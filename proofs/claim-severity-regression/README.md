@@ -29,7 +29,7 @@ Primary holdout: R², RMSE, MAE on test (see `results/results.json`).
 
 ## Industry comparison (Tier C)
 
-Filled: sklearn `StandardScaler` + `Ridge` twin via `baseline_industry.py` → `results/comparison.json`.
+Industry twin: sklearn `StandardScaler` + `Ridge` twin via `baseline_industry.py` → `results/comparison.json`.
 
 ## Limitations
 

@@ -74,11 +74,11 @@ def main() -> None:
     session = new_session(frame)
 
     # 1. What can this installation actually do?
-    matrix = Session.nlp_capability_matrix()
+    matrix = session.nlp.capability_matrix()
     print("backends", {k: v["available"] for k, v in matrix["backends"].items()})
 
     # 2. Screen the corpus before trusting any score.
-    profile = session.profile_text_corpus(near_duplicate_threshold=0.9)
+    profile = session.nlp.profile_corpus(near_duplicate_threshold=0.9)
     print(
         "profile",
         profile.n_documents,
@@ -93,7 +93,7 @@ def main() -> None:
         print("  finding:", finding)
 
     # 3. Fit on train only; the normalization plan is stored with the model.
-    fit = session.fit_text_classifier(
+    fit = session.nlp.fit_classifier(
         estimator="logistic",
         ngram_range=(1, 2),
         min_df=2,
@@ -103,14 +103,14 @@ def main() -> None:
     print("fit", fit.backend, fit.estimator, "vocab", fit.vocabulary_size)
 
     # 4. Choose on validation, then read test once.
-    print("validation", session.evaluate_text_classifier(partition="validation").metrics)
-    test = session.evaluate_text_classifier(partition="test")
+    print("validation", session.nlp.evaluate(partition="validation").metrics)
+    test = session.nlp.evaluate(partition="test")
     print("test", test.metrics, "oov", test.oov_rate)
 
     # 5. Exact token attribution — an identity for a linear head. Explain the row
     #    against the class it was actually predicted as, not an arbitrary default.
-    first_prediction = session.predict_text(partition="test").predictions[0]
-    interpret = session.interpret_text_prediction(
+    first_prediction = session.nlp.predict(partition="test").predictions[0]
+    interpret = session.nlp.interpret(
         partition="test", top_k=5, max_documents=1, target_class=first_prediction
     )
     print("explaining", interpret.target_class, "via", interpret.method)
@@ -118,29 +118,29 @@ def main() -> None:
         print(f"  {item.token:<24} {item.contribution:+.4f}")
 
     # 6. Unsupervised structure, fitted on train and assigned to holdout.
-    topics = session.fit_topics(method="nmf", n_topics=3, min_df=3, random_state=0)
+    topics = session.nlp.fit_topics(method="nmf", n_topics=3, min_df=3, random_state=0)
     print("topics", [t.label for t in topics.topics], "coherence", topics.mean_coherence)
-    print("holdout share", session.assign_topics(partition="test").topic_share)
+    print("holdout share", session.nlp.assign_topics(partition="test").topic_share)
 
     # 7. Description surfaces that claim no quality metric.
-    keyphrases = session.extract_keyphrases(partition="train", top_n=6)
+    keyphrases = session.nlp.extract_keyphrases(partition="train", top_n=6)
     print("keyphrases", [k.phrase for k in keyphrases.corpus_keyphrases])
-    summary = session.summarize_text(partition="test", n_sentences=1, max_documents=1)
+    summary = session.nlp.summarize(partition="test", n_sentences=1, max_documents=1)
     print("summary", summary.summaries[0])
-    entities = session.extract_entities(
+    entities = session.nlp.extract_entities(
         partition="test", gazetteers={"TERM": ["invoice", "portal", "shipment"]}
     )
     print("entities", entities.label_counts)
-    sentiment = session.analyze_sentiment(partition="test")
+    sentiment = session.nlp.analyze_sentiment(partition="test")
     print("sentiment", sentiment.negative_rate, "matched", sentiment.matched_term_rate)
-    print("language", session.detect_language(partition="all").dominant_language)
+    print("language", session.nlp.detect_language(partition="all").dominant_language)
 
     # 8. Bundle carries the normalization plan, so the reload scores identically.
     out = Path("artifacts") / "nlp_demo_bundle"
-    session.save_nlp_bundle(out)
+    session.nlp.save_bundle(out)
     reloaded = new_session(frame)
-    reloaded.load_nlp_bundle(out, trusted=True)
-    print("reloaded", reloaded.evaluate_text_classifier(partition="test").metrics)
+    reloaded.nlp.load_bundle(out, trusted=True)
+    print("reloaded", reloaded.nlp.evaluate(partition="test").metrics)
 
 
 if __name__ == "__main__":

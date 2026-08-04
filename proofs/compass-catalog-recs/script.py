@@ -94,7 +94,7 @@ def main() -> None:
         method = "als" if impl_ok else "item_knn"
         try:
             if impl_ok:
-                fit = rec_session.fit_recommender(
+                fit = rec_session.recommender.fit(
                     method="als",
                     feedback="implicit",
                     user_column="user_id",
@@ -102,7 +102,7 @@ def main() -> None:
                     random_state=ctx.seed,
                 )
             else:
-                fit = rec_session.fit_recommender(
+                fit = rec_session.recommender.fit(
                     method="item_knn",
                     user_column="user_id",
                     item_column="item_id",
@@ -111,7 +111,7 @@ def main() -> None:
                 )
                 method = "item_knn"
         except (MissingExtraError, TypeError, ValueError):
-            fit = rec_session.fit_recommender(
+            fit = rec_session.recommender.fit(
                 method="item_knn",
                 user_column="user_id",
                 item_column="item_id",
@@ -119,8 +119,8 @@ def main() -> None:
                 random_state=ctx.seed,
             )
             method = "item_knn"
-        recs = rec_session.recommend(partition="test", k=5)
-        ev = rec_session.evaluate_recommender(partition="test", k=5)
+        recs = rec_session.recommender.recommend(partition="test", k=5)
+        ev = rec_session.recommender.evaluate(partition="test", k=5)
         stages["recommender"] = {
             "status": "ok",
             "method": method,
@@ -159,14 +159,14 @@ def main() -> None:
             stratify=True,
             random_state=ctx.seed,
         )
-        g_session.set_graph(
+        g_session.graph.set_spec(
             edges,
             source_col="source",
             target_col="target",
             node_id_col="node_id",
         )
-        g_fit = g_session.fit_graph(method="classical", mode="inductive", random_state=ctx.seed)
-        g_ev = g_session.evaluate_graph(partition="test")
+        g_fit = g_session.graph.fit(method="classical", mode="inductive", random_state=ctx.seed)
+        g_ev = g_session.graph.evaluate(partition="test")
         plan_g = g_session.split_plan
         assert plan_g is not None
         stages["graph"] = {
@@ -261,7 +261,7 @@ def main() -> None:
             "Recommender split before fit; train-only ALS / item_knn",
             "Graph node split before classical graph features",
             "Classical repurchase scorer uses the same node inject_split",
-            "Test recommend / evaluate_graph / evaluate after locks",
+            "Test session.recommender.recommend / session.graph.evaluate / evaluate after locks",
         ],
         "what_fails_if_leakage_ignored": [
             "Fitting recommenders on test interactions invents recall@k",

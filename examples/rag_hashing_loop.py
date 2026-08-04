@@ -33,18 +33,18 @@ def main() -> None:
     ]
 
     session = Session()
-    session.rag_ingest_corpus(docs)
-    session.rag_chunk(size=160, overlap=32)
-    session.rag_embed_and_index()
+    session.rag.ingest_corpus(docs)
+    session.rag.chunk(size=160, overlap=32)
+    session.rag.embed_and_index()
 
-    hybrid = session.rag_retrieve(
+    hybrid = session.rag.retrieve(
         "corpus contamination indexed answers",
         k=3,
         mode="hybrid",
     )
     print("top hit:", hybrid.hits[0].doc_id)
 
-    answer = session.rag_generate(
+    answer = session.rag.generate(
         "What causes evaluation contamination?",
         provider=EchoGroundedProvider(),
         k=3,
@@ -59,7 +59,7 @@ def main() -> None:
             answer.faithfulness.answer_context_token_overlap,
         )
 
-    metrics = session.rag_evaluate(
+    metrics = session.rag.evaluate(
         {
             "corpus contamination indexed answers": ["leak"],
             "supervised learning hold out test": ["ml"],

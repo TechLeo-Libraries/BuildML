@@ -14,18 +14,18 @@ confounded by RFM features; true spend ATE ≈ 1.2. The studio:
 
 ## Status
 
-`completed`: run `script.py`; see `results/summary.json` and stage JSONs.
+Run `script.py`. Outputs land under `results/` (summary and stage JSON)..
 
 ## How to run
 
 ```bash
-.\.venv\Scripts\python.exe proofs\apex-uplift-studio\script.py
+python proofs\apex-uplift-studio\script.py
 ```
 
 ## Leakage controls
 
 - Shared stratified split before causal / classical / decisions
-- Causal assumptions declared before `fit_causal`
+- Causal assumptions declared before `session.causal.fit`
 - Promo budget knapsack / threshold tuned on validation only
 - Test evaluated after each stage locks
 

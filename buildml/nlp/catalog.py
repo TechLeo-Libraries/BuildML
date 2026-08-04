@@ -21,9 +21,12 @@ from buildml.nlp.extras import (
     langdetect_available,
     nltk_available,
     sentence_transformers_available,
+    sentence_transformers_spec_present,
     spacy_available,
     spacy_model_available,
+    spacy_spec_present,
     transformers_available,
+    transformers_spec_present,
 )
 from buildml.nlp.lexicons import (
     RULE_ENTITY_LABELS,
@@ -336,7 +339,16 @@ def nlp_capability_matrix() -> dict[str, Any]:
         "spacy_model_present": spacy_model_available(),
         "sentence_transformers_present": embedding_ready,
         "transformers_present": transformer_ready,
-        "industry_extra_present": spacy_ready or transformer_ready,
+        "industry_extra_present": (
+            spacy_spec_present() or transformers_spec_present()
+        ),
+        "industry_runtime_present": spacy_ready or transformer_ready,
+        "sentence_transformers_spec_present": sentence_transformers_spec_present(),
+        "industry_import_honesty": (
+            "backend/capability 'available' flags and industry_runtime_present "
+            "use real import probes (subprocess-safe for heavy torch stacks). "
+            "industry_extra_present / *_spec_present are find_spec only."
+        ),
     }
 
 

@@ -43,9 +43,9 @@ SELFSUPERVISED_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.fit_ssl_pretext(method='masked_tabular', mask_rate=0.3, epochs=50)",
-            "session.finetune_ssl_head(estimator=LogisticRegression(max_iter=1000))",
-            "session.evaluate_ssl(partition='validation')",
+            "session.ssl.fit_pretext(method='masked_tabular', mask_rate=0.3, epochs=50)",
+            "session.ssl.finetune_head(estimator=LogisticRegression(max_iter=1000))",
+            "session.ssl.evaluate(partition='validation')",
         ),
         check=(
             "Does the frozen-encoder-plus-head beat a plain model on your raw features?",
@@ -71,7 +71,7 @@ SELFSUPERVISED_BEGINNER: dict[str, BeginnerLayer] = _index(
             "The network sees the masked row and tries to reproduce the original.",
             "Its bottleneck layer is forced to hold a compact summary of the row.",
             "After training, discard the reconstruction output and keep the bottleneck as your embedding.",
-            "Export those embeddings with `transform_ssl` for any downstream model.",
+            "Export those embeddings with `session.ssl.transform` for any downstream model.",
         ),
         use=(
             "On wide tabular data where columns are genuinely related, so reconstruction requires learning structure.",
@@ -92,11 +92,11 @@ SELFSUPERVISED_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.fit_ssl_pretext(",
+            "session.ssl.fit_pretext(",
             "    method='masked_tabular', mask_rate=0.25,",
             "    embedding_dim=32, epochs=50, random_state=0,",
             ")",
-            "session.transform_ssl()   # embedding columns join the frame",
+            "session.ssl.transform()   # embedding columns join the frame",
         ),
         check=(
             "Is your embedding dimension meaningfully smaller than your feature count?",
@@ -119,8 +119,8 @@ SELFSUPERVISED_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         steps=(
             "Identify your data type. Tabular rows point to the SSL path; images, audio, or speech point to backbones.",
-            "For tabular, use `fit_ssl_pretext`: the encoder is trained on your data alone.",
-            "For images or audio, use `load_pretrained_backbone` and then `attach_backbone_head`.",
+            "For tabular, use `session.ssl.fit_pretext`: the encoder is trained on your data alone.",
+            "For images or audio, use `session.dl.load_backbone` and then `session.dl.attach_head`.",
             "Decide whether to freeze the backbone or fine-tune it; freezing needs far less data.",
             "Evaluate either path on labelled holdout rows the same way.",
         ),
@@ -144,10 +144,10 @@ SELFSUPERVISED_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         example=(
             "# tabular:",
-            "session.fit_ssl_pretext(method='masked_tabular', epochs=50)",
+            "session.ssl.fit_pretext(method='masked_tabular', epochs=50)",
             "# images / audio / speech:",
-            "session.load_pretrained_backbone(name='resnet18', freeze=True)",
-            "session.attach_backbone_head(num_classes=5)",
+            "session.dl.load_backbone(name='resnet18', freeze=True)",
+            "session.dl.attach_head(num_classes=5)",
         ),
         check=(
             "Is there a pretrained model whose training domain resembles your data?",
@@ -171,8 +171,8 @@ SELFSUPERVISED_BEGINNER: dict[str, BeginnerLayer] = _index(
         steps=(
             "Pretrain an encoder so an SSL plan exists.",
             "Optionally attach and fit a head.",
-            "Call `save_ssl_bundle(path)` to store the encoder and, if present, the head.",
-            "Reload with `load_ssl_bundle(path)` and call `transform_ssl` on new rows.",
+            "Call `session.ssl.save_bundle(path)` to store the encoder and, if present, the head.",
+            "Reload with `session.ssl.load_bundle(path)` and call `session.ssl.transform` on new rows.",
             "Keep checkpoints and Torch trainer bundles separately; each answers a different question.",
         ),
         use=(
@@ -194,9 +194,9 @@ SELFSUPERVISED_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.save_ssl_bundle('artifacts/tab-encoder')",
-            "job = Session.ingest(new_frame).load_ssl_bundle('artifacts/tab-encoder')",
-            "job.transform_ssl()   # embeddings for previously unseen rows",
+            "session.ssl.save_bundle('artifacts/tab-encoder')",
+            "job = Session.ingest(new_frame).ssl.load_bundle('artifacts/tab-encoder')",
+            "job.ssl.transform()   # embeddings for previously unseen rows",
         ),
         check=(
             "Does your bundle include the head, or only the encoder?",

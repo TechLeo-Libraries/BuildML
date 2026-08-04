@@ -51,13 +51,13 @@ def main() -> None:
     )
     backend_note = "sklearn"
     try:
-        fit = session.fit_metalearning(
+        fit = session.metalearning.fit(
             method="prototypical", task_column="category_id",
             n_way=2, k_shot=5, n_query=5, random_state=ctx.seed,
         )
     except (MissingExtraError, TypeError, ValueError) as exc:
         try:
-            fit = session.fit_metalearning(
+            fit = session.metalearning.fit(
                 method="warm_start", task_column="category_id",
                 n_way=2, k_shot=5, n_query=5, random_state=ctx.seed,
             )
@@ -70,9 +70,9 @@ def main() -> None:
             })
             print("coldstart-meta-adapt SKIPPED", exc2)
             return
-    ev = session.evaluate_metalearning(partition="test")
+    ev = session.metalearning.evaluate(partition="test")
     try:
-        bundle = session.save_metalearning_bundle(ctx.artifacts_dir / "meta_bundle")
+        bundle = session.metalearning.save_bundle(ctx.artifacts_dir / "meta_bundle")
         bundle_path = str(bundle)
     except Exception as exc:  # noqa: BLE001
         bundle_path = f"unavailable: {exc}"

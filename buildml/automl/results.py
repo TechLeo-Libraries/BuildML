@@ -167,18 +167,64 @@ class AutoMLResult:
         pandas.DataFrame
             Tabular trial comparison suitable for sorting and export.
         """
-        rows = [
-            {
-                "trial": t.trial,
-                "kind": t.kind,
-                "family": t.family,
-                "recipe_strategy": t.recipe_strategy,
-                "mean_score": t.mean_score,
-                "std_score": t.std_score,
-                **{f"param_{k}": v for k, v in t.params.items()},
-            }
-            for t in self.trials
-        ]
+        return self.leaderboard()
+
+    def leaderboard(self, *, top_n: int | None = None) -> pd.DataFrame:
+        """Return a rich AutoML leaderboard with selection / nested-CV fields.
+
+        Ranks trials by ``mean_score`` (descending), adds ``rank`` and
+        ``gap_to_best``, and broadcasts selection-mode disclosures
+        (``selection``, ``outer_score_mean`` / ``outer_score_std``) so a
+        default ``selection='cv'`` run cannot be mistaken for nested outer
+        evidence.
+
+        Parameters
+        ----------
+        top_n:
+            Optional cap on rows after ranking. ``None`` returns every trial.
+
+        Returns
+        -------
+        pandas.DataFrame
+            Leaderboard with family, recipe, kind, scores, selection context,
+            and flattened ``param_*`` columns.
+        """
+        ranked = sorted(
+            self.trials,
+            key=lambda t: (
+                -1.0 if t.mean_score != t.mean_score else -float(t.mean_score)
+            ),
+        )
+        best = ranked[0].mean_score if ranked else float("nan")
+        rows: list[dict[str, Any]] = []
+        for rank, t in enumerate(ranked, start=1):
+            gap = (
+                float("nan")
+                if best != best or t.mean_score != t.mean_score
+                else float(best - t.mean_score)
+            )
+            rows.append(
+                {
+                    "rank": rank,
+                    "trial": t.trial,
+                    "kind": t.kind,
+                    "family": t.family,
+                    "recipe_strategy": t.recipe_strategy,
+                    "mean_score": t.mean_score,
+                    "std_score": t.std_score,
+                    "gap_to_best": gap,
+                    "selection": self.selection,
+                    "ranking_metric": self.ranking_metric,
+                    "outer_score_mean": self.outer_score_mean,
+                    "outer_score_std": self.outer_score_std,
+                    "nested_cv_disclosed": self.selection == "nested",
+                    "ensemble_bases": list(t.ensemble_bases),
+                    **{f"mean_{k}": v for k, v in t.mean_metrics.items()},
+                    **{f"param_{k}": v for k, v in t.params.items()},
+                }
+            )
+            if top_n is not None and len(rows) >= int(top_n):
+                break
         return pd.DataFrame(rows)
 
     def to_dict(self) -> dict[str, Any]:
@@ -228,6 +274,11 @@ class AutoMLResult:
             f"AutoML · {self.method}/{self.selection} · {self.task} · "
             f"ranked by {self.ranking_metric} · trials={len(self.trials)}"
         )
+        if self.selection == "cv":
+            print(
+                "  note: default selection='cv' ranks by train-fold CV; "
+                "use selection='nested' for an outer post-selection estimate."
+            )
         if self.best_score is not None:
             std = "" if self.best_std is None else f" ± {self.best_std:.6f}"
             print(
@@ -240,7 +291,9 @@ class AutoMLResult:
                 if self.outer_score_std is None
                 else f" ± {self.outer_score_std:.6f}"
             )
-            print(f"  outer: {self.outer_score_mean:.6f}{std}")
+            print(f"  outer (nested): {self.outer_score_mean:.6f}{std}")
+        elif self.selection == "nested":
+            print("  outer (nested): unavailable (all outer folds failed)")
         for tip in self.disclosures[:6]:
             print(f"  - {tip}")
 

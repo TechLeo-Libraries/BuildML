@@ -15,7 +15,7 @@ from buildml.explain.schemas import OperationSpec, Prerequisite
 ANOMALY_PLAN = Prerequisite(
     "anomaly-plan",
     "A train-fitted AnomalyPlan is attached to the Session.",
-    check_hint="Session.anomaly_plan is not None.",
+    check_hint="session.anomaly.plan is not None.",
 )
 
 _OPERATIONS: tuple[OperationSpec, ...] = (
@@ -35,7 +35,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             _p(
                 "backend",
                 "sklearn | pyod | torch",
-                "Detector backend (see anomaly_capability_matrix).",
+                "Detector backend (see session.anomaly.capability_matrix).",
                 None,
             ),
             _p(
@@ -116,12 +116,12 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             "Claiming causal fraud attribution from scores.",
         ),
         state_changes=(
-            "Stores anomaly_plan and anomaly_fit_result; clears prior score/eval slots.",
+            "Stores session.anomaly.plan and session.anomaly.fit_result; clears prior score/eval slots.",
         ),
         result_reading=(
             "Read method, mode, threshold, threshold_policy, train_alert_rate, disclosures.",
         ),
-        next_steps=("score_anomalies and/or evaluate_anomaly; optionally save_anomaly_bundle.",),
+        next_steps=("session.anomaly.score and/or session.anomaly.evaluate; optionally session.anomaly.save_bundle.",),
         concepts=(
             "anomaly-train-fit-holdout-score",
             "anomaly-threshold-alert-rate",
@@ -158,8 +158,8 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         inputs=("Active AnomalyPlan and matching feature columns.",),
         outputs=("AnomalyScoreResult; optional mutated dataset when attach=True.",),
         prerequisites=(DATASET, ANOMALY_PLAN),
-        ordering=("After fit_anomaly or load_anomaly_bundle.",),
-        alternatives=("evaluate_anomaly when you need metrics rather than raw scores/flags.",),
+        ordering=("After session.anomaly.fit or session.anomaly.load_bundle.",),
+        alternatives=("session.anomaly.evaluate when you need metrics rather than raw scores/flags.",),
         rationale=("Use to materialize scores and alert flags for inspection or export.",),
         assumptions=("Plan feature columns still exist; threshold disclosures are accepted.",),
         failures=("No plan, missing columns, attach=True with partition≠all, existing score/flag columns.",),
@@ -168,9 +168,9 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             "Hiding alert_rate when publishing flags.",
             "Mutating thresholds on test after peeking at labels without disclosure.",
         ),
-        state_changes=("Stores anomaly_score_result; may add feature-role score/flag columns.",),
+        state_changes=("Stores session.anomaly.score_result; may add feature-role score/flag columns.",),
         result_reading=("Read n_flagged, alert_rate, threshold, score_stats, and disclosures.",),
-        next_steps=("evaluate_anomaly; or use attached columns cautiously downstream.",),
+        next_steps=("session.anomaly.evaluate; or use attached columns cautiously downstream.",),
         concepts=(
             "anomaly-train-fit-holdout-score",
             "anomaly-threshold-alert-rate",
@@ -207,8 +207,8 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         inputs=("Active AnomalyPlan and partition features (optional labels).",),
         outputs=("AnomalyEvalResult stored on the Session.",),
         prerequisites=(DATASET, ANOMALY_PLAN),
-        ordering=("After fit_anomaly; prefer validation/test over train for claims.",),
-        alternatives=("score_anomalies for scores/flags without labeled metrics.",),
+        ordering=("After session.anomaly.fit; prefer validation/test over train for claims.",),
+        alternatives=("session.anomaly.score for scores/flags without labeled metrics.",),
         rationale=("Use to compare methods/thresholds under a leakage-safe scorer.",),
         assumptions=("When reporting labeled metrics, labels are honestly scoped.",),
         failures=("No plan, missing label column, null labels, empty validation without fallback.",),
@@ -220,11 +220,11 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             "Publishing accuracy alone under rare fraud positives.",
             "Equating PR-AUC with causal fraud mechanism recovery.",
         ),
-        state_changes=("Stores anomaly_eval_result.",),
+        state_changes=("Stores session.anomaly.eval_result.",),
         result_reading=(
             "Read alert_rate, threshold, labeled_metrics, positive_rate, disclosures, recommendations.",
         ),
-        next_steps=("save_anomaly_bundle; or revise features/threshold and refit on train.",),
+        next_steps=("session.anomaly.save_bundle; or revise features/threshold and refit on train.",),
         concepts=(
             "anomaly-imbalance-metrics",
             "anomaly-threshold-alert-rate",
@@ -282,7 +282,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         inputs=("Active AnomalyPlan plus labeled rows from the tuning partition.",),
         outputs=("AnomalyThresholdTuneResult with the chosen threshold and its metric curve.",),
         prerequisites=(DATASET, SPLIT, ANOMALY_PLAN),
-        ordering=("After fit_anomaly; before evaluate_anomaly on test.",),
+        ordering=("After session.anomaly.fit; before session.anomaly.evaluate on test.",),
         alternatives=(
             "Setting threshold_policy at fit time when no labels exist to tune against.",
         ),
@@ -309,7 +309,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             "Read the chosen threshold together with its alert rate, not the metric alone.",
             "Inspect the metric curve for a plateau: a sharp peak usually means the threshold is fitted to noise.",
         ),
-        next_steps=("evaluate_anomaly on test; save_anomaly_bundle.",),
+        next_steps=("session.anomaly.evaluate on test; session.anomaly.save_bundle.",),
         concepts=(
             "anomaly-threshold-alert-rate",
             "anomaly-imbalance-metrics",
@@ -331,7 +331,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         inputs=("Active AnomalyPlan (optional fit/eval summaries in meta).",),
         outputs=("Bundle directory path.",),
         prerequisites=(ANOMALY_PLAN,),
-        ordering=("After fit_anomaly (and usually after evaluate_anomaly).",),
+        ordering=("After session.anomaly.fit (and usually after session.anomaly.evaluate).",),
         alternatives=("Keep working inside one Session without persistence.",),
         rationale=("Use when scoring must resume without replaying the full tabular Session.",),
         assumptions=("joblib can serialize the sklearn estimator.",),
@@ -343,7 +343,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         ),
         state_changes=("Records save path in history; does not clear the plan.",),
         result_reading=("Confirm meta.json format == buildml.anomaly_bundle.v1.",),
-        next_steps=("load_anomaly_bundle on a fresh Session when needed.",),
+        next_steps=("session.anomaly.load_bundle on a fresh Session when needed.",),
         concepts=("anomaly-bundle-boundary", "anomaly-train-fit-holdout-score"),
     ),
     _operation(
@@ -366,18 +366,18 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             ),
         ),
         inputs=("Anomaly bundle directory.",),
-        outputs=("Session with anomaly_plan attached.",),
+        outputs=("Session with session.anomaly.plan attached.",),
         prerequisites=(),
-        ordering=("Before score_anomalies / evaluate_anomaly on a restored plan.",),
-        alternatives=("Refit with fit_anomaly when the feature space changed.",),
+        ordering=("Before session.anomaly.score / session.anomaly.evaluate on a restored plan.",),
+        alternatives=("Refit with session.anomaly.fit when the feature space changed.",),
         rationale=("Use to resume scoring without refitting the detector.",),
         assumptions=("Feature columns at score time still match the plan.",),
         failures=("Missing files, wrong format, corrupt joblib payload.",),
         leakage=("Loading does not recreate SplitPlan; attach data/splits separately for holdout claims.",),
-        anti_patterns=("Loading a RAG/Torch/unsupervised bundle path into load_anomaly_bundle.",),
-        state_changes=("Stores anomaly_plan; clears prior fit/score/eval result slots.",),
+        anti_patterns=("Loading a RAG/Torch/unsupervised bundle path into session.anomaly.load_bundle.",),
+        state_changes=("Stores session.anomaly.plan; clears prior fit/score/eval result slots.",),
         result_reading=("Check method, mode, threshold, columns from plan.to_dict().",),
-        next_steps=("score_anomalies or evaluate_anomaly once features are available.",),
+        next_steps=("session.anomaly.score or session.anomaly.evaluate once features are available.",),
         concepts=("anomaly-bundle-boundary", "anomaly-train-fit-holdout-score"),
     ),
 )

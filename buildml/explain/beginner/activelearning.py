@@ -45,9 +45,9 @@ ACTIVELEARNING_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         example=(
             "session.split(test_size=0.2, random_state=0)",
-            "session.fit_active_learner(estimator=LogisticRegression(max_iter=1000))",
-            "indices = session.suggest_query(n=20, strategy='margin')",
-            "session.label_rows({int(i): labels[i] for i in indices})",
+            "session.active_learning.fit(estimator=LogisticRegression(max_iter=1000))",
+            "indices = session.active_learning.suggest_query(n=20, strategy='margin')",
+            "session.active_learning.label_rows({int(i): labels[i] for i in indices})",
         ),
         check=(
             "How many unlabelled rows are in your training partition?",
@@ -69,10 +69,10 @@ ACTIVELEARNING_BEGINNER: dict[str, BeginnerLayer] = _index(
             "write your conclusions for you."
         ),
         steps=(
-            "Call `suggest_query` to get the row indices worth labelling next.",
+            "Call `session.active_learning.suggest_query` to get the row indices worth labelling next.",
             "Export those rows to whatever your annotation process is: a spreadsheet, a labelling tool, an expert review.",
             "Collect the real labels.",
-            "Feed them back with `label_rows`.",
+            "Feed them back with `session.active_learning.label_rows`.",
             "Refit and repeat until the budget runs out or the score plateaus.",
         ),
         use=(
@@ -94,11 +94,11 @@ ACTIVELEARNING_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "indices = session.suggest_query(n=25, strategy='least_confidence')",
+            "indices = session.active_learning.suggest_query(n=25, strategy='least_confidence')",
             "batch = session.head(indices=indices)      # export for annotation",
             "# ... humans label the batch ...",
-            "session.label_rows(reviewed_labels)",
-            "session.fit_active_learner(estimator=LogisticRegression(max_iter=1000))",
+            "session.active_learning.label_rows(reviewed_labels)",
+            "session.active_learning.fit(estimator=LogisticRegression(max_iter=1000))",
         ),
         check=(
             "Who is doing the labelling, and are the queried rows within their expertise?",
@@ -146,10 +146,10 @@ ACTIVELEARNING_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.suggest_query(n=20, strategy='margin')          # closest top-two",
-            "session.suggest_query(n=20, strategy='entropy')         # many classes",
-            "session.suggest_query(n=20, strategy='coreset')         # coverage",
-            "session.evaluate_active_learning(partition='validation')",
+            "session.active_learning.suggest_query(n=20, strategy='margin')          # closest top-two",
+            "session.active_learning.suggest_query(n=20, strategy='entropy')         # many classes",
+            "session.active_learning.suggest_query(n=20, strategy='coreset')         # coverage",
+            "session.active_learning.evaluate(partition='validation')",
         ),
         check=(
             "Does your strategy beat random selection at the same budget?",
@@ -172,8 +172,8 @@ ACTIVELEARNING_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         steps=(
             "Run at least one query-and-label round so a plan exists.",
-            "Call `save_active_learning_bundle(path)` to store the model, the pool indices, and the query history.",
-            "Reload with `load_active_learning_bundle(path)` to resume the loop.",
+            "Call `session.active_learning.save_bundle(path)` to store the model, the pool indices, and the query history.",
+            "Reload with `session.active_learning.load_bundle(path)` to resume the loop.",
             "Continue querying from where you left off, without re-suggesting rows you already labelled.",
             "Keep checkpoints separately for the data state itself.",
         ),
@@ -196,9 +196,9 @@ ACTIVELEARNING_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.save_active_learning_bundle('artifacts/al-round-3')",
-            "resumed = Session.ingest(frame).load_active_learning_bundle('artifacts/al-round-3')",
-            "resumed.suggest_query(n=20, strategy='margin')   # continues the sequence",
+            "session.active_learning.save_bundle('artifacts/al-round-3')",
+            "resumed = Session.ingest(frame).active_learning.load_bundle('artifacts/al-round-3')",
+            "resumed.active_learning.suggest_query(n=20, strategy='margin')   # continues the sequence",
         ),
         check=(
             "Does your saved bundle know which rows have already been labelled?",

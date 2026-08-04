@@ -31,23 +31,32 @@ EXTERNAL = "true_family"
 
 def _load_sku_embeddings(n_per: int, seed: int) -> tuple[pd.DataFrame, dict]:
     rng = np.random.default_rng(seed)
+    # Closer centers + higher noise so KMeans after PCA cannot trivially hit ARI≈1.
     centers = {
-        0: np.array([-1.5, -1.2, 0.2, 0.0, -0.5]),
-        1: np.array([1.4, -0.8, 0.5, 0.3, 0.2]),
-        2: np.array([0.1, 1.5, -0.4, -0.2, 0.8]),
-        3: np.array([-0.3, 0.2, 1.6, 1.1, -0.9]),
+        0: np.array([-1.0, -0.8, 0.2, 0.0, -0.3]),
+        1: np.array([0.9, -0.5, 0.4, 0.2, 0.1]),
+        2: np.array([0.1, 0.9, -0.2, -0.1, 0.5]),
+        3: np.array([-0.2, 0.1, 1.0, 0.7, -0.5]),
     }
     rows = []
     for fam, center in centers.items():
         for _ in range(n_per):
-            x = center + rng.normal(scale=0.35, size=5)
+            x = center + rng.normal(scale=0.6, size=5)
             rows.append({**{FEATURES[i]: float(x[i]) for i in range(5)}, EXTERNAL: fam})
     frame = pd.DataFrame(rows)
+    n_boundary = max(1, int(0.1 * len(frame)))
+    for idx in rng.choice(len(frame), size=n_boundary, replace=False):
+        a, b = rng.choice(4, size=2, replace=False)
+        blend = 0.5 * centers[int(a)] + 0.5 * centers[int(b)] + rng.normal(0, 0.25, size=5)
+        for i, col in enumerate(FEATURES):
+            frame.loc[idx, col] = float(blend[i])
+        frame.loc[idx, EXTERNAL] = int(a if rng.random() < 0.5 else b)
     meta = {
         "name": "synthetic_sku_embeddings",
         "license": "synthetic/public-domain",
         "n_rows": int(len(frame)),
         "n_families": 4,
+        "notes": "Overlapping embedding families + 10% boundary SKUs (anti perfect ARI).",
     }
     return frame, meta
 
@@ -71,20 +80,31 @@ def main() -> None:
         "test": len(plan.test_indices),
     }
 
-    fit = session.fit_clusters(method="kmeans", n_clusters=4, random_state=ctx.seed)
+    fit = session.unsupervised.fit(method="kmeans", n_clusters=4, random_state=ctx.seed)
     assert_no_test_in_selection(
         selection_partition="validation",
         evaluation_partition="test",
     )
-    val = session.evaluate_clusters(
+    val = session.unsupervised.evaluate(
         partition="validation",
         external_label_column=EXTERNAL,
     )
-    test = session.evaluate_clusters(
+    test = session.unsupervised.evaluate(
         partition="test",
         external_label_column=EXTERNAL,
     )
-    bundle = session.save_unsupervised_bundle(ctx.artifacts_dir / "unsupervised_bundle")
+    test_metrics = metrics_round(
+        test.to_dict() if hasattr(test, "to_dict") else {}
+    )
+    external = dict(test_metrics.get("external_metrics") or {})
+    for key in ("adjusted_rand_index", "normalized_mutual_info"):
+        value = external.get(key)
+        if isinstance(value, (int, float)) and float(value) >= 0.97:
+            raise SystemExit(
+                "sku-embedding-clusters refused perfect-score theater: "
+                f"{key}={float(value):.4f} >= 0.97 on overlapping SKU families."
+            )
+    bundle = session.unsupervised.save_bundle(ctx.artifacts_dir / "unsupervised_bundle")
 
     write_results(
         ctx,
@@ -99,9 +119,7 @@ def main() -> None:
             "validation_metrics": metrics_round(
                 val.to_dict() if hasattr(val, "to_dict") else {}
             ),
-            "test_metrics": metrics_round(
-                test.to_dict() if hasattr(test, "to_dict") else {}
-            ),
+            "test_metrics": test_metrics,
             "bundle_path": str(bundle),
             "leakage_controls": [
                 "Scale + PCA fit on train only",

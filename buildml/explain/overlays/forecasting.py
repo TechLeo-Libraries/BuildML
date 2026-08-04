@@ -16,7 +16,7 @@ from buildml.explain.schemas import OperationSpec, Prerequisite
 FORECAST_PLAN = Prerequisite(
     "forecast-plan",
     "A train-fitted ForecastPlan is attached to the Session.",
-    check_hint="Session.forecast_plan is not None.",
+    check_hint="session.forecast.plan is not None.",
 )
 
 _OPERATIONS: tuple[OperationSpec, ...] = (
@@ -80,17 +80,17 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         ),
         anti_patterns=(
             "Calling this a digital twin or full econometrics suite.",
-            "Using Session.split(random) then fit_forecast.",
+            "Using Session.split(random) then session.forecast.fit.",
             "Treating MAPE near zero targets as a stable primary metric.",
         ),
         state_changes=(
-            "Stores forecast_plan and forecast_fit_result; clears prior generate/eval slots.",
+            "Stores session.forecast.plan and session.forecast.fit_result; clears prior generate/eval slots.",
         ),
         result_reading=(
             "Read method, n_train_rows, n_fit_rows, lags, univariate, disclosures.",
         ),
         next_steps=(
-            "generate_forecast and/or evaluate_forecast; optionally save_forecast_bundle.",
+            "session.forecast.generate and/or session.forecast.evaluate; optionally session.forecast.save_bundle.",
         ),
         concepts=(
             "forecast-temporal-leakage",
@@ -128,8 +128,8 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         inputs=("Active ForecastPlan; optional future_exog.",),
         outputs=("ForecastGenerateResult with prediction tuple.",),
         prerequisites=(FORECAST_PLAN,),
-        ordering=("After fit_forecast or load_forecast_bundle.",),
-        alternatives=("evaluate_forecast when holdout actuals exist for scoring.",),
+        ordering=("After session.forecast.fit or session.forecast.load_bundle.",),
+        alternatives=("session.forecast.evaluate when holdout actuals exist for scoring.",),
         rationale=("Use to materialize a horizon path for planning or inspection.",),
         assumptions=(
             "Origin history is long enough for max(lags).",
@@ -144,9 +144,9 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         anti_patterns=(
             "Interpreting recursive multi-step accuracy as one-step skill.",
         ),
-        state_changes=("Stores forecast_generate_result.",),
+        state_changes=("Stores session.forecast.generate_result.",),
         result_reading=("Read predictions, horizon, origin, disclosures.",),
-        next_steps=("evaluate_forecast on holdout; save_forecast_bundle if deploying the plan.",),
+        next_steps=("session.forecast.evaluate on holdout; session.forecast.save_bundle if deploying the plan.",),
         concepts=(
             "forecast-horizon-generate",
             "forecast-lag-features",
@@ -177,8 +177,8 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         inputs=("Active ForecastPlan and chronological SplitPlan.",),
         outputs=("ForecastEvalResult with metrics and disclosures.",),
         prerequisites=(FORECAST_PLAN, SPLIT),
-        ordering=("After fit_forecast; typically on validation then test.",),
-        alternatives=("generate_forecast when you need future values without actuals.",),
+        ordering=("After session.forecast.fit; typically on validation then test.",),
+        alternatives=("session.forecast.generate when you need future values without actuals.",),
         rationale=("Use to quantify holdout forecast error under an explicit protocol.",),
         assumptions=(
             "Holdout actuals exist and are numeric.",
@@ -192,9 +192,9 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             "Reporting only MAPE near zero.",
             "Calling origin multi-step error 'accuracy' without naming the strategy.",
         ),
-        state_changes=("Stores forecast_eval_result.",),
+        state_changes=("Stores session.forecast.eval_result.",),
         result_reading=("Read mae/rmse/mape beside partition and strategy.",),
-        next_steps=("Compare baselines; save_forecast_bundle for the chosen plan.",),
+        next_steps=("Compare baselines; session.forecast.save_bundle for the chosen plan.",),
         concepts=(
             "forecast-eval-protocols",
             "forecast-temporal-leakage",
@@ -215,7 +215,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         inputs=("Active ForecastPlan.",),
         outputs=("Bundle directory path.",),
         prerequisites=(FORECAST_PLAN,),
-        ordering=("After fit_forecast (optionally after evaluate_forecast).",),
+        ordering=("After session.forecast.fit (optionally after session.forecast.evaluate).",),
         alternatives=("checkpoint_save for workflow resume without the forecaster.",),
         rationale=("Use when the fitted forecast plan must travel independently of Session data.",),
         assumptions=("Destination is writable.",),
@@ -228,7 +228,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         ),
         state_changes=("No Session mutation beyond history.",),
         result_reading=("Confirm meta.json format == buildml.forecast_bundle.v1.",),
-        next_steps=("load_forecast_bundle in a fresh Session with matching roles/splits.",),
+        next_steps=("session.forecast.load_bundle in a fresh Session with matching roles/splits.",),
         concepts=("forecast-bundle-boundary",),
     ),
     _operation(
@@ -251,20 +251,20 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             ),
         ),
         inputs=("forecast_bundle directory.",),
-        outputs=("Session with forecast_plan attached.",),
+        outputs=("Session with session.forecast.plan attached.",),
         prerequisites=(DATASET,),
         ordering=("After ingest/roles/time_split for subsequent generate/evaluate.",),
-        alternatives=("fit_forecast to train a new plan.",),
+        alternatives=("session.forecast.fit to train a new plan.",),
         rationale=("Use to reuse a previously fitted forecast plan.",),
         assumptions=("Bundle format matches buildml.forecast_bundle.v1.",),
         failures=("Missing files; wrong format tag.",),
         leakage=(
-            "Loading fits nothing, but it does not re-validate the plan against this Session's split; a shuffled split still makes evaluate_forecast dishonest.",
+            "Loading fits nothing, but it does not re-validate the plan against this Session's split; a shuffled split still makes session.forecast.evaluate dishonest.",
         ),
-        anti_patterns=("Loading into a shuffled-split Session and trusting evaluate_forecast.",),
-        state_changes=("Sets forecast_plan; clears fit/generate/eval result caches.",),
-        result_reading=("Inspect Session.forecast_plan.to_dict().",),
-        next_steps=("generate_forecast / evaluate_forecast.",),
+        anti_patterns=("Loading into a shuffled-split Session and trusting session.forecast.evaluate.",),
+        state_changes=("Sets session.forecast.plan; clears fit/generate/eval result caches.",),
+        result_reading=("Inspect session.forecast.plan.to_dict().",),
+        next_steps=("session.forecast.generate / session.forecast.evaluate.",),
         concepts=("forecast-bundle-boundary",),
     ),
 )

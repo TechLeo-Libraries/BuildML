@@ -46,13 +46,16 @@ session = (
     .scale(method="standard")
 )
 
-session.fit_voting(bases, voting="soft", task="classification")
-validation = session.evaluate_ensemble(partition="validation")
-test = session.evaluate_ensemble(partition="test")
+session.ensemble.fit_voting(bases, voting="soft", task="classification")
+validation = session.ensemble.evaluate(partition="validation")
+test = session.ensemble.evaluate(partition="test")
+# Base contributions + diversity (predict-only; no refit on the eval partition)
+print(test.diagnostics["base_contributions"])
+print(test.diagnostics["diversity"]["mean_pairwise_disagreement"])
 print(validation.metrics, test.metrics)
 ```
 
-`fit_voting` sets classical `fit_result`, so `evaluate` / `predict` /
+`session.ensemble.fit_voting` sets classical `fit_result`, so `evaluate` / `predict` /
 `save_pipeline` also work.
 
 ---
@@ -60,8 +63,8 @@ print(validation.metrics, test.metrics)
 ## Stacking (CV meta-learner inside train)
 
 ```python
-session.fit_stacking(bases, cv=3, task="classification")
-print(session.evaluate_ensemble(partition="test").metrics)
+session.ensemble.fit_stacking(bases, cv=3, task="classification")
+print(session.ensemble.evaluate(partition="test").metrics)
 ```
 
 Stacking folds stay inside **train**. Session test never enters meta-feature
@@ -72,9 +75,9 @@ construction. Prefer this over blending when you want out-of-fold meta features.
 ## Blending (holdout carved from train)
 
 ```python
-session.fit_blending(bases, holdout_fraction=0.2, random_state=0)
-print(session.ensemble_plan.disclosures[:3])
-print(session.evaluate_ensemble(partition="test").metrics)
+session.ensemble.fit_blending(bases, holdout_fraction=0.2, random_state=0)
+print(session.ensemble.plan.disclosures[:3])
+print(session.ensemble.evaluate(partition="test").metrics)
 ```
 
 The blend holdout is an **inner train carve**, not Session validation/test.
@@ -85,7 +88,7 @@ Bases are refit on full train after meta fit by default (disclosed).
 ## Persist
 
 ```python
-session.save_ensemble_bundle("artifacts/ensemble_bundle")
+session.ensemble.save_bundle("artifacts/ensemble_bundle")
 session.save_pipeline("artifacts/ensemble_pipeline", evaluate_partition="test")
 
 fresh = (
@@ -93,8 +96,8 @@ fresh = (
     .set_roles({"age": "feature", "income": "feature", "approved": "target"})
     .split(test_size=0.25, validation_size=0.25, stratify=True, random_state=0)
 )
-fresh.load_ensemble_bundle("artifacts/ensemble_bundle")
-print(fresh.evaluate_ensemble(partition="test").metrics)
+fresh.ensemble.load_bundle("artifacts/ensemble_bundle")
+print(fresh.ensemble.evaluate(partition="test").metrics)
 ```
 
 `buildml.ensemble_bundle.v1` stores `EnsemblePlan` + fit contract.
@@ -107,9 +110,9 @@ estimator. Session checkpoints do **not** embed the ensemble.
 
 | Use | Do not confuse with |
 | --- | --- |
-| `fit_voting` / `fit_stacking` / `fit_blending` | `Session.fit(RandomForest…)` (single estimator) |
+| `session.ensemble.fit_voting` / `session.ensemble.fit_stacking` / `session.ensemble.fit_blending` | `Session.fit(RandomForest…)` (single estimator) |
 | Train-only stacking CV / blend holdout | Fitting meta-learners on Session test |
-| `evaluate_ensemble` supervised metrics | Unsupervised cluster validity |
+| `session.ensemble.evaluate` supervised metrics | Unsupervised cluster validity |
 | Ensemble bundle | Session checkpoint |
 
 Teaching: `session.explain("fit_stacking")`. Runnable mirror:

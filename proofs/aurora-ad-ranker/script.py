@@ -86,7 +86,7 @@ def main() -> None:
         method = "lambdarank" if lgbm else "pointwise"
         try:
             if lgbm:
-                fit_r = rank_session.fit_ranker(
+                fit_r = rank_session.ranking.fit(
                     method="lambdarank",
                     query_column="query_id",
                     item_column="ad_id",
@@ -95,7 +95,7 @@ def main() -> None:
             else:
                 raise MissingExtraError("ranking-industry", "lambdarank")
         except (MissingExtraError, TypeError, ValueError):
-            fit_r = rank_session.fit_ranker(
+            fit_r = rank_session.ranking.fit(
                 method="pointwise",
                 query_column="query_id",
                 item_column="ad_id",
@@ -103,8 +103,8 @@ def main() -> None:
                 random_state=ctx.seed,
             )
             method = "pointwise"
-        ranked = rank_session.rank(partition="test", k=5)
-        ev_r = rank_session.evaluate_ranker(partition="test", k=5)
+        ranked = rank_session.ranking.rank(partition="test", k=5)
+        ev_r = rank_session.ranking.evaluate(partition="test", k=5)
         plan_r = rank_session.split_plan
         assert plan_r is not None
         stages["ranking"] = {
@@ -188,16 +188,16 @@ def main() -> None:
         assert_no_test_in_selection(
             selection_partition="validation", evaluation_partition="test"
         )
-        thr = classical.fit_decision_policy(
+        thr = classical.decision.fit(
             method="threshold",
             partition="validation",
             fp_cost=1.0,
             fn_cost=3.0,
         )
-        thr_test = classical.evaluate_decisions(partition="test")
+        thr_test = classical.decision.evaluate(partition="test")
         alloc_payload: dict = {"alloc_status": "skipped"}
         try:
-            knap = classical.fit_decision_policy(
+            knap = classical.decision.fit(
                 method="knapsack",
                 partition="validation",
                 budget=40.0,
@@ -206,7 +206,7 @@ def main() -> None:
                 score_source="model_proba",
                 knapsack_solver="dp",
             )
-            applied = classical.apply_decisions(partition="test")
+            applied = classical.decision.apply(partition="test")
             alloc_payload = {
                 "alloc_status": "ok",
                 "knapsack_policy": metrics_round(
@@ -219,13 +219,13 @@ def main() -> None:
                 },
             }
         except Exception as exc:  # noqa: BLE001
-            topk = classical.fit_decision_policy(
+            topk = classical.decision.fit(
                 method="topk",
                 partition="validation",
                 capacity=25,
                 score_source="model_proba",
             )
-            applied = classical.apply_decisions(partition="test")
+            applied = classical.decision.apply(partition="test")
             alloc_payload = {
                 "alloc_status": "ok_topk_fallback",
                 "error": f"{type(exc).__name__}: {exc}",

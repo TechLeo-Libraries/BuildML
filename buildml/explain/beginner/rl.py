@@ -45,8 +45,8 @@ RL_BEGINNER: dict[str, BeginnerLayer] = _index(
         example=(
             "session.set_roles({'action_taken': 'target', 'episode_id': 'group'})",
             "session.group_split(group_column='episode_id', test_size=0.2, random_state=0)",
-            "session.fit_imitation(estimator=HistGradientBoostingClassifier())",
-            "session.evaluate_imitation(partition='test')",
+            "session.rl.fit_imitation(estimator=HistGradientBoostingClassifier())",
+            "session.rl.evaluate_imitation(partition='test')",
         ),
         check=(
             "Were your demonstrations produced by someone genuinely good at the task?",
@@ -68,9 +68,9 @@ RL_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         steps=(
             "Fit an imitation policy so a plan exists.",
-            "Call `save_imitation_bundle(path)`.",
-            "Reload with `load_imitation_bundle(path)` wherever decisions are served.",
-            "Call `predict_imitation_action` with the current situation's features.",
+            "Call `session.rl.save_imitation_bundle(path)`.",
+            "Reload with `session.rl.load_imitation_bundle(path)` wherever decisions are served.",
+            "Call `session.rl.predict_imitation` with the current situation's features.",
             "Keep checkpoints separately for the demonstration dataset.",
         ),
         use=(
@@ -92,9 +92,9 @@ RL_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.save_imitation_bundle('artifacts/routing-policy')",
-            "service = Session.ingest(state_frame).load_imitation_bundle('artifacts/routing-policy')",
-            "action = service.predict_imitation_action()",
+            "session.rl.save_imitation_bundle('artifacts/routing-policy')",
+            "service = Session.ingest(state_frame).rl.load_imitation_bundle('artifacts/routing-policy')",
+            "action = service.rl.predict_imitation()",
         ),
         check=(
             "When were your demonstrations recorded, and is that behaviour still current?",
@@ -141,11 +141,11 @@ RL_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.fit_rl(",
+            "session.rl.fit(",
             "    method='linucb', context_columns=['segment', 'recency'],",
             "    action_column='offer_shown', reward_column='converted', alpha=1.0,",
             ")",
-            "action = session.act_rl(context={'segment': 'A', 'recency': 3})",
+            "action = session.rl.act(context={'segment': 'A', 'recency': 3})",
         ),
         check=(
             "Did your logging policy try every action at least sometimes?",
@@ -194,7 +194,7 @@ RL_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "report = session.evaluate_rl(partition='test', estimator='ips')",
+            "report = session.rl.evaluate(partition='test', estimator='ips')",
             "print(report.estimated_value, report.effective_sample_size)",
             "print(report.disclosures)",
         ),
@@ -243,11 +243,11 @@ RL_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         example=(
             "# pip install \"buildml[rl]\"",
-            "session.fit_rl(",
+            "session.rl.fit(",
             "    method='reinforce', env_id='CartPole-v1',",
             "    n_episodes=500, random_state=0,",
             ")",
-            "session.evaluate_rl(n_eval_episodes=20)",
+            "session.rl.evaluate(n_eval_episodes=20)",
         ),
         check=(
             "Do you have an environment, or only logs?",
@@ -303,11 +303,11 @@ RL_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         example=(
             "# pip install \"buildml[rl-industry]\"",
-            "session.fit_rl(",
+            "session.rl.fit(",
             "    method='ppo', env_id='CartPole-v1',",
             "    total_timesteps=50_000, random_state=0,",
             ")",
-            "session.evaluate_rl(n_eval_episodes=50)",
+            "session.rl.evaluate(n_eval_episodes=50)",
         ),
         check=(
             "Do your actions change the state you will see next?",
@@ -329,9 +329,9 @@ RL_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         steps=(
             "Fit a bandit or an agent so a plan exists.",
-            "Call `save_rl_bundle(path)` to store the policy and its action space.",
-            "Reload with `load_rl_bundle(path)` in the serving path.",
-            "Call `act_rl` with a context to get an action.",
+            "Call `session.rl.save_bundle(path)` to store the policy and its action space.",
+            "Reload with `session.rl.load_bundle(path)` in the serving path.",
+            "Call `session.rl.act` with a context to get an action.",
             "Keep checkpoints separately for the interaction logs.",
         ),
         use=(
@@ -353,9 +353,9 @@ RL_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.save_rl_bundle('artifacts/offer-policy')",
-            "service = Session().load_rl_bundle('artifacts/offer-policy')",
-            "action = service.act_rl(context={'segment': 'A', 'recency': 3})",
+            "session.rl.save_bundle('artifacts/offer-policy')",
+            "service = Session().rl.load_bundle('artifacts/offer-policy')",
+            "action = service.rl.act(context={'segment': 'A', 'recency': 3})",
         ),
         check=(
             "Is your deployed policy still exploring, and at what rate?",
@@ -403,9 +403,9 @@ RL_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         example=(
             "# pip install \"buildml[rl]\"",
-            "session.fit_rl(mode='tabular_q', algorithm='q_learning', env_id='FrozenLake-v1')",
-            "print(session.rl_plan.greedy_policy_table())",
-            "session.evaluate_rl(n_episodes=100)",
+            "session.rl.fit(mode='tabular_q', algorithm='q_learning', env_id='FrozenLake-v1')",
+            "print(session.rl.plan.greedy_policy_table())",
+            "session.rl.evaluate(n_episodes=100)",
         ),
         check=(
             "What fraction of your table was ever updated? Low coverage means most of it is still zeros.",
@@ -452,8 +452,8 @@ RL_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.fit_rl(mode='tabular_q', algorithm='sarsa', env_id='CliffWalking-v0')",
-            "session.fit_rl(mode='tabular_q', algorithm='expected_sarsa', env_id='CliffWalking-v0')",
+            "session.rl.fit(mode='tabular_q', algorithm='sarsa', env_id='CliffWalking-v0')",
+            "session.rl.fit(mode='tabular_q', algorithm='expected_sarsa', env_id='CliffWalking-v0')",
             "# compare mean_return against algorithm='q_learning' with the same seed",
         ),
         check=(
@@ -501,8 +501,8 @@ RL_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.fit_rl(mode='tabular_q', env_id='CartPole-v1', n_bins=6)",
-            "disc = session.rl_plan.config['discretizer']",
+            "session.rl.fit(mode='tabular_q', env_id='CartPole-v1', n_bins=6)",
+            "disc = session.rl.plan.config['discretizer']",
             "print(disc['bound_sources'], disc['n_states'])",
         ),
         check=(
@@ -526,7 +526,7 @@ RL_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         steps=(
             "Install buildml[rl] so Gymnasium env loops are available.",
-            "fit_rl(mode='gym_reinforce', env_id='CartPole-v1', n_episodes=...).",
+            "session.rl.fit(mode='gym_reinforce', env_id='CartPole-v1', n_episodes=...).",
             "Plot mean_return over episodes: expect high variance.",
             "Compare sample efficiency against tabular_q or gym_sb3 on the same env and seed.",
         ),
@@ -543,8 +543,8 @@ RL_BEGINNER: dict[str, BeginnerLayer] = _index(
             ("Monte Carlo removes variance.", "It is unbiased but often high-variance versus TD."),
         ),
         example=(
-            "session.fit_rl(mode='gym_reinforce', env_id='CartPole-v1', n_episodes=300)",
-            "session.evaluate_rl()",
+            "session.rl.fit(mode='gym_reinforce', env_id='CartPole-v1', n_episodes=300)",
+            "session.rl.evaluate()",
         ),
         check=(
             "Is mean_return trending up over episodes?",
@@ -566,7 +566,7 @@ RL_BEGINNER: dict[str, BeginnerLayer] = _index(
             "scoreboard instead of waiting for the entire game to finish."
         ),
         steps=(
-            "fit_rl(mode='tabular_q', algorithm='q_learning' or 'sarsa').",
+            "session.rl.fit(mode='tabular_q', algorithm='q_learning' or 'sarsa').",
             "Inspect state_coverage and mean_abs_td_error in fit results.",
             "Compare mean_return against the other algorithm on CliffWalking with the same seed.",
             "Use rl-n-step-td as the bridge when reading DQN target-network papers.",
@@ -584,8 +584,8 @@ RL_BEGINNER: dict[str, BeginnerLayer] = _index(
             ("One-step TD is always lower variance than Monte Carlo.", "Bias-variance trade-off depends on n and noise."),
         ),
         example=(
-            "session.fit_rl(mode='tabular_q', algorithm='sarsa', env_id='CliffWalking-v0')",
-            "session.evaluate_rl()",
+            "session.rl.fit(mode='tabular_q', algorithm='sarsa', env_id='CliffWalking-v0')",
+            "session.rl.evaluate()",
         ),
         check=(
             "Does state_coverage show enough repeated (state, action) visits?",
@@ -608,8 +608,8 @@ RL_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         steps=(
             "pip install 'buildml[rl-industry]'.",
-            "fit_rl(mode='gym_sb3', algorithm='ppo' or 'a2c', total_timesteps=...).",
-            "evaluate_rl and read mean_return with offline=False disclosures.",
+            "session.rl.fit(mode='gym_sb3', algorithm='ppo' or 'a2c', total_timesteps=...).",
+            "session.rl.evaluate and read mean_return with offline=False disclosures.",
             "Contrast against gym_reinforce (MC) and tabular_q on the same env.",
         ),
         use=(
@@ -625,11 +625,11 @@ RL_BEGINNER: dict[str, BeginnerLayer] = _index(
             ("PPO is unrelated to REINFORCE.", "Both are policy-gradient families with different variance control."),
         ),
         example=(
-            "session.fit_rl(mode='gym_sb3', algorithm='ppo', total_timesteps=25000)",
-            "session.evaluate_rl()",
+            "session.rl.fit(mode='gym_sb3', algorithm='ppo', total_timesteps=25000)",
+            "session.rl.evaluate()",
         ),
         check=(
-            "Did you read rl_capability_matrix() for backend defaults?",
+            "Did you read session.rl.capability_matrix() for backend defaults?",
             "Does mean_return beat REINFORCE with matched seeds and timesteps?",
         ),
         tools=("fit_rl", "evaluate_rl", "rl_capability_matrix"),

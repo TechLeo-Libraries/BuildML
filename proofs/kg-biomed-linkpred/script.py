@@ -44,15 +44,15 @@ def main() -> None:
         .set_roles({"head": "id", "relation": "id", "tail": "id"})
         .split(test_size=0.2, validation_size=0.1, random_state=ctx.seed)
     )
-    fit = session.fit_kg(
+    fit = session.kg.fit(
         method="transe",
         head_column="head", relation_column="relation", tail_column="tail",
         embedding_dim=32, epochs=40, batch_size=64, learning_rate=0.05,
         neg_ratio=2, random_state=ctx.seed,
     )
-    preds = session.predict_links(mode="tail", heads=["g0"], relations=["associated_with"], k=5)
-    ev = session.evaluate_kg(partition="test")
-    bundle = session.save_kg_bundle(ctx.artifacts_dir / "kg_bundle")
+    preds = session.kg.predict_links(mode="tail", heads=["g0"], relations=["associated_with"], k=5)
+    ev = session.kg.evaluate(partition="test")
+    bundle = session.kg.save_bundle(ctx.artifacts_dir / "kg_bundle")
     write_results(ctx, {
         "status": "completed",
         "data": {"name": "synthetic_biomed_kg", "license": "synthetic/public-domain", "n_triples": int(len(frame))},

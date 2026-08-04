@@ -7,9 +7,12 @@ from typing import Any, Literal
 from buildml.dl.extras import torch_available, torch_spec_available
 from buildml.multitask.extras import (
     catboost_available,
+    catboost_spec_present,
     lightgbm_available,
+    lightgbm_spec_present,
     multitask_industry_available,
     xgboost_available,
+    xgboost_spec_present,
 )
 
 MultiTaskBackendName = Literal["sklearn", "industry", "torch"]
@@ -101,10 +104,20 @@ def multitask_capability_matrix() -> dict[str, Any]:
             "ClassifierChain/RegressorChain on industry GBDT backends",
         ],
         "torch_spec_present": torch_spec_available(),
-        "industry_extra_present": multitask_industry_available(),
+        "industry_extra_present": (
+            lightgbm_spec_present()
+            or xgboost_spec_present()
+            or catboost_spec_present()
+        ),
+        "industry_runtime_present": multitask_industry_available(),
         "xgboost_present": xgboost_available(),
         "lightgbm_present": lightgbm_available(),
         "catboost_present": catboost_available(),
+        "industry_import_honesty": (
+            "industry backend 'available' and industry_runtime_present require "
+            "successful subprocess imports of at least one GBDT library. "
+            "industry_extra_present / *_spec_present are find_spec only."
+        ),
     }
 
 

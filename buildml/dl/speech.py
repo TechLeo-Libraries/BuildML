@@ -57,6 +57,7 @@ from buildml.dl.results import LoaderReport, TorchLoaderBundle
 from buildml.dl.types import FeatureContract
 
 SpeechBackend = Literal["stub", "transformers"]
+SpeechBackendChoice = SpeechBackend | Literal["auto"]
 SpeechMode = Literal["classify", "asr"]
 
 
@@ -675,6 +676,53 @@ def speech_stack_available() -> bool:
     return importlib.util.find_spec("transformers") is not None
 
 
+def resolve_default_asr_backend() -> SpeechBackend:
+    """Prefer transformers ASR when the speech stack is installed; else stub.
+
+    CI and minimal installs without ``transformers`` keep the deterministic stub
+    so transcription plumbing stays offline-safe. When ``buildml[speech]`` (or
+    any working transformers install) is present, the product default is real
+    ASR rather than placeholder text.
+
+    Returns
+    -------
+    {'stub', 'transformers'}
+        Resolved default backend for this process.
+    """
+    if speech_stack_available():
+        return "transformers"
+    return "stub"
+
+
+def resolve_asr_backend(backend: SpeechBackendChoice | None) -> SpeechBackend:
+    """Resolve ``None`` / ``'auto'`` to the environment-aware ASR default.
+
+    Parameters
+    ----------
+    backend:
+        Explicit ``'stub'`` / ``'transformers'``, or ``None`` / ``'auto'`` to
+        prefer transformers when available.
+
+    Returns
+    -------
+    {'stub', 'transformers'}
+        Concrete backend name.
+
+    Raises
+    ------
+    ValidationError
+        When ``backend`` is not a recognised choice.
+    """
+    if backend is None or backend == "auto":
+        return resolve_default_asr_backend()
+    if backend not in {"stub", "transformers"}:
+        raise ValidationError(
+            "speech backend must be 'stub', 'transformers', or 'auto' "
+            f"(got {backend!r})"
+        )
+    return backend
+
+
 def _resolve_audio_target(
     dataset: Dataset,
     audio_column: str | None,
@@ -1078,7 +1126,7 @@ def _load_transformers_asr(model_id: str) -> Any:
 def transcribe_audio_values(
     values: list[Any],
     *,
-    backend: SpeechBackend = "stub",
+    backend: SpeechBackendChoice | None = None,
     model_id: str | None = None,
     sample_rate: int = 16_000,
     max_samples: int = 16_000,
@@ -1096,8 +1144,9 @@ def transcribe_audio_values(
     values:
         Audio cells: paths, ``Path`` objects, or waveform arrays.
     backend:
-        ``'stub'`` for offline placeholder text, ``'transformers'`` for real
-        transcription.
+        ``'transformers'`` for real ASR, ``'stub'`` for offline placeholder
+        text, or ``None`` / ``'auto'`` to prefer transformers when the speech
+        stack is installed and fall back to stub otherwise.
     model_id:
         Hugging Face model id for the transformers backend. Defaults to a tiny
         testing model, which downloads once and transcribes badly: name a real
@@ -1128,7 +1177,11 @@ def transcribe_audio_values(
     -----
     **The stub backend does not transcribe anything.** It hashes the waveform's
     energy into a stable phrase so tests can run offline and deterministically.
-    Never treat its output as speech.
+    Never treat its output as speech. Stub use is always disclosed on the
+    result.
+
+    **Default prefers transformers when available.** Pass ``backend='stub'``
+    explicitly for CI / offline runs.
 
     **A per-clip failure does not stop the run.** The transformers backend
     records the error in ``warnings`` and puts ``'[asr-error]'`` in that
@@ -1157,9 +1210,10 @@ def transcribe_audio_values(
     --------
     transcribe_from_dataset : The Dataset-oriented version.
     evaluate_asr : Scoring the transcripts.
+    resolve_default_asr_backend : Environment-aware default.
     """
-    if backend not in {"stub", "transformers"}:
-        raise ValidationError("speech backend must be 'stub' or 'transformers'")
+    requested = backend
+    backend = resolve_asr_backend(backend)
     warnings: list[str] = []
     texts: list[str] = []
     resolved_model = model_id
@@ -1172,9 +1226,21 @@ def transcribe_audio_values(
         f"Speech ASR backend={backend}.",
         "Primary product path is ASR transcription; classify uses fit_speech_torch.",
     )
+    if requested in (None, "auto"):
+        disclosures = disclosures + (
+            f"Backend resolved from auto/default → {backend!r} "
+            f"(transformers preferred when buildml[speech] / transformers is installed).",
+        )
 
     if backend == "stub":
         resolved_model = resolved_model or "buildml-stub-asr"
+        stub_disclosure = (
+            "STUB ASR IN USE: texts are deterministic waveform fingerprints, "
+            "not speech recognition. Install buildml[speech] for transformers ASR, "
+            "or pass backend='transformers' explicitly."
+        )
+        disclosures = disclosures + (stub_disclosure,)
+        warnings.append(stub_disclosure)
         for value in values:
             wave = decode_audio_cell(
                 value,
@@ -1191,7 +1257,12 @@ def transcribe_audio_values(
             disclosures=disclosures,
             limitations=limitations,
             warnings=warnings,
-            meta={"sample_rate": sample_rate, "max_samples": max_samples},
+            meta={
+                "sample_rate": sample_rate,
+                "max_samples": max_samples,
+                "requested_backend": requested,
+                "stub": True,
+            },
         )
 
     # transformers path
@@ -1225,7 +1296,12 @@ def transcribe_audio_values(
         disclosures=disclosures + ("Uses Hugging Face transformers ASR pipeline.",),
         limitations=limitations,
         warnings=warnings,
-        meta={"sample_rate": sample_rate, "max_samples": max_samples},
+        meta={
+            "sample_rate": sample_rate,
+            "max_samples": max_samples,
+            "requested_backend": requested,
+            "stub": False,
+        },
     )
 
 
@@ -1233,7 +1309,7 @@ def transcribe_from_dataset(
     dataset: Dataset,
     *,
     audio_column: str,
-    backend: SpeechBackend = "stub",
+    backend: SpeechBackendChoice | None = None,
     model_id: str | None = None,
     sample_rate: int = 16_000,
     max_samples: int = 16_000,
@@ -1254,7 +1330,8 @@ def transcribe_from_dataset(
     audio_column:
         Which column holds audio.
     backend:
-        ``'stub'`` or ``'transformers'``.
+        ``'stub'``, ``'transformers'``, or ``None`` / ``'auto'`` (prefer
+        transformers when installed).
     model_id:
         Hugging Face model id for the transformers backend.
     sample_rate / max_samples / source_sample_rate:

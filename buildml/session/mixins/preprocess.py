@@ -9,7 +9,10 @@ from buildml.session.mixins._shared import *  # noqa: F403
 
 
 class PreprocessSessionMixin:
-    """Public Session methods for the preprocess domain."""
+    """Public Session methods for the preprocess domain.
+
+    Preferred namespaced API: ``session.preprocess.*`` (classical/core dual: flat methods remain first-class without warnings).
+    """
     # mypy: session private attrs (owned by Session.__init__)
     if TYPE_CHECKING:
         _binning_plan: Any

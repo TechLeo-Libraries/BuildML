@@ -5,14 +5,14 @@ tabular estimators, not a probabilistic-programming product.
 
 ## Mental model
 
-1. `fit_probabilistic` fits on Session **train** (choose a **backend**).
+1. `session.probabilistic.fit` fits on Session **train** (choose a **backend**).
 2. If `conformal=True` on **native** / **ngboost**, a calibration subset is
    carved from **train only** (stratified for classification). **MAPIE** owns
    conformal calibration internally (split carve, CV+, or jackknife+).
-3. `predict_interval` builds regression bands or classification prediction sets.
-4. `evaluate_probabilistic` reports point metrics plus NLL, CRPS (when
+3. `session.probabilistic.predict_interval` builds regression bands or classification prediction sets.
+4. `session.probabilistic.evaluate` reports point metrics plus NLL, CRPS (when
    feasible), coverage / mean width (or set coverage / mean set size).
-5. `save_probabilistic_bundle` / `load_probabilistic_bundle` persist the
+5. `session.probabilistic.save_bundle` / `session.probabilistic.load_bundle` persist the
    `ProbabilisticPlan` separately from Session checkpoints.
 
 ## Backends
@@ -75,7 +75,7 @@ GP `n_restarts_optimizer` defaults to `0` for cheap/deterministic runs.
 
 Classical `Session.calibration()` diagnoses reliability for classical
 `fit(...)` classifiers (`FitResult`). The probabilistic path does **not**
-replace it; `evaluate_probabilistic` reports NLL/Brier/ECE/CRPS for its own
+replace it; `session.probabilistic.evaluate` reports NLL/Brier/ECE/CRPS for its own
 plan. Both can coexist on one Session.
 
 ## Bundle boundary

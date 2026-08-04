@@ -1,0 +1,37 @@
+# Local BuildML managed-serve compose example.
+# Honesty: operator-run recipe — not a managed cloud product.
+#
+# Prerequisites:
+#   1. Build the image from the repo root:
+#        docker build -f deploy/serve/Dockerfile -t buildml-serve:local .
+#   2. Place a pipeline bundle under ./model-bundle (or change the volume).
+#   3. Export BUILDML_API_KEY (required; compose does not enable insecure public bind).
+#
+#   docker compose -f deploy/serve/docker-compose.example.yml up
+services:
+  buildml-serve:
+    image: buildml-serve:local
+    build:
+      context: ../..
+      dockerfile: deploy/serve/Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      BUILDML_BUNDLE: /models/bundle
+      BUILDML_SERVE_KIND: pipeline
+      BUILDML_SERVE_TRUSTED: "true"
+      BUILDML_API_KEY: ${BUILDML_API_KEY:?set BUILDML_API_KEY}
+      # Optional Basic auth alternative/addition:
+      # BUILDML_SERVE_BASIC_AUTH: "operator:change-me"
+      # Docs stay closed by default when auth is on; opt in explicitly:
+      # BUILDML_SERVE_DOCS_ENABLED: "true"
+    volumes:
+      - ./model-bundle:/models/bundle:ro
+    # CMD from Dockerfile: buildml-serve --host 0.0.0.0 --port 8080 --trusted
+    # plus API key from env via ServeConfig.from_env (insecure public bind override off).
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8080/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s

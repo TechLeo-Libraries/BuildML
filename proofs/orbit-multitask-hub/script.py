@@ -84,9 +84,9 @@ def main() -> None:
         "test": len(plan.test_indices),
     }
     try:
-        mt_fit = mt_session.fit_multitask(method="multioutput", random_state=ctx.seed)
-        mt_val = mt_session.evaluate_multitask(partition="validation")
-        mt_test = mt_session.evaluate_multitask(partition="test")
+        mt_fit = mt_session.multitask.fit(method="multioutput", random_state=ctx.seed)
+        mt_val = mt_session.multitask.evaluate(partition="validation")
+        mt_test = mt_session.multitask.evaluate(partition="test")
         stages["multitask"] = {
             "status": "ok",
             "fit": metrics_round(mt_fit.to_dict() if hasattr(mt_fit, "to_dict") else {}),
@@ -124,7 +124,7 @@ def main() -> None:
         )
     )
     try:
-        am = auto_session.run_automl(
+        am = auto_session.automl.run(
             backend="native",
             task="classification",
             method="randomized",
@@ -135,8 +135,8 @@ def main() -> None:
             families=["logistic", "random_forest"],
             random_state=ctx.seed,
         )
-        am_val = auto_session.evaluate_automl(partition="validation")
-        am_test = auto_session.evaluate_automl(partition="test")
+        am_val = auto_session.automl.evaluate(partition="validation")
+        am_test = auto_session.automl.evaluate(partition="test")
         stages["automl"] = {
             "status": "ok",
             "result": metrics_round(am.to_dict() if hasattr(am, "to_dict") else {}),
@@ -186,13 +186,13 @@ def main() -> None:
         assert_no_test_in_selection(
             selection_partition="validation", evaluation_partition="test"
         )
-        thr = decision_session.fit_decision_policy(
+        thr = decision_session.decision.fit(
             method="threshold",
             partition="validation",
             fp_cost=1.0,
             fn_cost=3.5,
         )
-        thr_test = decision_session.evaluate_decisions(partition="test")
+        thr_test = decision_session.decision.evaluate(partition="test")
         stages["decisions"] = {
             "status": "ok",
             "threshold_policy": metrics_round(
@@ -203,7 +203,7 @@ def main() -> None:
             ),
         }
         try:
-            knap = decision_session.fit_decision_policy(
+            knap = decision_session.decision.fit(
                 method="knapsack",
                 partition="validation",
                 budget=55.0,
@@ -212,7 +212,7 @@ def main() -> None:
                 score_source="model_proba",
                 knapsack_solver="dp",
             )
-            applied = decision_session.apply_decisions(partition="test")
+            applied = decision_session.decision.apply(partition="test")
             stages["decisions"]["knapsack"] = {
                 "status": "ok",
                 "policy": metrics_round(

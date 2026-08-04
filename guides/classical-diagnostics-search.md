@@ -159,7 +159,7 @@ session.fit(LogisticRegression(max_iter=500), task="classification")
 session.calibration(partition="validation")
 session.tune_threshold(partition="validation", fp_cost=1.0, fn_cost=5.0)
 # Persist the same operating point as a DecisionPlan (see guides/quickstart-optimize.md):
-# session.fit_decision_policy(method="threshold", partition="validation", fp_cost=1.0, fn_cost=5.0)
+# session.decision.fit(method="threshold", partition="validation", fp_cost=1.0, fn_cost=5.0)
 session.feature_importance(partition="validation", n_repeats=8)
 session.learning_curve(
     LogisticRegression(max_iter=500),

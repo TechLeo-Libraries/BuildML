@@ -6,8 +6,8 @@
 > See [installation](../docs/installation.rst).
 
 Practical tabular few-shot / episodic meta-learning: assign a `role="group"`
-task column (or pass `task_column=`), `fit_metalearning` on train tasks only,
-then `adapt_to_task` / `evaluate_metalearning` on holdout episodes, and save a
+task column (or pass `task_column=`), `session.metalearning.fit` on train tasks only,
+then `session.metalearning.adapt` / `session.metalearning.evaluate` on holdout episodes, and save a
 distinct bundle. Honesty: **not** foundation-model meta-learning or
 MAML-at-scale.
 
@@ -44,7 +44,7 @@ session = (
     .scale(method="standard")
 )
 
-fit = session.fit_metalearning(
+fit = session.metalearning.fit(
     method="prototypical",
     k_shot=3,
     n_query=6,
@@ -53,19 +53,19 @@ fit = session.fit_metalearning(
 )
 print(fit.n_meta_train_tasks, fit.meta_train_accuracy)
 
-adapt = session.adapt_to_task(
-    task_id=session.metalearning_plan.train_task_ids[0],
+adapt = session.metalearning.adapt(
+    task_id=session.metalearning.plan.train_task_ids[0],
     partition="train",
     max_support_per_class=3,
 )
 print(adapt.n_support, adapt.n_classes_adapted)
 
 # Prefer train held-out tasks for a true task-disjoint episodic check
-ev = session.evaluate_metalearning(partition="train", k_shot=3)
+ev = session.metalearning.evaluate(partition="train", k_shot=3)
 print(ev.metrics)
 print(ev.novel_task_ids, ev.overlapping_task_ids)
 
-session.save_metalearning_bundle("artifacts/metalearning_bundle")
+session.metalearning.save_bundle("artifacts/metalearning_bundle")
 ```
 
 ## Honest boundaries
@@ -78,5 +78,5 @@ session.save_metalearning_bundle("artifacts/metalearning_bundle")
 | Leakage-safe train-only meta-train | Meta-training on validation/test |
 | Distinct `buildml.metalearning_bundle.v1` | Session checkpoint embedding the plan |
 
-Next Phase 2 item after meta-learning (now shipped): **federated learning**
+Related next: federated learning
 (see [Federated quickstart](quickstart-federated.md)).

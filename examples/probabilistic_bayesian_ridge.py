@@ -27,7 +27,7 @@ def main() -> None:
         .scale(method="standard")
     )
 
-    fit = session.fit_probabilistic(
+    fit = session.probabilistic.fit(
         estimator="bayesian_ridge",
         alpha=0.1,
         conformal=True,
@@ -38,20 +38,20 @@ def main() -> None:
         f"n_calib={fit.n_conformal_calib_rows} q={fit.conformal_quantile}"
     )
 
-    preds = session.predict_probabilistic(partition="test", return_std=True)
+    preds = session.probabilistic.predict(partition="test", return_std=True)
     print(f"n_pred={len(preds.predictions)} has_std={preds.std is not None}")
 
-    intervals = session.predict_interval(partition="test")
+    intervals = session.probabilistic.predict_interval(partition="test")
     print(
         f"interval method={intervals.method} "
         f"width0={intervals.upper[0] - intervals.lower[0]:.4f}"
     )
 
-    ev = session.evaluate_probabilistic(partition="validation")
+    ev = session.probabilistic.evaluate(partition="validation")
     print(f"metrics={ev.metrics}")
 
     out = Path("artifacts") / "probabilistic_bayesian_ridge_bundle"
-    session.save_probabilistic_bundle(out)
+    session.probabilistic.save_bundle(out)
     print(f"saved bundle -> {out}")
 
 

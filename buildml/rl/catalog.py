@@ -34,8 +34,10 @@ from typing import Any, Literal
 from buildml.rl.extras import (
     gymnasium_available,
     imitation_available,
+    imitation_spec_present,
     rl_industry_available,
     stable_baselines3_available,
+    stable_baselines3_spec_present,
 )
 
 ImitationBackendName = Literal["sklearn", "industry"]
@@ -230,7 +232,25 @@ def rl_capability_matrix() -> dict[str, Any]:
         "gymnasium_present": gymnasium_available(),
         "stable_baselines3_present": stable_baselines3_available(),
         "imitation_present": imitation_available(),
-        "rl_industry_extra_present": rl_industry_available(),
+        "stable_baselines3_spec_present": stable_baselines3_spec_present(),
+        "imitation_spec_present": imitation_spec_present(),
+        "industry_extra_present": (
+            stable_baselines3_spec_present() and imitation_spec_present()
+        ),
+        "industry_runtime_present": rl_industry_available(),
+        # Backward-compatible alias: historically conflated with runtime; now
+        # mirrors industry_extra_present (find_spec). Prefer industry_* keys.
+        "rl_industry_extra_present": (
+            stable_baselines3_spec_present() and imitation_spec_present()
+        ),
+        "industry_import_honesty": (
+            "imitation/rl industry backend 'available' and "
+            "industry_runtime_present require successful subprocess import "
+            "probes for Stable-Baselines3 and imitation (plus a working "
+            "Gymnasium import). industry_extra_present / "
+            "rl_industry_extra_present / *_spec_present are find_spec only — "
+            "discoverable wheels can still be broken."
+        ),
     }
 
 

@@ -36,7 +36,7 @@ def main() -> None:
         .scale(method="standard")
     )
 
-    fit = session.fit_tda(
+    fit = session.tda.fit(
         vectorization="persistence_image",
         knn=12,
         n_bins=12,
@@ -45,22 +45,22 @@ def main() -> None:
     )
     print("fit", fit.to_dict())
 
-    tr = session.transform_tda(partition="test")
+    tr = session.tda.transform(partition="test")
     print("transform shape", tr.features.shape)
 
-    ev = session.evaluate_tda(partition="validation")
+    ev = session.tda.evaluate(partition="validation")
     print("eval", ev.metrics)
 
     out = Path("artifacts/tda_demo_bundle")
-    session.save_tda_bundle(out)
+    session.tda.save_bundle(out)
     other = (
         Session.ingest(frame)
         .set_roles({**{f"f{i}": "feature" for i in range(4)}, "y": "target"})
         .split(test_size=0.2, validation_size=0.2, random_state=0, stratify=True)
         .scale(method="standard")
     )
-    other.load_tda_bundle(out, trusted=True)
-    print("reloaded eval", other.evaluate_tda(partition="test").metrics)
+    other.tda.load_bundle(out, trusted=True)
+    print("reloaded eval", other.tda.evaluate(partition="test").metrics)
 
 
 if __name__ == "__main__":

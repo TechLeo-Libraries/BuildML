@@ -109,6 +109,7 @@ def evaluate_causal(
         y_hat = np.where(t == 1, mu1_hat, mu0_hat)
         if plan.outcome_kind == "continuous":
             metrics["outcome_rmse"] = float(np.sqrt(mean_squared_error(y, y_hat)))
+            metrics["outcome_mae"] = float(np.mean(np.abs(y - y_hat)))
             metrics["outcome_r2"] = float(r2_score(y, y_hat))
         else:
             y_hat_cls = (y_hat >= 0.5).astype(int)

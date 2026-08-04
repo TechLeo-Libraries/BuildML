@@ -47,7 +47,7 @@ def main() -> None:
         .split(test_size=0.2, validation_size=0.1, random_state=0)
     )
 
-    fit = session.fit_kg(
+    fit = session.kg.fit(
         method="transe",
         head_column="head",
         relation_column="relation",
@@ -64,7 +64,7 @@ def main() -> None:
         "embedding_dim", "epochs_run", "final_loss", "neg_ratio",
     )})
 
-    preds = session.predict_links(
+    preds = session.kg.predict_links(
         mode="tail",
         heads=["p0"],
         relations=["works_at"],
@@ -72,29 +72,29 @@ def main() -> None:
     )
     print("predict_links", preds.predictions)
 
-    nbrs = session.query_kg(mode="neighbors", entity="p0", direction="out")
+    nbrs = session.kg.query(mode="neighbors", entity="p0", direction="out")
     print("neighbors", nbrs.n_results, nbrs.results[:5])
 
-    typed = session.query_kg(
+    typed = session.kg.query(
         mode="typed", entity="p0", relation="works_at", direction="out"
     )
     print("typed", typed.results)
 
-    path = session.query_kg(mode="path", source="p0", target="city0", max_hops=3)
+    path = session.kg.query(mode="path", source="p0", target="city0", max_hops=3)
     print("path", path.results)
 
-    ev = session.evaluate_kg(partition="test", k=5)
+    ev = session.kg.evaluate(partition="test", k=5)
     print("eval", ev.metrics)
 
     out = Path("artifacts/kg_demo_bundle")
-    session.save_kg_bundle(out)
+    session.kg.save_bundle(out)
     other = (
         Session.ingest(frame)
         .set_roles({"head": "id", "relation": "id", "tail": "id"})
         .split(test_size=0.2, validation_size=0.1, random_state=0)
     )
-    other.load_kg_bundle(out, trusted=True)
-    ev2 = other.evaluate_kg(partition="test", k=5)
+    other.kg.load_bundle(out, trusted=True)
+    ev2 = other.kg.evaluate(partition="test", k=5)
     print("reloaded_eval", ev2.metrics)
 
 

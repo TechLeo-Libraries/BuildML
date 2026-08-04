@@ -14,12 +14,12 @@ changes both matter. The stack:
 
 ## Status
 
-`completed` / `partial`: run `script.py`; see `results/summary.json` and stage JSONs.
+Run `script.py`. Outputs land under `results/` (summary and stage JSON)..
 
 ## How to run
 
 ```bash
-.\.venv\Scripts\python.exe proofs\volt-sensor-fusion\script.py
+python proofs\volt-sensor-fusion\script.py
 ```
 
 ## Leakage controls

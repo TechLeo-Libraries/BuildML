@@ -33,9 +33,9 @@ session = (
 )
 
 # backend=None → industry ANN when buildml[cbr-industry] installed, else sklearn
-print(Session.cbr_capability_matrix()["default_backend_when_installed"])
+print(session.cbr.capability_matrix()["default_backend_when_installed"])
 
-fit = session.fit_cbr(
+fit = session.cbr.fit(
     task="classification",
     metric="euclidean",
     reuse="distance_weighted",
@@ -43,23 +43,23 @@ fit = session.fit_cbr(
 )
 print(fit.backend, fit.n_cases, fit.metric, fit.reuse)
 
-neighbors = session.retrieve_cases(partition="test", k=3)
+neighbors = session.cbr.retrieve(partition="test", k=3)
 print(neighbors.traces[0].neighbor_case_ids, neighbors.traces[0].distances)
 
-pred = session.predict_cbr(partition="test", return_traces=True)
+pred = session.cbr.predict(partition="test", return_traces=True)
 print(pred.traces[0].neighbor_solutions, pred.traces[0].prediction)
 
-ev = session.evaluate_cbr(partition="validation")
+ev = session.cbr.evaluate(partition="validation")
 print(ev.metrics, ev.mean_neighbor_distance)
 
-session.save_cbr_bundle("artifacts/cbr_bundle")
+session.cbr.save_bundle("artifacts/cbr_bundle")
 ```
 
 | In scope | Out of scope |
 | --- | --- |
 | Train-only case memory | Building memory from Session test |
 | sklearn exact kNN + industry ANN | Vector DB / Pinecone products |
-| Text embedding cases (`backend='embedding'`) | RAG `rag_generate` / citations |
+| Text embedding cases (`backend='embedding'`) | RAG `session.rag.generate` / citations |
 | Majority / distance-weighted / local Ridge | Full revise cognitive suite |
 | CaseTrace explanations (all backends) | Session checkpoint embedding the plan |
 | `buildml.cbr_bundle.v1` | Calling CBR “tabular RAG” |
@@ -68,4 +68,4 @@ Optional extras: `buildml[cbr-industry]` (hnswlib ANN), `buildml[rag|ssl]`
 (text embeddings), `buildml[torch]` (learned metric encoder). Included in
 `buildml[production]`.
 
-Next Phase 2 item after this: **Learning to rank (LTR)**.
+Related next: learning to rank (LTR).

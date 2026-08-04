@@ -9,8 +9,8 @@ Meta-learning quickstart
 
 Practical tabular few-shot / episodic meta-learning: assign a
 ``role="group"`` task column (or pass ``task_column=``),
-``fit_metalearning`` on train tasks only, then ``adapt_to_task`` /
-``evaluate_metalearning`` on holdout episodes, and save a distinct bundle.
+``session.metalearning.fit`` on train tasks only, then ``session.metalearning.adapt`` /
+``session.metalearning.evaluate`` on holdout episodes, and save a distinct bundle.
 Honesty: **not** foundation-model meta-learning or MAML-at-scale.
 
 **Go deeper:** :doc:`meta-learning-deep`.
@@ -58,7 +58,7 @@ Honesty: **not** foundation-model meta-learning or MAML-at-scale.
        .scale(method="standard")
    )
 
-   fit = session.fit_metalearning(
+   fit = session.metalearning.fit(
        method="prototypical",
        k_shot=3,
        n_query=6,
@@ -67,17 +67,17 @@ Honesty: **not** foundation-model meta-learning or MAML-at-scale.
    )
    print(fit.n_meta_train_tasks, fit.meta_train_accuracy)
 
-   adapt = session.adapt_to_task(
-       task_id=session.metalearning_plan.train_task_ids[0],
+   adapt = session.metalearning.adapt(
+       task_id=session.metalearning.plan.train_task_ids[0],
        partition="train",
        max_support_per_class=3,
    )
    print(adapt.n_support, adapt.n_classes_adapted)
 
-   ev = session.evaluate_metalearning(partition="train", k_shot=3)
+   ev = session.metalearning.evaluate(partition="train", k_shot=3)
    print(ev.metrics)
 
-   session.save_metalearning_bundle("artifacts/metalearning_bundle")
+   session.metalearning.save_bundle("artifacts/metalearning_bundle")
 
 Honest boundaries
 -----------------
@@ -88,5 +88,5 @@ Honest boundaries
 * **Out of scope:** foundation-model meta-learning; learned ProtoNet
   embeddings; full MAML/Reptile; meta-training on holdout.
 
-Next Phase 2 item after meta-learning (now shipped): **federated learning**
+Related next: federated learning
 (:doc:`quickstart-federated`).

@@ -5,7 +5,7 @@ Phase R3 analysis plugin: distinct Session surface from forecasting.
 ## Architecture
 
 ```
-Session.analyze_timeseries / ts_decompose / ts_diagnostics
+session.timeseries.analyze / ts_decompose / ts_diagnostics
         ↓
 buildml.timeseries.analyze
         ↓
@@ -26,18 +26,18 @@ random/stratified/group splits refused).
 
 ## APIs
 
-### `analyze_timeseries`
+### `session.timeseries.analyze`
 
 Full report with toggles:
 
 - `include_decompose`, `include_diagnostics`, `include_changepoints`, `include_features`
 - `scope='train'` (default) or `'all'` (EDA: disclosed leakage risk)
 
-### `ts_decompose`
+### `session.timeseries.decompose`
 
 STL (default when statsmodels installed), classical additive, or moving-average fallback.
 
-### `ts_diagnostics`
+### `session.timeseries.diagnostics`
 
 ACF/PACF arrays (+ confidence intervals with statsmodels), ADF and KPSS p-values.
 
@@ -53,7 +53,7 @@ ACF/PACF arrays (+ confidence intervals with statsmodels), ADF and KPSS p-values
 ## Walkthrough / AI
 
 `session.walkthrough()` includes `timeseries_status`. AI allowlist:
-`analyze_timeseries`, `ts_decompose`, `ts_diagnostics`.
+`session.timeseries.analyze`, `session.timeseries.decompose`, `session.timeseries.diagnostics`.
 
 ## Benchmark
 
@@ -66,4 +66,4 @@ Writes `benchmarks/timeseries/results/analysis_smoke.json`.
 ## Relationship to forecasting
 
 Analysis informs method choice (`ets` vs `arima` vs lag models) but does not
-fit predictors. Use `fit_forecast(method='auto')` after train-only analysis.
+fit predictors. Use `session.forecast.fit(method='auto')` after train-only analysis.

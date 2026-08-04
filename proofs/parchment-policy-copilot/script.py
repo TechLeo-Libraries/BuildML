@@ -172,28 +172,28 @@ def main() -> None:
     # --- Stage 1: RAG ---
     docs, judgments = _policy_corpus()
     try:
-        rag = Session()
-        rag.rag_ingest_corpus(docs)
-        rag.rag_chunk(size=180, overlap=40)
+        session = Session()
+        session.rag.ingest_corpus(docs)
+        session.rag.chunk(size=180, overlap=40)
         embed_backend = "hashing"
         try:
             if extra_available("sentence_transformers"):
-                rag.rag_embed_and_index(embedder="auto")
+                session.rag.embed_and_index(embedder="auto")
                 embed_backend = "sentence_transformers_or_auto"
             else:
-                rag.rag_embed_and_index(embedder="hashing")
+                session.rag.embed_and_index(embedder="hashing")
         except (MissingExtraError, TypeError, ValueError):
-            rag.rag_embed_and_index(embedder="hashing")
+            session.rag.embed_and_index(embedder="hashing")
             embed_backend = "hashing"
-        sample = rag.rag_retrieve(
+        sample = session.rag.retrieve(
             "How many paid time off days accrue each year?", k=3, mode="hybrid"
         )
-        answer = rag.rag_generate(
+        answer = session.rag.generate(
             "What is the PTO accrual policy?",
             provider=EchoGroundedProvider(),
             k=3,
         )
-        metrics = rag.rag_evaluate(judgments, k=3)
+        metrics = session.rag.evaluate(judgments, k=3)
         stages["rag"] = {
             "status": "ok",
             "embed_backend": embed_backend,
@@ -233,7 +233,7 @@ def main() -> None:
         method = "lambdarank" if extra_available("lightgbm") else "pointwise"
         try:
             if method == "lambdarank":
-                rk_fit = ltr.fit_ranker(
+                rk_fit = ltr.ranking.fit(
                     method="lambdarank",
                     query_column="query_id",
                     item_column="item_id",
@@ -242,7 +242,7 @@ def main() -> None:
             else:
                 raise MissingExtraError("ranking-industry", "lambdarank")
         except (MissingExtraError, TypeError, ValueError):
-            rk_fit = ltr.fit_ranker(
+            rk_fit = ltr.ranking.fit(
                 method="pointwise",
                 query_column="query_id",
                 item_column="item_id",
@@ -250,8 +250,8 @@ def main() -> None:
                 random_state=ctx.seed,
             )
             method = "pointwise"
-        rk_val = ltr.evaluate_ranker(partition="validation", k=5)
-        rk_test = ltr.evaluate_ranker(partition="test", k=5)
+        rk_val = ltr.ranking.evaluate(partition="validation", k=5)
+        rk_test = ltr.ranking.evaluate(partition="test", k=5)
         stages["ranking"] = {
             "status": "ok",
             "method": method,
@@ -272,7 +272,7 @@ def main() -> None:
     # --- Stage 3: CBR case memory ---
     cases, case_meta = _case_memory(seed=ctx.seed)
     try:
-        cbr = (
+        session = (
             Session.ingest(cases)
             .set_roles(
                 {
@@ -292,22 +292,22 @@ def main() -> None:
             )
             .scale(method="standard")
         )
-        plan = cbr.split_plan
+        plan = session.split_plan
         assert plan is not None
         split_counts = {
             "train": len(plan.train_indices),
             "validation": len(plan.validation_indices),
             "test": len(plan.test_indices),
         }
-        c_fit = cbr.fit_cbr(
+        c_fit = session.cbr.fit(
             task="classification",
             metric="euclidean",
             reuse="distance_weighted",
             k=5,
             random_state=ctx.seed,
         )
-        c_val = cbr.evaluate_cbr(partition="validation")
-        c_test = cbr.evaluate_cbr(partition="test")
+        c_val = session.cbr.evaluate(partition="validation")
+        c_test = session.cbr.evaluate(partition="test")
         stages["cbr"] = {
             "status": "ok",
             "data": case_meta,
@@ -344,7 +344,7 @@ def main() -> None:
             "RAG corpus contains policy articles only — judgments never indexed",
             "LTR group_split on query_id before fit",
             "CBR case memory built from train only",
-            "Test retrieval / rank / CBR metrics after lock",
+            "Test retrieval / session.ranking.rank / CBR metrics after lock",
         ],
         "what_fails_if_leakage_ignored": [
             "Indexing labeled answers into the corpus turns RAG eval into a lookup",

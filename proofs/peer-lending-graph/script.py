@@ -50,14 +50,14 @@ def main() -> None:
         "is_default_ring": "target",
     })
     session.split(test_size=0.25, validation_size=0.15, stratify=True, random_state=ctx.seed)
-    session.set_graph(
+    session.graph.set_spec(
         edge_frame,
         source_col="source",
         target_col="target",
         node_id_col="borrower_id",
     )
-    fit = session.fit_graph(method="classical", mode="inductive", random_state=ctx.seed)
-    ev = session.evaluate_graph(partition="test")
+    fit = session.graph.fit(method="classical", mode="inductive", random_state=ctx.seed)
+    ev = session.graph.evaluate(partition="test")
     torch_probe = {"ran": False, "skip": TORCH_STATUS.get("skip_torch_paths", True)}
     if not TORCH_STATUS.get("skip_torch_paths") and extra_available("torch"):
         try:
@@ -73,14 +73,14 @@ def main() -> None:
                 validation_indices=list(session.split_plan.validation_indices),
                 test_indices=list(session.split_plan.test_indices),
             )
-            session2.set_graph(
+            session2.graph.set_spec(
                 edge_frame,
                 source_col="source",
                 target_col="target",
                 node_id_col="borrower_id",
             )
-            f2 = session2.fit_graph(method="gcn", epochs=20, random_state=ctx.seed)
-            e2 = session2.evaluate_graph(partition="test")
+            f2 = session2.graph.fit(method="gcn", epochs=20, random_state=ctx.seed)
+            e2 = session2.graph.evaluate(partition="test")
             torch_probe = {
                 "ran": True,
                 "fit": metrics_round(f2.to_dict() if hasattr(f2, "to_dict") else {}),
@@ -88,7 +88,7 @@ def main() -> None:
             }
         except (MissingExtraError, TypeError, ValueError) as exc:
             torch_probe = {"ran": False, "error": f"{type(exc).__name__}: {exc}"}
-    bundle = session.save_graph_bundle(ctx.artifacts_dir / "graph_bundle")
+    bundle = session.graph.save_bundle(ctx.artifacts_dir / "graph_bundle")
     write_results(ctx, {
         "status": "completed",
         "data": {

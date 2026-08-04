@@ -16,45 +16,36 @@ from typing import Any
 from buildml.core.errors import MissingExtraError
 
 
-def mapie_available() -> bool:
-    """Return whether MAPIE imports cleanly for conformal prediction paths.
-
-    Used by the capability matrix and fit routing so split/CV+/jackknife+
-    methods are offered only when MAPIE is installed.
-
-    Returns
-    -------
-    bool
-        ``True`` when ``mapie`` is importable.
-    """
+def mapie_spec_present() -> bool:
+    """Cheap find_spec discovery for MAPIE."""
     return importlib.util.find_spec("mapie") is not None
 
 
-def ngboost_available() -> bool:
-    """Return whether NGBoost imports cleanly for distribution boosting paths.
+def mapie_available() -> bool:
+    """Return whether MAPIE imports cleanly (subprocess probe)."""
+    if not mapie_spec_present():
+        return False
+    from buildml.dl.extras import _subprocess_import_ok
 
-    Gates NGBoost regressor/classifier backends without importing ngboost at
-    module load time.
+    return _subprocess_import_ok("mapie")
 
-    Returns
-    -------
-    bool
-        ``True`` when ``ngboost`` is importable.
-    """
+
+def ngboost_spec_present() -> bool:
+    """Cheap find_spec discovery for NGBoost."""
     return importlib.util.find_spec("ngboost") is not None
 
 
+def ngboost_available() -> bool:
+    """Return whether NGBoost imports cleanly (subprocess probe)."""
+    if not ngboost_spec_present():
+        return False
+    from buildml.dl.extras import _subprocess_import_ok
+
+    return _subprocess_import_ok("ngboost")
+
+
 def probabilistic_industry_available() -> bool:
-    """Return whether any industry probabilistic backend (MAPIE or NGBoost) is usable.
-
-    Used when choosing default backends in
-    :func:`buildml.probabilistic.catalog.probabilistic_capability_matrix`.
-
-    Returns
-    -------
-    bool
-        ``True`` when at least one industry extra imports cleanly.
-    """
+    """Return whether any industry probabilistic backend imports cleanly."""
     return mapie_available() or ngboost_available()
 
 

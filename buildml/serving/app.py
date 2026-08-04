@@ -39,9 +39,9 @@ try:
     from fastapi import FastAPI, HTTPException
     from fastapi.responses import JSONResponse
 except ImportError:  # pragma: no cover - exercised when serve extra missing
-    FastAPI = None  # type: ignore[assignment]
-    HTTPException = None  # type: ignore[assignment]
-    JSONResponse = None  # type: ignore[assignment]
+    FastAPI = None  # type: ignore[assignment,misc]
+    HTTPException = None  # type: ignore[assignment,misc]
+    JSONResponse = None  # type: ignore[assignment,misc]
 
 
 class ServingState:
@@ -281,15 +281,27 @@ def create_serving_app(
     title: str = "BuildML Serve",
     map_location: str = "cpu",
     api_keys: str | list[str] | tuple[str, ...] | None = None,
+    basic_auth: str
+    | tuple[str, str]
+    | list[tuple[str, str]]
+    | dict[str, str]
+    | None = None,
+    docs_enabled: bool | None = None,
     trusted: bool = False,
+    config: Any | None = None,
 ) -> Any:
-    """Load a bundle and wrap it in a FastAPI app with five endpoints.
+    """Load a bundle and wrap it in a FastAPI app with predict endpoints.
 
     The app exposes ``/health`` for liveness and self-description, ``/metadata``
     for the model card and schema contract, ``/predict`` and ``/predict/batch``
-    for inference, and ``/docs`` for the generated OpenAPI page. The bundle is
-    loaded before the app is returned, so a bad artifact fails at construction
+    for inference, and (when docs are enabled) ``/docs`` for OpenAPI. The bundle
+    is loaded before the app is returned, so a bad artifact fails at construction
     rather than on the first request.
+
+    When API keys and/or HTTP Basic credentials are configured, authentication
+    is required on protected routes (either mechanism may authorize). OpenAPI
+    docs default to **closed** whenever auth is enabled, unless
+    ``docs_enabled=True`` is set explicitly.
 
     Request bodies differ by kind. A pipeline takes ``{"rows": [{col: value,
     ...}, ...]}``: records, by column name, with the fitted preprocessing
@@ -309,12 +321,20 @@ def create_serving_app(
     map_location:
         Device placement for TorchScript.
     api_keys:
-        One key or several. When given, every request must present a matching
-        key; when ``None``, the app is unauthenticated and must not be reachable
-        from an untrusted network.
+        One key or several for Bearer / ``X-API-Key``. Combined with Basic when
+        both are set (either may authorize).
+    basic_auth:
+        HTTP Basic credentials: ``'user:pass'``, ``(user, pass)``, or
+        ``{username, password}``.
+    docs_enabled:
+        Explicit OpenAPI/docs toggle. ``None`` means auto: closed when auth is
+        on, open otherwise.
     trusted:
         Must be ``True`` to deserialize the served artifact. Operators own this
         opt-in; the default refuses pickle/joblib/TorchScript loads.
+    config:
+        Optional :class:`~buildml.serving.config.ServeConfig`. When provided,
+        supplies defaults for the kwargs above; explicit kwargs still win.
 
     Returns
     -------
@@ -329,21 +349,17 @@ def create_serving_app(
         If FastAPI is not installed. Install with ``pip install
         'buildml[serve]'``.
     ValidationError
-        If the artifact cannot be loaded, or if ``api_keys`` contains a key that
-        is empty or too short.
+        If the artifact cannot be loaded, or if auth credentials are malformed.
 
     Notes
     -----
-    **The API-key middleware is a shared secret, not authentication.** It has no
-    identities, no rotation, no expiry, and no audit trail. It is a guard
-    against accidental access, not against an attacker. For anything reachable
+    **Shared-secret middleware is not managed IAM.** It has no identities, no
+    rotation product, no expiry, and no audit trail. For anything reachable
     beyond localhost, terminate TLS and authenticate at a reverse proxy.
 
     **Prediction errors become 400 or 500 by intent.** A
     :class:`~buildml.core.errors.ValidationError` means the request was wrong
-    and returns 400; anything else returns 500. Both include the message, which
-    is convenient locally and worth suppressing at a proxy if the endpoint is
-    exposed.
+    and returns 400; anything else returns 500.
 
     **The bundle loads once per process.** Running several uvicorn workers loads
     it once per worker.
@@ -372,31 +388,114 @@ def create_serving_app(
     See Also
     --------
     buildml.serving.launch.serve_bundle : Doing this and starting a server.
+    buildml.serving.config.ServeConfig : Declarative YAML/env/CLI config.
     """
     _require_fastapi()
+    if config is not None:
+        from buildml.serving.config import ServeConfig
+
+        if not isinstance(config, ServeConfig):
+            raise ValidationError("config must be a ServeConfig instance")
+        # Config is the base; kwargs overlay when not None (auth/docs) or always
+        # for path/kind/title/map_location/trusted so call-site stays explicit.
+        overlay: dict[str, Any] = {
+            "bundle": str(path),
+            "kind": kind,
+            "title": title,
+            "map_location": map_location,
+            "trusted": trusted,
+        }
+        if api_keys is not None:
+            overlay["api_keys"] = api_keys
+        if basic_auth is not None:
+            overlay["basic_auth"] = basic_auth
+        if docs_enabled is not None:
+            overlay["docs_enabled"] = docs_enabled
+        merged = config.merge(**overlay)
+        # Preserve config auth/docs/trusted when kwargs left at "unset" defaults.
+        if api_keys is None and merged.api_keys:
+            pass  # already from config
+        if basic_auth is None and config.basic_auth is not None:
+            merged = merged.merge(basic_auth=config.basic_auth)
+        if docs_enabled is None and config.docs_enabled is not None:
+            merged = merged.merge(docs_enabled=config.docs_enabled)
+        if not trusted and config.trusted:
+            merged = merged.merge(trusted=True)
+        if title == "BuildML Serve" and config.title != "BuildML Serve":
+            merged = merged.merge(title=config.title)
+        if kind == "pipeline" and config.kind != "pipeline":
+            merged = merged.merge(kind=config.kind)
+        if map_location == "cpu" and config.map_location != "cpu":
+            merged = merged.merge(map_location=config.map_location)
+        path = merged.require_bundle()
+        kind = merged.kind  # type: ignore[assignment]
+        title = merged.title
+        map_location = merged.map_location
+        api_keys = list(merged.api_keys) if merged.api_keys else None
+        basic_auth = merged.basic_auth
+        docs_enabled = merged.docs_enabled
+        trusted = merged.trusted
+
     state = load_serving_bundle(
         path, kind=kind, map_location=map_location, trusted=trusted
     )
     state.title = title
     set_serving_state(state)
 
-    from buildml.serving.auth import APIKeyAuthMiddleware, normalize_api_keys
+    from buildml.serving.auth import (
+        DEFAULT_OPEN_PATHS_HEALTH_ONLY,
+        DEFAULT_OPEN_PATHS_WITH_DOCS,
+        ServingAuthMiddleware,
+        normalize_api_keys,
+        normalize_basic_credentials,
+    )
 
     keys = normalize_api_keys(api_keys) if api_keys is not None else frozenset()
-    auth_enabled = bool(keys)
+    basics = (
+        normalize_basic_credentials(basic_auth) if basic_auth is not None else frozenset()
+    )
+    auth_enabled = bool(keys) or bool(basics)
+    if docs_enabled is None:
+        docs_on = not auth_enabled
+    else:
+        docs_on = bool(docs_enabled)
+
+    docs_url = "/docs" if docs_on else None
+    openapi_url = "/openapi.json" if docs_on else None
+
+    auth_modes: list[str] = []
+    if keys:
+        auth_modes.append("api_key_bearer")
+    if basics:
+        auth_modes.append("basic")
+    auth_mode = "+".join(auth_modes) if auth_modes else None
+
+    endpoints = ["/health", "/metadata", "/predict", "/predict/batch"]
+    if docs_on:
+        endpoints.append("/docs")
 
     app = FastAPI(
         title=title,
-        docs_url="/docs",
+        docs_url=docs_url,
         redoc_url=None,
+        openapi_url=openapi_url,
         description=(
             "BuildML managed serving (alpha). Localhost-oriented. "
-            "Optional API-key/Bearer middleware when configured; still not a "
-            "managed cloud. Put a reverse proxy (TLS) in front for non-local exposure."
+            "Optional API-key/Bearer and/or HTTP Basic middleware when configured; "
+            "still not a managed cloud. Put a reverse proxy (TLS) in front for "
+            "non-local exposure."
         ),
     )
     if auth_enabled:
-        app.add_middleware(APIKeyAuthMiddleware, api_keys=keys)
+        open_paths = (
+            DEFAULT_OPEN_PATHS_WITH_DOCS if docs_on else DEFAULT_OPEN_PATHS_HEALTH_ONLY
+        )
+        app.add_middleware(
+            ServingAuthMiddleware,
+            api_keys=keys,
+            basic_credentials=basics,
+            open_paths=open_paths,
+        )
 
     def _run_predict(payload: dict[str, Any]) -> dict[str, Any]:
         st = get_serving_state()
@@ -414,13 +513,14 @@ def create_serving_app(
             "kind": st.kind,
             "path": str(st.path),
             "auth": auth_enabled,
-            "auth_mode": "api_key_bearer" if auth_enabled else None,
+            "auth_mode": auth_mode,
+            "docs_enabled": docs_on,
             "bind_recommendation": "127.0.0.1",
             "tls_note": (
                 "Prefer TLS at a reverse proxy. Optional local HTTPS via "
                 "ssl_certfile/ssl_keyfile is library-owned: still not managed certs."
             ),
-            "endpoints": ["/health", "/metadata", "/predict", "/predict/batch", "/docs"],
+            "endpoints": endpoints,
             "predict_contract": (
                 "pipeline: {rows|instances:[...]} | torchscript: {inputs:[[...],...]}"
             ),
@@ -483,6 +583,10 @@ def create_serving_app(
 def _predict_pipeline(state: ServingState, payload: dict[str, Any]) -> dict[str, Any]:
     from buildml.pipeline.score import predict_from_pipeline
 
+    if state.pipeline_bundle is None:
+        raise ValidationError(
+            "Pipeline predict requires a loaded pipeline_bundle on ServingState"
+        )
     rows = payload.get("rows")
     if rows is None and "instances" in payload:
         rows = payload["instances"]

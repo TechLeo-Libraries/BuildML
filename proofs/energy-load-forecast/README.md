@@ -11,18 +11,18 @@ In-repo synthetic hourly energy load (`load_energy_load_synthetic`): license-cle
 ## Leakage controls
 
 - `time_split`: chronological train → validation → test
-- `analyze_timeseries` scoped to train only
+- `session.timeseries.analyze` scoped to train only
 - Forecast fit on train; selection metrics on validation
-- Test `evaluate_forecast` after model lock
+- Test `session.forecast.evaluate` after model lock
 - Industry twin uses the same time_split
 
 ## BuildML API steps
 
 1. `Session.ingest` → `set_roles` → `time_split`
-2. Optional `analyze_timeseries(scope="train")`
-3. `fit_forecast(method="lag_ridge", horizon=24)`
-4. `evaluate_forecast(validation)` → `evaluate_forecast(test)`
-5. `generate_forecast` → `save_forecast_bundle`
+2. Optional `session.timeseries.analyze(scope="train")`
+3. `session.forecast.fit(method="lag_ridge", horizon=24)`
+4. `session.forecast.evaluate(validation)` → `session.forecast.evaluate(test)`
+5. `session.forecast.generate` → `session.forecast.save_bundle`
 
 ## Metrics
 
@@ -30,7 +30,7 @@ Primary holdout: MAE, RMSE, MAPE (rolling one-step) on test.
 
 ## Industry comparison (Tier C)
 
-Filled: seasonal naive (period=24) or Ridge lag twin selected on validation via `baseline_industry.py` → `results/comparison.json`.
+Industry twin: seasonal naive (period=24) or Ridge lag twin selected on validation via `baseline_industry.py` → `results/comparison.json`.
 
 ## Limitations
 

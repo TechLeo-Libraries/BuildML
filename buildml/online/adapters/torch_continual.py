@@ -306,7 +306,8 @@ class ContinualTabularClassifier:
 def _build_mlp(n_features: int, n_classes: int, *, hidden_dim: int) -> Any:
     torch = require_torch_continual()
 
-    class _MLP(torch.nn.Module):
+    # Dynamic torch import: base class is only known at runtime.
+    class _MLP(torch.nn.Module):  # type: ignore[name-defined,misc]
         def __init__(self) -> None:
             super().__init__()
             self.net = torch.nn.Sequential(

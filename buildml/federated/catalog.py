@@ -4,7 +4,11 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
-from buildml.federated.extras import federated_industry_available, flwr_available
+from buildml.federated.extras import (
+    federated_industry_available,
+    flwr_runtime_available,
+    flwr_spec_present,
+)
 
 FederatedBackendName = Literal["native", "flower"]
 FederatedMethodName = Literal["fedavg", "fedprox"]
@@ -48,7 +52,7 @@ def federated_capability_matrix() -> dict[str, Any]:
                 ),
             },
             "flower": {
-                "available": flwr_available(),
+                "available": flwr_runtime_available(),
                 "extra": "federated-industry",
                 "methods": list(_FLOWER_METHODS),
                 "estimators": [
@@ -80,6 +84,20 @@ def federated_capability_matrix() -> dict[str, Any]:
                 "# Flower (flwr) NumPyClient + aggregation adapter"
             ),
         },
+        "evaluation_metrics": {
+            "classification": [
+                "accuracy",
+                "f1_macro",
+                "balanced_accuracy",
+                "roc_auc",
+            ],
+            "regression": ["r2", "mae", "rmse"],
+            "notes": (
+                "Holdout-only scoring of the global model; per_client slices "
+                "report the same metric keys when client_column is present. "
+                "roc_auc requires binary classification with predict_proba."
+            ),
+        },
         "non_goals": [
             "Cryptographic secure aggregation (not implemented on any backend)",
             "Differential privacy guarantees from simulation alone",
@@ -87,18 +105,27 @@ def federated_capability_matrix() -> dict[str, Any]:
             "Non-linear tree/neural FedAvg zoo without coef_/intercept_ path",
             "OpenFL / TensorFlow Federated replacement claims",
         ],
-        "industry_extra_present": federated_industry_available(),
+        "industry_extra_present": flwr_spec_present(),
+        "industry_runtime_present": federated_industry_available(),
+        "flwr_spec_present": flwr_spec_present(),
+        "flwr_runtime_present": flwr_runtime_available(),
+        "flwr_import_honesty": (
+            "flower backend 'available' and industry_runtime_present require a "
+            "successful subprocess flwr import (flwr_runtime_available). "
+            "flwr_spec_present / industry_extra_present are find_spec only — "
+            "discoverable wheels can still be broken."
+        ),
         "honesty": (
             "Both backends are honest local simulations on Session data. "
             "backend='flower' uses Flower libraries for client/aggregation wiring "
             "but does not start a networked FL deployment unless you operate one "
-            "separately."
+            "separately. Flower is disclosed as local-sim, not production FL."
         ),
     }
 
 
 def _default_backend_when_installed() -> str:
-    if flwr_available():
+    if flwr_runtime_available():
         return "flower"
     return "native"
 

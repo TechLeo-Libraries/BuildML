@@ -30,7 +30,7 @@ DL_NOTES: dict[str, ConceptNote] = {
                 "Normalize fit on all partitions is the neural analogue of scaling before train_test_split.",
             ),
             how_buildml_uses=(
-                "Session.make_torch_loaders shuffles the train loader only.",
+                "session.dl.make_loaders shuffles the train loader only.",
                 "Optional standardize fits mean/std on train and freezes them on validation/test.",
                 "Catalog leakage notes call out shuffle and normalize scope for Torch ops.",
             ),
@@ -50,7 +50,7 @@ DL_NOTES: dict[str, ConceptNote] = {
                 "Building one shuffled DataLoader over the full table, then slicing batches by index later.",
             ),
             worked_example_pattern=(
-                "Split → make_torch_loaders(shuffle_train=True) → assert validation/test loaders do not shuffle.",
+                "Split → session.dl.make_loaders(shuffle_train=True) → assert validation/test loaders do not shuffle.",
                 "Compare train-fit normalize versus full-table normalize on the same holdout.",
             ),
             related_concepts=("leakage-boundary", "evaluation-partitions", "data-splitting"),
@@ -76,9 +76,9 @@ DL_NOTES: dict[str, ConceptNote] = {
                 "Teaching and model cards need the monitor partition named beside the selected epoch.",
             ),
             how_buildml_uses=(
-                "fit_torch early_stopping_patience monitors validation (default monitor=val_loss).",
+                "session.dl.fit early_stopping_patience monitors validation (default monitor=val_loss).",
                 "TrainResult.early_stop records triggered/best_epoch/reason and restore_best_weights.",
-                "evaluate_torch defaults to partition='test' for final scoring after training choices freeze.",
+                "session.dl.evaluate defaults to partition='test' for final scoring after training choices freeze.",
                 "Catalog anti-patterns warn against test-tuned stopping.",
             ),
             interpretation_rules=(
@@ -97,8 +97,8 @@ DL_NOTES: dict[str, ConceptNote] = {
                 "Using test loss as the early-stopping monitor.",
             ),
             worked_example_pattern=(
-                "fit_torch(..., early_stopping_patience=3) → read early_stop.reason → "
-                "evaluate_torch(partition='test') once.",
+                "session.dl.fit(..., early_stopping_patience=3) → read early_stop.reason → "
+                "session.dl.evaluate(partition='test') once.",
             ),
             related_concepts=("evaluation-partitions", "leakage-boundary", "batch-leakage", "training-curves"),
         ),
@@ -125,7 +125,7 @@ DL_NOTES: dict[str, ConceptNote] = {
             ),
             how_buildml_uses=(
                 "TrainResult.history and TrainingCurveReport store epoch series plus disclosures.",
-                "Session.torch_training_curve() and walkthrough torch_training_status surface limits.",
+                "session.dl.training_curve() and walkthrough torch_training_status surface limits.",
                 "Teaching Studio cockpit discloses early-stop partition and resolved device when a trainer exists.",
             ),
             interpretation_rules=(
@@ -145,7 +145,7 @@ DL_NOTES: dict[str, ConceptNote] = {
                 "Publishing a loss plot without stating validation vs test scope.",
             ),
             worked_example_pattern=(
-                "fit_torch → torch_training_curve → read disclosures → evaluate_torch(partition='test').",
+                "session.dl.fit → session.dl.training_curve → read disclosures → session.dl.evaluate(partition='test').",
             ),
             related_concepts=("early-stopping-partition", "evaluation-partitions", "batch-leakage"),
         ),

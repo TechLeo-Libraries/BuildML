@@ -44,8 +44,8 @@ METALEARNING_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         example=(
             "session.set_roles({'store_id': 'group', 'converted': 'target'})",
-            "session.fit_metalearning(method='prototypical', k_shot=5, n_episodes=50)",
-            "report = session.evaluate_metalearning(partition='validation')",
+            "session.metalearning.fit(method='prototypical', k_shot=5, n_episodes=50)",
+            "report = session.metalearning.evaluate(partition='validation')",
             "print(report.novel_task_ids, report.mean_accuracy)",
         ),
         check=(
@@ -93,8 +93,8 @@ METALEARNING_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.fit_metalearning(method='prototypical', k_shot=3, n_episodes=30)",
-            "adapted = session.adapt_to_task(task_id='store_42')",
+            "session.metalearning.fit(method='prototypical', k_shot=3, n_episodes=30)",
+            "adapted = session.metalearning.adapt(task_id='store_42')",
             "print(adapted.support_size, adapted.classes)",
         ),
         check=(
@@ -142,11 +142,11 @@ METALEARNING_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.fit_metalearning(",
+            "session.metalearning.fit(",
             "    method='warm_start',",
             "    base_estimator=LogisticRegression(max_iter=1000),",
             ")",
-            "session.adapt_to_task(task_id='client_new')",
+            "session.metalearning.adapt(task_id='client_new')",
         ),
         check=(
             "Does class 3 mean the same thing in every task?",
@@ -194,7 +194,7 @@ METALEARNING_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         example=(
             "# pip install \"buildml[torch]\"",
-            "session.fit_metalearning(",
+            "session.metalearning.fit(",
             "    backend='torch', method='prototypical_torch',",
             "    k_shot=5, n_episodes=200, random_state=0,",
             ")",
@@ -244,11 +244,11 @@ METALEARNING_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.fit_metalearning(",
+            "session.metalearning.fit(",
             "    backend='industry', method='maml',",
             "    inner_steps=5, k_shot=5, random_state=0,",
             ")",
-            "session.evaluate_metalearning(partition='test')",
+            "session.metalearning.evaluate(partition='test')",
         ),
         check=(
             "How many inner steps can your support set actually support?",
@@ -271,9 +271,9 @@ METALEARNING_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         steps=(
             "Fit a meta-learner so a plan exists.",
-            "Call `save_metalearning_bundle(path)`.",
-            "Reload with `load_metalearning_bundle(path)` in a Session holding the new task's rows.",
-            "Call `adapt_to_task` to fit the few-shot adaptation for that specific task.",
+            "Call `session.metalearning.save_bundle(path)`.",
+            "Reload with `session.metalearning.load_bundle(path)` in a Session holding the new task's rows.",
+            "Call `session.metalearning.adapt` to fit the few-shot adaptation for that specific task.",
             "Use checkpoints separately for data and workflow state.",
         ),
         use=(
@@ -287,7 +287,7 @@ METALEARNING_BEGINNER: dict[str, BeginnerLayer] = _index(
         myths=(
             (
                 "Loading the bundle gives you a ready-to-predict model.",
-                "It gives you the meta-learner. You still call `adapt_to_task` with the new task's support rows before you can predict.",
+                "It gives you the meta-learner. You still call `session.metalearning.adapt` with the new task's support rows before you can predict.",
             ),
             (
                 "The task column can change after loading.",
@@ -295,9 +295,9 @@ METALEARNING_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.save_metalearning_bundle('artifacts/store-fewshot')",
-            "svc = Session.ingest(new_store_rows).load_metalearning_bundle('artifacts/store-fewshot')",
-            "svc.adapt_to_task(task_id='store_new')",
+            "session.metalearning.save_bundle('artifacts/store-fewshot')",
+            "svc = Session.ingest(new_store_rows).metalearning.load_bundle('artifacts/store-fewshot')",
+            "svc.metalearning.adapt(task_id='store_new')",
         ),
         check=(
             "Do the new rows carry the same feature and task columns the bundle expects?",

@@ -23,11 +23,41 @@ Related: [artifacts](artifacts-checkpoints-bundles.md), [torch-deep](torch-deep.
 Exposing ML scores without auth is a common incident. Defaults:
 
 - Bind `127.0.0.1`
-- Optional API-key / Bearer middleware
-- Non-loopback binds require `api_keys` unless
+- Optional API-key / Bearer **and/or** HTTP Basic middleware (either may authorize)
+- When auth is enabled, OpenAPI `/docs` defaults to **closed** unless
+  `docs_enabled=True` / `--docs`
+- Non-loopback binds require `api_keys` or `basic_auth` unless
   `allow_insecure_public_bind=True`
 - Optional local HTTPS via `ssl_certfile` / `ssl_keyfile` (both required together)
 - Prefer TLS at a reverse proxy for any non-local exposure
+- Declarative `ServeConfig` layers: defaults ← YAML ← env ← CLI
+
+---
+
+## ServeConfig (YAML / env / CLI)
+
+```yaml
+# serve.yaml
+host: 127.0.0.1
+port: 8080
+bundle: artifacts/pipeline
+kind: pipeline
+trusted: true
+api_keys:
+  - rotate-me
+# basic_auth: "ops:change-me"
+# docs_enabled: false   # default when auth is on
+```
+
+```bash
+buildml-serve --config serve.yaml
+# Env overrides (examples): BUILDML_BUNDLE, BUILDML_API_KEY,
+# BUILDML_SERVE_BASIC_AUTH, BUILDML_SERVE_DOCS_ENABLED, BUILDML_SERVE_HOST
+buildml-serve --bundle artifacts/pipeline --api-key "$BUILDML_API_KEY" --trusted
+buildml-serve --bundle artifacts/pipeline --basic-auth "ops:change-me" --trusted
+# Opt in to OpenAPI when auth is on:
+buildml-serve --bundle artifacts/pipeline --api-key "$KEY" --docs --trusted
+```
 
 ---
 
@@ -58,7 +88,7 @@ session = (
 session.save_pipeline("artifacts/pipeline", evaluate_partition="test")
 
 # pip install "buildml[serve]"
-handle = session.serve_bundle(
+handle = session.dl.serve(
     "artifacts/pipeline",
     kind="pipeline",
     host="127.0.0.1",
@@ -105,8 +135,8 @@ curl -s -X POST http://127.0.0.1:8080/predict/batch \
 ## Use case B: Serve TorchScript
 
 ```python
-# After fit_torch + export_torch("artifacts/model.ts.pt", format="torchscript"):
-# session.serve_bundle(
+# After session.dl.fit + session.dl.export("artifacts/model.ts.pt", format="torchscript"):
+# session.dl.serve(
 #     "artifacts/model.ts.pt",
 #     kind="torchscript",
 #     api_keys=["dev-key"],
@@ -121,22 +151,30 @@ TorchScript tensor payloads. Inspect `/metadata` and OpenAPI locally.
 ## Use case C: Auth, public bind, optional local HTTPS
 
 ```python
-# Refused without keys on non-loopback (unless allow_insecure_public_bind):
-# session.serve_bundle(
+# Refused without auth on non-loopback (unless allow_insecure_public_bind):
+# session.dl.serve(
 #     "artifacts/pipeline",
 #     host="0.0.0.0",
 #     api_keys=["rotate-me"],
+#     # or basic_auth=("ops", "change-me"),
+# )
+
+# Docs stay closed when auth is on; opt in explicitly:
+# session.dl.serve(
+#     "artifacts/pipeline",
+#     api_keys=["rotate-me"],
+#     docs_enabled=True,
 # )
 
 # Emergency lab-only override (do not use in production):
-# session.serve_bundle(
+# session.dl.serve(
 #     "artifacts/pipeline",
 #     host="0.0.0.0",
 #     allow_insecure_public_bind=True,
 # )
 
 # Optional local HTTPS: both cert and key required (ValidationError otherwise):
-# session.serve_bundle(
+# session.dl.serve(
 #     "artifacts/pipeline",
 #     ssl_certfile="cert.pem",
 #     ssl_keyfile="key.pem",
@@ -144,16 +182,34 @@ TorchScript tensor payloads. Inspect `/metadata` and OpenAPI locally.
 # )
 ```
 
-API keys are **not** cloud IAM. Local SSL is **not** a managed cert product.
-Rotate keys; prefer a reverse proxy for production TLS.
+API keys / Basic auth are **not** cloud IAM. Local SSL is **not** a managed cert
+product. Rotate secrets; prefer a reverse proxy for production TLS.
+
+---
+
+## Use case C2: First-party Docker image
+
+```bash
+# From repo root:
+docker build -f deploy/serve/Dockerfile -t buildml-serve:local .
+docker run --rm -p 8080:8080 \
+  -e BUILDML_API_KEY=rotate-me \
+  -e BUILDML_BUNDLE=/models/bundle \
+  -v "$PWD/artifacts/pipeline:/models/bundle:ro" \
+  buildml-serve:local
+# Compose example: deploy/serve/docker-compose.example.yml
+```
+
+Image runs as non-root, ships a `/health` HEALTHCHECK, and does **not** enable
+the insecure public-bind override (API key / Basic auth required for `0.0.0.0`).
 
 ---
 
 ## Use case D: TorchServe directory pack + compose example
 
 ```python
-# session.export_torch("artifacts/model.ts.pt", format="torchscript")
-# result = session.pack_torchserve(
+# session.dl.export("artifacts/model.ts.pt", format="torchscript")
+# result = session.dl.pack_torchserve(
 #     "artifacts/torchserve_dir",
 #     torchscript_path="artifacts/model.ts.pt",
 #     model_name="buildml_model",
@@ -166,7 +222,7 @@ Repo recipe for a local compose loop (operator-run; not a managed cloud):
 - `deploy/torchserve/docker-compose.example.yml`
 
 ```bash
-# After packing a .mar into a model-store (see pack_torchserve ARCHIVE.txt):
+# After packing a .mar into a model-store (see session.dl.pack_torchserve / ARCHIVE.txt):
 # docker compose -f deploy/torchserve/docker-compose.example.yml up
 ```
 
@@ -175,8 +231,8 @@ Repo recipe for a local compose loop (operator-run; not a managed cloud):
 ## Use case E: TensorRT trtexec plan (recipe)
 
 ```python
-# session.export_torch("artifacts/model.onnx", format="onnx")
-# plan = session.prepare_tensorrt_export(
+# session.dl.export("artifacts/model.onnx", format="onnx")
+# plan = session.dl.prepare_tensorrt(
 #     "artifacts/trt_plan",
 #     onnx_path="artifacts/model.onnx",
 #     engine_name="model.engine",
@@ -191,7 +247,7 @@ Repo recipe for a local compose loop (operator-run; not a managed cloud):
 
 ```python
 session = Session()
-session.emit_k8s_ddp_job(
+session.dl.emit_k8s_ddp(
     "artifacts/ddp-job.yaml",
     job_name="buildml-torchrun-ddp",
     namespace="default",
@@ -213,16 +269,17 @@ Static multi-node example: `deploy/k8s/torchrun-ddp-multinode.example.yaml`.
 
 ```python
 session = Session()
-session.emit_k8s_serve_deployment(
+session.dl.emit_k8s_serve(
     "artifacts/serve-deploy.yaml",
     name="buildml-serve",
     namespace="default",
-    image="python:3.12-slim",
+    image="buildml-serve:local",  # build via deploy/serve/Dockerfile
     replicas=1,
     port=8080,
     # gpu_limit=1,  # optional GPU request when your cluster schedules GPUs
 )
-# Template only: wire volumes, TLS, API keys, and RBAC yourself.
+# Template only: replace Secret api-key, wire volumes/TLS/Ingress/RBAC yourself.
+# Renderer includes readiness/liveness probes and secretKeyRef; no insecure bind flag.
 ```
 
 Static example: `deploy/k8s/serve-deployment.example.yaml`.
@@ -232,9 +289,9 @@ Static example: `deploy/k8s/serve-deployment.example.yaml`.
 ## AI operator note
 
 Pack/export helpers may appear on the AI tool allowlist
-(`pack_torchserve`, `prepare_tensorrt_export`, `emit_k8s_ddp_job`,
-`emit_k8s_serve_deployment`).
-**`serve_bundle` is not an AI tool**: keep process binding under human/CLI
+(`session.dl.pack_torchserve`, `session.dl.prepare_tensorrt`, `session.dl.emit_k8s_ddp`,
+`session.dl.emit_k8s_serve`).
+**`session.dl.serve` is not an AI tool**: keep process binding under human/CLI
 control ([ai-tools](ai-tools-operator-patterns.md)).
 
 ---
@@ -245,10 +302,11 @@ control ([ai-tools](ai-tools-operator-patterns.md)).
 | --- | --- |
 | Managed cloud | Not provided |
 | TLS termination | Local SSL pair optional; prefer your proxy for production |
-| TorchServe / TRT / K8s | Recipes/templates only |
+| TorchServe / TRT / K8s / Docker | Recipes/templates only (`deploy/serve`, `deploy/k8s`) |
 | Missing serve extra | `MissingExtraError` |
-| Public bind without keys | `ValidationError` |
+| Public bind without auth | `ValidationError` |
 | Partial SSL (`ssl_certfile` xor `ssl_keyfile`) | `ValidationError` |
+| Auth on → docs closed | Override with `docs_enabled=True` / `--docs` |
 
 ---
 

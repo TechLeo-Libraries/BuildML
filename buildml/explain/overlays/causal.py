@@ -16,13 +16,13 @@ from buildml.explain.schemas import OperationSpec, Prerequisite
 CAUSAL_ASSUMPTIONS = Prerequisite(
     "causal-assumptions",
     "Validated CausalAssumptions are attached (or passed) before estimation.",
-    check_hint="Session.causal_assumptions is not None (or assumptions= passed).",
+    check_hint="session.causal.assumptions is not None (or assumptions= passed).",
 )
 
 CAUSAL_PLAN = Prerequisite(
     "causal-plan",
     "A train-fitted CausalPlan is attached to the Session.",
-    check_hint="Session.causal_plan is not None.",
+    check_hint="session.causal.plan is not None.",
 )
 
 _OPERATIONS: tuple[OperationSpec, ...] = (
@@ -76,8 +76,8 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         inputs=("Dataset columns and domain knowledge.",),
         outputs=("Validated CausalAssumptions on the Session.",),
         prerequisites=(DATASET, ROLES),
-        ordering=("Before fit_causal.",),
-        alternatives=("Pass assumptions= into fit_causal.",),
+        ordering=("Before session.causal.fit.",),
+        alternatives=("Pass assumptions= into session.causal.fit.",),
         rationale=(
             "Force an explicit identification contract before any effect estimate.",
         ),
@@ -90,9 +90,9 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             "Treating EDA correlation / MI / importance as identification.",
             "Skipping acknowledgements.",
         ),
-        state_changes=("Stores Session.causal_assumptions.",),
+        state_changes=("Stores session.causal.assumptions.",),
         result_reading=("Inspect treatment, outcome, confounders, acknowledgements.",),
-        next_steps=("fit_causal.",),
+        next_steps=("session.causal.fit.",),
         concepts=(
             "causal-assumptions",
             "causal-eda-boundary",
@@ -129,7 +129,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             _p(
                 "assumptions",
                 "CausalAssumptions | mapping | None",
-                "Explicit assumptions; else Session.causal_assumptions.",
+                "Explicit assumptions; else session.causal.assumptions.",
             ),
             _p(
                 "bootstrap_samples",
@@ -155,8 +155,8 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         inputs=("Train partition + CausalAssumptions.",),
         outputs=("CausalPlan + CausalFitResult with ATE / CI.",),
         prerequisites=(DATASET, ROLES, SPLIT, CAUSAL_ASSUMPTIONS),
-        ordering=("After declare_causal_assumptions and split.",),
-        alternatives=("estimate_causal after a prior fit.",),
+        ordering=("After session.causal.declare_assumptions and split.",),
+        alternatives=("session.causal.estimate after a prior fit.",),
         rationale=(
             "Estimate ATE only after an explicit identification declaration.",
         ),
@@ -176,13 +176,13 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             "Treating DoWhy refutation as proof of identification.",
         ),
         state_changes=(
-            "Stores causal_plan and fit result; clears estimate/eval/refute slots.",
+            "Stores session.causal.plan and fit result; clears estimate/eval/refute slots.",
         ),
         result_reading=(
             "Read ate, ate_ci_low/high, n_treated/n_control, disclosures.",
         ),
         next_steps=(
-            "evaluate_causal; refute_causal; save_causal_bundle.",
+            "session.causal.evaluate; session.causal.refute; session.causal.save_bundle.",
         ),
         concepts=(
             "causal-assumptions",
@@ -219,16 +219,16 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         inputs=("Active CausalPlan + partition rows.",),
         outputs=("CausalEstimateResult.",),
         prerequisites=(DATASET, CAUSAL_PLAN),
-        ordering=("After fit_causal or load_causal_bundle.",),
-        alternatives=("evaluate_causal for nuisance metrics too.",),
+        ordering=("After session.causal.fit or session.causal.load_bundle.",),
+        alternatives=("session.causal.evaluate for nuisance metrics too.",),
         rationale=("Re-score ATE without refitting nuisances.",),
         assumptions=("Treatment levels match the plan encoding.",),
         failures=("No plan; empty/single-arm partition; missing columns.",),
         leakage=("Do not refit nuisances on the scored holdout.",),
         anti_patterns=("Treating holdout ATE as proof of identification.",),
-        state_changes=("Stores causal_estimate_result.",),
+        state_changes=("Stores session.causal.estimate_result.",),
         result_reading=("Read ate / CI / n_treated / disclosures.",),
-        next_steps=("evaluate_causal; save_causal_bundle.",),
+        next_steps=("session.causal.evaluate; session.causal.save_bundle.",),
         concepts=("causal-ate-backdoor", "causal-aipw"),
     ),
     _operation(
@@ -254,8 +254,8 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         inputs=("CausalPlan + holdout partition.",),
         outputs=("CausalEvalResult with metrics and ATE.",),
         prerequisites=(DATASET, CAUSAL_PLAN),
-        ordering=("After fit_causal.",),
-        alternatives=("estimate_causal for ATE only.",),
+        ordering=("After session.causal.fit.",),
+        alternatives=("session.causal.estimate for ATE only.",),
         rationale=(
             "Check nuisance predictive quality and report partition ATE honestly.",
         ),
@@ -263,15 +263,15 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         failures=("No plan; empty partition; single treatment class.",),
         leakage=("Tuning clip bounds against locked test repeatedly without protocol.",),
         anti_patterns=(
-            "Advertising evaluate_causal as assumption validation.",
+            "Advertising session.causal.evaluate as assumption validation.",
             "Equating propensity AUC with true confounding control.",
         ),
-        state_changes=("Stores causal_eval_result.",),
+        state_changes=("Stores session.causal.eval_result.",),
         result_reading=(
             "Read metrics (outcome_rmse/r2 or accuracy, propensity_auc/brier), "
             "ate, disclosures.",
         ),
-        next_steps=("refute_causal; save_causal_bundle.",),
+        next_steps=("session.causal.refute; session.causal.save_bundle.",),
         concepts=(
             "causal-assumptions",
             "causal-eda-boundary",
@@ -305,7 +305,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         inputs=("Active CausalPlan + train partition.",),
         outputs=("CausalRefuteResult.",),
         prerequisites=(DATASET, CAUSAL_PLAN),
-        ordering=("After fit_causal.",),
+        ordering=("After session.causal.fit.",),
         alternatives=("Manual domain sensitivity analyses.",),
         rationale=("Surface fragile estimates with cheap sensitivity checks.",),
         assumptions=("Train partition still available and aligned.",),
@@ -315,9 +315,9 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             "Calling this a complete DoWhy suite.",
             "Treating a near-zero placebo as proof of identification.",
         ),
-        state_changes=("Stores causal_refute_result.",),
+        state_changes=("Stores session.causal.refute_result.",),
         result_reading=("Compare original_ate vs refute_ate and ate_shift.",),
-        next_steps=("save_causal_bundle.",),
+        next_steps=("session.causal.save_bundle.",),
         concepts=("causal-assumptions", "causal-ate-backdoor"),
     ),
     _operation(
@@ -331,16 +331,16 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         inputs=("Active CausalPlan.",),
         outputs=("Bundle directory path.",),
         prerequisites=(CAUSAL_PLAN,),
-        ordering=("After a successful fit_causal.",),
+        ordering=("After a successful session.causal.fit.",),
         alternatives=("Session.checkpoint_save for workflow resume without the learner.",),
         rationale=("Use when assumptions + nuisances must travel separately.",),
         assumptions=("Destination is writable.",),
         failures=("No plan attached.",),
         leakage=("Bundles do not embed holdout rows.",),
         anti_patterns=("Assuming a Session checkpoint embeds the CausalPlan.",),
-        state_changes=("History records save_causal_bundle.",),
+        state_changes=("History records session.causal.save_bundle.",),
         result_reading=("Confirm meta.json format buildml.causal_bundle.v1.",),
-        next_steps=("load_causal_bundle in another Session.",),
+        next_steps=("session.causal.load_bundle in another Session.",),
         concepts=("causal-bundle-boundary",),
     ),
     _operation(
@@ -363,20 +363,20 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             ),
         ),
         inputs=("Bundle directory with meta.json + causal_plan.joblib.",),
-        outputs=("Session with causal_plan attached.",),
+        outputs=("Session with session.causal.plan attached.",),
         prerequisites=(DATASET,),
         ordering=("After ingest/roles/split aligned with the plan contract.",),
-        alternatives=("fit_causal to learn a new plan.",),
+        alternatives=("session.causal.fit to learn a new plan.",),
         rationale=("Use to resume an assumption-declared causal learner.",),
         assumptions=("Columns still match the plan contract.",),
         failures=("Incomplete or wrong-format bundle.",),
         leakage=("Do not treat load as permission to train on holdout rows.",),
         anti_patterns=("Loading a probabilistic bundle as causal.",),
         state_changes=(
-            "Sets causal_plan + causal_assumptions; clears fit/estimate/eval/refute slots.",
+            "Sets session.causal.plan + session.causal.assumptions; clears fit/estimate/eval/refute slots.",
         ),
-        result_reading=("Inspect Session.causal_plan.to_dict().",),
-        next_steps=("evaluate_causal / estimate_causal.",),
+        result_reading=("Inspect session.causal.plan.to_dict().",),
+        next_steps=("session.causal.evaluate / session.causal.estimate.",),
         concepts=("causal-bundle-boundary", "causal-assumptions"),
     ),
 )

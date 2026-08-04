@@ -45,6 +45,8 @@ jobs:
 
       # Scoped typing ratchet. Session package is fully under warn_return_any;
       # dashboard / explain overlays still use warn_return_any=false overlays.
+      # Domain packages below were verified clean with --follow-imports=silent
+      # (gradual expand; do not add packages that still fail).
       - name: Mypy (scoped)
         run: >
           mypy --follow-imports=silent
@@ -58,12 +60,25 @@ jobs:
           buildml/explain/glossary.py
           buildml/explain/prerequisites.py
           buildml/session
+          buildml/fairness
+          buildml/serving
+          buildml/pipeline
+          buildml/online
+          buildml/federated
+          buildml/activelearning
+          buildml/ensemble
+          buildml/anomaly
+          buildml/unsupervised
+          buildml/timeseries
+          buildml/causal
+          buildml/reporting
+          buildml/checkpoint
 
       - name: Domain maturity index
         run: python scripts/domain_maturity_index.py --check --report
 
       # Coverage fail_under comes from pyproject.toml [tool.coverage.report]
-      # and scripts/coverage_ratchet.json (active 60; next 70).
+      # and scripts/coverage_ratchet.json (active 70 for 2.4.0a3).
       - name: Pytest
         run: pytest --cov=buildml --cov-report=term-missing
 

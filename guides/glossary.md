@@ -25,7 +25,7 @@ materialization is Pandas even when another engine is configured.
 
 **Case base (CBR)**  
 Train-built tabular memory of cases (features + solution/label/outcome) used by
-`fit_cbr` / `retrieve_cases` / `predict_cbr`. Validation and test rows never enter
+`session.cbr.fit` / `session.cbr.retrieve` / `session.cbr.predict`. Validation and test rows never enter
 the memory at fit time. Distinct from a RAG text corpus.
 
 **CaseTrace**  
@@ -38,8 +38,8 @@ a `CbrPlan` (case memory + metric/reuse config). It is not a Session checkpoint
 and is not interchangeable with `buildml.rag_bundle.v1`.
 
 **Behavioral cloning (imitation)**  
-Supervised state→action policy fitted by `fit_imitation` on Session train
-demonstration rows only. Holdout `evaluate_imitation` compares predicted actions
+Supervised state→action policy fitted by `session.rl.fit_imitation` on Session train
+demonstration rows only. Holdout `session.rl.evaluate_imitation` compares predicted actions
 to demonstration actions. Not inverse RL and not a robotics stack.
 
 **Checkpoint**  
@@ -58,7 +58,7 @@ Changing the mode after ingestion records policy metadata; it does not retroacti
 already materialized frame.
 
 **DataLoader (Torch)**  
-A batched iterator over partition tensors built by `Session.make_torch_loaders`. Shuffle applies to
+A batched iterator over partition tensors built by `session.dl.make_loaders`. Shuffle applies to
 the train loader only. Validation and test loaders stay unshuffled for evaluation honesty.
 
 **DeviceSpec**  
@@ -69,20 +69,20 @@ the requested device was unavailable.
 One of `automatic`, `recommended`, or `explicit`, identifying whether BuildML selected a choice,
 suggested it without mutation, or received it from the caller.
 
-**dl_train_result**  
-The Session slot holding the last Torch `TrainResult`. Distinct from classical `fit_result`. Cleared
+**session.dl.train_result**  
+The Session slot holding the last Torch `TrainResult` (flat alias: dl_train_result). Distinct from classical `fit_result`. Cleared
 only by a new Torch fit/load path; classical `fit` does not overwrite it.
 
 **Early stopping (Torch)**  
-Optional patience on a validation monitor (default `val_loss`) during `fit_torch`. Selecting the
+Optional patience on a validation monitor (default `val_loss`) during `session.dl.fit`. Selecting the
 epoch on the test partition turns test into selection data; use validation for stopping and test
 once the recipe is fixed.
 
 **evaluate_asr / WER / CER**  
-`Session.evaluate_asr` (and `buildml.dl.speech.evaluate_asr`) scores ASR
+`session.dl.evaluate_asr` (and `buildml.dl.speech.dl.evaluate_asr`) scores ASR
 hypotheses against references with word and character error rates via
 Levenshtein edit distance. String metrics only: not a speech quality / MOS
-product. Omitting `hypotheses=` reuses texts from the last `transcribe_speech`.
+product. Omitting `hypotheses=` reuses texts from the last `session.dl.transcribe`.
 
 **Engine**  
 The tabular execution/interchange implementation: currently Pandas, Polars, or DuckDB. Polars and
@@ -122,7 +122,7 @@ validation data according to the decision being made.
 
 **Gated fusion (Torch multimodal)**  
 Late-fusion mode (`fusion="gated"`) for `build_multimodal_fusion` that gates
-modality branches before combining them. Default built-in `fit_torch` fusion
+modality branches before combining them. Default built-in `session.dl.fit` fusion
 (when a module is omitted) remains concat; pass an explicit gated module to
 opt in.
 
@@ -150,7 +150,7 @@ fusion is optional via retrieve config.
 
 **IndexResult**  
 Typed summary of a built RAG index: chunk/document counts, embedder id and
-dimension, store backend, and disclosures. Stored on `session.rag_index_result`.
+dimension, store backend, and disclosures. Stored on `session.rag.index_result`.
 
 **Injected split**  
 Train, validation, and test membership supplied as positional indices by the caller. Use it for
@@ -163,13 +163,13 @@ target proxies or misuse in external code.
 
 **MRR (mean reciprocal rank)**  
 Mean, over evaluation queries, of `1 / rank` of the first relevant hit (0 when
-no relevant hit appears). Reported by `Session.rag_evaluate`.
+no relevant hit appears). Reported by `session.rag.evaluate`.
 
 **multimodal_preprocess**  
 Frozen multimodal fit meta (normalize stats, vocab, image/audio rates/layout)
-optionally stored on Torch trainer bundles. `load_torch_bundle` restores it for
+optionally stored on Torch trainer bundles. `session.dl.load_bundle` restores it for
 inspection; rebuild loaders with
-`make_multimodal_torch_loaders(..., use_saved_preprocess=True)` or
+`session.dl.make_multimodal_loaders(..., use_saved_preprocess=True)` or
 `preprocess=`.
 
 **Manifest**  
@@ -185,7 +185,7 @@ gates; it does not provide out-of-core sklearn training.
 **nDCG@k**  
 Normalized discounted cumulative gain at cutoff k for retrieval evaluation.
 Uses graded or binary relevance from gold qrels; reported alongside recall@k
-and MRR by `Session.rag_evaluate`.
+and MRR by `session.rag.evaluate`.
 
 **Native sidecar**  
 Optional Parquet snapshot written beside checkpoint `frame.parquet` so Polars/DuckDB handles can
@@ -261,7 +261,7 @@ Session dataset, partitions, or complete preprocessing workflow. Treat pickle-co
 bundles as trusted-input artifacts.
 
 **Normalize (Torch loaders)**  
-Optional train-fit feature mean/std computed in `make_torch_loaders` when `normalize=True`. Stats
+Optional train-fit feature mean/std computed in `session.dl.make_loaders` when `normalize=True`. Stats
 are frozen on validation and test. This is not batch-norm inside the module and is not classical
 `Session.scale`.
 
@@ -282,13 +282,13 @@ returns a copy.
 
 **Recommendation**  
 Advice supported by findings or evidence. It includes rationale, priority, and caveats and does not
-change Session state. Distinct from **recommendation systems** (`fit_recommender` /
-`recommend`), which rank catalog items from user–item interactions.
+change Session state. Distinct from **recommendation systems** (`session.recommender.fit` /
+`session.recommender.recommend`), which rank catalog items from user–item interactions.
 
 **Recommendation systems (Session)**  
-`fit_recommender` learns from train user–item interactions (item/user kNN CF,
-TruncatedSVD / NMF, or content profiles). `recommend` returns top-K train-catalog
-items; `evaluate_recommender` scores Precision@K, Recall@K, nDCG@K, MAP@K under
+`session.recommender.fit` learns from train user–item interactions (item/user kNN CF,
+TruncatedSVD / NMF, or content profiles). `session.recommender.recommend` returns top-K train-catalog
+items; `session.recommender.evaluate` scores Precision@K, Recall@K, nDCG@K, MAP@K under
 a known-item protocol with cold-start disclosure. Not RAG; not EDA Recommendation
 Findings; not a Netflix-scale platform.
 
@@ -298,9 +298,9 @@ Directory schema `buildml.recommender_bundle.v1` (`meta.json` +
 checkpoints and from RAG / TDA bundles.
 
 **Learning-to-rank / Search ranking (Session)**  
-`fit_ranker` learns from train query–item (or query–document) feature rows
+`session.ranking.fit` learns from train query–item (or query–document) feature rows
 with relevance labels (pointwise Ridge/HGB or pairwise RankSVM-lite).
-`rank` orders items per query; `evaluate_ranker` scores graded nDCG@K, MAP@K,
+`session.ranking.rank` orders items per query; `session.ranking.evaluate` scores graded nDCG@K, MAP@K,
 MRR@K. Prefer `group_split` on the query id. Not a search-engine product; not
 RAG retrieve/generate; not recommender user–item CF.
 
@@ -310,7 +310,7 @@ Directory schema `buildml.ranker_bundle.v1` (`meta.json` +
 checkpoints and from RAG / recommender bundles.
 
 **Reinforcement learning (Session)**  
-`fit_rl` covers contextual bandits on logged train tables (LinUCB / ε-greedy /
+`session.rl.fit` covers contextual bandits on logged train tables (LinUCB / ε-greedy /
 softmax) plus optional Gymnasium env loops behind `buildml[rl]`: tabular TD
 control (`tabular_q`: Q-learning / SARSA / Expected SARSA / Double Q-learning)
 and REINFORCE-lite (`gym_reinforce`); SB3 PPO/DQN/A2C behind
@@ -334,7 +334,7 @@ Directory schema `buildml.imitation_bundle.v1` (`meta.json` +
 `imitation_plan.joblib`) holding an `ImitationPlan` (behavioral cloning policy).
 
 **Topological Data Analysis (Session)**  
-`fit_tda` builds local Vietoris–Rips persistence diagrams (ripser) on kNN train
+`session.tda.fit` builds local Vietoris–Rips persistence diagrams (ripser) on kNN train
 neighborhoods, vectorizes them (persim images/landscapes or in-tree
 silhouettes), and optionally fits a sklearn head: all on train only. Requires
 `buildml[tda]`. Not a Mapper research suite.
@@ -345,10 +345,10 @@ a `TdaPlan` (frozen PH vectorizer ± head). Distinct from Session checkpoints.
 
 **Natural language processing (Session)**  
 The `buildml.nlp` surface for one text column that lives on the Session dataset:
-`profile_text_corpus`, `fit_text_classifier` → `predict_text` /
-`evaluate_text_classifier` / `interpret_text_prediction`, plus `fit_topics` /
-`assign_topics`, `extract_keyphrases`, `analyze_sentiment`, `extract_entities`,
-`summarize_text`, and `detect_language`. Single-label document classification and
+`session.nlp.profile_corpus`, `session.nlp.fit_classifier` → `session.nlp.predict` /
+`session.nlp.evaluate` / `session.nlp.interpret`, plus `session.nlp.fit_topics` /
+`session.nlp.assign_topics`, `session.nlp.extract_keyphrases`, `session.nlp.analyze_sentiment`, `session.nlp.extract_entities`,
+`session.nlp.summarize`, and `session.nlp.detect_language`. Single-label document classification and
 analysis: not multi-label, not span labelling, not generation, and not document
 retrieval for generation (that is RAG).
 
@@ -360,7 +360,7 @@ it replays freely on holdout rows. The vocabulary, document frequencies, and IDF
 weights beside it are train-only.
 
 **Token attribution (NLP)**  
-`interpret_text_prediction` output: per token, the model's coefficient, the
+`session.nlp.interpret` output: per token, the model's coefficient, the
 token's value in this document, and their product. For a linear head on an
 invertible vocabulary the products plus the intercept reconstruct the decision
 score exactly, so this is an identity rather than an approximation. Refused for
@@ -374,7 +374,7 @@ real" and the usual way to choose `n_topics`. Reconstruction error always falls 
 topics are added, so it cannot serve the same purpose.
 
 **Corpus contamination screen**  
-The part of `profile_text_corpus` that counts holdout documents which are exact
+The part of `session.nlp.profile_corpus` that counts holdout documents which are exact
 duplicates of a train document, and those above a stated cosine similarity
 threshold on character n-grams. It reports what it finds; it never silently drops
 rows.
@@ -402,10 +402,10 @@ not embed dataset rows or Torch weights.
 
 **rag_eval_result / rag_index_result / rag_retrieve_result**  
 Session slots for the last RAG evaluate, index, and retrieve typed results.
-Distinct from classical `fit_result` and Torch `dl_train_result`.
+Distinct from classical `fit_result` and Torch `session.dl.train_result`.
 
 **RagEvalResult**  
-Typed output of `rag_evaluate`: recall@k, MRR, nDCG@k, hit-rate@k, relevance
+Typed output of `session.rag.evaluate`: recall@k, MRR, nDCG@k, hit-rate@k, relevance
 mode, retrieve mode, per-query rows, and disclosures/warnings.
 
 **Recall@k**  
@@ -413,7 +413,7 @@ Fraction of relevant labels recovered in the top-k hits for a query (averaged
 over the eval set). It is not classification accuracy.
 
 **RetrieveResult**  
-Typed ranked-hit list from `rag_retrieve`: mode (`dense` / `bm25` / `hybrid`),
+Typed ranked-hit list from `session.rag.retrieve`: mode (`dense` / `bm25` / `hybrid`),
 fusion/rerank flags, filters, scores, and disclosures.
 
 **Role**  
@@ -444,17 +444,17 @@ sample rates, layout). Load restores that meta for inspection but does not rebui
 It is not a Session checkpoint and does not embed dataset rows or split indices.
 
 **TrainConfig**  
-Typed epoch-loop knobs for `fit_torch` (epochs, learning rate, device, grad clip, scheduler,
+Typed epoch-loop knobs for `session.dl.fit` (epochs, learning rate, device, grad clip, scheduler,
 early-stopping patience/monitor). Defaults are documented on `buildml.dl.types.TrainConfig`.
 
 **TrainingCurveReport**  
 Structured per-epoch series plus interpretation, limitations, and disclosures (device, early-stop
-partition, scheduler) from `Session.torch_training_curve`. It is teaching data, not a pass/fail
+partition, scheduler) from `session.dl.training_curve`. It is teaching data, not a pass/fail
 verdict.
 
 **TrainResult**  
-Typed output of `fit_torch`: module, config, device, history, optional early-stop record, and
-feature contract. Stored on `session.dl_train_result`.
+Typed output of `session.dl.fit`: module, config, device, history, optional early-stop record, and
+feature contract. Stored on `session.dl.train_result`.
 
 **Train-fitted**  
 Learned exclusively from training rows and then applied with frozen parameters to other partitions.

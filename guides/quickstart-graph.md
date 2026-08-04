@@ -1,7 +1,7 @@
 # Quickstart: Graph ML
 
 Session path for **node classification** over an edge list + node feature
-table: `set_graph` → `fit_graph` → `predict_graph` / `evaluate_graph` →
+table: `session.graph.set_spec` → `session.graph.fit` → `session.graph.predict` / `session.graph.evaluate` →
 `buildml.graph_bundle.v1`.
 
 **Conventions:** Session rows are **nodes**. Edges are a separate table whose
@@ -54,20 +54,20 @@ session = (
     )
     .split(test_size=0.2, validation_size=0.2, random_state=0, stratify=True)
 )
-session.set_graph(edges_df, node_id_col="node_id")
-# Scale features only: avoid mutating node_id (set_graph also snapshots ids).
+session.graph.set_spec(edges_df, node_id_col="node_id")
+# Scale features only: avoid mutating node_id (session.graph.set_spec also snapshots ids).
 session.scale(columns=["f1", "f2"], method="standard")
 
-fit = session.fit_graph(method="classical", mode="inductive")
+fit = session.graph.fit(method="classical", mode="inductive")
 print(fit.train_accuracy, fit.n_edges_fit)
 
 # PyG path (when buildml[graph-pyg] installed):
-# fit = session.fit_graph(method="pyg", pyg_model="graphsage", epochs=60)
+# fit = session.graph.fit(method="pyg", pyg_model="graphsage", epochs=60)
 
-ev = session.evaluate_graph(partition="validation")
+ev = session.graph.evaluate(partition="validation")
 print(ev.metrics)
 
-session.save_graph_bundle("artifacts/graph_bundle")
+session.graph.save_bundle("artifacts/graph_bundle")
 ```
 
 | In scope | Out of scope |
@@ -78,4 +78,4 @@ session.save_graph_bundle("artifacts/graph_bundle")
 | Inductive / transductive modes | Graph-level classify zoo |
 | Distinct `buildml.graph_bundle.v1` | Silent full-graph train as "inductive" |
 
-Next Phase 2 item after this: **Evolutionary algorithms** (search/HPO backend).
+Related next: evolutionary algorithms (search/HPO backend).

@@ -24,8 +24,8 @@ pip install "git+https://github.com/TechLeo-Libraries/BuildML.git"
 ```
 
 Classical `Session.fit` stays unchanged. Unsupervised methods are
-`fit_clusters` / `assign_clusters` / `evaluate_clusters` plus
-`save_unsupervised_bundle` / `load_unsupervised_bundle`.
+`session.unsupervised.fit` / `session.unsupervised.assign` / `session.unsupervised.evaluate` plus
+`session.unsupervised.save_bundle` / `session.unsupervised.load_bundle`.
 
 EDA IsolationForest / correlation-cluster screens are **not** this API: they
 remain descriptive teaching signals.
@@ -52,26 +52,26 @@ session = (
     .scale(method="standard")
 )
 
-fit = session.fit_clusters(method="kmeans", n_clusters=2)
+fit = session.unsupervised.fit(method="kmeans", n_clusters=2)
 print(fit.cluster_sizes, fit.assign_strategy)
 
-labels = session.assign_clusters(partition="test")
+labels = session.unsupervised.assign(partition="test")
 print(labels.n_rows, set(labels.labels))
 
-metrics = session.evaluate_clusters(
+metrics = session.unsupervised.evaluate(
     partition="test",
     external_label_column="segment",  # optional agreement check: not used in fit
 )
 print(metrics.metrics, metrics.external_metrics)
 
-bundle = session.save_unsupervised_bundle("artifacts/unsupervised_bundle")
+bundle = session.unsupervised.save_bundle("artifacts/unsupervised_bundle")
 # Bundle stores the ClusterPlan only: reload features/splits via checkpoint or re-ingest.
 fresh = Session.ingest(session.to_pandas()).set_roles(
     {"x": "feature", "y": "feature", "segment": "ignore"}
 )
 fresh.split(test_size=0.25, random_state=0).scale(method="standard")
-fresh.load_unsupervised_bundle(bundle)
-again = fresh.assign_clusters(partition="test")
+fresh.unsupervised.load_bundle(bundle)
+again = fresh.unsupervised.assign(partition="test")
 print(again.labels[:5])
 ```
 
@@ -85,8 +85,8 @@ session = (
     .scale(method="standard")
     .reduce_dimensions(method="pca", n_components=2, prefix="pc")
 )
-session.fit_clusters(method="kmeans", n_clusters=2)  # prefers pc_* columns
-assert session.cluster_fit_result.used_reduce_components
+session.unsupervised.fit(method="kmeans", n_clusters=2)  # prefers pc_* columns
+assert session.unsupervised.fit_result.used_reduce_components
 ```
 
 Explain catalog coverage:
@@ -104,5 +104,5 @@ print(session.explain("evaluate_clusters", moment="before").concept_links)
   nearest-core within `eps` (else noise `-1`): both are disclosed approximations.
 - Unsupervised bundles are complementary to Session checkpoints (data/splits/
   classical plans) and to Torch/RAG bundles: not interchangeable.
-- Dedicated anomaly/fraud scoring is ``fit_anomaly`` (separate Session path);
+- Dedicated anomaly/fraud scoring is ``session.anomaly.fit`` (separate Session path);
   do not treat clustering or EDA IsolationForest as that product.

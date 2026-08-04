@@ -10,6 +10,11 @@ from buildml.core.errors import MissingExtraError
 from buildml.dl.extras import _subprocess_import_ok
 
 
+def sdv_spec_present() -> bool:
+    """Cheap find_spec discovery for SDV (does not prove import works)."""
+    return importlib.util.find_spec("sdv") is not None
+
+
 def sdv_available() -> bool:
     """True when SDV imports cleanly (may pull torch: catch broken wheels).
 
@@ -20,7 +25,7 @@ Returns
 bool
     ``True`` when the capability or dependency check succeeds.
     """
-    if importlib.util.find_spec("sdv") is None:
+    if not sdv_spec_present():
         return False
     if sys.platform.startswith("win"):
         return _subprocess_import_ok("sdv")

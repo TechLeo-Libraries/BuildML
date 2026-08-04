@@ -19,10 +19,10 @@ SYNTHETIC_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         steps=(
             "Split your data first, so training and holdout are already separate.",
-            "`fit_synthesizer` learns the column schema and the generator parameters from training rows only.",
+            "`session.synthetic.fit` learns the column schema and the generator parameters from training rows only.",
             "Bootstrap resamples existing rows; Gaussian copula models the joint distribution; SMOTE interpolates between neighbours.",
-            "`sample_synthetic(n=...)` draws as many new rows as you want.",
-            "`evaluate_synthetic` checks the result against real holdout rows.",
+            "`session.synthetic.sample(n=...)` draws as many new rows as you want.",
+            "`session.synthetic.evaluate` checks the result against real holdout rows.",
         ),
         use=(
             "To augment a small training set when collecting more real data is not possible.",
@@ -44,9 +44,9 @@ SYNTHETIC_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         example=(
             "session.split(test_size=0.2, random_state=0)",
-            "session.fit_synthesizer(method='gaussian_copula', random_state=0)",
-            "extra = session.sample_synthetic(n=500)",
-            "session.evaluate_synthetic(mode='tstr', partition='test')",
+            "session.synthetic.fit(method='gaussian_copula', random_state=0)",
+            "extra = session.synthetic.sample(n=500)",
+            "session.synthetic.evaluate(mode='tstr', partition='test')",
         ),
         check=(
             "Did you split before fitting the synthesizer?",
@@ -60,7 +60,7 @@ SYNTHETIC_BEGINNER: dict[str, BeginnerLayer] = _index(
         "synthetic-vs-resample",
         plain=(
             "These two look alike and answer different questions. `resample` fixes class imbalance by "
-            "changing which training rows exist: it is a preprocessing step. `fit_synthesizer` builds a "
+            "changing which training rows exist: it is a preprocessing step. `session.synthetic.fit` builds a "
             "reusable generator you can save, share, and sample from repeatedly."
         ),
         analogy=(
@@ -70,13 +70,13 @@ SYNTHETIC_BEGINNER: dict[str, BeginnerLayer] = _index(
         steps=(
             "Ask what you are trying to fix.",
             "Too few rows of the rare class, and you just want a fair classifier? Use `resample`.",
-            "Want new rows on demand, saved as an artifact, possibly for sharing? Use `fit_synthesizer`.",
+            "Want new rows on demand, saved as an artifact, possibly for sharing? Use `session.synthetic.fit`.",
             "`resample` mutates training membership directly and persists nothing.",
             "The synthetic path returns a frame by default and can save a bundle.",
         ),
         use=(
             "`resample` for the specific, common problem of class imbalance before fitting.",
-            "`fit_synthesizer` when generation itself is the deliverable.",
+            "`session.synthetic.fit` when generation itself is the deliverable.",
         ),
         avoid=(
             "Do not use `resample` as a general synthetic-data product; it has no bundle and no evaluation surface.",
@@ -94,8 +94,8 @@ SYNTHETIC_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         example=(
             "session.resample(sampler='smote')            # imbalance fix",
-            "session.fit_synthesizer(method='smote')      # reusable generator",
-            "session.save_synthetic_bundle('artifacts/gen')",
+            "session.synthetic.fit(method='smote')      # reusable generator",
+            "session.synthetic.save_bundle('artifacts/gen')",
         ),
         check=(
             "Do you need the generated rows once, or repeatedly?",
@@ -142,8 +142,8 @@ SYNTHETIC_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.evaluate_synthetic(mode='fidelity', partition='test')",
-            "session.evaluate_synthetic(mode='tstr', partition='test')",
+            "session.synthetic.evaluate(mode='fidelity', partition='test')",
+            "session.synthetic.evaluate(mode='tstr', partition='test')",
             "# compare TSTR against the real-data baseline before drawing conclusions",
         ),
         check=(
@@ -166,7 +166,7 @@ SYNTHETIC_BEGINNER: dict[str, BeginnerLayer] = _index(
             "precisely because nobody can mistake it for one."
         ),
         steps=(
-            "`sample_synthetic(n=...)` returns a frame; `merge_mode` defaults to none.",
+            "`session.synthetic.sample(n=...)` returns a frame; `merge_mode` defaults to none.",
             "With `merge_mode='extend_train'`, the rows are appended to training only.",
             "A provenance column (`_synthetic` by default) marks the generated rows.",
             "That column gets the `ignore` role, so no model can accidentally learn from the marker itself.",
@@ -191,7 +191,7 @@ SYNTHETIC_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.sample_synthetic(",
+            "session.synthetic.sample(",
             "    n=200, merge_mode='extend_train', provenance_column='_synthetic',",
             ")",
             "session.fit()  # refit on the extended training set",
@@ -241,7 +241,7 @@ SYNTHETIC_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "plan = session.fit_synthesizer(method='bootstrap')",
+            "plan = session.synthetic.fit(method='bootstrap')",
             "for note in plan.disclosures: print(note)",
             "# keep real identifiers out of anything you share",
         ),
@@ -265,8 +265,8 @@ SYNTHETIC_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         steps=(
             "Fit a synthesizer.",
-            "Call `save_synthetic_bundle(path)`: the generator state and a metadata file are written.",
-            "Reload with `load_synthetic_bundle(path)`.",
+            "Call `session.synthetic.save_bundle(path)`: the generator state and a metadata file are written.",
+            "Reload with `session.synthetic.load_bundle(path)`.",
             "Sample new rows from the restored generator.",
             "Keep checkpoints separate for the workflow itself.",
         ),
@@ -289,10 +289,10 @@ SYNTHETIC_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.fit_synthesizer(method='gaussian_copula')",
-            "session.save_synthetic_bundle('artifacts/customer-gen')",
-            "other = Session().load_synthetic_bundle('artifacts/customer-gen')",
-            "other.sample_synthetic(n=1000)",
+            "session.synthetic.fit(method='gaussian_copula')",
+            "session.synthetic.save_bundle('artifacts/customer-gen')",
+            "other = Session().synthetic.load_bundle('artifacts/customer-gen')",
+            "other.synthetic.sample(n=1000)",
         ),
         check=(
             "Does the bundle directory contain both the metadata and the generator state?",

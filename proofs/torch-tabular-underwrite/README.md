@@ -12,15 +12,15 @@ In-repo synthetic mortgage table (`load_mortgage_default_synthetic`): license-cl
 
 - Stratified train / validation / test before impute / encode / loaders
 - Torch normalize statistics from train loader only
-- Test `evaluate_torch` after lock
+- Test `session.dl.evaluate` after lock
 - Industry MLPClassifier twin uses the same SplitPlan
 
 ## BuildML API steps
 
 1. Probe `TORCH_STATUS`; if `skip_torch_paths` → `skipped_missing_extra`
 2. `Session.ingest` → `set_roles` → `split` → `impute` → `encode`
-3. `make_torch_loaders` → `fit_torch(epochs=3)` → `evaluate_torch`
-4. `save_torch_bundle` when available
+3. `session.dl.make_loaders` → `session.dl.fit(epochs=3)` → `session.dl.evaluate`
+4. `session.dl.save_bundle` when available
 
 ## Metrics
 
@@ -28,7 +28,7 @@ Primary holdout: accuracy / F1 / ROC-AUC (or Torch report metrics) on test.
 
 ## Industry comparison (Tier C)
 
-Filled: sklearn `MLPClassifier` twin via `baseline_industry.py` → `results/comparison.json`.
+Industry twin: sklearn `MLPClassifier` twin via `baseline_industry.py` → `results/comparison.json`.
 
 ## Limitations
 

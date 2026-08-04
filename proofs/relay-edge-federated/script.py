@@ -101,15 +101,15 @@ def main() -> None:
 
     # --- Stage 1: federated FedAvg ---
     try:
-        fit = session.fit_federated(
+        fit = session.federated.fit(
             method="fedavg",
             client_column="site",
             n_rounds=6,
             random_state=ctx.seed,
         )
-        ev = session.evaluate_federated(partition="test")
+        ev = session.federated.evaluate(partition="test")
         try:
-            bundle = session.save_federated_bundle(ctx.artifacts_dir / "fed_bundle")
+            bundle = session.federated.save_bundle(ctx.artifacts_dir / "fed_bundle")
             bundle_path = str(bundle)
         except Exception as exc:  # noqa: BLE001
             bundle_path = f"unavailable: {exc}"
@@ -155,7 +155,7 @@ def main() -> None:
             )
             .scale(method="standard")
         )
-        p_fit = prob_session.fit_probabilistic(
+        p_fit = prob_session.probabilistic.fit(
             estimator="bayesian_ridge",
             alpha=0.1,
             conformal=True,
@@ -163,13 +163,13 @@ def main() -> None:
             random_state=ctx.seed,
         )
         try:
-            intervals = prob_session.predict_interval(partition="test", alpha=0.1)
+            intervals = prob_session.probabilistic.predict_interval(partition="test", alpha=0.1)
             interval_payload = metrics_round(
                 intervals.to_dict() if hasattr(intervals, "to_dict") else {}
             )
         except Exception as exc:  # noqa: BLE001
             interval_payload = {"error": f"{type(exc).__name__}: {exc}"}
-        p_ev = prob_session.evaluate_probabilistic(partition="test")
+        p_ev = prob_session.probabilistic.evaluate(partition="test")
         stages["probabilistic"] = {
             "status": "ok",
             "fit": metrics_round(p_fit.to_dict() if hasattr(p_fit, "to_dict") else {}),
@@ -253,7 +253,7 @@ def main() -> None:
             "group_split by site so held-out edges never train FedAvg clients",
             "Probabilistic fit uses the same inject_split indices",
             "Classical pooled baseline is a disclosure contrast on the same split",
-            "Test evaluate_federated / evaluate after locks",
+            "Test session.federated.evaluate / evaluate after locks",
         ],
         "what_fails_if_leakage_ignored": [
             "Including test sites as FL clients invents cross-silo generalization",

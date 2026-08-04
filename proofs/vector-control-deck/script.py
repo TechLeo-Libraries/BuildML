@@ -81,11 +81,11 @@ def main() -> None:
 
     # --- Stage 1: imitation learning ---
     try:
-        il_fit = session.fit_imitation(
+        il_fit = session.rl.fit_imitation(
             method="behavioral_cloning", random_state=ctx.seed
         )
-        il_val = session.evaluate_imitation(partition="validation")
-        il_test = session.evaluate_imitation(partition="test")
+        il_val = session.rl.evaluate_imitation(partition="validation")
+        il_test = session.rl.evaluate_imitation(partition="test")
         stages["imitation"] = {
             "status": "ok",
             "fit": metrics_round(il_fit.to_dict() if hasattr(il_fit, "to_dict") else {}),
@@ -110,7 +110,7 @@ def main() -> None:
     }
     if extra_available("gymnasium") and not TORCH_STATUS.get("skip_torch_paths"):
         try:
-            rf = session.fit_rl(
+            rf = session.rl.fit(
                 mode="gym_reinforce",
                 env_id="CartPole-v1",
                 total_timesteps=800,
@@ -166,13 +166,13 @@ def main() -> None:
         assert_no_test_in_selection(
             selection_partition="validation", evaluation_partition="test"
         )
-        thr = c_session.fit_decision_policy(
+        thr = c_session.decision.fit(
             method="threshold",
             partition="validation",
             fp_cost=1.0,
             fn_cost=2.0,
         )
-        thr_test = c_session.evaluate_decisions(partition="test")
+        thr_test = c_session.decision.evaluate(partition="test")
         stages["decisions"] = {
             "status": "ok",
             "threshold_policy": metrics_round(
@@ -183,7 +183,7 @@ def main() -> None:
             ),
         }
         try:
-            knap = c_session.fit_decision_policy(
+            knap = c_session.decision.fit(
                 method="knapsack",
                 partition="validation",
                 budget=50.0,
@@ -192,7 +192,7 @@ def main() -> None:
                 score_source="model_proba",
                 knapsack_solver="dp",
             )
-            applied = c_session.apply_decisions(partition="test")
+            applied = c_session.decision.apply(partition="test")
             stages["decisions"]["allocation"] = {
                 "status": "ok",
                 "policy": metrics_round(
@@ -205,13 +205,13 @@ def main() -> None:
                 },
             }
         except Exception as exc:  # noqa: BLE001
-            topk = c_session.fit_decision_policy(
+            topk = c_session.decision.fit(
                 method="topk",
                 partition="validation",
                 capacity=35,
                 score_source="model_proba",
             )
-            applied = c_session.apply_decisions(partition="test")
+            applied = c_session.decision.apply(partition="test")
             stages["decisions"]["allocation"] = {
                 "status": "ok_topk_fallback",
                 "error": f"{type(exc).__name__}: {exc}",

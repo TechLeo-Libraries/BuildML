@@ -13,7 +13,7 @@ RECOMMENDER_NOTES: dict[str, ConceptNote] = {
             key="recommender-collaborative-filtering",
             title="Collaborative filtering (user/item interactions)",
             summary=(
-                "fit_recommender learns from train user–item interactions "
+                "session.recommender.fit learns from train user–item interactions "
                 "(neighborhood CF or matrix factorization) for top-K ranking."
             ),
             definition=(
@@ -34,7 +34,7 @@ RECOMMENDER_NOTES: dict[str, ConceptNote] = {
                 "Ranking metrics need a clear candidate catalog.",
             ),
             how_buildml_uses=(
-                "Session.fit_recommender(method='item_knn'|'user_knn'|'svd'|'nmf').",
+                "session.recommender.fit(method='item_knn'|'user_knn'|'svd'|'nmf').",
             ),
             interpretation_rules=(
                 "Prefer holdout Precision@K / Recall@K / nDCG@K / MAP@K.",
@@ -52,8 +52,8 @@ RECOMMENDER_NOTES: dict[str, ConceptNote] = {
                 "Confusing with RAG retrieve or EDA Recommendation Findings.",
             ),
             worked_example_pattern=(
-                "fit_recommender(method='item_knn', user_column=..., item_column=...) "
-                "→ evaluate_recommender(k=10).",
+                "session.recommender.fit(method='item_knn', user_column=..., item_column=...) "
+                "→ session.recommender.evaluate(k=10).",
             ),
             related_concepts=(
                 "recommender-ranking-metrics",
@@ -84,7 +84,7 @@ RECOMMENDER_NOTES: dict[str, ConceptNote] = {
                 "Helps when collaborative signal is thin but item features exist.",
             ),
             how_buildml_uses=(
-                "fit_recommender(method='content', item_feature_columns=[...]).",
+                "session.recommender.fit(method='content', item_feature_columns=[...]).",
             ),
             interpretation_rules=(
                 "Still restricted to the train item catalog (known-item).",
@@ -93,7 +93,7 @@ RECOMMENDER_NOTES: dict[str, ConceptNote] = {
             failure_modes=("Missing/non-numeric features; empty user history.",),
             anti_patterns=("Fitting content scalers on holdout item rows.",),
             worked_example_pattern=(
-                "fit_recommender(method='content', item_feature_columns=['f1','f2']).",
+                "session.recommender.fit(method='content', item_feature_columns=['f1','f2']).",
             ),
             related_concepts=(
                 "recommender-collaborative-filtering",
@@ -104,7 +104,7 @@ RECOMMENDER_NOTES: dict[str, ConceptNote] = {
             key="recommender-ranking-metrics",
             title="Precision@K, Recall@K, nDCG@K, MAP@K",
             summary=(
-                "evaluate_recommender scores top-K lists against holdout "
+                "session.recommender.evaluate scores top-K lists against holdout "
                 "known-item positives for warm users."
             ),
             definition=(
@@ -119,7 +119,7 @@ RECOMMENDER_NOTES: dict[str, ConceptNote] = {
             why_it_matters=(
                 "Accuracy/RMSE on ratings is not the same as ranking quality.",
             ),
-            how_buildml_uses=("Session.evaluate_recommender(partition=..., k=...).",),
+            how_buildml_uses=("session.recommender.evaluate(partition=..., k=...).",),
             interpretation_rules=(
                 "Cold-start users are excluded from averages and counted separately.",
                 "Holdout-only items are dropped from relevant sets (disclosed).",
@@ -127,7 +127,7 @@ RECOMMENDER_NOTES: dict[str, ConceptNote] = {
             assumptions=("Frozen train plan; exclude train history from candidates.",),
             failure_modes=("No warm users → zeros with disclosure.",),
             anti_patterns=("Reporting train reconstruction error as ranking quality.",),
-            worked_example_pattern=("evaluate_recommender(partition='test', k=10).",),
+            worked_example_pattern=("session.recommender.evaluate(partition='test', k=10).",),
             related_concepts=(
                 "recommender-collaborative-filtering",
                 "recommender-cold-start",
@@ -151,7 +151,7 @@ RECOMMENDER_NOTES: dict[str, ConceptNote] = {
             ),
             formal_idea="Candidates ⊆ I_train; cold users → popularity or ∅.",
             why_it_matters=("Prevents silent leakage of holdout-only catalog ids.",),
-            how_buildml_uses=("cold_start='popularity'|'skip' on fit_recommender.",),
+            how_buildml_uses=("cold_start='popularity'|'skip' on session.recommender.fit.",),
             interpretation_rules=(
                 "n_cold_start_users on eval/recommend is a first-class disclosure.",
             ),
@@ -159,7 +159,7 @@ RECOMMENDER_NOTES: dict[str, ConceptNote] = {
             failure_modes=("Most users cold → ranking averages over few warm users.",),
             anti_patterns=("Adding test-only items into the similarity graph.",),
             worked_example_pattern=(
-                "fit_recommender(cold_start='popularity') → recommend(partition='test').",
+                "session.recommender.fit(cold_start='popularity') → recommend(partition='test').",
             ),
             related_concepts=(
                 "recommender-ranking-metrics",
@@ -191,11 +191,11 @@ RECOMMENDER_NOTES: dict[str, ConceptNote] = {
                 "available without industry dependencies.",
             ),
             how_buildml_uses=(
-                "fit_recommender(feedback='implicit') defaults to als; "
-                "fit_recommender(method='lightfm', item_feature_columns=[...]).",
+                "session.recommender.fit(feedback='implicit') defaults to als; "
+                "session.recommender.fit(method='lightfm', item_feature_columns=[...]).",
             ),
             interpretation_rules=(
-                "Inspect recommender_capability_matrix() for install state.",
+                "Inspect session.recommender.capability_matrix() for install state.",
                 "Known-item protocol applies to all backends.",
             ),
             assumptions=(
@@ -210,7 +210,7 @@ RECOMMENDER_NOTES: dict[str, ConceptNote] = {
             ),
             worked_example_pattern=(
                 "pip install 'buildml[recommenders-industry]' → "
-                "fit_recommender(feedback='implicit') → evaluate_recommender(k=10).",
+                "session.recommender.fit(feedback='implicit') → session.recommender.evaluate(k=10).",
             ),
             related_concepts=(
                 "recommender-collaborative-filtering",
@@ -232,16 +232,16 @@ RECOMMENDER_NOTES: dict[str, ConceptNote] = {
             intuition="Save the CF model separately from workflow resume state.",
             formal_idea="RecommenderPlan is not embedded in a Session checkpoint payload.",
             why_it_matters=("Avoid silent gaps when reloading workflows.",),
-            how_buildml_uses=("save_recommender_bundle / load_recommender_bundle.",),
+            how_buildml_uses=("session.recommender.save_bundle / session.recommender.load_bundle.",),
             interpretation_rules=(
-                "Reload via load_recommender_bundle after checkpoint_load.",
+                "Reload via session.recommender.load_bundle after checkpoint_load.",
                 "Do not confuse with rag_* or explain.schemas.Recommendation.",
             ),
             assumptions=("Bundle format matches buildml.recommender_bundle.v1.",),
             failure_modes=("Mixing recommender bundles with RAG / TDA bundles.",),
             anti_patterns=("Expecting checkpoint_load to restore RecommenderPlan.",),
             worked_example_pattern=(
-                "save_recommender_bundle(path) → load_recommender_bundle(path).",
+                "session.recommender.save_bundle(path) → session.recommender.load_bundle(path).",
             ),
             related_concepts=("recommender-collaborative-filtering",),
         ),

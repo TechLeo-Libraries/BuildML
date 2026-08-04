@@ -31,8 +31,8 @@ SELFSUPERVISED_NOTES: dict[str, ConceptNote] = {
                 "leaking holdout labels into representation learning.",
             ),
             how_buildml_uses=(
-                "Session.fit_ssl_pretext → finetune_ssl_head → evaluate_ssl.",
-                "transform_ssl can attach embedding columns for classical Session.fit.",
+                "session.ssl.fit_pretext → session.ssl.finetune_head → session.ssl.evaluate.",
+                "session.ssl.transform can attach embedding columns for classical Session.fit.",
             ),
             interpretation_rules=(
                 "Reconstruction MAE is a pretext diagnostic, not predictive utility.",
@@ -47,8 +47,8 @@ SELFSUPERVISED_NOTES: dict[str, ConceptNote] = {
                 "Calling reconstruction MAE a classification score.",
             ),
             worked_example_pattern=(
-                "fit_ssl_pretext(method='simclr_tabular', latent_dim=16, epochs=40) "
-                "→ finetune_ssl_head() → evaluate_ssl().",
+                "session.ssl.fit_pretext(method='simclr_tabular', latent_dim=16, epochs=40) "
+                "→ session.ssl.finetune_head() → session.ssl.evaluate().",
             ),
             related_concepts=("ssl-masked-tabular", "semisupervised-label-missingness"),
         ),
@@ -73,7 +73,7 @@ SELFSUPERVISED_NOTES: dict[str, ConceptNote] = {
                 "Ships a real, tested pretext without pretending to be a contrastive FM zoo.",
             ),
             how_buildml_uses=(
-                "method='masked_tabular' on Session.fit_ssl_pretext (core sklearn path).",
+                "method='masked_tabular' on session.ssl.fit_pretext (core sklearn path).",
             ),
             interpretation_rules=(
                 "Contrastive SimCLR/MoCo and BERT-from-scratch are out of scope here.",
@@ -83,13 +83,13 @@ SELFSUPERVISED_NOTES: dict[str, ConceptNote] = {
             anti_patterns=(
                 "Shipping stub catalogs of many pretext tasks without a working path.",
             ),
-            worked_example_pattern=("fit_ssl_pretext(mask_ratio=0.2, latent_dim=8).",),
+            worked_example_pattern=("session.ssl.fit_pretext(mask_ratio=0.2, latent_dim=8).",),
             related_concepts=("ssl-pretext-then-head", "ssl-vs-backbone-transfer"),
         ),
         _note(
             key="ssl-vs-backbone-transfer",
             title="Tabular SSL vs Torch backbone transfer",
-            summary="Tabular masked pretext is core Session SSL; vision/audio/speech freeze/finetune stays on load_pretrained_backbone / attach_backbone_head.",
+            summary="Tabular masked pretext is core Session SSL; vision/audio/speech freeze/finetune stays on session.dl.load_backbone / session.dl.attach_head.",
             definition=(
                 "BuildML separates tabular self-supervised hooks from optional Torch "
                 "pretrained backbone transfer. The zoo path loads published weights "
@@ -107,7 +107,7 @@ SELFSUPERVISED_NOTES: dict[str, ConceptNote] = {
                 "Keeps core light while still offering honest Torch transfer under extras.",
             ),
             how_buildml_uses=(
-                "Session.fit_ssl_pretext vs Session.load_pretrained_backbone + attach_backbone_head.",
+                "session.ssl.fit_pretext vs session.dl.load_backbone + session.dl.attach_head.",
             ),
             interpretation_rules=(
                 "Do not claim the tabular path trains Whisper/BERT foundations.",
@@ -118,7 +118,7 @@ SELFSUPERVISED_NOTES: dict[str, ConceptNote] = {
                 "Reimplementing the zoo inside buildml.selfsupervised as duplicate stubs.",
             ),
             worked_example_pattern=(
-                "Tables → fit_ssl_pretext; images → load_pretrained_backbone('resnet18').",
+                "Tables → session.ssl.fit_pretext; images → session.dl.load_backbone('resnet18').",
             ),
             related_concepts=("ssl-pretext-then-head", "ssl-masked-tabular"),
         ),
@@ -135,17 +135,17 @@ SELFSUPERVISED_NOTES: dict[str, ConceptNote] = {
                 "Saving your homework resume is not the same as shipping the learned encoder."
             ),
             formal_idea=(
-                "checkpoint_load ↛ SSL encoder; load_ssl_bundle ↛ dataset rows; "
+                "checkpoint_load ↛ SSL encoder; session.ssl.load_bundle ↛ dataset rows; "
                 "torch_bundle ↛ tabular MaskedTabularEncoder."
             ),
             why_it_matters=("Artifact confusion drops weights or pretends loaders restored.",),
-            how_buildml_uses=("save_ssl_bundle / load_ssl_bundle.",),
+            how_buildml_uses=("session.ssl.save_bundle / session.ssl.load_bundle.",),
             interpretation_rules=("Read meta.json format buildml.selfsupervised_bundle.v1.",),
             assumptions=("Feature contract still matches at load time.",),
             failure_modes=("Expecting checkpoint_load to restore SelfSupervisedPlan.",),
             anti_patterns=("Assuming torch_bundle load restores masked tabular encoders.",),
             worked_example_pattern=(
-                "session.save_ssl_bundle(path); other.load_ssl_bundle(path).",
+                "session.ssl.save_bundle(path); other.ssl.load_bundle(path).",
             ),
             related_concepts=("ssl-pretext-then-head",),
         ),

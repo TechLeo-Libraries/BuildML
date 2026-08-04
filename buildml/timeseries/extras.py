@@ -141,82 +141,67 @@ def require_neuralforecast(*, feature: str = "neural forecasting") -> Any:
     return neuralforecast
 
 
-def statsmodels_available() -> bool:
-    """Return whether ``statsmodels`` is importable in the active environment.
+def _runtime_ok(module: str) -> bool:
+    from buildml.dl.extras import _subprocess_import_ok
 
-    Cheap ``find_spec`` probe used by catalog defaults and capability matrices.
-    Never raises: missing packages return ``False``.
+    return _subprocess_import_ok(module)
 
-    Returns
-    -------
-    bool
-        ``True`` when statsmodels can be imported.
-    """
+
+def statsmodels_spec_present() -> bool:
+    """Cheap find_spec discovery for statsmodels."""
     return importlib.util.find_spec("statsmodels") is not None
 
 
-def ruptures_available() -> bool:
-    """Return whether ``ruptures`` is importable in the active environment.
-
-    Cheap ``find_spec`` probe for PELT/BinSeg changepoint defaults. Never raises.
-
-    Returns
-    -------
-    bool
-        ``True`` when ruptures can be imported.
-    """
+def ruptures_spec_present() -> bool:
+    """Cheap find_spec discovery for ruptures."""
     return importlib.util.find_spec("ruptures") is not None
 
 
-def prophet_available() -> bool:
-    """Return whether ``prophet`` is importable in the active environment.
-
-    Used by forecasting extras, not core analysis. Never raises.
-
-    Returns
-    -------
-    bool
-        ``True`` when Prophet can be imported.
-    """
+def prophet_spec_present() -> bool:
+    """Cheap find_spec discovery for Prophet."""
     return importlib.util.find_spec("prophet") is not None
 
 
-def neuralforecast_available() -> bool:
-    """Return whether ``neuralforecast`` is importable in the active environment.
-
-    Used by forecasting extras for deep learning forecasters. Never raises.
-
-    Returns
-    -------
-    bool
-        ``True`` when neuralforecast can be imported.
-    """
+def neuralforecast_spec_present() -> bool:
+    """Cheap find_spec discovery for neuralforecast."""
     return importlib.util.find_spec("neuralforecast") is not None
 
 
+def statsmodels_available() -> bool:
+    """Return whether statsmodels imports cleanly (subprocess probe)."""
+    if not statsmodels_spec_present():
+        return False
+    return _runtime_ok("statsmodels")
+
+
+def ruptures_available() -> bool:
+    """Return whether ruptures imports cleanly (subprocess probe)."""
+    if not ruptures_spec_present():
+        return False
+    return _runtime_ok("ruptures")
+
+
+def prophet_available() -> bool:
+    """Return whether Prophet imports cleanly (subprocess probe)."""
+    if not prophet_spec_present():
+        return False
+    return _runtime_ok("prophet")
+
+
+def neuralforecast_available() -> bool:
+    """Return whether neuralforecast imports cleanly (subprocess probe)."""
+    if not neuralforecast_spec_present():
+        return False
+    return _runtime_ok("neuralforecast")
+
+
 def scipy_available() -> bool:
-    """Return whether ``scipy`` is importable for Welch spectral features.
-
-    Spectral features in :func:`compute_features` degrade gracefully when
-    ``False``. Never raises.
-
-    Returns
-    -------
-    bool
-        ``True`` when scipy can be imported.
-    """
-    return importlib.util.find_spec("scipy") is not None
+    """Return whether scipy imports cleanly for Welch spectral features."""
+    if importlib.util.find_spec("scipy") is None:
+        return False
+    return _runtime_ok("scipy")
 
 
 def timeseries_extra_available() -> bool:
-    """Return whether the recommended analysis stack (statsmodels) is importable.
-
-    This is the predicate :func:`timeseries_capability_matrix` uses to decide
-    whether STL/ADF defaults are safe on this machine.
-
-    Returns
-    -------
-    bool
-        ``True`` when ``statsmodels`` can be imported; ``False`` otherwise.
-    """
+    """Return whether the recommended analysis stack imports cleanly."""
     return statsmodels_available()

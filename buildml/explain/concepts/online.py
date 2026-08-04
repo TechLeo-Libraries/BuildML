@@ -33,7 +33,7 @@ ONLINE_NOTES: dict[str, ConceptNote] = {
                 "Using validation/test for updates is leakage.",
             ),
             how_buildml_uses=(
-                "Session.fit_online → Session.partial_fit_online → Session.evaluate_online.",
+                "session.online.fit → session.online.partial_fit → session.online.evaluate.",
                 "allow_refit_fallback defaults False; when True, refits are disclosed.",
             ),
             interpretation_rules=(
@@ -47,7 +47,7 @@ ONLINE_NOTES: dict[str, ConceptNote] = {
             ),
             anti_patterns=("Calling .fit on all data each round while claiming online learning.",),
             worked_example_pattern=(
-                "fit_online(chunk_size=40) → partial_fit_online() × k → evaluate_online('validation').",
+                "session.online.fit(chunk_size=40) → session.online.partial_fit() × k → session.online.evaluate('validation').",
             ),
             related_concepts=("online-class-discovery", "online-bundle-boundary"),
         ),
@@ -73,16 +73,16 @@ ONLINE_NOTES: dict[str, ConceptNote] = {
                 "Missing classes cause hard failures when a later chunk introduces a label.",
             ),
             how_buildml_uses=(
-                "fit_online(classes=...) or automatic train-target discovery with disclosure.",
+                "session.online.fit(classes=...) or automatic train-target discovery with disclosure.",
             ),
             interpretation_rules=(
-                "Read plan.classes_ and the class-discovery disclosure on fit_online.",
+                "Read plan.classes_ and the class-discovery disclosure on session.online.fit.",
             ),
             assumptions=("Train targets span (or classes= lists) every label the stream may emit.",),
             failure_modes=("Omitting a rare class that appears only in a late chunk.",),
             anti_patterns=("Expanding classes silently mid-stream without a declared contract.",),
             worked_example_pattern=(
-                "fit_online(estimator='sgd_classifier', classes=[0, 1])",
+                "session.online.fit(estimator='sgd_classifier', classes=[0, 1])",
             ),
             related_concepts=("online-partial-fit", "leakage-boundary"),
         ),
@@ -106,16 +106,16 @@ ONLINE_NOTES: dict[str, ConceptNote] = {
                 "Catching gross feature shifts mid-stream prevents silent quality cliffs.",
             ),
             how_buildml_uses=(
-                "partial_fit_online returns drift_notes; walkthrough surfaces them.",
+                "session.online.partial_fit returns drift_notes; walkthrough surfaces them.",
             ),
             interpretation_rules=(
                 "Treat drift_notes as disclosure, not automatic remediation.",
             ),
-            assumptions=("Init means were recorded at fit_online.",),
+            assumptions=("Init means were recorded at session.online.fit.",),
             failure_modes=("Treating the lite screen as a production drift monitor.",),
             anti_patterns=("Building a streaming platform claim from mean-shift notes.",),
             worked_example_pattern=(
-                "u = session.partial_fit_online(); print(u.drift_notes)",
+                "u = session.online.partial_fit(); print(u.drift_notes)",
             ),
             related_concepts=("online-partial-fit", "online-bundle-boundary"),
         ),
@@ -140,8 +140,8 @@ ONLINE_NOTES: dict[str, ConceptNote] = {
                 "Catalog defaults to River when installed: read backend on the plan.",
             ),
             how_buildml_uses=(
-                "fit_online(backend='industry', estimator='river_logistic'|...).",
-                "Drift disclosures attached to partial_fit_online / evaluate_online.",
+                "session.online.fit(backend='industry', estimator='river_logistic'|...).",
+                "Drift disclosures attached to session.online.partial_fit / session.online.evaluate.",
             ),
             interpretation_rules=(
                 "Read backend, estimator, drift_notes, and update_mode on results.",
@@ -150,7 +150,7 @@ ONLINE_NOTES: dict[str, ConceptNote] = {
             failure_modes=("Expecting River to run without buildml[online-industry].",),
             anti_patterns=("Claiming a full streaming platform from River adapters.",),
             worked_example_pattern=(
-                "fit_online(backend='industry') → partial_fit_online() → evaluate_online('validation').",
+                "session.online.fit(backend='industry') → session.online.partial_fit() → session.online.evaluate('validation').",
             ),
             related_concepts=("online-drift-disclose", "online-partial-fit"),
         ),
@@ -175,14 +175,14 @@ ONLINE_NOTES: dict[str, ConceptNote] = {
                 "Neural continual learning differs from sklearn partial_fit semantics.",
             ),
             how_buildml_uses=(
-                "fit_online(backend='torch', estimator='replay_mlp'|'ewc_mlp').",
+                "session.online.fit(backend='torch', estimator='replay_mlp'|'ewc_mlp').",
             ),
             interpretation_rules=("Read n_updates, n_seen_rows, and backend on OnlinePlan.",),
             assumptions=("Torch installed; classification task.",),
             failure_modes=("Calling replay_mlp for regression: refused at resolve time.",),
             anti_patterns=("Treating replay MLP as full lifelong learning at scale.",),
             worked_example_pattern=(
-                "fit_online(backend='torch', estimator='ewc_mlp') → partial_fit_online().",
+                "session.online.fit(backend='torch', estimator='ewc_mlp') → session.online.partial_fit().",
             ),
             related_concepts=("online-partial-fit", "online-bundle-boundary"),
         ),
@@ -202,16 +202,16 @@ ONLINE_NOTES: dict[str, ConceptNote] = {
             ),
             formal_idea=(
                 "Artifacts are complementary: checkpoint_load ↛ online learner; "
-                "load_online_bundle ↛ dataset rows."
+                "session.online.load_bundle ↛ dataset rows."
             ),
             why_it_matters=("Mixing artifacts causes silent missing-learner failures.",),
-            how_buildml_uses=("save_online_bundle / load_online_bundle.",),
+            how_buildml_uses=("session.online.save_bundle / session.online.load_bundle.",),
             interpretation_rules=("Read meta.json format buildml.online_bundle.v1.",),
             assumptions=("Feature contract and target role still match at load time.",),
             failure_modes=("Expecting checkpoint_load to restore OnlinePlan.",),
             anti_patterns=("Treating active-learning bundles as online plans.",),
             worked_example_pattern=(
-                "session.save_online_bundle(path); other.load_online_bundle(path).",
+                "session.online.save_bundle(path); other.online.load_bundle(path).",
             ),
             related_concepts=("online-partial-fit", "activelearning-bundle-boundary"),
         ),

@@ -34,24 +34,24 @@ def main() -> None:
         .scale(method="standard", columns=["s0", "s1"])
     )
 
-    bc = session.fit_imitation()
+    bc = session.rl.fit_imitation()
     print("imitation", bc.task, bc.train_score)
-    print("imitation_eval", session.evaluate_imitation(partition="validation").metrics)
+    print("imitation_eval", session.rl.evaluate_imitation(partition="validation").metrics)
 
-    rl = session.fit_rl(
+    rl = session.rl.fit(
         mode="contextual_bandit",
         algorithm="linucb",
         action_column="action",
         reward_column="reward",
     )
     print("bandit", rl.n_arms, rl.train_metrics)
-    print("act0", session.act_rl(partition="test").actions[:3])
-    print("bandit_eval", session.evaluate_rl(partition="validation").metrics)
+    print("act0", session.rl.act(partition="test").actions[:3])
+    print("bandit_eval", session.rl.evaluate(partition="validation").metrics)
 
     out_il = Path("artifacts") / "imitation_demo_bundle"
     out_rl = Path("artifacts") / "rl_bandit_demo_bundle"
-    session.save_imitation_bundle(out_il)
-    session.save_rl_bundle(out_rl)
+    session.rl.save_imitation_bundle(out_il)
+    session.rl.save_bundle(out_rl)
     print("saved", out_il, out_rl)
 
     if gymnasium_available():
@@ -67,7 +67,7 @@ def main() -> None:
             )
             .split(test_size=0.2, validation_size=0.2, random_state=0)
         )
-        gfit = gym_session.fit_rl(
+        gfit = gym_session.rl.fit(
             mode="gym_reinforce",
             env_id="CartPole-v1",
             n_episodes=80,
@@ -76,8 +76,8 @@ def main() -> None:
             random_state=0,
         )
         print("gym", gfit.train_metrics)
-        print("gym_eval", gym_session.evaluate_rl(n_episodes=10).metrics)
-        gym_session.save_rl_bundle(Path("artifacts") / "rl_gym_demo_bundle")
+        print("gym_eval", gym_session.rl.evaluate(n_episodes=10).metrics)
+        gym_session.rl.save_bundle(Path("artifacts") / "rl_gym_demo_bundle")
 
         tab_session = (
             Session.ingest(frame)
@@ -91,7 +91,7 @@ def main() -> None:
             )
             .split(test_size=0.2, validation_size=0.2, random_state=0)
         )
-        tfit = tab_session.fit_rl(
+        tfit = tab_session.rl.fit(
             mode="tabular_q",
             algorithm="q_learning",
             env_id="FrozenLake-v1",
@@ -105,9 +105,9 @@ def main() -> None:
             random_state=0,
         )
         print("tabular_q", tfit.algorithm, tfit.train_metrics)
-        print("tabular_q_eval", tab_session.evaluate_rl(n_episodes=50).metrics)
-        print("tabular_q_scores", tab_session.act_rl(observations=[0, 1]).scores)
-        tab_session.save_rl_bundle(Path("artifacts") / "rl_tabular_demo_bundle")
+        print("tabular_q_eval", tab_session.rl.evaluate(n_episodes=50).metrics)
+        print("tabular_q_scores", tab_session.rl.act(observations=[0, 1]).scores)
+        tab_session.rl.save_bundle(Path("artifacts") / "rl_tabular_demo_bundle")
     else:
         print(
             "gymnasium not installed; skip gym_reinforce / tabular_q "

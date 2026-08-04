@@ -16,7 +16,7 @@ from buildml.explain.schemas import OperationSpec, Prerequisite
 SYNTHESIZER_PLAN = Prerequisite(
     "synthesizer-plan",
     "A fitted SynthesizerPlan is attached.",
-    check_hint="Session.synthesizer_plan is not None.",
+    check_hint="session.synthetic.plan is not None.",
 )
 
 _OPERATIONS: tuple[OperationSpec, ...] = (
@@ -38,7 +38,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             _p(
                 "backend",
                 "native | sdv | None",
-                "Synthesizer backend (see synthetic_capability_matrix).",
+                "Synthesizer backend (see session.synthetic.capability_matrix).",
                 None,
             ),
             _p(
@@ -75,7 +75,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         inputs=("Split train rows + column roles.",),
         outputs=("SynthesizerPlan + SynthesizerFitResult.",),
         prerequisites=(DATASET, ROLES, SPLIT),
-        ordering=("After split; before sample_synthetic / evaluate_synthetic.",),
+        ordering=("After split; before session.synthetic.sample / session.synthetic.evaluate.",),
         alternatives=(
             "Session.resample for class-balance preprocess (mutates train; not a reusable generator).",
         ),
@@ -96,10 +96,10 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             "Requiring heavy SDV/CTGAN stacks for core workflows.",
         ),
         state_changes=(
-            "Stores synthesizer_plan; clears prior sample/eval synthetic results."
+            "Stores session.synthetic.plan; clears prior sample/eval synthetic results."
         ,),
         result_reading=("Inspect method, column_kinds, and privacy disclosures.",),
-        next_steps=("sample_synthetic; evaluate_synthetic; save_synthetic_bundle.",),
+        next_steps=("session.synthetic.sample; session.synthetic.evaluate; session.synthetic.save_bundle.",),
         concepts=(
             "synthetic-train-only-generator",
             "synthetic-vs-resample",
@@ -150,8 +150,8 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         inputs=("Frozen SynthesizerPlan.",),
         outputs=("SyntheticSampleResult (+ optional Session train mutation).",),
         prerequisites=(SYNTHESIZER_PLAN, SPLIT),
-        ordering=("After fit_synthesizer.",),
-        alternatives=("evaluate_synthetic without merging.",),
+        ordering=("After session.synthetic.fit.",),
+        alternatives=("session.synthetic.evaluate without merging.",),
         rationale=("Keep merge explicit so roles/splits are not silently poisoned.",),
         assumptions=("Compatible generator state.",),
         failures=("No SynthesizerPlan; condition on non-copula methods.",),
@@ -161,11 +161,11 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             "Treating synthetic rows as real labeled observations without disclosure.",
         ),
         state_changes=(
-            "Stores synthetic_sample_result; extend_train rebuilds dataset/split "
+            "Stores session.synthetic.sample_result; extend_train rebuilds dataset/split "
             "and clears classical FitResult."
         ,),
         result_reading=("Inspect n_rows, merged, provenance_column, frame.",),
-        next_steps=("evaluate_synthetic; save_synthetic_bundle.",),
+        next_steps=("session.synthetic.evaluate; session.synthetic.save_bundle.",),
         concepts=(
             "synthetic-train-only-generator",
             "synthetic-merge-provenance",
@@ -210,8 +210,8 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         inputs=("Frozen SynthesizerPlan + real holdout partition.",),
         outputs=("SyntheticEvalResult.",),
         prerequisites=(SYNTHESIZER_PLAN, SPLIT),
-        ordering=("After fit_synthesizer.",),
-        alternatives=("Manual downstream model training on sample_synthetic frames.",),
+        ordering=("After session.synthetic.fit.",),
+        alternatives=("Manual downstream model training on session.synthetic.sample frames.",),
         rationale=("Disclose utility vs fidelity so users know what was measured.",),
         assumptions=("Overlapping columns; tstr needs a target.",),
         failures=("No plan; tstr without target; empty partitions.",),
@@ -220,11 +220,11 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         ,),
         anti_patterns=(
             "Calling fidelity a privacy guarantee.",
-            "Tuning generator hyperparameters against test evaluate_synthetic repeatedly.",
+            "Tuning generator hyperparameters against test session.synthetic.evaluate repeatedly.",
         ),
-        state_changes=("Stores synthetic_eval_result.",),
+        state_changes=("Stores session.synthetic.eval_result.",),
         result_reading=("Inspect mode, metrics (mean_ks / score), disclosures.",),
-        next_steps=("save_synthetic_bundle.",),
+        next_steps=("session.synthetic.save_bundle.",),
         concepts=(
             "synthetic-fidelity-vs-tstr",
             "synthetic-privacy-limits",
@@ -242,7 +242,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         inputs=("SynthesizerPlan.",),
         outputs=("Path.",),
         prerequisites=(SYNTHESIZER_PLAN,),
-        ordering=("After fit_synthesizer.",),
+        ordering=("After session.synthetic.fit.",),
         alternatives=("Session checkpoint for data/history (does not embed plan).",),
         rationale=("Ship the fitted generator separately from Session state.",),
         assumptions=("Writable path.",),
@@ -251,7 +251,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         anti_patterns=("Assuming checkpoint_save includes the SynthesizerPlan.",),
         state_changes=("Filesystem write; history record.",),
         result_reading=("Confirm format buildml.synthetic_bundle.v1.",),
-        next_steps=("load_synthetic_bundle on a restored Session.",),
+        next_steps=("session.synthetic.load_bundle on a restored Session.",),
         concepts=("synthetic-bundle-boundary",),
     ),
     _operation(
@@ -271,18 +271,18 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             ),
         ),
         inputs=("Synthetic bundle directory.",),
-        outputs=("Session with synthesizer_plan.",),
+        outputs=("Session with session.synthetic.plan.",),
         prerequisites=(DATASET,),
         ordering=("Anytime a bundle exists.",),
-        alternatives=("fit_synthesizer to create a new plan.",),
+        alternatives=("session.synthetic.fit to create a new plan.",),
         rationale=("Reload a previously fitted generator.",),
         assumptions=("Compatible bundle format.",),
         failures=("Incomplete or wrong-format bundle.",),
         leakage=("Loading does not re-open holdouts for generator refit.",),
         anti_patterns=("Loading then refitting on test.",),
-        state_changes=("Stores synthesizer_plan; clears fit/sample/eval synthetic results.",),
-        result_reading=("Inspect synthesizer_plan.method / columns.",),
-        next_steps=("sample_synthetic; evaluate_synthetic.",),
+        state_changes=("Stores session.synthetic.plan; clears fit/sample/eval synthetic results.",),
+        result_reading=("Inspect session.synthetic.plan.method / columns.",),
+        next_steps=("session.synthetic.sample; session.synthetic.evaluate.",),
         concepts=("synthetic-bundle-boundary",),
     ),
 )

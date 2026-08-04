@@ -28,7 +28,7 @@ def main() -> None:
         .scale(method="standard")
     )
 
-    fit = session.fit_anomaly(
+    fit = session.anomaly.fit(
         method="isolation_forest",
         mode="unsupervised",
         contamination=0.1,
@@ -43,14 +43,14 @@ def main() -> None:
         round(fit.train_alert_rate, 4),
     )
 
-    scored = session.score_anomalies(partition="test")
+    scored = session.anomaly.score(partition="test")
     print("score:", scored.n_flagged, "flagged; alert_rate=", round(scored.alert_rate, 4))
 
-    ev = session.evaluate_anomaly(partition="test", positive_label=1)
+    ev = session.anomaly.evaluate(partition="test", positive_label=1)
     print("eval labeled:", {k: round(v, 4) for k, v in ev.labeled_metrics.items()})
 
     out = Path(".buildml-artifacts") / "anomaly_bundle"
-    path = session.save_anomaly_bundle(out)
+    path = session.anomaly.save_bundle(out)
     print("bundle:", path)
 
 

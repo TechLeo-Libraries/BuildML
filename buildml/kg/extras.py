@@ -49,45 +49,39 @@ def require_pykeen(*, feature: str = "PyKEEN KG backend") -> Any:
     return pykeen
 
 
-def pykeen_available() -> bool:
-    """Return whether a PyKEEN distribution is installed on this machine.
-
-    Uses ``find_spec`` for a cheap catalog probe without importing torch.
-
-    Returns
-    -------
-    bool
-        ``True`` when the ``pykeen`` package is discoverable.
-    """
+def pykeen_spec_present() -> bool:
+    """Cheap find_spec discovery for PyKEEN (does not prove import works)."""
     return importlib.util.find_spec("pykeen") is not None
 
 
+def pykeen_available() -> bool:
+    """Return whether a PyKEEN distribution is discoverable (find_spec).
+
+    Prefer :func:`pykeen_runtime_available` when deciding if the pykeen backend
+    can actually train.
+    """
+    return pykeen_spec_present()
+
+
 def pykeen_runtime_available() -> bool:
-    """Return whether PyKEEN and torch both import cleanly.
+    """Return whether PyKEEN and torch both import cleanly (subprocess).
 
     Used when deciding if the pykeen backend can actually train, not merely
     appear in the capability matrix install probe.
-
-    Returns
-    -------
-    bool
-        ``True`` when both pykeen and torch import successfully.
     """
-    if not pykeen_available():
+    if not pykeen_spec_present():
         return False
-    from buildml.dl.extras import torch_available
+    from buildml.dl.extras import _subprocess_import_ok, torch_available
 
-    return torch_available()
+    if not torch_available():
+        return False
+    return _subprocess_import_ok("pykeen")
 
 
 def kg_industry_available() -> bool:
-    """Return whether the KG industry extra (PyKEEN) is importable.
+    """Return whether the KG industry extra (PyKEEN) imports cleanly at runtime.
 
-    Mirrors :func:`pykeen_available` for capability-matrix ``industry_extra_present``.
-
-    Returns
-    -------
-    bool
-        ``True`` when PyKEEN is discoverable on this machine.
+    Gates capability-matrix ``available`` / backend readiness. Use
+    :func:`pykeen_spec_present` for install-discovery disclosure.
     """
-    return pykeen_available()
+    return pykeen_runtime_available()

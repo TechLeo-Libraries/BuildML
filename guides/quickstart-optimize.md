@@ -24,9 +24,14 @@ Deep guide: [optimize-deep.md](optimize-deep.md).
 ## Capability matrix
 
 ```python
+import pandas as pd
+
 from buildml import Session
 
-print(Session.decision_capability_matrix()["default_backend_when_installed"])
+# Preferred: session.decision.capability_matrix on a Session instance.
+# Flat Session.*_capability_matrix classmethods still work without data.
+session = Session.ingest(pd.DataFrame({"score": [0.5], "y": [0]}))
+print(session.decision.capability_matrix()["default_backend_when_installed"])
 ```
 
 ---
@@ -60,7 +65,7 @@ session = (
 )
 
 # Prefer validation for policy selection (test requires allow_test_tuning=True)
-fit = session.fit_decision_policy(
+fit = session.decision.fit(
     method="threshold",
     partition="validation",
     fp_cost=1.0,
@@ -69,12 +74,12 @@ fit = session.fit_decision_policy(
 )
 print(fit.to_dict())
 
-applied = session.apply_decisions(partition="test")
-eval_result = session.evaluate_decisions(partition="test")
+applied = session.decision.apply(partition="test")
+eval_result = session.decision.evaluate(partition="test")
 print(eval_result.to_dict())
 
 # MIP knapsack when optimize-industry is installed
-session.fit_decision_policy(
+session.decision.fit(
     method="knapsack",
     partition="validation",
     budget=40.0,
@@ -82,9 +87,9 @@ session.fit_decision_policy(
     score_source="model_proba",
     backend="pulp",  # auto-defaults to pulp/ortools when installed
 )
-print(session.apply_decisions(partition="test").selected_ids[:10])
+print(session.decision.apply(partition="test").selected_ids[:10])
 
-session.save_decision_bundle("artifacts/decision_demo_bundle")
+session.decision.save_bundle("artifacts/decision_demo_bundle")
 ```
 
 ---
@@ -94,7 +99,7 @@ session.save_decision_bundle("artifacts/decision_demo_bundle")
 - Default tuning partition is **`validation`**.
 - Tuning on Session **test** requires `allow_test_tuning=True` and emits a
   dangerous-opt-in disclosure.
-- Confirm a frozen policy once with `evaluate_decisions(partition="test")`.
+- Confirm a frozen policy once with `session.decision.evaluate(partition="test")`.
 
 ---
 
@@ -103,6 +108,6 @@ session.save_decision_bundle("artifacts/decision_demo_bundle")
 Decision helpers for ML scores/costs/allocations: scoped PuLP/OR-Tools MIP
 knapsack and CVXPY LP only; not a general OR platform or digital twin.
 `tune_threshold` remains the classical diagnostic sweep;
-`fit_decision_policy(method="threshold")` persists the chosen operating point.
+`session.decision.fit(method="threshold")` persists the chosen operating point.
 
-Phase-3 synthetic-data systems: **PASS** → [quickstart-synthetic.md](quickstart-synthetic.md).
+Related: [quickstart-synthetic.md](quickstart-synthetic.md).

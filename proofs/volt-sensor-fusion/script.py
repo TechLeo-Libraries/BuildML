@@ -62,7 +62,7 @@ def main() -> None:
     # --- Stage 1: anomaly ---
     try:
         if extra_available("pyod"):
-            a_fit = session.fit_anomaly(
+            a_fit = session.anomaly.fit(
                 backend="pyod",
                 method="hbos",
                 mode="unsupervised",
@@ -71,7 +71,7 @@ def main() -> None:
             )
             a_backend = "pyod/hbos"
         else:
-            a_fit = session.fit_anomaly(
+            a_fit = session.anomaly.fit(
                 method="isolation_forest",
                 mode="unsupervised",
                 contamination=0.08,
@@ -81,13 +81,13 @@ def main() -> None:
         assert_no_test_in_selection(
             selection_partition="validation", evaluation_partition="test"
         )
-        a_tune = session.tune_anomaly_threshold(
+        a_tune = session.anomaly.tune_threshold(
             partition="validation",
             label_column=TARGET,
             positive_label=1,
             metric="f1",
         )
-        a_ev = session.evaluate_anomaly(partition="test", positive_label=1)
+        a_ev = session.anomaly.evaluate(partition="test", positive_label=1)
         stages["anomaly"] = {
             "status": "ok",
             "backend": a_backend,
@@ -127,14 +127,14 @@ def main() -> None:
                 )
                 .scale(method="standard")
             )
-            fit_t = tda_session.fit_tda(
+            fit_t = tda_session.tda.fit(
                 vectorization="persistence_image",
                 knn=12,
                 n_bins=12,
                 head="logistic_regression",
                 random_state=ctx.seed,
             )
-            test_t = tda_session.evaluate_tda(partition="test")
+            test_t = tda_session.tda.evaluate(partition="test")
             stages["tda"] = {
                 "status": "ok",
                 "fit": metrics_round(

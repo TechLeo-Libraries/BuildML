@@ -135,7 +135,7 @@ def main() -> None:
             selection_partition="cv", evaluation_partition="test"
         )
         try:
-            result = automl_session.run_automl(
+            result = automl_session.automl.run(
                 task="classification",
                 backend=backend,  # type: ignore[arg-type]
                 method="randomized",
@@ -150,7 +150,7 @@ def main() -> None:
                 random_state=ctx.seed,
             )
         except (MissingExtraError, ValueError, TypeError) as exc:
-            result = automl_session.run_automl(
+            result = automl_session.automl.run(
                 task="classification",
                 backend="native",
                 method="randomized",
@@ -165,7 +165,7 @@ def main() -> None:
             )
             backend = f"native_fallback ({type(exc).__name__})"
         try:
-            am_test = automl_session.evaluate_automl(partition="test")
+            am_test = automl_session.automl.evaluate(partition="test")
         except Exception:
             am_test = automl_session.evaluate(partition="test")
         stages["automl"] = {
@@ -205,15 +205,15 @@ def main() -> None:
             .impute(strategy="median")
             .scale(method="standard")
         )
-        causal_session.declare_causal_assumptions(
+        causal_session.causal.declare_assumptions(
             treatment="outreach",
             outcome=TARGET,
             confounders=["age", "income", "debt_ratio", "employment_years"],
             acknowledge_unconfoundedness=True,
             acknowledge_positivity=True,
         )
-        fit_c = causal_session.fit_causal(method="aipw", bootstrap_samples=30)
-        ev_c = causal_session.evaluate_causal(partition="validation", bootstrap_samples=15)
+        fit_c = causal_session.causal.fit(method="aipw", bootstrap_samples=30)
+        ev_c = causal_session.causal.evaluate(partition="validation", bootstrap_samples=15)
         stages["causal"] = {
             "status": "ok",
             "assumptions": {
@@ -246,16 +246,16 @@ def main() -> None:
     assert_no_test_in_selection(
         selection_partition="validation", evaluation_partition="test"
     )
-    thr = session.fit_decision_policy(
+    thr = session.decision.fit(
         method="threshold",
         partition="validation",
         fp_cost=1.0,
         fn_cost=5.0,
     )
-    thr_test = session.evaluate_decisions(partition="test")
+    thr_test = session.decision.evaluate(partition="test")
     knap_payload: dict = {"status": "skipped"}
     try:
-        knap = session.fit_decision_policy(
+        knap = session.decision.fit(
             method="knapsack",
             partition="validation",
             budget=70.0,
@@ -264,7 +264,7 @@ def main() -> None:
             score_source="model_proba",
             knapsack_solver="dp",
         )
-        applied = session.apply_decisions(partition="test")
+        applied = session.decision.apply(partition="test")
         knap_payload = {
             "knapsack_status": "ok",
             "knapsack_policy": metrics_round(
@@ -278,13 +278,13 @@ def main() -> None:
         }
     except Exception as exc:  # noqa: BLE001
         try:
-            topk = session.fit_decision_policy(
+            topk = session.decision.fit(
                 method="topk",
                 partition="validation",
                 capacity=40,
                 score_source="model_proba",
             )
-            applied = session.apply_decisions(partition="test")
+            applied = session.decision.apply(partition="test")
             knap_payload = {
                 "knapsack_status": "ok_topk_fallback",
                 "knapsack_error": f"{type(exc).__name__}: {exc}",
@@ -349,7 +349,7 @@ def main() -> None:
         "skip_notes": skip_notes,
         "leakage_controls": [
             "Stratified split before classical / AutoML / causal / decisions",
-            "Causal assumptions declared before fit_causal (required API gate)",
+            "Causal assumptions declared before session.causal.fit (required API gate)",
             "Decision threshold + knapsack selected on validation ONLY — never test",
             "Calibration reported on validation then confirmed on untouched test",
             "AutoML search/selection never uses the test partition",

@@ -9,7 +9,10 @@ from buildml.session.mixins._shared import *  # noqa: F403
 
 
 class ActivelearningSessionMixin:
-    """Public Session methods for the activelearning domain."""
+    """Public Session methods for the activelearning domain.
+
+    Preferred namespaced API: ``session.active_learning.*`` (domain flat actions emit DeprecationWarning until BuildML 3.0).
+    """
     # mypy: session private attrs (owned by Session.__init__)
     if TYPE_CHECKING:
         _activelearning_eval_result: Any

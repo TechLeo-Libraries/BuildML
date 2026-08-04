@@ -147,7 +147,8 @@ REQUIRED_AI_TOOL_SESSION_METHODS: frozenset[str] = frozenset(
 AI_TOOL_BUILTINS: frozenset[str] = frozenset({"describe_dataset", "ai_status"})
 
 # Session methods that must NOT appear in the AI tool registry.
-# serve_bundle starts a network listener: CLI / Session-primary only.
+# session.dl.serve (flat allowlist key: serve_bundle) starts a network listener:
+# CLI / Session-primary only.
 EXPLICITLY_NON_AI_SESSION_METHODS: frozenset[str] = frozenset({"serve_bundle"})
 
 
@@ -806,7 +807,7 @@ def check_ai_tools_vs_catalog(
     agent simply becomes less capable, with no failure anywhere.
 
     ``EXPLICITLY_NON_AI_SESSION_METHODS`` names operations an agent must not
-    reach. ``serve_bundle`` is the example: it opens a network listener, and an
+    reach. ``session.dl.serve`` is the example: it opens a network listener, and an
     agent deciding on its own to start a server is not a decision anyone
     delegated. Those methods still need catalog entries, because a human calling
     them deserves documentation.
@@ -844,6 +845,8 @@ def check_ai_tools_vs_catalog(
     session_names = set(public_session_operations(session_cls))
     from buildml.ai.tools import build_default_registry
 
+    from buildml.session.facade_registry import resolve_operation_name
+
     registry = build_default_registry()
     tool_session_methods: set[str] = set()
     for tool in registry.tools:
@@ -852,17 +855,19 @@ def check_ai_tools_vs_catalog(
                 report.warnings.append(
                     f"AI builtin tool {tool.name!r} unexpectedly sets session_method"
                 )
-            if tool.catalog_operation and tool.catalog_operation not in catalog_names:
-                report.errors.append(
-                    f"AI tool {tool.name!r} catalog_operation "
-                    f"{tool.catalog_operation!r} not in catalog"
-                )
+            if tool.catalog_operation:
+                catalog_op = resolve_operation_name(tool.catalog_operation)
+                if catalog_op not in catalog_names:
+                    report.errors.append(
+                        f"AI tool {tool.name!r} catalog_operation "
+                        f"{tool.catalog_operation!r} not in catalog"
+                    )
             continue
-        method = tool.session_method or tool.name
+        method = resolve_operation_name(tool.session_method or tool.name)
         tool_session_methods.add(method)
         if method not in session_names:
             report.errors.append(f"AI tool {tool.name!r} maps to missing Session.{method}")
-        catalog_op = tool.catalog_operation or method
+        catalog_op = resolve_operation_name(tool.catalog_operation or method)
         if catalog_op not in catalog_names:
             report.errors.append(
                 f"AI tool {tool.name!r} catalog_operation {catalog_op!r} not in catalog"

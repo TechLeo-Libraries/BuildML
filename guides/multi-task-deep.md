@@ -27,9 +27,9 @@ no multi-label binary-relevance zoo, no causal multi-task).
 
 ## Leakage discipline
 
-1. `fit_multitask` requires a `SplitPlan` and fits **train only**.
-2. Validation / test are evaluation-only (`evaluate_multitask` /
-   `predict_multitask` never refit).
+1. `session.multitask.fit` requires a `SplitPlan` and fits **train only**.
+2. Validation / test are evaluation-only (`session.multitask.evaluate` /
+   `session.multitask.predict` never refit).
 3. Classical `Session.fit` still calls `require_target()` and expects **exactly
    one** target: multi-task is a distinct Session path.
 4. `split(stratify=True)` also uses `require_target()` (single target). With
@@ -48,7 +48,7 @@ no multi-label binary-relevance zoo, no causal multi-task).
 
 ## Metrics
 
-`evaluate_multitask` returns:
+`session.multitask.evaluate` returns:
 
 - `per_task_metrics[task]`: accuracy / F1 (cls) or MAE / RMSE / R² (reg)
 - `metrics`: unweighted means across tasks of each kind (`mean_accuracy`,
@@ -59,7 +59,7 @@ no multi-label binary-relevance zoo, no causal multi-task).
 `buildml.multitask_bundle.v1` stores `MultiTaskPlan` (estimator + target
 contract + per-task label encoders + backend metadata). Session checkpoints do
 **not** embed it. Reload tabular workflow via `checkpoint_load`; reload the
-learner via `load_multitask_bundle`.
+learner via `session.multitask.load_bundle`.
 
 See [Artifacts](artifacts-checkpoints-bundles.md).
 
@@ -67,8 +67,8 @@ See [Artifacts](artifacts-checkpoints-bundles.md).
 
 - Concepts: `multitask-multi-output`, `multitask-chain`,
   `multitask-target-roles`, `multitask-bundle-boundary`
-- Session ops: `fit_multitask`, `predict_multitask`, `evaluate_multitask`,
-  `save_multitask_bundle`, `load_multitask_bundle`
+- Session ops: `session.multitask.fit`, `session.multitask.predict`, `session.multitask.evaluate`,
+  `session.multitask.save_bundle`, `session.multitask.load_bundle`
 - Walkthrough: `multitask_status` (includes capability matrix)
 - AI allowlist: fit / evaluate / save / load
 
@@ -81,7 +81,7 @@ python benchmarks/multitask/multi_target_quality.py
 Writes `benchmarks/multitask/results/multi_target_quality.json` comparing
 sklearn vs industry/torch when extras are installed.
 
-## Phase tracker
+## Scope notes
 
-Phase 2 item 5 (**multi-task industry depth**, R6.4) is done.
-Next depth-first item: **meta-learning** (R6.5).
+Multi-task industry depth is shipped.
+Related next: **meta-learning**.

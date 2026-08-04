@@ -45,8 +45,8 @@ FEDERATED_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         example=(
             "session.set_roles({'hospital_id': 'group', 'readmitted': 'target'})",
-            "session.fit_federated(method='fedavg', n_rounds=5, random_state=0)",
-            "report = session.evaluate_federated(partition='validation')",
+            "session.federated.fit(method='fedavg', n_rounds=5, random_state=0)",
+            "report = session.federated.evaluate(partition='validation')",
             "print(report.global_metrics, report.per_client_metrics)",
         ),
         check=(
@@ -70,7 +70,7 @@ FEDERATED_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         steps=(
             "Install the industry extra so `flwr` is available.",
-            "Pass `backend='flower'` to `fit_federated`.",
+            "Pass `backend='flower'` to `session.federated.fit`.",
             "Each client partition becomes a Flower NumPyClient.",
             "Local fitting still goes through the same scikit-learn linear or SGD path.",
             "Flower's own weighted-averaging strategy combines the client updates.",
@@ -95,9 +95,9 @@ FEDERATED_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         example=(
             "# pip install \"buildml[federated-industry]\"",
-            "session.fit_federated(backend='flower', method='fedavg', n_rounds=5)",
-            "session.export_round_history('artifacts/fed_rounds.json')",
-            "print(session.federated_plan.backend, session.federated_plan.disclosures)",
+            "session.federated.fit(backend='flower', method='fedavg', n_rounds=5)",
+            "session.federated.export_round_history('artifacts/fed_rounds.json')",
+            "print(session.federated.plan.backend, session.federated.plan.disclosures)",
         ),
         check=(
             "Do you actually need Flower, or is the native path enough for what you are measuring?",
@@ -144,11 +144,11 @@ FEDERATED_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.fit_federated(",
+            "session.federated.fit(",
             "    method='fedavg', estimator='logistic_regression',",
             "    n_rounds=8, local_epochs=2, random_state=0,",
             ")",
-            "for row in session.federated_plan.round_history: print(row)",
+            "for row in session.federated.plan.round_history: print(row)",
         ),
         check=(
             "Does your chosen estimator actually expose coefficients?",
@@ -195,7 +195,7 @@ FEDERATED_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.fit_federated(method='fedprox', mu=0.05, n_rounds=5, random_state=0)",
+            "session.federated.fit(method='fedprox', mu=0.05, n_rounds=5, random_state=0)",
             "# compare against the fedavg run on the same holdout",
         ),
         check=(
@@ -217,8 +217,8 @@ FEDERATED_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         steps=(
             "Run federated training so a plan exists.",
-            "Call `save_federated_bundle(path)`.",
-            "Reload with `load_federated_bundle(path)`.",
+            "Call `session.federated.save_bundle(path)`.",
+            "Reload with `session.federated.load_bundle(path)`.",
             "Predict with the global model on new rows.",
             "Keep checkpoints separate for data and workflow state.",
         ),
@@ -241,9 +241,9 @@ FEDERATED_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.save_federated_bundle('artifacts/consortium-model')",
-            "svc = Session.ingest(new_rows).load_federated_bundle('artifacts/consortium-model')",
-            "svc.predict_federated()",
+            "session.federated.save_bundle('artifacts/consortium-model')",
+            "svc = Session.ingest(new_rows).federated.load_bundle('artifacts/consortium-model')",
+            "svc.federated.predict()",
         ),
         check=(
             "Does the serving data carry the same feature and client columns?",

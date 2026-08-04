@@ -5,7 +5,7 @@
 > See [installation](../docs/installation.rst).
 
 Pool-based active learning on the Session train partition: scarce seed labels,
-uncertainty / committee / CoreSet / BALD queries, human `label_rows`, budget
+uncertainty / committee / CoreSet / BALD queries, human `session.active_learning.label_rows`, budget
 caps, labeled holdout eval, and `buildml.activelearning_bundle.v1`.
 
 **Related:** [Quickstart](quickstart-active-learning.md) ·
@@ -20,14 +20,14 @@ caps, labeled holdout eval, and `buildml.activelearning_bundle.v1`.
 | --- | --- |
 | Human-in-the-loop labeling loop on **train** | Semi-supervised graph propagation |
 | Uncertainty / committee / CoreSet / BALD query strategies | A built-in oracle that peeks at truths |
-| Budget-capped `suggest_query` → `label_rows` | Querying validation/test |
-| Distinct AL bundle + explain catalog | Passive NaN-label propagation (`fit_semisupervised`) |
+| Budget-capped `session.active_learning.suggest_query` → `session.active_learning.label_rows` | Querying validation/test |
+| Distinct AL bundle + explain catalog | Passive NaN-label propagation (`session.semisupervised.fit`) |
 
 Honesty: **labels come from the user**. Library core never invents an oracle.
 Examples and tests may simulate one: always disclose that.
 
 **vs semi-supervised:** Active learning is an *interactive* query loop
-(`suggest_query` → human `label_rows` → refit). Semi-supervised learning uses
+(`session.active_learning.suggest_query` → human `session.active_learning.label_rows` → refit). Semi-supervised learning uses
 *passive* missing labels and propagates/pseudo-labels without an oracle loop.
 
 ---
@@ -54,7 +54,7 @@ for their strategy families. Sklearn remains the fallback when extras are absent
 
 After a normal stratified split on fully labeled data, blank a fraction of
 **train** targets to `NaN`. Those rows become the unlabeled pool. Holdout stays
-labeled so `evaluate_active_learning` can score honestly.
+labeled so `session.active_learning.evaluate` can score honestly.
 
 `unlabeled_marker` overrides the default NaN convention (same helper as
 semi-supervised).
@@ -63,21 +63,21 @@ semi-supervised).
 
 ## API loop
 
-1. `fit_active_learner(backend=..., strategy=..., label_budget=...)`: fit on labeled train
-2. `suggest_query(batch_size=...)`: ranked train-pool indices (no labels)
-3. `label_rows(indices=..., labels=...)`: **user** labels; auto-refit by default
+1. `session.active_learning.fit(backend=..., strategy=..., label_budget=...)`: fit on labeled train
+2. `session.active_learning.suggest_query(batch_size=...)`: ranked train-pool indices (no labels)
+3. `session.active_learning.label_rows(indices=..., labels=...)`: **user** labels; auto-refit by default
 4. Repeat until budget exhausted or pool empty
-5. `evaluate_active_learning(partition="test")`: labeled holdout only
-6. `save_active_learning_bundle(...)`: model + pool indices + query history
+5. `session.active_learning.evaluate(partition="test")`: labeled holdout only
+6. `session.active_learning.save_bundle(...)`: model + pool indices + query history
 
-`label_rows` is **Session-primary** and **not AI-allowlisted**: humans (or test
+`session.active_learning.label_rows` is **Session-primary** and **not AI-allowlisted**: humans (or test
 harnesses that disclose simulation) supply labels.
 
 Leakage guards:
 
 - Fit requires a split (`assert_can_fit`)
 - Pool ⊆ train indices
-- `label_rows` refuses validation/test indices
+- `session.active_learning.label_rows` refuses validation/test indices
 - Eval scores only labeled holdout rows
 
 ---
@@ -113,8 +113,8 @@ Leakage guards:
 
 ## Budget and disclosures
 
-- `label_budget` caps how many labels `label_rows` may incorporate
-- Exhausted budgets → `suggest_query` returns empty indices with a warning
+- `label_budget` caps how many labels `session.active_learning.label_rows` may incorporate
+- Exhausted budgets → `session.active_learning.suggest_query` returns empty indices with a warning
 - Fit / query / label / eval disclosures state that labels are user-supplied
 - Walkthrough exposes `activelearning_status` + capability matrix
 
@@ -143,13 +143,13 @@ checkpoints do **not** embed the learner. See [Artifacts](artifacts-checkpoints-
 
 - Fitting before split
 - Blanking holdout targets and treating them as the pool
-- Expecting `suggest_query` to return labels
-- Using `fit_semisupervised` when you need a human query loop
+- Expecting `session.active_learning.suggest_query` to return labels
+- Using `session.semisupervised.fit` when you need a human query loop
 - Reporting train accuracy after each query as holdout performance
 - Exceeding `label_budget` without raising it
 
 ---
 
-## Phase tracker
+## Scope notes
 
-R6.2 active-learning industry depth is **PASS**. **Next:** R6.3 online/continual.
+Active-learning industry depth is shipped. Related next: online / continual learning.

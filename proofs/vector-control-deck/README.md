@@ -16,13 +16,13 @@ allocated under a capacity budget. The platform:
 
 ## Status
 
-`completed`: run `script.py`; see `results/summary.json` and stage JSONs.
+Run `script.py`. Outputs land under `results/` (summary and stage JSON)..
 Core stages keep the product completed when gym RL skips.
 
 ## How to run
 
 ```bash
-.\.venv\Scripts\python.exe proofs\vector-control-deck\script.py
+python proofs\vector-control-deck\script.py
 ```
 
 ## Leakage controls

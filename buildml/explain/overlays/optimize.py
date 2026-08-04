@@ -16,7 +16,7 @@ from buildml.explain.schemas import OperationSpec, Prerequisite
 DECISION_PLAN = Prerequisite(
     "decision-plan",
     "A fitted DecisionPlan is attached.",
-    check_hint="Session.decision_plan is not None.",
+    check_hint="session.decision.plan is not None.",
 )
 FITTED = Prerequisite(
     "fitted-estimator",
@@ -43,7 +43,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             _p(
                 "backend",
                 "native | pulp | ortools | cvxpy | calibrated | xgb",
-                "Solver/scorer backend (see decision_capability_matrix).",
+                "Solver/scorer backend (see session.decision.capability_matrix).",
                 None,
             ),
             _p(
@@ -117,13 +117,13 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             "Assuming this replaces Optuna HPO.",
         ),
         state_changes=(
-            "Stores decision_plan; clears prior apply/eval; may set last_diagnostic "
+            "Stores session.decision.plan; clears prior apply/eval; may set last_diagnostic "
             "for method='threshold'."
         ,),
         result_reading=(
             "Inspect threshold / expected_cost / n_selected and disclosures."
         ,),
-        next_steps=("apply_decisions; evaluate_decisions; save_decision_bundle.",),
+        next_steps=("session.decision.apply; session.decision.evaluate; session.decision.save_bundle.",),
         concepts=(
             "decision-operating-point",
             "decision-cost-matrix",
@@ -159,16 +159,16 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         inputs=("Frozen DecisionPlan + partition or candidates.",),
         outputs=("ApplyDecisionsResult.",),
         prerequisites=(DECISION_PLAN,),
-        ordering=("After fit_decision_policy.",),
-        alternatives=("evaluate_decisions for labeled metrics.",),
+        ordering=("After session.decision.fit.",),
+        alternatives=("session.decision.evaluate for labeled metrics.",),
         rationale=("Deploy the frozen operating policy.",),
         assumptions=("Compatible features for model-score methods.",),
         failures=("No DecisionPlan; missing FitResult for threshold/cost_matrix.",),
         leakage=("Applying is not fitting; iterating on test still peeks.",),
         anti_patterns=("Refitting the policy on test apply metrics.",),
-        state_changes=("Stores decision_apply_result.",),
+        state_changes=("Stores session.decision.apply_result.",),
         result_reading=("Inspect decisions / selected_ids / selected_value.",),
-        next_steps=("evaluate_decisions; save_decision_bundle.",),
+        next_steps=("session.decision.evaluate; session.decision.save_bundle.",),
         concepts=("decision-operating-point", "decision-allocation"),
     ),
     _operation(
@@ -192,8 +192,8 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         inputs=("Frozen DecisionPlan + labeled/scoreable partition.",),
         outputs=("DecisionEvalResult.",),
         prerequisites=(DECISION_PLAN,),
-        ordering=("After fit_decision_policy.",),
-        alternatives=("apply_decisions when labels are unavailable.",),
+        ordering=("After session.decision.fit.",),
+        alternatives=("session.decision.apply when labels are unavailable.",),
         rationale=("Confirm the frozen policy once on untouched test.",),
         assumptions=("Split present; labels available for threshold/cost_matrix.",),
         failures=("No DecisionPlan; evaluating without labels where required.",),
@@ -201,10 +201,10 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             "Repeated test evaluation can still overfit human iteration; "
             "prefer one confirmation."
         ,),
-        anti_patterns=("Retuning the policy after peeking at test evaluate_decisions.",),
-        state_changes=("Stores decision_eval_result.",),
+        anti_patterns=("Retuning the policy after peeking at test session.decision.evaluate.",),
+        state_changes=("Stores session.decision.eval_result.",),
         result_reading=("Inspect metrics and realized_cost.",),
-        next_steps=("save_decision_bundle.",),
+        next_steps=("session.decision.save_bundle.",),
         concepts=(
             "decision-operating-point",
             "decision-cost-matrix",
@@ -223,7 +223,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         inputs=("DecisionPlan.",),
         outputs=("Path.",),
         prerequisites=(DECISION_PLAN,),
-        ordering=("After fit_decision_policy.",),
+        ordering=("After session.decision.fit.",),
         alternatives=("Session checkpoint for data/history (does not embed plan).",),
         rationale=("Ship the operating policy separately from Session state.",),
         assumptions=("Writable path.",),
@@ -232,7 +232,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         anti_patterns=("Assuming checkpoint_save includes the DecisionPlan.",),
         state_changes=("Filesystem write; history record.",),
         result_reading=("Confirm format buildml.decision_bundle.v1.",),
-        next_steps=("load_decision_bundle on a restored Session.",),
+        next_steps=("session.decision.load_bundle on a restored Session.",),
         concepts=("decision-bundle-boundary",),
     ),
     _operation(
@@ -252,18 +252,18 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             ),
         ),
         inputs=("Decision bundle directory.",),
-        outputs=("Session with decision_plan.",),
+        outputs=("Session with session.decision.plan.",),
         prerequisites=(DATASET,),
         ordering=("Anytime a bundle exists; model-score apply still needs fit.",),
-        alternatives=("fit_decision_policy to create a new plan.",),
+        alternatives=("session.decision.fit to create a new plan.",),
         rationale=("Reload a previously selected operating policy.",),
         assumptions=("Compatible bundle format.",),
         failures=("Incomplete or wrong-format bundle.",),
         leakage=("Loading does not re-open Session test for retuning.",),
         anti_patterns=("Loading then retuning on test without disclosure.",),
-        state_changes=("Stores decision_plan; clears fit/apply/eval decision results.",),
-        result_reading=("Inspect decision_plan.method / threshold.",),
-        next_steps=("apply_decisions; evaluate_decisions.",),
+        state_changes=("Stores session.decision.plan; clears fit/apply/eval decision results.",),
+        result_reading=("Inspect session.decision.plan.method / threshold.",),
+        next_steps=("session.decision.apply; session.decision.evaluate.",),
         concepts=("decision-bundle-boundary",),
     ),
 )

@@ -10,7 +10,8 @@ Session-shaped persistent homology for tabular workflows: native and industry ba
 | **giotto** (default when industry installed) | `buildml[tda-industry]` | gtda VietorisRipsPersistence | betti_curve, persistence_image, persistence_landscape, landscape |
 
 ```python
-Session.tda_capability_matrix()
+# Preferred on a Session instance; flat Session.*_capability_matrix still works.
+session.tda.capability_matrix()
 ```
 
 ## Why ripser + persim (native) vs giotto-tda (industry)
@@ -39,17 +40,17 @@ Session.tda_capability_matrix()
 
 | Method | Role |
 |--------|------|
-| `fit_tda` | Train PH + vectorizer ± head (`backend=`, `mapper=` on giotto) |
-| `transform_tda` | Topological feature matrix |
-| `predict_tda` | Head predictions |
-| `evaluate_tda` | Holdout metrics; optional Wasserstein/bottleneck diagram distances |
-| `tda_capability_matrix` | Honest backend / vectorization matrix |
-| `save_tda_bundle` / `load_tda_bundle` | `buildml.tda_bundle.v2` (v1 loadable) |
+| `session.tda.fit` | Train PH + vectorizer ± head (`backend=`, `mapper=` on giotto) |
+| `session.tda.transform` | Topological feature matrix |
+| `session.tda.predict` | Head predictions |
+| `session.tda.evaluate` | Holdout metrics; optional Wasserstein/bottleneck diagram distances |
+| `session.tda.capability_matrix` | Honest backend / vectorization matrix |
+| `session.tda.save_bundle` / `session.tda.load_bundle` | `buildml.tda_bundle.v2` (v1 loadable) |
 
 ## Bundle boundary
 
 `meta.json` + `tda_plan.joblib`. Session checkpoints do **not** embed
-`TdaPlan`. Reload workflow via `checkpoint_load`, then `load_tda_bundle`.
+`TdaPlan`. Reload workflow via `checkpoint_load`, then `session.tda.load_bundle`.
 
 ## What this is not
 
@@ -67,6 +68,6 @@ Concepts: `tda-persistent-homology`, `tda-vectorization`, `tda-supervised-head`,
 `tda-bundle-boundary`, `tda-extra-boundary`, `tda-giotto-backend`. Overlays +
 AI allowlist + walkthrough `tda_status` are wired.
 
-## Tracker
+## Scope notes
 
-Phase 2 TDA → **PASS (R5.9 industry depth)**.
+TDA industry depth is shipped for this release.

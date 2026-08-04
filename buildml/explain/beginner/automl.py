@@ -43,11 +43,11 @@ AUTOML_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.run_automl(",
+            "session.automl.run(",
             "    time_budget=300, selection='cv', cv=5, random_state=0,",
             ")",
-            "print(session.automl_plan.leaderboard[:5])",
-            "session.evaluate_automl(partition='test')",
+            "print(session.automl.plan.leaderboard[:5])",
+            "session.automl.evaluate(partition='test')",
         ),
         check=(
             "How much better is the winner than the second place, relative to fold noise?",
@@ -99,7 +99,7 @@ AUTOML_BEGINNER: dict[str, BeginnerLayer] = _index(
             "    encode=['onehot', 'target'],",
             "    scale=['standard', None],",
             ")",
-            "session.run_automl(recipe=recipe, selection='cv', cv=5, random_state=0)",
+            "session.automl.run(recipe=recipe, selection='cv', cv=5, random_state=0)",
         ),
         check=(
             "Is your data unpoisoned: no Session-global transforms applied before the search?",
@@ -147,9 +147,9 @@ AUTOML_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.run_automl(selection='nested', inner_cv=3, outer_cv=5, random_state=0)",
-            "print(session.automl_plan.selection_disclosures)",
-            "session.evaluate_automl(partition='test')   # once, after freezing",
+            "session.automl.run(selection='nested', inner_cv=3, outer_cv=5, random_state=0)",
+            "print(session.automl.plan.selection_disclosures)",
+            "session.automl.evaluate(partition='test')   # once, after freezing",
         ),
         check=(
             "Which partition ranked your candidates, and which one produced your reported number?",
@@ -171,8 +171,8 @@ AUTOML_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         steps=(
             "Run AutoML so a plan exists on the Session.",
-            "Call `save_automl_bundle(path)` to persist the winner, the recipe, and the disclosures.",
-            "Reload with `load_automl_bundle(path)`.",
+            "Call `session.automl.save_bundle(path)` to persist the winner, the recipe, and the disclosures.",
+            "Reload with `session.automl.load_bundle(path)`.",
             "Evaluate or predict with the restored plan.",
             "Save a checkpoint too if you also want the data state that produced it.",
         ),
@@ -195,9 +195,9 @@ AUTOML_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.save_automl_bundle('artifacts/automl')",
-            "restored = Session.ingest(frame).load_automl_bundle('artifacts/automl')",
-            "restored.evaluate_automl(partition='test')",
+            "session.automl.save_bundle('artifacts/automl')",
+            "restored = Session.ingest(frame).automl.load_bundle('artifacts/automl')",
+            "restored.automl.evaluate(partition='test')",
         ),
         check=(
             "Does your saved bundle include the preprocessing recipe the winner needs?",
@@ -220,7 +220,7 @@ AUTOML_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         steps=(
             "Install the relevant extra, for example `pip install buildml[automl-industry]`.",
-            "Pass `backend='flaml'` or `backend='autogluon'` to `run_automl`.",
+            "Pass `backend='flaml'` or `backend='autogluon'` to `session.automl.run`.",
             "BuildML passes training-partition data only and applies its own split boundary.",
             "The adapter's internal search runs under its own rules; BuildML records the limits it cannot enforce as disclosures.",
             "Evaluate and bundle exactly as you would with the native backend.",
@@ -245,11 +245,11 @@ AUTOML_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         example=(
             "# pip install \"buildml[automl-industry]\"",
-            "session.run_automl(backend='flaml', time_budget=300, random_state=0)",
-            "print(session.automl_plan.disclosures)",
+            "session.automl.run(backend='flaml', time_budget=300, random_state=0)",
+            "print(session.automl.plan.disclosures)",
         ),
         check=(
-            "Is the extra installed, and does `automl_capability_matrix()` confirm the backend is available?",
+            "Is the extra installed, and does `session.automl.capability_matrix()` confirm the backend is available?",
             "Which disclosures did the adapter produce, and do any of them affect your claim?",
         ),
         tools=("run_automl", "evaluate_automl", "save_automl_bundle"),

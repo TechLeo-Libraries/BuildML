@@ -15,18 +15,18 @@ The suite:
 
 ## Status
 
-`completed`: run `script.py`; see `results/summary.json` and stage JSONs.
+Run `script.py`. Outputs land under `results/` (summary and stage JSON)..
 
 ## How to run
 
 ```bash
-.\.venv\Scripts\python.exe proofs\cornerstone-mortgage-suite\script.py
+python proofs\cornerstone-mortgage-suite\script.py
 ```
 
 ## Leakage controls
 
 - Stratified split before classical / causal / decisions
-- Causal assumptions declared before `fit_causal`
+- Causal assumptions declared before `session.causal.fit`
 - Decision threshold + knapsack selected on validation ONLY
 - Test evaluate after each stage locks
 

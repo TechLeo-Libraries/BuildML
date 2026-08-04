@@ -14,13 +14,13 @@ geometry is scored three ways:
 
 ## Status
 
-`completed`: run `script.py`; see `results/summary.json` and stage JSONs.
+Run `script.py`. Outputs land under `results/` (summary and stage JSON)..
 Core stages (anomaly + supervised) keep the product completed when TDA skips.
 
 ## How to run
 
 ```bash
-.\.venv\Scripts\python.exe proofs\prism-shape-monitor\script.py
+python proofs\prism-shape-monitor\script.py
 ```
 
 ## Leakage controls

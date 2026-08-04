@@ -28,7 +28,7 @@ AI_NOTES: dict[str, ConceptNote] = {
             ),
             formal_idea=(
                 "The egress manifest is a typed record of what will be (or was) sent: columns, row count, estimated tokens, "
-                "and warnings about PII-like columns. ai_egress_preview returns the manifest without making an API call."
+                "and warnings about PII-like columns. session.ai.egress_preview returns the manifest without making an API call."
             ),
             why_it_matters=(
                 "External LLM providers see whatever payload the user approves.",
@@ -36,16 +36,16 @@ AI_NOTES: dict[str, ConceptNote] = {
                 "Regulatory and security requirements often restrict what data can leave internal systems.",
             ),
             how_buildml_uses=(
-                "ai_configure sets the default egress level (STATS_ONLY by default).",
-                "ai_egress_preview shows the manifest before any call.",
-                "ai_dry_run returns the full prompt payload for local inspection.",
+                "session.ai.configure sets the default egress level (STATS_ONLY by default).",
+                "session.ai.egress_preview shows the manifest before any call.",
+                "session.ai.dry_run returns the full prompt payload for local inspection.",
                 "Column allow/deny lists filter what columns appear in egress.",
                 "Transcripts record egress manifests, not raw data (unless FULL_SAMPLE).",
             ),
             interpretation_rules=(
                 "STATS_ONLY sends aggregates and schema, never raw row values.",
                 "FULL_SAMPLE requires explicit opt-in and sends raw data.",
-                "Always inspect ai_egress_preview before first AI call on sensitive data.",
+                "Always inspect session.ai.egress_preview before first AI call on sensitive data.",
             ),
             assumptions=(
                 "The user reviews egress manifests before approving data-heavy calls.",
@@ -60,7 +60,7 @@ AI_NOTES: dict[str, ConceptNote] = {
                 "Assuming STATS_ONLY protects against all data leakage (aggregates can still reveal patterns).",
             ),
             worked_example_pattern=(
-                "ai_configure → ai_egress_preview → review manifest → ai_advisor (if manifest acceptable).",
+                "session.ai.configure → session.ai.egress_preview → review manifest → session.ai.advisor (if manifest acceptable).",
             ),
             related_concepts=("leakage-boundary", "ai-tool-trust"),
         ),
@@ -92,7 +92,7 @@ AI_NOTES: dict[str, ConceptNote] = {
             ),
             how_buildml_uses=(
                 "ToolRegistry defines the M1 allowlist: describe_dataset, explain_operation, workflow_status, etc.",
-                "ai_execute validates tool calls against the registry and requires confirmation for writes.",
+                "session.ai.execute validates tool calls against the registry and requires confirmation for writes.",
                 "Destructive tools (drop, delete) always require explicit confirmation.",
                 "Read-only tools (describe, explain) may auto-confirm.",
             ),
@@ -114,7 +114,7 @@ AI_NOTES: dict[str, ConceptNote] = {
                 "Trusting AI tool suggestions without verifying prerequisites.",
             ),
             worked_example_pattern=(
-                "ai_execute('set_roles', {'mapping': {...}}) → review proposal → ai_execute(..., confirm=True).",
+                "session.ai.execute('set_roles', {'mapping': {...}}) → review proposal → session.ai.execute(..., confirm=True).",
             ),
             related_concepts=("ai-prompt-injection", "ai-egress-privacy", "leakage-boundary"),
         ),

@@ -22,7 +22,7 @@ pip install "buildml[torch]"
 ```
 
 Classical `Session.fit` stays the default sklearn path. Torch methods use the
-`*_torch` prefix and store results in `session.dl_train_result`.
+`*_torch` prefix and store results in `session.dl.train_result`.
 
 ```python
 import pandas as pd
@@ -63,8 +63,8 @@ session = (
 # Optional classical prep first (not auto-applied before loaders).
 # session.impute(strategy="median").scale(method="standard")
 
-session.make_torch_loaders(batch_size=4, normalize=True, seed=42)
-session.fit_torch(
+session.dl.make_loaders(batch_size=4, normalize=True, seed=42)
+session.dl.fit(
     TinyMLP(),
     epochs=6,
     learning_rate=5e-3,
@@ -74,14 +74,14 @@ session.fit_torch(
 )
 
 # Prefer validation while iterating; reserve test for a fixed recipe.
-validation = session.evaluate_torch(partition="validation")
-test = session.evaluate_torch(partition="test")
+validation = session.dl.evaluate(partition="validation")
+test = session.dl.evaluate(partition="test")
 print(test.metrics)
 
-curve = session.torch_training_curve()
+curve = session.dl.training_curve()
 print(curve.disclosures)
 
-bundle = session.save_torch_bundle("artifacts/torch_bundle")
+bundle = session.dl.save_bundle("artifacts/torch_bundle")
 ```
 
 Reload and optionally resume:
@@ -97,17 +97,17 @@ restored = (
         random_state=42,
     )
 )
-restored.load_torch_bundle(bundle, TinyMLP(), map_location="cpu")
-restored.make_torch_loaders(batch_size=4, normalize=True, seed=42)
-restored.evaluate_torch(partition="test")
+restored.dl.load_bundle(bundle, TinyMLP(), map_location="cpu")
+restored.dl.make_loaders(batch_size=4, normalize=True, seed=42)
+restored.dl.evaluate(partition="test")
 # Additional epochs; optimizer/scheduler state restored when compatible.
-restored.fit_torch(TinyMLP(), epochs=2, resume=True, device="cpu")
+restored.dl.fit(TinyMLP(), epochs=2, resume=True, device="cpu")
 ```
 
 Explain catalog coverage:
 
 ```python
-before = session.explain("fit_torch", moment="before")
+before = session.explain("session.dl.fit", moment="before")
 print(before.operation, before.prerequisites)
 ```
 
@@ -124,22 +124,22 @@ Layout: `<path>/meta.json` + `<path>/trainer.pt`.
 
 ```python
 # Tabular happy path: omit module to use the built-in MLP
-session.make_torch_loaders()
-session.fit_torch(epochs=5, device="auto")  # builds TabularMLP from the contract
+session.dl.make_loaders()
+session.dl.fit(epochs=5, device="auto")  # builds TabularMLP from the contract
 
 # Fold-local CV (not nested hyperparameter search)
-cv = session.cross_validate_torch(n_folds=3, epochs=2)
+cv = session.dl.cross_validate(n_folds=3, epochs=2)
 
 # Text / sequence modality
-text_session.make_text_torch_loaders(text_column="text")
-text_session.fit_torch(epochs=3)  # builds embedding text classifier
+text_session.dl.make_text_loaders(text_column="text")
+text_session.dl.fit(epochs=3)  # builds embedding text classifier
 ```
 
-## Nested search and multimodal (Pass G)
+## Nested search and multimodal
 
 ```python
 # Nested Torch HPO (outer estimate after inner search; fold-local normalize)
-nested = session.nested_cv_torch(
+nested = session.dl.nested_cv(
     param_grid={"learning_rate": [1e-3, 1e-2], "hidden": [(32,), (64, 32)]},
     outer_cv=3,
     inner_cv=2,
@@ -155,16 +155,16 @@ mm = (
     .set_roles({"x1": "feature", "text": "feature", "y": "target"})
     .split(test_size=0.2, validation_size=0.2, stratify=True, random_state=0)
 )
-mm_bundle = mm.make_multimodal_torch_loaders(text_column="text")
-# mm.fit_torch(epochs=5, mixed_precision=False)  # concat built-in; AMP is CUDA-only
-mm.fit_torch(
+mm_bundle = mm.dl.make_multimodal_loaders(text_column="text")
+# mm.dl.fit(epochs=5, mixed_precision=False)  # concat built-in; AMP is CUDA-only
+mm.dl.fit(
     build_multimodal_fusion(mm_bundle.multimodal_contract, fusion="gated"),
     epochs=5,
     mixed_precision=False,
 )
-mm.export_torch("model.ts.pt", format="torchscript")
-# Restore frozen multimodal_preprocess after load_torch_bundle:
-# mm.make_multimodal_torch_loaders(text_column="text", use_saved_preprocess=True)
+mm.dl.export("model.ts.pt", format="torchscript")
+# Restore frozen multimodal_preprocess after session.dl.load_bundle:
+# mm.dl.make_multimodal_loaders(text_column="text", use_saved_preprocess=True)
 
 # Image multimodal (path or array column ⊕ tabular and/or text)
 img = (
@@ -172,10 +172,10 @@ img = (
     .set_roles({"x1": "feature", "image": "feature", "y": "target"})
     .split(test_size=0.2, validation_size=0.2, stratify=True, random_state=0)
 )
-img.make_image_multimodal_torch_loaders(
+img.dl.make_image_loaders(
     image_column="image", image_size=(32, 32), normalize_images=True
 )
-img.fit_torch(epochs=5, device="cpu")
+img.dl.fit(epochs=5, device="cpu")
 
 # Audio multimodal (path or waveform column ⊕ tabular and/or text and/or image)
 aud = (
@@ -183,13 +183,13 @@ aud = (
     .set_roles({"x1": "feature", "audio": "feature", "y": "target"})
     .split(test_size=0.2, validation_size=0.2, stratify=True, random_state=0)
 )
-aud.make_audio_multimodal_torch_loaders(
+aud.dl.make_audio_loaders(
     audio_column="audio",
     audio_sample_rate=16000,
     audio_max_samples=16000,
     normalize_audio=True,
 )
-aud.fit_torch(epochs=5, device="cpu")
+aud.dl.fit(epochs=5, device="cpu")
 
 # Speech ASR (stub is CI-safe) + classify finetune-lite / domain adapt
 # pip install "buildml[speech]" for transformers Whisper-class backend
@@ -198,32 +198,32 @@ speech = (
     .set_roles({"audio": "feature", "y": "target"})
     .split(test_size=0.2, validation_size=0.2, stratify=True, random_state=0)
 )
-asr = speech.transcribe_speech(audio_column="audio", backend="stub")
-# speech.evaluate_asr(references=[...])  # WER/CER; reuses last ASR texts if hypotheses omitted
-speech.domain_adapt_speech_torch(epochs=5, device="cpu", audio_column="audio")
-# speech.refuse_speech_foundation_pretrain()  # honest refuse for FM-from-scratch asks
+asr = speech.dl.transcribe(audio_column="audio", backend="stub")
+# speech.dl.evaluate_asr(references=[...])  # WER/CER; reuses last ASR texts if hypotheses omitted
+speech.dl.domain_adapt_speech(epochs=5, device="cpu", audio_column="audio")
+# speech.dl.refuse_speech_pretrain()  # honest refuse for FM-from-scratch asks
 
 # Pretrained backbone hooks (mock weights = CI-safe; not a full zoo product)
 # pip install "buildml[pretrained]"  # vision+speech extras
 # from buildml.dl.zoo import list_pretrained_backbones
 # print(list_pretrained_backbones())  # resnet34/50, vit_b_32, hubert_base, whisper_base_encoder, ...
-# backbone = session.load_pretrained_backbone("vision", "resnet34", weights="mock")
-# session.attach_backbone_head(n_classes=2, freeze_backbone=True)
+# backbone = session.dl.load_backbone("vision", "resnet34", weights="mock")
+# session.dl.attach_head(n_classes=2, freeze_backbone=True)
 
 # Multi-node DDP (launch under torchrun; each process runs this)
 # torchrun --nnodes=2 --nproc_per_node=2 --rdzv_endpoint=$MASTER_ADDR:$MASTER_PORT train.py
-# session.fit_torch_ddp(module_factory, multi_node=True, epochs=5)
-# session.emit_k8s_ddp_job("job.yaml", nnodes=2, include_configmap=True)  # ConfigMap+GPU template
-# session.emit_k8s_serve_deployment("serve.yaml")  # Deployment+Service template
+# session.dl.fit_ddp(module_factory, multi_node=True, epochs=5)
+# session.dl.emit_k8s_ddp("job.yaml", nnodes=2, include_configmap=True)  # ConfigMap+GPU template
+# session.dl.emit_k8s_serve("serve.yaml")  # Deployment+Service template
 
 # Managed local serving (pip install "buildml[serve]")
 # classical.save_pipeline("bundle/")
-# classical.serve_bundle("bundle/", kind="pipeline", api_keys=["dev-key"])
+# classical.dl.serve("bundle/", kind="pipeline", api_keys=["dev-key"])
 # or: buildml-serve --bundle bundle/ --kind pipeline --api-key dev-key
 # Routes: /health, /metadata, /predict, /predict/batch (+ optional --ssl-certfile/--ssl-keyfile)
 # Pack helpers (operator runs TorchServe / trtexec):
-# session.export_torch("model.ts.pt"); session.pack_torchserve("torchserve_dir/")
-# session.export_torch("model.onnx", format="onnx"); session.prepare_tensorrt_export("trt_plan/")
+# session.dl.export("model.ts.pt"); session.dl.pack_torchserve("torchserve_dir/")
+# session.dl.export("model.onnx", format="onnx"); session.dl.prepare_tensorrt("trt_plan/")
 # compose example: deploy/torchserve/docker-compose.example.yml
 ```
 
@@ -236,32 +236,32 @@ speech.domain_adapt_speech_torch(epochs=5, device="cpu", audio_column="audio")
   classifier, and fusion (small CNN image branch + small 1D-CNN audio branch)
   cover the happy path; custom `nn.Module` still works. Audio multimodal fusion
   is honest alpha: not a speech FM. For ASR / speech classify finetune-lite see
-  `transcribe_speech` / `fit_speech_torch` (`buildml[speech]`). Short clips are
+  `session.dl.transcribe` / `session.dl.fit_speech` (`buildml[speech]`). Short clips are
   repeat-padded to `audio_max_samples` so global pooling stays informative
   without a lengths tensor in forward/export. Trainer bundles may store frozen
-  multimodal preprocess meta; `load_torch_bundle` restores it for inspection but
+  multimodal preprocess meta; `session.dl.load_bundle` restores it for inspection but
   does not rebuild loaders: use `use_saved_preprocess=True` or `preprocess=` on
-  `make_multimodal_torch_loaders`. Gated late fusion is available via
+  `session.dl.make_multimodal_loaders`. Gated late fusion is available via
   `build_multimodal_fusion(..., fusion="gated")`.
 - **Materialization.** Partition rows become tensors via the current Session
   frame (Pandas/NumPy bridge). No Polars/DuckDB zero-copy into DataLoaders.
 - **Classical plans.** Session impute/encode/scale mutate the frame and are
   disclosed on loaders; `apply_plans=True` re-applies fitted plans (no refit).
-  Fold-local classical plan refit is not automatic inside `cross_validate_torch`.
-- **CV + nested search.** Use `cross_validate_torch` for fold-local estimates and
-  `nested_cv_torch` / `search_torch` for hyperparameter selection. Do not tune
+  Fold-local classical plan refit is not automatic inside `session.dl.cross_validate`.
+- **CV + nested search.** Use `session.dl.cross_validate` for fold-local estimates and
+  `session.dl.nested_cv` / `session.dl.search` for hyperparameter selection. Do not tune
   early stop on test.
-- **DDP / export / serve / packs.** `fit_torch_ddp` supports single-node spawn and
-  torchrun multi-node (`multi_node=True`). `emit_k8s_ddp_job` /
-  `emit_k8s_serve_deployment` write Job/Deployment YAML templates only (not live
-  multi-cluster orchestration). `export_torch` is an alpha TorchScript/ONNX
-  escape hatch; `pack_torchserve` / `prepare_tensorrt_export` write
+- **DDP / export / serve / packs.** `session.dl.fit_ddp` supports single-node spawn and
+  torchrun multi-node (`multi_node=True`). `session.dl.emit_k8s_ddp` /
+  `session.dl.emit_k8s_serve` write Job/Deployment YAML templates only (not live
+  multi-cluster orchestration). `session.dl.export` is an alpha TorchScript/ONNX
+  escape hatch; `session.dl.pack_torchserve` / `session.dl.prepare_tensorrt` write
   operator-owned recipes (not a cloud). Managed local serving is
-  `buildml[serve]` / `Session.serve_bundle` / `buildml-serve` (localhost;
+  `buildml[serve]` / `session.dl.serve` / `buildml-serve` (localhost;
   `/metadata` + `/predict/batch`; optional API-key + local SSL: still not
   managed IAM).
 - **Pretrained hooks vs FM pretrain.** `list_pretrained_backbones` /
-  `load_pretrained_backbone` / `attach_backbone_head` cover curated
+  `session.dl.load_backbone` / `session.dl.attach_head` cover curated
   ResNet/ViT/Wav2Vec/HuBERT/Whisper-encoder hooks (`weights=mock` in CI).
   BuildML does **not** train Whisper-scale foundation models from scratch.
 - **RAG / AI** are separate domains (`rag_*`, `ai_*`) that can call Torch tools.

@@ -56,12 +56,19 @@ def dl_capability_matrix() -> dict[str, Any]:
                 "available": torch_ok,
                 "extra": "torch",
                 "asr_backends": list(SPEECH_BACKENDS),
-                "default_asr_backend": "stub",
+                "default_asr_backend": "transformers" if speech_ok else "stub",
+                "default_asr_backend_policy": (
+                    "Prefer transformers when the speech stack is installed; "
+                    "fall back to deterministic stub for CI / absent extras. "
+                    "Stub use is disclosed on SpeechTranscribeResult."
+                ),
                 "transformers_asr_available": speech_ok,
                 "entrypoints": ["transcribe_from_dataset", "evaluate_asr", "fit_torch"],
                 "notes": (
-                    "Default ASR backend is deterministic stub (offline tests). "
-                    "Real Whisper-class ASR requires buildml[speech] + transformers."
+                    "Default ASR backend prefers transformers when "
+                    "buildml[speech] / transformers is available; otherwise stub. "
+                    "Pass backend='stub' explicitly for offline CI. "
+                    "Stub texts are fingerprints, not speech."
                 ),
             },
             "text": {
@@ -97,10 +104,24 @@ def dl_capability_matrix() -> dict[str, Any]:
             "dl": "pip install 'buildml[dl]'  # alias extra for torch stack",
             "speech": "pip install 'buildml[speech]'  # Whisper-class ASR backend",
         },
+        "serving": {
+            "entrypoint": "buildml-serve / session.dl.serve / ServeConfig",
+            "extra": "serve",
+            "auth": ["api_key_bearer", "http_basic"],
+            "docs_default_when_auth": "closed",
+            "dockerfile": "deploy/serve/Dockerfile",
+            "k8s_template": "deploy/k8s/serve-deployment.example.yaml",
+            "notes": (
+                "Local managed FastAPI serve with trust gates, optional API-key/"
+                "Basic auth, ServeConfig YAML/env/CLI, and operator-owned Docker/K8s "
+                "recipes. Not a managed cloud IAM / multi-cluster product."
+            ),
+        },
         "non_goals": [
             "Foundation-model pretraining from scratch (refuse_foundation_model_pretrain)",
             "Full Hugging Face hub mirror / arbitrary checkpoint zoo",
-            "Production MLOps serving stack (only packaging helpers disclosed)",
+            "Managed cloud IAM / multi-cluster MLOps control plane "
+            "(first-party serve Dockerfile + K8s templates are operator-owned recipes)",
             "Automatic mixed-precision product defaults",
         ],
         "torch_present": torch_ok,

@@ -54,7 +54,7 @@ def main() -> None:
         .group_split(test_size=0.25, validation_size=0.15, random_state=0)
     )
 
-    fit = session.fit_ranker(
+    fit = session.ranking.fit(
         method="pointwise",
         query_column="query_id",
         item_column="item_id",
@@ -63,14 +63,14 @@ def main() -> None:
     )
     print("fit", fit.to_dict())
 
-    ranked = session.rank(partition="test", k=5)
+    ranked = session.ranking.rank(partition="test", k=5)
     print("rank", ranked.to_dict())
 
-    ev = session.evaluate_ranker(partition="test", k=5)
+    ev = session.ranking.evaluate(partition="test", k=5)
     print("eval", ev.metrics)
 
     out = Path("artifacts/ranker_demo_bundle")
-    session.save_ranker_bundle(out)
+    session.ranking.save_bundle(out)
     other = (
         Session.ingest(frame)
         .set_roles(
@@ -85,8 +85,8 @@ def main() -> None:
         )
         .group_split(test_size=0.25, validation_size=0.15, random_state=0)
     )
-    other.load_ranker_bundle(out, trusted=True)
-    print("reloaded eval", other.evaluate_ranker(partition="test", k=5).metrics)
+    other.ranking.load_bundle(out, trusted=True)
+    print("reloaded eval", other.ranking.evaluate(partition="test", k=5).metrics)
 
 
 if __name__ == "__main__":

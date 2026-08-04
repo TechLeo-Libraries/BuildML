@@ -1,7 +1,8 @@
-"""License-clear synthetic / sklearn datasets for proof projects.
+"""License-clear synthetic and real public datasets for proof projects.
 
-Real OpenML / remote downloads can be added later; synthetics here are
-deterministic, documented, and free of proprietary licensing risk.
+Synthetics here are deterministic and free of proprietary licensing risk.
+Real loaders wrap sklearn built-ins (offline) and optional OpenML fetches
+(network / cache) with explicit provenance metadata for results.json.
 """
 
 from __future__ import annotations
@@ -10,6 +11,33 @@ from typing import Any
 
 import numpy as np
 import pandas as pd
+
+
+def _real_meta(
+    *,
+    name: str,
+    source: str,
+    license_provenance: str,
+    n_rows: int,
+    n_features: int,
+    task: str,
+    **extra: Any,
+) -> dict[str, Any]:
+    """Standard provenance envelope for REAL_PUBLIC_DATASET proofs."""
+    meta: dict[str, Any] = {
+        "name": name,
+        "dataset_identity": name,
+        "source": source,
+        "license": license_provenance,
+        "provenance": license_provenance,
+        "n_rows": int(n_rows),
+        "n_features": int(n_features),
+        "task": task,
+        "real_public_dataset": True,
+        "evidence_tier": "REAL_PUBLIC_DATASET",
+    }
+    meta.update(extra)
+    return meta
 
 
 def load_credit_approval_synthetic(
@@ -34,9 +62,10 @@ def load_credit_approval_synthetic(
         - 2.5 * debt_ratio
         + 0.08 * employment_years
         + np.array([region_bias[r] for r in region])
-        + rng.normal(0, 0.35, size=n)
+        + rng.normal(0, 0.55, size=n)
     )
-    approved = (1 / (1 + np.exp(-logit)) > 0.5).astype(int)
+    # Bernoulli labels (not hard-threshold) leave irreducible classification error.
+    approved = (rng.random(n) < 1 / (1 + np.exp(-logit))).astype(int)
     frame = pd.DataFrame(
         {
             "age": age,
@@ -219,16 +248,17 @@ def load_customer_segments_synthetic(
     rng = np.random.default_rng(seed)
     centers = np.array(
         [
-            [20, 2, 50],
-            [80, 8, 200],
-            [40, 12, 30],
-            [60, 4, 120],
+            [30, 3, 70],
+            [70, 7, 160],
+            [45, 9, 55],
+            [55, 5, 110],
         ],
         dtype=float,
     )
     frames = []
     for i, center in enumerate(centers):
-        block = rng.normal(center, [8, 1.5, 25], size=(n_per, 3))
+        # Wider within-cluster spread so ARI/NMI cannot trivially hit ~1.0.
+        block = rng.normal(center, [18, 3.5, 45], size=(n_per, 3))
         frames.append(
             pd.DataFrame(
                 {
@@ -240,6 +270,16 @@ def load_customer_segments_synthetic(
             )
         )
     frame = pd.concat(frames, ignore_index=True)
+    # Boundary / mixed-membership rows blur segment edges.
+    n_boundary = max(1, int(0.12 * len(frame)))
+    boundary_idx = rng.choice(len(frame), size=n_boundary, replace=False)
+    for idx in boundary_idx:
+        a, b = rng.choice(4, size=2, replace=False)
+        blend = 0.5 * centers[a] + 0.5 * centers[b] + rng.normal(0, [6, 1.2, 15], size=3)
+        frame.loc[idx, "recency_days"] = float(np.clip(blend[0], 1, 365))
+        frame.loc[idx, "frequency"] = float(max(blend[1], 0))
+        frame.loc[idx, "monetary"] = float(max(blend[2], 1))
+        frame.loc[idx, "true_segment"] = int(a if rng.random() < 0.5 else b)
     frame = frame.sample(frac=1.0, random_state=seed).reset_index(drop=True)
     meta = {
         "name": "customer_segments_synthetic",
@@ -585,9 +625,10 @@ def load_mortgage_default_synthetic(
         + 0.12 * (rate - 5.5)
         + 0.02 * (term_years - 20)
         + np.array([type_bias[t] for t in property_type])
-        + rng.normal(0, 0.4, size=n)
+        + rng.normal(0, 0.6, size=n)
     )
-    defaulted = (1 / (1 + np.exp(-logit)) > 0.5).astype(int)
+    # Bernoulli labels leave irreducible error vs hard-threshold synthetic labels.
+    defaulted = (rng.random(n) < 1 / (1 + np.exp(-logit))).astype(int)
     frame = pd.DataFrame(
         {
             "ltv": ltv,
@@ -661,37 +702,47 @@ def load_payment_rail_anomaly_synthetic(
 ) -> tuple[pd.DataFrame, dict[str, Any]]:
     """Payment-rail anomaly table (ACH / card authorization style)."""
     rng = np.random.default_rng(seed)
+    normal_hours = rng.integers(0, 24, n_normal)
+    attack_hours = rng.integers(0, 24, n_attack)  # overlap hours with normals
     normal = pd.DataFrame(
         {
             "amount_z": rng.normal(0, 1, n_normal),
-            "hour_sin": np.sin(2 * np.pi * rng.integers(0, 24, n_normal) / 24),
-            "hour_cos": np.cos(2 * np.pi * rng.integers(0, 24, n_normal) / 24),
+            "hour_sin": np.sin(2 * np.pi * normal_hours / 24),
+            "hour_cos": np.cos(2 * np.pi * normal_hours / 24),
             "merchant_risk": rng.beta(2, 8, n_normal),
             "device_age_days": rng.exponential(180, n_normal).clip(1, 2000),
             "velocity_1h": rng.poisson(2, n_normal).astype(float),
             "is_attack": np.zeros(n_normal, dtype=int),
         }
     )
+    # Milder attack shifts + shared hour support so detectors leave residual error.
     attack = pd.DataFrame(
         {
-            "amount_z": rng.normal(2.5, 0.8, n_attack),
-            "hour_sin": np.sin(2 * np.pi * rng.integers(0, 6, n_attack) / 24),
-            "hour_cos": np.cos(2 * np.pi * rng.integers(0, 6, n_attack) / 24),
-            "merchant_risk": rng.beta(5, 2, n_attack),
-            "device_age_days": rng.exponential(20, n_attack).clip(1, 200),
-            "velocity_1h": rng.poisson(12, n_attack).astype(float),
+            "amount_z": rng.normal(1.2, 1.0, n_attack),
+            "hour_sin": np.sin(2 * np.pi * attack_hours / 24),
+            "hour_cos": np.cos(2 * np.pi * attack_hours / 24),
+            "merchant_risk": rng.beta(3.5, 4.0, n_attack),
+            "device_age_days": rng.exponential(90, n_attack).clip(1, 1500),
+            "velocity_1h": rng.poisson(5, n_attack).astype(float),
             "is_attack": np.ones(n_attack, dtype=int),
         }
     )
     frame = pd.concat([normal, attack], ignore_index=True)
+    # Label noise: flipped authorizations so perfect F1/AP/ROC is not theater.
+    flip_n = max(1, int(0.04 * len(frame)))
+    flip_idx = rng.choice(len(frame), size=flip_n, replace=False)
+    frame.loc[flip_idx, "is_attack"] = 1 - frame.loc[flip_idx, "is_attack"].to_numpy()
     frame = frame.sample(frac=1.0, random_state=seed).reset_index(drop=True)
     meta = {
         "name": "payment_rail_anomaly_synthetic",
         "license": "synthetic/public-domain (generated in-repo)",
         "n_rows": int(len(frame)),
-        "n_attack": int(n_attack),
+        "n_attack": int((frame["is_attack"] == 1).sum()),
         "target": "is_attack",
-        "notes": "Synthetic payment authorizations; not a card-network extract.",
+        "notes": (
+            "Synthetic payment authorizations with overlapping attack margins "
+            "and ~4% label noise; not a card-network extract."
+        ),
     }
     return frame, meta
 
@@ -714,25 +765,32 @@ def load_iot_sensor_anomaly_synthetic(
             "is_fault": np.zeros(n_normal, dtype=int),
         }
     )
+    # Milder fault shifts so unsupervised detectors leave residual error.
     fault = pd.DataFrame(
         {
-            "temp_c": rng.normal(72, 4, n_fault),
-            "vibration": rng.normal(1.1, 0.2, n_fault),
-            "current_a": rng.normal(18, 2.0, n_fault),
-            "pressure": rng.normal(95, 3, n_fault),
-            "rpm": rng.normal(1650, 80, n_fault),
+            "temp_c": rng.normal(62, 4, n_fault),
+            "vibration": rng.normal(0.65, 0.15, n_fault),
+            "current_a": rng.normal(14.5, 1.8, n_fault),
+            "pressure": rng.normal(98, 2.5, n_fault),
+            "rpm": rng.normal(1740, 70, n_fault),
             "is_fault": np.ones(n_fault, dtype=int),
         }
     )
     frame = pd.concat([normal, fault], ignore_index=True)
+    flip_n = max(1, int(0.04 * len(frame)))
+    flip_idx = rng.choice(len(frame), size=flip_n, replace=False)
+    frame.loc[flip_idx, "is_fault"] = 1 - frame.loc[flip_idx, "is_fault"].to_numpy()
     frame = frame.sample(frac=1.0, random_state=seed).reset_index(drop=True)
     meta = {
         "name": "iot_sensor_anomaly_synthetic",
         "license": "synthetic/public-domain (generated in-repo)",
         "n_rows": int(len(frame)),
-        "n_fault": int(n_fault),
+        "n_fault": int((frame["is_fault"] == 1).sum()),
         "target": "is_fault",
-        "notes": "Synthetic industrial sensors; not a real SCADA extract.",
+        "notes": (
+            "Synthetic industrial sensors with overlapping fault margins and "
+            "~4% label noise; not a real SCADA extract."
+        ),
     }
     return frame, meta
 
@@ -881,4 +939,341 @@ def load_ad_ltr_judgments_synthetic(
         "n_rows": int(len(frame)),
         "notes": "Synthetic ad judgments; not a real auction log.",
     }
+    return frame, meta
+
+
+# ---------------------------------------------------------------------------
+# Real public datasets (sklearn built-ins offline; OpenML optional / cached)
+# ---------------------------------------------------------------------------
+
+
+def load_sklearn_breast_cancer() -> tuple[pd.DataFrame, dict[str, Any]]:
+    """Wisconsin breast cancer (sklearn bundled; offline, no network)."""
+    from sklearn.datasets import load_breast_cancer
+
+    bunch = load_breast_cancer(as_frame=True)
+    frame = bunch.frame.copy()
+    # sklearn uses "target"; rename for proof clarity.
+    frame = frame.rename(columns={"target": "malignant"})
+    feature_cols = [c for c in frame.columns if c != "malignant"]
+    # Sanitize spaces in feature names for stable Session column keys.
+    rename = {c: c.replace(" ", "_") for c in feature_cols}
+    frame = frame.rename(columns=rename)
+    feature_cols = [rename[c] for c in feature_cols]
+    meta = _real_meta(
+        name="sklearn_breast_cancer",
+        source=(
+            "sklearn.datasets.load_breast_cancer "
+            "(UCI ML Repository: Breast Cancer Wisconsin Diagnostic)"
+        ),
+        license_provenance=(
+            "UCI / sklearn redistributed sample; see sklearn.datasets docs "
+            "and UCI Breast Cancer Wisconsin (Diagnostic) citation. "
+            "Non-commercial research redistributed with sklearn."
+        ),
+        n_rows=int(len(frame)),
+        n_features=int(len(feature_cols)),
+        task="binary_classification",
+        target="malignant",
+        feature_columns=feature_cols,
+        openml=False,
+        offline_safe=True,
+        citation=(
+            "Wolberg, Street, Mangasarian — Breast Cancer Wisconsin (Diagnostic), "
+            "UCI Machine Learning Repository."
+        ),
+    )
+    return frame, meta
+
+
+def load_sklearn_wine() -> tuple[pd.DataFrame, dict[str, Any]]:
+    """Wine recognition (sklearn bundled; offline) with cultivar labels."""
+    from sklearn.datasets import load_wine
+
+    bunch = load_wine(as_frame=True)
+    frame = bunch.frame.copy()
+    frame = frame.rename(columns={"target": "cultivar"})
+    feature_cols = [c for c in frame.columns if c != "cultivar"]
+    meta = _real_meta(
+        name="sklearn_wine",
+        source="sklearn.datasets.load_wine (UCI Wine recognition data)",
+        license_provenance=(
+            "UCI / sklearn redistributed sample; see sklearn.datasets docs "
+            "and UCI Wine dataset citation."
+        ),
+        n_rows=int(len(frame)),
+        n_features=int(len(feature_cols)),
+        task="multiclass_classification_or_clustering",
+        target="cultivar",
+        external_label="cultivar",
+        feature_columns=feature_cols,
+        n_classes=int(frame["cultivar"].nunique()),
+        openml=False,
+        offline_safe=True,
+        citation="Aeberhard & Forina — Wine, UCI Machine Learning Repository.",
+    )
+    return frame, meta
+
+
+def load_sklearn_diabetes() -> tuple[pd.DataFrame, dict[str, Any]]:
+    """Diabetes disease progression regression (sklearn bundled; offline)."""
+    from sklearn.datasets import load_diabetes
+
+    bunch = load_diabetes(as_frame=True)
+    frame = bunch.frame.copy()
+    frame = frame.rename(columns={"target": "progression"})
+    feature_cols = [c for c in frame.columns if c != "progression"]
+    meta = _real_meta(
+        name="sklearn_diabetes",
+        source="sklearn.datasets.load_diabetes (Efron et al. diabetes study)",
+        license_provenance=(
+            "sklearn redistributed sample of the diabetes dataset used in "
+            "Efron et al. (2004) Least Angle Regression; see sklearn.datasets docs."
+        ),
+        n_rows=int(len(frame)),
+        n_features=int(len(feature_cols)),
+        task="regression",
+        target="progression",
+        feature_columns=feature_cols,
+        openml=False,
+        offline_safe=True,
+        citation=(
+            "Efron, Hastie, Johnstone, Tibshirani (2004), Least Angle Regression, "
+            "Annals of Statistics."
+        ),
+    )
+    return frame, meta
+
+
+def load_sklearn_digits_subset(
+    *,
+    n_class: int = 5,
+    max_rows: int = 400,
+    seed: int = 0,
+) -> tuple[pd.DataFrame, dict[str, Any]]:
+    """Digits image features (sklearn bundled subset; offline, CI-friendly)."""
+    from sklearn.datasets import load_digits
+
+    bunch = load_digits(n_class=n_class, as_frame=True)
+    frame = bunch.frame.copy()
+    frame = frame.rename(columns={"target": "digit"})
+    if len(frame) > max_rows:
+        frame = frame.sample(n=max_rows, random_state=seed).reset_index(drop=True)
+    feature_cols = [c for c in frame.columns if c != "digit"]
+    meta = _real_meta(
+        name="sklearn_digits_subset",
+        source=(
+            f"sklearn.datasets.load_digits(n_class={n_class}) "
+            f"subsampled to max_rows={max_rows}"
+        ),
+        license_provenance=(
+            "UCI / sklearn redistributed Optical Recognition of Handwritten Digits; "
+            "see sklearn.datasets docs."
+        ),
+        n_rows=int(len(frame)),
+        n_features=int(len(feature_cols)),
+        task="multiclass_classification",
+        target="digit",
+        feature_columns=feature_cols,
+        n_class=int(n_class),
+        openml=False,
+        offline_safe=True,
+    )
+    return frame, meta
+
+
+def load_openml_adult(
+    *,
+    data_id: int = 1590,
+    as_frame: bool = True,
+) -> tuple[pd.DataFrame, dict[str, Any]]:
+    """UCI Adult income via OpenML (cached after first fetch; may need network).
+
+    Raises
+    ------
+    RuntimeError
+        When OpenML/sklearn cannot load the dataset (offline, no cache, etc.).
+    """
+    try:
+        from sklearn.datasets import fetch_openml
+    except Exception as exc:  # noqa: BLE001
+        raise RuntimeError(f"sklearn.fetch_openml unavailable: {exc}") from exc
+    try:
+        bunch = fetch_openml(
+            data_id=data_id,
+            as_frame=as_frame,
+            parser="auto",
+        )
+    except Exception as exc:  # noqa: BLE001
+        raise RuntimeError(
+            "OpenML Adult (data_id=1590) unavailable "
+            f"(network/cache failure): {type(exc).__name__}: {exc}"
+        ) from exc
+    frame = bunch.frame.copy() if hasattr(bunch, "frame") else pd.DataFrame(bunch.data)
+    # Canonical Adult target / sensitive names across OpenML versions.
+    target_col = "class" if "class" in frame.columns else "income"
+    if target_col not in frame.columns and getattr(bunch, "target", None) is not None:
+        frame[target_col] = bunch.target
+    if target_col not in frame.columns:
+        raise RuntimeError("Adult frame missing target column 'class'/'income'.")
+    if "sex" not in frame.columns:
+        raise RuntimeError("Adult frame missing sensitive column 'sex'.")
+    # Drop rows with string missing markers common in Adult.
+    frame = frame.replace("?", np.nan).dropna(axis=0).reset_index(drop=True)
+    y_raw = frame[target_col].astype(str).str.strip()
+    # Positive class: >50K income.
+    frame["income_gt_50k"] = (y_raw.str.contains(">50", regex=False)).astype(int)
+    frame = frame.drop(columns=[target_col])
+    sensitive = "sex"
+    feature_cols = [
+        c for c in frame.columns if c not in {"income_gt_50k", sensitive}
+    ]
+    meta = _real_meta(
+        name="openml_adult_1590",
+        source=(
+            f"sklearn.datasets.fetch_openml(data_id={data_id}) "
+            "(UCI Adult / Census Income)"
+        ),
+        license_provenance=(
+            "UCI Adult (Census Income) via OpenML data_id=1590; "
+            "public research redistribution. Cite UCI / Kohavi & Becker."
+        ),
+        n_rows=int(len(frame)),
+        n_features=int(len(feature_cols)),
+        task="binary_classification",
+        target="income_gt_50k",
+        sensitive_column=sensitive,
+        feature_columns=feature_cols,
+        openml=True,
+        openml_data_id=int(data_id),
+        offline_safe=False,
+        notes=(
+            "Requires OpenML cache or network on first fetch. "
+            "Proofs should fall back when load fails."
+        ),
+    )
+    return frame, meta
+
+
+def load_openml_credit_g() -> tuple[pd.DataFrame, dict[str, Any]]:
+    """German Credit (credit-g) via OpenML; sensitive stand-in from personal_status."""
+    try:
+        from sklearn.datasets import fetch_openml
+    except Exception as exc:  # noqa: BLE001
+        raise RuntimeError(f"sklearn.fetch_openml unavailable: {exc}") from exc
+    try:
+        bunch = fetch_openml(name="credit-g", version=1, as_frame=True, parser="auto")
+    except Exception as exc:  # noqa: BLE001
+        raise RuntimeError(
+            "OpenML credit-g unavailable "
+            f"(network/cache failure): {type(exc).__name__}: {exc}"
+        ) from exc
+    frame = bunch.frame.copy()
+    target_col = "class" if "class" in frame.columns else str(bunch.target.name)
+    if target_col not in frame.columns:
+        frame[target_col] = bunch.target
+    frame = frame.replace("?", np.nan).dropna(axis=0).reset_index(drop=True)
+    # good/bad → binary (UCI/OpenML: 'good'/'bad' or 1=good, 2=bad)
+    y = frame[target_col].astype(str).str.lower().str.strip()
+    frame["credit_good"] = y.isin(["good", "1"]).astype(int)
+    # Map personal_status → binary sex proxy disclosed as OpenML attribute encoding.
+    if "personal_status" in frame.columns:
+        ps = frame["personal_status"].astype(str).str.lower()
+        # credit-g codes: male* / female*
+        frame["sex_standin"] = np.where(ps.str.contains("female"), "female", "male")
+        sensitive = "sex_standin"
+    elif "sex" in frame.columns:
+        frame["sex_standin"] = frame["sex"].astype(str)
+        sensitive = "sex_standin"
+    else:
+        raise RuntimeError("credit-g missing personal_status/sex for fairness stand-in.")
+    drop_cols = {target_col, "personal_status", "sex", "credit_good", sensitive}
+    feature_cols = [c for c in frame.columns if c not in drop_cols]
+    # Keep sensitive column; drop raw personal_status to avoid leakage into features.
+    keep = feature_cols + [sensitive, "credit_good"]
+    frame = frame[keep].copy()
+    meta = _real_meta(
+        name="openml_credit_g",
+        source="sklearn.datasets.fetch_openml(name='credit-g', version=1)",
+        license_provenance=(
+            "UCI Statlog German Credit via OpenML credit-g; public research "
+            "redistribution. Sensitive stand-in derived from personal_status."
+        ),
+        n_rows=int(len(frame)),
+        n_features=int(len(feature_cols)),
+        task="binary_classification",
+        target="credit_good",
+        sensitive_column=sensitive,
+        feature_columns=feature_cols,
+        openml=True,
+        offline_safe=False,
+        notes=(
+            "sex_standin is derived from OpenML personal_status encoding "
+            "(male*/female*); observational fairness only."
+        ),
+    )
+    return frame, meta
+
+
+def load_breast_cancer_fairness_proxy() -> tuple[pd.DataFrame, dict[str, Any]]:
+    """Offline fairness fallback: breast cancer + disclosed constructed proxy.
+
+    When Adult / credit-g cannot be fetched, CI still exercises the fairness
+    Session surface on a real sklearn table. The sensitive column is a
+    **constructed median-split proxy** on ``mean_radius`` (imaging intensity
+    stand-in) — **not** a protected demographic class. Disclosed in metadata.
+    """
+    frame, base = load_sklearn_breast_cancer()
+    radius = frame["mean_radius"].to_numpy(dtype=float)
+    median = float(np.median(radius))
+    frame = frame.copy()
+    frame["radius_intensity_proxy"] = np.where(radius >= median, "high", "low")
+    feature_cols = [
+        c
+        for c in frame.columns
+        if c not in {"malignant", "radius_intensity_proxy", "mean_radius"}
+    ]
+    # Exclude the proxy-generating feature from predictors (honest disclosure).
+    meta = _real_meta(
+        name="sklearn_breast_cancer_fairness_proxy",
+        source=str(base["source"]),
+        license_provenance=str(base["license"]),
+        n_rows=int(len(frame)),
+        n_features=int(len(feature_cols)),
+        task="binary_classification",
+        target="malignant",
+        sensitive_column="radius_intensity_proxy",
+        feature_columns=feature_cols,
+        openml=False,
+        offline_safe=True,
+        proxy_disclosure=(
+            "radius_intensity_proxy is a constructed median-split of mean_radius "
+            "for offline CI fairness API exercise only. It is NOT a legal "
+            "protected attribute. Prefer OpenML Adult / credit-g when available."
+        ),
+        fallback_reason="openml_adult_or_credit_g_unavailable",
+        notes=str(base.get("citation", "")),
+    )
+    return frame, meta
+
+
+def load_fairness_public_dataset() -> tuple[pd.DataFrame, dict[str, Any]]:
+    """Prefer Adult → credit-g → disclosed breast-cancer proxy (always offline-safe)."""
+    errors: list[str] = []
+    for loader, label in (
+        (load_openml_adult, "openml_adult"),
+        (load_openml_credit_g, "openml_credit_g"),
+    ):
+        try:
+            frame, meta = loader()
+            meta = dict(meta)
+            meta["loader_selected"] = label
+            meta["loader_errors"] = errors
+            return frame, meta
+        except Exception as exc:  # noqa: BLE001
+            errors.append(f"{label}: {type(exc).__name__}: {exc}")
+    frame, meta = load_breast_cancer_fairness_proxy()
+    meta = dict(meta)
+    meta["loader_selected"] = "breast_cancer_fairness_proxy"
+    meta["loader_errors"] = errors
     return frame, meta

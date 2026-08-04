@@ -15,12 +15,12 @@ bypassing escalation policy:
 
 ## Status
 
-`completed`: run `script.py`; see `results/summary.json` and stage JSONs.
+Run `script.py`. Outputs land under `results/` (summary and stage JSON)..
 
 ## How to run
 
 ```bash
-.\.venv\Scripts\python.exe proofs\pulse-support-copilot\script.py
+python proofs\pulse-support-copilot\script.py
 ```
 
 ## Leakage controls

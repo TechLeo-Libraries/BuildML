@@ -2,7 +2,7 @@
 
 ## Business purpose
 
-Route free-text support tickets to a queue using BuildML's Torch text path (`make_text_torch_loaders` + `fit_torch`), with an honest skip when Torch is unavailable.
+Route free-text support tickets to a queue using BuildML's Torch text path (`session.dl.make_text_loaders` + `session.dl.fit`), with an honest skip when Torch is unavailable.
 
 ## Data source
 
@@ -19,8 +19,8 @@ In-repo synthetic support tickets (`load_support_tickets_synthetic`): license-cl
 
 1. Probe `TORCH_STATUS`; if `skip_torch_paths` → `skipped_missing_extra`
 2. `Session.ingest` → `set_roles` → `split`
-3. `make_text_torch_loaders` → `fit_torch(epochs=3)` → `evaluate_torch`
-4. Fallback: `fit_text_classifier` if Torch text APIs raise after Torch is available
+3. `session.dl.make_text_loaders` → `session.dl.fit(epochs=3)` → `session.dl.evaluate`
+4. Fallback: `session.nlp.fit_classifier` if Torch text APIs raise after Torch is available
 
 ## Metrics
 
@@ -28,7 +28,7 @@ Primary holdout: accuracy / F1 (weighted) on test (see `results/results.json`).
 
 ## Industry comparison (Tier C)
 
-Filled: sklearn `TfidfVectorizer` + `LogisticRegression` twin via `baseline_industry.py` → `results/comparison.json`.
+Industry twin: sklearn `TfidfVectorizer` + `LogisticRegression` twin via `baseline_industry.py` → `results/comparison.json`.
 
 ## Limitations
 

@@ -55,7 +55,7 @@ FIT = Prerequisite(
 FIT_TORCH = Prerequisite(
     "fit_torch",
     "A Torch trainer has been fitted or a trainer bundle has been loaded.",
-    check_hint="Session.dl_train_result is not None.",
+    check_hint="session.dl.train_result is not None.",
 )
 TORCH = Prerequisite(
     "torch-extra",
@@ -66,12 +66,12 @@ TORCH = Prerequisite(
 RAG_CORPUS = Prerequisite(
     "rag-corpus",
     "A RAG corpus has been ingested on the Session.",
-    check_hint="Session history includes rag_ingest_corpus or an equivalent corpus handle.",
+    check_hint="Session history includes session.rag.ingest_corpus or an equivalent corpus handle.",
 )
 RAG_INDEX = Prerequisite(
     "rag-index",
     "A RAG index has been built or a RAG bundle has been loaded.",
-    check_hint="Session.rag_index_result is not None.",
+    check_hint="session.rag.index_result is not None.",
 )
 RAG = Prerequisite(
     "rag-extra",
@@ -94,7 +94,7 @@ DASHBOARD = Prerequisite(
 AI_PROVIDER = Prerequisite(
     "ai-provider",
     "An AI provider has been configured on the Session.",
-    check_hint="Session history includes ai_configure or Session._ai_provider is not None.",
+    check_hint="Session history includes session.ai.configure or Session._ai_provider is not None.",
 )
 AI = Prerequisite(
     "ai-extra",

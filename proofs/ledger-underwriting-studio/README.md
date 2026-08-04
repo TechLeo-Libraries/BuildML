@@ -12,7 +12,7 @@ only: with calibration diagnostics before the holdout confirm.
 
 1. Classical logistic scorer on stratified split
 2. AutoML search (FLAML / AutoGluon when present; else native): test never in search
-3. AIPW causal fit after `declare_causal_assumptions` (unconfoundedness + positivity)
+3. AIPW causal fit after `session.causal.declare_assumptions` (unconfoundedness + positivity)
 4. Threshold / knapsack policies selected on **validation only**
    (default `impute`/`encode`/`scale` skip `ignore`/`id` roles so
    `review_cost` / `app_id` stay usable for knapsack)
@@ -20,18 +20,18 @@ only: with calibration diagnostics before the holdout confirm.
 
 ## Status
 
-`completed`: run `script.py`; see `results/summary.json` and stage JSONs.
+Run `script.py`. Outputs land under `results/` (summary and stage JSON)..
 
 ## How to run
 
 ```bash
-.\.venv\Scripts\python.exe proofs\ledger-underwriting-studio\script.py
+python proofs\ledger-underwriting-studio\script.py
 ```
 
 ## Leakage controls (critical)
 
 - Stratified split before classical / AutoML / causal / decisions
-- Causal assumptions declared before `fit_causal` (required API gate)
+- Causal assumptions declared before `session.causal.fit` (required API gate)
 - Decision threshold **not** tuned on test: validation selection, test confirm
 - AutoML selection never uses the test partition
 - Calibration reported on validation then confirmed on test

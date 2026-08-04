@@ -45,8 +45,8 @@ ANOMALY_BEGINNER: dict[str, BeginnerLayer] = _index(
         example=(
             "session.split(test_size=0.2, random_state=0)",
             "session.scale(strategy='standard')",
-            "session.fit_anomaly(method='isolation_forest', random_state=0)",
-            "scores = session.score_anomalies(partition='test')",
+            "session.anomaly.fit(method='isolation_forest', random_state=0)",
+            "scores = session.anomaly.score(partition='test')",
         ),
         check=(
             "Which partition did your reported alert rate come from?",
@@ -93,8 +93,8 @@ ANOMALY_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "scores = session.score_anomalies(partition='validation')",
-            "report = session.evaluate_anomaly(partition='validation', alert_rate=0.02)",
+            "scores = session.anomaly.score(partition='validation')",
+            "report = session.anomaly.evaluate(partition='validation', alert_rate=0.02)",
             "print(report.threshold, report.alert_rate, report.n_flagged)",
         ),
         check=(
@@ -143,11 +143,11 @@ ANOMALY_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.fit_anomaly(",
+            "session.anomaly.fit(",
             "    method='one_class_svm', mode='novelty',",
             "    normal_only_filter='verified_clean == True',",
             ")",
-            "print(session.anomaly_plan.disclosures)   # records the normal-only subset",
+            "print(session.anomaly.plan.disclosures)   # records the normal-only subset",
         ),
         check=(
             "How was your 'clean' subset verified, and by whom?",
@@ -194,7 +194,7 @@ ANOMALY_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "report = session.evaluate_anomaly(",
+            "report = session.anomaly.evaluate(",
             "    partition='test', label_column='is_fraud', alert_rate=0.01,",
             ")",
             "print(report.pr_auc, report.precision_at_k, report.recall_at_k)",
@@ -211,7 +211,7 @@ ANOMALY_BEGINNER: dict[str, BeginnerLayer] = _index(
         "anomaly-eda-boundary",
         plain=(
             "BuildML has two things that both mention isolation forests, and they are not the same. The EDA "
-            "screen is a quick descriptive look at odd rows during exploration. `fit_anomaly` builds a real, "
+            "screen is a quick descriptive look at odd rows during exploration. `session.anomaly.fit` builds a real, "
             "leakage-safe, saveable detector with scoring, thresholds, and evaluation."
         ),
         analogy=(
@@ -221,7 +221,7 @@ ANOMALY_BEGINNER: dict[str, BeginnerLayer] = _index(
         steps=(
             "During exploration, read the EDA outlier screen to get a feel for which rows are unusual.",
             "Do not build a process on that screen: it is descriptive and partition-agnostic.",
-            "When you need an operational detector, call `fit_anomaly` after splitting.",
+            "When you need an operational detector, call `session.anomaly.fit` after splitting.",
             "That produces a plan you can score with, threshold, evaluate, and save.",
             "Keep the two mentally separate in your write-up so readers know which one produced a number.",
         ),
@@ -247,7 +247,7 @@ ANOMALY_BEGINNER: dict[str, BeginnerLayer] = _index(
             "report = session.eda()",
             "print(report.outliers.isolation_forest)   # descriptive screen",
             "session.split(test_size=0.2, random_state=0)",
-            "session.fit_anomaly(method='isolation_forest', random_state=0)   # the product path",
+            "session.anomaly.fit(method='isolation_forest', random_state=0)   # the product path",
         ),
         check=(
             "Which of the two produced the number you are about to present?",
@@ -270,8 +270,8 @@ ANOMALY_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         steps=(
             "Fit a detector so an anomaly plan exists.",
-            "Call `save_anomaly_bundle(path)`.",
-            "Reload with `load_anomaly_bundle(path)` in a fresh Session or a scheduled job.",
+            "Call `session.anomaly.save_bundle(path)`.",
+            "Reload with `session.anomaly.load_bundle(path)` in a fresh Session or a scheduled job.",
             "Confirm the feature columns still exist, then score.",
             "Keep your threshold with the bundle: a detector without its operating point is only half a system.",
         ),
@@ -294,9 +294,9 @@ ANOMALY_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.save_anomaly_bundle('artifacts/fraud-detector')",
-            "job = Session.ingest(today_frame).load_anomaly_bundle('artifacts/fraud-detector')",
-            "flags = job.score_anomalies()",
+            "session.anomaly.save_bundle('artifacts/fraud-detector')",
+            "job = Session.ingest(today_frame).anomaly.load_bundle('artifacts/fraud-detector')",
+            "flags = job.anomaly.score()",
         ),
         check=(
             "Where is your operating threshold recorded?",
@@ -319,7 +319,7 @@ ANOMALY_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         steps=(
             "Split first, then scale numeric features when distances matter.",
-            "Call fit_anomaly(method='isolation_forest') on train only.",
+            "Call session.anomaly.fit(method='isolation_forest') on train only.",
             "Score holdout rows and read alert_rate with a disclosed threshold.",
             "Compare against LOF or One-Class SVM on validation if ranking differs.",
         ),
@@ -336,8 +336,8 @@ ANOMALY_BEGINNER: dict[str, BeginnerLayer] = _index(
             ("Default contamination is your operating point.", "It is a prior guess: set threshold for capacity."),
         ),
         example=(
-            "session.fit_anomaly(method='isolation_forest', contamination=0.05, random_state=0)",
-            "session.evaluate_anomaly(partition='validation')",
+            "session.anomaly.fit(method='isolation_forest', contamination=0.05, random_state=0)",
+            "session.anomaly.evaluate(partition='validation')",
         ),
         check=(
             "Did you scale before comparing against LOF or One-Class SVM?",
@@ -361,7 +361,7 @@ ANOMALY_BEGINNER: dict[str, BeginnerLayer] = _index(
         steps=(
             "Scale numeric features so neighbour distances are meaningful.",
             "Choose n_neighbors with your expected cluster size in mind.",
-            "fit_anomaly(method='lof') on train only.",
+            "session.anomaly.fit(method='lof') on train only.",
             "Score validation/test and compare alert_rate against Isolation Forest.",
         ),
         use=(
@@ -377,8 +377,8 @@ ANOMALY_BEGINNER: dict[str, BeginnerLayer] = _index(
             ("More neighbours always helps.", "Too large k washes out local structure."),
         ),
         example=(
-            "session.fit_anomaly(method='lof', n_neighbors=20, random_state=0)",
-            "session.score_anomalies(partition='test')",
+            "session.anomaly.fit(method='lof', n_neighbors=20, random_state=0)",
+            "session.anomaly.score(partition='test')",
         ),
         check=(
             "Is your feature scale meaningful for k-nearest neighbours?",
@@ -401,7 +401,7 @@ ANOMALY_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         steps=(
             "Scale numeric columns before fitting the RBF kernel.",
-            "fit_anomaly(method='one_class_svm', kernel='rbf') on train or a normal-only subset.",
+            "session.anomaly.fit(method='one_class_svm', kernel='rbf') on train or a normal-only subset.",
             "Read disclosures for nu, kernel, and train alert_rate.",
             "Evaluate validation alert_rate before locking an operating threshold.",
         ),
@@ -418,8 +418,8 @@ ANOMALY_BEGINNER: dict[str, BeginnerLayer] = _index(
             ("nu is the holdout alert rate.", "nu is a training prior; holdout alert_rate can differ."),
         ),
         example=(
-            "session.fit_anomaly(method='one_class_svm', nu=0.05, random_state=0)",
-            "session.evaluate_anomaly(partition='validation')",
+            "session.anomaly.fit(method='one_class_svm', nu=0.05, random_state=0)",
+            "session.anomaly.evaluate(partition='validation')",
         ),
         check=(
             "Did you disclose novelty vs unsupervised mode?",
@@ -441,8 +441,8 @@ ANOMALY_BEGINNER: dict[str, BeginnerLayer] = _index(
             "tail signals: like multiple thermometers agreeing something is off."
         ),
         steps=(
-            "Read anomaly_capability_matrix()['backends']['pyod']['available'].",
-            "fit_anomaly(backend='pyod', method='copod'|'hbos'|'ecod') on train.",
+            "Read session.anomaly.capability_matrix()['backends']['pyod']['available'].",
+            "session.anomaly.fit(backend='pyod', method='copod'|'hbos'|'ecod') on train.",
             "Score validation and compare alert_rate against isolation_forest on the same split.",
             "Record that PyOD was the backend in your write-up.",
         ),
@@ -460,10 +460,10 @@ ANOMALY_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         example=(
             "# pip install 'buildml[anomaly-industry]'",
-            "session.fit_anomaly(backend='pyod', method='ecod', random_state=0)",
+            "session.anomaly.fit(backend='pyod', method='ecod', random_state=0)",
         ),
         check=(
-            "Does anomaly_capability_matrix show pyod available?",
+            "Does session.anomaly.capability_matrix show pyod available?",
             "Did you compare validation alert_rate against sklearn baselines?",
         ),
         tools=("fit_anomaly", "anomaly_capability_matrix", "evaluate_anomaly"),
@@ -483,7 +483,7 @@ ANOMALY_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         steps=(
             "Scale features and confirm buildml[torch] is available.",
-            "fit_anomaly(backend='torch', method='autoencoder', epochs=...) on train.",
+            "session.anomaly.fit(backend='torch', method='autoencoder', epochs=...) on train.",
             "Score holdout rows; read reconstruction-error and alert_rate disclosures.",
             "Compare against isolation_forest on validation before claiming uplift.",
         ),
@@ -500,8 +500,8 @@ ANOMALY_BEGINNER: dict[str, BeginnerLayer] = _index(
             ("Higher epochs always help.", "Under- or over-training shifts reconstruction calibration."),
         ),
         example=(
-            "session.fit_anomaly(backend='torch', method='autoencoder', epochs=40, random_state=0)",
-            "session.score_anomalies(partition='validation')",
+            "session.anomaly.fit(backend='torch', method='autoencoder', epochs=40, random_state=0)",
+            "session.anomaly.score(partition='validation')",
         ),
         check=(
             "Are feature columns identical at score time?",

@@ -69,20 +69,20 @@ def main() -> None:
         "lr": LogisticRegression(max_iter=1000, random_state=ctx.seed),
         "rf": RandomForestClassifier(n_estimators=80, max_depth=6, random_state=ctx.seed),
     }
-    fit = session.fit_blending(
+    fit = session.ensemble.fit_blending(
         bases,
         final_estimator=LogisticRegression(max_iter=1000, random_state=ctx.seed),
         holdout_fraction=0.2,
         random_state=ctx.seed,
         task="classification",
     )
-    val = session.evaluate_ensemble(partition="validation")
+    val = session.ensemble.evaluate(partition="validation")
     assert_no_test_in_selection(
         selection_partition="validation",
         evaluation_partition="test",
     )
-    test = session.evaluate_ensemble(partition="test")
-    bundle = session.save_ensemble_bundle(ctx.artifacts_dir / "ensemble_bundle")
+    test = session.ensemble.evaluate(partition="test")
+    bundle = session.ensemble.save_bundle(ctx.artifacts_dir / "ensemble_bundle")
     bml_test = metrics_round(dict(test.metrics))
     write_results(
         ctx,
@@ -97,7 +97,7 @@ def main() -> None:
                 "Stratified outer split before scale/blend",
                 "Blend holdout carved from train only (holdout_fraction=0.2)",
                 "Session validation/test never used for meta-learner fit",
-                "Test evaluate_ensemble after lock",
+                "Test session.ensemble.evaluate after lock",
             ],
             "validation_metrics": metrics_round(dict(val.metrics)),
             "test_metrics": bml_test,

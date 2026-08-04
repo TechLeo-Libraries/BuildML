@@ -34,14 +34,14 @@ def main() -> None:
         .split(test_size=0.2, validation_size=0.2, stratify=True, random_state=ctx.seed)
         .scale(method="standard")
     )
-    fit = session.fit_ssl_pretext(method="masked_tabular", random_state=ctx.seed)
+    fit = session.ssl.fit_pretext(method="masked_tabular", random_state=ctx.seed)
     try:
-        session.finetune_ssl_head(random_state=ctx.seed)
+        session.ssl.finetune_head(random_state=ctx.seed)
     except Exception:
         pass
-    val = session.evaluate_ssl(partition="validation")
-    test = session.evaluate_ssl(partition="test")
-    bundle = session.save_ssl_bundle(ctx.artifacts_dir / "ssl_bundle")
+    val = session.ssl.evaluate(partition="validation")
+    test = session.ssl.evaluate(partition="test")
+    bundle = session.ssl.save_bundle(ctx.artifacts_dir / "ssl_bundle")
     write_results(ctx, {
         "status": "completed",
         "data": {"name": "synthetic_ssl_tabular", "license": "synthetic/public-domain", "n_rows": n},

@@ -50,7 +50,7 @@ def main() -> None:
         .set_roles({"head": "id", "relation": "id", "tail": "id"})
         .split(test_size=0.2, validation_size=0.1, random_state=ctx.seed)
     )
-    fit = session.fit_kg(
+    fit = session.kg.fit(
         method="transe",
         head_column="head",
         relation_column="relation",
@@ -62,14 +62,24 @@ def main() -> None:
         neg_ratio=2,
         random_state=ctx.seed,
     )
-    preds = session.predict_links(
+    preds = session.kg.predict_links(
         mode="tail",
         heads=["wh0"],
         relations=["ships_via"],
         k=5,
     )
-    ev = session.evaluate_kg(partition="test")
-    bundle = session.save_kg_bundle(ctx.artifacts_dir / "kg_bundle")
+    ev = session.kg.evaluate(partition="test")
+    bundle = session.kg.save_bundle(ctx.artifacts_dir / "kg_bundle")
+
+    # Checkpoint roundtrip: load bundle on a fresh Session and re-score.
+    restored = (
+        Session.ingest(frame)
+        .set_roles({"head": "id", "relation": "id", "tail": "id"})
+        .split(test_size=0.2, validation_size=0.1, random_state=ctx.seed)
+    )
+    restored.kg.load_bundle(bundle, trusted=True)
+    ev_reloaded = restored.kg.evaluate(partition="test")
+
     write_results(
         ctx,
         {
@@ -85,11 +95,26 @@ def main() -> None:
                 preds.to_dict() if hasattr(preds, "to_dict") else {}
             ),
             "test_metrics": metrics_round(dict(getattr(ev, "metrics", {}) or {})),
+            "reloaded_test_metrics": metrics_round(
+                dict(getattr(ev_reloaded, "metrics", {}) or {})
+            ),
+            "n_triples_scored": int(getattr(ev, "n_triples_scored", 0) or 0),
             "bundle_path": str(bundle),
+            "bundle_roundtrip": {
+                "loaded": restored.kg.plan is not None,
+                "mrr_match": bool(
+                    abs(
+                        float(ev.metrics.get("mrr", 0.0))
+                        - float(ev_reloaded.metrics.get("mrr", -1.0))
+                    )
+                    < 1e-9
+                ),
+            },
             "leakage_controls": [
                 "Triple split before fit",
                 "Train-only TransE",
                 "Test link metrics after lock",
+                "Bundle load re-score uses frozen train embeddings only",
             ],
             "industry_comparison": {
                 "status": "filled",
@@ -100,6 +125,7 @@ def main() -> None:
             },
             "limitations": [
                 "Synthetic logistics motifs; not a licensed TMS / network extract",
+                "Native numpy TransE path (PyKEEN industry optional, subprocess-gated)",
             ],
         },
     )

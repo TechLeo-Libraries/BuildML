@@ -16,7 +16,7 @@ from buildml.explain.schemas import OperationSpec, Prerequisite
 METALEARNING_PLAN = Prerequisite(
     "metalearning-plan",
     "A train-fitted MetaLearningPlan is attached to the Session.",
-    check_hint="Session.metalearning_plan is not None.",
+    check_hint="session.metalearning.plan is not None.",
 )
 
 _OPERATIONS: tuple[OperationSpec, ...] = (
@@ -90,7 +90,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         ordering=("After split and usually after impute/scale.",),
         alternatives=(
             "Session.fit for classical single-task learning.",
-            "Session.fit_multitask when targets are multiple columns, not task groups.",
+            "session.multitask.fit when targets are multiple columns, not task groups.",
         ),
         rationale=(
             "Use when many related tasks share a feature space and few labels per task.",
@@ -112,13 +112,13 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             "Using the task id column as a feature.",
         ),
         state_changes=(
-            "Stores metalearning_plan and fit result; clears prior adapt/eval slots.",
+            "Stores session.metalearning.plan and fit result; clears prior adapt/eval slots.",
         ),
         result_reading=(
             "Read n_meta_train_tasks, meta_train_accuracy, method, disclosures.",
         ),
         next_steps=(
-            "adapt_to_task / evaluate_metalearning; optionally save_metalearning_bundle.",
+            "session.metalearning.adapt / session.metalearning.evaluate; optionally session.metalearning.save_bundle.",
         ),
         concepts=(
             "metalearning-episodic",
@@ -162,16 +162,16 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         inputs=("Active MetaLearningPlan and labeled support rows.",),
         outputs=("MetaAdaptResult stored on the Session.",),
         prerequisites=(DATASET, METALEARNING_PLAN),
-        ordering=("After fit_metalearning or load_metalearning_bundle.",),
-        alternatives=("evaluate_metalearning for automatic episodic support/query scoring.",),
+        ordering=("After session.metalearning.fit or session.metalearning.load_bundle.",),
+        alternatives=("session.metalearning.evaluate for automatic episodic support/query scoring.",),
         rationale=("Use when a novel task arrives with a small labeled support set.",),
         assumptions=("Support labels are in the plan's known class set.",),
         failures=("No plan; empty support; missing columns; unseen labels.",),
         leakage=("Do not pull support from rows you will also score as query without disclosure.",),
         anti_patterns=("Treating adapt as permission to meta-train on holdout tasks silently.",),
-        state_changes=("Stores metalearning_adapt_result.",),
+        state_changes=("Stores session.metalearning.adapt_result.",),
         result_reading=("Read task_id, n_support, n_classes_adapted, disclosures.",),
-        next_steps=("evaluate_metalearning or save_metalearning_bundle.",),
+        next_steps=("session.metalearning.evaluate or session.metalearning.save_bundle.",),
         concepts=("metalearning-episodic", "metalearning-prototypical", "metalearning-warm-start"),
     ),
     _operation(
@@ -206,21 +206,21 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         inputs=("Active MetaLearningPlan and a labeled evaluation partition.",),
         outputs=("MetaLearningEvalResult.",),
         prerequisites=(DATASET, METALEARNING_PLAN),
-        ordering=("After fit_metalearning.",),
+        ordering=("After session.metalearning.fit.",),
         alternatives=("Classical Session.evaluate for a single non-episodic model.",),
         rationale=("Use to quantify few-shot generalization across tasks.",),
         assumptions=("Enough per-class rows for support + query on scored tasks.",),
         failures=("No plan; empty partition; all tasks skipped for insufficient rows.",),
         leakage=(
-            "Using evaluate_metalearning metrics to choose which holdout rows to meta-train on.",
+            "Using session.metalearning.evaluate metrics to choose which holdout rows to meta-train on.",
         ),
         anti_patterns=("Reporting meta_train_accuracy as holdout few-shot performance.",),
-        state_changes=("Stores metalearning_eval_result.",),
+        state_changes=("Stores session.metalearning.eval_result.",),
         result_reading=(
             "Read metrics, per_task_metrics, novel_task_ids, overlapping_task_ids.",
         ),
         next_steps=(
-            "save_metalearning_bundle; or compare prototypical vs warm_start.",
+            "session.metalearning.save_bundle; or compare prototypical vs warm_start.",
         ),
         concepts=(
             "metalearning-episodic",
@@ -238,16 +238,16 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         inputs=("Active MetaLearningPlan.",),
         outputs=("Bundle directory path.",),
         prerequisites=(METALEARNING_PLAN,),
-        ordering=("After a successful fit_metalearning.",),
+        ordering=("After a successful session.metalearning.fit.",),
         alternatives=("Session.checkpoint_save for workflow resume without the learner.",),
         rationale=("Use when the few-shot meta-learner must travel separately.",),
         assumptions=("Destination is writable.",),
         failures=("No plan attached.",),
         leakage=("Bundles do not embed holdout rows.",),
         anti_patterns=("Assuming a Session checkpoint embeds the MetaLearningPlan.",),
-        state_changes=("History records save_metalearning_bundle.",),
+        state_changes=("History records session.metalearning.save_bundle.",),
         result_reading=("Confirm meta.json format buildml.metalearning_bundle.v1.",),
-        next_steps=("load_metalearning_bundle in another Session.",),
+        next_steps=("session.metalearning.load_bundle in another Session.",),
         concepts=("metalearning-bundle-boundary",),
     ),
     _operation(
@@ -267,20 +267,20 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             ),
         ),
         inputs=("Bundle directory with meta.json + metalearning_plan.joblib.",),
-        outputs=("Session with metalearning_plan attached.",),
+        outputs=("Session with session.metalearning.plan attached.",),
         prerequisites=(DATASET,),
         ordering=("After ingest/roles/split aligned with the plan feature contract.",),
-        alternatives=("fit_metalearning to learn a new plan.",),
+        alternatives=("session.metalearning.fit to learn a new plan.",),
         rationale=("Use to resume a few-shot meta-learner.",),
         assumptions=("Feature/task/target columns still match the plan contract.",),
         failures=("Incomplete or wrong-format bundle.",),
         leakage=("Do not treat load as permission to meta-train on holdout rows.",),
         anti_patterns=("Loading into a Session whose features drifted from the plan.",),
         state_changes=(
-            "Sets metalearning_plan; clears fit/adapt/eval result slots.",
+            "Sets session.metalearning.plan; clears fit/adapt/eval result slots.",
         ),
-        result_reading=("Inspect Session.metalearning_plan.to_dict().",),
-        next_steps=("adapt_to_task / evaluate_metalearning.",),
+        result_reading=("Inspect session.metalearning.plan.to_dict().",),
+        next_steps=("session.metalearning.adapt / session.metalearning.evaluate.",),
         concepts=("metalearning-bundle-boundary",),
     ),
 )

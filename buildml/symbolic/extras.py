@@ -18,64 +18,46 @@ from buildml.core.errors import MissingExtraError
 from buildml.dl.extras import torch_available, torch_spec_available
 
 
+def _runtime_ok(module: str) -> bool:
+    from buildml.dl.extras import _subprocess_import_ok
+
+    return _subprocess_import_ok(module)
+
+
+def skope_rules_spec_present() -> bool:
+    """Cheap find_spec discovery for skope-rules (``skrules``)."""
+    return importlib.util.find_spec("skrules") is not None
+
+
+def imodels_spec_present() -> bool:
+    """Cheap find_spec discovery for imodels."""
+    return importlib.util.find_spec("imodels") is not None
+
+
+def z3_spec_present() -> bool:
+    """Cheap find_spec discovery for Z3."""
+    return importlib.util.find_spec("z3") is not None
+
+
 def skope_rules_available() -> bool:
-    """Return whether skope-rules (``skrules``) imports cleanly on this machine.
-
-    Uses a real import probe because find_spec alone misses Python 3.13
-    incompatibilities in older skope-rules releases.
-
-    Returns
-    -------
-    bool
-        ``True`` when ``SkopeRules`` can be imported.
-    """
-    if importlib.util.find_spec("skrules") is None:
+    """Return whether skope-rules (``skrules``) imports cleanly (subprocess)."""
+    if not skope_rules_spec_present():
         return False
-    try:
-        from skrules import SkopeRules  # noqa: F401
-    except Exception:
-        return False
-    return True
+    return _runtime_ok("skrules")
 
 
 def imodels_available() -> bool:
-    """Return whether ``imodels`` is importable for RuleFit/BoostedRules export.
-
-    Called from the capability matrix and fit routing so industry rule export
-    is offered only when imodels actually imports on this machine.
-
-    Returns
-    -------
-    bool
-        ``True`` when imodels imports successfully.
-    """
-    if importlib.util.find_spec("imodels") is None:
+    """Return whether ``imodels`` imports cleanly (subprocess probe)."""
+    if not imodels_spec_present():
         return False
-    try:
-        import imodels  # noqa: F401
-    except Exception:
-        return False
-    return True
+    return _runtime_ok("imodels")
 
 
 def z3_available() -> bool:
-    """Return whether ``z3`` is importable for optional constraint verification.
-
-    Gates the optional SAT check in :mod:`buildml.symbolic.adapters.z3_verify`
-    without importing Z3 at module load time.
-
-    Returns
-    -------
-    bool
-        ``True`` when Z3 imports successfully.
-    """
-    if importlib.util.find_spec("z3") is None:
+    """Return whether ``z3`` imports cleanly (subprocess probe)."""
+    if not z3_spec_present():
         return False
-    try:
-        import z3  # noqa: F401
-    except Exception:
-        return False
-    return True
+    return _runtime_ok("z3")
 
 
 def symbolic_industry_available() -> bool:

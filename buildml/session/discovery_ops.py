@@ -16,6 +16,8 @@ from buildml.explain.capability_status import (
     FIT_TO_CAPABILITY_MATRIX,
     load_capability_matrix,
 )
+from buildml.session.facade_registry import DOMAIN_FACADES, flat_to_facade, preferred_path
+from buildml.session.facades import list_facades as list_facades
 
 # Matrix op → short domain key for grouped discovery.
 _MATRIX_TO_DOMAIN: dict[str, str] = {
@@ -65,6 +67,10 @@ def list_capabilities(
 ) -> dict[str, Any]:
     """List Session domain capabilities grouped for discovery.
 
+    Aggregates existing ``*_capability_matrix`` operations, fit→matrix routes,
+    facade catalog metadata, and optional live matrix payloads so callers can
+    browse the large Session surface without deleting flat methods.
+
     Parameters
     ----------
     include_matrices:
@@ -76,8 +82,8 @@ def list_capabilities(
     Returns
     -------
     dict[str, Any]
-        Grouped domain entries, matrix operation names, fit→matrix routing, and
-        walkthrough status field map.
+        Grouped domain entries (with preferred facade + stability tier), matrix
+        operation names, fit→matrix routing, facades catalog, and disclosures.
     """
     status_by_matrix = {matrix: status for status, matrix in DOMAIN_STATUS_CAPABILITY_OPS}
     domains: list[dict[str, Any]] = []
@@ -87,10 +93,20 @@ def list_capabilities(
         )
         if domain is not None and domain_key != domain:
             continue
+        facade_attr = _facade_attr_for_domain(domain_key)
+        facade_spec = DOMAIN_FACADES.get(facade_attr) if facade_attr else None
         entry: dict[str, Any] = {
             "domain": domain_key,
             "capability_matrix_operation": matrix_op,
             "session_call": f"Session.{matrix_op}()",
+            "preferred_facade": (
+                f"session.{facade_attr}.capability_matrix"
+                if facade_attr and facade_spec and "capability_matrix" in facade_spec["bindings"]
+                else (f"session.{facade_attr}" if facade_attr else None)
+            ),
+            "stability_tier": (
+                facade_spec["tier"] if facade_spec else _DOMAIN_MATURITY_HINTS.get(domain_key)
+            ),
             "walkthrough_status_field": status_by_matrix.get(matrix_op),
             "maturity_hint": _DOMAIN_MATURITY_HINTS.get(domain_key),
         }
@@ -121,16 +137,23 @@ def list_capabilities(
         "domains": domains,
         "capability_matrix_operations": sorted(CAPABILITY_MATRIX_OPERATIONS),
         "fit_to_capability_matrix": fit_routes,
+        "facades": list_facades(),
         "disclosures": (
             "Additive discovery API over existing Session.*_capability_matrix() "
             "and explain catalog — does not reduce the public surface.",
             "include_matrices=True may import optional industry stacks.",
+            "Prefer session.<domain>.* facades; flat domain actions are deprecated "
+            "until BuildML 3.0 (see docs/session-facade-migration.md).",
         ),
     }
 
 
 def describe_method(name: str, session_type: type | None = None) -> dict[str, Any]:
     """Describe one Session method via catalog, capability routing, or docstring.
+
+    Accepts flat names (``evaluate_fairness``) or facade-style names
+    (``fairness.evaluate`` / ``session.fairness.evaluate``) and always reports
+    the preferred facade path plus whether the flat alias is deprecated.
 
     Parameters
     ----------
@@ -143,7 +166,8 @@ def describe_method(name: str, session_type: type | None = None) -> dict[str, An
     Returns
     -------
     dict[str, Any]
-        Summary, domain tags, related capability matrix, and teaching pointers.
+        Summary, domain tags, preferred_path, stability_tier, related capability
+        matrix, and teaching pointers.
 
     Raises
     ------
@@ -153,7 +177,21 @@ def describe_method(name: str, session_type: type | None = None) -> dict[str, An
     """
     if not name or not str(name).strip():
         raise ValidationError("describe_method requires a non-empty operation name.")
-    op_name = str(name).strip()
+    from buildml.session.facade_registry import resolve_operation_name
+
+    requested = str(name).strip()
+    preferred_from_facade, facade_meta_early = _resolve_facade_style_name(requested)
+    facade_meta: dict[str, Any] | None
+    if facade_meta_early is not None:
+        attr = facade_meta_early["facade_attr"]
+        facade_method = facade_meta_early["facade_method"]
+        op_name = DOMAIN_FACADES[attr]["bindings"][facade_method]
+        preferred = preferred_from_facade
+        facade_meta = facade_meta_early
+    else:
+        op_name = resolve_operation_name(requested)
+        facade_meta = flat_to_facade().get(op_name)
+        preferred = preferred_path(op_name)
 
     matrix_op = FIT_TO_CAPABILITY_MATRIX.get(op_name)
     if matrix_op is None and op_name in CAPABILITY_MATRIX_OPERATIONS:
@@ -191,7 +229,7 @@ def describe_method(name: str, session_type: type | None = None) -> dict[str, An
             docstring_summary = inspect.getdoc(getattr(_Session, op_name))
         else:
             raise ValidationError(
-                f"Unknown Session method {op_name!r}. "
+                f"Unknown Session method {requested!r}. "
                 "Use Session.list_capabilities() or session.workflow() to browse."
             )
 
@@ -204,8 +242,18 @@ def describe_method(name: str, session_type: type | None = None) -> dict[str, An
         or op_name
     )
 
+    stability_tier = None
+    if facade_meta is not None:
+        stability_tier = facade_meta["tier"]
+        domain = domain or facade_meta["mixin_key"]
+    elif domain is not None:
+        facade_attr = _facade_attr_for_domain(domain)
+        if facade_attr and facade_attr in DOMAIN_FACADES:
+            stability_tier = DOMAIN_FACADES[facade_attr]["tier"]
+
     payload: dict[str, Any] = {
         "name": op_name,
+        "requested": requested,
         "summary": str(summary),
         "domain": domain,
         "capability_matrix_operation": matrix_op,
@@ -213,6 +261,11 @@ def describe_method(name: str, session_type: type | None = None) -> dict[str, An
             f"Session.{op_name}()"
             if op_name.endswith("_capability_matrix")
             else f"session.{op_name}(...)"
+        ),
+        "preferred_path": preferred,
+        "stability_tier": stability_tier,
+        "flat_deprecated": bool(
+            facade_meta["warn_flat"] if facade_meta is not None else False
         ),
         "explain": f'session.explain("{op_name}")',
         "learn": f'session.learn("{op_name}")',
@@ -230,6 +283,9 @@ def describe_method(name: str, session_type: type | None = None) -> dict[str, An
 
 def list_active_domains(session: Any) -> dict[str, Any]:
     """Report which domain artifacts are present on a live Session.
+
+    This is a presence probe over plan/result attributes and recent history —
+    not a maturity score and not a substitute for capability matrices.
 
     Parameters
     ----------
@@ -281,8 +337,49 @@ def list_active_domains(session: Any) -> dict[str, Any]:
     }
 
 
+def _facade_attr_for_domain(domain_key: str) -> str | None:
+    """Map capability domain key → facade attribute name."""
+    aliases = {
+        "activelearning": "active_learning",
+        "forecasting": "forecast",
+        "optimize": "decision",
+        "recommenders": "recommender",
+        "selfsupervised": "ssl",
+        "ssl": "ssl",
+        "eda": "explore",
+        "workflow": "audit",
+    }
+    if domain_key in aliases:
+        return aliases[domain_key]
+    if domain_key in DOMAIN_FACADES:
+        return domain_key
+    for attr, spec in DOMAIN_FACADES.items():
+        if spec["mixin_key"] == domain_key:
+            return attr
+    return None
+
+
+def _resolve_facade_style_name(
+    name: str,
+) -> tuple[str | None, dict[str, Any] | None]:
+    """Resolve ``fairness.evaluate`` or ``session.fairness.evaluate`` style names."""
+    cleaned = name.strip()
+    if cleaned.startswith("session."):
+        cleaned = cleaned[len("session.") :]
+    if "." not in cleaned:
+        return None, None
+    attr, method = cleaned.split(".", 1)
+    spec = DOMAIN_FACADES.get(attr)
+    if spec is None or method not in spec["bindings"]:
+        return None, None
+    flat = spec["bindings"][method]
+    meta = flat_to_facade().get(flat)
+    return f"session.{attr}.{method}", meta
+
+
 __all__ = [
     "describe_method",
     "list_active_domains",
     "list_capabilities",
+    "list_facades",
 ]

@@ -7,9 +7,12 @@ from typing import Any, Literal
 from buildml.dl.extras import torch_available, torch_spec_available
 from buildml.ranking.extras import (
     catboost_available,
+    catboost_spec_present,
     lightgbm_available,
+    lightgbm_spec_present,
     ranking_industry_available,
     xgboost_available,
+    xgboost_spec_present,
 )
 
 RankingBackendName = Literal["sklearn", "industry", "torch"]
@@ -140,11 +143,21 @@ def ranking_capability_matrix() -> dict[str, Any]:
             "RAG chunk retrieve/generate (see buildml.rag)",
             "Recommender user–item CF (see buildml.recommenders)",
         ],
-        "industry_extra_present": ranking_industry_available(),
+        "industry_extra_present": (
+            lightgbm_spec_present()
+            or xgboost_spec_present()
+            or catboost_spec_present()
+        ),
+        "industry_runtime_present": ranking_industry_available(),
         "lightgbm_present": lightgbm_available(),
         "xgboost_present": xgboost_available(),
         "catboost_present": catboost_available(),
         "torch_spec_present": torch_spec_available(),
+        "industry_import_honesty": (
+            "industry backend 'available' and industry_runtime_present require "
+            "successful subprocess imports of at least one GBDT ranker. "
+            "industry_extra_present / *_spec_present are find_spec only."
+        ),
     }
 
 

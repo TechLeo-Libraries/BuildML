@@ -89,7 +89,7 @@ def main() -> None:
             )
             .scale(method="standard")
         )
-        o_fit = online_session.fit_online(
+        o_fit = online_session.online.fit(
             estimator="sgd_classifier",
             chunk_size=50,
             n_init=50,
@@ -98,14 +98,14 @@ def main() -> None:
         updates = 0
         while True:
             remaining = (
-                online_session.online_plan.n_train_rows
-                - online_session.online_plan.cursor
+                online_session.online.plan.n_train_rows
+                - online_session.online.plan.cursor
             )
             if remaining <= 0:
                 break
-            online_session.partial_fit_online(n_rows=min(50, remaining))
+            online_session.online.partial_fit(n_rows=min(50, remaining))
             updates += 1
-        o_test = online_session.evaluate_online(partition="test")
+        o_test = online_session.online.evaluate(partition="test")
         stages["online"] = {
             "status": "ok",
             "n_init_rows": int(o_fit.n_init_rows),
@@ -120,7 +120,7 @@ def main() -> None:
     # --- Stage 2: unsupervised anomaly + validation threshold ---
     try:
         if extra_available("pyod"):
-            a_fit = session.fit_anomaly(
+            a_fit = session.anomaly.fit(
                 backend="pyod",
                 method="hbos",
                 mode="unsupervised",
@@ -129,7 +129,7 @@ def main() -> None:
             )
             a_backend = "pyod/hbos"
         else:
-            a_fit = session.fit_anomaly(
+            a_fit = session.anomaly.fit(
                 method="isolation_forest",
                 mode="unsupervised",
                 contamination=0.08,
@@ -139,13 +139,13 @@ def main() -> None:
         assert_no_test_in_selection(
             selection_partition="validation", evaluation_partition="test"
         )
-        a_tune = session.tune_anomaly_threshold(
+        a_tune = session.anomaly.tune_threshold(
             partition="validation",
             label_column=TARGET,
             positive_label=1,
             metric="f1",
         )
-        a_ev = session.evaluate_anomaly(partition="test", positive_label=1)
+        a_ev = session.anomaly.evaluate(partition="test", positive_label=1)
         stages["anomaly"] = {
             "status": "ok",
             "backend": a_backend,
@@ -176,16 +176,16 @@ def main() -> None:
     assert_no_test_in_selection(
         selection_partition="validation", evaluation_partition="test"
     )
-    thr = session.fit_decision_policy(
+    thr = session.decision.fit(
         method="threshold",
         partition="validation",
         fp_cost=1.0,
         fn_cost=6.0,
     )
-    thr_test = session.evaluate_decisions(partition="test")
+    thr_test = session.decision.evaluate(partition="test")
     knap_payload: dict = {"alloc_status": "skipped"}
     try:
-        knap = session.fit_decision_policy(
+        knap = session.decision.fit(
             method="knapsack",
             partition="validation",
             budget=90.0,
@@ -194,7 +194,7 @@ def main() -> None:
             score_source="model_proba",
             knapsack_solver="dp",
         )
-        applied = session.apply_decisions(partition="test")
+        applied = session.decision.apply(partition="test")
         knap_payload = {
             "alloc_status": "ok",
             "knapsack_policy": metrics_round(
@@ -208,13 +208,13 @@ def main() -> None:
         }
     except Exception as exc:  # noqa: BLE001
         try:
-            topk = session.fit_decision_policy(
+            topk = session.decision.fit(
                 method="topk",
                 partition="validation",
                 capacity=45,
                 score_source="model_proba",
             )
-            applied = session.apply_decisions(partition="test")
+            applied = session.decision.apply(partition="test")
             knap_payload = {
                 "alloc_status": "ok_topk_fallback",
                 "error": f"{type(exc).__name__}: {exc}",

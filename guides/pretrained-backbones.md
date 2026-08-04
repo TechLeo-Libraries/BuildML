@@ -8,9 +8,9 @@
 > ```
 > See [installation](../docs/installation.rst).
 
-`Session.load_pretrained_backbone` exposes **curated** vision / audio / speech
+`session.dl.load_backbone` exposes **curated** vision / audio / speech
 encoder hooks with `weights=none|mock|pretrained`, plus
-`Session.attach_backbone_head` for a linear classify/probe head. Discover the
+`session.dl.attach_head` for a linear classify/probe head. Discover the
 shipped catalog with `list_pretrained_backbones()`. This is **not** a full
 Hugging Face / TorchVision zoo product.
 
@@ -41,7 +41,7 @@ for row in list_pretrained_backbones():
     print(row["modality"], row["architecture"], row["provider"])
 ```
 
-Curated architectures (Pass V expansion):
+Curated architectures:
 
 | Modality | Architectures | Provider |
 | --- | --- | --- |
@@ -60,7 +60,7 @@ over memorizing a stale table when the installed version may differ.
 from buildml import Session
 
 session = Session()
-backbone = session.load_pretrained_backbone(
+backbone = session.dl.load_backbone(
     "vision",
     "resnet34",  # or resnet18 / resnet50 / vit_b_16 / vit_b_32
     weights="mock",
@@ -69,12 +69,12 @@ backbone = session.load_pretrained_backbone(
 )
 print(backbone.feature_dim, backbone.architecture)
 
-head = session.attach_backbone_head(n_classes=2, freeze_backbone=True)
-# head.module is an nn.Module (backbone + linear head); also on session.dl_backbone_head
-print(session.dl_backbone_head.n_classes)
+head = session.dl.attach_head(n_classes=2, freeze_backbone=True)
+# head.module is an nn.Module (backbone + linear head); also on session.dl.backbone_head
+print(session.dl.backbone_head.n_classes)
 ```
 
-`attach_backbone_head` uses the last `load_pretrained_backbone` result on the
+`session.dl.attach_head` uses the last `session.dl.load_backbone` result on the
 Session. `freeze_backbone=True` freezes encoder params and trains the linear
 head (linear-probe style).
 
@@ -84,19 +84,19 @@ head (linear-probe style).
 
 ```python
 # audio modality
-# audio_bb = session.load_pretrained_backbone(
+# audio_bb = session.dl.load_backbone(
 #     "audio", "hubert_base", weights="mock", freeze=True
 # )
 # # also: "wav2vec2_base"
 
 # speech encoder hook (not FM pretrain)
-# speech_bb = session.load_pretrained_backbone(
+# speech_bb = session.dl.load_backbone(
 #     "speech", "whisper_base_encoder", weights="mock", freeze=True
 # )
 # # also: "whisper_tiny_encoder"
 
 # Real weights (may download; operator-owned cache/license):
-# speech_bb = session.load_pretrained_backbone(
+# speech_bb = session.dl.load_backbone(
 #     "speech",
 #     "whisper_tiny_encoder",
 #     weights="pretrained",
@@ -120,8 +120,8 @@ head (linear-probe style).
 
 ## AI tool exposure
 
-The AI operator allowlist can call `load_pretrained_backbone` and
-`attach_backbone_head` as typed tools
+The AI operator allowlist can call `session.dl.load_backbone` and
+`session.dl.attach_head` as typed tools
 ([ai-tools-operator-patterns](ai-tools-operator-patterns.md)). Still verify
 architecture names and weight modes before confirming execution.
 
@@ -132,9 +132,9 @@ architecture names and weight modes before confirming execution.
 - Missing `vision` / `speech` / `pretrained` extra → `MissingExtraError`.
 - Unknown architecture → validation error (not silent fallback to a random zoo model).
 - `pretrained` without network/cache → upstream download errors.
-- `attach_backbone_head` without a prior `load_pretrained_backbone` → validation error.
-- Not a substitute for `make_image_multimodal_torch_loaders` contracts.
-- Not Whisper-scale training: see `refuse_speech_foundation_pretrain`.
+- `session.dl.attach_head` without a prior `session.dl.load_backbone` → validation error.
+- Not a substitute for `session.dl.make_image_loaders` contracts.
+- Not Whisper-scale training: see `session.dl.refuse_speech_pretrain`.
 
 ---
 

@@ -13,7 +13,7 @@ RANKING_NOTES: dict[str, ConceptNote] = {
             key="ltr-tabular-ranking",
             title="Tabular learning-to-rank (query–item judgments)",
             summary=(
-                "fit_ranker learns from train rows of (query, item, features, "
+                "session.ranking.fit learns from train rows of (query, item, features, "
                 "relevance) to score and order items per query."
             ),
             definition=(
@@ -36,7 +36,7 @@ RANKING_NOTES: dict[str, ConceptNote] = {
                 "Ranking metrics need per-query candidate lists.",
             ),
             how_buildml_uses=(
-                "Session.fit_ranker(method='pointwise'|'pairwise', "
+                "session.ranking.fit(method='pointwise'|'pairwise', "
                 "query_column=..., item_column=...).",
             ),
             interpretation_rules=(
@@ -52,12 +52,12 @@ RANKING_NOTES: dict[str, ConceptNote] = {
             anti_patterns=(
                 "Fitting on full-frame judgments including test queries.",
                 "Calling this a search-engine product or RAG retrieve.",
-                "Confusing with fit_recommender user–item CF.",
+                "Confusing with session.recommender.fit user–item CF.",
             ),
             worked_example_pattern=(
                 "group_split(group_column='query_id') → "
-                "fit_ranker(method='pointwise', query_column=..., item_column=...) "
-                "→ evaluate_ranker(k=10).",
+                "session.ranking.fit(method='pointwise', query_column=..., item_column=...) "
+                "→ session.ranking.evaluate(k=10).",
             ),
             related_concepts=(
                 "ltr-pointwise",
@@ -89,7 +89,7 @@ RANKING_NOTES: dict[str, ConceptNote] = {
                 "Does not directly optimize pairwise preferences.",
             ),
             how_buildml_uses=(
-                "fit_ranker(method='pointwise', pointwise_estimator='ridge'|'hgb').",
+                "session.ranking.fit(method='pointwise', pointwise_estimator='ridge'|'hgb').",
             ),
             interpretation_rules=(
                 "Still evaluate with ranking metrics, not only RMSE.",
@@ -98,7 +98,7 @@ RANKING_NOTES: dict[str, ConceptNote] = {
             failure_modes=("Calibration mismatch; dominance by frequent queries.",),
             anti_patterns=("Reporting only regression loss as ranking quality.",),
             worked_example_pattern=(
-                "fit_ranker(method='pointwise', pointwise_estimator='ridge') → rank()."
+                "session.ranking.fit(method='pointwise', pointwise_estimator='ridge') → rank()."
             ,),
             related_concepts=("ltr-tabular-ranking", "ltr-pairwise", "ltr-ranking-metrics"),
         ),
@@ -127,7 +127,7 @@ RANKING_NOTES: dict[str, ConceptNote] = {
                 "Sklearn-core fallback: industry GBDT rankers when installed.",
             ),
             how_buildml_uses=(
-                "fit_ranker(method='pairwise', max_pairs_per_query=...).",
+                "session.ranking.fit(method='pairwise', max_pairs_per_query=...).",
             ),
             interpretation_rules=(
                 "Needs queries with ≥2 items and distinct grades.",
@@ -138,7 +138,7 @@ RANKING_NOTES: dict[str, ConceptNote] = {
                 "Calling this LambdaMART or a production search stack.",
             ),
             worked_example_pattern=(
-                "fit_ranker(method='pairwise') → evaluate_ranker(k=5)."
+                "session.ranking.fit(method='pairwise') → session.ranking.evaluate(k=5)."
             ,),
             related_concepts=("ltr-tabular-ranking", "ltr-pointwise", "ltr-ranking-metrics"),
         ),
@@ -166,8 +166,8 @@ RANKING_NOTES: dict[str, ConceptNote] = {
                 "Still requires honest query-group splits: not a search product.",
             ),
             how_buildml_uses=(
-                "fit_ranker(backend='industry', method='lambdarank_lgbm'|...); "
-                "ranking_capability_matrix() lists installed methods.",
+                "session.ranking.fit(backend='industry', method='lambdarank_lgbm'|...); "
+                "session.ranking.capability_matrix() lists installed methods.",
             ),
             interpretation_rules=(
                 "Compare against sklearn pointwise on the same group_split.",
@@ -177,10 +177,10 @@ RANKING_NOTES: dict[str, ConceptNote] = {
             failure_modes=("Missing extra; tiny query groups; overlapping query ids.",),
             anti_patterns=(
                 "Calling LambdaRank a search-engine stack.",
-                "Mixing evaluate_ranker numbers with rag_evaluate.",
+                "Mixing session.ranking.evaluate numbers with session.rag.evaluate.",
             ),
             worked_example_pattern=(
-                "fit_ranker(backend='industry') → evaluate_ranker(k=10)."
+                "session.ranking.fit(backend='industry') → session.ranking.evaluate(k=10)."
             ,),
             related_concepts=(
                 "ltr-tabular-ranking",
@@ -192,7 +192,7 @@ RANKING_NOTES: dict[str, ConceptNote] = {
             key="ltr-ranking-metrics",
             title="LTR ranking metrics (nDCG / MAP / MRR)",
             summary=(
-                "evaluate_ranker reports graded nDCG@K, MAP@K, and MRR@K "
+                "session.ranking.evaluate reports graded nDCG@K, MAP@K, and MRR@K "
                 "macro-averaged over holdout queries."
             ),
             definition=(
@@ -210,16 +210,16 @@ RANKING_NOTES: dict[str, ConceptNote] = {
                 "Regression loss alone does not prove ranking quality.",
                 "Same metric names appear in RAG/recommenders with different protocols.",
             ),
-            how_buildml_uses=("Session.evaluate_ranker(partition='test', k=...).",),
+            how_buildml_uses=("session.ranking.evaluate(partition='test', k=...).",),
             interpretation_rules=(
                 "Compare only under the same k, threshold, and split policy.",
                 "Do not equate with RAG chunk nDCG or recommender known-item nDCG.",
             ),
             assumptions=("Holdout queries with ≥1 relevant item.",),
             failure_modes=("All-zero labels; tiny k; leaked query overlap.",),
-            anti_patterns=("Mixing RAG evaluate metrics with LTR evaluate_ranker.",),
+            anti_patterns=("Mixing RAG evaluate metrics with LTR session.ranking.evaluate.",),
             worked_example_pattern=(
-                "evaluate_ranker(k=10) → inspect metrics['ndcg_at_k']."
+                "session.ranking.evaluate(k=10) → inspect metrics['ndcg_at_k']."
             ,),
             related_concepts=("ltr-tabular-ranking", "leakage-boundary"),
         ),
@@ -227,7 +227,7 @@ RANKING_NOTES: dict[str, ConceptNote] = {
             key="ltr-bundle-boundary",
             title="Ranker bundle vs Session checkpoint / RAG / recommenders",
             summary=(
-                "save_ranker_bundle stores RankerPlan as buildml.ranker_bundle.v1; "
+                "session.ranking.save_bundle stores RankerPlan as buildml.ranker_bundle.v1; "
                 "checkpoints and RAG/recommender bundles are separate."
             ),
             definition=(
@@ -237,12 +237,12 @@ RANKING_NOTES: dict[str, ConceptNote] = {
             ),
             intuition=(
                 "Reload workflow state with checkpoint_load; reload the ranker "
-                "with load_ranker_bundle."
+                "with session.ranking.load_bundle."
             ),
             formal_idea=("buildml.ranker_bundle.v1 = meta.json + ranker_plan.joblib."),
             why_it_matters=("Prevents silent mixing of artifact types.",),
             how_buildml_uses=(
-                "Session.save_ranker_bundle / load_ranker_bundle.",
+                "session.ranking.save_bundle / session.ranking.load_bundle.",
             ),
             interpretation_rules=(
                 "Bundles are complementary to checkpoints, not interchangeable.",
@@ -253,7 +253,7 @@ RANKING_NOTES: dict[str, ConceptNote] = {
                 "Treating ranker bundles as RAG corpora or recommender catalogs.",
             ),
             worked_example_pattern=(
-                "save_ranker_bundle(path) → load_ranker_bundle(path) → evaluate_ranker()."
+                "session.ranking.save_bundle(path) → session.ranking.load_bundle(path) → session.ranking.evaluate()."
             ,),
             related_concepts=("ltr-tabular-ranking", "checkpoint-boundary"),
         ),

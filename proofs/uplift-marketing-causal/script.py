@@ -48,15 +48,15 @@ def main() -> None:
         .split(test_size=0.2, validation_size=0.2, random_state=ctx.seed)
         .scale(method="standard")
     )
-    session.declare_causal_assumptions(
+    session.causal.declare_assumptions(
         treatment="promo", outcome="spend",
         confounders=["recency_z", "freq_z", "monetary_z"],
         acknowledge_unconfoundedness=True, acknowledge_positivity=True,
     )
-    fit = session.fit_causal(method="aipw", bootstrap_samples=40)
-    ev = session.evaluate_causal(partition="validation", bootstrap_samples=20)
-    ref = session.refute_causal(kind="placebo_treatment")
-    bundle = session.save_causal_bundle(ctx.artifacts_dir / "causal_bundle")
+    fit = session.causal.fit(method="aipw", bootstrap_samples=40)
+    ev = session.causal.evaluate(partition="validation", bootstrap_samples=20)
+    ref = session.causal.refute(kind="placebo_treatment")
+    bundle = session.causal.save_bundle(ctx.artifacts_dir / "causal_bundle")
     write_results(ctx, {
         "status": "completed",
         "data": {

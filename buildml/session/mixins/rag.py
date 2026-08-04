@@ -9,7 +9,10 @@ from buildml.session.mixins._shared import *  # noqa: F403
 
 
 class RagSessionMixin:
-    """Public Session methods for the rag domain."""
+    """Public Session methods for the rag domain.
+
+    Preferred namespaced API: ``session.rag.*`` (domain flat actions emit DeprecationWarning until BuildML 3.0).
+    """
     # mypy: session private attrs (owned by Session.__init__)
     if TYPE_CHECKING:
         _rag_eval_result: Any

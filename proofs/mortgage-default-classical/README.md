@@ -29,7 +29,7 @@ Primary holdout: accuracy, F1, ROC-AUC on test (see `results/results.json`).
 
 ## Industry comparison (Tier C)
 
-Filled: sklearn `ColumnTransformer` + `LogisticRegression` twin via `baseline_industry.py` → `results/comparison.json`.
+Industry twin: sklearn `ColumnTransformer` + `LogisticRegression` twin via `baseline_industry.py` → `results/comparison.json`.
 
 ## Limitations
 

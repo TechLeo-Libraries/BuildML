@@ -1,18 +1,23 @@
-"""Optional API-key / Bearer auth middleware for BuildML serving.
+"""Optional API-key / Bearer and HTTP Basic auth for BuildML serving.
 
-Default serving remains open on localhost. When ``api_keys`` is provided,
-``/predict`` (and optionally all non-docs routes) require
-``Authorization: Bearer <key>`` or ``X-API-Key: <key>``.
+Default serving remains open on localhost. When API keys and/or Basic
+credentials are configured, protected routes require either:
 
-This is a thin library middleware: **not** a managed identity / cloud IAM
-product. Prefer TLS + auth at a reverse proxy for internet exposure.
+* ``Authorization: Bearer <key>`` / ``X-API-Key: <key>``, or
+* ``Authorization: Basic <base64(user:pass)>``
+
+Either mechanism may authorize when both are configured. This is thin
+library middleware: **not** managed identity / cloud IAM. Prefer TLS + auth
+at a reverse proxy for internet exposure.
 """
 
 from __future__ import annotations
 
+import base64
+import binascii
 import secrets
-from collections.abc import Iterable, Sequence
-from typing import Any
+from collections.abc import Iterable, Mapping, Sequence
+from typing import Any, cast
 
 from buildml.core.errors import ValidationError
 
@@ -22,9 +27,15 @@ try:
     from starlette.responses import JSONResponse, Response
 except ImportError:  # pragma: no cover - serve extra missing
     BaseHTTPMiddleware = object  # type: ignore[assignment,misc]
-    Request = Any  # type: ignore[assignment]
-    JSONResponse = None  # type: ignore[assignment]
-    Response = Any  # type: ignore[assignment]
+    Request = Any  # type: ignore[assignment,misc]
+    JSONResponse = None  # type: ignore[assignment,misc]
+    Response = Any  # type: ignore[assignment,misc]
+
+
+DEFAULT_OPEN_PATHS_WITH_DOCS: frozenset[str] = frozenset(
+    {"/health", "/docs", "/openapi.json", "/redoc"}
+)
+DEFAULT_OPEN_PATHS_HEALTH_ONLY: frozenset[str] = frozenset({"/health"})
 
 
 def normalize_api_keys(api_keys: str | Sequence[str] | None) -> frozenset[str]:
@@ -38,35 +49,18 @@ def normalize_api_keys(api_keys: str | Sequence[str] | None) -> frozenset[str]:
     Parameters
     ----------
     api_keys:
-        One key, several keys, or ``None`` for no authentication. Surrounding
-        whitespace is stripped, which matters when keys come from environment
-        variables or files with trailing newlines.
+        One key, several keys, or ``None`` for no API-key authentication.
+        Surrounding whitespace is stripped.
 
     Returns
     -------
     frozenset of str
         The cleaned keys, or an empty set when ``api_keys`` is ``None``.
-        Immutable so the middleware's allowed set cannot change under it.
 
     Raises
     ------
     ValidationError
-        If keys were supplied but all of them were blank. An empty set is only
-        valid as an explicit ``None``, because silently disabling authentication
-        for a caller who asked for it is the worse outcome.
-
-    Examples
-    --------
-    >>> sorted(normalize_api_keys(["  alpha  ", "beta", "   "]))
-    ['alpha', 'beta']
-    >>> normalize_api_keys(None)
-    frozenset()
-    >>> normalize_api_keys("solo")
-    frozenset({'solo'})
-
-    See Also
-    --------
-    key_is_authorized : Checking a presented key against this set.
+        If keys were supplied but all of them were blank.
     """
     if api_keys is None:
         return frozenset()
@@ -80,45 +74,98 @@ def normalize_api_keys(api_keys: str | Sequence[str] | None) -> frozenset[str]:
     return frozenset(cleaned)
 
 
-def extract_presented_key(authorization: str | None, api_key_header: str | None) -> str | None:
-    """Pull the credential out of whichever of the two headers carries it.
-
-    Both spellings are accepted because both are in common use: ``Authorization:
-    Bearer <key>`` is the HTTP convention and works with most clients unchanged,
-    while ``X-API-Key: <key>`` is simpler to set by hand and in scripts.
-    ``X-API-Key`` wins when both are present, on the grounds that it is the more
-    deliberate of the two.
+def normalize_basic_credentials(
+    basic_auth: str
+    | tuple[str, str]
+    | Sequence[tuple[str, str]]
+    | Mapping[str, str]
+    | None,
+) -> frozenset[tuple[str, str]]:
+    """Normalize Basic-auth credential pairs into an immutable set.
 
     Parameters
     ----------
-    authorization:
-        The ``Authorization`` header value, or ``None``. Only the ``Bearer``
-        scheme is recognised; ``Basic`` and others yield ``None``.
-    api_key_header:
-        The ``X-API-Key`` header value, or ``None``.
+    basic_auth:
+        ``'user:pass'``, ``(user, pass)``, a sequence of pairs, a
+        ``{username, password}`` mapping, or ``None``.
 
     Returns
     -------
-    str or None
-        The credential with whitespace stripped, or ``None`` when neither header
-        carries a usable one.
+    frozenset of tuple[str, str]
+        Accepted ``(username, password)`` pairs.
 
-    Notes
-    -----
-    **A malformed header returns ``None`` rather than raising**, so it is
-    treated the same as no credential at all and produces a 401. There is no
-    useful distinction to draw for a caller who is not authorised either way.
+    Raises
+    ------
+    ValidationError
+        If credentials were supplied but none were usable.
+    """
+    if basic_auth is None:
+        return frozenset()
+    pairs: list[tuple[str, str]] = []
+    if isinstance(basic_auth, str):
+        text = basic_auth.strip()
+        if not text:
+            raise ValidationError("basic_auth must contain username:password")
+        if ":" not in text:
+            raise ValidationError(
+                "basic_auth string must be 'username:password' (colon-separated)"
+            )
+        user, _, password = text.partition(":")
+        if not user.strip():
+            raise ValidationError("basic_auth username must be non-empty")
+        pairs.append((user.strip(), password))
+    elif isinstance(basic_auth, Mapping):
+        mapping_user: str | None = basic_auth.get("username")
+        if mapping_user is None:
+            mapping_user = basic_auth.get("user")
+        mapping_password: str | None = basic_auth.get("password")
+        if mapping_password is None:
+            mapping_password = basic_auth.get("pass")
+        if mapping_user is None or mapping_password is None:
+            raise ValidationError(
+                "basic_auth mapping requires both username and password"
+            )
+        user_s = str(mapping_user).strip()
+        if not user_s:
+            raise ValidationError("basic_auth username must be non-empty")
+        pairs.append((user_s, str(mapping_password)))
+    elif isinstance(basic_auth, Sequence) and not isinstance(basic_auth, (str, bytes)):
+        # Distinguish a single (user, pass) pair from a list of pairs.
+        items = list(basic_auth)
+        if len(items) == 2 and all(not isinstance(x, (tuple, list)) for x in items):
+            user_s = str(items[0]).strip()
+            if not user_s:
+                raise ValidationError("basic_auth username must be non-empty")
+            pairs.append((user_s, str(items[1])))
+        else:
+            for item in items:
+                if not isinstance(item, Sequence) or isinstance(item, (str, bytes)):
+                    raise ValidationError(
+                        "basic_auth sequence entries must be (username, password)"
+                    )
+                entry = list(item)
+                if len(entry) != 2:
+                    raise ValidationError(
+                        "basic_auth sequence entries must be (username, password)"
+                    )
+                user_s = str(entry[0]).strip()
+                if not user_s:
+                    raise ValidationError("basic_auth username must be non-empty")
+                pairs.append((user_s, str(entry[1])))
+    else:
+        raise ValidationError(
+            "basic_auth must be 'user:pass', (user, pass), or {username, password}"
+        )
+    if not pairs:
+        raise ValidationError("basic_auth must contain at least one credential pair")
+    return frozenset(pairs)
 
-    Examples
-    --------
-    >>> extract_presented_key("Bearer abc123", None)
-    'abc123'
-    >>> extract_presented_key(None, "  abc123 ")
-    'abc123'
-    >>> extract_presented_key("Basic dXNlcjpwYXNz", None) is None
-    True
-    >>> extract_presented_key(None, None) is None
-    True
+
+def extract_presented_key(authorization: str | None, api_key_header: str | None) -> str | None:
+    """Pull an API-key credential from Bearer or ``X-API-Key``.
+
+    ``X-API-Key`` wins when both are present. ``Basic`` and other schemes are
+    ignored here (handled by :func:`extract_basic_credentials`).
     """
     if api_key_header and api_key_header.strip():
         return api_key_header.strip()
@@ -131,49 +178,34 @@ def extract_presented_key(authorization: str | None, api_key_header: str | None)
     return None
 
 
-def key_is_authorized(presented: str | None, allowed: Iterable[str]) -> bool:
-    """Check a presented key against the allowed set without leaking timing.
+def extract_basic_credentials(authorization: str | None) -> tuple[str, str] | None:
+    """Decode ``Authorization: Basic ...`` into ``(username, password)``.
 
-    The obvious implementation, ``presented in allowed``, compares strings with
-    an early exit on the first differing character. The time it takes therefore
-    depends on how many leading characters matched, and an attacker who can
-    measure that can recover a key one character at a time. Comparing every
-    candidate with :func:`secrets.compare_digest` removes the signal.
-
-    Parameters
-    ----------
-    presented:
-        The credential from the request, or ``None`` when none was supplied.
-    allowed:
-        The configured keys.
-
-    Returns
-    -------
-    bool
-        Whether the presented key matches one of the allowed keys. ``None``
-        always returns ``False``.
-
-    Notes
-    -----
-    **"Constant-time-ish" is the honest description.** Each comparison is
-    constant-time, but the loop still exits on the first match, so the total
-    time reveals a little about position within the set. With a handful of keys
-    that is not a practical concern; the per-comparison guarantee is what
-    matters.
-
-    Examples
-    --------
-    >>> key_is_authorized("abc123", {"abc123", "def456"})
-    True
-    >>> key_is_authorized("wrong", {"abc123"})
-    False
-    >>> key_is_authorized(None, {"abc123"})
-    False
-
-    See Also
-    --------
-    secrets.compare_digest : The comparison being used.
+    Returns ``None`` for missing, non-Basic, or malformed headers so callers
+    treat them the same as no credential.
     """
+    if not authorization:
+        return None
+    parts = authorization.split(None, 1)
+    if len(parts) != 2 or parts[0].lower() != "basic":
+        return None
+    token = parts[1].strip()
+    if not token:
+        return None
+    try:
+        decoded = base64.b64decode(token, validate=True).decode("utf-8")
+    except (binascii.Error, UnicodeDecodeError, ValueError):
+        return None
+    if ":" not in decoded:
+        return None
+    user, _, password = decoded.partition(":")
+    if not user:
+        return None
+    return user, password
+
+
+def key_is_authorized(presented: str | None, allowed: Iterable[str]) -> bool:
+    """Check a presented API key against the allowed set without leaking timing."""
     if presented is None:
         return False
     allowed_list = list(allowed)
@@ -183,38 +215,129 @@ def key_is_authorized(presented: str | None, allowed: Iterable[str]) -> bool:
     return False
 
 
-class APIKeyAuthMiddleware(BaseHTTPMiddleware):
-    """Require a valid key on every route except the ones left deliberately open.
+def basic_is_authorized(
+    presented: tuple[str, str] | None,
+    allowed: Iterable[tuple[str, str]],
+) -> bool:
+    """Check Basic credentials with constant-time-ish comparisons."""
+    if presented is None:
+        return False
+    user, password = presented
+    for cand_user, cand_password in allowed:
+        user_ok = secrets.compare_digest(user, cand_user)
+        pass_ok = secrets.compare_digest(password, cand_password)
+        if user_ok and pass_ok:
+            return True
+    return False
 
-    Installed by :func:`~buildml.serving.app.create_serving_app` when
-    ``api_keys`` is given. Requests without a valid credential get a 401 with a
-    ``WWW-Authenticate`` header naming the scheme, so a client knows what to
-    send rather than guessing.
 
-    Attributes
-    ----------
-    api_keys:
-        The accepted credentials.
-    open_paths:
-        Routes that skip the check.
+def request_is_authorized(
+    *,
+    authorization: str | None,
+    api_key_header: str | None,
+    api_keys: Iterable[str],
+    basic_credentials: Iterable[tuple[str, str]],
+) -> bool:
+    """Return True when API-key **or** Basic credentials authorize the request."""
+    keys = list(api_keys)
+    basics = list(basic_credentials)
+    if keys:
+        presented_key = extract_presented_key(authorization, api_key_header)
+        if key_is_authorized(presented_key, keys):
+            return True
+    if basics:
+        presented_basic = extract_basic_credentials(authorization)
+        if basic_is_authorized(presented_basic, basics):
+            return True
+    return False
 
-    Notes
-    -----
-    **``/health`` is open by design.** Liveness probes and load balancers cannot
-    usually be configured with credentials, and a probe that fails
-    authentication looks identical to a dead process. The health response
-    deliberately contains no data about the model beyond what it is serving.
 
-    **``/docs`` and ``/openapi.json`` are also open**, which means the request
-    schema is public. Pass an ``open_paths`` set containing only ``/health`` to
-    close them.
+def _www_authenticate_value(*, api_keys: bool, basic: bool) -> str:
+    parts: list[str] = []
+    if api_keys:
+        parts.append("Bearer")
+    if basic:
+        parts.append('Basic realm="buildml-serve"')
+    return ", ".join(parts) if parts else "Bearer"
 
-    **Path matching is exact.** A path with a trailing slash, or any route not
-    listed verbatim, is protected.
 
-    See Also
-    --------
-    buildml.serving.app.create_serving_app : Where this gets installed.
+def _unauthorized_detail(*, api_keys: bool, basic: bool) -> str:
+    options: list[str] = []
+    if api_keys:
+        options.append("Authorization: Bearer <key> or X-API-Key: <key>")
+    if basic:
+        options.append("Authorization: Basic <base64(user:pass)>")
+    joined = " or ".join(options) if options else "a valid credential"
+    return f"Unauthorized. Provide {joined}."
+
+
+class ServingAuthMiddleware(BaseHTTPMiddleware):
+    """Require API-key and/or HTTP Basic credentials on protected routes.
+
+    Either configured mechanism may authorize. ``/health`` stays open for
+    probes. Docs/OpenAPI paths are open only when included in ``open_paths``
+    (closed by default when auth is enabled and docs are not opted in).
+    """
+
+    def __init__(
+        self,
+        app: Any,
+        *,
+        api_keys: frozenset[str] | None = None,
+        basic_credentials: frozenset[tuple[str, str]] | None = None,
+        open_paths: frozenset[str] | None = None,
+    ) -> None:
+        super().__init__(app)
+        self.api_keys = api_keys or frozenset()
+        self.basic_credentials = basic_credentials or frozenset()
+        if not self.api_keys and not self.basic_credentials:
+            raise ValidationError(
+                "ServingAuthMiddleware requires api_keys and/or basic_credentials"
+            )
+        self.open_paths = (
+            open_paths
+            if open_paths is not None
+            else DEFAULT_OPEN_PATHS_HEALTH_ONLY
+        )
+
+    async def dispatch(self, request: Request, call_next: Any) -> Response:
+        path = request.url.path
+        if path in self.open_paths:
+            return cast(Response, await call_next(request))
+        authorized = request_is_authorized(
+            authorization=request.headers.get("authorization"),
+            api_key_header=request.headers.get("x-api-key"),
+            api_keys=self.api_keys,
+            basic_credentials=self.basic_credentials,
+        )
+        if not authorized:
+            has_keys = bool(self.api_keys)
+            has_basic = bool(self.basic_credentials)
+            return cast(
+                Response,
+                JSONResponse(
+                    {
+                        "detail": _unauthorized_detail(
+                            api_keys=has_keys, basic=has_basic
+                        )
+                    },
+                    status_code=401,
+                    headers={
+                        "WWW-Authenticate": _www_authenticate_value(
+                            api_keys=has_keys, basic=has_basic
+                        )
+                    },
+                ),
+            )
+        return cast(Response, await call_next(request))
+
+
+class APIKeyAuthMiddleware(ServingAuthMiddleware):
+    """Backward-compatible API-key-only middleware.
+
+    Prefer :class:`ServingAuthMiddleware` when configuring Basic auth as well.
+    Default ``open_paths`` historically included docs; callers that want closed
+    docs should pass ``open_paths`` explicitly (``create_serving_app`` does).
     """
 
     def __init__(
@@ -224,73 +347,13 @@ class APIKeyAuthMiddleware(BaseHTTPMiddleware):
         api_keys: frozenset[str],
         open_paths: frozenset[str] | None = None,
     ) -> None:
-        """Wrap an ASGI app, protecting every path outside ``open_paths``.
-
-        The allowed keys and open paths are captured once here rather than read
-        per request, so the set a request is checked against cannot change while
-        the server is running.
-
-        Parameters
-        ----------
-        app:
-            The ASGI application to wrap. Supplied by Starlette when the
-            middleware is added, not by user code.
-        api_keys:
-            The accepted keys, already normalised by
-            :func:`normalize_api_keys`. Passing an empty set makes every
-            protected request fail, which is a configuration error rather than
-            an open server.
-        open_paths:
-            Exact paths that skip the check. Defaults to ``/health``, ``/docs``,
-            and ``/openapi.json``. Pass a narrower set to close the docs.
-        """
-        super().__init__(app)
-        self.api_keys = api_keys
-        self.open_paths = open_paths or frozenset({"/health", "/docs", "/openapi.json"})
-
-    async def dispatch(self, request: Request, call_next: Any) -> Response:
-        """Let the request through, or answer it with a 401.
-
-        Open paths pass straight to the next handler. Everything else must carry
-        a credential in either accepted header that matches a configured key.
-
-        Parameters
-        ----------
-        request:
-            The incoming request, inspected for its path and auth headers.
-        call_next:
-            The rest of the middleware chain, awaited only for authorised
-            requests.
-
-        Returns
-        -------
-        Response
-            The downstream response, or a 401 carrying ``WWW-Authenticate:
-            Bearer`` and a message naming both accepted headers.
-
-        Notes
-        -----
-        **The rejection is deliberately uninformative about why.** A missing
-        credential, a malformed header, and a wrong key all produce the same
-        response, since distinguishing them tells an attacker which part to
-        vary.
-        """
-        path = request.url.path
-        if path in self.open_paths:
-            return await call_next(request)
-        presented = extract_presented_key(
-            request.headers.get("authorization"),
-            request.headers.get("x-api-key"),
+        super().__init__(
+            app,
+            api_keys=api_keys,
+            basic_credentials=frozenset(),
+            open_paths=(
+                open_paths
+                if open_paths is not None
+                else DEFAULT_OPEN_PATHS_WITH_DOCS
+            ),
         )
-        if not key_is_authorized(presented, self.api_keys):
-            return JSONResponse(
-                {
-                    "detail": (
-                        "Unauthorized. Provide Authorization: Bearer <key> "
-                        "or X-API-Key: <key>."
-                    )
-                },
-                status_code=401,
-                headers={"WWW-Authenticate": "Bearer"},
-            )
-        return await call_next(request)

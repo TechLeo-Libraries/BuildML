@@ -1,21 +1,21 @@
 # Case-based reasoning deep guide
 
-## What shipped
+## Scope
 
 BuildML’s CBR path is a **Session-native tabular case memory** with retrieve →
 reuse/adapt → optional retain, explanation traces, and a dedicated bundle.
 
 | Surface | Role |
 | --- | --- |
-| `fit_cbr` | Build case base from Session **train** |
-| `retrieve_cases` | kNN neighbors (no reuse) |
-| `predict_cbr` | Retrieve + reuse (+ `CaseTrace`) |
-| `evaluate_cbr` | Holdout accuracy/RMSE (+ mean neighbor distance) |
-| `retain_cbr` | Lite retain with disclosure; refuse holdout indices |
-| `save_cbr_bundle` / `load_cbr_bundle` | `buildml.cbr_bundle.v1` |
-| `cbr_capability_matrix()` | Honest backend / extra matrix |
+| `session.cbr.fit` | Build case base from Session **train** |
+| `session.cbr.retrieve` | kNN neighbors (no reuse) |
+| `session.cbr.predict` | Retrieve + reuse (+ `CaseTrace`) |
+| `session.cbr.evaluate` | Holdout accuracy/RMSE (+ mean neighbor distance) |
+| `session.cbr.retain` | Lite retain with disclosure; refuse holdout indices |
+| `session.cbr.save_bundle` / `session.cbr.load_bundle` | `buildml.cbr_bundle.v1` |
+| `session.cbr.capability_matrix()` | Honest backend / extra matrix |
 
-## Backends (R6.7 industry depth)
+## Backends (industry depth)
 
 | `backend` | Extra | Retrieval |
 | --- | --- | --- |
@@ -24,21 +24,21 @@ reuse/adapt → optional retain, explanation traces, and a dedicated bundle.
 | `embedding` | `buildml[rag]` or `buildml[ssl]` | sentence-transformer case embeddings (+ optional numeric concat) |
 | `torch` | `buildml[torch]` | Learned metric MLP encoder + kNN |
 
-Pass `backend=` on `fit_cbr`, `retrieve_cases`, and `predict_cbr`. Case
+Pass `backend=` on `session.cbr.fit`, `session.cbr.retrieve`, and `session.cbr.predict`. Case
 influence traces (`CaseTrace`) are preserved for all backends.
 
 ```python
-matrix = Session.cbr_capability_matrix()
+matrix = session.cbr.capability_matrix()
 print(matrix["default_backend_when_installed"])
 
-session.fit_cbr(backend="industry", metric="euclidean", k=5)
+session.cbr.fit(backend="industry", metric="euclidean", k=5)
 # or backend=None → honest default when cbr-industry is installed
 ```
 
 Text/hybrid cases:
 
 ```python
-session.fit_cbr(
+session.cbr.fit(
     backend="embedding",
     text_columns=["description"],
     text_model_name="sentence-transformers/all-MiniLM-L6-v2",
@@ -58,7 +58,7 @@ session.fit_cbr(
 
 Categorical columns are **explicit** via `categorical_columns=` (used by
 `mixed` on the sklearn backend). Train-fit transforms (mean/scale, ranges, cat
-vocabularies, encoders, ANN indexes) are frozen at `fit_cbr` and reused at
+vocabularies, encoders, ANN indexes) are frozen at `session.cbr.fit` and reused at
 score/retain time.
 
 ## Reuse / adapt
@@ -89,10 +89,10 @@ grounding LLM output.
 
 ## Leakage discipline
 
-- Require `SplitPlan` before `fit_cbr`.
+- Require `SplitPlan` before `session.cbr.fit`.
 - Case memory at fit: **train only**.
 - Holdout partitions: retrieve / predict / evaluate only.
-- `retain_cbr` hard-refuses validation/test **label** indices and requires
+- `session.cbr.retain` hard-refuses validation/test **label** indices and requires
   `source_disclosure`.
 - Distance transforms and ANN indexes are never refit on holdout or retained rows.
 - Bundles store the plan; Session checkpoints do **not**.
@@ -103,14 +103,14 @@ grounding LLM output.
 - Retaining Session test rows “to improve accuracy.”
 - Treating in-sample `train_score` as holdout performance (self is usually
   nearest).
-- Routing CBR through `rag_retrieve` / `rag_generate`.
+- Routing CBR through `session.rag.retrieve` / `session.rag.generate`.
 - Expecting `checkpoint_load` to restore `CbrPlan`.
 - Calling embedding backend “RAG” because it uses sentence-transformers.
 
 ## Bundle boundary
 
 See `buildml.cbr.checkpoint.CHECKPOINT_BOUNDARY`. Reload workflow via
-`checkpoint_load`; reload the learner via `load_cbr_bundle`.
+`checkpoint_load`; reload the learner via `session.cbr.load_bundle`.
 
 ## Benchmark
 

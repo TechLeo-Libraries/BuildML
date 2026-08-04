@@ -8,8 +8,11 @@ from buildml.anomaly.extras import (
     anomaly_industry_available,
     gradient_boosting_extras_available,
     lightgbm_available,
+    lightgbm_spec_present,
     pyod_available,
+    pyod_spec_present,
     xgboost_available,
+    xgboost_spec_present,
 )
 from buildml.dl.extras import torch_available, torch_spec_available
 
@@ -107,7 +110,18 @@ dict[str, Any]
             "torch backend 'available' uses a real import probe (torch_available). "
             "torch_spec_present is the cheap find_spec signal only."
         ),
-        "industry_extra_present": anomaly_industry_available(),
+        "industry_extra_present": (
+            pyod_spec_present()
+            or lightgbm_spec_present()
+            or xgboost_spec_present()
+        ),
+        "industry_runtime_present": anomaly_industry_available(),
+        "industry_import_honesty": (
+            "pyod / supervised_xgb / supervised_lgbm 'available' and "
+            "industry_runtime_present use subprocess import probes. "
+            "industry_extra_present / *_spec_present are find_spec only — "
+            "a discoverable wheel that fails to import reports available=False."
+        ),
     }
 
 

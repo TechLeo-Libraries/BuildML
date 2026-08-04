@@ -26,18 +26,18 @@ lexical hashing + dense-only retrieve (CI-safe, disclosed in results).
 [AI tools](ai-tools-operator-patterns.md) (RAG on the allowlist).
 
 Classical `Session.fit` and Torch `*_torch` stay unchanged. RAG methods use the
-`rag_*` prefix and store results in `session.rag_index_result` /
-`session.rag_retrieve_result` / `session.rag_generate_result` /
-`session.rag_eval_result`.
+`rag_*` prefix and store results in `session.rag.index_result` /
+`session.rag.retrieve_result` / `session.rag.generate_result` /
+`session.rag.eval_result`.
 
-Distinct from tabular LTR (`fit_ranker` on labeled query–item feature rows) and
-from recommenders (`fit_recommender` user–item CF): see
+Distinct from tabular LTR (`session.ranking.fit` on labeled query–item feature rows) and
+from recommenders (`session.recommender.fit` user–item CF): see
 [LTR quickstart](quickstart-ranking.md).
 
 The path is **ingest → chunk → embed/index → retrieve → generate → evaluate →
-bundle**. Grounded generate needs a chat provider (`ai_configure`, or pass
+bundle**. Grounded generate needs a chat provider (`session.ai.configure`, or pass
 `provider=` such as `EchoGroundedProvider` for offline demos). The AI operator
-(`buildml.ai`) can also call `rag_retrieve` / `rag_generate` as allowlisted tools.
+(`buildml.ai`) can also call `session.rag.retrieve` / `session.rag.generate` as allowlisted tools.
 
 ```python
 from buildml import Session
@@ -68,28 +68,28 @@ docs = [
 ]
 
 session = Session()
-session.rag_ingest_corpus(docs)
-session.rag_chunk(size=160, overlap=32, strategy="recursive")
-session.rag_embed_and_index()  # auto: ST when buildml[rag] installed
+session.rag.ingest_corpus(docs)
+session.rag.chunk(size=160, overlap=32, strategy="recursive")
+session.rag.embed_and_index()  # auto: ST when buildml[rag] installed
 
 # Default retrieve is hybrid (BM25 + dense RRF) when rag extra is present
-hybrid = session.rag_retrieve("corpus contamination indexed answers", k=3)
-dense = session.rag_retrieve("corpus contamination indexed answers", k=3, mode="dense")
+hybrid = session.rag.retrieve("corpus contamination indexed answers", k=3)
+dense = session.rag.retrieve("corpus contamination indexed answers", k=3, mode="dense")
 print(hybrid.mode, dense.hits[0].doc_id)
 
 # Explicit lexical fallback (no model download):
-# session.rag_embed_and_index(embedder="hashing")
+# session.rag.embed_and_index(embedder="hashing")
 
 from buildml.rag.generate import EchoGroundedProvider
 
-answer = session.rag_generate(
+answer = session.rag.generate(
     "What causes evaluation contamination?",
     provider=EchoGroundedProvider(),
     k=3,
 )
 print(answer.answer, [c.doc_id for c in answer.citations])
 
-metrics = session.rag_evaluate(
+metrics = session.rag.evaluate(
     {
         "corpus contamination indexed answers": ["leak"],
         "supervised learning hold out test": ["ml"],
@@ -98,7 +98,7 @@ metrics = session.rag_evaluate(
 )
 print(metrics.recall_at_k, metrics.mrr, metrics.ndcg_at_k)
 
-session.save_rag_bundle("artifacts/rag_bundle")
+session.rag.save_bundle("artifacts/rag_bundle")
 ```
 
 ## Extras

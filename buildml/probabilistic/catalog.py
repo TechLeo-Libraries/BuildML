@@ -6,7 +6,9 @@ from typing import Any, Literal
 
 from buildml.probabilistic.extras import (
     mapie_available,
+    mapie_spec_present,
     ngboost_available,
+    ngboost_spec_present,
     probabilistic_industry_available,
 )
 
@@ -121,7 +123,16 @@ def probabilistic_capability_matrix() -> dict[str, Any]:
             "Bayesian deep nets",
             "Full MAPIE algorithm zoo beyond split/CV+/jackknife+",
         ],
-        "industry_extra_present": probabilistic_industry_available(),
+        "industry_extra_present": mapie_spec_present() or ngboost_spec_present(),
+        "industry_runtime_present": probabilistic_industry_available(),
+        "mapie_spec_present": mapie_spec_present(),
+        "ngboost_spec_present": ngboost_spec_present(),
+        "industry_import_honesty": (
+            "mapie / ngboost backend 'available' and industry_runtime_present "
+            "use subprocess import probes. industry_extra_present / "
+            "*_spec_present are find_spec only — spec-present but broken "
+            "wheels report available=False."
+        ),
         "classical_calibration_unchanged": (
             "Session.calibration() remains for classical fit(...) classifiers; "
             "evaluate_probabilistic reports NLL/Brier/ECE for probabilistic plans."

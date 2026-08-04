@@ -2,7 +2,7 @@
 
 Requires: pip install 'buildml[graph]'
 Honesty: node classification with NetworkX metrics + sklearn. Optional PyG
-path: ``fit_graph(method='pyg', pyg_model='graphsage')`` with ``buildml[graph-pyg]``.
+path: ``session.graph.fit(method='pyg', pyg_model='graphsage')`` with ``buildml[graph-pyg]``.
 Not Neo4j/KG.
 """
 
@@ -40,14 +40,14 @@ def main() -> None:
         )
         .split(test_size=0.2, validation_size=0.2, random_state=0, stratify=True)
     )
-    session.set_graph(edges_df, node_id_col="node_id")
+    session.graph.set_spec(edges_df, node_id_col="node_id")
     session.scale(columns=["f1", "f2"], method="standard")
-    fit = session.fit_graph(method="classical", mode="inductive", random_state=0)
+    fit = session.graph.fit(method="classical", mode="inductive", random_state=0)
     print("fit", fit.to_dict())
-    ev = session.evaluate_graph(partition="validation")
+    ev = session.graph.evaluate(partition="validation")
     print("eval", ev.metrics)
     out = Path("artifacts/graph_classical_bundle")
-    session.save_graph_bundle(out)
+    session.graph.save_bundle(out)
     print("bundle", out)
 
 

@@ -8,15 +8,15 @@ database and not an exhaustive PyG research suite.
 
 1. Ingest a **node table** (one row per node) and assign roles. Prefer
    `node_id` with role `id`.
-2. `set_graph(edges, node_id_col=...)` attaches structure. Endpoints must match
+2. `session.graph.set_spec(edges, node_id_col=...)` attaches structure. Endpoints must match
    `node_id` values (not raw row positions unless those *are* your ids).
 3. `split` creates **node** partitions (train / validation / test).
-4. `fit_graph` learns under an explicit `mode`:
+4. `session.graph.fit` learns under an explicit `mode`:
    - **inductive** (default): fit edges = train–train only.
    - **transductive**: full adjacency; loss / sklearn fit rows = train labels
      only (holdout features may participate via edges: disclosed).
-5. `predict_graph` / `evaluate_graph` score holdout nodes with a frozen plan.
-6. `save_graph_bundle` / `load_graph_bundle` persist `GraphPlan` separately
+5. `session.graph.predict` / `session.graph.evaluate` score holdout nodes with a frozen plan.
+6. `session.graph.save_bundle` / `session.graph.load_bundle` persist `GraphPlan` separately
    from Session checkpoints.
 
 ## Paths
@@ -55,7 +55,7 @@ print(graph_capability_matrix()["backends"])
 `buildml.graph_bundle.v1` stores `GraphPlan` (GraphSpec + estimator/GCN/PyG +
 label encoder). Session checkpoints do **not** embed the graph learner.
 
-## Residuals (honest)
+## Known limits
 
 - Node classification only (no link prediction / graph-level classify depth).
 - Not Neo4j / KG (separate `buildml.kg` path).

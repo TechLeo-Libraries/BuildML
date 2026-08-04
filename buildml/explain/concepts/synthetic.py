@@ -13,8 +13,8 @@ SYNTHETIC_NOTES: dict[str, ConceptNote] = {
             key="synthetic-train-only-generator",
             title="Train-only tabular synthesizers",
             summary=(
-                "fit_synthesizer estimates schema and generator parameters on "
-                "Session train only, then sample_synthetic draws new rows."
+                "session.synthetic.fit estimates schema and generator parameters on "
+                "Session train only, then session.synthetic.sample draws new rows."
             ),
             definition=(
                 "A synthesizer is a fitted generative model of the train "
@@ -32,18 +32,18 @@ SYNTHETIC_NOTES: dict[str, ConceptNote] = {
                 "Synthetic augmentation that peeks at test inflates reported utility.",
             ),
             how_buildml_uses=(
-                "Session.fit_synthesizer(...); sample_synthetic(...); "
-                "evaluate_synthetic(partition='test').",
+                "session.synthetic.fit(...); session.synthetic.sample(...); "
+                "session.synthetic.evaluate(partition='test').",
             ),
             interpretation_rules=(
-                "Always train-only fit; prefer test for evaluate_synthetic.",
+                "Always train-only fit; prefer test for session.synthetic.evaluate.",
             ),
             assumptions=("Split present; non-empty train.",),
             failure_modes=("Fitting on validation/test; tiny train for copula.",),
             anti_patterns=("Calling bootstrap samples 'anonymous data'.",),
             worked_example_pattern=(
-                "split → fit_synthesizer(method='gaussian_copula') → "
-                "sample_synthetic(n=500) → evaluate_synthetic(mode='tstr').",
+                "split → session.synthetic.fit(method='gaussian_copula') → "
+                "session.synthetic.sample(n=500) → session.synthetic.evaluate(mode='tstr').",
             ),
             related_concepts=(
                 "synthetic-vs-resample",
@@ -57,7 +57,7 @@ SYNTHETIC_NOTES: dict[str, ConceptNote] = {
             title="Synthetic generators vs Session.resample",
             summary=(
                 "resample rebalances train class counts (imblearn) as preprocess; "
-                "fit_synthesizer fits a reusable generator plan."
+                "session.synthetic.fit fits a reusable generator plan."
             ),
             definition=(
                 "resample mutates train membership for imbalance; the synthetic "
@@ -67,7 +67,7 @@ SYNTHETIC_NOTES: dict[str, ConceptNote] = {
             intuition=(
                 "Need more minority rows for a classifier → resample. "
                 "Need a general tabular generator / augmentation product → "
-                "fit_synthesizer."
+                "session.synthetic.fit."
             ),
             formal_idea=("Different objectives: P(y) rebalance vs p(x,y) model."),
             why_it_matters=(
@@ -75,7 +75,7 @@ SYNTHETIC_NOTES: dict[str, ConceptNote] = {
             ),
             how_buildml_uses=(
                 "Session.resample(sampler='smote'); "
-                "Session.fit_synthesizer(method='smote') for reusable sampling.",
+                "session.synthetic.fit(method='smote') for reusable sampling.",
             ),
             interpretation_rules=(
                 "method='smote' in synthetic still requires buildml[imbalanced].",
@@ -84,8 +84,8 @@ SYNTHETIC_NOTES: dict[str, ConceptNote] = {
             failure_modes=("Using resample as a general synthetic-data product.",),
             anti_patterns=("Assuming resample persists a generator bundle.",),
             worked_example_pattern=(
-                "For imbalance: resample → fit. For generator: fit_synthesizer → "
-                "sample_synthetic → save_synthetic_bundle.",
+                "For imbalance: resample → fit. For generator: session.synthetic.fit → "
+                "session.synthetic.sample → session.synthetic.save_bundle.",
             ),
             related_concepts=(
                 "synthetic-train-only-generator",
@@ -97,7 +97,7 @@ SYNTHETIC_NOTES: dict[str, ConceptNote] = {
             key="synthetic-fidelity-vs-tstr",
             title="Fidelity metrics vs TSTR utility",
             summary=(
-                "evaluate_synthetic(mode='fidelity') scores distributional "
+                "session.synthetic.evaluate(mode='fidelity') scores distributional "
                 "match; mode='tstr' trains on synthetic and tests on real."
             ),
             definition=(
@@ -115,7 +115,7 @@ SYNTHETIC_NOTES: dict[str, ConceptNote] = {
                 "Users must know which claim an eval supports.",
             ),
             how_buildml_uses=(
-                "evaluate_synthetic(mode='fidelity'|'tstr', partition='test').",
+                "session.synthetic.evaluate(mode='fidelity'|'tstr', partition='test').",
             ),
             interpretation_rules=(
                 "Prefer holdout partition for TSTR; disclose TRTR baseline when available.",
@@ -124,8 +124,8 @@ SYNTHETIC_NOTES: dict[str, ConceptNote] = {
             failure_modes=("Tuning generator knobs against test TSTR repeatedly.",),
             anti_patterns=("Reporting fidelity as a privacy certificate.",),
             worked_example_pattern=(
-                "fit_synthesizer → evaluate_synthetic(mode='fidelity') and "
-                "evaluate_synthetic(mode='tstr').",
+                "session.synthetic.fit → session.synthetic.evaluate(mode='fidelity') and "
+                "session.synthetic.evaluate(mode='tstr').",
             ),
             related_concepts=(
                 "synthetic-train-only-generator",
@@ -136,7 +136,7 @@ SYNTHETIC_NOTES: dict[str, ConceptNote] = {
             key="synthetic-merge-provenance",
             title="Explicit merge with provenance",
             summary=(
-                "sample_synthetic defaults to returning a Frame; "
+                "session.synthetic.sample defaults to returning a Frame; "
                 "merge_mode='extend_train' appends with an ignore-role marker."
             ),
             definition=(
@@ -150,7 +150,7 @@ SYNTHETIC_NOTES: dict[str, ConceptNote] = {
             formal_idea=("train' = train ∪ {(x̃, flag=1)}; val, test unchanged."),
             why_it_matters=("Silent merges corrupt audit trails and metrics.",),
             how_buildml_uses=(
-                "sample_synthetic(merge_mode='extend_train', provenance_column='_synthetic').",
+                "session.synthetic.sample(merge_mode='extend_train', provenance_column='_synthetic').",
             ),
             interpretation_rules=(
                 "Default merge_mode='none'; extend_train clears classical FitResult.",
@@ -159,7 +159,7 @@ SYNTHETIC_NOTES: dict[str, ConceptNote] = {
             failure_modes=("Reusing an existing provenance column name.",),
             anti_patterns=("Concatenating synthetics into test.",),
             worked_example_pattern=(
-                "sample_synthetic(n=200, merge_mode='extend_train') → refit on new train.",
+                "session.synthetic.sample(n=200, merge_mode='extend_train') → refit on new train.",
             ),
             related_concepts=(
                 "synthetic-vs-resample",
@@ -196,7 +196,7 @@ SYNTHETIC_NOTES: dict[str, ConceptNote] = {
             failure_modes=("Treating bootstrap samples as public-safe releases.",),
             anti_patterns=("Marketing synthetic as DP without implementing DP.",),
             worked_example_pattern=(
-                "Read fit_synthesizer disclosures; keep real PII out of shared samples.",
+                "Read session.synthetic.fit disclosures; keep real PII out of shared samples.",
             ),
             related_concepts=(
                 "synthetic-fidelity-vs-tstr",
@@ -216,12 +216,12 @@ SYNTHETIC_NOTES: dict[str, ConceptNote] = {
             ),
             intuition=(
                 "Reload workflow via checkpoint_load; reload generator via "
-                "load_synthetic_bundle."
+                "session.synthetic.load_bundle."
             ),
             formal_idea=("Orthogonal artifacts; compose explicitly."),
             why_it_matters=("Avoid assuming one artifact contains the other.",),
             how_buildml_uses=(
-                "save_synthetic_bundle / load_synthetic_bundle.",
+                "session.synthetic.save_bundle / session.synthetic.load_bundle.",
             ),
             interpretation_rules=(
                 "Confirm format buildml.synthetic_bundle.v1 in meta.json.",
@@ -230,7 +230,7 @@ SYNTHETIC_NOTES: dict[str, ConceptNote] = {
             failure_modes=("Incomplete bundle missing synthetic_plan.joblib.",),
             anti_patterns=("Assuming checkpoint_save includes the synthesizer.",),
             worked_example_pattern=(
-                "fit_synthesizer → save_synthetic_bundle → load_synthetic_bundle → sample.",
+                "session.synthetic.fit → session.synthetic.save_bundle → session.synthetic.load_bundle → sample.",
             ),
             related_concepts=(
                 "synthetic-train-only-generator",

@@ -79,7 +79,7 @@ def main() -> None:
 
     # --- Stage 1: NLP text classifier ---
     try:
-        nlp = (
+        session = (
             Session.ingest(tickets.copy())
             .set_roles(
                 {
@@ -96,12 +96,12 @@ def main() -> None:
                 random_state=ctx.seed,
             )
         )
-        profile = nlp.profile_text_corpus(
+        profile = session.nlp.profile_corpus(
             text_column="body",
             near_duplicate_threshold=0.9,
             detect_languages=True,
         )
-        fit = nlp.fit_text_classifier(
+        fit = session.nlp.fit_classifier(
             text_column="body",
             vectorizer="tfidf",
             estimator="logistic",
@@ -110,10 +110,10 @@ def main() -> None:
             class_weight="balanced",
             random_state=ctx.seed,
         )
-        validation = nlp.evaluate_text_classifier(partition="validation")
+        validation = session.nlp.evaluate(partition="validation")
         assert_no_test_in_selection(selection_partition="validation")
-        test = nlp.evaluate_text_classifier(partition="test")
-        topics = nlp.fit_topics(
+        test = session.nlp.evaluate(partition="test")
+        topics = session.nlp.fit_topics(
             method="nmf",
             n_topics=4,
             text_column="body",
@@ -143,7 +143,7 @@ def main() -> None:
     # --- Stage 2: CBR case memory ---
     cases, case_meta = _claim_cases(seed=ctx.seed)
     try:
-        cbr = (
+        session = (
             Session.ingest(cases.copy())
             .set_roles(
                 {
@@ -164,15 +164,15 @@ def main() -> None:
             )
             .scale(method="standard")
         )
-        fit_c = cbr.fit_cbr(
+        fit_c = session.cbr.fit(
             task="classification",
             metric="euclidean",
             reuse="distance_weighted",
             k=5,
             random_state=ctx.seed,
         )
-        ev_c = cbr.evaluate_cbr(partition="test")
-        plan_c = cbr.split_plan
+        ev_c = session.cbr.evaluate(partition="test")
+        plan_c = session.split_plan
         assert plan_c is not None
         stages["cbr"] = {
             "status": "ok",
@@ -189,12 +189,12 @@ def main() -> None:
     except (MissingExtraError, TypeError, ValueError) as exc:
         stages["cbr"] = {"status": "skipped", "error": f"{type(exc).__name__}: {exc}"}
         skip_notes.append(f"cbr: {exc}")
-        cbr = None
+        session = None
         plan_c = None
 
     # --- Stage 3: symbolic guardrails ---
     try:
-        if cbr is None or plan_c is None:
+        if session is None or plan_c is None:
             raise ValueError("CBR stage unavailable")
         sym = (
             Session.ingest(cases.copy())
@@ -219,12 +219,12 @@ def main() -> None:
             selection_partition="train", evaluation_partition="test"
         )
         try:
-            fit_s = sym.fit_symbolic(
+            fit_s = sym.symbolic.fit(
                 source="decision_tree", max_depth=3, random_state=ctx.seed
             )
         except TypeError:
-            fit_s = sym.fit_symbolic(method="decision_tree", random_state=ctx.seed)
-        ev_s = sym.evaluate_symbolic(partition="test")
+            fit_s = sym.symbolic.fit(method="decision_tree", random_state=ctx.seed)
+        ev_s = sym.symbolic.evaluate(partition="test")
         stages["symbolic"] = {
             "status": "ok",
             "fit": metrics_round(fit_s.to_dict() if hasattr(fit_s, "to_dict") else {}),

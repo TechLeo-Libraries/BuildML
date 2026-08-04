@@ -134,34 +134,34 @@ def main() -> None:
     st_ok = extra_available("sentence_transformers")
 
     session = Session()
-    session.rag_ingest_corpus(docs)
-    session.rag_chunk(size=180, overlap=40)
+    session.rag.ingest_corpus(docs)
+    session.rag.chunk(size=180, overlap=40)
 
     embed_backend = "hashing"
     try:
         if st_ok:
-            session.rag_embed_and_index(embedder="auto")
+            session.rag.embed_and_index(embedder="auto")
             embed_backend = "sentence_transformers_or_auto"
         else:
-            session.rag_embed_and_index(embedder="hashing")
+            session.rag.embed_and_index(embedder="hashing")
             embed_backend = "hashing"
     except (MissingExtraError, TypeError, ValueError):
-        session.rag_embed_and_index(embedder="hashing")
+        session.rag.embed_and_index(embedder="hashing")
         embed_backend = "hashing"
 
-    sample = session.rag_retrieve(
+    sample = session.rag.retrieve(
         "How many paid time off days accrue each year?",
         k=3,
         mode="hybrid",
     )
-    answer = session.rag_generate(
+    answer = session.rag.generate(
         "What is the PTO accrual policy?",
         provider=EchoGroundedProvider(),
         k=3,
     )
-    metrics = session.rag_evaluate(judgments, k=3)
+    metrics = session.rag.evaluate(judgments, k=3)
     try:
-        bundle = session.save_rag_bundle(ctx.artifacts_dir / "rag_bundle")
+        bundle = session.rag.save_bundle(ctx.artifacts_dir / "rag_bundle")
         bundle_path = str(bundle)
     except Exception as exc:  # noqa: BLE001
         bundle_path = f"unavailable: {type(exc).__name__}: {exc}"
@@ -201,7 +201,7 @@ def main() -> None:
             "bundle_path": bundle_path,
             "leakage_controls": [
                 "Corpus contains policy articles only — not labeled answers",
-                "Judgments used solely in rag_evaluate (not indexed)",
+                "Judgments used solely in session.rag.evaluate (not indexed)",
                 "EchoGroundedProvider for offline generate (no live LLM required)",
             ],
             "industry_comparison": {

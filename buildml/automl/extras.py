@@ -102,109 +102,71 @@ def require_autogluon(*, feature: str = "AutoGluon tabular AutoML adapter") -> A
     return TabularPredictor
 
 
+def _runtime_ok(module: str) -> bool:
+    from buildml.dl.extras import _subprocess_import_ok
+
+    return _subprocess_import_ok(module)
+
+
 def optuna_available() -> bool:
-    """Return whether ``optuna`` appears on the import path without importing it.
-
-    Used for capability-matrix disclosure before attempting a real import probe.
-
-    Returns
-    -------
-    bool
-        ``True`` when ``importlib.util.find_spec('optuna')`` succeeds.
-    """
-    return importlib.util.find_spec("optuna") is not None
+    """Return whether Optuna imports cleanly (subprocess probe)."""
+    if importlib.util.find_spec("optuna") is None:
+        return False
+    return _runtime_ok("optuna")
 
 
-def flaml_available() -> bool:
-    """Return whether ``flaml`` appears on the import path without importing it.
-
-    Gates the FLAML industry adapter without importing flaml at module load time.
-
-    Returns
-    -------
-    bool
-        ``True`` when ``importlib.util.find_spec('flaml')`` succeeds.
-    """
+def flaml_spec_present() -> bool:
+    """Cheap find_spec discovery for FLAML."""
     return importlib.util.find_spec("flaml") is not None
 
 
-def autogluon_available() -> bool:
-    """Return whether ``autogluon`` appears on the import path without importing it.
+def flaml_available() -> bool:
+    """Return whether FLAML imports cleanly (subprocess probe)."""
+    if not flaml_spec_present():
+        return False
+    return _runtime_ok("flaml")
 
-    Gates the AutoGluon industry adapter without importing autogluon at load time.
 
-    Returns
-    -------
-    bool
-        ``True`` when ``importlib.util.find_spec('autogluon')`` succeeds.
-    """
+def autogluon_spec_present() -> bool:
+    """Cheap find_spec discovery for AutoGluon."""
     return importlib.util.find_spec("autogluon") is not None
 
 
+def autogluon_available() -> bool:
+    """Return whether AutoGluon tabular imports cleanly (subprocess probe)."""
+    if not autogluon_spec_present():
+        return False
+    return _runtime_ok("autogluon.tabular")
+
+
 def lightgbm_available() -> bool:
-    """Return whether ``lightgbm`` appears on the import path without importing it.
-
-    Gates optional LightGBM estimator families in the native AutoML catalog.
-
-    Returns
-    -------
-    bool
-        ``True`` when ``importlib.util.find_spec('lightgbm')`` succeeds.
-    """
-    return importlib.util.find_spec("lightgbm") is not None
+    """Return whether LightGBM imports cleanly (subprocess probe)."""
+    if importlib.util.find_spec("lightgbm") is None:
+        return False
+    return _runtime_ok("lightgbm")
 
 
 def xgboost_available() -> bool:
-    """Return whether ``xgboost`` appears on the import path without importing it.
-
-    Gates optional XGBoost estimator families in the native AutoML catalog.
-
-    Returns
-    -------
-    bool
-        ``True`` when ``importlib.util.find_spec('xgboost')`` succeeds.
-    """
-    return importlib.util.find_spec("xgboost") is not None
+    """Return whether XGBoost imports cleanly (subprocess probe)."""
+    if importlib.util.find_spec("xgboost") is None:
+        return False
+    return _runtime_ok("xgboost")
 
 
 def catboost_available() -> bool:
-    """Return whether ``catboost`` appears on the import path without importing it.
-
-    Gates optional CatBoost estimator families in the native AutoML catalog.
-
-    Returns
-    -------
-    bool
-        ``True`` when ``importlib.util.find_spec('catboost')`` succeeds.
-    """
-    return importlib.util.find_spec("catboost") is not None
+    """Return whether CatBoost imports cleanly (subprocess probe)."""
+    if importlib.util.find_spec("catboost") is None:
+        return False
+    return _runtime_ok("catboost")
 
 
 def gradient_boosting_extras_available() -> bool:
-    """Return whether at least one industry GBDT library is importable.
-
-    Native AutoML extends its family catalog with LightGBM, XGBoost, and/or
-    CatBoost when the corresponding packages are installed.
-
-    Returns
-    -------
-    bool
-        ``True`` when any of lightgbm, xgboost, or catboost is discoverable.
-    """
+    """Return whether at least one industry GBDT library imports cleanly."""
     return lightgbm_available() or xgboost_available() or catboost_available()
 
 
 def automl_industry_available() -> bool:
-    """Return whether FLAML or AutoGluon industry adapters can be imported.
-
-    Industry backends bypass fold-local recipe search and run internal model
-    selection on train-only data.
-
-    Returns
-    -------
-    bool
-        ``True`` when flaml or autogluon is discoverable on the import path.
-    """
+    """Return whether FLAML or AutoGluon import cleanly at runtime."""
     return flaml_available() or autogluon_available()
 
 

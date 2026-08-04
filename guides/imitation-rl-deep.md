@@ -34,10 +34,10 @@ TD-control family; `mode="gym_reinforce"` returns the policy-gradient entry.
 
 | API | Role |
 | --- | --- |
-| `fit_imitation` / `predict_imitation_action` / `evaluate_imitation` | Behavioral cloning |
-| `save_imitation_bundle` / `load_imitation_bundle` | `buildml.imitation_bundle.v1` |
-| `fit_rl` / `act_rl` / `evaluate_rl` | Contextual bandit, tabular TD control, REINFORCE-lite, or SB3 |
-| `save_rl_bundle` / `load_rl_bundle` | `buildml.rl_bundle.v1` |
+| `session.rl.fit_imitation` / `session.rl.predict_imitation` / `session.rl.evaluate_imitation` | Behavioral cloning |
+| `session.rl.save_imitation_bundle` / `session.rl.load_imitation_bundle` | `buildml.imitation_bundle.v1` |
+| `session.rl.fit` / `session.rl.act` / `session.rl.evaluate` | Contextual bandit, tabular TD control, REINFORCE-lite, or SB3 |
+| `session.rl.save_bundle` / `session.rl.load_bundle` | `buildml.rl_bundle.v1` |
 
 Package: `buildml.rl` (lazy imports). Core stays numpy/pandas/sklearn.
 
@@ -70,7 +70,7 @@ Algorithms (`backend="sklearn"`, `mode="contextual_bandit"`):
 
 ### Offline evaluation (disclosed)
 
-`evaluate_rl` for bandits sets `offline=True` and reports DM / IPS / action_match_rate.
+`session.rl.evaluate` for bandits sets `offline=True` and reports DM / IPS / action_match_rate.
 These are **not** online A/B lifts.
 
 ---
@@ -79,7 +79,7 @@ These are **not** online A/B lifts.
 
 - `backend="native"`, `mode="gym_reinforce"`
 - Linear softmax REINFORCE teaching loop on discrete envs
-- `evaluate_rl` rolls out episodes (`offline=False`)
+- `session.rl.evaluate` rolls out episodes (`offline=False`)
 
 ---
 
@@ -96,7 +96,7 @@ an explicit `Q[s, a]` table updated by bootstrapping, with no neural network.
 | `double_q_learning` | Cross-evaluated `Q_A` / `Q_B` | Off-policy, no max bias |
 
 ```python
-session.fit_rl(
+session.rl.fit(
     mode="tabular_q",
     algorithm="q_learning",
     env_id="FrozenLake-v1",
@@ -107,12 +107,12 @@ session.fit_rl(
     epsilon_min=0.05,
     epsilon_decay=0.999,
 )
-ev = session.evaluate_rl(n_episodes=100)
+ev = session.rl.evaluate(n_episodes=100)
 print(ev.metrics["mean_return"], ev.metrics["unseen_state_rate"])
 ```
 
 Passing only `algorithm="sarsa"` (no `mode=`) routes to `tabular_q`
-automatically. `act_rl(observations=...)` returns per-action `Q(s, a)` as scores.
+automatically. `session.rl.act(observations=...)` returns per-action `Q(s, a)` as scores.
 
 **State discretization.** `Discrete` observation spaces (FrozenLake, Taxi,
 CliffWalking) index directly. `Box` spaces (CartPole) are binned uniformly into
@@ -139,14 +139,14 @@ much of the table was actually learned.
 - **Offline RL** (CQL/IQL/batch RL) is out of scope and disclosed in the capability matrix
 
 ```python
-session.fit_rl(
+session.rl.fit(
     backend="industry",
     mode="gym_sb3",
     algorithm="ppo",
     env_id="CartPole-v1",
     total_timesteps=25_000,
 )
-ev = session.evaluate_rl(n_episodes=20)
+ev = session.rl.evaluate(n_episodes=20)
 print(ev.metrics["mean_return"])
 ```
 
@@ -187,6 +187,6 @@ Benchmark: `python benchmarks/rl/policy_return.py` (BC baseline vs SB3 return).
 
 ---
 
-## Tracker
+## Scope notes
 
-IL+RL industry depth is **PASS** (R6.11). R6 sweep complete.
+IL+RL industry depth is shipped (Gymnasium / SB3 extras when installed).

@@ -145,6 +145,38 @@ def test_bandit_fit_act_eval_bundle(tmp_path: Path) -> None:
     assert reloaded.offline is True
 
 
+def test_bandit_bundle_roundtrip_metric_parity(tmp_path: Path) -> None:
+    """Save → load → re-score must reproduce offline DM/IPS metrics."""
+    session = _bandit_session()
+    session.rl.fit(
+        mode="contextual_bandit",
+        algorithm="linucb",
+        action_column="arm",
+        reward_column="reward",
+    )
+    ev = session.rl.evaluate(partition="validation")
+    assert ev.offline is True
+    assert "direct_method" in ev.metrics
+    assert "action_match_rate" in ev.metrics
+
+    out = tmp_path / "rl_bandit_bundle"
+    session.rl.save_bundle(out)
+    other = _bandit_session()
+    other.rl.load_bundle(out, trusted=True)
+    ev2 = other.rl.evaluate(partition="validation")
+    assert ev2.offline is True
+    assert ev2.metrics["direct_method"] == pytest.approx(
+        ev.metrics["direct_method"], rel=1e-6, abs=1e-6
+    )
+    assert ev2.metrics["action_match_rate"] == pytest.approx(
+        ev.metrics["action_match_rate"], rel=1e-6, abs=1e-6
+    )
+    if np.isfinite(ev.metrics.get("ips", float("nan"))):
+        assert ev2.metrics["ips"] == pytest.approx(
+            ev.metrics["ips"], rel=1e-6, abs=1e-6
+        )
+
+
 def test_epsilon_greedy_bandit() -> None:
     session = _bandit_session()
     fit = session.fit_rl(

@@ -44,7 +44,7 @@ NLP_NOTES: dict[str, ConceptNote] = {
             ),
             how_buildml_uses=(
                 "build_normalize_plan resolves config into a serializable TextNormalizePlan.",
-                "The same plan drives fit_text_classifier, fit_topics, extract_keyphrases, and summarize_text.",
+                "The same plan drives session.nlp.fit_classifier, session.nlp.fit_topics, session.nlp.extract_keyphrases, and session.nlp.summarize.",
                 "The plan travels inside buildml.nlp_bundle.v1 so a reloaded model preprocesses identically.",
             ),
             interpretation_rules=(
@@ -67,7 +67,7 @@ NLP_NOTES: dict[str, ConceptNote] = {
                 "Stripping punctuation before sentiment scoring and then wondering why emphasis disappeared.",
             ),
             worked_example_pattern=(
-                "fit_text_classifier(normalize_steps=['strip_html', 'lowercase', 'collapse_whitespace'], stopword_language='en') -> inspect nlp_text_plan.normalize_plan.",
+                "session.nlp.fit_classifier(normalize_steps=['strip_html', 'lowercase', 'collapse_whitespace'], stopword_language='en') -> inspect session.nlp.text_plan.normalize_plan.",
             ),
             related_concepts=(
                 "nlp-document-representation",
@@ -106,7 +106,7 @@ NLP_NOTES: dict[str, ConceptNote] = {
                 "Character n-grams survive typos and morphology where word n-grams fail.",
             ),
             how_buildml_uses=(
-                "fit_text_classifier(backend=..., vectorizer=..., analyzer=..., ngram_range=...).",
+                "session.nlp.fit_classifier(backend=..., vectorizer=..., analyzer=..., ngram_range=...).",
                 "Vocabulary, document frequencies, and idf are fitted on Session train only.",
                 "The fitted vectorizer is stored on NlpTextPlan and reused verbatim for predict and evaluate.",
             ),
@@ -131,7 +131,7 @@ NLP_NOTES: dict[str, ConceptNote] = {
                 "Reporting 'the model looks at the word X' after fitting a hashing vectorizer.",
             ),
             worked_example_pattern=(
-                "fit_text_classifier(vectorizer='tfidf', ngram_range=(1, 2)) -> evaluate_text_classifier() -> read metrics and oov_rate.",
+                "session.nlp.fit_classifier(vectorizer='tfidf', ngram_range=(1, 2)) -> session.nlp.evaluate() -> read metrics and oov_rate.",
             ),
             related_concepts=(
                 "nlp-text-normalization",
@@ -168,7 +168,7 @@ NLP_NOTES: dict[str, ConceptNote] = {
                 "Distinguishing per-document contributions from global weights prevents the common error of reading a global list as an explanation of one prediction.",
             ),
             how_buildml_uses=(
-                "interpret_text_prediction returns per-document TokenAttribution rows plus per-class global top tokens.",
+                "session.nlp.interpret returns per-document TokenAttribution rows plus per-class global top tokens.",
                 "Naive-Bayes heads use centred log-likelihoods and are labelled as ranking evidence, not additive terms.",
                 "Binary linear heads are expanded to two signed rows so the requested class is always explained in its own orientation.",
             ),
@@ -179,7 +179,7 @@ NLP_NOTES: dict[str, ConceptNote] = {
             ),
             assumptions=(
                 "The head is linear (logistic, linear SVM, SGD) or naive Bayes.",
-                "The plan carries feature names, which requires fitting through fit_text_classifier.",
+                "The plan carries feature names, which requires fitting through session.nlp.fit_classifier.",
             ),
             failure_modes=(
                 "Requesting attribution after fitting with vectorizer='hashing' (refused).",
@@ -192,7 +192,7 @@ NLP_NOTES: dict[str, ConceptNote] = {
                 "Treating high coefficients as causal effects of words.",
             ),
             worked_example_pattern=(
-                "fit_text_classifier(estimator='logistic') -> interpret_text_prediction(top_k=12) -> compare document_attributions with global_top_tokens.",
+                "session.nlp.fit_classifier(estimator='logistic') -> session.nlp.interpret(top_k=12) -> compare document_attributions with global_top_tokens.",
             ),
             related_concepts=(
                 "nlp-document-representation",
@@ -226,12 +226,12 @@ NLP_NOTES: dict[str, ConceptNote] = {
             ),
             why_it_matters=(
                 "Unsupervised structure invites over-claiming; coherence gives a number to argue with.",
-                "Fitting the vectorizer and decomposition on train only makes assign_topics on holdout a pure transform, which keeps topic features usable downstream.",
+                "Fitting the vectorizer and decomposition on train only makes session.nlp.assign_topics on holdout a pure transform, which keeps topic features usable downstream.",
                 "n_topics is a modelling decision, not a discovered truth.",
             ),
             how_buildml_uses=(
-                "fit_topics(method='nmf' | 'lda') fits on Session train and reports per-topic NPMI coherence and train mass.",
-                "assign_topics transforms a partition into per-document topic weights plus dominant-topic shares.",
+                "session.nlp.fit_topics(method='nmf' | 'lda') fits on Session train and reports per-topic NPMI coherence and train mass.",
+                "session.nlp.assign_topics transforms a partition into per-document topic weights plus dominant-topic shares.",
                 "The fitted topic plan is persisted in buildml.nlp_bundle.v1 alongside any text classifier.",
             ),
             interpretation_rules=(
@@ -255,7 +255,7 @@ NLP_NOTES: dict[str, ConceptNote] = {
                 "Comparing coherence across different vectorizer settings as if it were an absolute scale.",
             ),
             worked_example_pattern=(
-                "fit_topics(method='nmf', n_topics=8, min_df=2) -> inspect coherence -> assign_topics(partition='test').",
+                "session.nlp.fit_topics(method='nmf', n_topics=8, min_df=2) -> inspect coherence -> session.nlp.assign_topics(partition='test').",
             ),
             related_concepts=(
                 "nlp-document-representation",
@@ -293,7 +293,7 @@ NLP_NOTES: dict[str, ConceptNote] = {
                 "Running extraction on holdout text is description, not model selection: but reading holdout still informs the analyst, so it is disclosed.",
             ),
             how_buildml_uses=(
-                "extract_keyphrases(method='tfidf' | 'rake' | 'textrank') returns corpus-level and per-document rankings.",
+                "session.nlp.extract_keyphrases(method='tfidf' | 'rake' | 'textrank') returns corpus-level and per-document rankings.",
                 "Candidates exclude bare numbers and punctuation, so phrases are alphabetic content words.",
                 "Nothing is fitted or persisted; the operation records a history entry and a disclosure.",
             ),
@@ -317,7 +317,7 @@ NLP_NOTES: dict[str, ConceptNote] = {
                 "Treating keyphrases and topics as the same product.",
             ),
             worked_example_pattern=(
-                "extract_keyphrases(partition='train', method='rake', top_n=20) -> compare with fit_topics term lists.",
+                "session.nlp.extract_keyphrases(partition='train', method='rake', top_n=20) -> compare with session.nlp.fit_topics term lists.",
             ),
             related_concepts=(
                 "nlp-topic-models",
@@ -355,7 +355,7 @@ NLP_NOTES: dict[str, ConceptNote] = {
                 "A supervised classifier fitted on your own labels usually beats it: and the comparison is only meaningful if the baseline is stated.",
             ),
             how_buildml_uses=(
-                "analyze_sentiment(backend='lexicon') scores documents with the shipped English lexicon and no install.",
+                "session.nlp.analyze_sentiment(backend='lexicon') scores documents with the shipped English lexicon and no install.",
                 "backend='supervised' reuses a fitted text classifier's own labels instead of inventing a second scorer.",
                 "backend='transformer' delegates to a sentiment checkpoint via buildml[nlp].",
                 "compare_to_target reports agreement when the dataset target looks like sentiment labels.",
@@ -376,11 +376,11 @@ NLP_NOTES: dict[str, ConceptNote] = {
             ),
             anti_patterns=(
                 "Reporting lexicon sentiment as ground truth instead of as a baseline.",
-                "Applying the English lexicon to a multilingual corpus without running detect_language.",
+                "Applying the English lexicon to a multilingual corpus without running session.nlp.detect_language.",
                 "Ignoring matched_term_rate when explaining a large neutral share.",
             ),
             worked_example_pattern=(
-                "analyze_sentiment(backend='lexicon') -> fit_text_classifier on labels -> analyze_sentiment(backend='supervised') and compare.",
+                "session.nlp.analyze_sentiment(backend='lexicon') -> session.nlp.fit_classifier on labels -> session.nlp.analyze_sentiment(backend='supervised') and compare.",
             ),
             related_concepts=(
                 "nlp-language-identification",
@@ -417,7 +417,7 @@ NLP_NOTES: dict[str, ConceptNote] = {
                 "Gazetteers let domain knowledge enter without training data.",
             ),
             how_buildml_uses=(
-                "extract_entities(backend='rules') needs no install and reports the pattern source per span.",
+                "session.nlp.extract_entities(backend='rules') needs no install and reports the pattern source per span.",
                 "backend='spacy' requires buildml[nlp-industry] plus a downloaded model, and label names are normalized to BuildML's set.",
                 "Overlaps are resolved deterministically so spans never double-count characters.",
             ),
@@ -441,7 +441,7 @@ NLP_NOTES: dict[str, ConceptNote] = {
                 "Assuming spaCy labels mean the same thing as rule labels without checking the mapping.",
             ),
             worked_example_pattern=(
-                "extract_entities(backend='rules', gazetteers={'PRODUCT': ['widget-9']}) -> inspect label_counts and source.",
+                "session.nlp.extract_entities(backend='rules', gazetteers={'PRODUCT': ['widget-9']}) -> inspect label_counts and source.",
             ),
             related_concepts=(
                 "nlp-lexicon-sentiment",
@@ -477,7 +477,7 @@ NLP_NOTES: dict[str, ConceptNote] = {
                 "Without reference summaries no ROUGE score is meaningful, so none is reported.",
             ),
             how_buildml_uses=(
-                "summarize_text(method='textrank' | 'lexrank' | 'lead') returns summaries, selected sentence indices, and mean compression.",
+                "session.nlp.summarize(method='textrank' | 'lexrank' | 'lead') returns summaries, selected sentence indices, and mean compression.",
                 "Sentence splitting is abbreviation-aware so 'Dr. Smith' does not become two sentences.",
                 "max_input_sentences bounds the graph size on very long documents.",
             ),
@@ -501,7 +501,7 @@ NLP_NOTES: dict[str, ConceptNote] = {
                 "Skipping the lead baseline and asserting the graph method is better.",
             ),
             worked_example_pattern=(
-                "summarize_text(method='lead', n_sentences=3) then summarize_text(method='textrank', n_sentences=3) and compare on the same documents.",
+                "session.nlp.summarize(method='lead', n_sentences=3) then session.nlp.summarize(method='textrank', n_sentences=3) and compare on the same documents.",
             ),
             related_concepts=(
                 "nlp-keyphrases-vs-topics",
@@ -538,8 +538,8 @@ NLP_NOTES: dict[str, ConceptNote] = {
                 "A dominant-language check is one of the cheapest data-quality screens available for text.",
             ),
             how_buildml_uses=(
-                "detect_language(backend='native' | 'langdetect') reports per-document codes, counts, dominant language, and the undetermined rate.",
-                "profile_text_corpus runs detection as part of the corpus health screen.",
+                "session.nlp.detect_language(backend='native' | 'langdetect') reports per-document codes, counts, dominant language, and the undetermined rate.",
+                "session.nlp.profile_corpus runs detection as part of the corpus health screen.",
                 "The native backend needs no install; langdetect comes with buildml[nlp].",
             ),
             interpretation_rules=(
@@ -562,7 +562,7 @@ NLP_NOTES: dict[str, ConceptNote] = {
                 "Treating the native backend as a general-purpose language classifier for all of Unicode.",
             ),
             worked_example_pattern=(
-                "detect_language(partition='all') -> if dominant_language != 'en', reconsider stopword_language and sentiment backend.",
+                "session.nlp.detect_language(partition='all') -> if dominant_language != 'en', reconsider stopword_language and sentiment backend.",
             ),
             related_concepts=(
                 "nlp-lexicon-sentiment",
@@ -599,7 +599,7 @@ NLP_NOTES: dict[str, ConceptNote] = {
                 "Vocabulary drift and contamination are opposite failure signals; seeing both at once tells you which risk you actually have.",
             ),
             how_buildml_uses=(
-                "profile_text_corpus reports exact overlap, near-duplicate pairs, the threshold used, duplicate groups, and holdout OOV rate.",
+                "session.nlp.profile_corpus reports exact overlap, near-duplicate pairs, the threshold used, duplicate groups, and holdout OOV rate.",
                 "Findings are surfaced as warnings on the result and in the Session walkthrough.",
                 "Nothing is removed; deduplication stays an explicit choice.",
             ),
@@ -623,7 +623,7 @@ NLP_NOTES: dict[str, ConceptNote] = {
                 "Quoting a near-duplicate count without the threshold that produced it.",
             ),
             worked_example_pattern=(
-                "split(...) -> profile_text_corpus(near_duplicate_threshold=0.9) -> read findings before fit_text_classifier.",
+                "split(...) -> session.nlp.profile_corpus(near_duplicate_threshold=0.9) -> read findings before session.nlp.fit_classifier.",
             ),
             related_concepts=(
                 "nlp-document-representation",
@@ -669,8 +669,8 @@ NLP_NOTES: dict[str, ConceptNote] = {
                 "Separate bundle formats, each validated on load.",
             ),
             interpretation_rules=(
-                "Use fit_text_classifier when the label is on the row and the text is the evidence.",
-                "Use rag_ingest_corpus when the answer lives in a document you must find and cite.",
+                "Use session.nlp.fit_classifier when the label is on the row and the text is the evidence.",
+                "Use session.rag.ingest_corpus when the answer lives in a document you must find and cite.",
                 "Use text_features when text is one signal among many tabular columns.",
                 "Use the Torch text path when you need to update model weights on your own data.",
             ),
@@ -686,7 +686,7 @@ NLP_NOTES: dict[str, ConceptNote] = {
                 "Using text_features and then claiming token-level explanations of the tabular model.",
             ),
             worked_example_pattern=(
-                "fit_text_classifier(...) for document classification; rag_ingest_corpus(...) for grounded answers; text_features(...) for tabular expansion.",
+                "session.nlp.fit_classifier(...) for document classification; session.rag.ingest_corpus(...) for grounded answers; text_features(...) for tabular expansion.",
             ),
             related_concepts=(
                 "nlp-document-representation",
@@ -700,13 +700,13 @@ NLP_NOTES: dict[str, ConceptNote] = {
             title="NLP bundle vs Session checkpoint",
             summary="buildml.nlp_bundle.v1 stores the fitted vectorizer, head, and topic model; Session checkpoints store workflow state and do not embed them.",
             definition=(
-                "save_nlp_bundle writes meta.json plus joblib payloads for the "
+                "session.nlp.save_bundle writes meta.json plus joblib payloads for the "
                 "text plan and the topic plan. checkpoint_save records the "
                 "Session workflow without the NLP vectorizer, head, or "
                 "decomposition. The two artifacts are complementary."
             ),
             intuition=(
-                "Reload the model with load_nlp_bundle; reload the workflow with "
+                "Reload the model with session.nlp.load_bundle; reload the workflow with "
                 "checkpoint_load. Expecting one to do the other loses work."
             ),
             formal_idea=(
@@ -719,7 +719,7 @@ NLP_NOTES: dict[str, ConceptNote] = {
                 "Keeps NLP bundles distinguishable from RAG, CBR, classical, and Torch bundles on load.",
             ),
             how_buildml_uses=(
-                "Session.save_nlp_bundle / load_nlp_bundle; format is validated as buildml.nlp_bundle.v1.",
+                "session.nlp.save_bundle / session.nlp.load_bundle; format is validated as buildml.nlp_bundle.v1.",
                 "A bundle may carry a text plan, a topic plan, or both.",
                 "Loading clears stale fit, eval, predict, and interpret results so nothing misattributes to the new plan.",
             ),
@@ -740,7 +740,7 @@ NLP_NOTES: dict[str, ConceptNote] = {
                 "Shipping a fitted vectorizer without its normalization plan.",
             ),
             worked_example_pattern=(
-                "fit_text_classifier(...) -> save_nlp_bundle(path) -> new Session -> load_nlp_bundle(path) -> evaluate_text_classifier(partition='test').",
+                "session.nlp.fit_classifier(...) -> session.nlp.save_bundle(path) -> new Session -> session.nlp.load_bundle(path) -> session.nlp.evaluate(partition='test').",
             ),
             related_concepts=(
                 "nlp-vs-rag",

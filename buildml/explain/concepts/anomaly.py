@@ -34,8 +34,8 @@ ANOMALY_NOTES: dict[str, ConceptNote] = {
                 "Teaching and model cards need explicit fit-partition and threshold disclosures.",
             ),
             how_buildml_uses=(
-                "Session.fit_anomaly requires a SplitPlan and fits on train only.",
-                "Session.score_anomalies / evaluate_anomaly reuse the frozen AnomalyPlan.",
+                "session.anomaly.fit requires a SplitPlan and fits on train only.",
+                "session.anomaly.score / session.anomaly.evaluate reuse the frozen AnomalyPlan.",
                 "Novelty mode further restricts fit rows to a normal-only train subset.",
             ),
             interpretation_rules=(
@@ -43,7 +43,7 @@ ANOMALY_NOTES: dict[str, ConceptNote] = {
                 "Train-partition metrics are optimistic for threshold selection.",
             ),
             assumptions=(
-                "A disjoint SplitPlan exists before fit_anomaly.",
+                "A disjoint SplitPlan exists before session.anomaly.fit.",
                 "Feature columns are numeric and imputed before distance-based methods.",
             ),
             failure_modes=(
@@ -54,7 +54,7 @@ ANOMALY_NOTES: dict[str, ConceptNote] = {
                 "Calling sklearn fit_predict on concatenated train+test for 'evaluation'.",
             ),
             worked_example_pattern=(
-                "split → scale → fit_anomaly → evaluate_anomaly(partition='validation').",
+                "split → scale → session.anomaly.fit → session.anomaly.evaluate(partition='validation').",
             ),
             related_concepts=("leakage-boundary", "evaluation-partitions", "anomaly-threshold-alert-rate"),
         ),
@@ -82,7 +82,7 @@ ANOMALY_NOTES: dict[str, ConceptNote] = {
             ),
             how_buildml_uses=(
                 "AnomalyPlan stores threshold_, threshold_policy, and train_alert_rate_.",
-                "score_anomalies / evaluate_anomaly always report alert_rate and threshold.",
+                "session.anomaly.score / session.anomaly.evaluate always report alert_rate and threshold.",
                 "override_threshold can change a single call without mutating the plan.",
             ),
             interpretation_rules=(
@@ -101,7 +101,7 @@ ANOMALY_NOTES: dict[str, ConceptNote] = {
                 "Retuning τ on the test partition after peeking at labels.",
             ),
             worked_example_pattern=(
-                "fit_anomaly(contamination=0.05) → score_anomalies → read alert_rate.",
+                "session.anomaly.fit(contamination=0.05) → session.anomaly.score → read alert_rate.",
             ),
             related_concepts=("anomaly-train-fit-holdout-score", "anomaly-imbalance-metrics"),
         ),
@@ -129,7 +129,7 @@ ANOMALY_NOTES: dict[str, ConceptNote] = {
                 "Contamination priors are meaningless if the fit subset was already filtered clean.",
             ),
             how_buildml_uses=(
-                "mode='unsupervised' vs mode='novelty' on Session.fit_anomaly.",
+                "mode='unsupervised' vs mode='novelty' on session.anomaly.fit.",
                 "novelty requires normal_label_column (or a single target role) and normal_label_value.",
                 "Catalog and guides disclose the normal-only contract explicitly.",
             ),
@@ -149,8 +149,8 @@ ANOMALY_NOTES: dict[str, ConceptNote] = {
                 "Filtering to normal on train and then claiming a fully unsupervised detector.",
             ),
             worked_example_pattern=(
-                "fit_anomaly(mode='novelty', normal_label_column='is_fraud', "
-                "normal_label_value=0) → evaluate_anomaly.",
+                "session.anomaly.fit(mode='novelty', normal_label_column='is_fraud', "
+                "normal_label_value=0) → session.anomaly.evaluate.",
             ),
             related_concepts=("anomaly-train-fit-holdout-score", "anomaly-eda-boundary"),
         ),
@@ -178,7 +178,7 @@ ANOMALY_NOTES: dict[str, ConceptNote] = {
                 "Supervised mode reuses classical binary patterns but must keep the same honesty.",
             ),
             how_buildml_uses=(
-                "evaluate_anomaly fills labeled_metrics when a label/target is available.",
+                "session.anomaly.evaluate fills labeled_metrics when a label/target is available.",
                 "Disclosures warn when positive_rate is low.",
                 "Supervised mode fits HistGradientBoostingClassifier; unsupervised modes "
                 "use labels for evaluation only.",
@@ -199,7 +199,7 @@ ANOMALY_NOTES: dict[str, ConceptNote] = {
                 "Claiming a 'fraud platform' from batch PR-AUC on a static table.",
             ),
             worked_example_pattern=(
-                "fit_anomaly → evaluate_anomaly(label_column='is_fraud') → read "
+                "session.anomaly.fit → session.anomaly.evaluate(label_column='is_fraud') → read "
                 "average_precision and precision_at_k.",
             ),
             related_concepts=("anomaly-threshold-alert-rate", "evaluation-partitions"),
@@ -207,7 +207,7 @@ ANOMALY_NOTES: dict[str, ConceptNote] = {
         _note(
             key="anomaly-eda-boundary",
             title="Anomaly product vs EDA IsolationForest",
-            summary="EDA IsolationForest is a descriptive screen; Session.fit_anomaly produces a leakage-safe AnomalyPlan with score/flag/evaluate and bundles.",
+            summary="EDA IsolationForest is a descriptive screen; session.anomaly.fit produces a leakage-safe AnomalyPlan with score/flag/evaluate and bundles.",
             definition=(
                 "The anomaly product boundary separates descriptive EDA multivariate "
                 "IsolationForest screens (and preprocess outlier fences) from the "
@@ -228,12 +228,12 @@ ANOMALY_NOTES: dict[str, ConceptNote] = {
                 "ClusterPlan labels are structure signals, not anomaly flags: keep APIs separate.",
             ),
             how_buildml_uses=(
-                "fit_anomaly / score_anomalies / evaluate_anomaly / anomaly bundles.",
+                "session.anomaly.fit / session.anomaly.score / session.anomaly.evaluate / anomaly bundles.",
                 "Docs and overlays explicitly refuse to equate EDA IF with AnomalyPlan.",
                 "handle_outliers remains a preprocess fence path.",
             ),
             interpretation_rules=(
-                "Use EDA for teaching/exploration; use fit_anomaly for Session product claims.",
+                "Use EDA for teaching/exploration; use session.anomaly.fit for Session product claims.",
                 "Cite bundle format when shipping a detector artifact.",
             ),
             assumptions=(
@@ -247,7 +247,7 @@ ANOMALY_NOTES: dict[str, ConceptNote] = {
                 "Renaming EDA IsolationForest output columns to is_anomaly without a plan.",
             ),
             worked_example_pattern=(
-                "eda() for exploration → separately fit_anomaly after split/scale.",
+                "eda() for exploration → separately session.anomaly.fit after split/scale.",
             ),
             related_concepts=("anomaly-train-fit-holdout-score", "unsupervised-train-fit-holdout-assign"),
         ),
@@ -274,26 +274,26 @@ ANOMALY_NOTES: dict[str, ConceptNote] = {
                 "Threshold and mode disclosures must travel with the estimator.",
             ),
             how_buildml_uses=(
-                "save_anomaly_bundle / load_anomaly_bundle on Session.",
+                "session.anomaly.save_bundle / session.anomaly.load_bundle on Session.",
                 "CHECKPOINT_BOUNDARY string documents complementarity.",
             ),
             interpretation_rules=(
-                "After load_anomaly_bundle, rebuild or reload the tabular Session separately if needed.",
-                "Confirm feature columns still exist before score_anomalies.",
+                "After session.anomaly.load_bundle, rebuild or reload the tabular Session separately if needed.",
+                "Confirm feature columns still exist before session.anomaly.score.",
             ),
             assumptions=(
                 "joblib can serialize the sklearn estimator in the plan.",
                 "Feature schema at score time matches the plan columns.",
             ),
             failure_modes=(
-                "Expecting checkpoint_load to restore fit_anomaly state.",
+                "Expecting checkpoint_load to restore session.anomaly.fit state.",
                 "Loading a Torch/RAG/unsupervised bundle as anomaly.",
             ),
             anti_patterns=(
                 "Hand-copying only scores without threshold/mode disclosures.",
             ),
             worked_example_pattern=(
-                "fit_anomaly → save_anomaly_bundle → Session().load_anomaly_bundle → score_anomalies.",
+                "session.anomaly.fit → session.anomaly.save_bundle → Session().anomaly.load_bundle → session.anomaly.score.",
             ),
             related_concepts=("anomaly-train-fit-holdout-score", "anomaly-eda-boundary"),
         ),
@@ -311,15 +311,15 @@ ANOMALY_NOTES: dict[str, ConceptNote] = {
             formal_idea="Anomaly score ∝ average path length to isolation in an ensemble of random trees.",
             why_it_matters=("Strong default for tabular multivariate anomaly without labels.",),
             how_buildml_uses=(
-                "Session.fit_anomaly(method='isolation_forest', backend='sklearn').",
-                "See anomaly_capability_matrix() for modes and score calibration.",
+                "session.anomaly.fit(method='isolation_forest', backend='sklearn').",
+                "See session.anomaly.capability_matrix() for modes and score calibration.",
             ),
             interpretation_rules=("Higher score = more anomalous after orientation disclosure.",),
             assumptions=("Numeric features; contamination or quantile threshold chosen on train.",),
             failure_modes=("High-dimensional sparse data without scaling.",),
             anti_patterns=("Fitting on train+test before split.",),
             worked_example_pattern=(
-                "fit_anomaly(method='isolation_forest', contamination=0.05) → evaluate_anomaly.",
+                "session.anomaly.fit(method='isolation_forest', contamination=0.05) → session.anomaly.evaluate.",
             ),
             related_concepts=("anomaly-train-fit-holdout-score", "anomaly-threshold-alert-rate"),
         ),
@@ -335,13 +335,13 @@ ANOMALY_NOTES: dict[str, ConceptNote] = {
             intuition="A point in a sparse neighbourhood among dense neighbours looks suspicious.",
             formal_idea="LOF_k(x) ≈ mean local density of neighbours / local density of x.",
             why_it_matters=("Captures local density deviations that global methods miss.",),
-            how_buildml_uses=("Session.fit_anomaly(method='lof', n_neighbors=20).",),
+            how_buildml_uses=("session.anomaly.fit(method='lof', n_neighbors=20).",),
             interpretation_rules=("Tune n_neighbors with feature scale and expected cluster size.",),
             assumptions=("Meaningful distance metric after scaling.",),
             failure_modes=("Curse of dimensionality with too many weak features.",),
             anti_patterns=("Using LOF on unscaled mixed-scale columns.",),
             worked_example_pattern=(
-                "fit_anomaly(method='lof') → score_anomalies(partition='test').",
+                "session.anomaly.fit(method='lof') → session.anomaly.score(partition='test').",
             ),
             related_concepts=("anomaly-isolation-forest", "anomaly-threshold-alert-rate"),
         ),
@@ -358,14 +358,14 @@ ANOMALY_NOTES: dict[str, ConceptNote] = {
             formal_idea="Minimize volume of envelope subject to most train points inside (ν fraction may be outliers).",
             why_it_matters=("Useful when normal class is compact and anomalies are far in feature space.",),
             how_buildml_uses=(
-                "Session.fit_anomaly(method='one_class_svm', kernel='rbf').",
+                "session.anomaly.fit(method='one_class_svm', kernel='rbf').",
             ),
             interpretation_rules=("Kernel and ν strongly affect boundary tightness.",),
             assumptions=("Scaled numeric features; reasonable ν or contamination prior.",),
             failure_modes=("Slow on large n; poor with high-dimensional sparse text.",),
             anti_patterns=("Using default RBF without scaling.",),
             worked_example_pattern=(
-                "fit_anomaly(method='one_class_svm', nu=0.05) → evaluate_anomaly.",
+                "session.anomaly.fit(method='one_class_svm', nu=0.05) → session.anomaly.evaluate.",
             ),
             related_concepts=("anomaly-novelty-vs-unsupervised", "anomaly-threshold-alert-rate"),
         ),
@@ -382,14 +382,14 @@ ANOMALY_NOTES: dict[str, ConceptNote] = {
             formal_idea="Per-feature tail probabilities or copula-based P-values aggregated into a decision score.",
             why_it_matters=("Cheap strong baselines beyond sklearn trio when PyOD extra is present.",),
             how_buildml_uses=(
-                "fit_anomaly(backend='pyod', method='hbos'|'copod'|'ecod').",
+                "session.anomaly.fit(backend='pyod', method='hbos'|'copod'|'ecod').",
             ),
-            interpretation_rules=("Check pyod available flag in anomaly_capability_matrix().",),
+            interpretation_rules=("Check pyod available flag in session.anomaly.capability_matrix().",),
             assumptions=("Numeric matrix; PyOD installed.",),
             failure_modes=("Missing buildml[anomaly-industry] raises MissingExtraError.",),
             anti_patterns=("Claiming PyOD path without the extra installed.",),
             worked_example_pattern=(
-                "pip install 'buildml[anomaly-industry]'; fit_anomaly(method='copod').",
+                "pip install 'buildml[anomaly-industry]'; session.anomaly.fit(method='copod').",
             ),
             related_concepts=("anomaly-isolation-forest", "anomaly-train-fit-holdout-score"),
         ),
@@ -405,13 +405,13 @@ ANOMALY_NOTES: dict[str, ConceptNote] = {
             intuition="If the model cannot reconstruct a row well, that row did not look like training normals.",
             formal_idea="score(x) = ||x − decode(encode(x))||² with train-only encoder fit.",
             why_it_matters=("Nonlinear alternative to distance-based sklearn/PyOD paths.",),
-            how_buildml_uses=("Session.fit_anomaly(backend='torch', method='autoencoder', epochs=...).",),
+            how_buildml_uses=("session.anomaly.fit(backend='torch', method='autoencoder', epochs=...).",),
             interpretation_rules=("Read torch_present and epochs/disclosures in AnomalyPlan.",),
             assumptions=("Scaled numeric features; torch installed.",),
             failure_modes=("Under-trained AE; tiny train sets.",),
             anti_patterns=("Scoring before scaling or with mismatched feature columns.",),
             worked_example_pattern=(
-                "fit_anomaly(backend='torch', method='autoencoder') → score_anomalies.",
+                "session.anomaly.fit(backend='torch', method='autoencoder') → session.anomaly.score.",
             ),
             related_concepts=("anomaly-novelty-vs-unsupervised", "anomaly-threshold-alert-rate"),
         ),

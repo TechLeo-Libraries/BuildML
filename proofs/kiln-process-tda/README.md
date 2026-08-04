@@ -15,18 +15,18 @@ topology and density. The desk:
 
 ## Status
 
-`completed` / `partial`: run `script.py`; see `results/summary.json` and stage JSONs.
+Run `script.py`. Outputs land under `results/` (summary and stage JSON)..
 
 ## How to run
 
 ```bash
-.\.venv\Scripts\python.exe proofs\kiln-process-tda\script.py
+python proofs\kiln-process-tda\script.py
 ```
 
 ## Leakage controls
 
 - Stratified split before TDA / clusters / anomaly
-- TDA + scale fit on train only; test `evaluate_tda` after lock
+- TDA + scale fit on train only; test `session.tda.evaluate` after lock
 - Cluster fit on train; external labels only for holdout eval
 - Anomaly threshold tuned on validation only
 

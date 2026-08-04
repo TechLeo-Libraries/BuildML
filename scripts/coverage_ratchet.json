@@ -1,7 +1,7 @@
 {
   "policy": "Coverage fail_under is a one-way ratchet. Raise when classical/core coverage improves; never lower to silence regressions. Floors must be set from a full-suite measure (scripts/run_full_coverage.py or CI pytest --cov=buildml), never from a tiny subset.",
   "source": "pyproject.toml [tool.coverage.report] fail_under",
-  "current": 60,
+  "current": 70,
   "schedule": [
     {
       "target": 27,
@@ -18,14 +18,14 @@
     {
       "target": 60,
       "release": "2.4.0a3",
-      "status": "active",
-      "notes": "Full-suite Windows isolated combine measured 70.71% (39539/55914); ~10pp headroom. Linux CI monolith is the gate."
+      "status": "superseded",
+      "notes": "Superseded once fail_under raised to 70; full-suite Windows isolated combine measured 70.71%"
     },
     {
       "target": 70,
-      "release": "2.5.0",
-      "status": "planned",
-      "notes": "Industry-comparable floor; require >=1.0pp headroom on Linux CI full suite after reducing Windows native crashes"
+      "release": "2.4.0a3",
+      "status": "active",
+      "notes": "Industry-comparable floor. Full-suite Windows isolated combine measured 70.71% (39539/55914); ~0.7pp headroom. Linux CI monolith is the gate."
     }
   ],
   "how_to_raise": [
@@ -79,5 +79,5 @@
     ]
   },
   "last_full_suite_percent": 70.71,
-  "suggested_fail_under": 69
+  "suggested_fail_under": 70
 }

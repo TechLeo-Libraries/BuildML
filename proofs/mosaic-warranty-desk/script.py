@@ -91,15 +91,15 @@ def main() -> None:
 
     # --- Stage 1: CBR case memory ---
     try:
-        fit_c = session.fit_cbr(
+        fit_c = session.cbr.fit(
             task="classification",
             metric="euclidean",
             reuse="distance_weighted",
             k=5,
             random_state=ctx.seed,
         )
-        retrieved = session.retrieve_cases(partition="test", k=5)
-        ev_c = session.evaluate_cbr(partition="test")
+        retrieved = session.cbr.retrieve(partition="test", k=5)
+        ev_c = session.cbr.evaluate(partition="test")
         stages["cbr"] = {
             "status": "ok",
             "fit": metrics_round(fit_c.to_dict() if hasattr(fit_c, "to_dict") else {}),
@@ -134,14 +134,14 @@ def main() -> None:
             selection_partition="train", evaluation_partition="test"
         )
         try:
-            fit_s = sym_session.fit_symbolic(
+            fit_s = sym_session.symbolic.fit(
                 source="decision_tree", max_depth=3, random_state=ctx.seed
             )
         except TypeError:
-            fit_s = sym_session.fit_symbolic(
+            fit_s = sym_session.symbolic.fit(
                 method="decision_tree", random_state=ctx.seed
             )
-        ev_s = sym_session.evaluate_symbolic(partition="test")
+        ev_s = sym_session.symbolic.evaluate(partition="test")
         stages["symbolic"] = {
             "status": "ok",
             "fit": metrics_round(fit_s.to_dict() if hasattr(fit_s, "to_dict") else {}),

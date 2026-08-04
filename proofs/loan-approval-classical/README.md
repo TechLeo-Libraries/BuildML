@@ -35,7 +35,8 @@ CV mean±std reported for model selection disclosure.
 
 ## Industry comparison (Tier C)
 
-Filled: sklearn `ColumnTransformer` + `LogisticRegression` twin on the same SplitPlan indices, written to `results/comparison.json` from `script.py`.
+Industry twin: sklearn `ColumnTransformer` + `LogisticRegression` twin on the same SplitPlan indices, written to `results/comparison.json` from `script.py`.
+
 ## Limitations
 
 Synthetic labels; no fairness audit; single seed; not a deployment certification.

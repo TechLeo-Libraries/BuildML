@@ -6,7 +6,7 @@ from typing import Any, Literal
 
 from buildml.activelearning.extras import (
     activelearning_industry_available,
-    scikit_activeml_available,
+    scikit_activeml_spec_present,
 )
 from buildml.dl.extras import torch_available, torch_spec_available
 
@@ -124,9 +124,16 @@ def activelearning_capability_matrix() -> dict[str, Any]:
             "Semi-supervised passive propagation (see buildml.semisupervised)",
             "Stream-based active learning product surfaces",
         ],
-        "industry_extra_present": activelearning_industry_available(),
-        "scikit_activeml_present": scikit_activeml_available(),
+        "industry_extra_present": scikit_activeml_spec_present(),
+        "scikit_activeml_present": scikit_activeml_spec_present(),
         "torch_spec_present": torch_spec_available(),
+        "industry_import_honesty": (
+            "backends.industry.available is True because native CoreSet/QBC "
+            "scoring always runs in-tree. industry_extra_present / "
+            "scikit_activeml_present are find_spec only for the optional "
+            "scikit-activeml host path; real import probes are deferred to "
+            "query scoring (broken torch/skorch stacks can hard-crash)."
+        ),
     }
 
 

@@ -14,12 +14,12 @@ estimates the effect of confounded borrower outreach:
 
 ## Status
 
-`completed`: run `script.py`; see `results/summary.json` and stage JSONs.
+Run `script.py`. Outputs land under `results/` (summary and stage JSON)..
 
 ## How to run
 
 ```bash
-.\.venv\Scripts\python.exe proofs\keystone-underwrite-ml\script.py
+python proofs\keystone-underwrite-ml\script.py
 ```
 
 ## Leakage controls
@@ -27,7 +27,7 @@ estimates the effect of confounded borrower outreach:
 - Stratified split before stacking / AutoML / causal
 - OOF meta features from train CV folds only (cv=3)
 - AutoML search/selection never uses the test partition
-- Causal assumptions declared before `fit_causal`
+- Causal assumptions declared before `session.causal.fit`
 
 ## What fails if leakage is ignored
 

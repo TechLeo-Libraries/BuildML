@@ -44,8 +44,8 @@ print(registered_tool_names())
 | `head` | Preview rows (respects egress) |
 | `evaluate` | Metrics for a partition (read of fitted model) |
 | `walkthrough` | Audit report |
-| `ai_status` | Provider / budget / transcript status |
-| `rag_retrieve` | Retrieve chunks (index must exist) |
+| `session.ai.status` | Provider / budget / transcript status |
+| `session.rag.retrieve` | Retrieve chunks (index must exist) |
 
 ### Classical writes (confirm)
 
@@ -67,26 +67,26 @@ print(registered_tool_names())
 
 | Tool | Purpose |
 | --- | --- |
-| `rag_ingest_corpus` | Load corpus |
-| `rag_embed_and_index` | Build index (refuses `eval_only` contamination) |
-| `rag_generate` | Grounded generate (needs provider) |
+| `session.rag.ingest_corpus` | Load corpus |
+| `session.rag.embed_and_index` | Build index (refuses `eval_only` contamination) |
+| `session.rag.generate` | Grounded generate (needs provider) |
 
 ### Torch / speech / packs
 
 | Tool | Purpose |
 | --- | --- |
-| `make_torch_loaders` / `make_text_torch_loaders` | Tabular / text loaders |
-| `make_multimodal_torch_loaders` | Tabular+text (+ optional image/audio) |
-| `make_image_multimodal_torch_loaders` / `make_audio_multimodal_torch_loaders` | Image/audio-centric |
-| `fit_torch` / `evaluate_torch` / `cross_validate_torch` | Train / eval / CV |
-| `search_torch` / `nested_cv_torch` | HPO / nested |
-| `export_torch` | TorchScript / ONNX |
-| `make_speech_torch_loaders` / `fit_speech_torch` / `domain_adapt_speech_torch` | Speech classify |
-| `transcribe_speech` / `evaluate_asr` | ASR path |
-| `load_pretrained_backbone` / `attach_backbone_head` | Curated backbones |
-| `pack_torchserve` / `prepare_tensorrt_export` / `emit_k8s_ddp_job` / `emit_k8s_serve_deployment` | Operator recipes / YAML templates |
+| `session.dl.make_loaders` / `session.dl.make_text_loaders` | Tabular / text loaders |
+| `session.dl.make_multimodal_loaders` | Tabular+text (+ optional image/audio) |
+| `session.dl.make_image_loaders` / `session.dl.make_audio_loaders` | Image/audio-centric |
+| `session.dl.fit` / `session.dl.evaluate` / `session.dl.cross_validate` | Train / eval / CV |
+| `session.dl.search` / `session.dl.nested_cv` | HPO / nested |
+| `session.dl.export` | TorchScript / ONNX |
+| `session.dl.make_speech_loaders` / `session.dl.fit_speech` / `session.dl.domain_adapt_speech` | Speech classify |
+| `session.dl.transcribe` / `session.dl.evaluate_asr` | ASR path |
+| `session.dl.load_backbone` / `session.dl.attach_head` | Curated backbones |
+| `session.dl.pack_torchserve` / `session.dl.prepare_tensorrt` / `session.dl.emit_k8s_ddp` / `session.dl.emit_k8s_serve` | Operator recipes / YAML templates |
 
-**Note:** `serve_bundle` is Session/CLI-primary (not an AI tool): localhost
+**Note:** `session.dl.serve` is Session/CLI-primary (not an AI tool): localhost
 serving stays out of the LLM allowlist by design. See
 [serve-deploy](serve-deploy.md).
 
@@ -104,7 +104,7 @@ import pandas as pd
 session = Session.ingest(
     pd.DataFrame({"a": [1, 2, 3, 4], "b": [4, 3, 2, 1], "y": [0, 1, 0, 1]})
 )
-session.ai_configure(provider="mock")
+session.ai.configure(provider="mock")
 
 for tool, params in [
     ("set_roles", {"mapping": {"a": "feature", "b": "feature", "y": "target"}}),
@@ -112,14 +112,14 @@ for tool, params in [
     ("impute", {"strategy": "median"}),
     ("scale", {"method": "standard"}),
 ]:
-    session.ai_execute(tool, params, confirm=True)
+    session.ai.execute(tool, params, confirm=True)
 
-session.ai_execute(
+session.ai.execute(
     "fit",
     {"estimator": "LogisticRegression", "task": "classification"},
     confirm=True,
 )
-print(session.ai_execute("evaluate", {"partition": "test"}, confirm=False))
+print(session.ai.execute("evaluate", {"partition": "test"}, confirm=False))
 ```
 
 If a tool’s parameter schema rejects an estimator shorthand, fall back to
@@ -131,14 +131,14 @@ direct Session APIs for that step: never invent kwargs.
 
 ```python
 session = Session()
-session.ai_configure(provider="mock")
-session.ai_execute(
+session.ai.configure(provider="mock")
+session.ai.execute(
     "rag_ingest_corpus",
     {"documents": [{"doc_id": "a", "text": "Hold out a test partition."}]},
     confirm=True,
 )
-session.ai_execute("rag_embed_and_index", {}, confirm=True)
-hits = session.ai_execute(
+session.ai.execute("rag_embed_and_index", {}, confirm=True)
+hits = session.ai.execute(
     "rag_retrieve",
     {"query": "test partition", "k": 3},
     confirm=False,
@@ -155,13 +155,13 @@ Keep `eval_only` documents out of index tools
 
 ```python
 # After roles + split on a numeric frame:
-session.ai_configure(provider="mock")
-session.ai_execute("make_torch_loaders", {"batch_size": 4, "normalize": True}, confirm=True)
-session.ai_execute("fit_torch", {"epochs": 3, "device": "cpu"}, confirm=True)
-session.ai_execute("evaluate_torch", {"partition": "validation"}, confirm=False)
+session.ai.configure(provider="mock")
+session.ai.execute("make_torch_loaders", {"batch_size": 4, "normalize": True}, confirm=True)
+session.ai.execute("fit_torch", {"epochs": 3, "device": "cpu"}, confirm=True)
+session.ai.execute("evaluate_torch", {"partition": "validation"}, confirm=False)
 ```
 
-Nested search tools exist (`search_torch`, `nested_cv_torch`): still do not
+Nested search tools exist (`session.dl.search`, `session.dl.nested_cv`): still do not
 tune on Session test.
 
 ---
@@ -169,7 +169,7 @@ tune on Session test.
 ## Pattern 4: Autonomy with a tight allowlist
 
 ```python
-session.ai_run_autonomous(
+session.ai.run_autonomous(
     "report workflow status after describing the dataset",
     confirm_autonomy=True,
     max_steps=4,
@@ -186,14 +186,14 @@ increase residual risk even with caps.
 ## Pattern 5: Teaching-first before writes
 
 ```python
-session.ai_execute("learn_concept", {"topic": "missing-data"}, confirm=False)
-session.ai_execute(
+session.ai.execute("learn_concept", {"topic": "missing-data"}, confirm=False)
+session.ai.execute(
     "explain_operation",
     {"operation": "impute", "moment": "before", "level": "beginner"},
     confirm=False,
 )
-session.ai_execute("dry_run_plan", {"operations": ["impute", "scale", "fit"]}, confirm=False)
-session.ai_execute("workflow_status", {}, confirm=False)
+session.ai.execute("dry_run_plan", {"operations": ["impute", "scale", "fit"]}, confirm=False)
+session.ai.execute("workflow_status", {}, confirm=False)
 ```
 
 `learn_concept` answers the conceptual question and `explain_operation` answers
@@ -210,7 +210,7 @@ operator can teach freely before proposing a write.
 | Hallucinated params | Schema validation error: fix or use Session API |
 | Auto-confirm destructive | Not allowed |
 | Autonomy + FULL_SAMPLE egress | Blocked by safety caps |
-| Serving via AI tool | Use CLI/`serve_bundle` instead |
+| Serving via AI tool | Use CLI/`session.dl.serve` instead |
 
 ---
 

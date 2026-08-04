@@ -23,9 +23,14 @@ Deep guide: [synthetic-deep.md](synthetic-deep.md).
 ## Capability matrix
 
 ```python
+import pandas as pd
+
 from buildml import Session
 
-print(Session.synthetic_capability_matrix())
+# Preferred: session.synthetic.capability_matrix on a Session instance.
+# Flat Session.*_capability_matrix classmethods still work without data.
+session = Session.ingest(pd.DataFrame({"x": [0.0]}))
+print(session.synthetic.capability_matrix())
 ```
 
 ---
@@ -61,25 +66,25 @@ session = (
     .split(test_size=0.25, validation_size=0.25, random_state=0)
 )
 
-fit = session.fit_synthesizer(backend="native", method="gaussian_copula", random_state=0)
-sample = session.sample_synthetic(n=200, random_state=1, validate=True)
-fid = session.evaluate_synthetic(mode="fidelity", partition="test", eval_backend="auto")
-tstr = session.evaluate_synthetic(mode="tstr", partition="test")
-session.save_synthetic_bundle("artifacts/synthetic_demo_bundle")
+fit = session.synthetic.fit(backend="native", method="gaussian_copula", random_state=0)
+sample = session.synthetic.sample(n=200, random_state=1, validate=True)
+fid = session.synthetic.evaluate(mode="fidelity", partition="test", eval_backend="auto")
+tstr = session.synthetic.evaluate(mode="tstr", partition="test")
+session.synthetic.save_bundle("artifacts/synthetic_demo_bundle")
 ```
 
 ## SDV industry path (when installed)
 
 ```python
 # pip install "buildml[synthetic-industry]"
-session.fit_synthesizer(backend="sdv", method="ctgan", epochs=100, batch_size=256)
-session.sample_synthetic(n=300)
-session.evaluate_synthetic(mode="fidelity", eval_backend="auto")  # + SDMetrics when installed
+session.synthetic.fit(backend="sdv", method="ctgan", epochs=100, batch_size=256)
+session.synthetic.sample(n=300)
+session.synthetic.evaluate(mode="fidelity", eval_backend="auto")  # + SDMetrics when installed
 ```
 
 ### Cross-link: `resample`
 
-Prefer `Session.resample` for class balance only. Prefer `fit_synthesizer` for
+Prefer `Session.resample` for class balance only. Prefer `session.synthetic.fit` for
 reusable sampling, fidelity/TSTR, and controlled augmentation with provenance.
 
 ---
@@ -93,4 +98,4 @@ reusable sampling, fidelity/TSTR, and controlled augmentation with provenance.
 | Merge | Explicit `merge_mode`; default returns Frame only |
 | Industry | SDV optional: native copula always available |
 
-R6.10 industry depth **PASS**. Benchmark: `benchmarks/synthetic/tstr_quality.py`.
+Industry depth is shipped. Benchmark: `benchmarks/synthetic/tstr_quality.py`.

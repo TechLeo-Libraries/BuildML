@@ -43,11 +43,11 @@ AI_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.ai_configure(",
+            "session.ai.configure(",
             "    provider='openai', model='gpt-4o-mini',",
             "    egress='schema_only',   # names and dtypes, no cell values",
             ")",
-            "print(session.ai_status())",
+            "print(session.ai.status())",
         ),
         check=(
             "Exactly which fields would leave your machine under your current configuration?",
@@ -94,8 +94,8 @@ AI_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.ai_configure(provider='openai', model='gpt-4o-mini')",
-            "result = session.ai_run_autonomous(",
+            "session.ai.configure(provider='openai', model='gpt-4o-mini')",
+            "result = session.ai.run_autonomous(",
             "    'evaluate the current model on validation',",
             "    confirm=True,   # propose, then wait for approval",
             ")",
@@ -148,7 +148,7 @@ AI_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         example=(
             "# untrusted values are wrapped before reaching the model",
-            "session.ai_run_autonomous(",
+            "session.ai.run_autonomous(",
             "    'summarize the quality findings',",
             "    confirm=True,",
             ")",

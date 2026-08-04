@@ -16,7 +16,7 @@ from buildml.explain.schemas import OperationSpec, Prerequisite
 AUTOML_PLAN = Prerequisite(
     "automl-plan",
     "A train-selected AutoMLPlan is attached to the Session.",
-    check_hint="Session.automl_plan is not None.",
+    check_hint="session.automl.plan is not None.",
 )
 
 _OPERATIONS: tuple[OperationSpec, ...] = (
@@ -88,7 +88,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         alternatives=(
             "grid_search / optuna_search for HPO on one fixed estimator.",
             "compare_models for a small named holdout comparison.",
-            "fit_voting / fit_stacking when you already chose bases.",
+            "session.ensemble.fit_voting / session.ensemble.fit_stacking when you already chose bases.",
         ),
         rationale=(
             "Use when you need joint model-family + preprocess-strategy selection under leakage discipline.",
@@ -110,11 +110,11 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             "Treating train-CV AutoML ranks as final generalization without nested/validation/test confirm.",
             "Claiming neural architecture search when only sklearn catalogs were searched.",
         ),
-        state_changes=("Stores automl_plan, automl_result, and fit_result.",),
+        state_changes=("Stores session.automl.plan, session.automl.result, and fit_result.",),
         result_reading=(
             "Read best_family, best_recipe_strategy, best_score, disclosures, limitations.",
         ),
-        next_steps=("evaluate_automl; save_automl_bundle and/or save_pipeline.",),
+        next_steps=("session.automl.evaluate; session.automl.save_bundle and/or save_pipeline.",),
         concepts=(
             "automl-beyond-hpo",
             "automl-recipe-strategy-search",
@@ -130,7 +130,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         "Score the selected pipeline on a holdout partition with AutoML disclosures.",
         "AutoML evaluation step.",
         (
-            "Require FitResult from run_automl / load_automl_bundle.",
+            "Require FitResult from session.automl.run / session.automl.load_bundle.",
             "Delegate to classical evaluate_estimator metrics.",
             "Attach AutoMLPlan disclosures to recommendations/diagnostics.",
         ),
@@ -140,16 +140,16 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         inputs=("Fitted AutoML winner on the Session.",),
         outputs=("EvaluateResult with automl diagnostics when AutoMLPlan is present.",),
         prerequisites=(DATASET, SPLIT, FIT),
-        ordering=("After run_automl or load_automl_bundle.",),
+        ordering=("After session.automl.run or session.automl.load_bundle.",),
         alternatives=("Session.evaluate: same metrics without AutoML-specific tips.",),
         rationale=("Use to confirm the winner on a holdout after selection.",),
         assumptions=("Feature columns match the fitted contract.",),
         failures=("No fit_result; missing partition.",),
         leakage=("Train-partition scores are optimistic for model selection.",),
         anti_patterns=("Treating train metrics as final generalization.",),
-        state_changes=("Records evaluate_automl in history; does not mutate the estimator.",),
+        state_changes=("Records session.automl.evaluate in history; does not mutate the estimator.",),
         result_reading=("Read metrics, diagnostics.automl, recommendations.",),
-        next_steps=("save_automl_bundle and/or save_pipeline.",),
+        next_steps=("session.automl.save_bundle and/or save_pipeline.",),
         concepts=(
             "automl-selection-honesty",
             "evaluation-partitions",
@@ -170,7 +170,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         inputs=("Active AutoMLPlan.",),
         outputs=("Bundle directory path.",),
         prerequisites=(AUTOML_PLAN,),
-        ordering=("After a successful run_automl.",),
+        ordering=("After a successful session.automl.run.",),
         alternatives=(
             "save_pipeline when Session-global preprocess plans must travel with the estimator.",
             "save_model for estimator-only without AutoML disclosures.",
@@ -182,7 +182,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         anti_patterns=("Treating the bundle as a Session checkpoint.",),
         state_changes=("Writes files; records history.",),
         result_reading=("Confirm format=buildml.automl_bundle.v1 in meta.json.",),
-        next_steps=("load_automl_bundle in a fresh Session, then evaluate_automl.",),
+        next_steps=("session.automl.load_bundle in a fresh Session, then session.automl.evaluate.",),
         concepts=("automl-bundle-boundary",),
     ),
     _operation(
@@ -205,7 +205,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             ),
         ),
         inputs=("AutoML bundle directory.",),
-        outputs=("Session with automl_plan and fit_result attached.",),
+        outputs=("Session with session.automl.plan and fit_result attached.",),
         prerequisites=(DATASET,),
         ordering=("After ingesting a frame with matching feature columns.",),
         alternatives=("load_model / load_pipeline for classical artifacts.",),
@@ -214,9 +214,9 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         failures=("Incomplete or wrong-format bundle.",),
         leakage=("Loading does not re-open Session test for refitting.",),
         anti_patterns=("Expecting Session-global preprocess plans inside an AutoML bundle.",),
-        state_changes=("Sets automl_plan and fit_result; clears automl_result.",),
-        result_reading=("Read best_family and best_recipe_strategy from automl_plan.",),
-        next_steps=("evaluate_automl or predict.",),
+        state_changes=("Sets session.automl.plan and fit_result; clears session.automl.result.",),
+        result_reading=("Read best_family and best_recipe_strategy from session.automl.plan.",),
+        next_steps=("session.automl.evaluate or predict.",),
         concepts=("automl-bundle-boundary",),
     ),
 )

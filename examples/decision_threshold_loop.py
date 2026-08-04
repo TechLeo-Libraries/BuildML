@@ -38,7 +38,7 @@ def main() -> None:
     )
 
     # 1) Cost-sensitive operating point on validation (persisted DecisionPlan)
-    thr = session.fit_decision_policy(
+    thr = session.decision.fit(
         method="threshold",
         partition="validation",
         fp_cost=1.0,
@@ -55,11 +55,11 @@ def main() -> None:
         diagnostic.payload.get("recommended_threshold", {}).get("threshold"),
     )
 
-    eval_thr = session.evaluate_decisions(partition="test")
+    eval_thr = session.decision.evaluate(partition="test")
     print("threshold eval:", eval_thr.to_dict())
 
     # 2) Budget-constrained selection using model scores + row costs
-    knap = session.fit_decision_policy(
+    knap = session.decision.fit(
         method="knapsack",
         partition="validation",
         budget=50.0,
@@ -69,7 +69,7 @@ def main() -> None:
         knapsack_solver="dp",
     )
     print("knapsack fit:", knap.to_dict())
-    applied = session.apply_decisions(partition="test")
+    applied = session.decision.apply(partition="test")
     print(
         f"selected={applied.n_selected} value={applied.selected_value} "
         f"cost={applied.selected_cost}"
@@ -78,7 +78,7 @@ def main() -> None:
 
     # 3) Refuse silent test tuning
     try:
-        session.fit_decision_policy(
+        session.decision.fit(
             method="threshold",
             partition="test",
             fp_cost=1.0,
@@ -88,7 +88,7 @@ def main() -> None:
         print("blocked test tuning:", type(exc).__name__, str(exc)[:120])
 
     out = Path("artifacts/decision_demo_bundle")
-    session.save_decision_bundle(out)
+    session.decision.save_bundle(out)
     print("bundle:", out.resolve())
 
 

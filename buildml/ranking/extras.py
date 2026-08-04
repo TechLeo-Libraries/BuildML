@@ -4,6 +4,10 @@ Native sklearn pointwise/pairwise rankers are always available. LightGBM
 LambdaRank, XGBoost rank:ndcg, CatBoost YetiRank, and torch listwise-lite
 require ``buildml[ranking-industry]`` or ``buildml[torch]``.
 
+Industry ``*_available`` predicates use subprocess import probes so broken
+native wheels are never reported as ready. Use ``*_spec_present`` for cheap
+discovery disclosure in capability matrices.
+
 See Also
 --------
 buildml.ranking.catalog.ranking_capability_matrix : What is installed here.
@@ -18,95 +22,64 @@ from buildml.core.errors import MissingExtraError
 from buildml.dl.extras import torch_available, torch_spec_available
 
 
-def lightgbm_available() -> bool:
-    """Return whether LightGBM is discoverable for LambdaRank paths.
+def _runtime_ok(module: str) -> bool:
+    from buildml.dl.extras import _subprocess_import_ok
 
-    Uses ``find_spec`` for a cheap catalog probe without importing lightgbm.
+    return _subprocess_import_ok(module)
 
-    Returns
-    -------
-    bool
-        ``True`` when the ``lightgbm`` package is discoverable.
-    """
+
+def lightgbm_spec_present() -> bool:
+    """Cheap find_spec discovery for LightGBM (does not prove import works)."""
     return importlib.util.find_spec("lightgbm") is not None
 
 
-def xgboost_available() -> bool:
-    """Return whether XGBoost is discoverable for rank:ndcg paths.
-
-    Uses ``find_spec`` for a cheap catalog probe without importing xgboost.
-
-    Returns
-    -------
-    bool
-        ``True`` when the ``xgboost`` package is discoverable.
-    """
+def xgboost_spec_present() -> bool:
+    """Cheap find_spec discovery for XGBoost (does not prove import works)."""
     return importlib.util.find_spec("xgboost") is not None
 
 
-def catboost_available() -> bool:
-    """Return whether CatBoost is discoverable for YetiRank paths.
-
-    Uses ``find_spec`` for a cheap catalog probe without importing catboost.
-
-    Returns
-    -------
-    bool
-        ``True`` when the ``catboost`` package is discoverable.
-    """
+def catboost_spec_present() -> bool:
+    """Cheap find_spec discovery for CatBoost (does not prove import works)."""
     return importlib.util.find_spec("catboost") is not None
 
 
+def lightgbm_available() -> bool:
+    """Return whether LightGBM imports cleanly for LambdaRank paths."""
+    if not lightgbm_spec_present():
+        return False
+    return _runtime_ok("lightgbm")
+
+
+def xgboost_available() -> bool:
+    """Return whether XGBoost imports cleanly for rank:ndcg paths."""
+    if not xgboost_spec_present():
+        return False
+    return _runtime_ok("xgboost")
+
+
+def catboost_available() -> bool:
+    """Return whether CatBoost imports cleanly for YetiRank paths."""
+    if not catboost_spec_present():
+        return False
+    return _runtime_ok("catboost")
+
+
 def gradient_boosting_ranking_available() -> bool:
-    """Return whether any GBDT ranking library is discoverable.
-
-    True when LightGBM, XGBoost, or CatBoost is installed for industry LTR
-    backends.
-
-    Returns
-    -------
-    bool
-        ``True`` when at least one GBDT ranker dependency is discoverable.
-    """
+    """Return whether any GBDT ranking library imports cleanly at runtime."""
     return lightgbm_available() or xgboost_available() or catboost_available()
 
 
 def ranking_industry_available() -> bool:
-    """Return whether industry LTR libraries (GBDT rankers) are importable.
+    """Return whether industry LTR libraries import cleanly at runtime.
 
-    Mirrors :func:`gradient_boosting_ranking_available` for capability-matrix
-    ``industry_extra_present``.
-
-    Returns
-    -------
-    bool
-        ``True`` when at least one GBDT ranker dependency is discoverable.
+    Gates capability-matrix ``available`` flags. Prefer
+    ``*_spec_present`` when only install discovery is needed.
     """
     return gradient_boosting_ranking_available()
 
 
 def require_lightgbm(*, feature: str = "LightGBM LambdaRank LTR") -> Any:
-    """Import and return ``lightgbm``, or raise :class:`MissingExtraError`.
-
-    Called by the LightGBM adapter at fit time so missing extras surface as
-    actionable install guidance.
-
-    Parameters
-    ----------
-    feature:
-        Capability name for the error message.
-
-    Returns
-    -------
-    module
-        The imported lightgbm module.
-
-    Raises
-    ------
-    MissingExtraError
-        When LightGBM is not installed. Install with
-        ``pip install 'buildml[ranking-industry]'``.
-    """
+    """Import and return ``lightgbm``, or raise :class:`MissingExtraError`."""
     try:
         import lightgbm
     except ImportError as exc:
@@ -115,27 +88,7 @@ def require_lightgbm(*, feature: str = "LightGBM LambdaRank LTR") -> Any:
 
 
 def require_xgboost(*, feature: str = "XGBoost rank:ndcg LTR") -> Any:
-    """Import and return ``xgboost``, or raise :class:`MissingExtraError`.
-
-    Called by the XGBoost adapter at fit time so missing extras surface as
-    actionable install guidance.
-
-    Parameters
-    ----------
-    feature:
-        Capability name for the error message.
-
-    Returns
-    -------
-    module
-        The imported xgboost module.
-
-    Raises
-    ------
-    MissingExtraError
-        When XGBoost is not installed. Install with
-        ``pip install 'buildml[ranking-industry]'``.
-    """
+    """Import and return ``xgboost``, or raise :class:`MissingExtraError`."""
     try:
         import xgboost
     except ImportError as exc:
@@ -144,27 +97,7 @@ def require_xgboost(*, feature: str = "XGBoost rank:ndcg LTR") -> Any:
 
 
 def require_catboost(*, feature: str = "CatBoost YetiRank LTR") -> Any:
-    """Import and return ``catboost``, or raise :class:`MissingExtraError`.
-
-    Called by the CatBoost adapter at fit time so missing extras surface as
-    actionable install guidance.
-
-    Parameters
-    ----------
-    feature:
-        Capability name for the error message.
-
-    Returns
-    -------
-    module
-        The imported catboost module.
-
-    Raises
-    ------
-    MissingExtraError
-        When CatBoost is not installed. Install with
-        ``pip install 'buildml[ranking-industry]'``.
-    """
+    """Import and return ``catboost``, or raise :class:`MissingExtraError`."""
     try:
         import catboost
     except ImportError as exc:
@@ -173,26 +106,7 @@ def require_catboost(*, feature: str = "CatBoost YetiRank LTR") -> Any:
 
 
 def require_torch_ranking(*, feature: str = "Torch listwise-lite LTR") -> Any:
-    """Import torch for listwise-lite ranking, or raise :class:`MissingExtraError`.
-
-    Delegates to :func:`buildml.dl.extras.require_torch` so torch install
-    guidance is consistent across BuildML domains.
-
-    Parameters
-    ----------
-    feature:
-        Capability name for the error message.
-
-    Returns
-    -------
-    module
-        The imported torch module.
-
-    Raises
-    ------
-    MissingExtraError
-        When torch is not installed. Install with ``pip install 'buildml[torch]'``.
-    """
+    """Import torch for listwise-lite ranking, or raise :class:`MissingExtraError`."""
     from buildml.dl.extras import require_torch
 
     return require_torch(feature=feature)
@@ -200,8 +114,10 @@ def require_torch_ranking(*, feature: str = "Torch listwise-lite LTR") -> Any:
 
 __all__ = [
     "catboost_available",
+    "catboost_spec_present",
     "gradient_boosting_ranking_available",
     "lightgbm_available",
+    "lightgbm_spec_present",
     "ranking_industry_available",
     "require_catboost",
     "require_lightgbm",
@@ -210,4 +126,5 @@ __all__ = [
     "torch_available",
     "torch_spec_available",
     "xgboost_available",
+    "xgboost_spec_present",
 ]

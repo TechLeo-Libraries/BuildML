@@ -82,7 +82,7 @@ def main() -> None:
     # --- Stage 1: anomaly ---
     try:
         if extra_available("pyod"):
-            a_fit = session.fit_anomaly(
+            a_fit = session.anomaly.fit(
                 backend="pyod",
                 method="hbos",
                 mode="unsupervised",
@@ -91,7 +91,7 @@ def main() -> None:
             )
             a_backend = "pyod/hbos"
         else:
-            a_fit = session.fit_anomaly(
+            a_fit = session.anomaly.fit(
                 method="isolation_forest",
                 mode="unsupervised",
                 contamination=0.06,
@@ -101,13 +101,13 @@ def main() -> None:
         assert_no_test_in_selection(
             selection_partition="validation", evaluation_partition="test"
         )
-        a_tune = session.tune_anomaly_threshold(
+        a_tune = session.anomaly.tune_threshold(
             partition="validation",
             label_column=LABEL,
             positive_label=1,
             metric="f1",
         )
-        a_ev = session.evaluate_anomaly(partition="test", positive_label=1)
+        a_ev = session.anomaly.evaluate(partition="test", positive_label=1)
         stages["anomaly"] = {
             "status": "ok",
             "backend": a_backend,
@@ -137,7 +137,7 @@ def main() -> None:
             )
             .scale(method="standard")
         )
-        o_fit = online_session.fit_online(
+        o_fit = online_session.online.fit(
             estimator="sgd_classifier",
             chunk_size=50,
             n_init=50,
@@ -146,14 +146,14 @@ def main() -> None:
         updates = 0
         while True:
             remaining = (
-                online_session.online_plan.n_train_rows
-                - online_session.online_plan.cursor
+                online_session.online.plan.n_train_rows
+                - online_session.online.plan.cursor
             )
             if remaining <= 0:
                 break
-            online_session.partial_fit_online(n_rows=min(50, remaining))
+            online_session.online.partial_fit(n_rows=min(50, remaining))
             updates += 1
-        o_test = online_session.evaluate_online(partition="test")
+        o_test = online_session.online.evaluate(partition="test")
         stages["online"] = {
             "status": "ok",
             "n_init_rows": int(o_fit.n_init_rows),
@@ -180,7 +180,7 @@ def main() -> None:
         )
         fc_plan = fc_session.split_plan
         assert fc_plan is not None
-        fc_fit = fc_session.fit_forecast(
+        fc_fit = fc_session.forecast.fit(
             method="lag_ridge",
             horizon=24,
             lags=[1, 2, 3, 24, 48],
@@ -189,10 +189,10 @@ def main() -> None:
         assert_no_test_in_selection(
             selection_partition="validation", evaluation_partition="test"
         )
-        fc_val = fc_session.evaluate_forecast(
+        fc_val = fc_session.forecast.evaluate(
             partition="validation", strategy="rolling_one_step"
         )
-        fc_test = fc_session.evaluate_forecast(
+        fc_test = fc_session.forecast.evaluate(
             partition="test", strategy="rolling_one_step"
         )
         stages["forecast"] = {

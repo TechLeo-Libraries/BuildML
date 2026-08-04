@@ -39,28 +39,28 @@ def main() -> None:
         .split(test_size=0.25, validation_size=0.2, random_state=0)
     )
 
-    fit = session.fit_synthesizer(method="gaussian_copula", random_state=0)
+    fit = session.synthetic.fit(method="gaussian_copula", random_state=0)
     print("fit:", fit.to_dict())
 
     # Bootstrap path (plain + smoothed)
-    session.fit_synthesizer(method="bootstrap", smooth_sigma=0.05, random_state=1)
-    boot = session.sample_synthetic(n=80, random_state=2)
+    session.synthetic.fit(method="bootstrap", smooth_sigma=0.05, random_state=1)
+    boot = session.synthetic.sample(n=80, random_state=2)
     print("bootstrap sample n=", boot.n_rows)
 
     # Restore copula for fidelity / TSTR
-    session.fit_synthesizer(method="gaussian_copula", random_state=0)
-    sample = session.sample_synthetic(n=120, random_state=3)
+    session.synthetic.fit(method="gaussian_copula", random_state=0)
+    sample = session.synthetic.sample(n=120, random_state=3)
     assert sample.frame is not None
     print("copula sample head:\n", sample.frame.head())
 
-    fid = session.evaluate_synthetic(mode="fidelity", partition="test")
+    fid = session.synthetic.evaluate(mode="fidelity", partition="test")
     print("fidelity:", fid.metrics)
 
-    tstr = session.evaluate_synthetic(mode="tstr", partition="test")
+    tstr = session.synthetic.evaluate(mode="tstr", partition="test")
     print("tstr:", tstr.metrics)
 
     out = Path("artifacts/synthetic_demo_bundle")
-    session.save_synthetic_bundle(out)
+    session.synthetic.save_bundle(out)
     print("bundle:", out.resolve())
 
     # Walkthrough disclosure

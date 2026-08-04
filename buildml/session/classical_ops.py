@@ -370,6 +370,7 @@ def evaluate(
             "skipped": list(board.skipped),
             "interpretation": list(board.interpretation),
         }
+    session._last_evaluate_partition = str(partition)
     session._record(
         "evaluate",
         {
@@ -2745,6 +2746,12 @@ def explain_shap(
     -------
     ShapExplainResult
         Mean absolute SHAP importances and honesty disclosures.
+
+    Raises
+    ------
+    ValidationError
+        When the Session lacks a fit or split, the partition is unknown, or the
+        optional shap stack cannot attribute the fitted estimator.
     """
     from buildml.model.shap_explain import explain_with_shap
 

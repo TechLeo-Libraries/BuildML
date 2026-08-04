@@ -51,23 +51,34 @@ def main() -> None:
 
     method = "kmeans"
     try:
-        fit = session.fit_clusters(method="kmeans", n_clusters=4, random_state=ctx.seed)
+        fit = session.unsupervised.fit(method="kmeans", n_clusters=4, random_state=ctx.seed)
     except Exception:
-        fit = session.fit_clusters(method="kmeans", n_clusters=4, random_state=ctx.seed)
+        fit = session.unsupervised.fit(method="kmeans", n_clusters=4, random_state=ctx.seed)
 
     assert_no_test_in_selection(
         selection_partition="validation",
         evaluation_partition="test",
     )
-    val = session.evaluate_clusters(
+    val = session.unsupervised.evaluate(
         partition="validation",
         external_label_column=EXTERNAL,
     )
-    test = session.evaluate_clusters(
+    test = session.unsupervised.evaluate(
         partition="test",
         external_label_column=EXTERNAL,
     )
-    bundle = session.save_unsupervised_bundle(ctx.artifacts_dir / "unsupervised_bundle")
+    test_metrics = metrics_round(
+        test.to_dict() if hasattr(test, "to_dict") else {}
+    )
+    external = dict(test_metrics.get("external_metrics") or {})
+    for key in ("adjusted_rand_index", "normalized_mutual_info"):
+        value = external.get(key)
+        if isinstance(value, (int, float)) and float(value) >= 0.98:
+            raise SystemExit(
+                "cluster-customer-segments refused perfect-score theater: "
+                f"{key}={float(value):.4f} >= 0.98 on overlapping RFM segments."
+            )
+    bundle = session.unsupervised.save_bundle(ctx.artifacts_dir / "unsupervised_bundle")
 
     # Optional HDBSCAN probe (does not replace primary k-means claim).
     hdbscan_probe: dict = {"available": hdbscan_ok, "ran": False}
@@ -83,11 +94,11 @@ def main() -> None:
                 )
                 .scale(method="standard")
             )
-            fit_h = session2.fit_clusters(
+            fit_h = session2.unsupervised.fit(
                 method="hdbscan",
                 hdbscan_min_cluster_size=25,
             )
-            ev_h = session2.evaluate_clusters(
+            ev_h = session2.unsupervised.evaluate(
                 partition="validation",
                 external_label_column=EXTERNAL,
             )
@@ -121,9 +132,7 @@ def main() -> None:
             "validation_metrics": metrics_round(
                 val.to_dict() if hasattr(val, "to_dict") else {}
             ),
-            "test_metrics": metrics_round(
-                test.to_dict() if hasattr(test, "to_dict") else {}
-            ),
+            "test_metrics": test_metrics,
             "hdbscan_probe": hdbscan_probe,
             "bundle_path": str(bundle),
             "leakage_controls": [

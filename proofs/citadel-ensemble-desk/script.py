@@ -77,12 +77,12 @@ def main() -> None:
 
     # --- Stage 1: voting then stacking ---
     try:
-        v_fit = session.fit_voting(bases, voting="soft", task="classification")
-        v_val = session.evaluate_ensemble(partition="validation")
+        v_fit = session.ensemble.fit_voting(bases, voting="soft", task="classification")
+        v_val = session.ensemble.evaluate(partition="validation")
         assert_no_test_in_selection(
             selection_partition="validation", evaluation_partition="test"
         )
-        v_test = session.evaluate_ensemble(partition="test")
+        v_test = session.ensemble.evaluate(partition="test")
         stages["voting"] = {
             "status": "ok",
             "fit": metrics_round(v_fit.to_dict() if hasattr(v_fit, "to_dict") else {}),
@@ -117,14 +117,14 @@ def main() -> None:
         )
         stack_session.encode(method="onehot")
         stack_session.scale(method="standard")
-        s_fit = stack_session.fit_stacking(
+        s_fit = stack_session.ensemble.fit_stacking(
             bases,
             final_estimator=LogisticRegression(max_iter=1000, random_state=ctx.seed),
             cv=3,
             task="classification",
         )
-        s_val = stack_session.evaluate_ensemble(partition="validation")
-        s_test = stack_session.evaluate_ensemble(partition="test")
+        s_val = stack_session.ensemble.evaluate(partition="validation")
+        s_test = stack_session.ensemble.evaluate(partition="test")
         stages["stacking"] = {
             "status": "ok",
             "fit": metrics_round(s_fit.to_dict() if hasattr(s_fit, "to_dict") else {}),
@@ -162,7 +162,7 @@ def main() -> None:
             .scale(method="standard")
         )
         if extra_available("pyod"):
-            a_fit = a_session.fit_anomaly(
+            a_fit = a_session.anomaly.fit(
                 backend="pyod",
                 method="hbos",
                 mode="unsupervised",
@@ -171,20 +171,20 @@ def main() -> None:
             )
             a_backend = "pyod/hbos"
         else:
-            a_fit = a_session.fit_anomaly(
+            a_fit = a_session.anomaly.fit(
                 method="isolation_forest",
                 mode="unsupervised",
                 contamination=0.1,
                 random_state=ctx.seed,
             )
             a_backend = "sklearn/isolation_forest"
-        a_tune = a_session.tune_anomaly_threshold(
+        a_tune = a_session.anomaly.tune_threshold(
             partition="validation",
             label_column=TARGET,
             positive_label=1,
             metric="f1",
         )
-        a_ev = a_session.evaluate_anomaly(partition="test", positive_label=1)
+        a_ev = a_session.anomaly.evaluate(partition="test", positive_label=1)
         stages["anomaly"] = {
             "status": "ok",
             "backend": a_backend,
@@ -207,13 +207,13 @@ def main() -> None:
         assert_no_test_in_selection(
             selection_partition="validation", evaluation_partition="test"
         )
-        thr = decision_session.fit_decision_policy(
+        thr = decision_session.decision.fit(
             method="threshold",
             partition="validation",
             fp_cost=1.0,
             fn_cost=4.0,
         )
-        thr_test = decision_session.evaluate_decisions(partition="test")
+        thr_test = decision_session.decision.evaluate(partition="test")
         stages["decisions"] = {
             "status": "ok",
             "threshold_policy": metrics_round(
@@ -224,7 +224,7 @@ def main() -> None:
             ),
         }
         try:
-            knap = decision_session.fit_decision_policy(
+            knap = decision_session.decision.fit(
                 method="knapsack",
                 partition="validation",
                 budget=80.0,
@@ -233,7 +233,7 @@ def main() -> None:
                 score_source="model_proba",
                 knapsack_solver="dp",
             )
-            applied = decision_session.apply_decisions(partition="test")
+            applied = decision_session.decision.apply(partition="test")
             stages["decisions"]["knapsack"] = {
                 "status": "ok",
                 "policy": metrics_round(

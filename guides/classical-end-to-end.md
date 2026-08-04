@@ -10,6 +10,10 @@ pipeline bundle**. For the short on-ramp, see
 [quickstart-classical](quickstart-classical.md). For leakage and fold-local CV,
 see [leakage-cv-recipes](leakage-cv-recipes.md).
 
+Classical flat calls (`session.fit`, `session.evaluate`, …) remain the preferred
+DX; `session.classical.fit` / `session.classical.evaluate` exist as a dual
+namespaced path and are not required here.
+
 ## Why Session order exists
 
 Supervised ML fails quietly when preparation statistics (medians, category

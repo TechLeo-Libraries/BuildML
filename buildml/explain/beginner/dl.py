@@ -44,9 +44,9 @@ DL_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         example=(
             "session.split(test_size=0.2, validation_size=0.2, random_state=0)",
-            "session.make_torch_loaders(batch_size=64, shuffle_train=True)",
-            "session.fit_torch(epochs=20, monitor_partition='validation')",
-            "session.evaluate_torch(partition='test')",
+            "session.dl.make_loaders(batch_size=64, shuffle_train=True)",
+            "session.dl.fit(epochs=20, monitor_partition='validation')",
+            "session.dl.evaluate(partition='test')",
         ),
         check=(
             "Is your evaluation loader shuffled? It should not be.",
@@ -93,11 +93,11 @@ DL_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.fit_torch(",
+            "session.dl.fit(",
             "    epochs=100, early_stopping_patience=5,",
             "    monitor_partition='validation', monitor_metric='loss',",
             ")",
-            "session.evaluate_torch(partition='test')",
+            "session.dl.evaluate(partition='test')",
         ),
         check=(
             "Which partition does your monitor read?",
@@ -144,8 +144,8 @@ DL_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.fit_torch(epochs=50, monitor_partition='validation')",
-            "curve = session.torch_training_curve()",
+            "session.dl.fit(epochs=50, monitor_partition='validation')",
+            "curve = session.dl.training_curve()",
             "print(curve.epochs[-1], curve.train_loss[-1], curve.monitor_loss[-1])",
         ),
         check=(

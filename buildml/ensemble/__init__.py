@@ -26,12 +26,16 @@ from typing import Any
 __all__ = [
     "BUNDLE_FORMAT",
     "CHECKPOINT_BOUNDARY",
+    "BaseLearnerContribution",
     "BlendMethod",
     "EnsembleConfig",
+    "EnsembleDiversitySummary",
+    "EnsembleEvalReport",
     "EnsembleFitResult",
     "EnsemblePlan",
     "EnsembleStrategy",
     "VotingMethod",
+    "build_ensemble_eval_report",
     "ensemble_capability_matrix",
     "ensemble_status_payload",
     "fit_blending_ensemble",
@@ -57,6 +61,15 @@ def __getattr__(name: str) -> Any:
         from buildml.ensemble import results as results_mod
 
         return getattr(results_mod, name)
+    if name in {
+        "BaseLearnerContribution",
+        "EnsembleDiversitySummary",
+        "EnsembleEvalReport",
+        "build_ensemble_eval_report",
+    }:
+        from buildml.ensemble import evaluate as evaluate_mod
+
+        return getattr(evaluate_mod, name)
     if name in {
         "fit_voting_ensemble",
         "fit_stacking_ensemble",

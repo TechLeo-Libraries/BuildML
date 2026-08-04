@@ -32,22 +32,22 @@ session = (
 )
 
 # Inspect honest defaults (industry when installed, else sklearn)
-print(Session.symbolic_capability_matrix()["default_symbolic_backend_when_installed"])
+print(session.symbolic.capability_matrix()["default_symbolic_backend_when_installed"])
 
 # Symbolic: sklearn decision-tree rules (always available)
-fit = session.fit_symbolic(backend="sklearn", source="decision_tree", task="classification")
+fit = session.symbolic.fit(backend="sklearn", source="decision_tree", task="classification")
 print(fit.backend, fit.n_rules, fit.provenance)
 
 # Industry rule export when buildml[symbolic-industry] is installed:
-# fit = session.fit_symbolic(backend="industry", method="skope_rules")
+# fit = session.symbolic.fit(backend="industry", method="skope_rules")
 
-pred = session.predict_symbolic(partition="test", return_traces=True)
+pred = session.symbolic.predict(partition="test", return_traces=True)
 print(pred.traces[0].fired_rule_ids, pred.traces[0].chosen_rule_id)
 
-ev = session.evaluate_symbolic(partition="validation")
+ev = session.symbolic.evaluate(partition="validation")
 print(ev.metrics, ev.rule_coverage)
 
-session.save_symbolic_bundle("artifacts/symbolic_bundle")
+session.symbolic.save_bundle("artifacts/symbolic_bundle")
 
 # Neuro-symbolic: sklearn base + hard constraint overlay
 constraints = [
@@ -60,7 +60,7 @@ constraints = [
         "priority": 100,
     }
 ]
-neuro = session.fit_neuro_symbolic(
+neuro = session.symbolic.fit_neuro(
     backend="sklearn",
     mode="constraint_overlay",
     base_estimator="logistic_regression",
@@ -69,10 +69,10 @@ neuro = session.fit_neuro_symbolic(
     rule_source="declared",
 )
 print(neuro.backend, neuro.mode, neuro.rule_provenance, neuro.n_rules)
-print(session.evaluate_neuro_symbolic(partition="test").metrics)
+print(session.symbolic.evaluate_neuro(partition="test").metrics)
 
 # Torch lite concept-bottleneck when buildml[torch] is installed:
-# session.fit_neuro_symbolic(backend="torch", base_estimator="concept_bottleneck_lite")
+# session.symbolic.fit_neuro(backend="torch", base_estimator="concept_bottleneck_lite")
 ```
 
 | In scope | Out of scope |
@@ -86,5 +86,5 @@ print(session.evaluate_neuro_symbolic(partition="test").metrics)
 Benchmark: `python benchmarks/symbolic/rule_fidelity.py` (rule accuracy vs
 black-box RandomForest on tabular reference data).
 
-Next Phase 2 item after symbolic: **Case-based reasoning**
+Related next: case-based reasoning
 ([quickstart-cbr](quickstart-cbr.md)).

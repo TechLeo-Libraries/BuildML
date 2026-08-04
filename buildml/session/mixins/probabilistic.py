@@ -9,7 +9,10 @@ from buildml.session.mixins._shared import *  # noqa: F403
 
 
 class ProbabilisticSessionMixin:
-    """Public Session methods for the probabilistic domain."""
+    """Public Session methods for the probabilistic domain.
+
+    Preferred namespaced API: ``session.probabilistic.*`` (domain flat actions emit DeprecationWarning until BuildML 3.0).
+    """
     # mypy: session private attrs (owned by Session.__init__)
     if TYPE_CHECKING:
         _probabilistic_eval_result: Any

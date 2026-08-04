@@ -29,12 +29,13 @@ def main() -> None:
     wire_amount = rng.lognormal(9.2, 0.85, size=n)
     pep_score = rng.beta(2.5, 4.0, size=n)
     jurisdiction_risk = rng.beta(2.5, 3.5, size=n)
-    # Escalation rule-ish: high wire + elevated jurisdiction, or young account + PEP
-    # Thresholds tuned so both classes appear under seed=27 stratified splits.
-    escalate = (
-        ((wire_amount > 8000) & (jurisdiction_risk > 0.35))
-        | ((account_age_days < 365) & (pep_score > 0.30))
-    ).astype(int)
+    # Softened escalation score + Bernoulli labels (not exact Boolean rules).
+    score = (
+        1.6 * ((wire_amount > 8000) & (jurisdiction_risk > 0.35)).astype(float)
+        + 1.4 * ((account_age_days < 365) & (pep_score > 0.30)).astype(float)
+        + rng.normal(0, 0.55, size=n)
+    )
+    escalate = (rng.random(n) < 1 / (1 + np.exp(-score))).astype(int)
     frame = pd.DataFrame({
         "account_age_days": account_age_days,
         "wire_amount": wire_amount,
@@ -53,14 +54,22 @@ def main() -> None:
         })
         .split(test_size=0.2, validation_size=0.2, stratify=True, random_state=ctx.seed)
     )
-    fit = session.fit_symbolic(method="decision_tree", random_state=ctx.seed)
-    val = session.evaluate_symbolic(partition="validation")
-    test = session.evaluate_symbolic(partition="test")
+    fit = session.symbolic.fit(method="decision_tree", random_state=ctx.seed)
+    val = session.symbolic.evaluate(partition="validation")
+    test = session.symbolic.evaluate(partition="test")
+    test_metrics = metrics_round(dict(getattr(test, "metrics", {}) or {}))
+    for key in ("accuracy", "f1", "f1_macro", "f1_weighted"):
+        value = test_metrics.get(key)
+        if isinstance(value, (int, float)) and float(value) >= 0.97:
+            raise SystemExit(
+                "compliance-neuro-symbolic refused perfect-score theater: "
+                f"{key}={float(value):.4f} >= 0.97 on noisy KYC labels."
+            )
     neuro = {"ran": False, "skip_torch_paths": TORCH_STATUS.get("skip_torch_paths", True)}
     if not TORCH_STATUS.get("skip_torch_paths"):
         try:
-            nf = session.fit_neuro_symbolic(method="nam", random_state=ctx.seed, epochs=5)
-            ne = session.evaluate_neuro_symbolic(partition="validation")
+            nf = session.symbolic.fit_neuro(method="nam", random_state=ctx.seed, epochs=5)
+            ne = session.symbolic.evaluate_neuro(partition="validation")
             neuro = {
                 "ran": True,
                 "fit": metrics_round(nf.to_dict() if hasattr(nf, "to_dict") else {}),
@@ -68,7 +77,7 @@ def main() -> None:
             }
         except (MissingExtraError, TypeError, ValueError) as exc:
             neuro = {"ran": False, "error": f"{type(exc).__name__}: {exc}"}
-    bundle = session.save_symbolic_bundle(ctx.artifacts_dir / "symbolic_bundle")
+    bundle = session.symbolic.save_bundle(ctx.artifacts_dir / "symbolic_bundle")
     write_results(ctx, {
         "status": "completed",
         "data": {
@@ -78,7 +87,7 @@ def main() -> None:
         },
         "fit": metrics_round(fit.to_dict() if hasattr(fit, "to_dict") else {}),
         "validation_metrics": metrics_round(dict(getattr(val, "metrics", {}) or {})),
-        "test_metrics": metrics_round(dict(getattr(test, "metrics", {}) or {})),
+        "test_metrics": test_metrics,
         "neuro_symbolic": neuro,
         "torch": TORCH_STATUS,
         "bundle_path": str(bundle),
@@ -93,6 +102,7 @@ def main() -> None:
         "limitations": [
             "Not legal advice; rule fidelity ≠ compliance certification",
             "Distinct KYC/AML narrative from policy-rules-neuro-symbolic",
+            "Labels are probabilistic soft-rule draws, not exact Boolean rules",
         ],
     })
     print("compliance-neuro-symbolic OK", getattr(test, "metrics", test))

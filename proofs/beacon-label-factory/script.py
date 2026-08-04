@@ -92,13 +92,13 @@ def main() -> None:
 
     # --- Stage 1: SSL pretext ---
     try:
-        ssl_fit = session.fit_ssl_pretext(method="masked_tabular", random_state=ctx.seed)
+        ssl_fit = session.ssl.fit_pretext(method="masked_tabular", random_state=ctx.seed)
         try:
-            session.finetune_ssl_head(random_state=ctx.seed)
+            session.ssl.finetune_head(random_state=ctx.seed)
         except Exception:  # noqa: BLE001
             pass
-        ssl_val = session.evaluate_ssl(partition="validation")
-        ssl_test = session.evaluate_ssl(partition="test")
+        ssl_val = session.ssl.evaluate(partition="validation")
+        ssl_test = session.ssl.evaluate(partition="test")
         stages["ssl"] = {
             "status": "ok",
             "fit": metrics_round(
@@ -130,12 +130,12 @@ def main() -> None:
             .scale(method="standard")
         )
         _mask_train_labels(semi, fraction=0.82, seed=ctx.seed)
-        s_fit = semi.fit_semisupervised(method="label_propagation", n_neighbors=7)
-        s_val = semi.evaluate_semisupervised(partition="validation")
+        s_fit = semi.semisupervised.fit(method="label_propagation", n_neighbors=7)
+        s_val = semi.semisupervised.evaluate(partition="validation")
         assert_no_test_in_selection(
             selection_partition="validation", evaluation_partition="test"
         )
-        s_test = semi.evaluate_semisupervised(partition="test")
+        s_test = semi.semisupervised.evaluate(partition="test")
         stages["semisupervised"] = {
             "status": "ok",
             "fit": {
@@ -168,14 +168,14 @@ def main() -> None:
         )
         truth_series = pd.Series(truth, index=frame.index)
         _mask_train_labels(al, fraction=0.85, seed=ctx.seed + 1)
-        a_fit = al.fit_active_learner(strategy="margin", batch_size=8, label_budget=32)
+        a_fit = al.active_learning.fit(strategy="margin", batch_size=8, label_budget=32)
         curve = []
         for round_i in range(4):
-            q = al.suggest_query(batch_size=8)
+            q = al.active_learning.suggest_query(batch_size=8)
             if not q.indices:
                 break
             human = [int(truth_series.loc[i]) for i in q.indices]
-            labeled = al.label_rows(indices=q.indices, labels=human)
+            labeled = al.active_learning.label_rows(indices=q.indices, labels=human)
             curve.append(
                 {
                     "round": round_i,
@@ -184,7 +184,7 @@ def main() -> None:
                     "budget_remaining": int(labeled.budget_remaining),
                 }
             )
-        a_test = al.evaluate_active_learning(partition="test")
+        a_test = al.active_learning.evaluate(partition="test")
         stages["active_learning"] = {
             "status": "ok",
             "fit": {

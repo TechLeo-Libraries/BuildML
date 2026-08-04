@@ -46,8 +46,8 @@ UNSUPERVISED_BEGINNER: dict[str, BeginnerLayer] = _index(
         example=(
             "session.split(test_size=0.2, random_state=0)",
             "session.scale(strategy='standard')",
-            "session.fit_clusters(method='kmeans', n_clusters=4, random_state=0)",
-            "session.evaluate_clusters(partition='validation')",
+            "session.unsupervised.fit(method='kmeans', n_clusters=4, random_state=0)",
+            "session.unsupervised.evaluate(partition='validation')",
         ),
         check=(
             "Which partition did your silhouette score come from?",
@@ -94,7 +94,7 @@ UNSUPERVISED_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "report = session.evaluate_clusters(partition='validation')",
+            "report = session.unsupervised.evaluate(partition='validation')",
             "print(report.silhouette, report.cluster_sizes)",
             "print(report.disclosures)   # what the score cannot tell you",
         ),
@@ -143,9 +143,9 @@ UNSUPERVISED_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.fit_clusters(method='hdbscan', min_cluster_size=25)",
-            "session.assign_clusters(partition='validation')",
-            "session.evaluate_clusters(partition='validation')",
+            "session.unsupervised.fit(method='hdbscan', min_cluster_size=25)",
+            "session.unsupervised.assign(partition='validation')",
+            "session.unsupervised.evaluate(partition='validation')",
         ),
         check=(
             "Does your chosen method match how the points actually look in 2D/3D plots?",
@@ -160,7 +160,7 @@ UNSUPERVISED_BEGINNER: dict[str, BeginnerLayer] = _index(
         plain=(
             "You can compress your numeric columns with PCA first and cluster in that compressed space. "
             "In BuildML those are two separate, explicit steps: `reduce_dimensions` fits the compression on "
-            "training rows, and `fit_clusters` can then consume the resulting component columns."
+            "training rows, and `session.unsupervised.fit` can then consume the resulting component columns."
         ),
         analogy=(
             "Flattening a 3D sculpture into a photograph, then grouping photographs. You take the photo "
@@ -169,7 +169,7 @@ UNSUPERVISED_BEGINNER: dict[str, BeginnerLayer] = _index(
         steps=(
             "Split, then scale: PCA follows variance and unscaled columns hijack it.",
             "Call `reduce_dimensions` to fit the components on training rows; the component columns join the frame.",
-            "Call `fit_clusters(prefer_reduce_components=True)` so clustering runs on those components.",
+            "Call `session.unsupervised.fit(prefer_reduce_components=True)` so clustering runs on those components.",
             "BuildML records `used_reduce_components` on the plan so the choice is visible later.",
             "Assign and evaluate as usual: both PCA and the clusterer stay frozen.",
         ),
@@ -194,8 +194,8 @@ UNSUPERVISED_BEGINNER: dict[str, BeginnerLayer] = _index(
         example=(
             "session.scale(strategy='standard')",
             "session.reduce_dimensions(n_components=0.9)",
-            "session.fit_clusters(method='kmeans', n_clusters=4, prefer_reduce_components=True)",
-            "session.evaluate_clusters(partition='validation')",
+            "session.unsupervised.fit(method='kmeans', n_clusters=4, prefer_reduce_components=True)",
+            "session.unsupervised.evaluate(partition='validation')",
         ),
         check=(
             "Are your clusters running on component columns or raw features: and does the plan say so?",
@@ -218,10 +218,10 @@ UNSUPERVISED_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         steps=(
             "Fit clusters so a plan exists on the Session.",
-            "Call `save_unsupervised_bundle(path)`: it writes the estimator, the feature columns, the assign strategy, and the disclosures.",
-            "Later, create a Session and call `load_unsupervised_bundle(path)`.",
+            "Call `session.unsupervised.save_bundle(path)`: it writes the estimator, the feature columns, the assign strategy, and the disclosures.",
+            "Later, create a Session and call `session.unsupervised.load_bundle(path)`.",
             "Confirm the feature columns the plan expects still exist on your frame.",
-            "Call `assign_clusters` to place new rows on the restored map.",
+            "Call `session.unsupervised.assign` to place new rows on the restored map.",
         ),
         use=(
             "When the segmentation itself is the deliverable and will be applied to future data.",
@@ -242,10 +242,10 @@ UNSUPERVISED_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.fit_clusters(method='kmeans', n_clusters=4, random_state=0)",
-            "session.save_unsupervised_bundle('artifacts/segments')",
-            "later = Session.ingest(new_frame).load_unsupervised_bundle('artifacts/segments')",
-            "labels = later.assign_clusters()",
+            "session.unsupervised.fit(method='kmeans', n_clusters=4, random_state=0)",
+            "session.unsupervised.save_bundle('artifacts/segments')",
+            "later = Session.ingest(new_frame).unsupervised.load_bundle('artifacts/segments')",
+            "labels = later.unsupervised.assign()",
         ),
         check=(
             "If you deleted your notebook today, which file would restore the segmentation?",

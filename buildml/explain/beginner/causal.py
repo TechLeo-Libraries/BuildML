@@ -51,7 +51,7 @@ CAUSAL_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.declare_causal_assumptions(",
+            "session.causal.declare_assumptions(",
             "    treatment='received_discount',",
             "    outcome='renewed',",
             "    confounders=['tenure_months', 'plan_tier', 'prior_usage'],",
@@ -104,8 +104,8 @@ CAUSAL_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.fit_causal(method='aipw', random_state=0)",
-            "estimate = session.estimate_causal()",
+            "session.causal.fit(method='aipw', random_state=0)",
+            "estimate = session.causal.estimate()",
             "print(estimate.ate, estimate.confidence_interval)",
             "print(estimate.disclosures)",
         ),
@@ -155,8 +155,8 @@ CAUSAL_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.fit_causal(method='t_learner', random_state=0)",
-            "estimate = session.estimate_causal()",
+            "session.causal.fit(method='t_learner', random_state=0)",
+            "estimate = session.causal.estimate()",
             "print(estimate.ate, estimate.per_arm_n)",
         ),
         check=(
@@ -204,8 +204,8 @@ CAUSAL_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.fit_causal(method='ipw', propensity_clip=(0.01, 0.99), random_state=0)",
-            "estimate = session.estimate_causal()",
+            "session.causal.fit(method='ipw', propensity_clip=(0.01, 0.99), random_state=0)",
+            "estimate = session.causal.estimate()",
             "print(estimate.ate, estimate.effective_sample_size)",
         ),
         check=(
@@ -253,9 +253,9 @@ CAUSAL_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.fit_causal(method='aipw', random_state=0)",
-            "estimate = session.estimate_causal()",
-            "refutation = session.refute_causal(method='placebo_treatment')",
+            "session.causal.fit(method='aipw', random_state=0)",
+            "estimate = session.causal.estimate()",
+            "refutation = session.causal.refute(method='placebo_treatment')",
             "print(estimate.ate, refutation.passed)",
         ),
         check=(
@@ -305,8 +305,8 @@ CAUSAL_BEGINNER: dict[str, BeginnerLayer] = _index(
         example=(
             "report = session.eda()             # association only, by design",
             "# for a causal question, switch surfaces:",
-            "session.declare_causal_assumptions(treatment='...', outcome='...', confounders=[...])",
-            "session.fit_causal(method='aipw')",
+            "session.causal.declare_assumptions(treatment='...', outcome='...', confounders=[...])",
+            "session.causal.fit(method='aipw')",
         ),
         check=(
             "Is the question you are answering predictive or interventional?",
@@ -329,8 +329,8 @@ CAUSAL_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         steps=(
             "Declare assumptions and fit a causal plan.",
-            "Call `save_causal_bundle(path)`: assumptions, nuisance models, and estimates travel together.",
-            "Reload with `load_causal_bundle(path)`.",
+            "Call `session.causal.save_bundle(path)`: assumptions, nuisance models, and estimates travel together.",
+            "Reload with `session.causal.load_bundle(path)`.",
             "Re-read the assumptions before quoting the estimate anywhere.",
             "Keep checkpoints separately for the data state.",
         ),
@@ -353,8 +353,8 @@ CAUSAL_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.save_causal_bundle('artifacts/discount-effect')",
-            "review = Session.ingest(frame).load_causal_bundle('artifacts/discount-effect')",
+            "session.causal.save_bundle('artifacts/discount-effect')",
+            "review = Session.ingest(frame).causal.load_bundle('artifacts/discount-effect')",
             "print(review.causal_plan.assumptions)",
         ),
         check=(
@@ -379,7 +379,7 @@ CAUSAL_BEGINNER: dict[str, BeginnerLayer] = _index(
         steps=(
             "Install the extra: `pip install buildml[causal-industry]`.",
             "Declare assumptions as usual: they become the graph.",
-            "Pass `backend='dowhy'` to `fit_causal`.",
+            "Pass `backend='dowhy'` to `session.causal.fit`.",
             "DoWhy performs identification: does your graph actually let this estimand be estimated?",
             "Run refuters: placebo treatment, random common cause, data subset: and read whether the estimate holds up.",
         ),
@@ -403,9 +403,9 @@ CAUSAL_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         example=(
             "# pip install \"buildml[causal-industry]\"",
-            "session.fit_causal(backend='dowhy', method='backdoor.propensity_score_matching')",
-            "print(session.refute_causal(method='random_common_cause'))",
-            "print(session.refute_causal(method='placebo_treatment'))",
+            "session.causal.fit(backend='dowhy', method='backdoor.propensity_score_matching')",
+            "print(session.causal.refute(method='random_common_cause'))",
+            "print(session.causal.refute(method='placebo_treatment'))",
         ),
         check=(
             "Did identification succeed, and under which adjustment set?",
@@ -453,8 +453,8 @@ CAUSAL_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         example=(
             "# pip install \"buildml[causal-industry]\"",
-            "session.fit_causal(backend='econml', method='causal_forest', random_state=0)",
-            "estimate = session.estimate_causal()",
+            "session.causal.fit(backend='econml', method='causal_forest', random_state=0)",
+            "estimate = session.causal.estimate()",
             "print(estimate.ate, estimate.cate_summary)",
         ),
         check=(

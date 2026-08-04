@@ -14,12 +14,12 @@ explainable deny rules, and scoring with a classical logistic baseline:
 
 ## Status
 
-`completed`: run `script.py`; see `results/summary.json` and stage JSONs.
+Run `script.py`. Outputs land under `results/` (summary and stage JSON)..
 
 ## How to run
 
 ```bash
-.\.venv\Scripts\python.exe proofs\mosaic-warranty-desk\script.py
+python proofs\mosaic-warranty-desk\script.py
 ```
 
 ## Leakage controls

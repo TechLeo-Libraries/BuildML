@@ -21,7 +21,7 @@ ENSEMBLE_BEGINNER: dict[str, BeginnerLayer] = _index(
         steps=(
             "Pick two or more models that make different kinds of mistakes: a linear model, a tree ensemble, a nearest-neighbour model.",
             "Choose how to combine them: hard voting takes a majority of the predicted classes, soft voting averages the predicted probabilities.",
-            "Fit them all on the same training rows through `fit_voting`.",
+            "Fit them all on the same training rows through `session.ensemble.fit_voting`.",
             "Evaluate the ensemble against each individual member on validation.",
             "Keep it only if the combination genuinely beats the best member by more than fold-level noise.",
         ),
@@ -44,12 +44,12 @@ ENSEMBLE_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.fit_voting(",
+            "session.ensemble.fit_voting(",
             "    estimators={'logreg': LogisticRegression(max_iter=1000),",
             "                'forest': RandomForestClassifier(random_state=0)},",
             "    voting='soft',",
             ")",
-            "session.evaluate_ensemble(partition='validation')",
+            "session.ensemble.evaluate(partition='validation')",
         ),
         check=(
             "Do your members disagree on different rows, or make the same mistakes together?",
@@ -97,13 +97,13 @@ ENSEMBLE_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.fit_stacking(",
+            "session.ensemble.fit_stacking(",
             "    estimators={'logreg': LogisticRegression(max_iter=1000),",
             "                'gbdt': HistGradientBoostingClassifier(random_state=0)},",
             "    final_estimator=LogisticRegression(max_iter=1000),",
             "    cv=5,",
             ")",
-            "session.evaluate_ensemble(partition='validation')",
+            "session.ensemble.evaluate(partition='validation')",
         ),
         check=(
             "How many rows does each inner fold leave for the meta-features?",
@@ -150,12 +150,12 @@ ENSEMBLE_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.fit_blending(",
+            "session.ensemble.fit_blending(",
             "    estimators={'logreg': LogisticRegression(max_iter=1000),",
             "                'gbdt': HistGradientBoostingClassifier(random_state=0)},",
             "    holdout_size=0.25, random_state=0,",
             ")",
-            "session.evaluate_ensemble(partition='validation')",
+            "session.ensemble.evaluate(partition='validation')",
         ),
         check=(
             "How many rows ended up in the inner blending holdout?",
@@ -178,8 +178,8 @@ ENSEMBLE_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         steps=(
             "Fit a voting, stacking, or blending ensemble so an ensemble plan exists.",
-            "Call `save_ensemble_bundle(path)` to persist the members, the combination rule, and the fit result.",
-            "Reload with `load_ensemble_bundle(path)` on a Session whose features match.",
+            "Call `session.ensemble.save_bundle(path)` to persist the members, the combination rule, and the fit result.",
+            "Reload with `session.ensemble.load_bundle(path)` on a Session whose features match.",
             "Evaluate or predict with the restored plan.",
             "Keep checkpoints separately if you also want the data workflow state back.",
         ),
@@ -202,9 +202,9 @@ ENSEMBLE_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.save_ensemble_bundle('artifacts/ensemble')",
-            "restored = Session.ingest(frame).load_ensemble_bundle('artifacts/ensemble')",
-            "restored.evaluate_ensemble(partition='test')",
+            "session.ensemble.save_bundle('artifacts/ensemble')",
+            "restored = Session.ingest(frame).ensemble.load_bundle('artifacts/ensemble')",
+            "restored.ensemble.evaluate(partition='test')",
         ),
         check=(
             "Which artifact holds your preprocessing, and which holds your ensemble?",

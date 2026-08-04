@@ -14,12 +14,12 @@ amount × jurisdiction and young-account × PEP patterns. The desk:
 
 ## Status
 
-`completed` / `partial`: run `script.py`; see `results/summary.json` and stage JSONs.
+Run `script.py`. Outputs land under `results/` (summary and stage JSON)..
 
 ## How to run
 
 ```bash
-.\.venv\Scripts\python.exe proofs\scaffold-compliance-ai\script.py
+python proofs\scaffold-compliance-ai\script.py
 ```
 
 ## Leakage controls

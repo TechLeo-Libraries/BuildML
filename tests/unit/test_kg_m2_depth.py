@@ -208,3 +208,39 @@ def test_query_does_not_see_holdout_only_edges() -> None:
             for r, n in plan.out_edges_.get(plan.entity_index_["HOLD_H"], [])
         }
         assert {row[0] for row in q.results} == train_tails
+
+
+def test_native_bundle_roundtrip_reevaluate(tmp_path) -> None:
+    """Save → load → re-evaluate must reproduce filtered ranking metrics."""
+    session = _session()
+    session.kg.fit(
+        method="transe",
+        head_column="head",
+        relation_column="relation",
+        tail_column="tail",
+        embedding_dim=16,
+        epochs=25,
+        batch_size=32,
+        learning_rate=0.05,
+        neg_ratio=2,
+        random_state=0,
+    )
+    ev = session.kg.evaluate(partition="test", k=5)
+    assert set(ev.metrics) >= {"mrr", "hits_at_1", "hits_at_3", "hits_at_5", "mean_rank"}
+    assert ev.n_triples_scored >= 1
+
+    bundle = tmp_path / "kg_native_bundle"
+    session.kg.save_bundle(bundle)
+
+    other = (
+        Session.ingest(_kg_frame())
+        .set_roles({"head": "id", "relation": "id", "tail": "id"})
+        .split(test_size=0.2, validation_size=0.1, random_state=2)
+    )
+    other.kg.load_bundle(bundle, trusted=True)
+    assert other.kg.plan is not None
+    ev2 = other.kg.evaluate(partition="test", k=5)
+    assert ev2.n_triples_scored == ev.n_triples_scored
+    assert ev2.metrics["mrr"] == pytest.approx(ev.metrics["mrr"])
+    assert ev2.metrics["mean_rank"] == pytest.approx(ev.metrics["mean_rank"])
+    assert ev2.metrics["hits_at_5"] == pytest.approx(ev.metrics["hits_at_5"])

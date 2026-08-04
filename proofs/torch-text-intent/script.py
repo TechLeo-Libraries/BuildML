@@ -75,24 +75,24 @@ def main() -> None:
         "test": len(plan.test_indices),
     }
 
-    path_used = "make_text_torch_loaders+fit_torch"
+    path_used = "session.dl.make_text_loaders+session.dl.fit"
     try:
-        session.make_text_torch_loaders(
+        session.dl.make_text_loaders(
             text_column="body",
             batch_size=32,
             max_len=64,
             max_vocab=4000,
             seed=ctx.seed,
         )
-        session.fit_torch(epochs=3, learning_rate=1e-2, device="cpu")
-        val = session.evaluate_torch(partition="validation")
+        session.dl.fit(epochs=3, learning_rate=1e-2, device="cpu")
+        val = session.dl.evaluate(partition="validation")
         assert_no_test_in_selection(
             selection_partition="validation",
             evaluation_partition="test",
         )
-        test = session.evaluate_torch(partition="test")
+        test = session.dl.evaluate(partition="test")
         try:
-            bundle = session.save_torch_bundle(ctx.artifacts_dir / "torch_bundle")
+            bundle = session.dl.save_bundle(ctx.artifacts_dir / "torch_bundle")
             bundle_path = str(bundle)
         except Exception as exc:  # noqa: BLE001
             bundle_path = f"unavailable: {type(exc).__name__}: {exc}"
@@ -118,7 +118,7 @@ def main() -> None:
                 validation_indices=list(plan.validation_indices),
                 test_indices=list(plan.test_indices),
             )
-            fit = session.fit_text_classifier(
+            fit = session.nlp.fit_classifier(
                 text_column="body",
                 vectorizer="tfidf",
                 estimator="logistic",
@@ -128,10 +128,10 @@ def main() -> None:
                 random_state=ctx.seed,
             )
             path_used = f"fit_text_classifier_fallback({type(exc).__name__})"
-            val = session.evaluate_text_classifier(partition="validation")
-            test = session.evaluate_text_classifier(partition="test")
+            val = session.nlp.evaluate(partition="validation")
+            test = session.nlp.evaluate(partition="test")
             try:
-                bundle = session.save_nlp_bundle(ctx.artifacts_dir / "nlp_bundle")
+                bundle = session.nlp.save_bundle(ctx.artifacts_dir / "nlp_bundle")
                 bundle_path = str(bundle)
             except Exception as exc2:  # noqa: BLE001
                 bundle_path = f"unavailable: {type(exc2).__name__}: {exc2}"

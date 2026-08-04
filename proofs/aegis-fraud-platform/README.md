@@ -19,12 +19,12 @@ community graphs; rare fraud is denser in one community. The platform:
 
 ## Status
 
-`completed`: run `script.py`; see `results/summary.json` and stage JSONs.
+Run `script.py`. Outputs land under `results/` (summary and stage JSON)..
 
 ## How to run
 
 ```bash
-.\.venv\Scripts\python.exe proofs\aegis-fraud-platform\script.py
+python proofs\aegis-fraud-platform\script.py
 ```
 
 ## Leakage controls

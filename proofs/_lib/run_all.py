@@ -83,6 +83,11 @@ TIER_A = [
     "peer-lending-graph",
     # Observational fairness (analysis-only domain)
     "loan-fairness-observational",
+    # Real public-dataset cohort (sklearn / OpenML provenance)
+    "breast-cancer-classical",
+    "diabetes-progression-regression",
+    "wine-cluster-segments",
+    "adult-fairness-observational",
 ]
 
 TIER_B = [
@@ -153,6 +158,11 @@ CI_SMOKE_TIER_A: tuple[str, ...] = (
     "loan-fairness-observational",
     "synthetic-privacy-utility",
     "sku-embedding-clusters",
+    # Real public datasets (sklearn offline; Adult falls back if OpenML missing)
+    "breast-cancer-classical",
+    "diabetes-progression-regression",
+    "wine-cluster-segments",
+    "adult-fairness-observational",
 )
 
 _SKIP_RESULT_STATUSES = frozenset(

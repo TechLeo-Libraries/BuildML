@@ -1757,7 +1757,7 @@ def transcribe_speech(
     session,
     *,
     audio_column: str,
-    backend: Literal["stub", "transformers"] = "stub",
+    backend: Literal["stub", "transformers", "auto"] | None = None,
     model_id: str | None = None,
     sample_rate: int = 16_000,
     max_samples: int = 16_000,
@@ -1766,9 +1766,11 @@ def transcribe_speech(
 ) -> Any:
     """ASR transcription for an audio feature column.
 
-    ``backend="stub"`` is CI-safe. ``backend="transformers"`` requires
-    ``buildml[speech]`` and may download Whisper-class weights. Integration
-    path only: not FM training from scratch.
+    Default prefers ``transformers`` when the speech stack is installed;
+    otherwise falls back to the deterministic stub (CI-safe). Pass
+    ``backend="stub"`` explicitly for offline tests. ``backend="transformers"``
+    requires ``buildml[speech]`` and may download Whisper-class weights.
+    Integration path only: not FM training from scratch.
     Delegates to :func:`buildml.dl.speech.transcribe_from_dataset`.
 
     Parameters
@@ -1778,7 +1780,8 @@ def transcribe_speech(
     audio_column:
         Audio feature column to transcribe.
     backend:
-        ASR backend (``stub`` or ``transformers``).
+        ASR backend (``stub``, ``transformers``, ``auto``, or ``None`` for
+        environment-aware default).
     model_id:
         Optional Hugging Face model id for transformers backend.
     sample_rate:
@@ -1793,21 +1796,22 @@ def transcribe_speech(
     Returns
     -------
     SpeechTranscribeResult
-        Transcripts, model metadata, and row counts.
+        Transcripts, model metadata, and row counts. Stub use is disclosed.
 
     Raises
     ------
     ValidationError
         When no dataset is attached to the Session.
     """
-    from buildml.dl.speech import transcribe_from_dataset
+    from buildml.dl.speech import resolve_asr_backend, transcribe_from_dataset
 
     if session.dataset is None:
         raise ValidationError("transcribe_speech requires an ingested dataset")
+    resolved = resolve_asr_backend(backend)
     result = transcribe_from_dataset(
         session.dataset,
         audio_column=audio_column,
-        backend=backend,
+        backend=resolved,
         model_id=model_id,
         sample_rate=sample_rate,
         max_samples=max_samples,
@@ -1815,12 +1819,15 @@ def transcribe_speech(
         partition=partition,
         split_plan=session._split_plan,
     )
+    # Preserve requested vs resolved for history honesty.
+    result.meta["requested_backend"] = backend
     session._dl_speech_result = result
     session._record(
         "transcribe_speech",
         {
             "audio_column": audio_column,
-            "backend": backend,
+            "backend": result.backend,
+            "requested_backend": backend,
             "model_id": result.model_id,
             "partition": partition,
             "n_rows": result.n_rows,
@@ -1841,21 +1848,31 @@ def serve_bundle(
     title: str = "BuildML Serve",
     blocking: bool = False,
     api_keys: str | list[str] | tuple[str, ...] | None = None,
+    basic_auth: str
+    | tuple[str, str]
+    | list[tuple[str, str]]
+    | dict[str, str]
+    | None = None,
+    docs_enabled: bool | None = None,
     allow_insecure_public_bind: bool = False,
     ssl_certfile: str | Path | None = None,
     ssl_keyfile: str | Path | None = None,
     trusted: bool = False,
+    config: Any | None = None,
 ) -> Any:
     """Launch BuildML managed serving for a pipeline or TorchScript artifact.
 
     Requires ``buildml[serve]``. Defaults to localhost bind. Optional
-    ``api_keys`` enables Bearer / ``X-API-Key`` middleware (still not a managed
-    IAM / cloud auth product). Non-loopback binds without ``api_keys`` raise
+    ``api_keys`` (Bearer / ``X-API-Key``) and/or ``basic_auth`` enable shared-
+    secret middleware (still not a managed IAM / cloud auth product). Either
+    mechanism may authorize. When auth is enabled, OpenAPI docs default to
+    closed unless ``docs_enabled=True``. Non-loopback binds without auth raise
     unless ``allow_insecure_public_bind=True``. Optional ``ssl_certfile`` /
     ``ssl_keyfile`` enable local uvicorn HTTPS (library-owned; not managed
     certs). Prefer TLS at a reverse proxy for non-local exposure. When ``path``
     is omitted and ``kind="pipeline"``, uses the last saved pipeline path
-    recorded on the Session if available.
+    recorded on the Session if available. Optional ``config`` accepts a
+    :class:`~buildml.serving.config.ServeConfig`.
 
     Not registered as an AI tool: CLI / Session-primary by design.
     Delegates to :func:`buildml.serving.launch.serve_bundle`.
@@ -1878,14 +1895,20 @@ def serve_bundle(
         When True, block until the server stops.
     api_keys:
         Optional API keys enabling Bearer / header auth middleware.
+    basic_auth:
+        Optional HTTP Basic credentials (``user:pass``, pair, or mapping).
+    docs_enabled:
+        OpenAPI/docs toggle; ``None`` auto-closes docs when auth is on.
     allow_insecure_public_bind:
-        When True, permit non-loopback binds without API keys.
+        When True, permit non-loopback binds without auth.
     ssl_certfile:
         Optional TLS certificate file for local HTTPS.
     ssl_keyfile:
         Optional TLS private key file for local HTTPS.
     trusted:
         Must be ``True`` to deserialize the served artifact.
+    config:
+        Optional :class:`~buildml.serving.config.ServeConfig` base.
 
     Returns
     -------
@@ -1900,9 +1923,9 @@ def serve_bundle(
     from buildml.serving.launch import serve_bundle as _serve
 
     resolved = path
-    if resolved is None:
+    if resolved is None and config is None:
         resolved = getattr(session, "_last_pipeline_path", None)
-    if resolved is None:
+    if resolved is None and config is None:
         raise ValidationError(
             "serve_bundle requires path= to a pipeline bundle or TorchScript file "
             "(or a prior save_pipeline on this Session)."
@@ -1915,34 +1938,41 @@ def serve_bundle(
         title=title,
         blocking=blocking,
         api_keys=api_keys,
+        basic_auth=basic_auth,
+        docs_enabled=docs_enabled,
         allow_insecure_public_bind=allow_insecure_public_bind,
         ssl_certfile=ssl_certfile,
         ssl_keyfile=ssl_keyfile,
         trusted=trusted,
+        config=config,
     )
     session._serve_handle = handle
-    auth_on = api_keys is not None
+    auth_on = api_keys is not None or basic_auth is not None
+    if config is not None and getattr(config, "auth_enabled", False):
+        auth_on = True
     tls_on = ssl_certfile is not None or ssl_keyfile is not None
     session._record(
         "serve_bundle",
         {
-            "path": str(resolved),
+            "path": str(resolved) if resolved is not None else None,
             "kind": kind,
             "host": host,
             "port": port,
             "auth": auth_on,
             "tls": tls_on,
+            "docs_enabled": docs_enabled,
         },
         result_summary={"url": handle.url, "kind": kind, "auth": auth_on, "tls": tls_on},
         warnings=(
             (
-                "API-key/Bearer middleware enabled; still not managed IAM. "
-                "Terminate TLS at a reverse proxy for non-local exposure."
+                "Shared-secret auth (API-key and/or Basic) enabled; still not managed "
+                "IAM. Docs default closed when auth is on. Terminate TLS at a reverse "
+                "proxy for non-local exposure."
             )
             if auth_on
             else (
-                "No authentication; localhost-oriented. Pass api_keys= or use a "
-                "reverse proxy for exposure."
+                "No authentication; localhost-oriented. Pass api_keys= / basic_auth= "
+                "or use a reverse proxy for exposure."
             ),
         ),
     )
@@ -2361,18 +2391,27 @@ def emit_k8s_serve_deployment(
     *,
     name: str = "buildml-serve",
     namespace: str = "default",
-    image: str = "python:3.12-slim",
+    image: str = "buildml-serve:local",
     replicas: int = 1,
     port: int = 8080,
     cpu_request: str = "1",
     memory_request: str = "2Gi",
     gpu_limit: int | None = None,
     service_account: str | None = None,
+    bundle_path: str = "/models/bundle",
+    kind: str = "pipeline",
+    api_key_secret_name: str = "buildml-serve-secrets",
+    api_key_secret_key: str = "api-key",
+    include_secret: bool = True,
+    trusted: bool = True,
 ) -> Any:
     """Emit a Kubernetes Deployment+Service YAML for managed serve (template only).
 
-    Delegates to :func:`buildml.dl.k8s.write_serve_deployment`. This writes a
-    starter manifest: not a managed cluster orchestrator.
+    Delegates to :func:`buildml.dl.k8s.write_serve_deployment`. Default image
+    ``buildml-serve:local`` matches ``deploy/serve/Dockerfile``. Manifest uses
+    a Secret for the API key and does not emit
+    ``--allow-insecure-public-bind``. Template only: not a managed cluster
+    orchestrator.
 
     Parameters
     ----------
@@ -2398,6 +2437,18 @@ def emit_k8s_serve_deployment(
         Optional GPU limit per replica.
     service_account:
         Optional Kubernetes service account name.
+    bundle_path:
+        In-container bundle path.
+    kind:
+        ``pipeline`` or ``torchscript``.
+    api_key_secret_name:
+        Secret name for ``BUILDML_API_KEY``.
+    api_key_secret_key:
+        Key inside the Secret.
+    include_secret:
+        Emit a placeholder Secret document when True.
+    trusted:
+        Pass ``--trusted`` in the rendered command when True.
 
     Returns
     -------
@@ -2417,6 +2468,12 @@ def emit_k8s_serve_deployment(
         memory_request=memory_request,
         gpu_limit=gpu_limit,
         service_account=service_account,
+        bundle_path=bundle_path,
+        kind=kind,
+        api_key_secret_name=api_key_secret_name,
+        api_key_secret_key=api_key_secret_key,
+        include_secret=include_secret,
+        trusted=trusted,
     )
     session._dl_k8s_result = result
     session._record(
@@ -2425,12 +2482,18 @@ def emit_k8s_serve_deployment(
             "path": str(path),
             "name": name,
             "namespace": namespace,
+            "image": image,
             "replicas": replicas,
             "port": port,
             "cpu_request": cpu_request,
             "memory_request": memory_request,
             "gpu_limit": gpu_limit,
             "service_account": service_account,
+            "bundle_path": bundle_path,
+            "kind": kind,
+            "api_key_secret_name": api_key_secret_name,
+            "include_secret": include_secret,
+            "trusted": trusted,
         },
         result_summary=result.to_dict(),
         warnings=tuple(result.limitations),

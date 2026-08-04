@@ -6,8 +6,8 @@
 > multi-head use optional extras. See [installation](../docs/installation.rst).
 
 Shared-feature multi-target fitting: assign multiple `role="target"` columns
-(or pass `targets=`), `fit_multitask` on train only, then
-`evaluate_multitask` / `predict_multitask` on holdout, and save a distinct
+(or pass `targets=`), `session.multitask.fit` on train only, then
+`session.multitask.evaluate` / `session.multitask.predict` on holdout, and save a distinct
 bundle. Backends: **sklearn** (core), **industry** (`buildml[multitask-industry]`),
 **torch** (`buildml[torch]` for shared-trunk multi-head). Classical
 `Session.fit` remains single-target.
@@ -47,7 +47,7 @@ session = (
     .scale(method="standard")
 )
 
-fit = session.fit_multitask(
+fit = session.multitask.fit(
     backend="sklearn",
     method="multi_output",
     task="classification",
@@ -55,11 +55,11 @@ fit = session.fit_multitask(
 )
 print(fit.backend, fit.n_tasks, fit.target_columns)
 
-ev = session.evaluate_multitask(partition="validation")
+ev = session.multitask.evaluate(partition="validation")
 print(ev.metrics)           # unweighted means across tasks
 print(ev.per_task_metrics)  # per-target accuracy / F1
 
-session.save_multitask_bundle("artifacts/multitask_bundle")
+session.multitask.save_bundle("artifacts/multitask_bundle")
 ```
 
 ## Honest boundaries
@@ -72,5 +72,5 @@ session.save_multitask_bundle("artifacts/multitask_bundle")
 | Per-task + aggregate holdout metrics | Causal multi-task / federated MTL |
 | Distinct `buildml.multitask_bundle.v1` | Session checkpoint embedding the plan |
 
-Next Phase 2 item after multi-task industry depth (R6.4): **meta-learning**
+Related next: meta-learning
 (see [Meta-learning quickstart](quickstart-meta-learning.md)).

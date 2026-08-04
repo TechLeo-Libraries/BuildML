@@ -61,10 +61,10 @@ def main() -> None:
         .scale(method="standard")
     )
     session = _mask(session, fraction=0.78, seed=ctx.seed)
-    fit = session.fit_semisupervised(method="label_propagation", n_neighbors=7)
-    val = session.evaluate_semisupervised(partition="validation")
-    test = session.evaluate_semisupervised(partition="test")
-    bundle = session.save_semisupervised_bundle(ctx.artifacts_dir / "semi_bundle")
+    fit = session.semisupervised.fit(method="label_propagation", n_neighbors=7)
+    val = session.semisupervised.evaluate(partition="validation")
+    test = session.semisupervised.evaluate(partition="test")
+    bundle = session.semisupervised.save_bundle(ctx.artifacts_dir / "semi_bundle")
     write_results(ctx, {
         "status": "completed",
         "data": {

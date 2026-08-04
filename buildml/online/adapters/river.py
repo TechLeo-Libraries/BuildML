@@ -117,20 +117,29 @@ class RiverOnlineWrapper:
 
         self.n_features = int(n_features)
         seed = self.random_state
+
+        def _river_ctor(factory: Any, **kwargs: Any) -> Any:
+            """Construct a River model, dropping unsupported kwargs (e.g. seed)."""
+            try:
+                return factory(**kwargs)
+            except TypeError:
+                kwargs.pop("seed", None)
+                return factory(**kwargs)
+
         if self.estimator_name == "river_logistic":
-            self.model_ = linear_model.LogisticRegression(seed=seed)
+            self.model_ = _river_ctor(linear_model.LogisticRegression, seed=seed)
             self.task = "classification"
         elif self.estimator_name == "river_hoeffding":
-            self.model_ = tree.HoeffdingTreeClassifier(seed=seed)
+            self.model_ = _river_ctor(tree.HoeffdingTreeClassifier, seed=seed)
             self.task = "classification"
         elif self.estimator_name == "river_pa":
-            self.model_ = linear_model.PAClassifier(seed=seed)
+            self.model_ = _river_ctor(linear_model.PAClassifier, seed=seed)
             self.task = "classification"
         elif self.estimator_name == "river_linear_regression":
             self.model_ = linear_model.LinearRegression()
             self.task = "regression"
         elif self.estimator_name == "river_hoeffding_regressor":
-            self.model_ = tree.HoeffdingTreeRegressor(seed=seed)
+            self.model_ = _river_ctor(tree.HoeffdingTreeRegressor, seed=seed)
             self.task = "regression"
         else:
             raise ValidationError(f"Unsupported River estimator {self.estimator_name!r}.")
@@ -243,7 +252,7 @@ class RiverOnlineWrapper:
         if self.model_ is None:
             raise ValidationError("RiverOnlineWrapper is not fitted.")
         x_arr = np.asarray(x, dtype=float)
-        out = []
+        out: list[int | float] = []
         for i in range(len(x_arr)):
             row = self._row_dict(x_arr[i])
             pred = self.model_.predict_one(row)

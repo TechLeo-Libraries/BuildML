@@ -13,16 +13,16 @@ In-repo synthetic attrition table (`load_attrition_tabular_synthetic`): license-
 - Stratified train / validation / test before encode / scale / ensemble fit
 - One-hot encode and scale fit on train only
 - Voting bases fit on train only
-- Test `evaluate_ensemble` after lock
+- Test `session.ensemble.evaluate` after lock
 - Industry VotingClassifier twin uses the same SplitPlan
 
 ## BuildML API steps
 
 1. `Session.ingest` → `set_roles` → `split` (stratified)
 2. `encode` → `scale`
-3. `fit_voting(LR+RF, voting="soft")`
-4. `evaluate_ensemble(validation)` → `evaluate_ensemble(test)`
-5. `save_ensemble_bundle`
+3. `session.ensemble.fit_voting(LR+RF, voting="soft")`
+4. `session.ensemble.evaluate(validation)` → `session.ensemble.evaluate(test)`
+5. `session.ensemble.save_bundle`
 
 ## Metrics
 
@@ -30,7 +30,7 @@ Primary holdout: accuracy, F1, ROC-AUC on test (see `results/results.json`).
 
 ## Industry comparison (Tier C)
 
-Filled: sklearn `VotingClassifier(soft)` twin via `baseline_industry.py` → `results/comparison.json`.
+Industry twin: sklearn `VotingClassifier(soft)` twin via `baseline_industry.py` → `results/comparison.json`.
 
 ## Limitations
 

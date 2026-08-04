@@ -130,15 +130,15 @@ def main() -> None:
             .impute(strategy="median")
             .scale(method="standard")
         )
-        causal_session.declare_causal_assumptions(
+        causal_session.causal.declare_assumptions(
             treatment="counseling",
             outcome=TARGET,
             confounders=["ltv", "dti", "credit_score", "note_rate", "term_years"],
             acknowledge_unconfoundedness=True,
             acknowledge_positivity=True,
         )
-        fit_c = causal_session.fit_causal(method="aipw", bootstrap_samples=30)
-        ev_c = causal_session.evaluate_causal(partition="validation", bootstrap_samples=15)
+        fit_c = causal_session.causal.fit(method="aipw", bootstrap_samples=30)
+        ev_c = causal_session.causal.evaluate(partition="validation", bootstrap_samples=15)
         stages["causal"] = {
             "status": "ok",
             "assumptions": {
@@ -167,16 +167,16 @@ def main() -> None:
     assert_no_test_in_selection(
         selection_partition="validation", evaluation_partition="test"
     )
-    thr = session.fit_decision_policy(
+    thr = session.decision.fit(
         method="threshold",
         partition="validation",
         fp_cost=1.0,
         fn_cost=8.0,
     )
-    thr_test = session.evaluate_decisions(partition="test")
+    thr_test = session.decision.evaluate(partition="test")
     knap_payload: dict = {"alloc_status": "skipped"}
     try:
-        knap = session.fit_decision_policy(
+        knap = session.decision.fit(
             method="knapsack",
             partition="validation",
             budget=80.0,
@@ -185,7 +185,7 @@ def main() -> None:
             score_source="model_proba",
             knapsack_solver="dp",
         )
-        applied = session.apply_decisions(partition="test")
+        applied = session.decision.apply(partition="test")
         knap_payload = {
             "alloc_status": "ok",
             "knapsack_policy": metrics_round(
@@ -199,13 +199,13 @@ def main() -> None:
         }
     except Exception as exc:  # noqa: BLE001
         try:
-            topk = session.fit_decision_policy(
+            topk = session.decision.fit(
                 method="topk",
                 partition="validation",
                 capacity=40,
                 score_source="model_proba",
             )
-            applied = session.apply_decisions(partition="test")
+            applied = session.decision.apply(partition="test")
             knap_payload = {
                 "alloc_status": "ok_topk_fallback",
                 "error": f"{type(exc).__name__}: {exc}",
@@ -249,7 +249,7 @@ def main() -> None:
         "skip_notes": skip_notes,
         "leakage_controls": [
             "Stratified split before classical / causal / decisions",
-            "Causal assumptions declared before fit_causal",
+            "Causal assumptions declared before session.causal.fit",
             "Decision threshold + knapsack selected on validation ONLY",
             "Test evaluate after each stage locks",
         ],

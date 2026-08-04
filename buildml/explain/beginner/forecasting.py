@@ -52,8 +52,8 @@ FORECASTING_BEGINNER: dict[str, BeginnerLayer] = _index(
         example=(
             "session.set_roles({'sales': 'target', 'order_date': 'time'})",
             "session.time_split(time_column='order_date', test_size=0.2)",
-            "session.fit_forecast(method='lag_ridge', lags=[1, 7, 28])",
-            "session.evaluate_forecast(partition='test')",
+            "session.forecast.fit(method='lag_ridge', lags=[1, 7, 28])",
+            "session.forecast.evaluate(partition='test')",
         ),
         check=(
             "What is the latest timestamp in your training rows and the earliest in your test rows?",
@@ -100,11 +100,11 @@ FORECASTING_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.fit_forecast(",
+            "session.forecast.fit(",
             "    method='lag_ridge', lags=[1, 2, 7, 14, 28],",
             "    rolling_windows=[7, 28],",
             ")",
-            "print(session.forecast_plan.n_dropped_warmup_rows)",
+            "print(session.forecast.plan.n_dropped_warmup_rows)",
         ),
         check=(
             "Do your lag choices match a real cycle in the data: weekly, monthly, yearly?",
@@ -152,8 +152,8 @@ FORECASTING_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         example=(
             "session.time_split(test_size=0.2)",
-            "session.fit_forecast(method='ets', seasonal_period=7)",
-            "session.evaluate_forecast(partition='validation', protocol='rolling_one_step')",
+            "session.forecast.fit(method='ets', seasonal_period=7)",
+            "session.forecast.evaluate(partition='validation', protocol='rolling_one_step')",
         ),
         check=(
             "Is your train window long enough for the seasonal period you chose?",
@@ -200,11 +200,11 @@ FORECASTING_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.fit_forecast(",
+            "session.forecast.fit(",
             "    method='lag_ridge', lags=[1, 7],",
             "    exog_columns=['is_holiday', 'planned_discount'],",
             ")",
-            "session.generate_forecast(horizon=14, future_exog=future_frame)",
+            "session.forecast.generate(horizon=14, future_exog=future_frame)",
         ),
         check=(
             "For each exogenous column: will you actually know its value for the whole horizon?",
@@ -251,7 +251,7 @@ FORECASTING_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "result = session.generate_forecast(horizon=14)",
+            "result = session.forecast.generate(horizon=14)",
             "print(result.predictions)          # 14 values",
             "print(result.protocol)             # 'recursive multi-step'",
         ),
@@ -301,8 +301,8 @@ FORECASTING_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "rolling = session.evaluate_forecast(partition='test', protocol='rolling_one_step')",
-            "origin = session.evaluate_forecast(partition='test', protocol='origin', horizon=14)",
+            "rolling = session.forecast.evaluate(partition='test', protocol='rolling_one_step')",
+            "origin = session.forecast.evaluate(partition='test', protocol='origin', horizon=14)",
             "print(rolling.mae, origin.mae)   # expect origin to be worse",
         ),
         check=(
@@ -350,7 +350,7 @@ FORECASTING_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "report = session.evaluate_forecast(partition='test')",
+            "report = session.forecast.evaluate(partition='test')",
             "print(report.mae, report.rmse, report.mape)",
             "print(report.disclosures)   # includes MAPE instability notes",
         ),
@@ -375,9 +375,9 @@ FORECASTING_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         steps=(
             "Fit a forecast so a plan exists.",
-            "Call `save_forecast_bundle(path)` to store the fitted weights and the lag/exog contract.",
-            "Reload with `load_forecast_bundle(path)` on a Session with a compatible time series.",
-            "Call `generate_forecast` or `evaluate_forecast` against the restored plan.",
+            "Call `session.forecast.save_bundle(path)` to store the fitted weights and the lag/exog contract.",
+            "Reload with `session.forecast.load_bundle(path)` on a Session with a compatible time series.",
+            "Call `session.forecast.generate` or `session.forecast.evaluate` against the restored plan.",
             "Save a checkpoint separately if you also need the historical frame.",
         ),
         use=(
@@ -399,9 +399,9 @@ FORECASTING_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.save_forecast_bundle('artifacts/demand-forecast')",
-            "job = Session.ingest(latest_history).load_forecast_bundle('artifacts/demand-forecast')",
-            "job.generate_forecast(horizon=14)",
+            "session.forecast.save_bundle('artifacts/demand-forecast')",
+            "job = Session.ingest(latest_history).forecast.load_bundle('artifacts/demand-forecast')",
+            "job.forecast.generate(horizon=14)",
         ),
         check=(
             "Does the reloaded plan's expected column list match your fresh data?",

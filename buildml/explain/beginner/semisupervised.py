@@ -47,7 +47,7 @@ SEMISUPERVISED_BEGINNER: dict[str, BeginnerLayer] = _index(
             "session = Session.ingest(frame)",
             "session.set_roles({'category': 'target'})",
             "session.split(test_size=0.2, random_state=0)",
-            "session.fit_semisupervised(method='label_propagation')",
+            "session.semisupervised.fit(method='label_propagation')",
         ),
         check=(
             "What fraction of your training rows have a blank target?",
@@ -94,10 +94,10 @@ SEMISUPERVISED_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.fit_semisupervised(",
+            "session.semisupervised.fit(",
             "    method='self_training', threshold=0.9, max_iter=10,",
             ")",
-            "session.evaluate_semisupervised(partition='validation')",
+            "session.semisupervised.evaluate(partition='validation')",
             "# compare against fitting on labelled rows only",
         ),
         check=(
@@ -121,8 +121,8 @@ SEMISUPERVISED_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         steps=(
             "Ask what your output needs to be: a class label, or an unusualness score?",
-            "If you need class labels and have some, use `fit_semisupervised`.",
-            "If you need to flag the unfamiliar and can identify clean rows, use `fit_anomaly(mode='novelty')`.",
+            "If you need class labels and have some, use `session.semisupervised.fit`.",
+            "If you need to flag the unfamiliar and can identify clean rows, use `session.anomaly.fit(mode='novelty')`.",
             "Note that they take different inputs: one needs a partly-labelled target, the other needs a certified-clean subset.",
             "Do not chain them casually: pseudo-labels from one are not clean training rows for the other.",
         ),
@@ -146,9 +146,9 @@ SEMISUPERVISED_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         example=(
             "# scarce labels, known categories:",
-            "session.fit_semisupervised(method='label_propagation')",
+            "session.semisupervised.fit(method='label_propagation')",
             "# no labels, need a strangeness score:",
-            "session.fit_anomaly(method='one_class_svm', mode='novelty')",
+            "session.anomaly.fit(method='one_class_svm', mode='novelty')",
         ),
         check=(
             "Does your downstream process consume a class name or a score?",
@@ -170,8 +170,8 @@ SEMISUPERVISED_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         steps=(
             "Fit a semi-supervised model so a plan exists.",
-            "Call `save_semisupervised_bundle(path)`.",
-            "Reload with `load_semisupervised_bundle(path)` in a new Session.",
+            "Call `session.semisupervised.save_bundle(path)`.",
+            "Reload with `session.semisupervised.load_bundle(path)` in a new Session.",
             "Confirm the feature columns match, then predict.",
             "Checkpoint separately if you also need the partly-labelled frame back.",
         ),
@@ -194,9 +194,9 @@ SEMISUPERVISED_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.save_semisupervised_bundle('artifacts/semisup')",
-            "job = Session.ingest(new_frame).load_semisupervised_bundle('artifacts/semisup')",
-            "labels = job.predict_semisupervised()",
+            "session.semisupervised.save_bundle('artifacts/semisup')",
+            "job = Session.ingest(new_frame).semisupervised.load_bundle('artifacts/semisup')",
+            "labels = job.semisupervised.predict()",
         ),
         check=(
             "Does your reload path apply the same preprocessing the plan was fitted under?",
@@ -218,9 +218,9 @@ SEMISUPERVISED_BEGINNER: dict[str, BeginnerLayer] = _index(
             "far easier once you have a good sense of similarity."
         ),
         steps=(
-            "Call `fit_ssl_pretext` to learn an encoder from training features: labels are ignored entirely here.",
-            "Call `transform_ssl` to turn rows into embeddings.",
-            "Run `fit_semisupervised` on those embeddings, where similar rows are now genuinely close together.",
+            "Call `session.ssl.fit_pretext` to learn an encoder from training features: labels are ignored entirely here.",
+            "Call `session.ssl.transform` to turn rows into embeddings.",
+            "Run `session.semisupervised.fit` on those embeddings, where similar rows are now genuinely close together.",
             "Freeze both stages and evaluate on labelled holdout rows.",
             "Compare against propagation on raw features; the extra stage has to earn its place.",
         ),
@@ -243,10 +243,10 @@ SEMISUPERVISED_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.fit_ssl_pretext(method='masked_tabular', epochs=30)",
-            "session.transform_ssl()          # embeddings join the frame",
-            "session.fit_semisupervised(method='label_propagation')",
-            "session.evaluate_semisupervised(partition='validation')",
+            "session.ssl.fit_pretext(method='masked_tabular', epochs=30)",
+            "session.ssl.transform()          # embeddings join the frame",
+            "session.semisupervised.fit(method='label_propagation')",
+            "session.semisupervised.evaluate(partition='validation')",
         ),
         check=(
             "Does the two-stage pipeline beat single-stage propagation on validation?",

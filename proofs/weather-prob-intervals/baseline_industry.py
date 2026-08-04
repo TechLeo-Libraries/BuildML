@@ -113,7 +113,7 @@ def main() -> None:
     write_comparison(
         ctx,
         buildml={
-            "backend": "buildml.Session.fit_probabilistic",
+            "backend": "buildml.session.probabilistic.fit",
             "test_metrics": bml_metrics,
         },
         industry={

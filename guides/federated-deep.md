@@ -38,7 +38,7 @@ from buildml.federated import federated_capability_matrix
 print(federated_capability_matrix())
 ```
 
-When `flwr` is installed and `backend=` is omitted, `fit_federated` defaults
+When `flwr` is installed and `backend=` is omitted, `session.federated.fit` defaults
 to `flower`. Pass `backend="native"` to force the core path.
 
 **Honesty:** `backend="flower"` still runs in-process on Session partitions
@@ -64,14 +64,14 @@ when available).
 
 | API | Role |
 | --- | --- |
-| `fit_federated(backend=...)` | Train-only federated rounds |
-| `evaluate_federated(backend=...)` | Global + optional per-client holdout metrics |
-| `predict_federated(backend=...)` | Global predictions (no update) |
-| `save_federated_bundle` / `load_federated_bundle` | `buildml.federated_bundle.v1` |
-| `export_round_history(path)` | JSON export of round metrics/weights (Session facade; module-level `export_round_history(plan, path)` also available) |
+| `session.federated.fit(backend=...)` | Train-only federated rounds |
+| `session.federated.evaluate(backend=...)` | Global + optional per-client holdout metrics |
+| `session.federated.predict(backend=...)` | Global predictions (no update) |
+| `session.federated.save_bundle` / `session.federated.load_bundle` | `buildml.federated_bundle.v1` |
+| `session.federated.export_round_history(path)` | JSON export of round metrics/weights (Session facade; module-level `buildml.federated.results.export_round_history(plan, path)` also available) |
 
-Properties: `federated_plan`, `federated_fit_result`,
-`federated_eval_result`, `federated_predict_result`.
+Properties: `session.federated.plan`, `session.federated.fit_result`,
+`session.federated.eval_result`, `session.federated.predict_result`.
 
 Client identity: single `role="group"` column, or explicit `client_column=`.
 The client column is excluded from features.
@@ -83,7 +83,7 @@ Round history includes `client_weights`, `total_weight`, and `weighting`:
 
 - Requires a split; local updates use **train only**.
 - Clients see only their own train rows during local updates.
-- `evaluate_federated` / `predict_federated` never call local training.
+- `session.federated.evaluate` / `session.federated.predict` never call local training.
 - Class vocabulary for classifiers is discovered from the full **train**
   target column (labels only), disclosed on the plan.
 
@@ -99,12 +99,12 @@ computation, or cryptographic secure aggregation from either backend.
 client contract + round history + `backend`). Session checkpoints store
 data/roles/splits/history: they do **not** embed the federated model.
 Reload tabular workflow via `checkpoint_load`; reload the learner via
-`load_federated_bundle`.
+`session.federated.load_bundle`.
 
 ## AI / explain / walkthrough
 
-Teaching-critical tools: `fit_federated`, `evaluate_federated`,
-`predict_federated`, plus save/load bundle. Walkthrough exposes
+Teaching-critical tools: `session.federated.fit`, `session.federated.evaluate`,
+`session.federated.predict`, plus save/load bundle. Walkthrough exposes
 `federated_status` with `backend`. Explain overlays cover leakage, privacy
 limits, native vs Flower honesty, and bundle boundaries.
 
@@ -124,4 +124,4 @@ optional Flower convergence curves.
 - No FedOpt / SCAFFOLD / neural FedAvg zoo (unless later implemented for real).
 - No causal APIs.
 
-Next Phase 2 item: **Knowledge graphs (KG)**.
+Related next: knowledge graphs (`session.kg`).

@@ -13,7 +13,7 @@ TDA_NOTES: dict[str, ConceptNote] = {
             key="tda-persistent-homology",
             title="Persistent homology on local point clouds",
             summary=(
-                "fit_tda builds local Vietoris–Rips diagrams (ripser) from kNN "
+                "session.tda.fit builds local Vietoris–Rips diagrams (ripser) from kNN "
                 "train neighborhoods, then vectorizes them for sklearn."
             ),
             definition=(
@@ -35,11 +35,11 @@ TDA_NOTES: dict[str, ConceptNote] = {
                 "Gives geometry-aware features beyond linear summaries.",
             ),
             how_buildml_uses=(
-                "Session.fit_tda → transform_tda / predict_tda / evaluate_tda.",
+                "session.tda.fit → session.tda.transform / session.tda.predict / session.tda.evaluate.",
             ),
             interpretation_rules=(
                 "Empty H1 diagrams are common for tiny clouds: vectors may be sparse.",
-                "Prefer holdout evaluate_tda over train_score.",
+                "Prefer holdout session.tda.evaluate over train_score.",
             ),
             assumptions=(
                 "Numeric features; split present; buildml[tda] installed.",
@@ -52,7 +52,7 @@ TDA_NOTES: dict[str, ConceptNote] = {
                 "Calling this a full Mapper / TDA research platform.",
             ),
             worked_example_pattern=(
-                "fit_tda(vectorization='persistence_image') → evaluate_tda().",
+                "session.tda.fit(vectorization='persistence_image') → session.tda.evaluate().",
             ),
             related_concepts=(
                 "tda-vectorization",
@@ -84,7 +84,7 @@ TDA_NOTES: dict[str, ConceptNote] = {
                 "Frozen train ranges prevent holdout leakage into the feature map.",
             ),
             how_buildml_uses=(
-                "vectorization='persistence_image'|'landscape'|'silhouette' on fit_tda.",
+                "vectorization='persistence_image'|'landscape'|'silhouette' on session.tda.fit.",
             ),
             interpretation_rules=(
                 "feature_dim = per-homology-dim size × len(homology_dims).",
@@ -93,7 +93,7 @@ TDA_NOTES: dict[str, ConceptNote] = {
             failure_modes=("All-empty diagrams → near-zero vectors; weak signal.",),
             anti_patterns=("Re-estimating birth_range on test diagrams.",),
             worked_example_pattern=(
-                "fit_tda(vectorization='landscape', n_bins=20, n_layers=3).",
+                "session.tda.fit(vectorization='landscape', n_bins=20, n_layers=3).",
             ),
             related_concepts=("tda-persistent-homology", "tda-supervised-head"),
         ),
@@ -102,7 +102,7 @@ TDA_NOTES: dict[str, ConceptNote] = {
             title="Sklearn head on topological features",
             summary=(
                 "Optional classify/regress head fitted on train TDA vectors; "
-                "evaluate_tda scores holdout with the frozen pipeline."
+                "session.tda.evaluate scores holdout with the frozen pipeline."
             ),
             definition=(
                 "After vectorization, a sklearn estimator (logistic / RF / ridge / "
@@ -116,16 +116,16 @@ TDA_NOTES: dict[str, ConceptNote] = {
                 "Separates topology extraction from supervised scoring.",
             ),
             how_buildml_uses=(
-                "head=... on fit_tda; predict_tda / evaluate_tda; head='none' for features only.",
+                "head=... on session.tda.fit; session.tda.predict / session.tda.evaluate; head='none' for features only.",
             ),
             interpretation_rules=(
                 "classification → accuracy/macro_f1; regression → rmse/mae/r2.",
             ),
             assumptions=("Non-null train targets when head!='none'.",),
-            failure_modes=("head='none' then evaluate_tda → ValidationError.",),
+            failure_modes=("head='none' then session.tda.evaluate → ValidationError.",),
             anti_patterns=("Fitting the head on concatenated train+test TDA features.",),
             worked_example_pattern=(
-                "fit_tda(head='random_forest') → evaluate_tda(partition='test').",
+                "session.tda.fit(head='random_forest') → session.tda.evaluate(partition='test').",
             ),
             related_concepts=("tda-vectorization", "tda-bundle-boundary"),
         ),
@@ -143,15 +143,15 @@ TDA_NOTES: dict[str, ConceptNote] = {
             intuition="Save the PH pipeline separately from workflow resume state.",
             formal_idea="TdaPlan is not embedded in a Session checkpoint payload.",
             why_it_matters=("Avoid silent gaps when reloading workflows.",),
-            how_buildml_uses=("save_tda_bundle / load_tda_bundle.",),
+            how_buildml_uses=("session.tda.save_bundle / session.tda.load_bundle.",),
             interpretation_rules=(
-                "Reload via load_tda_bundle after checkpoint_load.",
+                "Reload via session.tda.load_bundle after checkpoint_load.",
             ),
             assumptions=("Bundle format matches buildml.tda_bundle.v2 (or v1).",),
             failure_modes=("Mixing TDA bundles with RL / RAG / graph bundles.",),
             anti_patterns=("Expecting checkpoint_load to restore TdaPlan.",),
             worked_example_pattern=(
-                "save_tda_bundle(path) → load_tda_bundle(path).",
+                "session.tda.save_bundle(path) → session.tda.load_bundle(path).",
             ),
             related_concepts=("tda-persistent-homology",),
         ),
@@ -174,7 +174,7 @@ TDA_NOTES: dict[str, ConceptNote] = {
             how_buildml_uses=(
                 "pip install 'buildml[tda]' (native); "
                 "pip install 'buildml[tda-industry]' (giotto); "
-                "tda_capability_matrix(); require_tda_stack()."
+                "session.tda.capability_matrix(); require_tda_stack()."
             ,),
             interpretation_rules=(
                 "Default backend when both installed: giotto (industry depth). "
@@ -182,11 +182,11 @@ TDA_NOTES: dict[str, ConceptNote] = {
             ),
             assumptions=("Compatible wheels for the platform Python.",),
             failure_modes=(
-                "Extra not installed → MissingExtraError on fit_tda.",
+                "Extra not installed → MissingExtraError on session.tda.fit.",
             ),
             anti_patterns=("Importing ripser/gtda at buildml package import time.",),
             worked_example_pattern=(
-                "fit_tda(backend='giotto', vectorization='betti_curve')."
+                "session.tda.fit(backend='giotto', vectorization='betti_curve')."
             ,),
             related_concepts=("tda-persistent-homology", "tda-giotto-backend"),
         ),
@@ -211,7 +211,7 @@ TDA_NOTES: dict[str, ConceptNote] = {
                 "Betti curves and gtda vectorizers without abandoning the native path.",
             ),
             how_buildml_uses=(
-                "fit_tda(backend='giotto', vectorization='betti_curve', mapper=True)."
+                "session.tda.fit(backend='giotto', vectorization='betti_curve', mapper=True)."
             ,),
             interpretation_rules=(
                 "Mapper output is diagnostic disclosure only: not supervised features.",
@@ -220,7 +220,7 @@ TDA_NOTES: dict[str, ConceptNote] = {
             failure_modes=("giotto missing → MissingExtraError; Mapper may warn on tiny train.",),
             anti_patterns=("Expecting interactive Mapper visualization from Session API.",),
             worked_example_pattern=(
-                "Session.tda_capability_matrix()['backends']['giotto']."
+                "session.tda.capability_matrix()['backends']['giotto']."
             ,),
             related_concepts=("tda-extra-boundary", "tda-vectorization"),
         ),

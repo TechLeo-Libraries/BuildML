@@ -1599,7 +1599,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         prerequisites=(DATASET, SPLIT, FIT, VIZ),
         ordering=("After calibration review; select on validation and evaluate chosen threshold on test.",),
         alternatives=(
-            "Session.fit_decision_policy(method='threshold') uses this same engine and "
+            "session.decision.fit(method='threshold') uses this same engine and "
             "persists a DecisionPlan bundle; also domain cost curves or abstention policies.",
         ),
         rationale=("Choose by explicit false-positive/false-negative costs or operating constraints, not peak F1 alone.",),
@@ -1615,8 +1615,8 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             "Read recommended_threshold, recommendation_basis, operating_points, and cost_model together.",
         ),
         next_steps=(
-            "Prefer fit_decision_policy(method='threshold', partition='validation') to "
-            "persist the cutoff, then evaluate_decisions on untouched test.",
+            "Prefer session.decision.fit(method='threshold', partition='validation') to "
+            "persist the cutoff, then session.decision.evaluate on untouched test.",
         ),
         concepts=(
             "thresholds",
@@ -1679,6 +1679,67 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         concepts=("diagnostic-uncertainty", "model-selection", "evaluation-partitions", "feature-importance"),
     ),
     _operation(
+        "explain_shap",
+        OperationKind.DIAGNOSTIC,
+        "Compute SHAP attributions for the active fitted model on a named partition.",
+        "Attribute predictions to features with an optional SHAP backend when installed.",
+        "Optional model-explanation diagnostic (not a causal claim).",
+        (
+            "Resolve an explainable estimator and partition rows.",
+            "Compute SHAP values with the selected backend / explainer family.",
+            "Return a diagnostic payload with attributions and disclosures.",
+        ),
+        parameters=(
+            _p("partition", "train | validation | test", "Rows used for attribution.", "test"),
+            _p("max_samples", "int", "Cap on rows for cost control.", 100),
+            _p("random_state", "int | None", "Sample seed when the partition exceeds max_samples.", 0),
+        ),
+        inputs=("Active fit, partition features, and optional shap extra.",),
+        outputs=("SHAP attribution payload with mean |SHAP| and method disclosures.",),
+        prerequisites=(DATASET, SPLIT, FIT),
+        ordering=("After a credible fit and baseline evaluate; prefer validation while exploring."),
+        alternatives=(
+            "feature_importance for model-agnostic permutation reliance without the shap extra.",
+            "Coefficients or tree importances when the estimator exposes them honestly.",
+        ),
+        rationale=(
+            "Use SHAP when stakeholders need attribution detail; keep permutation as the "
+            "always-on fallback when shap is unavailable."
+        ),
+        assumptions=(
+            "Attributions explain the fitted function under the chosen partition sample, "
+            "not ground-truth causality."
+        ),
+        failures=(
+            "Missing shap extra, unsupported estimator/explainer pair, or insufficient rows.",
+        ),
+        leakage=(
+            "Selecting features from test SHAP plots contaminates final evaluation the same way "
+            "test-driven importance does."
+        ),
+        anti_patterns=(
+            "Treating SHAP as causal evidence or as a substitute for holdout metrics.",
+        ),
+        state_changes=("Stores last_diagnostic when applicable; model and dataset remain unchanged.",),
+        result_reading=(
+            "Read disclosures beside mean |SHAP| ranks; note max_samples caps.",
+        ),
+        next_steps=(
+            "Cross-check with feature_importance; confirm stories on validation before test claims.",
+        ),
+        concepts=("diagnostic-uncertainty", "feature-importance", "evaluation-partitions"),
+        plain="Ask which features pushed a prediction up or down for this model.",
+        when_to_use=(
+            "When attribution detail is required and the shap extra is acceptable.",
+        ),
+        when_not_to_use=(
+            "When you only need a cheap reliance screen: use feature_importance instead.",
+        ),
+        mini_example=(
+            "session.explain_shap(partition='validation', max_samples=100)",
+        ),
+    ),
+    _operation(
         "resample",
         OperationKind.TRANSFORM,
         "Over- or under-sample the training partition while leaving evaluation rows unchanged.",
@@ -1696,7 +1757,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         ordering=("After split and numeric preparation required by sampler; before fit.",),
         alternatives=(
             "Use class weights, threshold policy, anomaly methods, or collect minority examples.",
-            "Session.fit_synthesizer for a reusable tabular generator (bootstrap/copula/SMOTE) "
+            "session.synthetic.fit for a reusable tabular generator (bootstrap/copula/SMOTE) "
             "distinct from class-balance preprocess.",
         ),
         rationale=("Start with weights/metrics; use synthetic sampling when neighborhood assumptions are credible.",),
@@ -1706,7 +1767,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         anti_patterns=(
             "Balancing validation/test or reporting accuracy without original prevalence.",
             "Treating resample as a general synthetic-data / privacy product "
-            "(use fit_synthesizer + disclosures instead).",
+            "(use session.synthetic.fit + disclosures instead).",
         ),
         state_changes=("Replaces train rows and memberships, stores resample_plan, leaves holdouts unchanged.",),
         result_reading=("Compare class counts before/after and confirm evaluation counts are identical.",),

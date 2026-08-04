@@ -8,11 +8,13 @@ Federated learning quickstart
    core sklearn façades: no optional extra. See :doc:`installation`.
 
 Local FedAvg-style simulation on Session data partitioned by a client/group
-column: ``fit_federated`` runs train-only local updates, aggregates
-``coef_`` / ``intercept_``, then ``evaluate_federated`` /
-``predict_federated`` on holdout. Persist via ``buildml.federated_bundle.v1``.
-Honesty: **not** a distributed FL platform (Flower/OpenFL); **not**
-cryptographic secure aggregation.
+column: ``session.federated.fit`` runs train-only local updates, aggregates
+``coef_`` / ``intercept_``, then ``session.federated.evaluate`` /
+``session.federated.predict`` on holdout. Persist via ``buildml.federated_bundle.v1``.
+Honesty: **not** a distributed FL platform. Optional Flower
+(``backend='flower'``) is still an in-process **local simulation** on Session
+partitions (not a networked ServerApp). **Not** cryptographic secure
+aggregation.
 
 **Go deeper:** :doc:`federated-deep`.
 
@@ -58,15 +60,15 @@ cryptographic secure aggregation.
        .scale(method="standard")
    )
 
-   fit = session.fit_federated(
+   fit = session.federated.fit(
        method="fedavg",
        estimator="sgd_classifier",
        n_rounds=5,
        local_epochs=2,
    )
-   ev = session.evaluate_federated(partition="validation", per_client=True)
-   session.predict_federated(partition="test")
-   session.save_federated_bundle("artifacts/federated_bundle")
+   ev = session.federated.evaluate(partition="validation", per_client=True)
+   session.federated.predict(partition="test")
+   session.federated.save_bundle("artifacts/federated_bundle")
 
 What you get
 ------------
@@ -75,8 +77,11 @@ What you get
 * Local train-only updates; holdout evaluation never trains.
 * ``buildml.federated_bundle.v1``.
 
-* **Out of scope:** Flower/OpenFL networking; cryptographic secure aggregation;
-  non-linear FedAvg zoo.
+* Holdout metrics: accuracy / f1_macro / balanced_accuracy (+ roc_auc when binary).
+* Bundle roundtrip: ``save_bundle`` → ``load_bundle(..., trusted=True)`` → re-evaluate.
 
-Next Phase 2 item after Bayesian / probabilistic: **Causal ML**
+* **Out of scope:** Flower/OpenFL networking; cryptographic secure aggregation;
+  non-linear FedAvg zoo. Flower remains disclosed as local-sim when installed.
+
+Related next: Causal ML
 (assumption-declared path; EDA stays associational).

@@ -27,8 +27,8 @@ pip install "buildml[torch]"
 ```
 
 Classical `Session.fit` stays unchanged. Anomaly methods are
-`fit_anomaly` / `score_anomalies` / `evaluate_anomaly` /
-`tune_anomaly_threshold` plus bundle save/load.
+`session.anomaly.fit` / `session.anomaly.score` / `session.anomaly.evaluate` /
+`session.anomaly.tune_threshold` plus bundle save/load.
 
 EDA IsolationForest screens and `handle_outliers` fences are **not** this API.
 
@@ -52,30 +52,30 @@ session = (
     .scale(method="standard")
 )
 
-print(Session.anomaly_capability_matrix()["backends"].keys())
+print(session.anomaly.capability_matrix()["backends"].keys())
 
-fit = session.fit_anomaly(
+fit = session.anomaly.fit(
     backend="sklearn",
     method="isolation_forest",
     mode="unsupervised",
     contamination=0.1,
 )
-session.tune_anomaly_threshold(partition="validation", metric="f1")
-metrics = session.evaluate_anomaly(partition="test", positive_label=1)
+session.anomaly.tune_threshold(partition="validation", metric="f1")
+metrics = session.anomaly.evaluate(partition="test", positive_label=1)
 print(metrics.alert_rate, metrics.labeled_metrics)
 ```
 
 PyOD industry backend (when `buildml[anomaly-industry]` installed):
 
 ```python
-session.fit_anomaly(backend="pyod", method="ecod", contamination=0.1)
-session.evaluate_anomaly(partition="test")
+session.anomaly.fit(backend="pyod", method="ecod", contamination=0.1)
+session.anomaly.evaluate(partition="test")
 ```
 
 Torch autoencoder reconstruction error (when `buildml[torch]` installed):
 
 ```python
-session.fit_anomaly(
+session.anomaly.fit(
     backend="torch",
     method="autoencoder",
     ae_epochs=30,
@@ -86,16 +86,16 @@ session.fit_anomaly(
 Supervised fraud scorers:
 
 ```python
-session.fit_anomaly(method="supervised_hgb", mode="supervised")  # core
-# session.fit_anomaly(method="supervised_xgb", mode="supervised")  # industry
-session.evaluate_anomaly(partition="test", k=10)
+session.anomaly.fit(method="supervised_hgb", mode="supervised")  # core
+# session.anomaly.fit(method="supervised_xgb", mode="supervised")  # industry
+session.anomaly.evaluate(partition="test", k=10)
 ```
 
 ## Honesty limits
 
 - Higher `anomaly_score` means more anomalous. Score calibration differs by
   backend: compare detectors with ranking metrics (PR-AUC), not raw score scale.
-- Tune thresholds on validation via `tune_anomaly_threshold`; reserve test for
+- Tune thresholds on validation via `session.anomaly.tune_threshold`; reserve test for
   final claims (same discipline as `Session.tune_threshold`).
 - Not a full fraud platform (no graph fraud, no online streaming product).
 - No causal fraud claims. Under labels, prefer PR-AUC and precision/recall@k.

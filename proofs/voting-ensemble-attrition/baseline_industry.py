@@ -98,7 +98,7 @@ def main() -> None:
     write_comparison(
         ctx,
         buildml={
-            "backend": "buildml.Session.fit_voting",
+            "backend": "buildml.session.ensemble.fit_voting",
             "strategy": "voting/soft",
             "test_metrics": bml_metrics,
         },

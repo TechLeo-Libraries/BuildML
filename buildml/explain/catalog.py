@@ -79,11 +79,14 @@ def get_operation(name: str) -> OperationSpec:
     ----------
     name:
         A session operation name, such as ``'split'`` or ``'fit_forecast'``.
+        Also accepts facade forms ``'forecast.fit'`` /
+        ``'session.forecast.fit'`` (resolved to the canonical flat catalog key).
 
     Returns
     -------
     ~buildml.explain.schemas.OperationSpec
         The catalog entry, with index-derived parameters already merged in.
+        ``OperationSpec.name`` remains the canonical flat method name.
 
     Raises
     ------
@@ -94,8 +97,11 @@ def get_operation(name: str) -> OperationSpec:
     --------
     list_operations : Every entry, in a stable order.
     """
+    from buildml.session.facade_registry import resolve_operation_name
+
+    canonical = resolve_operation_name(name)
     try:
-        return OPERATION_CATALOG[name]
+        return OPERATION_CATALOG[canonical]
     except KeyError as exc:
         raise KeyError(f"Unknown Session operation: {name}") from exc
 

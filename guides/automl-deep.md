@@ -31,16 +31,16 @@ RAG / unsupervised / ensemble guides.
 | AutoML bundle + classical pipeline compatibility | Session checkpoint substitute |
 | Predictive ranking under a trial budget | Causal discovery / automated science |
 
-Phase 1 depth-first order (**complete**): unsupervised → ensembles →
-**AutoML (this guide)** → forecasting → anomaly (see
-[Anomaly deep](anomaly-deep.md)). Explicit non-goals (neuromorphic, swarm zoo,
-digital twins, AV/robotics, TTS, full COCO suite) stay out.
+Related: [unsupervised](unsupervised-deep.md), [ensembles](ensemble-deep.md),
+[forecasting](forecasting-deep.md), [anomaly](anomaly-deep.md). Explicit
+non-goals (neuromorphic, swarm zoo, digital twins, AV/robotics, TTS, full COCO
+suite) stay out.
 
 ---
 
 ## AutoML vs `grid_search` / `optuna_search` / `evolutionary_search`
 
-| Concern | Single-estimator search | `run_automl` |
+| Concern | Single-estimator search | `session.automl.run` |
 | --- | --- | --- |
 | Estimator | One fixed model you chose | Catalog of families (+ industry GBDT when installed) |
 | Preprocess | Optional knobs on one recipe | Discrete strategy search (impute/scale/encode/select) |
@@ -67,14 +67,36 @@ that fold-local recipe search is bypassed. Nested selection is **native-only**.
 
 ## Selection modes
 
+**Default is `selection='cv'`** (train-fold ranking). That is intentional for
+fast exploration and is disclosed on the result / leaderboard. For
+post-selection claims, prefer the prominent **`selection='nested'`** path
+(outer mean±std) or `selection='validation'`, then confirm once on Session test.
+
 | Mode | Ranking evidence | When to prefer |
 | --- | --- | --- |
-| `cv` | Train-fold CV means | Fast exploration |
-| `nested` | Outer train folds after inner selection | Stronger post-selection estimate |
+| `cv` (**default**) | Train-fold CV means | Fast exploration (optimistic vs outer) |
+| `nested` (**prominent honesty path**) | Outer train folds after inner selection | Stronger post-selection estimate |
 | `validation` | Session validation partition | Explicit holdout ranking (needs `validation_size`) |
 
 In every mode, **Session test stays out of selection**. Confirm once with
-`evaluate_automl(partition='test')` after freezing the winner.
+`session.automl.evaluate(partition='test')` after freezing the winner.
+
+### Leaderboard reporting
+
+```python
+result = session.automl.run(n_trials=12, cv=3, selection="cv", random_state=0)
+board = result.leaderboard()  # also result.to_frame()
+# columns include rank, family, recipe_strategy, mean_score, gap_to_best,
+# selection, outer_score_mean, nested_cv_disclosed, ranking_metric, param_*
+print(board.head())
+
+from buildml.automl import export_comparison_metrics
+export_comparison_metrics(result, "artifacts/automl_trials.json")
+```
+
+Catalog honesty: `automl_capability_matrix()["default_selection"] == "cv"`,
+`selection_modes["nested"]["prominent"] is True`, and industry
+`available` flags use subprocess import probes (not find_spec alone).
 
 ---
 
@@ -92,14 +114,14 @@ session = (
 )
 
 try:
-    session.run_automl(n_trials=6, cv=3)
+    session.automl.run(n_trials=6, cv=3)
 except LeakageError as exc:
     print(exc)
 ```
 
 Same refusal as classical `cv_score` / `grid_search`. Prefer:
 
-1. ingest → roles → split → `run_automl(include_recipe_search=True)` on
+1. ingest → roles → split → `session.automl.run(include_recipe_search=True)` on
    unpoisoned data, **or**
 2. re-ingest / checkpoint-load an unpoisoned frame, **or**
 3. `allow_session_global_preprocess=True` with eyes open (biased scores).
@@ -136,7 +158,7 @@ LightGBM, XGBoost, and CatBoost families (`include_industry_families=True`).
 When `include_ensembles=True`, AutoML scores **voting** and/or **stacking**
 ensembles (`ensemble_mode='voting'|'stacking'|'both'`) built from diverse
 top single-model families under a shared recipe.
-This is not a substitute for native `fit_stacking` / `fit_blending` when you
+This is not a substitute for native `session.ensemble.fit_stacking` / `session.ensemble.fit_blending` when you
 want CV OOF meta features or an explicit train-inner blend holdout.
 
 ---
@@ -144,8 +166,8 @@ want CV OOF meta features or an explicit train-inner blend holdout.
 ## Bundles and pipelines
 
 ```python
-session.run_automl(n_trials=10, cv=3, random_state=0)
-session.save_automl_bundle("artifacts/automl_bundle")
+session.automl.run(n_trials=10, cv=3, random_state=0)
+session.automl.save_bundle("artifacts/automl_bundle")
 session.save_pipeline("artifacts/automl_pipeline", evaluate_partition="test")
 ```
 
@@ -167,11 +189,11 @@ session.save_pipeline("artifacts/automl_pipeline", evaluate_partition="test")
 
 ---
 
-## Non-blocking residuals
+## Known limits
 
 - No dedicated AutoML dashboard charts (use classical plot boards / evaluate)
 - Industry adapters (FLAML/AutoGluon) do not support nested CV or fold-local recipes
 - Full AutoGluon multi-modal / multimodel export not wrapped: tabular TabularPredictor only
-- Stacking inside AutoML uses sklearn Stacking* with fixed meta-estimators (not full native `fit_stacking` OOF path)
+- Stacking inside AutoML uses sklearn Stacking* with fixed meta-estimators (not full native `session.ensemble.fit_stacking` OOF path)
 - Catalog deliberately omits deep nets and arbitrary Pipeline DAGs
 - Benchmark: `python benchmarks/automl/tabular_search.py` (skips unavailable backends)

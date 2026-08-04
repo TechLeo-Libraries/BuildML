@@ -7,6 +7,7 @@ from typing import Any, Literal
 from buildml.core.industry_markers import platform_skip_entry
 from buildml.metalearning.extras import (
     learn2learn_available,
+    learn2learn_spec_present,
     metalearning_industry_available,
     metalearning_torch_available,
 )
@@ -119,7 +120,15 @@ def metalearning_capability_matrix() -> dict[str, Any]:
         ],
         "learn2learn_present": learn2learn_available(),
         "torch_spec_present": torch_spec_available(),
-        "industry_extra_present": metalearning_industry_available(),
+        "industry_extra_present": learn2learn_spec_present(),
+        "industry_runtime_present": learn2learn_available(),
+        "industry_import_honesty": (
+            "industry_extra_present is learn2learn find_spec only. "
+            "industry_runtime_present requires a successful learn2learn "
+            "subprocess import. backends.industry.available follows "
+            "torch_available (native first-order MAML/Reptile when learn2learn "
+            "is missing) and must not be read as learn2learn readiness."
+        ),
     }
 
 

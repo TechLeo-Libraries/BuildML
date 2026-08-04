@@ -31,20 +31,20 @@ session = (
     .scale(method="standard")
 )
 
-fit = session.fit_probabilistic(
+fit = session.probabilistic.fit(
     estimator="bayesian_ridge",
     alpha=0.1,
     conformal=True,
 )
 print(fit.n_fit_rows, fit.n_conformal_calib_rows, fit.conformal_quantile)
 
-intervals = session.predict_interval(partition="test")
+intervals = session.probabilistic.predict_interval(partition="test")
 print(intervals.method, intervals.lower[:3], intervals.upper[:3])
 
-ev = session.evaluate_probabilistic(partition="validation")
+ev = session.probabilistic.evaluate(partition="validation")
 print(ev.metrics)
 
-session.save_probabilistic_bundle("artifacts/probabilistic_bundle")
+session.probabilistic.save_bundle("artifacts/probabilistic_bundle")
 ```
 
 | In scope | Out of scope |
@@ -54,4 +54,4 @@ session.save_probabilistic_bundle("artifacts/probabilistic_bundle")
 | Train-only split conformal | Conformal calibration on Session test |
 | Distinct `buildml.probabilistic_bundle.v1` | Session checkpoint embedding the plan |
 
-Next Phase 2 item after this: **Causal ML**: see [quickstart-causal](quickstart-causal.md).
+Related next: [causal ML](quickstart-causal.md).

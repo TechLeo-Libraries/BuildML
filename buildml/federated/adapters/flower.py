@@ -1,4 +1,11 @@
-"""Flower (flwr) adapter: NumPyClient wrappers + weighted aggregation (local sim)."""
+"""Flower (flwr) adapter: NumPyClient-shaped wrappers + weighted aggregation (local sim).
+
+Honesty: this module still runs **in-process** on Session client partitions.
+It uses Flower's ``aggregate`` helper for weighted coefficient averaging, but does
+**not** start a networked Flower ServerApp/ClientApp. Eager ``import flwr`` is
+avoided so a broken ``flwr`` wheel cannot crash host imports of the adapters
+package; ``require_flwr`` + a subprocess runtime probe gate readiness first.
+"""
 
 from __future__ import annotations
 
@@ -6,15 +13,11 @@ from dataclasses import dataclass
 from typing import Any
 
 import numpy as np
-from flwr.client import NumPyClient
-from flwr.server.strategy.aggregate import aggregate
 
-from buildml.core.errors import ValidationError
 from buildml.data.dataset import Dataset
 from buildml.data.splits import SplitPlan
 from buildml.federated.extras import require_flwr
 from buildml.federated.features import (
-    extract_linear_params,
     frame_for_client,
     matrix_from_frame,
     set_linear_params,
@@ -43,8 +46,14 @@ class _ClientPartition:
     n_rows: int
 
 
-class _BuildMLSklearnClient(NumPyClient):
-    """Flower NumPyClient delegating local fit to Session client partitions."""
+class _BuildMLSklearnClient:
+    """Flower NumPyClient-shaped local trainer for one Session client partition.
+
+    Implements the NumPyClient method surface (``get_parameters`` / ``fit`` /
+    ``evaluate``) without inheriting from ``flwr.client.NumPyClient`` at import
+    time, so importing this module never loads Flower. The federated loop below
+    calls these methods in-process (local sim); it is not a networked FL server.
+    """
 
     def __init__(
         self,
@@ -61,10 +70,7 @@ class _BuildMLSklearnClient(NumPyClient):
         classes: tuple[Any, ...] | None,
         random_state: int | None,
     ) -> None:
-        """Configure a Flower NumPyClient for one Session client partition.
-
-        Stores partition data and training hyperparameters so Flower can invoke
-        local fit and evaluate callbacks against a single client slice.
+        """Configure a local client trainer for one Session client partition.
 
         Parameters
         ----------
@@ -105,21 +111,7 @@ class _BuildMLSklearnClient(NumPyClient):
         self.last_metric: float | None = None
 
     def get_parameters(self, config: dict[str, Any]) -> list[np.ndarray]:
-        """Return global linear parameters as Flower ndarray payloads.
-
-        Serialises the current global template coefficients for Flower server
-        round initialization and client synchronization.
-
-        Parameters
-        ----------
-        config:
-            Flower server config dict (ignored).
-
-        Returns
-        -------
-        list[numpy.ndarray]
-            Flattened ``coef_`` and ``intercept_`` arrays for aggregation.
-        """
+        """Return global linear parameters as Flower ndarray payloads."""
         _ = config
         return _linear_ndarrays(self.global_template)
 
@@ -128,23 +120,7 @@ class _BuildMLSklearnClient(NumPyClient):
         parameters: list[np.ndarray],
         config: dict[str, Any],
     ) -> tuple[list[np.ndarray], int, dict[str, float]]:
-        """Run a local client update and return Flower fit results.
-
-        Applies local SGD or full fit starting from server parameters, optionally
-        with FedProx proximal pull, and reports sample-weighted metrics.
-
-        Parameters
-        ----------
-        parameters:
-            Global model parameters from the Flower server.
-        config:
-            Flower server config dict (ignored).
-
-        Returns
-        -------
-        tuple[list[numpy.ndarray], int, dict[str, float]]
-            Updated parameters, example count, and optional train metrics.
-        """
+        """Run a local client update and return Flower-shaped fit results."""
         from buildml.federated.fit import _local_update
 
         _ = config
@@ -178,23 +154,7 @@ class _BuildMLSklearnClient(NumPyClient):
         parameters: list[np.ndarray],
         config: dict[str, Any],
     ) -> tuple[float, int, dict[str, float]]:
-        """Evaluate the global model on the client holdout slice.
-
-        Returns Flower loss as ``1 - local_score`` so higher accuracy yields
-        lower reported loss.
-
-        Parameters
-        ----------
-        parameters:
-            Global model parameters from the Flower server.
-        config:
-            Flower server config dict (ignored).
-
-        Returns
-        -------
-        tuple[float, int, dict[str, float]]
-            Loss value, example count, and an empty metrics dict.
-        """
+        """Evaluate the global model on the client slice (Flower-shaped loss)."""
         from buildml.federated.fit import _make_estimator
         from buildml.federated.features import encode_labels
 
@@ -234,14 +194,14 @@ def fit_flower(
     min_client_rows: int = 2,
     reduce_plan: Any | None = None,
 ) -> tuple[FederatedPlan, FederatedFitResult]:
-    """Run federated rounds via Flower NumPyClient + flwr aggregation (local sim).
+    """Run federated rounds via Flower-shaped clients + flwr aggregation (local sim).
 
     Honesty
     -------
-    Uses ``flwr`` NumPyClient wrappers over Session client partitions and
-    Flower's weighted ``aggregate`` helper. This still executes in-process on
-    Session data: not a networked Flower deployment unless you operate one
-    separately. No cryptographic secure aggregation.
+    Uses Flower-compatible NumPyClient method shapes over Session client
+    partitions and Flower's weighted ``aggregate`` helper. This still executes
+    in-process on Session data: not a networked Flower deployment unless you
+    operate one separately. No cryptographic secure aggregation.
 
     Parameters
     ----------
@@ -289,6 +249,9 @@ def fit_flower(
         When ``flwr`` is not installed (``federated-industry`` extra).
     """
     require_flwr(feature="Flower federated backend")
+    # Lazy import: never load flwr at module import time.
+    from flwr.server.strategy.aggregate import aggregate
+
     ctx = _prepare_federated_context(
         dataset,
         split_plan,
@@ -390,10 +353,11 @@ def fit_flower(
 
     ctx.disclosures.extend(
         [
-            "Flower backend: NumPyClient local fit on Session client partitions "
-            "+ flwr weighted ndarray aggregation.",
-            "Honesty: still an in-process simulation on Session data: not a "
-            "networked Flower deployment unless you operate one separately.",
+            "Flower backend: NumPyClient-shaped local fit on Session client "
+            "partitions + flwr weighted ndarray aggregation.",
+            "Honesty: still an in-process local simulation on Session data — "
+            "not a networked Flower ServerApp/ClientApp unless you operate one "
+            "separately.",
             "No cryptographic secure aggregation; orchestrator sees client updates.",
             f"backend=flower, flwr aggregation rounds={len(round_history)}.",
         ]

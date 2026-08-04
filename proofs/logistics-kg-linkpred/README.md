@@ -18,9 +18,9 @@ Inline synthetic logistics triples (warehouse–route–hub–carrier motifs). *
 ## BuildML API steps
 
 1. `Session.ingest` → `set_roles` → `split`
-2. `fit_kg(method="transe")`
-3. `predict_links` → `evaluate_kg(test)`
-4. `save_kg_bundle`
+2. `session.kg.fit(method="transe")`
+3. `session.kg.predict_links` → `session.kg.evaluate(test)`
+4. `session.kg.save_bundle` → `session.kg.load_bundle` → re-evaluate
 
 ## Metrics
 
@@ -28,7 +28,7 @@ Primary holdout: hits@k, mean rank, MRR (see `results/results.json`).
 
 ## Industry comparison (Tier C)
 
-Filled: train co-occurrence PMI filtered-ranking twin via `baseline_industry.py` → `results/comparison.json`.
+Industry twin: train co-occurrence PMI filtered-ranking twin via `baseline_industry.py` → `results/comparison.json`.
 
 ## Limitations
 

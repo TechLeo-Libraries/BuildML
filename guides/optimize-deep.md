@@ -1,7 +1,7 @@
 # Optimisation / decision helpers: deep guide
 
 Session path for turning model scores into **decisions** under costs and
-capacity constraints. R6.9 industry depth: PuLP/OR-Tools MIP knapsack, CVXPY
+capacity constraints. Industry depth: PuLP/OR-Tools MIP knapsack, CVXPY
 LP, XGB/calibrated cost-sensitive thresholds: with honest native fallback.
 
 ## What this is / is not
@@ -22,7 +22,7 @@ from buildml.optimize import decision_capability_matrix
 decision_capability_matrix()["default_backend_when_installed"]
 ```
 
-## Backends (`backend=` on `fit_decision_policy`)
+## Backends (`backend=` on `session.decision.fit`)
 
 | Backend | Methods | Extra | Notes |
 | --- | --- | --- | --- |
@@ -42,16 +42,16 @@ When `backend=None`:
 ## Cross-link: `tune_threshold`
 
 Classical `Session.tune_threshold` remains the **diagnostic explorer**
-(`DiagnosticReport` threshold sweep). `fit_decision_policy(method="threshold")`
+(`DiagnosticReport` threshold sweep). `session.decision.fit(method="threshold")`
 calls the same `threshold_report` engine (or industry scorers), stores a
 reusable `DecisionPlan`, and also updates the Session's last diagnostic report
 for continuity when using the native/calibrated path.
 
 Prefer:
 
-1. `fit_decision_policy(..., partition="validation", fp_cost=..., fn_cost=...)`
-2. `evaluate_decisions(partition="test")` once
-3. `save_decision_bundle(...)`
+1. `session.decision.fit(..., partition="validation", fp_cost=..., fn_cost=...)`
+2. `session.decision.evaluate(partition="test")` once
+3. `session.decision.save_bundle(...)`
 
 ## Methods
 
@@ -108,7 +108,7 @@ the plan carries an auxiliary industry estimator.
 ## Walkthrough / audit
 
 `walkthrough().decision_status` discloses plan presence, capability matrix, and
-boundary text. Audit suggests `fit_decision_policy` when a classification fit
+boundary text. Audit suggests `session.decision.fit` when a classification fit
 exists without a threshold/decision step.
 
 ## Benchmark
@@ -116,7 +116,7 @@ exists without a threshold/decision step.
 `benchmarks/optimize/policy_value.py` compares validation-tuned cost-optimal
 policies vs a fixed 0.5 baseline on held-out expected cost.
 
-## Tracker
+## Scope notes
 
-Recommenders / LTR / KG: **PASS**. This module: R6.9 industry depth **PASS**.
-Phase-3 synthetic-data systems: **PASS** (see [synthetic-deep.md](synthetic-deep.md)).
+Recommenders / LTR / KG and this optimisation surface are shipped.
+See also [synthetic-deep.md](synthetic-deep.md).

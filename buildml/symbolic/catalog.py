@@ -8,10 +8,13 @@ from buildml.dl.extras import torch_available, torch_spec_available
 from buildml.core.industry_markers import platform_skip_entry
 from buildml.symbolic.extras import (
     imodels_available,
+    imodels_spec_present,
     skope_rules_available,
+    skope_rules_spec_present,
     symbolic_industry_available,
     torch_neuro_available,
     z3_available,
+    z3_spec_present,
 )
 
 SymbolicBackendName = Literal["sklearn", "industry"]
@@ -135,8 +138,18 @@ def symbolic_capability_matrix() -> dict[str, Any]:
         "skope_rules_present": skope_rules_available(),
         "imodels_present": imodels_available(),
         "z3_present": z3_available(),
-        "torch_spec_present": torch_neuro_available(),
-        "industry_extra_present": symbolic_industry_available(),
+        "torch_spec_present": torch_spec_available(),
+        "torch_neuro_runtime_present": torch_neuro_available(),
+        "industry_extra_present": (
+            skope_rules_spec_present() or imodels_spec_present()
+        ),
+        "industry_runtime_present": symbolic_industry_available(),
+        "z3_spec_present": z3_spec_present(),
+        "industry_import_honesty": (
+            "industry backend 'available' and industry_runtime_present require "
+            "successful subprocess imports of skope-rules or imodels. "
+            "industry_extra_present / *_spec_present are find_spec only."
+        ),
     }
 
 

@@ -57,6 +57,12 @@ __pycache__/
 requirements-*-tmp.txt
 .release-notes*
 _tmp_*.txt
+tmp_*.md
+tmp_*.txt
+
+# IDE / editor local project state
+.spyproject/
+.idea/
 
 # AutoGluon / local experiment dumps
 AutogluonModels/
@@ -67,6 +73,8 @@ proofs/**/results/
 proofs/**/artifacts/
 proofs/**/*.html
 proofs/_lib/last_run_report.json
+proofs/_lib/last_run_report.txt
+proofs/_lib/last_run_report.*
 !proofs/**/README.md
 !proofs/**/script.py
 !proofs/**/baseline_industry.py

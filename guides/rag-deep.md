@@ -57,14 +57,14 @@ docs = [
 ]
 
 session = Session()
-session.rag_ingest_corpus(docs)
-session.rag_chunk(size=160, overlap=32, strategy="recursive")
-session.rag_embed_and_index()  # auto: ST when buildml[rag] installed
+session.rag.ingest_corpus(docs)
+session.rag.chunk(size=160, overlap=32, strategy="recursive")
+session.rag.embed_and_index()  # auto: ST when buildml[rag] installed
 
 # Default retrieve is hybrid when rag extra present
-hybrid = session.rag_retrieve("corpus contamination indexed answers", k=3)
-dense = session.rag_retrieve("corpus contamination indexed answers", k=3, mode="dense")
-bm25 = session.rag_retrieve("corpus contamination indexed answers", k=3, mode="bm25")
+hybrid = session.rag.retrieve("corpus contamination indexed answers", k=3)
+dense = session.rag.retrieve("corpus contamination indexed answers", k=3, mode="dense")
+bm25 = session.rag.retrieve("corpus contamination indexed answers", k=3, mode="bm25")
 print(hybrid.mode, dense.hits[0].doc_id, bm25.hits[0].doc_id)
 ```
 
@@ -75,7 +75,7 @@ print(hybrid.mode, dense.hits[0].doc_id, bm25.hits[0].doc_id)
 ```python
 from buildml.rag.generate import EchoGroundedProvider, score_faithfulness
 
-answer = session.rag_generate(
+answer = session.rag.generate(
     "What causes evaluation contamination?",
     provider=EchoGroundedProvider(),  # offline demo
     k=3,
@@ -83,7 +83,7 @@ answer = session.rag_generate(
 print(answer.answer)
 print([c.doc_id for c in answer.citations])
 
-# Cheap faithfulness hooks (Pass V): citation-marker coverage + lexical overlap.
+# Cheap faithfulness hooks: citation-marker coverage + lexical overlap.
 # Attached automatically on GenerateResult when score_grounding is enabled (default).
 print(answer.faithfulness)
 if answer.faithfulness is not None:
@@ -98,8 +98,8 @@ report = score_faithfulness(answer.answer, answer.citations)
 print(report.to_dict())
 
 # Production: configure a real chat provider (buildml[ai]) then:
-# session.ai_configure(provider="openai")
-# answer = session.rag_generate("...", k=3)  # uses configured provider
+# session.ai.configure(provider="openai")
+# answer = session.rag.generate("...", k=3)  # uses configured provider
 ```
 
 Grounded generate without a provider fails clearly. Citations are first-class;
@@ -111,7 +111,7 @@ do not treat echo providers as factual QA. Faithfulness is a **cheap heuristic**
 ## Use case C: Evaluate with qrels
 
 ```python
-metrics = session.rag_evaluate(
+metrics = session.rag.evaluate(
     {
         "corpus contamination indexed answers": ["leak"],
         "supervised learning hold out test": ["ml"],
@@ -131,16 +131,16 @@ eval_docs = [
     {
         "doc_id": "heldout_answer",
         "text": "SECRET labeled answer that must not be indexed.",
-        # role handled via rag_ingest_corpus(..., role="eval_only") when supported
+        # role handled via session.rag.ingest_corpus(..., role="eval_only") when supported
     }
 ]
 
 # Pattern: ingest index docs with role="index" (default) and keep eval texts
-# out of rag_embed_and_index. Indexing eval_only content raises LeakageError.
+# out of session.rag.embed_and_index. Indexing eval_only content raises LeakageError.
 try:
     dirty = Session()
-    dirty.rag_ingest_corpus(eval_docs, role="eval_only")
-    dirty.rag_embed_and_index()
+    dirty.rag.ingest_corpus(eval_docs, role="eval_only")
+    dirty.rag.embed_and_index()
 except Exception as exc:  # LeakageError when eval_only would contaminate
     print(type(exc).__name__, exc)
 ```
@@ -153,17 +153,17 @@ except Exception as exc:  # LeakageError when eval_only would contaminate
 from buildml.rag.embed import SentenceTransformerEmbedder
 
 # Requires buildml[rag] sentence-transformers pin
-# session.rag_embed_and_index(
+# session.rag.embed_and_index(
 #     embedder=SentenceTransformerEmbedder("sentence-transformers/all-MiniLM-L6-v2"),
 #     device="cpu",
 # )
 
-session.rag_upsert([{"doc_id": "new", "text": "Chunk update without full rebuild."}])
-session.rag_delete(doc_ids=["new"])
+session.rag.upsert([{"doc_id": "new", "text": "Chunk update without full rebuild."}])
+session.rag.delete(doc_ids=["new"])
 
-bundle = session.save_rag_bundle("artifacts/rag_bundle")
-restored = Session().load_rag_bundle(bundle)
-again = restored.rag_retrieve("corpus contamination indexed answers", k=3)
+bundle = session.rag.save_bundle("artifacts/rag_bundle")
+restored = Session().rag.load_bundle(bundle)
+again = restored.rag.retrieve("corpus contamination indexed answers", k=3)
 assert again.hits[0].doc_id == dense.hits[0].doc_id
 ```
 
@@ -176,7 +176,7 @@ before = session.explain("rag_retrieve", moment="before")
 print(before.operation, before.prerequisites, before.risks)
 ```
 
-AI operator tools can call `rag_retrieve` / `rag_generate` under confirmation
+AI operator tools can call `session.rag.retrieve` / `session.rag.generate` under confirmation
 gates ([ai-tools](ai-tools-operator-patterns.md)).
 
 ---
@@ -196,7 +196,7 @@ gates ([ai-tools](ai-tools-operator-patterns.md)).
 from buildml.rag.evaluate import evaluate_generation
 
 # Optional rerank (requires buildml[rag])
-reranked = session.rag_retrieve(
+reranked = session.rag.retrieve(
     "corpus contamination indexed answers",
     k=3,
     mode="hybrid",
@@ -217,7 +217,7 @@ print(gen_metrics.mean_faithfulness, gen_metrics.mean_answer_relevance)
 ## Use case G: Explicit hashing fallback
 
 ```python
-session.rag_embed_and_index(embedder="hashing")  # lexical CI path
+session.rag.embed_and_index(embedder="hashing")  # lexical CI path
 ```
 
 ---
@@ -251,8 +251,8 @@ Compares hashing vs ST vs hybrid+rerank on an in-repo corpus with metric floors 
 - Generate quality depends entirely on the chat provider + retrieved context.
 - Faithfulness hooks are lexical / citation-marker heuristics, not a judge model.
 - Not a managed vector-DB cloud product.
-- Not tabular learning-to-rank (`fit_ranker` on labeled query–item feature
-  rows) and not recommender CF (`fit_recommender`). Shared metric names
+- Not tabular learning-to-rank (`session.ranking.fit` on labeled query–item feature
+  rows) and not recommender CF (`session.recommender.fit`). Shared metric names
   (nDCG/MRR) use different protocols: see [ranking-deep.md](ranking-deep.md).
 
 ---

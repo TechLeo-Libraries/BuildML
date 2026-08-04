@@ -32,7 +32,9 @@ from buildml.nlp.extras import (
     sentence_transformers_available,
     spacy_available,
     spacy_model_available,
+    spacy_spec_present,
     transformers_available,
+    transformers_spec_present,
 )
 from buildml.nlp.normalize import build_normalize_plan, tokenize_document
 from buildml.nlp.types import TextNormalizeConfig
@@ -80,7 +82,10 @@ def test_capability_matrix_availability_matches_the_extras_probes() -> None:
     assert matrix["langdetect_present"] is langdetect_available()
     assert matrix["spacy_present"] is spacy_available()
     assert matrix["spacy_model_present"] is spacy_model_available()
-    assert matrix["industry_extra_present"] is nlp_industry_available()
+    assert matrix["industry_runtime_present"] is nlp_industry_available()
+    assert matrix["industry_extra_present"] is (
+        spacy_spec_present() or transformers_spec_present()
+    )
     assert matrix["backends"]["embedding"]["extra"] == "nlp"
     assert matrix["backends"]["transformer"]["extra"] == "nlp"
 

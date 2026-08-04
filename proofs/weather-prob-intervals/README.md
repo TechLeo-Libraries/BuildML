@@ -19,9 +19,9 @@ In-script synthetic weather regression (hour, humidity, pressure, wind → temp)
 ## BuildML API steps
 
 1. `Session.ingest` → `set_roles` → `split` → `scale`
-2. `fit_probabilistic(estimator="bayesian_ridge", conformal=True)`
-3. `predict_interval(test)` → `evaluate_probabilistic(test)`
-4. `save_probabilistic_bundle`
+2. `session.probabilistic.fit(estimator="bayesian_ridge", conformal=True)`
+3. `session.probabilistic.predict_interval(test)` → `session.probabilistic.evaluate(test)`
+4. `session.probabilistic.save_bundle`
 
 ## Metrics
 
@@ -29,7 +29,7 @@ Primary holdout: regression metrics plus interval coverage / width (see `results
 
 ## Industry comparison (Tier C)
 
-Filled: sklearn `BayesianRidge` + validation residual quantile twin via `baseline_industry.py` → `results/comparison.json`.
+Industry twin: sklearn `BayesianRidge` + validation residual quantile twin via `baseline_industry.py` → `results/comparison.json`.
 
 ## Limitations
 

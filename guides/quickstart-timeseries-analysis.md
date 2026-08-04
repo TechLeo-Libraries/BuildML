@@ -6,7 +6,7 @@
 
 Descriptive time-series analysis on the same `Session`: `time` role +
 `time_split`, train-only scope by default, decomposition, diagnostics,
-changepoints, and spectral features: distinct from `fit_forecast`.
+changepoints, and spectral features: distinct from `session.forecast.fit`.
 
 **Go deeper:** [Time-series analysis deep](timeseries-analysis-deep.md) ·
 
@@ -36,21 +36,21 @@ session = (
     .time_split(test_size=0.2, validation_size=0.2)
 )
 
-report = session.analyze_timeseries(scope="train", seasonal_period=7)
+report = session.timeseries.analyze(scope="train", seasonal_period=7)
 report.show()
 
 # Focused calls
-session.ts_decompose(decompose_method="stl", seasonal_period=7)
-session.ts_diagnostics(acf_lags=30)
+session.timeseries.decompose(decompose_method="stl", seasonal_period=7)
+session.timeseries.diagnostics(acf_lags=30)
 ```
 
-`analyze_timeseries` **refuses** `session.split(...)` random/stratified splits.
+`session.timeseries.analyze` **refuses** `session.split(...)` random/stratified splits.
 
 ---
 
 ## Honesty bounds
 
-- Descriptive EDA only: not forecast fit (`fit_forecast`) and not a digital twin.
+- Descriptive EDA only: not forecast fit (`session.forecast.fit`) and not a digital twin.
 - `scope='all'` includes holdout rows; use for exploration, not silent tuning.
 - ADF/KPSS require `buildml[timeseries]`; core fallback exposes ACF/PACF only.
 - Changepoints: PELT/binseg via ruptures when installed; CUSUM fallback otherwise.
@@ -62,8 +62,8 @@ session.ts_diagnostics(acf_lags=30)
 After diagnostics, run forecasting with industry defaults:
 
 ```python
-session.fit_forecast(method="auto", horizon=7)
-session.evaluate_forecast(partition="test", strategy="rolling_origin")
+session.forecast.fit(method="auto", horizon=7)
+session.forecast.evaluate(partition="test", strategy="rolling_origin")
 ```
 
 See [quickstart-forecasting.md](quickstart-forecasting.md).

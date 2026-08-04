@@ -107,26 +107,26 @@ def main() -> None:
     docs, judgments = load_support_kb_corpus()
     st_ok = extra_available("sentence_transformers")
     try:
-        rag = Session()
-        rag.rag_ingest_corpus(docs)
-        rag.rag_chunk(size=180, overlap=40)
+        session = Session()
+        session.rag.ingest_corpus(docs)
+        session.rag.chunk(size=180, overlap=40)
         embed_backend = "hashing"
         try:
             if st_ok:
-                rag.rag_embed_and_index(embedder="auto")
+                session.rag.embed_and_index(embedder="auto")
                 embed_backend = "sentence_transformers_or_auto"
             else:
-                rag.rag_embed_and_index(embedder="hashing")
+                session.rag.embed_and_index(embedder="hashing")
         except (MissingExtraError, TypeError, ValueError):
-            rag.rag_embed_and_index(embedder="hashing")
+            session.rag.embed_and_index(embedder="hashing")
             embed_backend = "hashing"
-        sample = rag.rag_retrieve("forgot password reset link expired", k=3, mode="hybrid")
-        answer = rag.rag_generate(
+        sample = session.rag.retrieve("forgot password reset link expired", k=3, mode="hybrid")
+        answer = session.rag.generate(
             "How do I reset a forgotten password?",
             provider=EchoGroundedProvider(),
             k=3,
         )
-        metrics = rag.rag_evaluate(judgments, k=3)
+        metrics = session.rag.evaluate(judgments, k=3)
         stages["rag"] = {
             "status": "ok",
             "embed_backend": embed_backend,
@@ -165,7 +165,7 @@ def main() -> None:
         method = "lambdarank" if lgbm else "pointwise"
         try:
             if lgbm:
-                fit_r = rank_session.fit_ranker(
+                fit_r = rank_session.ranking.fit(
                     method="lambdarank",
                     query_column="query_id",
                     item_column="item_id",
@@ -174,7 +174,7 @@ def main() -> None:
             else:
                 raise MissingExtraError("ranking-industry", "lambdarank")
         except (MissingExtraError, TypeError, ValueError):
-            fit_r = rank_session.fit_ranker(
+            fit_r = rank_session.ranking.fit(
                 method="pointwise",
                 query_column="query_id",
                 item_column="item_id",
@@ -182,7 +182,7 @@ def main() -> None:
                 random_state=ctx.seed,
             )
             method = "pointwise"
-        ev_r = rank_session.evaluate_ranker(partition="test", k=3)
+        ev_r = rank_session.ranking.evaluate(partition="test", k=3)
         plan_r = rank_session.split_plan
         assert plan_r is not None
         stages["ranking"] = {
@@ -226,14 +226,14 @@ def main() -> None:
             )
             .scale(method="standard")
         )
-        fit_c = cbr_session.fit_cbr(
+        fit_c = cbr_session.cbr.fit(
             task="classification",
             metric="euclidean",
             reuse="distance_weighted",
             k=5,
             random_state=ctx.seed,
         )
-        ev_c = cbr_session.evaluate_cbr(partition="test")
+        ev_c = cbr_session.cbr.evaluate(partition="test")
         plan_c = cbr_session.split_plan
         assert plan_c is not None
         stages["cbr"] = {
@@ -281,14 +281,14 @@ def main() -> None:
             selection_partition="train", evaluation_partition="test"
         )
         try:
-            fit_s = sym_session.fit_symbolic(
+            fit_s = sym_session.symbolic.fit(
                 source="decision_tree", max_depth=3, random_state=ctx.seed
             )
         except TypeError:
-            fit_s = sym_session.fit_symbolic(
+            fit_s = sym_session.symbolic.fit(
                 method="decision_tree", random_state=ctx.seed
             )
-        ev_s = sym_session.evaluate_symbolic(partition="test")
+        ev_s = sym_session.symbolic.evaluate(partition="test")
         stages["symbolic"] = {
             "status": "ok",
             "fit": metrics_round(fit_s.to_dict() if hasattr(fit_s, "to_dict") else {}),

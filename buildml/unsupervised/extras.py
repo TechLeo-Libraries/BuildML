@@ -62,40 +62,36 @@ ValidationError
     return umap
 
 
-def hdbscan_available() -> bool:
-    """Return whether hdbscan optional dependencies are installed and usable.
+def _runtime_ok(module: str) -> bool:
+    from buildml.dl.extras import _subprocess_import_ok
 
-Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+    return _subprocess_import_ok(module)
 
-Returns
--------
-bool
-    ``True`` when the capability or dependency check succeeds.
-    """
+
+def hdbscan_spec_present() -> bool:
+    """Cheap find_spec discovery for hdbscan."""
     return importlib.util.find_spec("hdbscan") is not None
 
 
-def umap_available() -> bool:
-    """Return whether umap optional dependencies are installed and usable.
-
-Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
-
-Returns
--------
-bool
-    ``True`` when the capability or dependency check succeeds.
-    """
+def umap_spec_present() -> bool:
+    """Cheap find_spec discovery for umap."""
     return importlib.util.find_spec("umap") is not None
 
 
+def hdbscan_available() -> bool:
+    """Return whether hdbscan imports cleanly (subprocess probe)."""
+    if not hdbscan_spec_present():
+        return False
+    return _runtime_ok("hdbscan")
+
+
+def umap_available() -> bool:
+    """Return whether umap imports cleanly (subprocess probe)."""
+    if not umap_spec_present():
+        return False
+    return _runtime_ok("umap")
+
+
 def unsupervised_extra_available() -> bool:
-    """True when the recommended unsupervised stack (hdbscan + umap-learn) is importable.
-
-Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
-
-Returns
--------
-bool
-    ``True`` when the capability or dependency check succeeds.
-    """
+    """True when the recommended unsupervised stack imports cleanly at runtime."""
     return hdbscan_available() and umap_available()

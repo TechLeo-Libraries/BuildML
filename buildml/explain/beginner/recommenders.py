@@ -43,11 +43,11 @@ RECOMMENDER_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.fit_recommender(",
+            "session.recommender.fit(",
             "    method='matrix_factorization', user_column='user_id',",
             "    item_column='product_id', rating_column='rating', n_factors=32,",
             ")",
-            "top = session.recommend(user_ids=['u_1042'], k=10)",
+            "top = session.recommender.recommend(user_ids=['u_1042'], k=10)",
         ),
         check=(
             "How many interactions does your median user have?",
@@ -94,11 +94,11 @@ RECOMMENDER_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.fit_recommender(",
+            "session.recommender.fit(",
             "    method='content', user_column='user_id', item_column='product_id',",
             "    rating_column='rating', item_feature_columns=['price', 'is_organic', 'category_id'],",
             ")",
-            "session.recommend(user_ids=['u_1042'], k=10)",
+            "session.recommender.recommend(user_ids=['u_1042'], k=10)",
         ),
         check=(
             "Do your item features actually distinguish items a user would treat differently?",
@@ -145,7 +145,7 @@ RECOMMENDER_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "report = session.evaluate_recommender(partition='test', k=10)",
+            "report = session.recommender.evaluate(partition='test', k=10)",
             "print(report.precision_at_k, report.recall_at_k, report.ndcg_at_k)",
             "print(report.n_warm_users, report.n_cold_users)",
         ),
@@ -194,7 +194,7 @@ RECOMMENDER_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "report = session.evaluate_recommender(partition='test', k=10)",
+            "report = session.recommender.evaluate(partition='test', k=10)",
             "print(report.n_cold_users, report.n_cold_items)",
             "print(report.disclosures)   # candidate set is the train catalogue",
         ),
@@ -244,11 +244,11 @@ RECOMMENDER_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         example=(
             "# pip install \"buildml[recommenders-industry]\"",
-            "session.fit_recommender(",
+            "session.recommender.fit(",
             "    method='als', feedback='implicit',",
             "    user_column='user_id', item_column='product_id', n_factors=64,",
             ")",
-            "session.evaluate_recommender(partition='test', k=10)",
+            "session.recommender.evaluate(partition='test', k=10)",
         ),
         check=(
             "Is your feedback implicit (clicks) or explicit (ratings)?",
@@ -271,9 +271,9 @@ RECOMMENDER_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         steps=(
             "Fit a recommender so a plan exists.",
-            "Call `save_recommender_bundle(path)`.",
-            "Reload with `load_recommender_bundle(path)` in the serving job.",
-            "Call `recommend` with user identifiers; the catalogue comes from the bundle.",
+            "Call `session.recommender.save_bundle(path)`.",
+            "Reload with `session.recommender.load_bundle(path)` in the serving job.",
+            "Call `session.recommender.recommend` with user identifiers; the catalogue comes from the bundle.",
             "Keep checkpoints separate for the interaction data itself.",
         ),
         use=(
@@ -295,8 +295,8 @@ RECOMMENDER_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.save_recommender_bundle('artifacts/product-recs')",
-            "serving = Session.ingest(users_frame).load_recommender_bundle('artifacts/product-recs')",
+            "session.recommender.save_bundle('artifacts/product-recs')",
+            "serving = Session.ingest(users_frame).recommender.load_bundle('artifacts/product-recs')",
             "serving.recommend(user_ids=batch_ids, k=10)",
         ),
         check=(

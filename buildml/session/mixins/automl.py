@@ -9,7 +9,10 @@ from buildml.session.mixins._shared import *  # noqa: F403
 
 
 class AutomlSessionMixin:
-    """Public Session methods for the automl domain."""
+    """Public Session methods for the automl domain.
+
+    Preferred namespaced API: ``session.automl.*`` (domain flat actions emit DeprecationWarning until BuildML 3.0).
+    """
     # mypy: session private attrs (owned by Session.__init__)
     if TYPE_CHECKING:
         _automl_plan: Any

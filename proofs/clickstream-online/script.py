@@ -67,7 +67,7 @@ def main() -> None:
         .split(test_size=0.2, validation_size=0.2, stratify=True, random_state=ctx.seed)
         .scale(method="standard")
     )
-    fit = session.fit_online(
+    fit = session.online.fit(
         estimator="sgd_classifier",
         chunk_size=40,
         n_init=40,
@@ -75,11 +75,11 @@ def main() -> None:
     )
     updates = []
     while True:
-        plan = session.online_plan
+        plan = session.online.plan
         remaining = plan.n_train_rows - plan.cursor
         if remaining <= 0:
             break
-        u = session.partial_fit_online(n_rows=min(40, remaining))
+        u = session.online.partial_fit(n_rows=min(40, remaining))
         updates.append(
             {
                 "n_updates": int(u.n_updates),
@@ -87,8 +87,8 @@ def main() -> None:
                 "n_seen_rows": int(u.n_seen_rows),
             }
         )
-    val = session.evaluate_online(partition="validation")
-    test = session.evaluate_online(partition="test")
+    val = session.online.evaluate(partition="validation")
+    test = session.online.evaluate(partition="test")
     test_metrics = dict(test.metrics)
     acc = float(test_metrics.get("accuracy", float("nan")))
     if acc == acc and acc >= 0.99:
@@ -96,7 +96,7 @@ def main() -> None:
             "clickstream-online refused perfect-score theater: "
             f"test accuracy={acc:.4f} >= 0.99 on overlapping noisy stream."
         )
-    bundle = session.save_online_bundle(ctx.artifacts_dir / "online_bundle")
+    bundle = session.online.save_bundle(ctx.artifacts_dir / "online_bundle")
     write_results(
         ctx,
         {

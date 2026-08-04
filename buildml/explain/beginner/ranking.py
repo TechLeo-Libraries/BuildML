@@ -43,12 +43,12 @@ RANKING_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.fit_ranker(",
+            "session.ranking.fit(",
             "    method='pointwise', query_column='query_id',",
             "    relevance_column='relevance',",
             ")",
-            "ordered = session.rank(query_ids=['q_17'])",
-            "session.evaluate_ranker(partition='test', k=10)",
+            "ordered = session.ranking.rank(query_ids=['q_17'])",
+            "session.ranking.evaluate(partition='test', k=10)",
         ),
         check=(
             "Are all rows for a given query on the same side of your split?",
@@ -95,11 +95,11 @@ RANKING_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.fit_ranker(",
+            "session.ranking.fit(",
             "    method='pointwise', query_column='query_id',",
             "    relevance_column='relevance', estimator='hist_gbdt',",
             ")",
-            "session.evaluate_ranker(partition='validation', k=10)",
+            "session.ranking.evaluate(partition='validation', k=10)",
         ),
         check=(
             "Does your relevance scale mean the same thing across queries?",
@@ -146,11 +146,11 @@ RANKING_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.fit_ranker(",
+            "session.ranking.fit(",
             "    method='pairwise', query_column='query_id',",
             "    relevance_column='relevance',",
             ")",
-            "session.evaluate_ranker(partition='validation', k=10)",
+            "session.ranking.evaluate(partition='validation', k=10)",
         ),
         check=(
             "How many pairs does your largest query generate?",
@@ -199,11 +199,11 @@ RANKING_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         example=(
             "# pip install \"buildml[ranking-industry]\"",
-            "session.fit_ranker(",
+            "session.ranking.fit(",
             "    backend='industry', method='lambdarank',",
             "    query_column='query_id', relevance_column='relevance',",
             ")",
-            "session.evaluate_ranker(partition='test', k=10)",
+            "session.ranking.evaluate(partition='test', k=10)",
         ),
         check=(
             "How many distinct queries are in your training partition?",
@@ -250,7 +250,7 @@ RANKING_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "report = session.evaluate_ranker(partition='test', k=10)",
+            "report = session.ranking.evaluate(partition='test', k=10)",
             "print(report.ndcg_at_k, report.map_at_k, report.mrr_at_k)",
             "print(report.n_queries)",
         ),
@@ -275,9 +275,9 @@ RANKING_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         steps=(
             "Fit a ranker so a plan exists.",
-            "Call `save_ranker_bundle(path)`.",
-            "Reload with `load_ranker_bundle(path)` in your serving path.",
-            "Call `rank` with fresh query-item rows carrying the same features.",
+            "Call `session.ranking.save_bundle(path)`.",
+            "Reload with `session.ranking.load_bundle(path)` in your serving path.",
+            "Call `session.ranking.rank` with fresh query-item rows carrying the same features.",
             "Keep checkpoints and other domain bundles separate.",
         ),
         use=(
@@ -299,8 +299,8 @@ RANKING_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.save_ranker_bundle('artifacts/search-ranker')",
-            "serving = Session.ingest(candidate_frame).load_ranker_bundle('artifacts/search-ranker')",
+            "session.ranking.save_bundle('artifacts/search-ranker')",
+            "serving = Session.ingest(candidate_frame).ranking.load_bundle('artifacts/search-ranker')",
             "serving.rank(query_ids=['q_17'])",
         ),
         check=(

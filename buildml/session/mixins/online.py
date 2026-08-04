@@ -9,7 +9,10 @@ from buildml.session.mixins._shared import *  # noqa: F403
 
 
 class OnlineSessionMixin:
-    """Public Session methods for the online domain."""
+    """Public Session methods for the online domain.
+
+    Preferred namespaced API: ``session.online.*`` (domain flat actions emit DeprecationWarning until BuildML 3.0).
+    """
     # mypy: session private attrs (owned by Session.__init__)
     if TYPE_CHECKING:
         _online_eval_result: Any

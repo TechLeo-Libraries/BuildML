@@ -153,7 +153,7 @@ def encode_classification_targets(
     else:
         encoder = label_encoder
         known = {str(c) for c in encoder.classes_}
-        incoming = set(values)
+        incoming = {str(v) for v in np.asarray(values).tolist()}
         unknown = sorted(incoming - known)
         if unknown:
             raise ValidationError(
@@ -266,6 +266,10 @@ def carve_train_chunk(
     chosen = train_indices[cursor:end]
     full = dataset._ensure_pandas()
     chunk = full.loc[chosen]
+    if not isinstance(chunk, pd.DataFrame):
+        raise ValidationError(
+            "next_train_chunk expected a DataFrame slice of train rows"
+        )
     return chunk, list(chosen), end
 
 
@@ -308,7 +312,17 @@ def align_external_frame(
         raise ValidationError(
             f"External online chunk is missing feature columns: {missing}."
         )
-    return frame.loc[:, list(columns) + [target_column]].copy()
+    selected = frame.loc[:, list(columns) + [target_column]]
+    if not isinstance(selected, pd.DataFrame):
+        raise ValidationError(
+            "align_external_frame expected a DataFrame after column selection"
+        )
+    copied = selected.copy()
+    if not isinstance(copied, pd.DataFrame):
+        raise ValidationError(
+            "align_external_frame expected DataFrame.copy() to return a DataFrame"
+        )
+    return copied
 
 
 def chunk_drift_notes(

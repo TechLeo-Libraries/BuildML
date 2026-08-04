@@ -106,15 +106,15 @@ def main() -> None:
                 )
                 .scale(method="standard")
             )
-            fit = tda_session.fit_tda(
+            fit = tda_session.tda.fit(
                 vectorization="persistence_image",
                 knn=12,
                 n_bins=12,
                 head="logistic_regression",
                 random_state=ctx.seed,
             )
-            val = tda_session.evaluate_tda(partition="validation")
-            test = tda_session.evaluate_tda(partition="test")
+            val = tda_session.tda.evaluate(partition="validation")
+            test = tda_session.tda.evaluate(partition="test")
             stages["tda"] = {
                 "status": "ok",
                 "fit": metrics_round(fit.to_dict() if hasattr(fit, "to_dict") else {}),
@@ -143,14 +143,14 @@ def main() -> None:
             .scale(method="standard")
             .reduce_dimensions(method="pca", n_components=2, prefix="pc")
         )
-        c_fit = cluster_session.fit_clusters(
+        c_fit = cluster_session.unsupervised.fit(
             method="kmeans", n_clusters=2, random_state=ctx.seed
         )
         assert_no_test_in_selection(
             selection_partition="validation", evaluation_partition="test"
         )
         try:
-            c_ev = cluster_session.evaluate_clusters(
+            c_ev = cluster_session.unsupervised.evaluate(
                 partition="test", external_label_column=EXTERNAL
             )
             c_metrics = metrics_round(dict(getattr(c_ev, "metrics", {}) or {}))
@@ -182,7 +182,7 @@ def main() -> None:
             .scale(method="standard")
         )
         if extra_available("pyod"):
-            a_fit = anom_session.fit_anomaly(
+            a_fit = anom_session.anomaly.fit(
                 backend="pyod",
                 method="hbos",
                 mode="unsupervised",
@@ -191,7 +191,7 @@ def main() -> None:
             )
             a_backend = "pyod/hbos"
         else:
-            a_fit = anom_session.fit_anomaly(
+            a_fit = anom_session.anomaly.fit(
                 method="isolation_forest",
                 mode="unsupervised",
                 contamination=0.12,
@@ -201,13 +201,13 @@ def main() -> None:
         assert_no_test_in_selection(
             selection_partition="validation", evaluation_partition="test"
         )
-        a_tune = anom_session.tune_anomaly_threshold(
+        a_tune = anom_session.anomaly.tune_threshold(
             partition="validation",
             label_column=TARGET,
             positive_label=0,  # drift / fail is the anomaly
             metric="f1",
         )
-        a_ev = anom_session.evaluate_anomaly(partition="test", positive_label=0)
+        a_ev = anom_session.anomaly.evaluate(partition="test", positive_label=0)
         stages["anomaly"] = {
             "status": "ok",
             "backend": a_backend,
@@ -240,7 +240,7 @@ def main() -> None:
         "skip_notes": skip_notes,
         "leakage_controls": [
             "Stratified split before TDA / clusters / anomaly",
-            "TDA + scale fit on train only; test evaluate_tda after lock",
+            "TDA + scale fit on train only; test session.tda.evaluate after lock",
             "Cluster fit on train; external labels only for holdout eval",
             "Anomaly threshold tuned on validation only",
         ],

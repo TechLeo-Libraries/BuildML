@@ -64,7 +64,7 @@ def main() -> None:
     x_train_full = scaler.fit_transform(x_train_full)
     x_test = scaler.transform(x_test)
 
-    # Holdout blend carved from train only (mirrors BuildML fit_blending).
+    # Holdout blend carved from train only (mirrors BuildML session.ensemble.fit_blending).
     x_base, x_blend, y_base, y_blend = train_test_split(
         x_train_full,
         y_train_full,
@@ -110,7 +110,7 @@ def main() -> None:
     write_comparison(
         ctx,
         buildml={
-            "backend": "buildml.Session.fit_blending",
+            "backend": "buildml.session.ensemble.fit_blending",
             "holdout_fraction": 0.2,
             "test_metrics": bml_metrics,
         },

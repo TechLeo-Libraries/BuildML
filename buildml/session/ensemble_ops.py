@@ -274,7 +274,9 @@ def evaluate_ensemble(
     Returns
     -------
     EvaluateResult
-        Classical metrics plus ensemble strategy disclosures.
+        Classical metrics plus ensemble strategy disclosures. Diagnostics also
+        include ``base_contributions``, ``diversity``, and ``ensemble_report``
+        (predict-only scoring of train-fitted bases on ``partition``).
 
     Raises
     ------
@@ -299,6 +301,32 @@ def evaluate_ensemble(
             tips.append(note)
         result.recommendations = tips
         result.diagnostics["ensemble"] = plan.to_dict()
+        from buildml.ensemble.evaluate import build_ensemble_eval_report
+
+        report = build_ensemble_eval_report(
+            session.dataset,
+            session._split_plan,
+            session._fit_result,
+            plan,
+            partition=partition,
+            ensemble_metrics=dict(result.metrics),
+        )
+        result.diagnostics["ensemble_report"] = report.to_dict()
+        result.diagnostics["base_contributions"] = [
+            c.to_dict() for c in report.base_contributions
+        ]
+        result.diagnostics["diversity"] = (
+            None if report.diversity is None else report.diversity.to_dict()
+        )
+        for note in report.disclosures[:2]:
+            if note not in result.recommendations:
+                result.recommendations.append(note)
+        if report.diversity is not None and report.diversity.mean_pairwise_disagreement is not None:
+            tips_div = (
+                f"Base diversity mean_pairwise_disagreement="
+                f"{report.diversity.mean_pairwise_disagreement:.4f}."
+            )
+            result.recommendations.append(tips_div)
     session._record(
         "evaluate_ensemble",
         {"partition": partition, "strategy": None if plan is None else plan.strategy},

@@ -19,11 +19,11 @@ pip install "buildml[ai]"
 ```
 
 Classical `Session.fit`, Torch `*_torch`, and RAG `rag_*` stay unchanged. AI
-methods use the `ai_*` prefix and store results in `session.ai_result` /
-`session.ai_transcript`.
+methods use the `ai_*` prefix and store results in `session.ai.result` /
+`session.ai.transcript`.
 
 This alpha defaults to **advisor → plan → confirmed execute**. Optional
-`ai_run_autonomous` is explicit operator automation under hard caps (allowlist,
+`session.ai.run_autonomous` is explicit operator automation under hard caps (allowlist,
 max steps, blocked sample egress, transcript audit): not unconstrained agency.
 
 ## Bring your own API key
@@ -41,7 +41,7 @@ Or in code:
 from buildml import Session
 
 session = Session()
-session.ai_configure(api_key="sk-your-key-here")
+session.ai.configure(api_key="sk-your-key-here")
 ```
 
 Keys are never logged, never persisted in transcripts or checkpoints, and
@@ -65,10 +65,10 @@ frame = pd.DataFrame({
 })
 
 session = Session.ingest(frame)
-session.ai_configure(provider="openai")
+session.ai.configure(provider="openai")
 
 # Preview what will be sent before any API call
-manifest = session.ai_egress_preview()
+manifest = session.ai.egress_preview()
 print(manifest.level)           # EgressLevel.STATS_ONLY (default)
 print(manifest.columns_sent)    # column names only
 print(manifest.rows_sent)       # 0 (no raw rows at STATS_ONLY)
@@ -86,7 +86,7 @@ Egress levels:
 Escalate egress only when needed:
 
 ```python
-result = session.ai_advisor(
+result = session.ai.advisor(
     "What patterns do you see in the data?",
     level="redacted_sample",
     confirm=True,  # required for sample egress
@@ -95,11 +95,11 @@ result = session.ai_advisor(
 
 ## Dry run: inspect the full prompt payload
 
-`ai_dry_run` returns the complete prompt payload without calling the provider.
+`session.ai.dry_run` returns the complete prompt payload without calling the provider.
 Inspect exactly what would be sent:
 
 ```python
-payload = session.ai_dry_run("Suggest next preprocessing steps")
+payload = session.ai.dry_run("Suggest next preprocessing steps")
 print(payload["messages"])       # system + user messages
 print(payload["tools"])          # available tool schemas
 print(payload["egress_manifest"])  # egress details
@@ -108,13 +108,13 @@ print(payload["egress_manifest"])  # egress details
 
 ## Advisor: read-only Q&A
 
-`ai_advisor` answers questions about your data and workflow without modifying
+`session.ai.advisor` answers questions about your data and workflow without modifying
 Session state. It uses the explain catalog and current Session context:
 
 ```python
 session.set_roles({"age": "feature", "income": "feature", "approved": "target"})
 
-result = session.ai_advisor("What preprocessing steps should I consider?")
+result = session.ai.advisor("What preprocessing steps should I consider?")
 print(result.answer)
 print(result.egress_manifest)  # confirms what was sent
 ```
@@ -123,11 +123,11 @@ The advisor cannot execute operations. It returns suggestions, not actions.
 
 ## Plan: structured next steps
 
-`ai_plan` proposes a sequence of operations based on your goal and current
+`session.ai.plan` proposes a sequence of operations based on your goal and current
 Session state:
 
 ```python
-plan = session.ai_plan("Build a classification model with proper preprocessing")
+plan = session.ai.plan("Build a classification model with proper preprocessing")
 print(plan.goal)
 for step in plan.steps:
     print(f"  {step.operation}: {step.description}")
@@ -138,14 +138,14 @@ Plans are proposals. Nothing executes until you explicitly confirm.
 
 ## Execute: propose → confirm → execute
 
-`ai_execute` follows a two-phase pattern:
+`session.ai.execute` follows a two-phase pattern:
 
 1. **Propose:** Returns what the tool will do, marked as requiring confirmation
 2. **Execute:** Only runs when you pass `confirm=True`
 
 ```python
 # Phase 1: proposal (no state change)
-proposal = session.ai_execute(
+proposal = session.ai.execute(
     "set_roles",
     {"mapping": {"age": "feature", "income": "feature", "approved": "target"}},
 )
@@ -154,7 +154,7 @@ print(proposal.tool_name)              # "set_roles"
 print(proposal.arguments)              # the mapping
 
 # Phase 2: confirmed execution (state changes)
-result = session.ai_execute(
+result = session.ai.execute(
     "set_roles",
     {"mapping": {"age": "feature", "income": "feature", "approved": "target"}},
     confirm=True,
@@ -182,7 +182,7 @@ print(list(registry.keys()))  # available tools
 
 Available tools include:
 - **Read-only:** `describe_dataset`, `explain_operation`, `learn_concept`,
-  `workflow_status`, `eda_summary`, `head`, `ai_status`, `evaluate`,
+  `workflow_status`, `eda_summary`, `head`, `session.ai.status`, `evaluate`,
   `walkthrough`
 - **Write (confirm required):** `set_roles`, `split`, `impute`, `encode`,
   `scale`, `fit`, `checkpoint_save`
@@ -197,15 +197,15 @@ confirmations. API keys and raw data (unless `FULL_SAMPLE` opt-in) are never
 persisted:
 
 ```python
-session.ai_advisor("Describe the data")
-session.ai_execute("set_roles", {"mapping": {...}}, confirm=True)
+session.ai.advisor("Describe the data")
+session.ai.execute("set_roles", {"mapping": {...}}, confirm=True)
 
 # Save transcript (secrets redacted)
-session.save_ai_transcript("artifacts/transcript.json")
+session.ai.save_transcript("artifacts/transcript.json")
 
 # Load in another session
 session2 = Session.ingest(frame)
-session2.load_ai_transcript("artifacts/transcript.json")
+session2.ai.load_transcript("artifacts/transcript.json")
 ```
 
 Transcripts are separate from Session checkpoints and DL/RAG bundles.
@@ -215,14 +215,14 @@ Transcripts are separate from Session checkpoints and DL/RAG bundles.
 Configure token and cost budgets to prevent runaway usage:
 
 ```python
-session.ai_configure(
+session.ai.configure(
     provider="openai",
     max_tokens=10000,
     max_cost_usd=5.0,
     max_iterations=10,  # default
 )
 
-status = session.ai_status()
+status = session.ai.status()
 print(status["budget"])  # tokens_used, cost_used_usd, limits
 ```
 
@@ -231,8 +231,8 @@ print(status["budget"])  # tokens_used, cost_used_usd, limits
 Tests and offline workflows use `MockProvider`:
 
 ```python
-session.ai_configure(provider="mock")
-result = session.ai_advisor("Test question")
+session.ai.configure(provider="mock")
+result = session.ai.advisor("Test question")
 # Works offline; returns canned responses
 ```
 
@@ -244,8 +244,8 @@ Default AI stays propose→confirm→execute. For allowlisted automation with ha
 caps (max steps, tool allowlist, blocked sample egress, transcript audit):
 
 ```python
-session.ai_configure(provider="mock", egress_level="stats_only")
-result = session.ai_run_autonomous(
+session.ai.configure(provider="mock", egress_level="stats_only")
+result = session.ai.run_autonomous(
     "split the data and report workflow status",
     confirm_autonomy=True,  # required
     max_steps=5,
@@ -287,14 +287,14 @@ them. The operator is not a substitute for domain expertise.
 | Session checkpoint | existing formats | data, roles, splits, history | AI transcript, API keys |
 | Torch trainer bundle | `buildml.torch_bundle.v1` | weights, optimizer, config | AI transcript |
 | RAG bundle | `buildml.rag_bundle.v1` | embeddings, index, chunk config | AI transcript |
-| AI transcript | `buildml.ai_transcript.v1` | conversation, tool calls, egress manifests | API keys, raw data (default) |
+| AI transcript | `buildml.ai.transcript.v1` | conversation, tool calls, egress manifests | API keys, raw data (default) |
 
 ## Known limits (honest)
 
 - **Bring-your-own API key.** BuildML never ships, proxies, or embeds keys.
 - **Default egress is STATS_ONLY.** Raw rows require explicit opt-in and
   confirmation.
-- **Propose → confirm → execute by default.** `ai_run_autonomous` is opt-in
+- **Propose → confirm → execute by default.** `session.ai.run_autonomous` is opt-in
   allowlisted automation with residual risk: review transcripts.
 - **Tool registry is the trust boundary.** The operator cannot execute
   arbitrary code or tools not in the registry.

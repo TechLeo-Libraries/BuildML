@@ -7,7 +7,9 @@ from typing import Any, Literal
 from buildml.core.industry_markers import platform_skip_entry
 from buildml.recommenders.extras import (
     implicit_available,
+    implicit_spec_present,
     lightfm_available,
+    lightfm_spec_present,
     recommenders_industry_available,
 )
 from buildml.recommenders.types import FeedbackMode, RecommenderMethod
@@ -92,7 +94,15 @@ def recommender_capability_matrix() -> dict[str, Any]:
             "Full surprise/recommenders library zoo",
             "RAG document retrieve/generate",
         ],
-        "industry_extra_present": recommenders_industry_available(),
+        "industry_extra_present": (
+            implicit_spec_present() or lightfm_spec_present()
+        ),
+        "industry_runtime_present": recommenders_industry_available(),
+        "industry_import_honesty": (
+            "implicit / lightfm backend 'available' and "
+            "industry_runtime_present require successful subprocess imports. "
+            "industry_extra_present / *_spec_present are find_spec only."
+        ),
     }
 
 

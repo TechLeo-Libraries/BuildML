@@ -15,19 +15,19 @@ FL network or PHI:
 
 ## Status
 
-`completed`: run `script.py`; see `results/summary.json` and stage JSONs.
+Run `script.py`. Outputs land under `results/` (summary and stage JSON)..
 
 ## How to run
 
 ```bash
-.\.venv\Scripts\python.exe proofs\nexus-federated-clinical\script.py
+python proofs\nexus-federated-clinical\script.py
 ```
 
 ## Leakage controls
 
 - `group_split` by hospital before any federated / probabilistic fit
 - Federated local updates use train-client rows only
-- Holdout hospitals/rows reserved for `evaluate_federated`
+- Holdout hospitals/rows reserved for `session.federated.evaluate`
 - Probabilistic model fit on train; intervals evaluated on test after lock
 
 ## Disclosures

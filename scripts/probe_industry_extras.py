@@ -41,26 +41,30 @@ PROBES: dict[str, tuple[str, ...]] = {
     "ranking-industry": ("lightgbm", "xgboost", "catboost"),
     "recommenders-industry": ("implicit",),
     "recommenders-lightfm": ("lightfm",),
-    "tda-industry": ("giotto_tda", "ripser"),
+    "tda-industry": ("gtda", "ripser", "persim"),
     "causal-industry": ("dowhy", "econml"),
     "online-industry": ("river",),
     "metalearning-industry": ("learn2learn",),
-    "rl-industry": ("stable_baselines3",),
+    "rl-industry": ("stable_baselines3", "imitation"),
     "nlp-industry": ("spacy", "sentence_transformers"),
     "synthetic-industry": ("sdv",),
-    "symbolic-industry": ("skope_rules", "imodels"),
-    "probabilistic-industry": ("mapie",),
+    "symbolic-industry": ("skrules", "imodels", "z3"),
+    "probabilistic-industry": ("mapie", "ngboost"),
     "federated-industry": ("flwr",),
     "kg-industry": ("pykeen",),
+    "graph-pyg": ("torch_geometric", "networkx"),
     "activelearning-industry": ("skactiveml",),
     "semisupervised-industry": ("lightgbm", "xgboost"),
     "multitask-industry": ("lightgbm", "xgboost", "catboost"),
-    "cbr-industry": ("hnswlib",),
-    "optimize-industry": ("optuna", "pulp", "ortools"),
+    "cbr-industry": ("hnswlib", "faiss"),
+    "optimize-industry": ("optuna", "pulp", "ortools", "cvxpy", "xgboost"),
+    "timeseries": ("statsmodels", "ruptures"),
     "timeseries-ml": ("neuralforecast",),
     "timeseries-prophet": ("prophet",),
+    "unsupervised": ("hdbscan", "umap"),
     "torch": ("torch",),
     "rag": ("sentence_transformers",),
+    "vision": ("torchvision",),
 }
 
 # Documented platform / version fragility (mirrors pyproject + industry_markers).
@@ -230,9 +234,12 @@ def main(argv: list[str] | None = None) -> int:
         "probes": [asdict(r) for r in rows],
         "summary": summary,
         "honesty": (
-            "Informational only. Missing wheels must not fail CI. "
-            "Capability matrices report the same availability at runtime via "
-            "platform_markers / skipped_by_marker fields."
+            "Informational only. Missing or broken wheels must not fail CI. "
+            "This script is an import-health artifact — not proof that every "
+            "capability-matrix 'available' flag is True. Domain matrices now "
+            "prefer runtime import probes for industry backends (find_spec "
+            "alone is disclosed separately as *_spec_present / "
+            "industry_extra_present)."
         ),
     }
 

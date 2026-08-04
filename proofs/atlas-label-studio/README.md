@@ -16,13 +16,13 @@ masked; holdouts keep full labels for evaluation only. The product:
 
 ## Status
 
-`completed`: run `script.py`; see `results/summary.json` plus `ssl.json`,
+Run `script.py`. Outputs land under `results/` (summary and stage JSON).,
 `semisupervised.json`, `active_learning.json`.
 
 ## How to run
 
 ```bash
-.\.venv\Scripts\python.exe proofs\atlas-label-studio\script.py
+python proofs\atlas-label-studio\script.py
 ```
 
 ## Leakage controls

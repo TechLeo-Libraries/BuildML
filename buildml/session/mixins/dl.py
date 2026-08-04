@@ -9,7 +9,10 @@ from buildml.session.mixins._shared import *  # noqa: F403
 
 
 class DlSessionMixin:
-    """Public Session methods for the dl domain."""
+    """Public Session methods for the dl domain.
+
+    Preferred namespaced API: ``session.dl.*`` (domain flat actions emit DeprecationWarning until BuildML 3.0).
+    """
     # mypy: session private attrs (owned by Session.__init__)
     if TYPE_CHECKING:
         _dl_asr_eval: Any
@@ -663,7 +666,7 @@ class DlSessionMixin:
         self,
         *,
         audio_column: str,
-        backend: Literal["stub", "transformers"] = "stub",
+        backend: Literal["stub", "transformers", "auto"] | None = None,
         model_id: str | None = None,
         sample_rate: int = 16_000,
         max_samples: int = 16_000,
@@ -677,7 +680,8 @@ class DlSessionMixin:
         Returns
         -------
         SpeechTranscribeResult
-            Transcripts, model metadata, and row counts.
+            Transcripts, model metadata, and row counts. Defaults prefer
+            transformers when installed; stub is disclosed when used.
 
         See Also
         --------
@@ -705,10 +709,17 @@ class DlSessionMixin:
         title: str = "BuildML Serve",
         blocking: bool = False,
         api_keys: str | list[str] | tuple[str, ...] | None = None,
+        basic_auth: str
+        | tuple[str, str]
+        | list[tuple[str, str]]
+        | dict[str, str]
+        | None = None,
+        docs_enabled: bool | None = None,
         allow_insecure_public_bind: bool = False,
         ssl_certfile: str | Path | None = None,
         ssl_keyfile: str | Path | None = None,
         trusted: bool = False,
+        config: Any | None = None,
     ) -> Any:
         """Launch BuildML managed serving for a pipeline or TorchScript artifact.
 
@@ -733,10 +744,13 @@ class DlSessionMixin:
             title=title,
             blocking=blocking,
             api_keys=api_keys,
+            basic_auth=basic_auth,
+            docs_enabled=docs_enabled,
             allow_insecure_public_bind=allow_insecure_public_bind,
             ssl_certfile=ssl_certfile,
             ssl_keyfile=ssl_keyfile,
             trusted=trusted,
+            config=config,
         )
 
     def load_pretrained_backbone(
@@ -939,13 +953,19 @@ class DlSessionMixin:
         *,
         name: str = "buildml-serve",
         namespace: str = "default",
-        image: str = "python:3.12-slim",
+        image: str = "buildml-serve:local",
         replicas: int = 1,
         port: int = 8080,
         cpu_request: str = "1",
         memory_request: str = "2Gi",
         gpu_limit: int | None = None,
         service_account: str | None = None,
+        bundle_path: str = "/models/bundle",
+        kind: str = "pipeline",
+        api_key_secret_name: str = "buildml-serve-secrets",
+        api_key_secret_key: str = "api-key",
+        include_secret: bool = True,
+        trusted: bool = True,
     ) -> Any:
         """Emit a Kubernetes Deployment+Service YAML for managed serve (template only).
 
@@ -973,6 +993,12 @@ class DlSessionMixin:
             memory_request=memory_request,
             gpu_limit=gpu_limit,
             service_account=service_account,
+            bundle_path=bundle_path,
+            kind=kind,
+            api_key_secret_name=api_key_secret_name,
+            api_key_secret_key=api_key_secret_key,
+            include_secret=include_secret,
+            trusted=trusted,
         )
 
     def domain_adapt_speech_torch(

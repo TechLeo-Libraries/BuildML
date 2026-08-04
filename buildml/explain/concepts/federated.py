@@ -33,8 +33,8 @@ FEDERATED_NOTES: dict[str, ConceptNote] = {
                 "Training on holdout partitions is leakage.",
             ),
             how_buildml_uses=(
-                "Session.fit_federated(backend='native'|'flower') → "
-                "evaluate_federated / predict_federated.",
+                "session.federated.fit(backend='native'|'flower') → "
+                "session.federated.evaluate / session.federated.predict.",
                 "Client column from role='group' or client_column=.",
             ),
             interpretation_rules=(
@@ -52,7 +52,7 @@ FEDERATED_NOTES: dict[str, ConceptNote] = {
                 "Claiming production FL networking or cryptographic privacy from this simulation.",
             ),
             worked_example_pattern=(
-                "fit_federated(method='fedavg', n_rounds=5) → evaluate_federated('validation').",
+                "session.federated.fit(method='fedavg', n_rounds=5) → session.federated.evaluate('validation').",
             ),
             related_concepts=(
                 "federated-fedavg",
@@ -70,7 +70,7 @@ FEDERATED_NOTES: dict[str, ConceptNote] = {
                 "client partitions as Flower NumPyClients and aggregates with flwr."
             ),
             definition=(
-                "When flwr is installed, fit_federated can route through Flower: "
+                "When flwr is installed, session.federated.fit can route through Flower: "
                 "each client partition becomes a NumPyClient, local fit delegates "
                 "to the same sklearn linear/SGD path, and flwr.server.strategy.aggregate "
                 "performs weighted averaging. This still executes in-process on "
@@ -86,7 +86,7 @@ FEDERATED_NOTES: dict[str, ConceptNote] = {
             ),
             how_buildml_uses=(
                 "pip install 'buildml[federated-industry]' then "
-                "fit_federated(backend='flower', method='fedavg').",
+                "session.federated.fit(backend='flower', method='fedavg').",
             ),
             interpretation_rules=(
                 "Check plan.backend=='flower', round_history aggregation field, disclosures.",
@@ -97,7 +97,7 @@ FEDERATED_NOTES: dict[str, ConceptNote] = {
                 "Claiming Flower backend implies gRPC deployment or secure aggregation.",
             ),
             worked_example_pattern=(
-                "fit_federated(backend='flower', n_rounds=5) → session.export_round_history('rounds.json').",
+                "session.federated.fit(backend='flower', n_rounds=5) → session.federated.export_round_history('rounds.json').",
             ),
             related_concepts=("federated-simulation", "federated-fedavg", "federated-bundle-boundary"),
         ),
@@ -122,7 +122,7 @@ FEDERATED_NOTES: dict[str, ConceptNote] = {
                 "A complete, honest FL teaching/research path without pretending a network stack.",
             ),
             how_buildml_uses=(
-                "fit_federated(method='fedavg', estimator='sgd_classifier'|...).",
+                "session.federated.fit(method='fedavg', estimator='sgd_classifier'|...).",
             ),
             interpretation_rules=(
                 "Inspect round_history mean_client_train_metric and holdout accuracy/R².",
@@ -131,7 +131,7 @@ FEDERATED_NOTES: dict[str, ConceptNote] = {
             failure_modes=("Non-linear models without coef_; severe client drift.",),
             anti_patterns=("Calling this secure multi-party computation.",),
             worked_example_pattern=(
-                "fit_federated(method='fedavg', estimator='logistic_regression', n_rounds=8).",
+                "session.federated.fit(method='fedavg', estimator='logistic_regression', n_rounds=8).",
             ),
             related_concepts=("federated-simulation", "federated-fedprox"),
         ),
@@ -152,7 +152,7 @@ FEDERATED_NOTES: dict[str, ConceptNote] = {
                 "Approx. Li et al. FedProx: local objective + (μ/2)||w − w_global||²."
             ),
             why_it_matters=("Stabilizes aggregation under client heterogeneity.",),
-            how_buildml_uses=("fit_federated(method='fedprox', mu=0.1, ...).",),
+            how_buildml_uses=("session.federated.fit(method='fedprox', mu=0.1, ...).",),
             interpretation_rules=(
                 "Compare fedprox vs fedavg holdout metrics; read mu in disclosures.",
             ),
@@ -160,7 +160,7 @@ FEDERATED_NOTES: dict[str, ConceptNote] = {
             failure_modes=("mu too large freezes local learning; mu=0 is refused.",),
             anti_patterns=("Claiming full FedProx paper suite beyond proximal pull.",),
             worked_example_pattern=(
-                "fit_federated(method='fedprox', mu=0.05, n_rounds=5).",
+                "session.federated.fit(method='fedprox', mu=0.05, n_rounds=5).",
             ),
             related_concepts=("federated-simulation", "federated-fedavg"),
         ),
@@ -179,10 +179,10 @@ FEDERATED_NOTES: dict[str, ConceptNote] = {
             ),
             formal_idea=(
                 "Artifacts are complementary: checkpoint_load ↛ federated model; "
-                "load_federated_bundle ↛ dataset rows."
+                "session.federated.load_bundle ↛ dataset rows."
             ),
             why_it_matters=("Mixing artifacts causes silent missing-learner failures.",),
-            how_buildml_uses=("save_federated_bundle / load_federated_bundle.",),
+            how_buildml_uses=("session.federated.save_bundle / session.federated.load_bundle.",),
             interpretation_rules=("Read meta.json format buildml.federated_bundle.v1.",),
             assumptions=("Feature/client/target columns still match at load time.",),
             failure_modes=("Expecting checkpoint_load to restore FederatedPlan.",),
@@ -190,7 +190,7 @@ FEDERATED_NOTES: dict[str, ConceptNote] = {
                 "Treating online or meta-learning bundles as federated plans.",
             ),
             worked_example_pattern=(
-                "session.save_federated_bundle(path); other.load_federated_bundle(path).",
+                "session.federated.save_bundle(path); other.federated.load_bundle(path).",
             ),
             related_concepts=("federated-simulation", "metalearning-bundle-boundary"),
         ),

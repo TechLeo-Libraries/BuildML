@@ -3,7 +3,7 @@
 Requires a GitHub / editable BuildML 2.x install (core sklearn; no extra).
 
 The simulated oracle below is for the example only — library core never invents
-labels. Production code must supply human annotations to ``label_rows``.
+labels. Production code must supply human annotations to ``session.active_learning.label_rows``.
 """
 
 from __future__ import annotations
@@ -44,7 +44,7 @@ def main() -> None:
         roles=dict(session.dataset.roles),
     )
 
-    fit = session.fit_active_learner(
+    fit = session.active_learning.fit(
         strategy="margin",
         batch_size=8,
         label_budget=24,
@@ -59,12 +59,12 @@ def main() -> None:
     )
 
     for round_i in range(3):
-        q = session.suggest_query(batch_size=8)
+        q = session.active_learning.suggest_query(batch_size=8)
         if not q.indices:
             print("round", round_i, "empty query (budget or pool exhausted)")
             break
         human_labels = [int(truth.loc[i]) for i in q.indices]
-        labeled = session.label_rows(indices=q.indices, labels=human_labels)
+        labeled = session.active_learning.label_rows(indices=q.indices, labels=human_labels)
         print(
             "round",
             round_i,
@@ -76,11 +76,11 @@ def main() -> None:
             labeled.budget_remaining,
         )
 
-    ev = session.evaluate_active_learning(partition="test")
+    ev = session.active_learning.evaluate(partition="test")
     print("eval:", {k: round(v, 4) for k, v in ev.metrics.items()})
 
     out = Path(".buildml-artifacts") / "activelearning_bundle"
-    path = session.save_active_learning_bundle(out)
+    path = session.active_learning.save_bundle(out)
     print("bundle:", path)
 
 

@@ -38,14 +38,14 @@ session = (
 )
 
 # Default: simclr_tabular when torch installed
-pre = session.fit_ssl_pretext(latent_dim=8, epochs=30, batch_size=32)
+pre = session.ssl.fit_pretext(latent_dim=8, epochs=30, batch_size=32)
 print(pre.method, pre.pretext_loss)
 
-head = session.finetune_ssl_head(estimator="logistic_regression")
-ev = session.evaluate_ssl(partition="test")
+head = session.ssl.finetune_head(estimator="logistic_regression")
+ev = session.ssl.evaluate(partition="test")
 print(ev.metrics)
 
-bundle = session.save_ssl_bundle("artifacts/ssl_bundle")  # buildml.ssl_bundle.v2
+bundle = session.ssl.save_bundle("artifacts/ssl_bundle")  # buildml.ssl_bundle.v2
 ```
 
 Other tabular methods: `byol_tabular`, `vicreg_tabular`, `mae_tabular`, `vae_tabular`.
@@ -53,13 +53,13 @@ Other tabular methods: `byol_tabular`, `vicreg_tabular`, `mae_tabular`, `vae_tab
 Text SSL (`buildml[ssl]`):
 
 ```python
-session.fit_ssl_pretext(method="hf_text_ssl", text_column="text", latent_dim=384)
+session.ssl.fit_pretext(method="hf_text_ssl", text_column="text", latent_dim=384)
 ```
 
 Vision SSL (`buildml[vision]`):
 
 ```python
-session.fit_ssl_pretext(
+session.ssl.fit_pretext(
     method="vision_ssl",
     image_column="path",
     backbone="resnet18",

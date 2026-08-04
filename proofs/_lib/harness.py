@@ -115,6 +115,75 @@ def metrics_round(metrics: Mapping[str, Any], *, ndigits: int = 6) -> dict[str, 
     return out
 
 
+# Provenance keys expected under results.json ``data`` for public-dataset proofs.
+DATASET_PROVENANCE_KEYS: tuple[str, ...] = (
+    "name",
+    "dataset_identity",
+    "source",
+    "license",
+    "provenance",
+    "n_rows",
+    "n_features",
+    "task",
+)
+
+
+def normalize_dataset_meta(meta: Mapping[str, Any] | None) -> dict[str, Any] | None:
+    """Normalize dataset metadata and enforce provenance for real public sets."""
+    if meta is None:
+        return None
+    out = dict(meta)
+    name = out.get("name") or out.get("dataset_identity") or "unknown"
+    out["name"] = str(name)
+    out["dataset_identity"] = str(out.get("dataset_identity") or name)
+    out.setdefault("source", out.get("notes", "unspecified"))
+    license_val = out.get("license") or out.get("provenance") or "unspecified"
+    out["license"] = license_val
+    out["provenance"] = out.get("provenance") or license_val
+    out.setdefault("n_rows", out.get("n_rows"))
+    out.setdefault("n_features", out.get("n_features"))
+    out.setdefault("task", out.get("task", "unspecified"))
+    is_real = bool(
+        out.get("real_public_dataset")
+        or out.get("evidence_tier") == "REAL_PUBLIC_DATASET"
+    )
+    if is_real:
+        missing = [
+            key
+            for key in ("name", "source", "license", "n_rows", "n_features", "task")
+            if out.get(key) in (None, "", "unspecified")
+        ]
+        if missing:
+            raise AssertionError(
+                "REAL_PUBLIC_DATASET meta missing required provenance fields: "
+                f"{missing}; got keys={sorted(out)}"
+            )
+    return out
+
+
+def refuse_perfect_scores(
+    metrics: Mapping[str, Any],
+    *,
+    keys: Sequence[str],
+    ceiling: float = 1.0,
+    proof_slug: str,
+    context: str = "holdout",
+) -> None:
+    """Refuse perfect-score theater when a reported metric reaches ``ceiling``.
+
+    Real public datasets and intentionally noisy synthetics must not ship
+    trivially perfect primary metrics. ``ceiling`` defaults to 1.0 (strict);
+    pass 0.999 for soft synthetics that already use that gate.
+    """
+    for key in keys:
+        value = metrics.get(key)
+        if isinstance(value, (int, float)) and float(value) >= float(ceiling):
+            raise SystemExit(
+                f"{proof_slug} refused perfect-score theater: "
+                f"{key}={float(value):.6f} >= {float(ceiling)} on {context}."
+            )
+
+
 def write_results(
     ctx: ProofContext,
     payload: Mapping[str, Any],
@@ -122,6 +191,11 @@ def write_results(
     filename: str = "results.json",
 ) -> Path:
     """Write a proof result document with standard envelope fields."""
+    body = dict(payload)
+    if "data" in body:
+        body["data"] = normalize_dataset_meta(
+            body["data"] if isinstance(body["data"], Mapping) else {"name": body["data"]}
+        )
     envelope = {
         "project": ctx.slug,
         "seed": ctx.seed,
@@ -129,7 +203,7 @@ def write_results(
         "finished_at": datetime.now(timezone.utc).isoformat(),
         "torch": TORCH_STATUS,
         "repo_root": str(REPO_ROOT),
-        **dict(payload),
+        **body,
     }
     path = ctx.result_path(filename)
     path.write_text(json.dumps(json_safe(envelope), indent=2, sort_keys=True) + "\n")

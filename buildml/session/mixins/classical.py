@@ -9,7 +9,10 @@ from buildml.session.mixins._shared import *  # noqa: F403
 
 
 class ClassicalSessionMixin:
-    """Public Session methods for the classical domain."""
+    """Public Session methods for the classical domain.
+
+    Preferred namespaced API: ``session.classical.*`` (classical/core dual: flat methods remain first-class without warnings).
+    """
     # mypy: session private attrs (owned by Session.__init__)
     if TYPE_CHECKING:
         _fit_result: Any
@@ -776,6 +779,11 @@ class ClassicalSessionMixin:
         """Attribute predictions with SHAP (requires ``buildml[shap]``).
 
         Session facade over :func:`buildml.session.classical_ops.explain_shap`.
+
+        Returns
+        -------
+        Any
+            SHAP attribution payload (``ShapExplainResult`` when shap is installed).
         """
         return classical_ops.explain_shap(
             self,

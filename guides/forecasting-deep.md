@@ -14,7 +14,7 @@ exogenous support, bundles, and honesty bounds.
 **Related:** [Forecasting quickstart](quickstart-forecasting.md) ·
 [Leakage](leakage-cv-recipes.md) ·
 [Artifacts](artifacts-checkpoints-bundles.md) ·
-[AutoML deep](automl-deep.md) (Phase 1 predecessor).
+[AutoML deep](automl-deep.md).
 
 ---
 
@@ -29,11 +29,10 @@ exogenous support, bundles, and honesty bounds.
 | `buildml.forecast_bundle.v2` (v1 loadable) | Session checkpoint substitute |
 | statsmodels ETS/ARIMA when `[timeseries]` | Torch sequence forecaster in this package |
 
-Phase 1 order (depth-first, **complete**): unsupervised → ensembles → AutoML →
-**forecasting** → anomaly (see [Anomaly deep](anomaly-deep.md)). Explicit
-non-goals unchanged (neuromorphic, swarm, digital twins, AV/robotics, TTS,
-multi-agent sims, full COCO detection). Phase 2 first item: semi/self-supervised
-hooks.
+Related: [unsupervised](unsupervised-deep.md), [ensembles](ensemble-deep.md),
+[AutoML](automl-deep.md), [anomaly](anomaly-deep.md), and semi/self-supervised
+guides. Explicit non-goals (neuromorphic, swarm, digital twins, AV/robotics,
+TTS, multi-agent sims, full COCO detection) stay out.
 
 ---
 
@@ -42,7 +41,7 @@ hooks.
 1. Assign exactly one **`time`** role and one **`target`** role.
 2. Call **`time_split`** so train ends before validation/test in clock time.
 3. **`horizon`** is the default H-step length stored on `ForecastPlan`
-   (`generate_forecast` may override).
+   (`session.forecast.generate` may override).
 4. **`lags`** are positive integers; row *t* uses only `y[t-lag]`.
 
 ```python
@@ -69,7 +68,7 @@ session = (
 ```python
 # This raises LeakageError:
 bad = Session.ingest(frame).set_roles({"ts": "time", "y": "target"}).split(test_size=0.2)
-bad.fit_forecast(method="naive")  # refused
+bad.forecast.fit(method="naive")  # refused
 ```
 
 ---
@@ -99,19 +98,19 @@ eval strategy.
 ## Generate vs evaluate
 
 ```python
-session.fit_forecast(method="lag_ridge", horizon=14, lags=[1, 2, 7, 14])
+session.forecast.fit(method="lag_ridge", horizon=14, lags=[1, 2, 7, 14])
 
 # Operational path: recursive H-step from train end
-gen = session.generate_forecast(horizon=14, origin="train_end")
+gen = session.forecast.generate(horizon=14, origin="train_end")
 
 # Holdout skill: expanding one-step (default)
-roll = session.evaluate_forecast(partition="test", strategy="rolling_one_step")
+roll = session.forecast.evaluate(partition="test", strategy="rolling_one_step")
 
 # Harder multi-step protocol
-origin = session.evaluate_forecast(partition="test", strategy="origin")
+origin = session.forecast.evaluate(partition="test", strategy="origin")
 
 # Rolling-origin backtest (M4-style windows)
-rolling_origin = session.evaluate_forecast(partition="test", strategy="rolling_origin")
+rolling_origin = session.forecast.evaluate(partition="test", strategy="rolling_origin")
 print(roll.metrics, origin.metrics, rolling_origin.metrics)
 ```
 
@@ -124,22 +123,22 @@ disclosed; lead with MAE/RMSE.
 
 ```python
 # Univariate (default)
-session.fit_forecast(method="lag_ridge", lags=[1, 2, 3])
+session.forecast.fit(method="lag_ridge", lags=[1, 2, 3])
 
 # Light exogenous: numeric columns known at prediction time
-session.fit_forecast(
+session.forecast.fit(
     method="lag_ridge",
     lags=[1, 2, 3],
     exog_columns=["promo"],
 )
-# generate_forecast requires future_exog with shape (horizon, n_exog)
+# session.forecast.generate requires future_exog with shape (horizon, n_exog)
 import numpy as np
 future = np.zeros((7, 1))
-session.generate_forecast(horizon=7, future_exog=future)
+session.forecast.generate(horizon=7, future_exog=future)
 ```
 
 BuildML does **not** invent future exogenous drivers. Offline
-`evaluate_forecast` may use holdout exog at each scored timestamp with
+`session.forecast.evaluate` may use holdout exog at each scored timestamp with
 disclosure.
 
 ---
@@ -147,14 +146,14 @@ disclosure.
 ## Bundles
 
 ```python
-path = session.save_forecast_bundle("artifacts/forecast_bundle")
+path = session.forecast.save_bundle("artifacts/forecast_bundle")
 restored = Session.ingest(frame).set_roles({"ts": "time", "y": "target"})
 restored.time_split(test_size=0.2, validation_size=0.15)
-restored.load_forecast_bundle(path)
-print(restored.generate_forecast(horizon=7).predictions)
+restored.forecast.load_bundle(path)
+print(restored.forecast.generate(horizon=7).predictions)
 ```
 
-Format: `buildml.forecast_bundle.v2` (`meta.json` + `forecast_plan.joblib`).
+Format: `buildml.forecast_bundle.v2` (`meta.json` + `session.forecast.plan.joblib`).
 v1 bundles remain loadable.
 Not interchangeable with Session checkpoints, classical pipelines, Torch, RAG,
 unsupervised, ensemble, or AutoML bundles. See
@@ -164,12 +163,12 @@ unsupervised, ensemble, or AutoML bundles. See
 
 ## Teaching surfaces
 
-- `session.explain("fit_forecast", moment="before")`
+- `session.explain("session.forecast.fit", moment="before")`
 - Catalog concepts: `forecast-temporal-leakage`, `forecast-lag-features`,
   `forecast-univariate-vs-exog`, `forecast-eval-protocols`,
   `forecast-metric-limits`, `forecast-bundle-boundary`
 - Walkthrough includes `forecasting_status`
-- AI tools allowlist: `fit_forecast`, `generate_forecast`, `evaluate_forecast`,
+- AI tools allowlist: `session.forecast.fit`, `session.forecast.generate`, `session.forecast.evaluate`,
   bundle save/load
 
 ---
@@ -192,4 +191,4 @@ unsupervised, ensemble, or AutoML bundles. See
 - No Torch sequence forecaster in this package (prefer a complete classical
   Session over a shallow DL stub).
 - No causal identification APIs; EDA remains associational.
-- Anomaly/fraud is the next Phase 1 item: not this guide.
+- Anomaly/fraud lives in a separate guide: not this surface.

@@ -15,13 +15,13 @@ mortgage split. The platform:
 
 ## Status
 
-`completed`: run `script.py`; see `results/summary.json` and stage JSONs.
+Run `script.py`. Outputs land under `results/` (summary and stage JSON)..
 Core classical + probabilistic stages keep the product completed when torch skips.
 
 ## How to run
 
 ```bash
-.\.venv\Scripts\python.exe proofs\nova-torch-bench\script.py
+python proofs\nova-torch-bench\script.py
 ```
 
 ## Leakage controls

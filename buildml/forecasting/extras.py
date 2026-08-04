@@ -95,56 +95,48 @@ def require_neuralforecast(*, feature: str = "neural forecasting") -> Any:
     return neuralforecast
 
 
-def statsmodels_available() -> bool:
-    """Return whether statsmodels imports cleanly for industry forecast paths.
+def _runtime_ok(module: str) -> bool:
+    from buildml.dl.extras import _subprocess_import_ok
 
-    Used by the capability matrix and default-method routing so ETS/ARIMA
-    methods are offered only when ``buildml[timeseries]`` is installed.
+    return _subprocess_import_ok(module)
 
-    Returns
-    -------
-    bool
-        ``True`` when ``statsmodels`` is importable.
-    """
+
+def statsmodels_spec_present() -> bool:
+    """Cheap find_spec discovery for statsmodels."""
     return importlib.util.find_spec("statsmodels") is not None
 
 
-def prophet_available() -> bool:
-    """Return whether Prophet imports cleanly for the Prophet backend path.
-
-    Gates Prophet forecasting without importing prophet at module load time.
-
-    Returns
-    -------
-    bool
-        ``True`` when ``prophet`` is importable.
-    """
+def prophet_spec_present() -> bool:
+    """Cheap find_spec discovery for Prophet."""
     return importlib.util.find_spec("prophet") is not None
 
 
-def neuralforecast_available() -> bool:
-    """Return whether neuralforecast imports cleanly for N-BEATS paths.
-
-    Gates N-BEATS forecasting without importing neuralforecast at module load
-    time.
-
-    Returns
-    -------
-    bool
-        ``True`` when ``neuralforecast`` is importable.
-    """
+def neuralforecast_spec_present() -> bool:
+    """Cheap find_spec discovery for neuralforecast."""
     return importlib.util.find_spec("neuralforecast") is not None
 
 
+def statsmodels_available() -> bool:
+    """Return whether statsmodels imports cleanly for industry forecast paths."""
+    if not statsmodels_spec_present():
+        return False
+    return _runtime_ok("statsmodels")
+
+
+def prophet_available() -> bool:
+    """Return whether Prophet imports cleanly for the Prophet backend path."""
+    if not prophet_spec_present():
+        return False
+    return _runtime_ok("prophet")
+
+
+def neuralforecast_available() -> bool:
+    """Return whether neuralforecast imports cleanly for N-BEATS paths."""
+    if not neuralforecast_spec_present():
+        return False
+    return _runtime_ok("neuralforecast")
+
+
 def industry_forecast_available() -> bool:
-    """Return whether any industry statsmodels forecast backend is usable.
-
-    Used when choosing default methods in
-    :func:`buildml.forecasting.catalog.forecast_capability_matrix`.
-
-    Returns
-    -------
-    bool
-        ``True`` when statsmodels imports cleanly.
-    """
+    """Return whether any industry statsmodels forecast backend is usable."""
     return statsmodels_available()

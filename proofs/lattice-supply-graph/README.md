@@ -15,12 +15,12 @@ late-delivery risk. The platform:
 
 ## Status
 
-`completed`: run `script.py`; see `results/summary.json` and stage JSONs.
+Run `script.py`. Outputs land under `results/` (summary and stage JSON)..
 
 ## How to run
 
 ```bash
-.\.venv\Scripts\python.exe proofs\lattice-supply-graph\script.py
+python proofs\lattice-supply-graph\script.py
 ```
 
 ## Leakage controls

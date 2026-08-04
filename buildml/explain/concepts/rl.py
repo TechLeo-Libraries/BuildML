@@ -16,7 +16,7 @@ RL_NOTES: dict[str, ConceptNote] = {
             definition=(
                 "Behavioral cloning treats expert demonstrations as supervised "
                 "examples: features are states, the target is the demonstrated "
-                "action. fit_imitation trains on the train partition only."
+                "action. session.rl.fit_imitation trains on the train partition only."
             ),
             intuition=(
                 "Watch an expert's (state, action) pairs and imitate the mapping "
@@ -28,11 +28,11 @@ RL_NOTES: dict[str, ConceptNote] = {
                 "Simple, Session-shaped entry point before online RL.",
             ),
             how_buildml_uses=(
-                "Session.fit_imitation → predict_imitation_action / evaluate_imitation.",
+                "session.rl.fit_imitation → session.rl.predict_imitation / session.rl.evaluate_imitation.",
             ),
             interpretation_rules=(
                 "accuracy/macro_f1 (discrete) or rmse/mae/r2 (continuous) vs demos.",
-                "train_score is in-sample: prefer holdout evaluate_imitation.",
+                "train_score is in-sample: prefer holdout session.rl.evaluate_imitation.",
             ),
             assumptions=("Non-null state features and actions on train; split present.",),
             failure_modes=(
@@ -43,7 +43,7 @@ RL_NOTES: dict[str, ConceptNote] = {
                 "Calling BC a robotics / MuJoCo platform.",
             ),
             worked_example_pattern=(
-                "fit_imitation() → evaluate_imitation(partition='validation').",
+                "session.rl.fit_imitation() → session.rl.evaluate_imitation(partition='validation').",
             ),
             related_concepts=(
                 "imitation-bundle-boundary",
@@ -62,15 +62,15 @@ RL_NOTES: dict[str, ConceptNote] = {
             intuition="Save the cloned policy separately from workflow resume state.",
             formal_idea="ImitationPlan is not embedded in a Session checkpoint payload.",
             why_it_matters=("Avoid silent gaps when reloading workflows.",),
-            how_buildml_uses=("save_imitation_bundle / load_imitation_bundle.",),
+            how_buildml_uses=("session.rl.save_imitation_bundle / session.rl.load_imitation_bundle.",),
             interpretation_rules=(
-                "Reload policy via load_imitation_bundle after checkpoint_load.",
+                "Reload policy via session.rl.load_imitation_bundle after checkpoint_load.",
             ),
             assumptions=("Bundle format matches buildml.imitation_bundle.v1.",),
             failure_modes=("Mixing imitation bundles with RL / CBR / RAG bundles.",),
             anti_patterns=("Expecting checkpoint_load to restore the BC policy.",),
             worked_example_pattern=(
-                "save_imitation_bundle(path) → load_imitation_bundle(path).",
+                "session.rl.save_imitation_bundle(path) → session.rl.load_imitation_bundle(path).",
             ),
             related_concepts=("imitation-behavioral-cloning", "rl-bundle-boundary"),
         ),
@@ -96,10 +96,10 @@ RL_NOTES: dict[str, ConceptNote] = {
                 "Offline metrics must not be confused with online A/B lifts.",
             ),
             how_buildml_uses=(
-                "Session.fit_rl(mode='contextual_bandit') → act_rl / evaluate_rl.",
+                "session.rl.fit(mode='contextual_bandit') → session.rl.act / session.rl.evaluate.",
             ),
             interpretation_rules=(
-                "Read evaluate_rl.offline=True and DM/IPS disclosures.",
+                "Read session.rl.evaluate.offline=True and DM/IPS disclosures.",
                 "IPS needs a propensity model; treat confounding cautiously.",
             ),
             assumptions=("Logged actions + numeric rewards on train; discrete arms.",),
@@ -111,8 +111,8 @@ RL_NOTES: dict[str, ConceptNote] = {
                 "Updating the bandit from validation/test.",
             ),
             worked_example_pattern=(
-                "fit_rl(algorithm='linucb', reward_column='reward') → "
-                "evaluate_rl(partition='validation').",
+                "session.rl.fit(algorithm='linucb', reward_column='reward') → "
+                "session.rl.evaluate(partition='validation').",
             ),
             related_concepts=(
                 "rl-offline-metrics",
@@ -139,7 +139,7 @@ RL_NOTES: dict[str, ConceptNote] = {
                 "IPS = (1/n)Σ r_i 1[π(x_i)=a_i] / π_b(a_i|x_i)."
             ),
             why_it_matters=("Prevents overclaiming online gains from log replay.",),
-            how_buildml_uses=("evaluate_rl for contextual_bandit sets offline=True.",),
+            how_buildml_uses=("session.rl.evaluate for contextual_bandit sets offline=True.",),
             interpretation_rules=(
                 "Prefer reporting both DM and IPS with caveats.",
                 "action_match_rate shows overlap with the logging policy.",
@@ -150,7 +150,7 @@ RL_NOTES: dict[str, ConceptNote] = {
             ),
             anti_patterns=("Calling offline IPS 'production lift'.",),
             worked_example_pattern=(
-                "Inspect evaluate_rl().metrics['ips'] and disclosures.",
+                "Inspect session.rl.evaluate().metrics['ips'] and disclosures.",
             ),
             related_concepts=("rl-contextual-bandit",),
         ),
@@ -159,7 +159,7 @@ RL_NOTES: dict[str, ConceptNote] = {
             title="Gymnasium REINFORCE-lite (optional buildml[rl])",
             summary="Linear softmax REINFORCE on small discrete Gymnasium envs; core never requires gymnasium.",
             definition=(
-                "fit_rl(mode='gym_reinforce') trains a linear softmax policy with "
+                "session.rl.fit(mode='gym_reinforce') trains a linear softmax policy with "
                 "REINFORCE returns-to-go inside a Gymnasium env loop. Requires "
                 "optional extra buildml[rl]."
             ),
@@ -173,8 +173,8 @@ RL_NOTES: dict[str, ConceptNote] = {
                 "Honest small-env teaching path: not MuJoCo/robotics.",
             ),
             how_buildml_uses=(
-                "Session.fit_rl(mode='gym_reinforce', env_id='CartPole-v1') → "
-                "evaluate_rl / act_rl(observations=...).",
+                "session.rl.fit(mode='gym_reinforce', env_id='CartPole-v1') → "
+                "session.rl.evaluate / session.rl.act(observations=...).",
             ),
             interpretation_rules=(
                 "mean_return from env rollouts; offline=False for this mode.",
@@ -190,7 +190,7 @@ RL_NOTES: dict[str, ConceptNote] = {
                 "Importing gymnasium into core paths.",
             ),
             worked_example_pattern=(
-                "pip install 'buildml[rl]'; fit_rl(mode='gym_reinforce', n_episodes=300).",
+                "pip install 'buildml[rl]'; session.rl.fit(mode='gym_reinforce', n_episodes=300).",
             ),
             related_concepts=(
                 "rl-contextual-bandit",
@@ -207,7 +207,7 @@ RL_NOTES: dict[str, ConceptNote] = {
                 "one action-value per (state, action) pair and moves each entry "
                 "toward the Bellman optimality target r + γ max_a' Q(s', a'), "
                 "regardless of which action the exploring behaviour policy took. "
-                "fit_rl(mode='tabular_q', algorithm='q_learning') runs this loop "
+                "session.rl.fit(mode='tabular_q', algorithm='q_learning') runs this loop "
                 "on a discrete-action Gymnasium env behind buildml[rl]."
             ),
             intuition=(
@@ -231,8 +231,8 @@ RL_NOTES: dict[str, ConceptNote] = {
                 "(every state-action visited infinitely often, decaying α).",
             ),
             how_buildml_uses=(
-                "Session.fit_rl(mode='tabular_q', algorithm='q_learning') → "
-                "evaluate_rl / act_rl(observations=...).",
+                "session.rl.fit(mode='tabular_q', algorithm='q_learning') → "
+                "session.rl.evaluate / session.rl.act(observations=...).",
                 "Continuous Box observations are uniformly discretized first; "
                 "Discrete spaces (FrozenLake / Taxi / CliffWalking) index directly.",
             ),
@@ -259,7 +259,7 @@ RL_NOTES: dict[str, ConceptNote] = {
                 "online env loop, not batch RL from a fixed dataset.",
             ),
             worked_example_pattern=(
-                "pip install 'buildml[rl]'; fit_rl(mode='tabular_q', "
+                "pip install 'buildml[rl]'; session.rl.fit(mode='tabular_q', "
                 "algorithm='q_learning', env_id='FrozenLake-v1', n_episodes=3000).",
             ),
             related_concepts=(
@@ -297,7 +297,7 @@ RL_NOTES: dict[str, ConceptNote] = {
                 "load-bearing idea when reading RL papers.",
             ),
             how_buildml_uses=(
-                "Session.fit_rl(mode='tabular_q', algorithm='sarsa') or "
+                "session.rl.fit(mode='tabular_q', algorithm='sarsa') or "
                 "algorithm='expected_sarsa'.",
             ),
             interpretation_rules=(
@@ -318,7 +318,7 @@ RL_NOTES: dict[str, ConceptNote] = {
                 "Assuming SARSA and Q-learning must converge to the same policy.",
             ),
             worked_example_pattern=(
-                "fit_rl(mode='tabular_q', algorithm='sarsa', "
+                "session.rl.fit(mode='tabular_q', algorithm='sarsa', "
                 "env_id='CliffWalking-v0', n_episodes=2000).",
             ),
             related_concepts=(
@@ -353,7 +353,7 @@ RL_NOTES: dict[str, ConceptNote] = {
                 "exists at all.",
             ),
             how_buildml_uses=(
-                "fit_rl(mode='tabular_q', n_bins=...) builds the discretizer and "
+                "session.rl.fit(mode='tabular_q', n_bins=...) builds the discretizer and "
                 "records it in RlPlan.config['discretizer'].",
             ),
             interpretation_rules=(
@@ -377,8 +377,8 @@ RL_NOTES: dict[str, ConceptNote] = {
                 "state space were the same.",
             ),
             worked_example_pattern=(
-                "fit_rl(mode='tabular_q', env_id='CartPole-v1', n_bins=6, "
-                "n_episodes=4000); inspect rl_plan.config['discretizer'].",
+                "session.rl.fit(mode='tabular_q', env_id='CartPole-v1', n_bins=6, "
+                "n_episodes=4000); inspect session.rl.plan.config['discretizer'].",
             ),
             related_concepts=(
                 "rl-tabular-q-learning",
@@ -391,7 +391,7 @@ RL_NOTES: dict[str, ConceptNote] = {
             title="Stable-Baselines3 industry path (buildml[rl-industry])",
             summary="PPO/DQN/A2C on small Gymnasium envs via SB3; defaults when rl-industry is installed.",
             definition=(
-                "fit_rl(backend='industry', mode='gym_sb3') trains Stable-Baselines3 "
+                "session.rl.fit(backend='industry', mode='gym_sb3') trains Stable-Baselines3 "
                 "policies on honest small discrete-action envs. Requires "
                 "buildml[rl-industry] (SB3 + imitation + gymnasium + torch)."
             ),
@@ -409,12 +409,12 @@ RL_NOTES: dict[str, ConceptNote] = {
                 "Offline RL (batch RL) remains explicitly out of scope.",
             ),
             how_buildml_uses=(
-                "Session.fit_rl(backend='industry', mode='gym_sb3', algorithm='ppo') → "
-                "evaluate_rl / act_rl(observations=...).",
+                "session.rl.fit(backend='industry', mode='gym_sb3', algorithm='ppo') → "
+                "session.rl.evaluate / session.rl.act(observations=...).",
             ),
             interpretation_rules=(
                 "mean_return from env rollouts; offline=False.",
-                "Read rl_capability_matrix() for backend defaults and non-goals.",
+                "Read session.rl.capability_matrix() for backend defaults and non-goals.",
             ),
             assumptions=(
                 "Discrete action space; Box-like observations; rl-industry installed.",
@@ -428,7 +428,7 @@ RL_NOTES: dict[str, ConceptNote] = {
             ),
             worked_example_pattern=(
                 "pip install 'buildml[rl-industry]'; "
-                "fit_rl(mode='gym_sb3', algorithm='ppo', total_timesteps=25000).",
+                "session.rl.fit(mode='gym_sb3', algorithm='ppo', total_timesteps=25000).",
             ),
             related_concepts=(
                 "rl-gym-reinforce",
@@ -446,7 +446,7 @@ RL_NOTES: dict[str, ConceptNote] = {
             definition=(
                 "Monte Carlo methods wait until an episode ends, then assign each "
                 "step the actual return G_t from that step forward. BuildML's "
-                "fit_rl(mode='gym_reinforce') uses returns-to-go Monte Carlo targets "
+                "session.rl.fit(mode='gym_reinforce') uses returns-to-go Monte Carlo targets "
                 "for a linear softmax policy."
             ),
             intuition=(
@@ -460,8 +460,8 @@ RL_NOTES: dict[str, ConceptNote] = {
                 "Bridge concept linking REINFORCE to SB3 policy-gradient methods.",
             ),
             how_buildml_uses=(
-                "Session.fit_rl(mode='gym_reinforce'): see rl-gym-reinforce concept.",
-                "Session.fit_rl(mode='gym_sb3', algorithm='ppo'|'a2c') uses industry "
+                "session.rl.fit(mode='gym_reinforce'): see rl-gym-reinforce concept.",
+                "session.rl.fit(mode='gym_sb3', algorithm='ppo'|'a2c') uses industry "
                 "actor-critic stacks instead of raw MC REINFORCE.",
             ),
             interpretation_rules=(
@@ -473,7 +473,7 @@ RL_NOTES: dict[str, ConceptNote] = {
                 "Calling REINFORCE 'actor-critic': it is Monte Carlo policy gradient without a critic.",
             ),
             worked_example_pattern=(
-                "fit_rl(mode='gym_reinforce', env_id='CartPole-v1', n_episodes=300).",
+                "session.rl.fit(mode='gym_reinforce', env_id='CartPole-v1', n_episodes=300).",
             ),
             related_concepts=("rl-gym-reinforce", "rl-n-step-td", "rl-actor-critic"),
         ),
@@ -484,7 +484,7 @@ RL_NOTES: dict[str, ConceptNote] = {
             definition=(
                 "n-step TD targets sum n immediate rewards plus γⁿ times an "
                 "estimated value at step t+n. One-step Q-learning and SARSA in "
-                "fit_rl(mode='tabular_q') are the n=1 special case; increasing n "
+                "session.rl.fit(mode='tabular_q') are the n=1 special case; increasing n "
                 "trades bias for variance toward full Monte Carlo returns."
             ),
             intuition=(
@@ -513,7 +513,7 @@ RL_NOTES: dict[str, ConceptNote] = {
                 "Confusing one-step tabular_q with Monte Carlo REINFORCE returns.",
             ),
             worked_example_pattern=(
-                "fit_rl(mode='tabular_q', algorithm='q_learning', env_id='FrozenLake-v1').",
+                "session.rl.fit(mode='tabular_q', algorithm='q_learning', env_id='FrozenLake-v1').",
             ),
             related_concepts=(
                 "rl-tabular-q-learning",
@@ -529,7 +529,7 @@ RL_NOTES: dict[str, ConceptNote] = {
             definition=(
                 "Actor-critic methods update a policy π_θ and a value function "
                 "V_φ or Q_φ together: the critic reduces variance for the actor's "
-                "gradient. BuildML exposes this via fit_rl(mode='gym_sb3', "
+                "gradient. BuildML exposes this via session.rl.fit(mode='gym_sb3', "
                 "algorithm='ppo'|'a2c') when buildml[rl-industry] is installed."
             ),
             intuition=(
@@ -545,11 +545,11 @@ RL_NOTES: dict[str, ConceptNote] = {
                 "Industry default for continuous-control teaching without claiming robotics scope.",
             ),
             how_buildml_uses=(
-                "Session.fit_rl(backend='industry', mode='gym_sb3', algorithm='ppo').",
+                "session.rl.fit(backend='industry', mode='gym_sb3', algorithm='ppo').",
                 "Contrast with mode='gym_reinforce' (MC, no critic) and mode='tabular_q'.",
             ),
             interpretation_rules=(
-                "Read rl_capability_matrix() for backend defaults and non-goals.",
+                "Read session.rl.capability_matrix() for backend defaults and non-goals.",
                 "mean_return from env rollouts; offline=False.",
             ),
             assumptions=("Discrete small Gymnasium env; rl-industry extra for SB3 path.",),
@@ -560,7 +560,7 @@ RL_NOTES: dict[str, ConceptNote] = {
             ),
             worked_example_pattern=(
                 "pip install 'buildml[rl-industry]'; "
-                "fit_rl(mode='gym_sb3', algorithm='a2c', total_timesteps=25000).",
+                "session.rl.fit(mode='gym_sb3', algorithm='a2c', total_timesteps=25000).",
             ),
             related_concepts=(
                 "rl-sb3-industry",
@@ -580,14 +580,14 @@ RL_NOTES: dict[str, ConceptNote] = {
             intuition="Save the RL policy separately from workflow resume state.",
             formal_idea="RlPlan is not embedded in a Session checkpoint payload.",
             why_it_matters=("Avoid silent gaps when reloading workflows.",),
-            how_buildml_uses=("save_rl_bundle / load_rl_bundle.",),
+            how_buildml_uses=("session.rl.save_bundle / session.rl.load_bundle.",),
             interpretation_rules=(
-                "Reload policy via load_rl_bundle after checkpoint_load.",
+                "Reload policy via session.rl.load_bundle after checkpoint_load.",
             ),
             assumptions=("Bundle format matches buildml.rl_bundle.v1.",),
             failure_modes=("Mixing RL bundles with imitation / CBR / RAG bundles.",),
             anti_patterns=("Expecting checkpoint_load to restore the RL policy.",),
-            worked_example_pattern=("save_rl_bundle(path) → load_rl_bundle(path).",),
+            worked_example_pattern=("session.rl.save_bundle(path) → session.rl.load_bundle(path).",),
             related_concepts=(
                 "rl-contextual-bandit",
                 "rl-gym-reinforce",

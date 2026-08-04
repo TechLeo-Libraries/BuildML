@@ -48,11 +48,11 @@ def main() -> None:
             random_state=ctx.seed, group_column="device_id",
         )
     )
-    fit = session.fit_federated(
+    fit = session.federated.fit(
         method="fedavg", client_column="device_id", n_rounds=5, random_state=ctx.seed,
     )
-    ev = session.evaluate_federated(partition="test")
-    bundle = session.save_federated_bundle(ctx.artifacts_dir / "fed_bundle")
+    ev = session.federated.evaluate(partition="test")
+    bundle = session.federated.save_bundle(ctx.artifacts_dir / "fed_bundle")
     write_results(ctx, {
         "status": "completed",
         "data": {

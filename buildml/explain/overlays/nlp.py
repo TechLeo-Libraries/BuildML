@@ -16,12 +16,12 @@ from buildml.explain.schemas import OperationSpec, Prerequisite, PrerequisiteSta
 NLP_TEXT_PLAN = Prerequisite(
     "nlp-text-plan",
     "A train-fitted NlpTextPlan (normalization + representation + head) is attached to the Session.",
-    check_hint="Session.nlp_text_plan is not None.",
+    check_hint="session.nlp.text_plan is not None.",
 )
 NLP_TOPIC_PLAN = Prerequisite(
     "nlp-topic-plan",
     "A train-fitted NlpTopicPlan (vectorizer + decomposition) is attached to the Session.",
-    check_hint="Session.nlp_topic_plan is not None.",
+    check_hint="session.nlp.topic_plan is not None.",
 )
 NLP_TEXT_COLUMN = Prerequisite(
     "nlp-text-column",
@@ -80,9 +80,9 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         inputs=("A text column on the Session dataset; a SplitPlan when contamination is to be measured.",),
         outputs=("NlpCorpusProfile with findings, disclosures, and warnings.",),
         prerequisites=(DATASET, NLP_TEXT_COLUMN),
-        ordering=("After split; before fit_text_classifier or fit_topics.",),
+        ordering=("After split; before session.nlp.fit_classifier or session.nlp.fit_topics.",),
         alternatives=(
-            "eda() for tabular profiling; detect_language alone when only the language matters.",
+            "eda() for tabular profiling; session.nlp.detect_language alone when only the language matters.",
         ),
         rationale=(
             "Duplicate and near-duplicate documents are the most common reason a text model's holdout score does not survive deployment.",
@@ -101,12 +101,12 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             "Deduplicating automatically and reporting a clean score.",
             "Quoting a near-duplicate count without the threshold that produced it.",
         ),
-        state_changes=("Stores nlp_profile_result; adds a history record.",),
+        state_changes=("Stores session.nlp.profile_result; adds a history record.",),
         result_reading=(
             "Read findings first; a non-zero train_holdout_exact_overlap invalidates the holdout estimate for those rows.",
             "A very low holdout_oov_token_rate next to high near-duplicate counts is the classic contamination signature.",
         ),
-        next_steps=("detect_language; fit_text_classifier; fit_topics.",),
+        next_steps=("session.nlp.detect_language; session.nlp.fit_classifier; session.nlp.fit_topics.",),
         concepts=(
             "nlp-corpus-contamination",
             "nlp-text-normalization",
@@ -151,7 +151,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         outputs=("NlpLanguageResult with per-document codes, counts, dominant language, and undetermined rate.",),
         prerequisites=(DATASET, NLP_TEXT_COLUMN, NLP_EXTRA),
         ordering=("Early: before choosing stopword_language or a sentiment backend.",),
-        alternatives=("profile_text_corpus runs detection as part of a wider corpus screen.",),
+        alternatives=("session.nlp.profile_corpus runs detection as part of a wider corpus screen.",),
         rationale=(
             "Language-specific resources silently degrade on mixed corpora, so the check has to come before the choice.",
         ),
@@ -165,12 +165,12 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             "Forcing a label on documents below the character threshold.",
             "Running English stopwords and stemming after detection flagged a mixed corpus.",
         ),
-        state_changes=("Stores nlp_language_result; adds a history record.",),
+        state_changes=("Stores session.nlp.language_result; adds a history record.",),
         result_reading=(
             "'und' means below the evidence threshold, not 'unknown language'.",
             "Confidence is a relative marker score, not a calibrated probability.",
         ),
-        next_steps=("profile_text_corpus; fit_text_classifier; analyze_sentiment.",),
+        next_steps=("session.nlp.profile_corpus; session.nlp.fit_classifier; session.nlp.analyze_sentiment.",),
         concepts=(
             "nlp-language-identification",
             "nlp-lexicon-sentiment",
@@ -256,7 +256,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         inputs=("Train documents plus the Session target column.",),
         outputs=("NlpTextPlan on the Session plus an NlpFitResult summary.",),
         prerequisites=(DATASET, ROLES, SPLIT, NLP_TEXT_COLUMN, NLP_EXTRA),
-        ordering=("After split and profile_text_corpus; before predict / evaluate / interpret.",),
+        ordering=("After split and session.nlp.profile_corpus; before predict / evaluate / interpret.",),
         alternatives=(
             "text_features + fit() when text is one signal among many tabular columns; the Torch text path when weights must be updated; RAG when the answer lives in a document to retrieve and cite.",
         ),
@@ -280,14 +280,14 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             "Expecting token attribution after choosing vectorizer='hashing'.",
         ),
         state_changes=(
-            "Stores nlp_text_plan and nlp_fit_result; clears prior NLP eval, predict, and interpret results.",
+            "Stores session.nlp.text_plan and session.nlp.fit_result; clears prior NLP eval, predict, and interpret results.",
         ),
         result_reading=(
-            "train_score is in-sample; read evaluate_text_classifier for an honest number.",
+            "train_score is in-sample; read session.nlp.evaluate for an honest number.",
             "vocabulary_size is 0 for hashing because nothing is stored.",
         ),
         next_steps=(
-            "evaluate_text_classifier; interpret_text_prediction; predict_text; save_nlp_bundle.",
+            "session.nlp.evaluate; session.nlp.interpret; session.nlp.predict; session.nlp.save_bundle.",
         ),
         concepts=(
             "nlp-document-representation",
@@ -326,8 +326,8 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         inputs=("NlpTextPlan plus the requested partition's documents.",),
         outputs=("NlpPredictResult with predictions, optional probabilities, and OOV rate.",),
         prerequisites=(DATASET, NLP_TEXT_PLAN),
-        ordering=("After fit_text_classifier or load_nlp_bundle.",),
-        alternatives=("evaluate_text_classifier when labels exist and metrics are wanted.",),
+        ordering=("After session.nlp.fit_classifier or session.nlp.load_bundle.",),
+        alternatives=("session.nlp.evaluate when labels exist and metrics are wanted.",),
         rationale=("Scoring is separate from evaluation so unlabeled text can still be classified.",),
         assumptions=("The partition exposes the plan's text column.",),
         failures=("No plan attached; the text column missing from the frame.",),
@@ -336,12 +336,12 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             "Treating LinearSVC margins as probabilities.",
             "Refitting the vectorizer on the scoring partition.",
         ),
-        state_changes=("Stores nlp_predict_result; adds a history record.",),
+        state_changes=("Stores session.nlp.predict_result; adds a history record.",),
         result_reading=(
             "An empty probabilities tuple means the head is margin-only, which is stated as a warning.",
             "A high oov_rate means the fitted vocabulary cannot see much of this partition's text.",
         ),
-        next_steps=("evaluate_text_classifier; interpret_text_prediction.",),
+        next_steps=("session.nlp.evaluate; session.nlp.interpret.",),
         concepts=(
             "nlp-document-representation",
             "nlp-text-normalization",
@@ -371,26 +371,26 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         inputs=("NlpTextPlan plus holdout documents and labels.",),
         outputs=("NlpEvalResult with metrics, per-class report, and confusion matrix.",),
         prerequisites=(DATASET, SPLIT, NLP_TEXT_PLAN),
-        ordering=("After fit_text_classifier; before reporting any score.",),
-        alternatives=("predict_text when labels are unavailable.",),
+        ordering=("After session.nlp.fit_classifier; before reporting any score.",),
+        alternatives=("session.nlp.predict when labels are unavailable.",),
         rationale=(
             "Accuracy alone hides class imbalance, so balanced accuracy and a per-class report ship with it.",
         ),
         assumptions=("Non-null holdout labels drawn from the fitted classes.",),
         failures=("No plan; an empty partition; holdout labels unseen at fit time.",),
         leakage=(
-            "Holdout scoring only. Read profile_text_corpus first: duplicate documents across the split make even a correct score meaningless.",
+            "Holdout scoring only. Read session.nlp.profile_corpus first: duplicate documents across the split make even a correct score meaningless.",
         ),
         anti_patterns=(
             "Reporting the fit result's train_score as holdout performance.",
             "Tuning against test because no validation partition was created.",
         ),
-        state_changes=("Stores nlp_eval_result; adds a history record.",),
+        state_changes=("Stores session.nlp.eval_result; adds a history record.",),
         result_reading=(
             "Compare accuracy with balanced_accuracy: a large gap means the majority class is carrying the score.",
             "log_loss and roc_auc appear only when the head produced probabilities.",
         ),
-        next_steps=("interpret_text_prediction; save_nlp_bundle.",),
+        next_steps=("session.nlp.interpret; session.nlp.save_bundle.",),
         concepts=(
             "nlp-document-representation",
             "nlp-corpus-contamination",
@@ -430,9 +430,9 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         inputs=("NlpTextPlan with feature names plus the partition's documents.",),
         outputs=("NlpInterpretResult with per-document TokenAttribution rows and global top tokens.",),
         prerequisites=(DATASET, NLP_TEXT_PLAN),
-        ordering=("After fit_text_classifier and evaluate_text_classifier.",),
+        ordering=("After session.nlp.fit_classifier and session.nlp.evaluate.",),
         alternatives=(
-            "extract_keyphrases for unsupervised description; feature_importance for tabular models.",
+            "session.nlp.extract_keyphrases for unsupervised description; feature_importance for tabular models.",
         ),
         rationale=(
             "For a linear head the decomposition is an identity, so attribution can be exact instead of approximate.",
@@ -449,13 +449,13 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             "Presenting global coefficient rankings as an explanation of one prediction.",
             "Reading coefficients as causal effects of words.",
         ),
-        state_changes=("Stores nlp_interpret_result; adds a history record.",),
+        state_changes=("Stores session.nlp.interpret_result; adds a history record.",),
         result_reading=(
             "A positive contribution pushes the document toward the target class.",
             "A large weight with value 0 contributes nothing, because the token did not occur.",
             "Global top tokens ignore frequency, so a high-weight token may be rare and practically irrelevant.",
         ),
-        next_steps=("save_nlp_bundle; extract_keyphrases for a corpus-level view.",),
+        next_steps=("session.nlp.save_bundle; session.nlp.extract_keyphrases for a corpus-level view.",),
         concepts=(
             "nlp-token-attribution",
             "nlp-document-representation",
@@ -503,12 +503,12 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         inputs=("Train documents from the Session dataset.",),
         outputs=("NlpTopicPlan on the Session plus an NlpTopicResult summary.",),
         prerequisites=(DATASET, SPLIT, NLP_TEXT_COLUMN),
-        ordering=("After split and profile_text_corpus; before assign_topics.",),
+        ordering=("After split and session.nlp.profile_corpus; before session.nlp.assign_topics.",),
         alternatives=(
-            "fit_clusters for tabular structure; extract_keyphrases for per-document description without a fitted model.",
+            "session.unsupervised.fit for tabular structure; session.nlp.extract_keyphrases for per-document description without a fitted model.",
         ),
         rationale=(
-            "Fitting on train only makes assign_topics on holdout a pure transform, so topic weights stay usable as honest features.",
+            "Fitting on train only makes session.nlp.assign_topics on holdout a pure transform, so topic weights stay usable as honest features.",
         ),
         assumptions=(
             "Enough documents to estimate term co-occurrence; min_df and max_df have removed one-off tokens and boilerplate.",
@@ -524,14 +524,14 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             "Comparing coherence across different vectorizer settings as an absolute scale.",
         ),
         state_changes=(
-            "Stores nlp_topic_plan and nlp_topic_result; clears any prior topic assignment.",
+            "Stores session.nlp.topic_plan and session.nlp.topic_result; clears any prior topic assignment.",
         ),
         result_reading=(
             "Read terms and weights rather than the generated label when deciding what a topic is.",
             "Low or negative coherence means the top terms rarely co-occur; treat the topic as noise.",
             "A tiny train_mass usually marks an artifact rather than a theme.",
         ),
-        next_steps=("assign_topics; extract_keyphrases; save_nlp_bundle.",),
+        next_steps=("session.nlp.assign_topics; session.nlp.extract_keyphrases; session.nlp.save_bundle.",),
         concepts=(
             "nlp-topic-models",
             "nlp-document-representation",
@@ -561,18 +561,18 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         inputs=("NlpTopicPlan plus the requested partition's documents.",),
         outputs=("NlpTopicAssignResult with topic weights, dominant topics, and topic share.",),
         prerequisites=(DATASET, NLP_TOPIC_PLAN),
-        ordering=("After fit_topics or load_nlp_bundle.",),
-        alternatives=("fit_topics again on a different partition, which produces a different model.",),
+        ordering=("After session.nlp.fit_topics or session.nlp.load_bundle.",),
+        alternatives=("session.nlp.fit_topics again on a different partition, which produces a different model.",),
         rationale=("Separating transform from fit is what keeps holdout topic weights honest.",),
         assumptions=("The partition exposes the plan's text column.",),
         failures=("No topic plan attached; an empty partition.",),
         leakage=("Transform only; the decomposition is never updated.",),
         anti_patterns=("Refitting on holdout and calling the result an assignment.",),
-        state_changes=("Stores nlp_topic_assign_result; adds a history record.",),
+        state_changes=("Stores session.nlp.topic_assign_result; adds a history record.",),
         result_reading=(
             "topic_share shows how the partition distributes across topics; a share far from the train mass suggests drift.",
         ),
-        next_steps=("save_nlp_bundle; extract_keyphrases for a term-level cross-check.",),
+        next_steps=("session.nlp.save_bundle; session.nlp.extract_keyphrases for a term-level cross-check.",),
         concepts=(
             "nlp-topic-models",
             "unsupervised-train-fit-holdout-assign",
@@ -619,9 +619,9 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         inputs=("A text column on the Session dataset.",),
         outputs=("NlpKeyphraseResult with corpus and per-document Keyphrase rankings.",),
         prerequisites=(DATASET, NLP_TEXT_COLUMN),
-        ordering=("Any time after ingest; commonly alongside profile_text_corpus.",),
+        ordering=("Any time after ingest; commonly alongside session.nlp.profile_corpus.",),
         alternatives=(
-            "fit_topics for corpus-level themes; interpret_text_prediction for supervised token evidence.",
+            "session.nlp.fit_topics for corpus-level themes; session.nlp.interpret for supervised token evidence.",
         ),
         rationale=(
             "Keyphrases are the cheapest honest summary of a corpus, and they need no labels or fitted state.",
@@ -640,12 +640,12 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             "Claiming keyphrase precision or recall with no annotated reference.",
             "Using holdout keyphrases to choose features or hyperparameters.",
         ),
-        state_changes=("Stores nlp_keyphrase_result; adds a history record.",),
+        state_changes=("Stores session.nlp.keyphrase_result; adds a history record.",),
         result_reading=(
             "Scores are comparable within one call, never across methods or corpora.",
             "A high corpus score with document_frequency of 1 is a single-document quirk.",
         ),
-        next_steps=("fit_topics; summarize_text; fit_text_classifier.",),
+        next_steps=("session.nlp.fit_topics; session.nlp.summarize; session.nlp.fit_classifier.",),
         concepts=(
             "nlp-keyphrases-vs-topics",
             "nlp-text-normalization",
@@ -697,9 +697,9 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         inputs=("A text column; for backend='supervised', a fitted NlpTextPlan.",),
         outputs=("NlpSentimentResult with labels, scores, rates, and matched-term rate.",),
         prerequisites=(DATASET, NLP_TEXT_COLUMN, NLP_EXTRA),
-        ordering=("Any time after ingest; run detect_language first on unfamiliar corpora.",),
+        ordering=("Any time after ingest; run session.nlp.detect_language first on unfamiliar corpora.",),
         alternatives=(
-            "fit_text_classifier on your own sentiment labels, which almost always beats a generic lexicon.",
+            "session.nlp.fit_classifier on your own sentiment labels, which almost always beats a generic lexicon.",
         ),
         rationale=(
             "A transparent rule scorer works on day one with no labels, which makes it the right baseline before any supervised sentiment model.",
@@ -713,15 +713,15 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         leakage=("Read-only scoring; the lexicon backend fits nothing at all.",),
         anti_patterns=(
             "Reporting lexicon sentiment as ground truth rather than as a baseline.",
-            "Applying the English lexicon to a multilingual corpus without running detect_language.",
+            "Applying the English lexicon to a multilingual corpus without running session.nlp.detect_language.",
             "Ignoring matched_term_rate when explaining a large neutral share.",
         ),
-        state_changes=("Stores nlp_sentiment_result; adds a history record.",),
+        state_changes=("Stores session.nlp.sentiment_result; adds a history record.",),
         result_reading=(
             "matched_term_rate near zero means the neutral share is ignorance, not balance.",
             "Compound scores are bounded and ordinal, not probabilities.",
         ),
-        next_steps=("fit_text_classifier; interpret_text_prediction; extract_keyphrases.",),
+        next_steps=("session.nlp.fit_classifier; session.nlp.interpret; session.nlp.extract_keyphrases.",),
         concepts=(
             "nlp-lexicon-sentiment",
             "nlp-language-identification",
@@ -788,13 +788,13 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             "Presenting rule output as trained NER performance.",
             "Adding a rule so broad that precision is lost, which defeats the backend's purpose.",
         ),
-        state_changes=("Stores nlp_entity_result; adds a history record.",),
+        state_changes=("Stores session.nlp.entity_result; adds a history record.",),
         result_reading=(
             "source names the rule or gazetteer behind each span.",
             "A label count of zero means no pattern covers that type, not that the corpus lacks it.",
             "start and end are character offsets into the raw document, so spans can be highlighted exactly.",
         ),
-        next_steps=("summarize_text; extract_keyphrases; fit_text_classifier.",),
+        next_steps=("session.nlp.summarize; session.nlp.extract_keyphrases; session.nlp.fit_classifier.",),
         concepts=(
             "nlp-rule-vs-statistical-ner",
             "nlp-text-normalization",
@@ -838,7 +838,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         prerequisites=(DATASET, NLP_TEXT_COLUMN),
         ordering=("Any time after ingest.",),
         alternatives=(
-            "extract_keyphrases for phrase-level description; RAG plus a provider when generated prose is genuinely required.",
+            "session.nlp.extract_keyphrases for phrase-level description; RAG plus a provider when generated prose is genuinely required.",
         ),
         rationale=(
             "Extractive selection cannot state a fact the document does not contain, which matters more than fluency for most analysis work.",
@@ -857,12 +857,12 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             "Reporting ROUGE without reference summaries.",
             "Skipping the lead baseline and asserting the graph method is better.",
         ),
-        state_changes=("Stores nlp_summary_result; adds a history record.",),
+        state_changes=("Stores session.nlp.summary_result; adds a history record.",),
         result_reading=(
             "selected_sentence_indices lets you highlight the summary inside the original document.",
             "mean_compression near 1.0 means the document was already about as short as the request.",
         ),
-        next_steps=("extract_keyphrases; extract_entities.",),
+        next_steps=("session.nlp.extract_keyphrases; session.nlp.extract_entities.",),
         concepts=(
             "nlp-extractive-summarization",
             "nlp-keyphrases-vs-topics",
@@ -884,7 +884,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         inputs=("Active NlpTextPlan and/or NlpTopicPlan, plus optional fit and eval summaries.",),
         outputs=("Bundle directory path.",),
         prerequisites=(DATASET,),
-        ordering=("After fit_text_classifier or fit_topics.",),
+        ordering=("After session.nlp.fit_classifier or session.nlp.fit_topics.",),
         alternatives=("checkpoint_save for workflow state only.",),
         rationale=(
             "The normalization plan travels with the vectorizer, so a reloaded model preprocesses text exactly as it was fitted.",
@@ -898,7 +898,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         ),
         state_changes=("History record only.",),
         result_reading=("Confirm meta.json format is buildml.nlp_bundle.v1.",),
-        next_steps=("load_nlp_bundle on a new Session.",),
+        next_steps=("session.nlp.load_bundle on a new Session.",),
         concepts=("nlp-bundle-boundary", "nlp-text-normalization", "checkpoint-integrity"),
     ),
     _operation(
@@ -925,7 +925,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         outputs=("Session with NlpTextPlan and/or NlpTopicPlan attached.",),
         prerequisites=(DATASET,),
         ordering=("After ingest; usually after split so holdout scoring is available.",),
-        alternatives=("fit_text_classifier or fit_topics to create new plans.",),
+        alternatives=("session.nlp.fit_classifier or session.nlp.fit_topics to create new plans.",),
         rationale=("Reload a fitted vocabulary rather than rebuilding it from train.",),
         assumptions=("Bundle format matches; the Session exposes the same text column name.",),
         failures=(
@@ -934,9 +934,9 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         ),
         leakage=("Load does not fit; scoring still uses holdout only.",),
         anti_patterns=("Treating RAG bundles and NLP bundles as interchangeable.",),
-        state_changes=("Stores nlp_text_plan and/or nlp_topic_plan; clears dependent results.",),
+        state_changes=("Stores session.nlp.text_plan and/or session.nlp.topic_plan; clears dependent results.",),
         result_reading=("Inspect plan.estimator, plan.text_column, and plan.n_features after load.",),
-        next_steps=("evaluate_text_classifier; predict_text; assign_topics.",),
+        next_steps=("session.nlp.evaluate; session.nlp.predict; session.nlp.assign_topics.",),
         concepts=("nlp-bundle-boundary", "nlp-vs-rag", "leakage-boundary"),
     ),
 )

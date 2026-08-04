@@ -1,7 +1,7 @@
 # Synthetic-data systems: deep guide
 
-Session path for **train-fitted tabular generators**. Phase-1 bar + **R6.10
-industry depth**: native fallback, SDV when installed, honest capability matrix.
+Session path for **train-fitted tabular generators**. Core bar plus industry
+depth: native fallback, SDV when installed, honest capability matrix.
 
 ## What this is / is not
 
@@ -19,20 +19,24 @@ reuses `buildml[imbalanced]`. SDV + SDMetrics use `buildml[synthetic-industry]`.
 ## Capability matrix
 
 ```python
+import pandas as pd
+
 from buildml import Session
 
-Session.synthetic_capability_matrix()
+# Preferred namespaced form (flat Session.*_capability_matrix still works).
+session = Session.ingest(pd.DataFrame({"x": [0.0]}))
+session.synthetic.capability_matrix()
 # backends: native (always), sdv (when SDV installed)
 # evaluation: builtin fidelity/TSTR; sdmetrics when installed
 ```
 
-Use `backend=` on `fit_synthesizer` / `sample_synthetic` / `evaluate_synthetic`.
+Use `backend=` on `session.synthetic.fit` / `session.synthetic.sample` / `session.synthetic.evaluate`.
 When `backend=None`, method name resolves the backend (`gaussian_copula` → native,
 `ctgan` → sdv). Default backend when SDV is installed: **sdv** (see matrix).
 
 ## Cross-link: `Session.resample`
 
-| | `resample` | `fit_synthesizer` |
+| | `resample` | `session.synthetic.fit` |
 | --- | --- | --- |
 | Goal | Class rebalance | General tabular generation |
 | Mutates train? | Yes (rebuilds split) | Only if `merge_mode='extend_train'` |
@@ -61,7 +65,7 @@ Small train sets (n<100) may underfit: disclosures warn accordingly.
 - Fit **always** on train (`assert_fit_partition`).
 - Holdouts never estimate schema / joints.
 - `extend_train` rebuilds indices; validation/test values unchanged.
-- `evaluate_synthetic` never refits the generator on the eval partition.
+- `session.synthetic.evaluate` never refits the generator on the eval partition.
 
 ## Evaluation
 
@@ -79,10 +83,10 @@ alongside built-in fidelity metrics.
 ## Validation
 
 ```python
-session.sample_synthetic(n=100, validate=True)  # built-in checks on sample
+session.synthetic.sample(n=100, validate=True)  # built-in checks on sample
 # or:
 from buildml.synthetic import validate_synthetic
-validate_synthetic(session.synthesizer_plan, frame)
+validate_synthetic(session.synthetic.plan, frame)
 ```
 
 Built-in: column presence, null-rate tolerance, categorical vocabulary, numeric
@@ -92,7 +96,7 @@ range slack. Optional Great Expectations lite column-presence expectations when
 ## Merge provenance
 
 ```python
-session.sample_synthetic(n=100, merge_mode="extend_train", provenance_column="_synthetic")
+session.synthetic.sample(n=100, merge_mode="extend_train", provenance_column="_synthetic")
 ```
 
 Provenance column role = `ignore`. Default `merge_mode='none'` returns Frame only.
@@ -112,9 +116,9 @@ methods run when `buildml[synthetic-industry]` is installed.
 Not differential privacy. Do not ship synthetic samples as an anonymization
 control without a dedicated privacy review.
 
-## Phase tracker
+## Scope notes
 
-R6.10 **PASS**: native fallback + SDV industry depth + capability matrix +
+Shipped: native fallback + SDV industry depth + capability matrix +
 benchmark + guides/explain/AI allowlist/tests/production extra.
 
-Next: R6.11 imitation + RL (final R6 item).
+Related next: imitation + RL.

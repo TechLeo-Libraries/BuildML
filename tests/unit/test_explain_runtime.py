@@ -108,6 +108,18 @@ def test_before_and_after_explanations_use_state_and_observed_record() -> None:
     assert after.next_valid_choices
 
 
+def test_explain_accepts_facade_operation_names() -> None:
+    session = _session()
+    before_flat = session.explain("fit", moment="before")
+    before_facade = session.explain("classical.fit", moment="before")
+    before_prefixed = session.explain("session.classical.fit", moment="before")
+    assert before_facade.operation == before_prefixed.operation == "fit"
+    assert before_facade.status == before_flat.status
+    after = session.explain("session.data.ingest", moment="after")
+    assert after.operation == "ingest"
+    assert after.sequence == 1
+
+
 def test_after_explanation_for_unrun_repeatable_operation_is_explicit() -> None:
     explanation = explain(_session(), "eda", moment="after")
     assert isinstance(explanation, AfterOperationExplanation)
@@ -149,10 +161,21 @@ def test_checkpoint_preserves_v2_and_loads_old_history(tmp_path: Path) -> None:
         range(1, len(restored.history) + 1)
     )
 
+    from buildml.core.serialization import sha256_file
+
     (path / "history.json").write_text(
         json.dumps([{"action": "ingest", "details": {"format": "parquet"}}]),
         encoding="utf-8",
     )
+    # Keep MANIFEST hashes aligned so this exercises legacy history normalization,
+    # not tamper detection (integrity still refuses mismatched digests).
+    manifest_path = path / "MANIFEST.json"
+    if manifest_path.exists():
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        hashes = manifest.get("hashes")
+        if isinstance(hashes, dict) and "history.json" in hashes:
+            hashes["history.json"] = sha256_file(path / "history.json")
+            manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
     old_restored = Session.checkpoint_load(path, trusted=True)
     assert old_restored.history[0]["schema_version"] == 2
     assert old_restored.history[0]["parameters"]["format"] == "parquet"

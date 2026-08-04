@@ -35,30 +35,63 @@ def main() -> None:
         .split(test_size=0.2, validation_size=0.2, random_state=ctx.seed)
         .scale(method="standard")
     )
-    session.declare_causal_assumptions(
-        treatment="t", outcome="y", confounders=["x1", "x2"],
-        acknowledge_unconfoundedness=True, acknowledge_positivity=True,
+    session.causal.declare_assumptions(
+        treatment="t",
+        outcome="y",
+        confounders=["x1", "x2"],
+        acknowledge_unconfoundedness=True,
+        acknowledge_positivity=True,
     )
-    fit = session.fit_causal(method="aipw", bootstrap_samples=40)
-    ev = session.evaluate_causal(partition="validation", bootstrap_samples=20)
-    ref = session.refute_causal(kind="placebo_treatment")
-    bundle = session.save_causal_bundle(ctx.artifacts_dir / "causal_bundle")
+    fit = session.causal.fit(method="aipw", bootstrap_samples=40)
+    ev = session.causal.evaluate(partition="validation", bootstrap_samples=20)
+    ref = session.causal.refute(kind="placebo_treatment")
+    bundle = session.causal.save_bundle(ctx.artifacts_dir / "causal_bundle")
+
+    restored = (
+        Session.ingest(frame)
+        .set_roles({"x1": "feature", "x2": "feature", "t": "feature", "y": "target"})
+        .split(test_size=0.2, validation_size=0.2, random_state=ctx.seed)
+        .scale(method="standard")
+    )
+    restored.causal.load_bundle(bundle, trusted=True)
+    ev_reloaded = restored.causal.evaluate(
+        partition="validation", bootstrap_samples=20
+    )
+
     write_results(ctx, {
         "status": "completed",
-        "data": {"name": "synthetic_backdoor", "license": "synthetic/public-domain", "n_rows": n, "true_ate_approx": 1.8},
+        "data": {
+            "name": "synthetic_backdoor",
+            "license": "synthetic/public-domain",
+            "n_rows": n,
+            "true_ate_approx": 1.8,
+        },
         "assumptions": {
-            "treatment": "t", "outcome": "y", "confounders": ["x1", "x2"],
+            "treatment": "t",
+            "outcome": "y",
+            "confounders": ["x1", "x2"],
             "acknowledged": ["unconfoundedness", "positivity"],
         },
         "fit": {
             "method": fit.method,
+            "backend": getattr(fit, "backend", "native"),
             "ate": float(fit.ate),
-            "ate_ci_low": float(fit.ate_ci_low),
-            "ate_ci_high": float(fit.ate_ci_high),
+            "ate_ci_low": float(fit.ate_ci_low) if fit.ate_ci_low is not None else None,
+            "ate_ci_high": float(fit.ate_ci_high) if fit.ate_ci_high is not None else None,
         },
         "eval": {
             "ate": float(ev.ate),
+            "ate_ci_low": float(ev.ate_ci_low) if ev.ate_ci_low is not None else None,
+            "ate_ci_high": float(ev.ate_ci_high) if ev.ate_ci_high is not None else None,
             "metrics": metrics_round(dict(ev.metrics)),
+        },
+        "reloaded_eval": {
+            "ate": float(ev_reloaded.ate),
+            "metrics": metrics_round(dict(ev_reloaded.metrics)),
+        },
+        "bundle_roundtrip": {
+            "loaded": restored.causal.plan is not None,
+            "ate_match": bool(abs(float(ev.ate) - float(ev_reloaded.ate)) < 1e-9),
         },
         "refute": {
             "kind": "placebo_treatment",
@@ -66,7 +99,12 @@ def main() -> None:
             "ate_shift": float(ref.ate_shift),
         },
         "bundle_path": str(bundle),
-        "leakage_controls": ["Assumptions declared before fit", "Train-only nuisance models", "Holdout eval disclosed"],
+        "leakage_controls": [
+            "Assumptions declared before fit",
+            "Train-only nuisance models",
+            "Holdout eval disclosed",
+            "Bundle load re-evaluate uses frozen nuisances only",
+        ],
         "industry_comparison": {
             "status": "filled",
             "note": (
@@ -74,7 +112,11 @@ def main() -> None:
                 "run script then baseline_industry.py for results/comparison.json."
             ),
         },
-        "limitations": ["Synthetic DGP; assumptions are declared not proven", "EDA remains non-causal"],
+        "limitations": [
+            "Synthetic DGP; assumptions are declared not proven",
+            "EDA remains non-causal",
+            "Native AIPW path (DoWhy/EconML industry optional, subprocess-gated)",
+        ],
     })
     print("causal-treatment-effect OK", float(fit.ate))
 

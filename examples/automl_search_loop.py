@@ -26,7 +26,7 @@ def main() -> None:
         .split(test_size=0.2, validation_size=0.2, random_state=0, stratify=True)
     )
 
-    result = session.run_automl(
+    result = session.automl.run(
         method="randomized",
         selection="cv",
         n_trials=12,
@@ -38,11 +38,11 @@ def main() -> None:
         random_state=0,
     )
     result.show()
-    print(session.evaluate_automl(partition="validation").metrics)
-    print(session.evaluate_automl(partition="test").metrics)
+    print(session.automl.evaluate(partition="validation").metrics)
+    print(session.automl.evaluate(partition="test").metrics)
 
     out = Path(".buildml-artifacts") / "automl_demo_bundle"
-    session.save_automl_bundle(out)
+    session.automl.save_bundle(out)
     print(f"saved {out}")
 
 

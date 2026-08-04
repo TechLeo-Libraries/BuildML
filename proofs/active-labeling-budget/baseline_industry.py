@@ -104,7 +104,7 @@ def main() -> None:
     write_comparison(
         ctx,
         buildml={
-            "backend": "buildml.Session.fit_active_learner",
+            "backend": "buildml.session.active_learning.fit",
             "strategy": bml_raw.get("fit", {}).get("strategy", "margin"),
             "test_metrics": bml_metrics,
         },

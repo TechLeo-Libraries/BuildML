@@ -14,12 +14,12 @@ escalate-or-not, and induces explainable policy rules:
 
 ## Status
 
-`completed`: run `script.py`; see `results/summary.json` and stage JSONs.
+Run `script.py`. Outputs land under `results/` (summary and stage JSON)..
 
 ## How to run
 
 ```bash
-.\.venv\Scripts\python.exe proofs\folio-claims-nlp\script.py
+python proofs\folio-claims-nlp\script.py
 ```
 
 ## Leakage controls

@@ -1,5 +1,5 @@
 {
-  "n_operations": 304,
+  "n_operations": 314,
   "operations": {
     "act_rl": {
       "doc_summary": "Choose actions under the fitted RL policy.",
@@ -749,6 +749,85 @@
       ],
       "qualname": "DlSessionMixin.attach_backbone_head"
     },
+    "attach_fairness_to_last_eval": {
+      "doc_summary": "Attach a fairness report using the latest classical evaluate partition.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "attach_fairness_to_last_eval",
+      "parameters": [
+        {
+          "annotation": "str | Sequence[str]",
+          "default": null,
+          "kind": "KEYWORD_ONLY",
+          "name": "sensitive_column",
+          "required": true
+        },
+        {
+          "annotation": "Any",
+          "default": "1",
+          "kind": "KEYWORD_ONLY",
+          "name": "positive_label",
+          "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "True",
+          "kind": "KEYWORD_ONLY",
+          "name": "include_classical_metrics",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "0",
+          "kind": "KEYWORD_ONLY",
+          "name": "bootstrap_samples",
+          "required": false
+        },
+        {
+          "annotation": "str",
+          "default": "'bootstrap'",
+          "kind": "KEYWORD_ONLY",
+          "name": "stability_method",
+          "required": false
+        },
+        {
+          "annotation": "float",
+          "default": "0.8",
+          "kind": "KEYWORD_ONLY",
+          "name": "subsample_fraction",
+          "required": false
+        },
+        {
+          "annotation": "float",
+          "default": "0.95",
+          "kind": "KEYWORD_ONLY",
+          "name": "confidence_level",
+          "required": false
+        },
+        {
+          "annotation": "int | None",
+          "default": "0",
+          "kind": "KEYWORD_ONLY",
+          "name": "random_state",
+          "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "True",
+          "kind": "KEYWORD_ONLY",
+          "name": "include_scores",
+          "required": false
+        },
+        {
+          "annotation": "str | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "partition",
+          "required": false
+        }
+      ],
+      "qualname": "FairnessSessionMixin.attach_fairness_to_last_eval"
+    },
     "automl_capability_matrix": {
       "doc_summary": "Report which AutoML search backends and model families are available here.",
       "is_classmethod": false,
@@ -1175,6 +1254,22 @@
         }
       ],
       "qualname": "CausalSessionMixin.declare_causal_assumptions"
+    },
+    "describe_method": {
+      "doc_summary": "Describe one Session method (catalog, capability route, or docstring).",
+      "is_classmethod": false,
+      "is_staticmethod": true,
+      "name": "describe_method",
+      "parameters": [
+        {
+          "annotation": "str",
+          "default": null,
+          "kind": "POSITIONAL_OR_KEYWORD",
+          "name": "name",
+          "required": true
+        }
+      ],
+      "qualname": "WorkflowSessionMixin.describe_method"
     },
     "detect_language": {
       "doc_summary": "Identify the language of every document in a partition.",
@@ -1714,7 +1809,7 @@
       "qualname": "PreprocessSessionMixin.encode"
     },
     "ensemble_capability_matrix": {
-      "doc_summary": "Report ensemble strategies available with core sklearn.",
+      "doc_summary": "Report which ensemble strategies are available with core sklearn.",
       "is_classmethod": false,
       "is_staticmethod": true,
       "name": "ensemble_capability_matrix",
@@ -2166,6 +2261,85 @@
         }
       ],
       "qualname": "EnsembleSessionMixin.evaluate_ensemble"
+    },
+    "evaluate_fairness": {
+      "doc_summary": "Report group disparity metrics on a holdout partition.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "evaluate_fairness",
+      "parameters": [
+        {
+          "annotation": "str | Sequence[str]",
+          "default": null,
+          "kind": "KEYWORD_ONLY",
+          "name": "sensitive_column",
+          "required": true
+        },
+        {
+          "annotation": "str",
+          "default": "'test'",
+          "kind": "KEYWORD_ONLY",
+          "name": "partition",
+          "required": false
+        },
+        {
+          "annotation": "Any",
+          "default": "1",
+          "kind": "KEYWORD_ONLY",
+          "name": "positive_label",
+          "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "True",
+          "kind": "KEYWORD_ONLY",
+          "name": "include_classical_metrics",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "0",
+          "kind": "KEYWORD_ONLY",
+          "name": "bootstrap_samples",
+          "required": false
+        },
+        {
+          "annotation": "str",
+          "default": "'bootstrap'",
+          "kind": "KEYWORD_ONLY",
+          "name": "stability_method",
+          "required": false
+        },
+        {
+          "annotation": "float",
+          "default": "0.8",
+          "kind": "KEYWORD_ONLY",
+          "name": "subsample_fraction",
+          "required": false
+        },
+        {
+          "annotation": "float",
+          "default": "0.95",
+          "kind": "KEYWORD_ONLY",
+          "name": "confidence_level",
+          "required": false
+        },
+        {
+          "annotation": "int | None",
+          "default": "0",
+          "kind": "KEYWORD_ONLY",
+          "name": "random_state",
+          "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "True",
+          "kind": "KEYWORD_ONLY",
+          "name": "include_scores",
+          "required": false
+        }
+      ],
+      "qualname": "FairnessSessionMixin.evaluate_fairness"
     },
     "evaluate_federated": {
       "doc_summary": "Evaluate the global federated model on a holdout partition.",
@@ -2869,6 +3043,36 @@
       ],
       "qualname": "WorkflowSessionMixin.explain"
     },
+    "explain_shap": {
+      "doc_summary": "Attribute predictions with SHAP (requires ``buildml[shap]``).",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "explain_shap",
+      "parameters": [
+        {
+          "annotation": "Literal['train', 'validation', 'test']",
+          "default": "'test'",
+          "kind": "KEYWORD_ONLY",
+          "name": "partition",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "100",
+          "kind": "KEYWORD_ONLY",
+          "name": "max_samples",
+          "required": false
+        },
+        {
+          "annotation": "int | None",
+          "default": "0",
+          "kind": "KEYWORD_ONLY",
+          "name": "random_state",
+          "required": false
+        }
+      ],
+      "qualname": "ClassicalSessionMixin.explain_shap"
+    },
     "export_round_history": {
       "doc_summary": "Export federated round metrics to JSON for audit and teaching overlays.",
       "is_classmethod": false,
@@ -3130,6 +3334,14 @@
         }
       ],
       "qualname": "NlpSessionMixin.extract_keyphrases"
+    },
+    "fairness_capability_matrix": {
+      "doc_summary": "Honest fairness metric / non-goal matrix.",
+      "is_classmethod": false,
+      "is_staticmethod": true,
+      "name": "fairness_capability_matrix",
+      "parameters": [],
+      "qualname": "FairnessSessionMixin.fairness_capability_matrix"
     },
     "feature_importance": {
       "doc_summary": "Measure which features the model genuinely depends on.",
@@ -7419,7 +7631,7 @@
       "qualname": "ActivelearningSessionMixin.label_rows"
     },
     "learn": {
-      "doc_summary": "Teach a concept, an operation, or a term \u2014 and say what to read first.",
+      "doc_summary": "Teach a concept, an operation, or a term: and say what to read first.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "learn",
@@ -7484,6 +7696,45 @@
         }
       ],
       "qualname": "ClassicalSessionMixin.learning_curve"
+    },
+    "list_active_domains": {
+      "doc_summary": "Report which domain artifacts are present on this Session.",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "list_active_domains",
+      "parameters": [],
+      "qualname": "WorkflowSessionMixin.list_active_domains"
+    },
+    "list_capabilities": {
+      "doc_summary": "List Session domain capabilities grouped for discovery.",
+      "is_classmethod": false,
+      "is_staticmethod": true,
+      "name": "list_capabilities",
+      "parameters": [
+        {
+          "annotation": "bool",
+          "default": "False",
+          "kind": "KEYWORD_ONLY",
+          "name": "include_matrices",
+          "required": false
+        },
+        {
+          "annotation": "str | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "domain",
+          "required": false
+        }
+      ],
+      "qualname": "WorkflowSessionMixin.list_capabilities"
+    },
+    "list_facades": {
+      "doc_summary": "List namespaced Session facades (``session.fairness``, \u2026).",
+      "is_classmethod": false,
+      "is_staticmethod": true,
+      "name": "list_facades",
+      "parameters": [],
+      "qualname": "WorkflowSessionMixin.list_facades"
     },
     "list_transforms": {
       "doc_summary": "List the custom transforms currently registered.",
@@ -9224,7 +9475,7 @@
       "qualname": "OnlineSessionMixin.online_capability_matrix"
     },
     "open_eda_dashboard": {
-      "doc_summary": "Open the interactive EDA studio \u2014 an alias for :meth:`eda_app`.",
+      "doc_summary": "Open the interactive EDA studio: an alias for :meth:`eda_app`.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "open_eda_dashboard",
@@ -12147,6 +12398,80 @@
       "parameters": [],
       "qualname": "SelfsupervisedSessionMixin.ssl_capability_matrix"
     },
+    "suggest_fairness_reweighing": {
+      "doc_summary": "Suggest reweighing sample weights (opt-in; not auto-applied).",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "suggest_fairness_reweighing",
+      "parameters": [
+        {
+          "annotation": "str | Sequence[str]",
+          "default": null,
+          "kind": "KEYWORD_ONLY",
+          "name": "sensitive_column",
+          "required": true
+        },
+        {
+          "annotation": "str",
+          "default": "'train'",
+          "kind": "KEYWORD_ONLY",
+          "name": "partition",
+          "required": false
+        },
+        {
+          "annotation": "Any",
+          "default": "1",
+          "kind": "KEYWORD_ONLY",
+          "name": "positive_label",
+          "required": false
+        }
+      ],
+      "qualname": "FairnessSessionMixin.suggest_fairness_reweighing"
+    },
+    "suggest_fairness_thresholds": {
+      "doc_summary": "Suggest per-group thresholds (opt-in; not auto-applied).",
+      "is_classmethod": false,
+      "is_staticmethod": false,
+      "name": "suggest_fairness_thresholds",
+      "parameters": [
+        {
+          "annotation": "str | Sequence[str]",
+          "default": null,
+          "kind": "KEYWORD_ONLY",
+          "name": "sensitive_column",
+          "required": true
+        },
+        {
+          "annotation": "str",
+          "default": "'validation'",
+          "kind": "KEYWORD_ONLY",
+          "name": "partition",
+          "required": false
+        },
+        {
+          "annotation": "Any",
+          "default": "1",
+          "kind": "KEYWORD_ONLY",
+          "name": "positive_label",
+          "required": false
+        },
+        {
+          "annotation": "str",
+          "default": "'demographic_parity'",
+          "kind": "KEYWORD_ONLY",
+          "name": "target",
+          "required": false
+        },
+        {
+          "annotation": "int",
+          "default": "101",
+          "kind": "KEYWORD_ONLY",
+          "name": "grid_size",
+          "required": false
+        }
+      ],
+      "qualname": "FairnessSessionMixin.suggest_fairness_thresholds"
+    },
     "suggest_query": {
       "doc_summary": "Suggest unlabeled train-pool indices for human labeling without an oracle.",
       "is_classmethod": false,
@@ -12732,6 +13057,13 @@
           "default": "None",
           "kind": "KEYWORD_ONLY",
           "name": "export_html",
+          "required": false
+        },
+        {
+          "annotation": "str",
+          "default": "'lazy'",
+          "kind": "KEYWORD_ONLY",
+          "name": "capability_probe",
           "required": false
         }
       ],

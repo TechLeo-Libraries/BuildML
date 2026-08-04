@@ -8,13 +8,13 @@
 ## Story
 
 ```text
-fit_ssl_pretext (train features; labels ignored)
+session.ssl.fit_pretext (train features; labels ignored)
         ↓
-transform_ssl (optional attach of ssl_emb_* columns)
+session.ssl.transform (optional attach of ssl_emb_* columns)
         ↓
-finetune_ssl_head (labeled train only; NaN targets skipped)
+session.ssl.finetune_head (labeled train only; NaN targets skipped)
         ↓
-evaluate_ssl (labeled holdout only)
+session.ssl.evaluate (labeled holdout only)
 ```
 
 ## Method catalog (Session `method=`)
@@ -46,7 +46,7 @@ evaluate_ssl (labeled holdout only)
 Replace with:
 
 ```python
-session.fit_ssl_pretext(method="simclr_tabular", latent_dim=16, epochs=40)
+session.ssl.fit_pretext(method="simclr_tabular", latent_dim=16, epochs=40)
 ```
 
 Bundles saved after Torch fit use `buildml.ssl_bundle.v2`. Old
@@ -56,8 +56,8 @@ Bundles saved after Torch fit use `buildml.ssl_bundle.v2`. Old
 
 Vision/audio/speech freeze/finetune for downstream supervised heads:
 
-- `Session.load_pretrained_backbone`
-- `Session.attach_backbone_head`
+- `session.dl.load_backbone`
+- `session.dl.attach_head`
 
 `vision_ssl` trains a projector on image columns inside the SSL Session path;
 backbone transfer remains the path for published-weight linear probes.

@@ -32,8 +32,8 @@ SEMISUPERVISED_NOTES: dict[str, ConceptNote] = {
                 "Teaching and audits need an explicit unlabeled count beside every fit/eval.",
             ),
             how_buildml_uses=(
-                "Session.fit_semisupervised reads the target role and counts labeled/unlabeled train rows.",
-                "evaluate_semisupervised scores only labeled partition rows.",
+                "session.semisupervised.fit reads the target role and counts labeled/unlabeled train rows.",
+                "session.semisupervised.evaluate scores only labeled partition rows.",
             ),
             interpretation_rules=(
                 "Always read n_labeled_train / n_unlabeled_train and n_labeled_eval.",
@@ -51,7 +51,7 @@ SEMISUPERVISED_NOTES: dict[str, ConceptNote] = {
                 "Silently writing pseudo-labels into the Session target role.",
             ),
             worked_example_pattern=(
-                "After split, set a fraction of train targets to NaN, then fit_semisupervised.",
+                "After split, set a fraction of train targets to NaN, then session.semisupervised.fit.",
             ),
             related_concepts=("semisupervised-train-only-fit", "ssl-pretext-then-head"),
         ),
@@ -78,8 +78,8 @@ SEMISUPERVISED_NOTES: dict[str, ConceptNote] = {
                 "Pseudo-label accuracy on train is not holdout performance.",
             ),
             how_buildml_uses=(
-                "Session.fit_semisupervised asserts a train SplitPlan.",
-                "predict_semisupervised / evaluate_semisupervised reuse the frozen plan.",
+                "session.semisupervised.fit asserts a train SplitPlan.",
+                "session.semisupervised.predict / session.semisupervised.evaluate reuse the frozen plan.",
             ),
             interpretation_rules=(
                 "Prefer validation/test labeled metrics over train pseudo-label accuracy.",
@@ -94,7 +94,7 @@ SEMISUPERVISED_NOTES: dict[str, ConceptNote] = {
                 "Reporting train pseudo-label accuracy as holdout performance.",
             ),
             worked_example_pattern=(
-                "fit_semisupervised(method='self_training') → evaluate_semisupervised(partition='test').",
+                "session.semisupervised.fit(method='self_training') → session.semisupervised.evaluate(partition='test').",
             ),
             related_concepts=("semisupervised-label-missingness", "leakage-boundary"),
         ),
@@ -119,7 +119,7 @@ SEMISUPERVISED_NOTES: dict[str, ConceptNote] = {
                 "Conflating the APIs produces wrong metrics and wrong product claims.",
             ),
             how_buildml_uses=(
-                "Session.fit_semisupervised vs Session.fit_anomaly(mode='novelty').",
+                "session.semisupervised.fit vs session.anomaly.fit(mode='novelty').",
             ),
             interpretation_rules=(
                 "If the goal is class labels under scarce annotation, use semi-supervised.",
@@ -129,7 +129,7 @@ SEMISUPERVISED_NOTES: dict[str, ConceptNote] = {
             failure_modes=("Calling novelty 'semi-supervised representation learning'.",),
             anti_patterns=("Reusing anomaly novelty APIs for scarce multiclass labels.",),
             worked_example_pattern=(
-                "Fraud class labels scarce → fit_semisupervised; normal-only stream → fit_anomaly novelty.",
+                "Fraud class labels scarce → session.semisupervised.fit; normal-only stream → session.anomaly.fit novelty.",
             ),
             related_concepts=("anomaly-novelty-vs-unsupervised", "semisupervised-train-only-fit"),
         ),
@@ -148,18 +148,18 @@ SEMISUPERVISED_NOTES: dict[str, ConceptNote] = {
             ),
             formal_idea=(
                 "Artifacts are complementary: checkpoint_load ↛ semisupervised estimator; "
-                "load_semisupervised_bundle ↛ dataset rows."
+                "session.semisupervised.load_bundle ↛ dataset rows."
             ),
             why_it_matters=("Mixing artifacts causes silent missing-estimator failures.",),
             how_buildml_uses=(
-                "save_semisupervised_bundle / load_semisupervised_bundle.",
+                "session.semisupervised.save_bundle / session.semisupervised.load_bundle.",
             ),
             interpretation_rules=("Read meta.json format buildml.semisupervised_bundle.v1.",),
             assumptions=("Feature contract still matches at load time.",),
             failure_modes=("Expecting checkpoint_load to restore SemiSupervisedPlan.",),
             anti_patterns=("Treating unsupervised or anomaly bundles as semi-supervised plans.",),
             worked_example_pattern=(
-                "session.save_semisupervised_bundle(path); other.load_semisupervised_bundle(path).",
+                "session.semisupervised.save_bundle(path); other.semisupervised.load_bundle(path).",
             ),
             related_concepts=("semisupervised-train-only-fit",),
         ),
@@ -167,8 +167,8 @@ SEMISUPERVISED_NOTES: dict[str, ConceptNote] = {
             key="semisupervised-ssl-pipeline",
             title="SSL → semi-supervised pipeline",
             summary=(
-                "fit_ssl_pretext learns train representations; transform_ssl exposes "
-                "embeddings; fit_semisupervised propagates/pseudo-labels partial targets."
+                "session.ssl.fit_pretext learns train representations; session.ssl.transform exposes "
+                "embeddings; session.semisupervised.fit propagates/pseudo-labels partial targets."
             ),
             definition=(
                 "BuildML documents a two-stage pipeline: self-supervised pretext on "
@@ -180,30 +180,30 @@ SEMISUPERVISED_NOTES: dict[str, ConceptNote] = {
                 "class stickers using both the coordinates and the few known labels."
             ),
             formal_idea=(
-                "Stage 1: encoder f = fit_ssl_pretext(X_train). Stage 2: "
-                "g = fit_semisupervised(f(X_train), y_train^{partial})."
+                "Stage 1: encoder f = session.ssl.fit_pretext(X_train). Stage 2: "
+                "g = session.semisupervised.fit(f(X_train), y_train^{partial})."
             ),
             why_it_matters=(
                 "Combining representation learning with partial labels is a common "
-                "industry recipe; finetune_ssl_head alone ignores unlabeled train rows."
+                "industry recipe; session.ssl.finetune_head alone ignores unlabeled train rows."
             ,),
             how_buildml_uses=(
-                "Session.fit_ssl_pretext → Session.transform_ssl(attach=True) → "
-                "Session.fit_semisupervised(columns=ssl_emb_*).",
+                "session.ssl.fit_pretext → session.ssl.transform(attach=True) → "
+                "session.semisupervised.fit(columns=ssl_emb_*).",
             ),
             interpretation_rules=(
-                "finetune_ssl_head = labeled-only head; fit_semisupervised = uses unlabeled.",
+                "session.ssl.finetune_head = labeled-only head; session.semisupervised.fit = uses unlabeled.",
                 "Holdout eval still scores labeled rows only.",
             ),
             assumptions=("Split exists before both stages.",),
             failure_modes=(
-                "Using finetune_ssl_head when unlabeled train rows should contribute.",
+                "Using session.ssl.finetune_head when unlabeled train rows should contribute.",
             ),
             anti_patterns=(
-                "Skipping transform_ssl then expecting SSL columns magically.",
+                "Skipping session.ssl.transform then expecting SSL columns magically.",
             ),
             worked_example_pattern=(
-                "fit_ssl_pretext(simclr_tabular) → transform_ssl → fit_semisupervised(self_training).",
+                "session.ssl.fit_pretext(simclr_tabular) → session.ssl.transform → session.semisupervised.fit(self_training).",
             ),
             related_concepts=("ssl-pretext-then-head", "semisupervised-train-only-fit"),
         ),

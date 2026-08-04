@@ -99,13 +99,13 @@ def main() -> None:
     # --- Stage 1: symbolic ---
     try:
         try:
-            fit_s = session.fit_symbolic(
+            fit_s = session.symbolic.fit(
                 source="decision_tree", max_depth=4, random_state=ctx.seed
             )
         except TypeError:
-            fit_s = session.fit_symbolic(method="decision_tree", random_state=ctx.seed)
-        val_s = session.evaluate_symbolic(partition="validation")
-        test_s = session.evaluate_symbolic(partition="test")
+            fit_s = session.symbolic.fit(method="decision_tree", random_state=ctx.seed)
+        val_s = session.symbolic.evaluate(partition="validation")
+        test_s = session.symbolic.evaluate(partition="test")
         stages["symbolic"] = {
             "status": "ok",
             "fit": metrics_round(fit_s.to_dict() if hasattr(fit_s, "to_dict") else {}),
@@ -127,15 +127,15 @@ def main() -> None:
     }
     if not TORCH_STATUS.get("skip_torch_paths"):
         try:
-            nf = session.fit_neuro_symbolic(
+            nf = session.symbolic.fit_neuro(
                 mode="constraint_overlay",
                 base_estimator="logistic_regression",
                 rule_source="decision_tree",
                 random_state=ctx.seed,
                 torch_epochs=5,
             )
-            ne = session.evaluate_neuro_symbolic(partition="validation")
-            ne_test = session.evaluate_neuro_symbolic(partition="test")
+            ne = session.symbolic.evaluate_neuro(partition="validation")
+            ne_test = session.symbolic.evaluate_neuro(partition="test")
             neuro = {
                 "status": "ok",
                 "fit": metrics_round(nf.to_dict() if hasattr(nf, "to_dict") else {}),
@@ -185,16 +185,16 @@ def main() -> None:
         assert_no_test_in_selection(
             selection_partition="validation", evaluation_partition="test"
         )
-        thr = classical.fit_decision_policy(
+        thr = classical.decision.fit(
             method="threshold",
             partition="validation",
             fp_cost=1.0,
             fn_cost=7.0,
         )
-        thr_test = classical.evaluate_decisions(partition="test")
+        thr_test = classical.decision.evaluate(partition="test")
         alloc_payload: dict = {"alloc_status": "skipped"}
         try:
-            knap = classical.fit_decision_policy(
+            knap = classical.decision.fit(
                 method="knapsack",
                 partition="validation",
                 budget=60.0,
@@ -203,7 +203,7 @@ def main() -> None:
                 score_source="model_proba",
                 knapsack_solver="dp",
             )
-            applied = classical.apply_decisions(partition="test")
+            applied = classical.decision.apply(partition="test")
             alloc_payload = {
                 "alloc_status": "ok",
                 "knapsack_policy": metrics_round(
@@ -216,13 +216,13 @@ def main() -> None:
                 },
             }
         except Exception as exc:  # noqa: BLE001
-            topk = classical.fit_decision_policy(
+            topk = classical.decision.fit(
                 method="topk",
                 partition="validation",
                 capacity=30,
                 score_source="model_proba",
             )
-            applied = classical.apply_decisions(partition="test")
+            applied = classical.decision.apply(partition="test")
             alloc_payload = {
                 "alloc_status": "ok_topk_fallback",
                 "error": f"{type(exc).__name__}: {exc}",

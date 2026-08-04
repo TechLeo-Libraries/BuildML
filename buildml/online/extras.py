@@ -23,22 +23,17 @@ def river_spec_present() -> bool:
 
 
 def river_available() -> bool:
-    """Return whether River can be imported for industry streaming online paths.
+    """Return whether River imports cleanly (subprocess probe).
 
-    Performs a real import probe so broken installs are not reported as available.
-
-    Returns
-    -------
-    bool
-        ``True`` when ``river`` imports cleanly.
+    Uses out-of-process import so a broken native stack cannot hard-crash the
+    parent BuildML process. Prefer :func:`river_spec_present` for cheap
+    discovery disclosure.
     """
     if not river_spec_present():
         return False
-    try:
-        import river  # noqa: F401
-    except Exception:
-        return False
-    return True
+    from buildml.dl.extras import _subprocess_import_ok
+
+    return _subprocess_import_ok("river")
 
 
 def online_industry_available() -> bool:

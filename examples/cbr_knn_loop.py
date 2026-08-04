@@ -23,7 +23,7 @@ def main() -> None:
         .scale(method="standard")
     )
 
-    fit = session.fit_cbr(
+    fit = session.cbr.fit(
         task="classification",
         metric="euclidean",
         reuse="distance_weighted",
@@ -31,22 +31,22 @@ def main() -> None:
     )
     print("cbr", fit.n_cases, fit.metric, fit.reuse, fit.train_score)
 
-    neighbors = session.retrieve_cases(partition="test", k=3)
+    neighbors = session.cbr.retrieve(partition="test", k=3)
     t0 = neighbors.traces[0]
     print("retrieve0", t0.neighbor_case_ids, t0.distances)
 
-    pred = session.predict_cbr(partition="test", return_traces=True)
+    pred = session.cbr.predict(partition="test", return_traces=True)
     print(
         "predict0",
         pred.traces[0].prediction,
         pred.traces[0].neighbor_solutions,
     )
 
-    ev = session.evaluate_cbr(partition="validation")
+    ev = session.cbr.evaluate(partition="validation")
     print("eval", ev.metrics, "mean_d", ev.mean_neighbor_distance)
 
     out = Path("artifacts") / "cbr_demo_bundle"
-    session.save_cbr_bundle(out)
+    session.cbr.save_bundle(out)
     print("saved", out)
 
     other = (
@@ -55,8 +55,8 @@ def main() -> None:
         .split(test_size=0.2, validation_size=0.2, random_state=0, stratify=True)
         .scale(method="standard")
     )
-    other.load_cbr_bundle(out, trusted=True)
-    print("reloaded", other.evaluate_cbr(partition="test").metrics)
+    other.cbr.load_bundle(out, trusted=True)
+    print("reloaded", other.cbr.evaluate(partition="test").metrics)
 
 
 if __name__ == "__main__":

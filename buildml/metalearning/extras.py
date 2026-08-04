@@ -31,22 +31,12 @@ def learn2learn_spec_present() -> bool:
 
 
 def learn2learn_available() -> bool:
-    """Return whether learn2learn can be imported for MAML/Reptile industry paths.
-
-    Performs a real import probe so broken installs are not reported as available.
-
-    Returns
-    -------
-    bool
-        ``True`` when ``learn2learn`` imports cleanly.
-    """
+    """Return whether learn2learn imports cleanly (subprocess probe)."""
     if not learn2learn_spec_present():
         return False
-    try:
-        import learn2learn  # noqa: F401
-    except Exception:
-        return False
-    return True
+    from buildml.dl.extras import _subprocess_import_ok
+
+    return _subprocess_import_ok("learn2learn")
 
 
 def metalearning_industry_available() -> bool:

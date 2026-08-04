@@ -23,7 +23,7 @@ defaults for implicit feedback: not a from-scratch reimplementation.
 
 EDA **Recommendation** objects (`buildml.explain.schemas.Recommendation`) are
 teaching advice linked to Findings: they never rank items. RAG
-(`rag_retrieve` / `rag_generate`) ranks **documents**, not catalog items from
+(`session.rag.retrieve` / `session.rag.generate`) ranks **documents**, not catalog items from
 an interaction matrix.
 
 ---
@@ -115,11 +115,11 @@ Never train on test interactions (`assert_can_fit` / `assert_fit_partition`).
 
 ## Bundle boundary
 
-`save_recommender_bundle` / `load_recommender_bundle` write
+`session.recommender.save_bundle` / `session.recommender.load_bundle` write
 `buildml.recommender_bundle.v1` (`meta.json` + `recommender_plan.joblib`).
 
 Session checkpoints do **not** embed `RecommenderPlan`. Reload workflow via
-`checkpoint_load`, then `load_recommender_bundle`.
+`checkpoint_load`, then `session.recommender.load_bundle`.
 
 ---
 
@@ -127,10 +127,10 @@ Session checkpoints do **not** embed `RecommenderPlan`. Reload workflow via
 
 | Session method | Role |
 |----------------|------|
-| `fit_recommender` | Train-only fit (backend/method routing) |
-| `recommend` | Top-K lists |
-| `evaluate_recommender` | Holdout ranking metrics |
-| `save_recommender_bundle` / `load_recommender_bundle` | Persist / restore |
+| `session.recommender.fit` | Train-only fit (backend/method routing) |
+| `session.recommender.recommend` | Top-K lists |
+| `session.recommender.evaluate` | Holdout ranking metrics |
+| `session.recommender.save_bundle` / `session.recommender.load_bundle` | Persist / restore |
 
 Walkthrough exposes `recommender_status`; AI allowlist includes the five ops.
 
@@ -141,19 +141,19 @@ Walkthrough exposes `recommender_status`; AI allowlist includes the five ops.
 Implicit feedback with industry default (ALS when installed):
 
 ```python
-session.fit_recommender(
+session.recommender.fit(
     user_column="user_id",
     item_column="item_id",
     feedback="implicit",
     n_factors=32,
 )
-session.evaluate_recommender(k=10)
+session.recommender.evaluate(k=10)
 ```
 
 Explicit core + industry hybrid:
 
 ```python
-session.fit_recommender(
+session.recommender.fit(
     method="lightfm",
     user_column="user_id",
     item_column="item_id",
@@ -166,7 +166,7 @@ Core method swap:
 
 ```python
 for method in ("item_knn", "user_knn", "svd", "nmf"):
-    session.fit_recommender(
+    session.recommender.fit(
         method=method,
         user_column="user_id",
         item_column="item_id",
@@ -174,15 +174,14 @@ for method in ("item_knn", "user_knn", "svd", "nmf"):
         n_factors=16,
         random_state=0,
     )
-    print(method, session.evaluate_recommender(k=10).metrics)
+    print(method, session.recommender.evaluate(k=10).metrics)
 ```
 
 Benchmark: ``python benchmarks/recommenders/ranking_quality.py``
 
 ---
 
-## Tracker
+## Scope notes
 
-Phase 3 application systems: **recommenders** (this guide): PASS (R5.3 industry depth).
-Search/LTR: PASS. Knowledge graphs: PASS.
-**Next (R5.4):** Causal inference (dowhy/econml).
+Recommenders industry depth is shipped. Related: search/LTR, knowledge graphs,
+and causal inference.

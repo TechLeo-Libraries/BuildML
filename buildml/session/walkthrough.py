@@ -179,7 +179,13 @@ def _resolve_domain_status(
     loader: Any,
 ) -> dict[str, Any]:
     if capability_probe == "eager" or active:
-        return loader(session)
+        status = loader(session)
+        if not isinstance(status, dict):
+            raise TypeError(
+                f"Domain status loader for {domain!r} must return a dict, "
+                f"got {type(status).__name__}"
+            )
+        return status
     return _idle_domain_status(domain)
 
 
@@ -1076,7 +1082,21 @@ def synthetic_status_for_walkthrough(session: Any) -> dict[str, Any]:
 
 
 def fairness_status_for_walkthrough(session: Any) -> dict[str, Any]:
-    """Factual fairness report disclosure for walkthrough."""
+    """Build walkthrough status from the Session fairness report, if any.
+
+    Delegates to fairness explain hooks so walkthrough HTML can surface
+    observational disparity facts without mutating Session state.
+
+    Parameters
+    ----------
+    session:
+        Live Session that may hold ``_fairness_report`` / last fairness state.
+
+    Returns
+    -------
+    dict[str, Any]
+        JSON-safe status mapping with enabled flag, disclosures, and metrics.
+    """
     from buildml.fairness.explain_hooks import fairness_status_for_session
 
     return fairness_status_for_session(session)

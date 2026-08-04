@@ -46,8 +46,8 @@ TDA_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         example=(
             "# pip install \"buildml[tda]\"",
-            "session.fit_tda(knn=25, vectorization='persistence_image', head='random_forest')",
-            "session.evaluate_tda(partition='test')",
+            "session.tda.fit(knn=25, vectorization='persistence_image', head='random_forest')",
+            "session.tda.evaluate(partition='test')",
         ),
         check=(
             "Is your `knn` large enough for a loop to even be visible?",
@@ -94,8 +94,8 @@ TDA_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.fit_tda(vectorization='landscape', n_bins=20, n_layers=3)",
-            "features = session.transform_tda(partition='train')",
+            "session.tda.fit(vectorization='landscape', n_bins=20, n_layers=3)",
+            "features = session.tda.transform(partition='train')",
             "print(features.shape)",
         ),
         check=(
@@ -120,8 +120,8 @@ TDA_BEGINNER: dict[str, BeginnerLayer] = _index(
         steps=(
             "Choose a head appropriate to your task: a classifier for labels, a regressor for numbers.",
             "It is fitted on the training rows' topological features and training labels only.",
-            "`predict_tda` runs new rows through the frozen extraction pipeline and the head.",
-            "`evaluate_tda` scores the whole thing on a held-out partition.",
+            "`session.tda.predict` runs new rows through the frozen extraction pipeline and the head.",
+            "`session.tda.evaluate` scores the whole thing on a held-out partition.",
             "Set `head='none'` when you only want the features and will model them yourself.",
         ),
         use=(
@@ -129,7 +129,7 @@ TDA_BEGINNER: dict[str, BeginnerLayer] = _index(
             "With `head='none'` when topological features are one input among many in a larger pipeline.",
         ),
         avoid=(
-            "Do not call `evaluate_tda` with `head='none'`: there is no model to score, and BuildML raises rather than guessing.",
+            "Do not call `session.tda.evaluate` with `head='none'`: there is no model to score, and BuildML raises rather than guessing.",
             "Do not judge the approach on the training score; topological features can memorize local neighbourhoods.",
         ),
         myths=(
@@ -143,8 +143,8 @@ TDA_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.fit_tda(head='random_forest', random_state=0)",
-            "report = session.evaluate_tda(partition='test')",
+            "session.tda.fit(head='random_forest', random_state=0)",
+            "report = session.tda.evaluate(partition='test')",
             "print(report.metrics)",
         ),
         check=(
@@ -168,8 +168,8 @@ TDA_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         steps=(
             "Fit a topological pipeline.",
-            "Call `save_tda_bundle(path)`.",
-            "Reload with `load_tda_bundle(path)`: the training neighbour index comes back with it.",
+            "Call `session.tda.save_bundle(path)`.",
+            "Reload with `session.tda.load_bundle(path)`: the training neighbour index comes back with it.",
             "Transform or predict on new rows.",
             "Use checkpoints separately for data and workflow state.",
         ),
@@ -192,9 +192,9 @@ TDA_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.save_tda_bundle('artifacts/shape-model')",
-            "service = Session.ingest(new_rows).load_tda_bundle('artifacts/shape-model')",
-            "service.predict_tda()",
+            "session.tda.save_bundle('artifacts/shape-model')",
+            "service = Session.ingest(new_rows).tda.load_bundle('artifacts/shape-model')",
+            "service.tda.predict()",
         ),
         check=(
             "Does your saved bundle include a head, or features only?",
@@ -209,7 +209,7 @@ TDA_BEGINNER: dict[str, BeginnerLayer] = _index(
         plain=(
             "Topology needs specialist libraries that BuildML does not install by default. "
             "`buildml[tda]` gives you the native path; `buildml[tda-industry]` adds giotto-tda. Without "
-            "them, `fit_tda` raises a clear error naming the extra you need."
+            "them, `session.tda.fit` raises a clear error naming the extra you need."
         ),
         analogy=(
             "A power tool sold without the specialist bit. The manual tells you exactly which bit to buy "
@@ -219,7 +219,7 @@ TDA_BEGINNER: dict[str, BeginnerLayer] = _index(
             "`import buildml` never requires these libraries: the base install stays light.",
             "Install `buildml[tda]` for ripser and persim, the native persistence path.",
             "Install `buildml[tda-industry]` for giotto-tda and its extra vectorizers.",
-            "Call `tda_capability_matrix()` to see what is actually available in your environment.",
+            "Call `session.tda.capability_matrix()` to see what is actually available in your environment.",
             "If both are installed, giotto is the default backend; silhouette vectorization stays native-only.",
         ),
         use=(
@@ -243,7 +243,7 @@ TDA_BEGINNER: dict[str, BeginnerLayer] = _index(
         example=(
             "pip install \"buildml[tda]\"           # native: ripser + persim",
             "pip install \"buildml[tda-industry]\"  # adds giotto-tda",
-            "Session.tda_capability_matrix()",
+            "session.tda.capability_matrix()",
         ),
         check=(
             "Which extras does your deployment environment actually have?",
@@ -289,8 +289,8 @@ TDA_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.fit_tda(backend='giotto', vectorization='betti_curve', mapper=True)",
-            "print(Session.tda_capability_matrix()['backends']['giotto'])",
+            "session.tda.fit(backend='giotto', vectorization='betti_curve', mapper=True)",
+            "print(session.tda.capability_matrix()['backends']['giotto'])",
         ),
         check=(
             "Which backend was your saved bundle fitted with?",

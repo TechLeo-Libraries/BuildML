@@ -9,7 +9,10 @@ from buildml.session.mixins._shared import *  # noqa: F403
 
 
 class SymbolicSessionMixin:
-    """Public Session methods for the symbolic domain."""
+    """Public Session methods for the symbolic domain.
+
+    Preferred namespaced API: ``session.symbolic.*`` (domain flat actions emit DeprecationWarning until BuildML 3.0).
+    """
     # mypy: session private attrs (owned by Session.__init__)
     if TYPE_CHECKING:
         _neuro_symbolic_fit_result: Any

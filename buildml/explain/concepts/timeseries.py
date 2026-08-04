@@ -38,12 +38,12 @@ TIMESERIES_NOTES: dict[str, ConceptNote] = {
                 "classical models are plausible.",
             ),
             how_buildml_uses=(
-                "Session.analyze_timeseries(include_decompose=True) or ts_decompose.",
+                "session.timeseries.analyze(include_decompose=True) or session.timeseries.decompose.",
                 "Default scope='train' under a temporal SplitPlan.",
             ),
             interpretation_rules=(
                 "Inspect seasonal amplitude vs trend slope before picking horizon.",
-                "A dominant seasonal period suggests exogenous season length for fit_forecast.",
+                "A dominant seasonal period suggests exogenous season length for session.forecast.fit.",
             ),
             assumptions=(
                 "Numeric target with parseable time index.",
@@ -58,8 +58,8 @@ TIMESERIES_NOTES: dict[str, ConceptNote] = {
                 "Assuming decomposition quality equals forecast skill.",
             ),
             worked_example_pattern=(
-                "time_split → analyze_timeseries(scope='train', include_decompose=True) "
-                "→ fit_forecast informed by seasonal_period.",
+                "time_split → session.timeseries.analyze(scope='train', include_decompose=True) "
+                "→ session.forecast.fit informed by seasonal_period.",
             ),
             related_concepts=(
                 "forecast-temporal-leakage",
@@ -93,7 +93,7 @@ TIMESERIES_NOTES: dict[str, ConceptNote] = {
                 "PACF spikes suggest autoregressive order; ACF decay suggests MA structure.",
             ),
             how_buildml_uses=(
-                "Session.analyze_timeseries(include_diagnostics=True) or ts_diagnostics.",
+                "session.timeseries.analyze(include_diagnostics=True) or session.timeseries.diagnostics.",
                 "statsmodels paths when buildml[timeseries] installed; honest refusal otherwise.",
             ),
             interpretation_rules=(
@@ -110,7 +110,7 @@ TIMESERIES_NOTES: dict[str, ConceptNote] = {
                 "Treating p-values as proof the series is forecast-ready.",
             ),
             worked_example_pattern=(
-                "ts_diagnostics(scope='train') → choose lag_ridge lags or seasonal diff.",
+                "session.timeseries.diagnostics(scope='train') → choose lag_ridge lags or seasonal diff.",
             ),
             related_concepts=("ts-decomposition", "forecast-lag-features"),
         ),
@@ -139,7 +139,7 @@ TIMESERIES_NOTES: dict[str, ConceptNote] = {
                 "Regime labels can motivate separate models or exogenous flags.",
             ),
             how_buildml_uses=(
-                "Session.analyze_timeseries(include_changepoints=True) on train scope.",
+                "session.timeseries.analyze(include_changepoints=True) on train scope.",
             ),
             interpretation_rules=(
                 "Treat changepoints as hypotheses: validate with domain knowledge.",
@@ -154,7 +154,7 @@ TIMESERIES_NOTES: dict[str, ConceptNote] = {
                 "Refitting changepoint penalty on holdout to minimize forecast error.",
             ),
             worked_example_pattern=(
-                "analyze_timeseries(include_changepoints=True) → document breaks before fit_forecast.",
+                "session.timeseries.analyze(include_changepoints=True) → document breaks before session.forecast.fit.",
             ),
             related_concepts=("ts-decomposition", "forecast-temporal-leakage"),
         ),
@@ -162,7 +162,7 @@ TIMESERIES_NOTES: dict[str, ConceptNote] = {
             key="ts-analysis-before-forecast",
             title="Time-series analysis vs forecasting",
             summary=(
-                "analyze_timeseries is diagnostic EDA on train scope; fit_forecast is "
+                "session.timeseries.analyze is diagnostic EDA on train scope; session.forecast.fit is "
                 "predictive modelling: run analysis first so method choice is informed."
             ),
             definition=(
@@ -184,8 +184,8 @@ TIMESERIES_NOTES: dict[str, ConceptNote] = {
                 "Keeps diagnostic leakage separate from predictive evaluation.",
             ),
             how_buildml_uses=(
-                "time_split → analyze_timeseries → fit_forecast → evaluate_forecast.",
-                "timeseries_capability_matrix() lists installed diagnostic backends.",
+                "time_split → session.timeseries.analyze → session.forecast.fit → session.forecast.evaluate.",
+                "session.timeseries.capability_matrix() lists installed diagnostic backends.",
             ),
             interpretation_rules=(
                 "Analysis results do not include forecast metrics.",
@@ -193,14 +193,14 @@ TIMESERIES_NOTES: dict[str, ConceptNote] = {
             ),
             assumptions=("Temporal SplitPlan present for honest defaults.",),
             failure_modes=(
-                "Random split then analyze_timeseries: refused or misleading.",
+                "Random split then session.timeseries.analyze: refused or misleading.",
             ),
             anti_patterns=(
-                "Using analyze_timeseries on holdout to pick a forecaster silently.",
+                "Using session.timeseries.analyze on holdout to pick a forecaster silently.",
                 "Expecting changepoint detection to replace a forecast model.",
             ),
             worked_example_pattern=(
-                "set_roles(time+target) → time_split → analyze_timeseries() → fit_forecast().",
+                "set_roles(time+target) → time_split → session.timeseries.analyze() → session.forecast.fit().",
             ),
             related_concepts=(
                 "forecast-temporal-leakage",

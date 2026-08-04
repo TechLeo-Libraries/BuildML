@@ -9,7 +9,7 @@ under `buildml.forecasting`.
 
 | Artifact | Status |
 | --- | --- |
-| `catalog.py` + `timeseries_capability_matrix` | required |
+| `catalog.py` + `session.timeseries.capability_matrix` | required |
 | Session mixin matrix | required |
 | `explain_hooks.py` | required |
 | Guide (`guides/quickstart-timeseries-analysis.md`) | required |

@@ -1,24 +1,27 @@
 # BuildML Proof Suite
 
-Deep, industry-standard proofs that BuildML works end-to-end: not thin smoke.
-Each project uses honest splits, train-only fitting, holdout evaluation, persisted
-artifacts where applicable, and JSON metrics under `results/` (gitignored).
+Deep proofs that BuildML Session contracts work end-to-end on the executed
+configuration — not thin unit tests, and **not** a claim that every optional
+industry wheel is healthy on every host. Each project uses honest splits,
+train-only fitting, holdout evaluation, persisted artifacts where applicable,
+and JSON metrics under `results/` (gitignored).
 
 | Tier | Count | What it proves |
 | --- | ---: | --- |
-| **A** | **58/58** | One named product scenario per major Session domain (incl. ensembles + Torch + fairness) |
+| **A** | **62/62** | One named product scenario per major Session domain (incl. ensembles + Torch + fairness + real public datasets) |
 | **B** | **36/36** | Cross-domain products composing multiple Session surfaces |
-| **C** | **58/58** | Same-split industry twin + `comparison.json` per Tier A (when present) |
+| **C** | **58/62** | Same-split industry twin + `comparison.json` per Tier A (when present / runnable; real-public cohort may be A-only) |
 
-**Expansion:** +30 Tier A, +30 Tier B, +30 Tier C twins beyond the baseline cohort
-(ensembles, Torch/DL, and previously uncomposed Tier B domains).
+The suite grew by +30 Tier A, +30 Tier B, and +30 Tier C twins beyond the
+baseline cohort (ensembles, Torch/DL, and previously uncomposed Tier B domains).
 
-**Status:** proof program **complete** for the expanded inventory. Optional
-deepeners (not failures): `gymnasium` via `buildml[rl]` enables CartPole /
-FrozenLake paths; TDA prefers editable `pip install -e ".[tda]"`; Torch wheels
-deepen `torch-*` / `nova-torch-bench` when importable.
+Optional deepeners are not failures: `gymnasium` via `buildml[rl]` enables
+CartPole / FrozenLake paths; TDA prefers editable `pip install -e ".[tda]"`;
+Torch / FLAML / PyKEEN / etc. deepen paths only when **runtime import probes**
+succeed — `find_spec` alone is not enough. See capability-matrix
+`*_import_honesty` fields and `scripts/probe_industry_extras.py`.
 
-**Richer backends exercised in this env when installed:**
+**Richer backends when installed:**
 
 | Package | Proof path deepened |
 | --- | --- |
@@ -47,18 +50,29 @@ feature-scoped workarounds (Tier B `aegis` / `ledger` / decision-heavy products)
 2. Run one project, the CI smoke subset (always re-runs; no skip-existing), or
    the full harness from the repo root:
    ```bash
-   .\.venv\Scripts\python.exe proofs\loan-approval-classical\script.py
-   .\.venv\Scripts\python.exe -m proofs._lib.run_all --smoke
-   .\.venv\Scripts\python.exe -m proofs._lib.run_all --tier all
+   python proofs/loan-approval-classical/script.py
+   python -m proofs._lib.run_all --smoke
+   python -m proofs._lib.run_all --tier all
    ```
 3. Read `proofs/<slug>/results/*.json`: look for `"status": "completed"`.
    Harness semantics:
    - Process exit 0 alone is **not** enough under `--smoke`.
-   - `--smoke` reads result JSON and treats `skipped_missing_extra` /
+   - `--smoke` re-runs the CI Tier A subset and treats `skipped_missing_extra` /
      `partial` as **`unexpected_skip`** (harness exit 1) unless you also
      pass `--allow-skip`.
+   - Smoke validates **selected runnable Session contracts** and result JSON
+     status — not performance certification, public-dataset leaderboard proof,
+     or every optional industry wheel.
+   - Several Tier A scripts refuse perfect holdout scores (metric ceilings) on
+     intentionally noisy / overlapping synthetics and on **REAL_PUBLIC_DATASET**
+     proofs (holdout scores must stay strictly below 1.0 where gated).
+   - Real public-dataset proofs publish provenance under `results.json` → `data`
+     (`name`, `source`, `license`/`provenance`, `n_rows`, `n_features`, `task`,
+     `evidence_tier=REAL_PUBLIC_DATASET`).
    - Local non-smoke runs still allow soft-skips by default for optional extras.
    Tier C writes `results/comparison.json` on the **same split** as the BuildML path.
+   A twin may be an in-tree fallback when its optional industry wheel is absent
+   or fails a runtime import probe.
 
 Shared helpers live in [`_lib/`](_lib/) (seed, results writer, leakage asserts,
 synthetic loaders, extra probes, Tier C `write_comparison`, `run_all`).
@@ -106,14 +120,14 @@ Tier C is a **same-split industry twin**, not a bake-off for bragging rights.
 | --- | --- | --- |
 | Root overview | [`README.md`](../README.md) | → `proofs/` |
 | Guide index | [`guides/README.md`](../guides/README.md) | Mapping table + per-domain links |
-| Classical | `quickstart-classical.md`, `classical-end-to-end.md` | → `loan-approval-classical`, `mortgage-default-classical`, `claim-severity-regression` |
+| Classical | `quickstart-classical.md`, `classical-end-to-end.md` | → `loan-approval-classical`, `mortgage-default-classical`, `claim-severity-regression`, `breast-cancer-classical`, `diabetes-progression-regression` |
 | Ensembles | `quickstart-ensemble.md` (when present) | → `voting-ensemble-attrition`, `stacking-credit-risk`, `blending-payment-risk` · Tier B `citadel-ensemble-desk`, `keystone-underwrite-ml` |
 | Torch / DL | `quickstart-dl.md` / Torch guides | → `torch-tabular-underwrite`, `torch-text-intent` · Tier B `nova-torch-bench` |
 | AutoML | `quickstart-automl.md`, `automl-deep.md` | → `churn-automl-search` · Tier B `ledger`, `orbit`, `keystone` |
 | Anomaly | `quickstart-anomaly.md` | → `network-intrusion-anomaly`, `payment-rail-anomaly`, `iot-sensor-anomaly` · Tier B `aegis`, `sentinel`, `rivulet`, `volt` |
 | Forecasting / TS | `quickstart-forecasting.md`, `quickstart-timeseries-analysis.md` | → `store-sales-forecast`, `energy-load-forecast` · Tier B `harbor`, `ballast`, `terrace` |
 | RAG | `quickstart-rag.md` | → `support-kb-rag`, `policy-handbook-rag` · Tier B `pulse`, `parchment`, `helix`, `zenith` |
-| Unsupervised | `quickstart-unsupervised.md` | → `cluster-customer-segments`, `sku-embedding-clusters` · Tier B `canyon`, `forge`, `kiln` |
+| Unsupervised | `quickstart-unsupervised.md` | → `cluster-customer-segments`, `sku-embedding-clusters`, `wine-cluster-segments` · Tier B `canyon`, `forge`, `kiln` |
 | Recommenders / LTR | `quickstart-recommenders.md`, `quickstart-ranking.md` | → `movie-recs-collaborative`, `catalog-recs-implicit`, `search-relevance-ltr`, `sponsored-ad-ltr` · Tier B `meridian`, `aurora`, `compass` |
 | KG / TDA / Causal / Graph / Prob | matching quickstarts | → matching Tier A + expansion slugs · Tier B `helix`, `prism`, `lattice`, `apex`, `cornerstone`, `ballast`, `relay` |
 | Semi / AL / SSL | matching quickstarts | → Tier A + expansion · Tier B `atlas`, `beacon`, `zenith` |
@@ -193,8 +207,18 @@ Tier C is a **same-split industry twin**, not a bake-off for bragging rights.
 | 56 | [edge-fleet-federated](edge-fleet-federated/) | Federated | **completed** | Edge device clients |
 | 57 | [peer-lending-graph](peer-lending-graph/) | Graph | **completed** | P2P lending rings |
 
+### Real public-dataset cohort (58–61)
+
+| # | Project | Domain | Status | Notes |
+| ---: | --- | --- | --- | --- |
+| 58 | [breast-cancer-classical](breast-cancer-classical/) | Classical supervised | **completed** | **REAL_PUBLIC_DATASET** sklearn breast_cancer (offline) |
+| 59 | [diabetes-progression-regression](diabetes-progression-regression/) | Classical regression | **completed** | **REAL_PUBLIC_DATASET** sklearn diabetes (offline) |
+| 60 | [wine-cluster-segments](wine-cluster-segments/) | Unsupervised | **completed** | **REAL_PUBLIC_DATASET** sklearn wine + external ARI (offline) |
+| 61 | [adult-fairness-observational](adult-fairness-observational/) | Fairness (observational) | **completed** | **REAL_PUBLIC_DATASET** OpenML Adult/credit-g; offline disclosed proxy fallback |
+
 Each Tier A README includes: business purpose, data source, leakage controls,
-BuildML API steps, metrics, limitations, and an **Industry comparison** section.
+BuildML API steps, metrics, limitations, and an **Industry comparison** section
+(where a Tier C twin exists).
 
 ---
 
@@ -253,9 +277,11 @@ BuildML API steps, metrics, limitations, and an **Industry comparison** section.
 For each completed Tier A: `baseline_industry.py` **or** a comparison section
 in `script.py` on the **same split**, writing `results/comparison.json`.
 
-All **57** Tier A projects ship a Tier C twin (`baseline_industry.py`, or
+Most Tier A projects ship a Tier C twin (`baseline_industry.py`, or
 embedded comparison for `loan-approval-classical`). Expansion twins follow the
 same `write_comparison` envelope and leakage disclosures as the baseline cohort.
+The **REAL_PUBLIC_DATASET** cohort (breast-cancer / diabetes / wine / adult-fairness)
+is Tier A evidence-first; Tier C twins may be added later.
 
 Re-run Tier C after the matching Tier A `script.py`:
 

@@ -118,7 +118,7 @@ def main() -> None:
     write_comparison(
         ctx,
         buildml={
-            "backend": "buildml.Session.fit_graph(classical)",
+            "backend": "buildml.session.graph.fit(classical)",
             "test_metrics": bml_metrics,
         },
         industry={

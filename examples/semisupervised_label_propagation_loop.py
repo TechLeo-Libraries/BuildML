@@ -46,7 +46,7 @@ def main() -> None:
     )
     session = _mask_train_labels(session, fraction=0.7, seed=0)
 
-    fit = session.fit_semisupervised(method="label_propagation", n_neighbors=7)
+    fit = session.semisupervised.fit(method="label_propagation", n_neighbors=7)
     print(
         "fit:",
         fit.method,
@@ -56,11 +56,11 @@ def main() -> None:
         fit.n_unlabeled_train,
     )
 
-    ev = session.evaluate_semisupervised(partition="test")
+    ev = session.semisupervised.evaluate(partition="test")
     print("eval:", {k: round(v, 4) for k, v in ev.metrics.items()})
 
     out = Path(".buildml-artifacts") / "semisupervised_bundle"
-    path = session.save_semisupervised_bundle(out)
+    path = session.semisupervised.save_bundle(out)
     print("bundle:", path)
 
 

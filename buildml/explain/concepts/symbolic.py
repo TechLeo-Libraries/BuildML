@@ -34,7 +34,7 @@ SYMBOLIC_NOTES: dict[str, ConceptNote] = {
                 "Provenance must disclose declared vs train-induced.",
             ),
             how_buildml_uses=(
-                "Session.fit_symbolic → predict_symbolic / evaluate_symbolic.",
+                "session.symbolic.fit → session.symbolic.predict / session.symbolic.evaluate.",
             ),
             interpretation_rules=(
                 "Read provenance on the knowledge base (declared / induced_tree / induced_list).",
@@ -49,8 +49,8 @@ SYMBOLIC_NOTES: dict[str, ConceptNote] = {
                 "Requiring Prolog/Z3 in core for basic tabular rules.",
             ),
             worked_example_pattern=(
-                "fit_symbolic(source='decision_tree') → "
-                "predict_symbolic(return_traces=True).",
+                "session.symbolic.fit(source='decision_tree') → "
+                "session.symbolic.predict(return_traces=True).",
             ),
             related_concepts=(
                 "symbolic-induction",
@@ -83,7 +83,7 @@ SYMBOLIC_NOTES: dict[str, ConceptNote] = {
                 "Induction on validation/test would leak.",
             ),
             how_buildml_uses=(
-                "fit_symbolic(source=...); knowledge_base.provenance disclosure.",
+                "session.symbolic.fit(source=...); knowledge_base.provenance disclosure.",
             ),
             interpretation_rules=(
                 "induced_* means train-only learning; declared means expert.",
@@ -95,7 +95,7 @@ SYMBOLIC_NOTES: dict[str, ConceptNote] = {
                 "Inducing on the full dataset before split.",
             ),
             worked_example_pattern=(
-                "fit_symbolic(source='decision_list', max_rules=16).",
+                "session.symbolic.fit(source='decision_list', max_rules=16).",
             ),
             related_concepts=(
                 "symbolic-rules",
@@ -106,7 +106,7 @@ SYMBOLIC_NOTES: dict[str, ConceptNote] = {
         _note(
             key="symbolic-traces",
             title="Rule-firing explanation traces",
-            summary="predict_symbolic returns which rules fired and which rule chose the prediction.",
+            summary="session.symbolic.predict returns which rules fired and which rule chose the prediction.",
             definition=(
                 "A RuleTrace records fired_rule_ids, chosen_rule_id, prediction, "
                 "and optional neural_prediction / repaired flags for hybrids."
@@ -118,7 +118,7 @@ SYMBOLIC_NOTES: dict[str, ConceptNote] = {
             formal_idea=("Trace τ(x) = ({r : r(x)}, argmin priority among firings)."),
             why_it_matters=("Auditability is the point of shipping rules.",),
             how_buildml_uses=(
-                "predict_symbolic(..., return_traces=True); evaluate reports rule_coverage.",
+                "session.symbolic.predict(..., return_traces=True); evaluate reports rule_coverage.",
             ),
             interpretation_rules=(
                 "chosen_rule_id=None means default_consequent was used.",
@@ -135,7 +135,7 @@ SYMBOLIC_NOTES: dict[str, ConceptNote] = {
             title="Sklearn + symbolic constraints in one Session API",
             summary="Neuro-symbolic modes combine a probabilistic/sklearn model with rule overlay, rules-as-features, or constraint repair: not disconnected ad-hoc calls.",
             definition=(
-                "fit_neuro_symbolic trains a base estimator and attaches a "
+                "session.symbolic.fit_neuro trains a base estimator and attaches a "
                 "RuleKnowledgeBase. Modes: constraint_overlay (predict then "
                 "hard/soft rules), rules_as_features (binary rule firings "
                 "concatenated into X), constraint_repair (fix hard violations)."
@@ -152,7 +152,7 @@ SYMBOLIC_NOTES: dict[str, ConceptNote] = {
                 "and provenance: not 'fit() then manually if-then'.",
             ),
             how_buildml_uses=(
-                "Session.fit_neuro_symbolic → predict_neuro_symbolic / evaluate_neuro_symbolic.",
+                "session.symbolic.fit_neuro → session.symbolic.predict_neuro / session.symbolic.evaluate_neuro.",
             ),
             interpretation_rules=(
                 "Read mode, rule_provenance, and repair_rate on eval.",
@@ -167,7 +167,7 @@ SYMBOLIC_NOTES: dict[str, ConceptNote] = {
                 "Claiming deep neuro-symbolic research depth (LTN/logic tensors).",
             ),
             worked_example_pattern=(
-                "fit_neuro_symbolic(mode='constraint_overlay', rules=[...]).",
+                "session.symbolic.fit_neuro(mode='constraint_overlay', rules=[...]).",
             ),
             related_concepts=(
                 "symbolic-rules",
@@ -182,8 +182,8 @@ SYMBOLIC_NOTES: dict[str, ConceptNote] = {
             title="Symbolic bundles vs Session checkpoints",
             summary="buildml.symbolic_bundle.v1 stores SymbolicPlan / NeuroSymbolicPlan; Session checkpoints do not embed them.",
             definition=(
-                "save_symbolic_bundle writes meta.json + symbolic_plan.joblib. "
-                "Reload via load_symbolic_bundle. Checkpoints keep data/roles/"
+                "session.symbolic.save_bundle writes meta.json + symbolic_plan.joblib. "
+                "Reload via session.symbolic.load_bundle. Checkpoints keep data/roles/"
                 "splits/history only."
             ),
             intuition=(
@@ -192,7 +192,7 @@ SYMBOLIC_NOTES: dict[str, ConceptNote] = {
             formal_idea=("Artifact separation: workflow state ⊥ learner state."),
             why_it_matters=("Prevents silent loss of rules across reattach.",),
             how_buildml_uses=(
-                "save_symbolic_bundle / load_symbolic_bundle.",
+                "session.symbolic.save_bundle / session.symbolic.load_bundle.",
             ),
             interpretation_rules=(
                 "meta.json kind is symbolic or neuro_symbolic.",
@@ -203,7 +203,7 @@ SYMBOLIC_NOTES: dict[str, ConceptNote] = {
                 "Expecting checkpoint_load to restore SymbolicPlan.",
             ),
             worked_example_pattern=(
-                "save_symbolic_bundle('artifacts/symbolic_bundle').",
+                "session.symbolic.save_bundle('artifacts/symbolic_bundle').",
             ),
             related_concepts=(
                 "symbolic-rules",

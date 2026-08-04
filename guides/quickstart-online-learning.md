@@ -5,8 +5,8 @@
 > Online learning uses core sklearn `partial_fit` estimators: no optional extra.
 > See [installation](../docs/installation.rst).
 
-Incremental updates on **train chunks**: `fit_online` warm-starts on an initial
-chunk, `partial_fit_online` updates on subsequent chunks, `evaluate_online`
+Incremental updates on **train chunks**: `session.online.fit` warm-starts on an initial
+chunk, `session.online.partial_fit` updates on subsequent chunks, `session.online.evaluate`
 scores held-out validation/test (never used for updates), then save a distinct
 bundle. Honesty: this is batch/stream-chunk Session updating: **not** a
 distributed streaming platform or lifelong-learning research suite.
@@ -40,7 +40,7 @@ session = (
 )
 
 # Warm-start on the first train chunk; classes discovered from train targets.
-fit = session.fit_online(
+fit = session.online.fit(
     estimator="sgd_classifier",
     chunk_size=40,
     n_init=40,
@@ -49,18 +49,18 @@ print(fit.n_init_rows, fit.n_remaining_train)
 
 # Stream remaining train in chunks (cursor advances automatically).
 while True:
-    plan = session.online_plan
+    plan = session.online.plan
     assert plan is not None
     remaining = plan.n_train_rows - plan.cursor
     if remaining <= 0:
         break
-    update = session.partial_fit_online(n_rows=min(40, remaining))
+    update = session.online.partial_fit(n_rows=min(40, remaining))
     print(update.n_updates, update.n_seen_rows, update.update_mode)
 
-ev = session.evaluate_online(partition="validation")
+ev = session.online.evaluate(partition="validation")
 print(ev.metrics)
 
-session.save_online_bundle("artifacts/online_bundle")
+session.online.save_bundle("artifacts/online_bundle")
 ```
 
 ## Honest boundaries
@@ -72,4 +72,4 @@ session.save_online_bundle("artifacts/online_bundle")
 | Holdout eval never used for updates | Lifelong / continual research suites (EWC, replay zoos, …) |
 | Optional lite drift disclosure vs init chunk | Full production drift platform |
 
-Next Phase 2 item after multi-task: **meta-learning**.
+Related next: meta-learning.

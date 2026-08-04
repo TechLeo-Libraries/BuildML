@@ -5,7 +5,14 @@ from __future__ import annotations
 from typing import Any, Literal
 
 from buildml.core.industry_markers import platform_skip_entry
-from buildml.tda.extras import giotto_available, tda_available, tda_industry_available
+from buildml.tda.extras import (
+    giotto_available,
+    giotto_spec_present,
+    persim_spec_present,
+    ripser_spec_present,
+    tda_available,
+    tda_industry_available,
+)
 
 TdaBackendName = Literal["native", "giotto"]
 NativeVectorization = Literal["persistence_image", "landscape", "silhouette"]
@@ -95,8 +102,14 @@ def tda_capability_matrix() -> dict[str, Any]:
             "Domain-specific credit-risk product surface",
             "Every TDA paper implementation",
         ],
-        "tda_extra_present": tda_available(),
-        "tda_industry_extra_present": tda_industry_available(),
+        "tda_extra_present": ripser_spec_present() and persim_spec_present(),
+        "tda_runtime_present": tda_available(),
+        "tda_industry_extra_present": giotto_spec_present(),
+        "tda_industry_runtime_present": tda_industry_available(),
+        "industry_import_honesty": (
+            "tda_*_runtime_present and backend 'available' flags use subprocess "
+            "import probes. tda_*_extra_present / *_spec_present are find_spec only."
+        ),
     }
 
 

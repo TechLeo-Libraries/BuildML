@@ -5,7 +5,11 @@ from __future__ import annotations
 from typing import Any, Literal
 
 from buildml.dl.extras import torch_available, torch_spec_available
-from buildml.online.extras import online_industry_available, river_available
+from buildml.online.extras import (
+    online_industry_available,
+    river_available,
+    river_spec_present,
+)
 
 OnlineBackendName = Literal["sklearn", "industry", "torch"]
 
@@ -121,7 +125,13 @@ def online_capability_matrix() -> dict[str, Any]:
         ],
         "river_present": river_available(),
         "torch_spec_present": torch_spec_available(),
-        "industry_extra_present": online_industry_available(),
+        "industry_extra_present": river_spec_present(),
+        "industry_runtime_present": online_industry_available(),
+        "industry_import_honesty": (
+            "industry backend 'available' and industry_runtime_present require "
+            "a successful subprocess import of river. industry_extra_present / "
+            "river_spec_present are find_spec only."
+        ),
     }
 
 

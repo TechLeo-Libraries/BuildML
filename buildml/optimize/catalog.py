@@ -6,11 +6,15 @@ from typing import Any, Literal
 
 from buildml.optimize.extras import (
     cvxpy_available,
+    cvxpy_spec_present,
     mip_available,
     optimize_industry_available,
     ortools_available,
+    ortools_spec_present,
     pulp_available,
+    pulp_spec_present,
     xgboost_available,
+    xgboost_spec_present,
 )
 
 DecisionBackendName = Literal["native", "pulp", "ortools", "cvxpy", "calibrated", "xgb"]
@@ -135,14 +139,21 @@ def decision_capability_matrix() -> dict[str, Any]:
             "Causal decision analysis",
             "Production fleet scheduling",
         ],
-        "industry_extra_present": optimize_industry_available(),
+        "industry_extra_present": (
+            pulp_spec_present()
+            or ortools_spec_present()
+            or cvxpy_spec_present()
+            or xgboost_spec_present()
+        ),
+        "industry_runtime_present": optimize_industry_available(),
         "pulp_present": pulp_available(),
         "ortools_present": ortools_available(),
         "cvxpy_present": cvxpy_available(),
         "cvxpy_import_honesty": (
-            "cvxpy backend 'available' reflects package install (find_spec). "
-            "Broken wheels may fail at require_cvxpy: prefer native linprog "
-            "unless convex hooks are explicitly needed."
+            "cvxpy backend 'available' and industry_runtime_present use "
+            "subprocess import probes. industry_extra_present / *_spec_present "
+            "are find_spec only. Prefer native linprog unless convex hooks "
+            "are explicitly needed."
         ),
         "xgboost_present": xgboost_available(),
         "mip_present": mip_available(),

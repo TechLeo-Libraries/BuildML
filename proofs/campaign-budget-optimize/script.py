@@ -41,17 +41,17 @@ def main() -> None:
         .split(test_size=0.2, validation_size=0.2, stratify=True, random_state=ctx.seed)
         .fit(LogisticRegression(max_iter=800), task="classification")
     )
-    thr = session.fit_decision_policy(
+    thr = session.decision.fit(
         method="threshold", partition="validation", fp_cost=1.0, fn_cost=3.5,
     )
-    eval_thr = session.evaluate_decisions(partition="test")
-    knap = session.fit_decision_policy(
+    eval_thr = session.decision.evaluate(partition="test")
+    knap = session.decision.fit(
         method="knapsack", partition="validation", budget=55.0,
         cost_column="cost", id_column="id", score_source="model_proba", knapsack_solver="dp",
     )
-    applied = session.apply_decisions(partition="test")
+    applied = session.decision.apply(partition="test")
     try:
-        bundle = session.save_decision_bundle(ctx.artifacts_dir / "decision_bundle")
+        bundle = session.decision.save_bundle(ctx.artifacts_dir / "decision_bundle")
         bundle_path = str(bundle)
     except Exception as exc:  # noqa: BLE001
         bundle_path = f"unavailable: {exc}"
@@ -73,7 +73,7 @@ def main() -> None:
         "bundle_path": bundle_path,
         "leakage_controls": [
             "Policies fit/selected on validation only",
-            "Test evaluate_decisions / apply_decisions after lock",
+            "Test session.decision.evaluate / session.decision.apply after lock",
         ],
         "industry_comparison": {
             "status": "filled",

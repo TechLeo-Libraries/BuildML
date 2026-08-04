@@ -90,23 +90,23 @@ adaptation: not second-order MAML-at-scale.
 
 | Method | Role |
 | --- | --- |
-| `fit_metalearning` | Meta-train on train tasks (`backend=`, `method=`) |
-| `adapt_to_task` | Fast adapt to one task support set |
-| `evaluate_metalearning` | Episodic holdout metrics |
-| `save_metalearning_bundle` / `load_metalearning_bundle` | `buildml.metalearning_bundle.v1` |
+| `session.metalearning.fit` | Meta-train on train tasks (`backend=`, `method=`) |
+| `session.metalearning.adapt` | Fast adapt to one task support set |
+| `session.metalearning.evaluate` | Episodic holdout metrics |
+| `session.metalearning.save_bundle` / `session.metalearning.load_bundle` | `buildml.metalearning_bundle.v1` |
 
-Properties: `metalearning_plan`, `metalearning_fit_result`,
-`metalearning_adapt_result`, `metalearning_eval_result`.
+Properties: `session.metalearning.plan`, `session.metalearning.fit_result`,
+`session.metalearning.adapt_result`, `session.metalearning.eval_result`.
 
 ```python
-session.fit_metalearning(
+session.metalearning.fit(
     backend="torch",
     method="prototypical_torch",
     k_shot=5,
     n_episodes=20,
     meta_epochs=40,
 )
-session.evaluate_metalearning(partition="validation", prefer_novel_tasks=True)
+session.metalearning.evaluate(partition="validation", prefer_novel_tasks=True)
 ```
 
 ---
@@ -128,7 +128,7 @@ Benchmark: `python benchmarks/metalearning/few_shot_adaptation.py`
 
 - Meta-train requires a split and uses **train only**.
 - Validation/test are never used for meta-training.
-- `evaluate_metalearning` discloses overlapping task ids.
+- `session.metalearning.evaluate` discloses overlapping task ids.
 - Null features are refused (impute/scale first).
 
 ---
@@ -143,12 +143,12 @@ meta-learner). Session checkpoints do **not** embed the meta-learner.
 
 ## AI allowlist
 
-Teaching-critical tools: `fit_metalearning`, `adapt_to_task`,
-`evaluate_metalearning`, plus save/load bundle.
+Teaching-critical tools: `session.metalearning.fit`, `session.metalearning.adapt`,
+`session.metalearning.evaluate`, plus save/load bundle.
 
 ---
 
-## Residuals (honest)
+## Known limits
 
 - Classification-focused surface (shared global label space).
 - Tabular-only; no vision/audio episodic suites.
@@ -156,4 +156,4 @@ Teaching-critical tools: `fit_metalearning`, `adapt_to_task`,
 - Random row splits may place the same task id in train and holdout: disclosed.
 - Causal meta / EconML-style estimation lives in `buildml.causal`, not here.
 
-Next Phase 2 R6 item: **symbolic / neuro-symbolic** learning.
+Related next: symbolic / neuro-symbolic learning.

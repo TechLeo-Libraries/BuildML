@@ -33,7 +33,7 @@ def main() -> None:
         .scale(method="standard")
     )
 
-    fit = session.fit_multitask(
+    fit = session.multitask.fit(
         method="multi_output",
         task="classification",
         base_estimator="logistic_regression",
@@ -43,12 +43,12 @@ def main() -> None:
         f"targets={list(fit.target_columns)}"
     )
 
-    ev = session.evaluate_multitask(partition="validation")
+    ev = session.multitask.evaluate(partition="validation")
     print(f"aggregate metrics={ev.metrics}")
     print(f"per-task metrics={ev.per_task_metrics}")
 
     out = Path("artifacts") / "multitask_multioutput_bundle"
-    session.save_multitask_bundle(out)
+    session.multitask.save_bundle(out)
     print(f"saved bundle → {out}")
 
 

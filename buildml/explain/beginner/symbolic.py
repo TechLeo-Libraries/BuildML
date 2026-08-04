@@ -47,8 +47,8 @@ SYMBOLIC_BEGINNER: dict[str, BeginnerLayer] = _index(
             "    {'if': \"age > 65 and claims_last_year > 3\", 'then': 'review'},",
             "    {'if': \"amount > 10000\", 'then': 'review'},",
             "]",
-            "session.fit_symbolic(rules=rules, default='approve')",
-            "session.evaluate_symbolic(partition='test')",
+            "session.symbolic.fit(rules=rules, default='approve')",
+            "session.symbolic.evaluate(partition='test')",
         ),
         check=(
             "What fraction of your rows fall through to the default?",
@@ -96,8 +96,8 @@ SYMBOLIC_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.fit_symbolic(method='decision_tree', max_depth=4, random_state=0)",
-            "for rule in session.symbolic_plan.rules:",
+            "session.symbolic.fit(method='decision_tree', max_depth=4, random_state=0)",
+            "for rule in session.symbolic.plan.rules:",
             "    print(rule.condition, '->', rule.outcome, rule.support)",
         ),
         check=(
@@ -119,7 +119,7 @@ SYMBOLIC_BEGINNER: dict[str, BeginnerLayer] = _index(
             "An itemized bill instead of a total. When someone disputes it, you can point at the exact line."
         ),
         steps=(
-            "Predict as usual with `predict_symbolic`.",
+            "Predict as usual with `session.symbolic.predict`.",
             "The result carries the fired rule identifiers per row.",
             "It also identifies the deciding rule: the first match in the ordered list.",
             "Rows that matched nothing are marked as falling through to the default.",
@@ -144,7 +144,7 @@ SYMBOLIC_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "result = session.predict_symbolic(partition='test')",
+            "result = session.symbolic.predict(partition='test')",
             "print(result.predictions[:5])",
             "print(result.fired_rules[:5], result.deciding_rule[:5])",
             "print(result.default_rate)",
@@ -194,11 +194,11 @@ SYMBOLIC_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.fit_neuro_symbolic(",
+            "session.symbolic.fit_neuro(",
             "    mode='overlay', rules=hard_constraints,",
             "    estimator=HistGradientBoostingClassifier(random_state=0),",
             ")",
-            "session.evaluate_neuro_symbolic(partition='validation')",
+            "session.symbolic.evaluate_neuro(partition='validation')",
         ),
         check=(
             "On what fraction of rows does a rule override the model?",
@@ -220,8 +220,8 @@ SYMBOLIC_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         steps=(
             "Fit a symbolic or neuro-symbolic plan.",
-            "Call `save_symbolic_bundle(path)`: rule text, order, and default all travel together.",
-            "Reload with `load_symbolic_bundle(path)`.",
+            "Call `session.symbolic.save_bundle(path)`: rule text, order, and default all travel together.",
+            "Reload with `session.symbolic.load_bundle(path)`.",
             "Predict with traces intact.",
             "Keep checkpoints separately for the data.",
         ),
@@ -244,8 +244,8 @@ SYMBOLIC_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.save_symbolic_bundle('artifacts/underwriting-rules')",
-            "audit = Session.ingest(cases).load_symbolic_bundle('artifacts/underwriting-rules')",
+            "session.symbolic.save_bundle('artifacts/underwriting-rules')",
+            "audit = Session.ingest(cases).symbolic.load_bundle('artifacts/underwriting-rules')",
             "print(audit.symbolic_plan.rules)",
         ),
         check=(

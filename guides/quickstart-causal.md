@@ -43,7 +43,7 @@ session = (
     .scale(method="standard")
 )
 
-session.declare_causal_assumptions(
+session.causal.declare_assumptions(
     treatment="t",
     outcome="y",
     confounders=["x1", "x2"],
@@ -53,23 +53,24 @@ session.declare_causal_assumptions(
 )
 
 # Native (always available)
-fit = session.fit_causal(backend="native", method="aipw", bootstrap_samples=50)
+fit = session.causal.fit(backend="native", method="aipw", bootstrap_samples=50)
 print(fit.ate, fit.ate_ci_low, fit.ate_ci_high)
 
 # DoWhy when buildml[causal-industry] is installed:
-# fit = session.fit_causal(backend="dowhy", method="backdoor_linear")
-# ref = session.refute_causal(kind="random_common_cause")
+# fit = session.causal.fit(backend="dowhy", method="backdoor_linear")
+# ref = session.causal.refute(kind="random_common_cause")
 
 # EconML when installed:
-# fit = session.fit_causal(backend="econml", method="dml", bootstrap_samples=50)
+# fit = session.causal.fit(backend="econml", method="dml", bootstrap_samples=50)
 
-ev = session.evaluate_causal(partition="validation")
+ev = session.causal.evaluate(partition="validation")
 print(ev.metrics, ev.ate)
 
-ref = session.refute_causal(kind="placebo_treatment")
+ref = session.causal.refute(kind="placebo_treatment")
 print(ref.original_ate, ref.refute_ate)
 
-session.save_causal_bundle("artifacts/causal_bundle")
+session.causal.save_bundle("artifacts/causal_bundle")
+# Roundtrip: other.causal.load_bundle(..., trusted=True) then evaluate again
 ```
 
 | In scope | Out of scope |
@@ -80,4 +81,4 @@ session.save_causal_bundle("artifacts/causal_bundle")
 | DoWhy refutation when installed | Proof of unconfoundedness from holdout |
 | Distinct `buildml.causal_bundle.v1` | Multi-valued / continuous treatment |
 
-Next in R5 tracker: **Federated** (R5.5).
+Related next: federated learning.

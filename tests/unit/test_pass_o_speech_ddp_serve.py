@@ -388,12 +388,18 @@ def test_serve_missing_extra_message() -> None:
 
 def test_serve_cli_defaults_localhost_no_auth() -> None:
     from buildml.serving.cli import build_parser
+    from buildml.serving.config import ServeConfig
 
     parser = build_parser()
     args = parser.parse_args(["--bundle", "bundle/"])
-    assert args.host == "127.0.0.1"
-    assert args.port == 8080
-    assert args.kind == "pipeline"
+    # CLI defaults are None so YAML/env can supply values; ServeConfig fills gaps.
+    assert args.host is None
+    assert args.port is None
+    assert args.kind is None
+    cfg = ServeConfig.load(cli={"bundle": args.bundle, "host": args.host, "port": args.port})
+    assert cfg.host == "127.0.0.1"
+    assert cfg.port == 8080
+    assert cfg.kind == "pipeline"
     help_text = parser.format_help()
     assert "127.0.0.1" in help_text
     assert "no authentication" in help_text.lower() or "no auth" in help_text.lower()

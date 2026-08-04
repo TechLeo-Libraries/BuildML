@@ -469,9 +469,14 @@ class Session(
 
     The classical path is ingest, roles, split, preprocess, fit, evaluate. The
     same session also carries deep learning, forecasting, anomaly detection,
-    ranking, recommenders, causal inference, RL, and other domains; each
-    follows a ``fit_<domain>`` / ``evaluate_<domain>`` / ``save_<domain>_bundle``
-    naming pattern so learning one domain teaches you the rest.
+    ranking, recommenders, causal inference, RL, and other domains.
+
+    Prefer namespaced facades for domains (``session.fairness.evaluate``,
+    ``session.anomaly.fit``, ``session.rag.retrieve``, …). Flat
+    ``fit_<domain>`` / ``evaluate_<domain>`` aliases remain until BuildML 3.0
+    and emit ``DeprecationWarning`` for domain actions. Classical core flat
+    methods (``ingest`` / ``fit`` / ``evaluate`` / …) stay dual first-class;
+    see ``docs/session-facade-migration.md``.
 
     Examples
     --------
@@ -732,6 +737,8 @@ class Session(
         self._synthetic_eval_result: SyntheticEvalResult | None = None
         self._synthetic_sample_result: SyntheticSampleResult | None = None
         self._fairness_report: Any | None = None
+        self._fairness_mitigation_suggestion: Any | None = None
+        self._last_evaluate_partition: str | None = None
         self._ai_provider: ProviderProtocol | ProviderConfig | None = None
         self._ai_egress_config: EgressConfig | None = None
         self._ai_transcript: TranscriptStore | None = None
@@ -842,3 +849,9 @@ class Session(
             warnings=warnings,
             result_summary=result_summary,
         )
+
+
+# Additive namespaced facades + domain flat-method deprecation wrappers.
+from buildml.session.facades import install_session_facades
+
+install_session_facades(Session)

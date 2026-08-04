@@ -8,10 +8,10 @@ from typing import Any
 from buildml.core.errors import MissingExtraError
 
 
-def flwr_available() -> bool:
+def flwr_spec_present() -> bool:
     """Return whether ``flwr`` appears on the import path without importing it.
 
-    Used for capability-matrix disclosure before attempting a real import probe.
+    Cheap discovery only — a find_spec hit can still fail at import time.
 
     Returns
     -------
@@ -21,17 +21,39 @@ def flwr_available() -> bool:
     return importlib.util.find_spec("flwr") is not None
 
 
-def federated_industry_available() -> bool:
-    """Return whether the Flower federated backend extra is usable.
+def flwr_available() -> bool:
+    """Return whether ``flwr`` is discoverable (find_spec).
 
-    Gates ``backend='flower'`` without importing ``flwr`` at module load time.
+    Prefer :func:`flwr_runtime_available` when deciding if Flower can run.
+    Kept as the cheap discovery alias for install probes / extras flags.
+    """
+    return flwr_spec_present()
+
+
+def flwr_runtime_available() -> bool:
+    """Return whether ``flwr`` imports cleanly in a child process.
+
+    Flower stacks can hard-crash on broken native deps; subprocess isolation
+    keeps capability matrices from taking down the host process.
+    """
+    if not flwr_spec_present():
+        return False
+    from buildml.dl.extras import _subprocess_import_ok
+
+    return _subprocess_import_ok("flwr")
+
+
+def federated_industry_available() -> bool:
+    """Return whether the Flower federated backend extra is usable at runtime.
+
+    Gates ``backend='flower'`` on a successful import probe, not find_spec alone.
 
     Returns
     -------
     bool
-        ``True`` when :func:`flwr_available` succeeds.
+        ``True`` when :func:`flwr_runtime_available` succeeds.
     """
-    return flwr_available()
+    return flwr_runtime_available()
 
 
 def require_flwr(*, feature: str = "Flower federated backend") -> Any:

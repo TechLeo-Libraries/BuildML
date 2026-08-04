@@ -1,6 +1,6 @@
 # Natural language processing deep guide
 
-## What shipped
+## Scope
 
 BuildML's NLP path is a **Session-native text surface for one text column on the
 dataset**: profile → fit → select → score → attribute, with unsupervised
@@ -8,26 +8,26 @@ description layered on the same split and a dedicated bundle.
 
 | Surface | Role |
 | --- | --- |
-| `nlp_capability_matrix()` | Honest backend / task / extra / non-goal matrix (static) |
-| `profile_text_corpus` | Corpus health + split-contamination screen |
-| `detect_language` | Per-document language ID with confidence |
-| `fit_text_classifier` | Single-label document classifier on Session **train** |
-| `predict_text` | Score a partition with the train-fitted plan |
-| `evaluate_text_classifier` | Holdout metrics + per-class report + confusion + OOV rate |
-| `interpret_text_prediction` | Exact token attributions for linear heads |
-| `fit_topics` | NMF / LDA on **train**, with NPMI coherence |
-| `assign_topics` | Transform-and-assign a partition (never refits) |
-| `extract_keyphrases` | TF-IDF / RAKE / TextRank phrase ranking |
-| `analyze_sentiment` | Lexicon / supervised / transformer valence |
-| `extract_entities` | Rule (regex + gazetteer) or spaCy mentions with offsets |
-| `summarize_text` | Extractive TextRank / LexRank / lead summaries |
-| `save_nlp_bundle` / `load_nlp_bundle` | `buildml.nlp_bundle.v1` |
+| `session.nlp.capability_matrix()` | Honest backend / task / extra / non-goal matrix (static) |
+| `session.nlp.profile_corpus` | Corpus health + split-contamination screen |
+| `session.nlp.detect_language` | Per-document language ID with confidence |
+| `session.nlp.fit_classifier` | Single-label document classifier on Session **train** |
+| `session.nlp.predict` | Score a partition with the train-fitted plan |
+| `session.nlp.evaluate` | Holdout metrics + per-class report + confusion + OOV rate |
+| `session.nlp.interpret` | Exact token attributions for linear heads |
+| `session.nlp.fit_topics` | NMF / LDA on **train**, with NPMI coherence |
+| `session.nlp.assign_topics` | Transform-and-assign a partition (never refits) |
+| `session.nlp.extract_keyphrases` | TF-IDF / RAKE / TextRank phrase ranking |
+| `session.nlp.analyze_sentiment` | Lexicon / supervised / transformer valence |
+| `session.nlp.extract_entities` | Rule (regex + gazetteer) or spaCy mentions with offsets |
+| `session.nlp.summarize` | Extractive TextRank / LexRank / lead summaries |
+| `session.nlp.save_bundle` / `session.nlp.load_bundle` | `buildml.nlp_bundle.v1` |
 
-Read-only accessors mirror the other domains: `session.nlp_text_plan`,
-`nlp_topic_plan`, `nlp_fit_result`, `nlp_eval_result`, `nlp_predict_result`,
-`nlp_interpret_result`, `nlp_topic_result`, `nlp_topic_assign_result`,
-`nlp_keyphrase_result`, `nlp_sentiment_result`, `nlp_entity_result`,
-`nlp_summary_result`, `nlp_language_result`, `nlp_profile_result`.
+Read-only accessors mirror the other domains: `session.nlp.text_plan`,
+`session.nlp.topic_plan`, `session.nlp.fit_result`, `session.nlp.eval_result`, `session.nlp.predict_result`,
+`session.nlp.interpret_result`, `session.nlp.topic_result`, `session.nlp.topic_assign_result`,
+`session.nlp.keyphrase_result`, `session.nlp.sentiment_result`, `session.nlp.entity_result`,
+`session.nlp.summary_result`, `session.nlp.language_result`, `session.nlp.profile_result`.
 
 ## Backends
 
@@ -43,12 +43,12 @@ its own decisions. Choose a dense backend deliberately, when word overlap
 genuinely is not enough: and accept losing attribution when you do.
 
 ```python
-matrix = Session.nlp_capability_matrix()
+matrix = session.nlp.capability_matrix()
 print(matrix["default_backend_when_installed"])         # 'sklearn'
 print(matrix["backends"]["embedding"]["available"])     # needs buildml[nlp]
 print(matrix["non_goals"])                              # what this will never do
 
-session.fit_text_classifier(backend="embedding", estimator="logistic")
+session.nlp.fit_classifier(backend="embedding", estimator="logistic")
 ```
 
 Heads: `logistic`, `linear_svm`, `complement_nb`, `multinomial_nb`, `sgd` on
@@ -73,14 +73,14 @@ The split between the two is the whole leakage story for text.
 
 Because normalization learns nothing, it cannot leak, which is why the plan can
 apply it to holdout rows freely. Everything in the "yes" column is frozen at
-`fit_text_classifier` / `fit_topics` and reused verbatim afterwards.
+`session.nlp.fit_classifier` / `session.nlp.fit_topics` and reused verbatim afterwards.
 
 Default steps are `strip_html`, `strip_urls`, `strip_emails`, `lowercase`,
 `collapse_whitespace`: the ones that are almost always right. Override
 explicitly:
 
 ```python
-session.fit_text_classifier(
+session.nlp.fit_classifier(
     normalize_steps=["strip_html", "strip_urls", "lowercase", "collapse_repeats"],
     stopword_language="en",
     min_token_length=2,
@@ -96,11 +96,11 @@ anything else rather than getting a silent empty list.
 
 ## Profile before you believe a score
 
-`profile_text_corpus` is the step most text pipelines skip, and the reason their
+`session.nlp.profile_corpus` is the step most text pipelines skip, and the reason their
 holdout numbers are wrong.
 
 ```python
-profile = session.profile_text_corpus(
+profile = session.nlp.profile_corpus(
     text_column="body",
     near_duplicate_threshold=0.9,
     detect_languages=True,
@@ -119,14 +119,14 @@ near-duplicate threshold is recorded on the result so the claim stays auditable.
 
 ## Evaluation
 
-`evaluate_text_classifier` returns accuracy, balanced accuracy, macro/weighted F1,
+`session.nlp.evaluate` returns accuracy, balanced accuracy, macro/weighted F1,
 macro precision/recall, log loss, and ROC AUC (one-vs-rest for multi-class, when
 the head exposes probabilities), plus a per-class report, the confusion matrix in
 fitted-class order, and the holdout out-of-vocabulary token rate.
 
 ```python
-print(session.evaluate_text_classifier(partition="validation").metrics)  # choose here
-test = session.evaluate_text_classifier(partition="test")                # read once
+print(session.nlp.evaluate(partition="validation").metrics)  # choose here
+test = session.nlp.evaluate(partition="test")                # read once
 print(test.per_class["billing"], test.confusion, test.oov_rate)
 ```
 
@@ -142,7 +142,7 @@ exactly `coefficient × feature value`, and those contributions plus the interce
 reconstruct the decision function. There is nothing to approximate.
 
 ```python
-interpret = session.interpret_text_prediction(
+interpret = session.nlp.interpret(
     partition="test", target_class="billing", top_k=10, max_documents=5
 )
 print(interpret.method)                 # 'linear-coefficient x feature-value'
@@ -166,7 +166,7 @@ and a refusal otherwise.
 ## Topics
 
 ```python
-topics = session.fit_topics(
+topics = session.nlp.fit_topics(
     method="nmf",          # 'nmf' on TF-IDF, 'lda' on counts
     n_topics=6,
     min_df=3,
@@ -178,12 +178,12 @@ for topic in topics.topics:
 print(topics.mean_coherence)        # NPMI in [-1, 1], computed on train only
 print(topics.reconstruction_error)  # NMF; topics.perplexity for LDA
 
-assigned = session.assign_topics(partition="test")
+assigned = session.nlp.assign_topics(partition="test")
 print(assigned.dominant_topics[:10], assigned.topic_share)
 ```
 
 NPMI coherence is computed on the **train** partition with the train vocabulary,
-and clamped to its mathematical bounds. `assign_topics` is a pure transform: it
+and clamped to its mathematical bounds. `session.nlp.assign_topics` is a pure transform: it
 never refits the vectorizer or the decomposition, which is what makes holdout
 topic shares comparable to train ones. Topic `label`s are generated from top
 terms: they are a reading aid, not validated category names.
@@ -191,29 +191,29 @@ terms: they are a reading aid, not validated category names.
 ## Description surfaces (no quality metric is claimed)
 
 ```python
-kp = session.extract_keyphrases(
+kp = session.nlp.extract_keyphrases(
     partition="train", method="tfidf",   # or 'rake', 'textrank'
     top_n=15, max_phrase_words=3, per_document=True, max_documents=25,
 )
 print([k.phrase for k in kp.corpus_keyphrases], kp.document_keyphrases[0])
 
-s = session.summarize_text(
+s = session.nlp.summarize(
     partition="test", method="textrank",  # or 'lexrank', 'lead'
     n_sentences=3, max_documents=25,
 )
 print(s.summaries[0], s.mean_compression)
 
-ents = session.extract_entities(
+ents = session.nlp.extract_entities(
     partition="test", backend="rules",
     gazetteers={"QUEUE_TERM": ["invoice", "courier", "workspace"]},
 )
 print(ents.label_counts, ents.top_mentions)
 print(ents.document_entities[0][0])          # text, label, start, end, source
 
-sent = session.analyze_sentiment(partition="test", backend="lexicon", threshold=0.05)
+sent = session.nlp.analyze_sentiment(partition="test", backend="lexicon", threshold=0.05)
 print(sent.positive_rate, sent.negative_rate, sent.matched_term_rate)
 
-lang = session.detect_language(partition="all")  # backend='native' or 'langdetect'
+lang = session.nlp.detect_language(partition="all")  # backend='native' or 'langdetect'
 print(lang.dominant_language, lang.language_counts, lang.undetermined_rate)
 ```
 
@@ -244,11 +244,11 @@ Each of these is unsupervised and reports its own limits:
 
 ## Leakage discipline
 
-- Require a `SplitPlan` before `fit_text_classifier` and `fit_topics`.
+- Require a `SplitPlan` before `session.nlp.fit_classifier` and `session.nlp.fit_topics`.
 - Vocabulary, document frequencies, IDF, topic components, and the head: **train only**.
 - Holdout partitions: predict / evaluate / assign / describe only.
-- `assign_topics` and `predict_text` never refit any train-fitted state.
-- `profile_text_corpus` screens the split and discloses contamination instead of
+- `session.nlp.assign_topics` and `session.nlp.predict` never refit any train-fitted state.
+- `session.nlp.profile_corpus` screens the split and discloses contamination instead of
   repairing it behind your back.
 - Bundles store the plan; Session checkpoints do **not**.
 
@@ -262,7 +262,7 @@ Each of these is unsupervised and reports its own limits:
 - Treating topic `label`s as validated categories.
 - Quoting a lexicon sentiment rate without checking `matched_term_rate`.
 - Expecting token attributions from `hashing` or a dense backend.
-- Routing NLP through `rag_retrieve` / `rag_generate`, or calling document
+- Routing NLP through `session.rag.retrieve` / `session.rag.generate`, or calling document
   classification "RAG" because both touch text.
 - Expecting `checkpoint_load` to restore the `NlpTextPlan`.
 
@@ -272,7 +272,7 @@ Each of these is unsupervised and reports its own limits:
 | --- | --- | --- |
 | `Session.text_features` | Representation stays inside the NLP plan | Writes numeric columns back onto the dataset for tabular models |
 | `buildml.rag` | Supervised / unsupervised modelling of a text column | Ingest, chunk, index, retrieve to ground generated answers with citations |
-| `buildml.dl` text path | Encoders stay **frozen** | `make_text_torch_loaders` / `fit_torch` fine-tune sequence models on token ids |
+| `buildml.dl` text path | Encoders stay **frozen** | `session.dl.make_text_loaders` / `session.dl.fit` fine-tune sequence models on token ids |
 | `buildml.ai` | Never calls the network | External LLM provider under an operator policy |
 | `buildml.cbr` (`backend='embedding'`) | Documents and their labels | Cases (features + solution) retrieved for reuse |
 
@@ -284,7 +284,7 @@ See `buildml.nlp.checkpoint.CHECKPOINT_BOUNDARY`. `buildml.nlp_bundle.v1` stores
 the normalization plan, the train-fitted representation, the fitted head, and
 optionally the topic plan. It does **not** store data, roles, splits, or history :
 reload the workflow via `checkpoint_load` and the text model via
-`load_nlp_bundle`. Because the normalization plan travels with the vectorizer, a
+`session.nlp.load_bundle`. Because the normalization plan travels with the vectorizer, a
 reloaded bundle reproduces the holdout score exactly; the proof and the
 integration smoke both assert that.
 

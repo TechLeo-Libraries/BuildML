@@ -47,7 +47,7 @@ def main() -> None:
         .scale(method="standard")
     )
 
-    fit = session.fit_metalearning(
+    fit = session.metalearning.fit(
         method="prototypical",
         k_shot=3,
         n_query=6,
@@ -59,8 +59,8 @@ def main() -> None:
         f"meta_train_accuracy={fit.meta_train_accuracy}"
     )
 
-    adapt = session.adapt_to_task(
-        task_id=session.metalearning_plan.train_task_ids[0],
+    adapt = session.metalearning.adapt(
+        task_id=session.metalearning.plan.train_task_ids[0],
         partition="train",
         max_support_per_class=3,
     )
@@ -69,12 +69,12 @@ def main() -> None:
         f"n_classes={adapt.n_classes_adapted}"
     )
 
-    ev = session.evaluate_metalearning(partition="train", k_shot=3)
+    ev = session.metalearning.evaluate(partition="train", k_shot=3)
     print(f"episodic metrics={ev.metrics}")
     print(f"per-task={ev.per_task_metrics}")
 
     out = Path("artifacts") / "metalearning_prototypical_bundle"
-    session.save_metalearning_bundle(out)
+    session.metalearning.save_bundle(out)
     print(f"saved bundle -> {out}")
 
 

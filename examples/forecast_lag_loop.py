@@ -22,23 +22,23 @@ def main() -> None:
         .set_roles({"ts": "time", "y": "target"})
         .time_split(test_size=0.2, validation_size=0.2)
     )
-    fit = session.fit_forecast(
+    fit = session.forecast.fit(
         method="lag_ridge",
         horizon=7,
         lags=[1, 2, 3, 7],
         alpha=1.0,
     )
-    metrics = session.evaluate_forecast(
+    metrics = session.forecast.evaluate(
         partition="validation",
         strategy="rolling_one_step",
     )
-    gen = session.generate_forecast(horizon=7)
+    gen = session.forecast.generate(horizon=7)
     print("fit:", fit.to_dict())
     print("eval:", metrics.to_dict())
     print("generate:", gen.to_dict())
 
     out = Path(".buildml-artifacts") / "forecast_bundle"
-    path = session.save_forecast_bundle(out)
+    path = session.forecast.save_bundle(out)
     print("bundle:", path)
 
 

@@ -124,7 +124,7 @@ def main() -> None:
     write_comparison(
         ctx,
         buildml={
-            "backend": "buildml.Session.fit_forecast",
+            "backend": "buildml.session.forecast.fit",
             "method": bml_raw.get("fit", {}).get("method", "lag_ridge"),
             "test_metrics": bml_metrics,
         },

@@ -13,7 +13,7 @@ rows with relevance labels. Train-only fit, query-group split disclosure,
 and per-query ranking metrics (nDCG@K, MAP@K, MRR@K).
 
 **Not** a search-engine product. **Not** RAG retrieve/generate (chunk index +
-embedding nDCG). **Not** recommendation systems (`fit_recommender` user–item CF).
+embedding nDCG). **Not** recommendation systems (`session.recommender.fit` user–item CF).
 
 Runnable mirror: [`examples/ranking_pointwise_loop.py`](../examples/ranking_pointwise_loop.py).
 Deep guide: [ranking-deep.md](ranking-deep.md).
@@ -62,7 +62,7 @@ session = (
 )
 
 # Sklearn fallback (always works):
-fit = session.fit_ranker(
+fit = session.ranking.fit(
     backend="sklearn",
     method="pointwise",
     query_column="query_id",
@@ -72,15 +72,15 @@ fit = session.fit_ranker(
 print(fit.to_dict())
 
 # Or omit backend/method to use industry default when installed:
-# fit = session.fit_ranker(query_column="query_id", item_column="item_id")
+# fit = session.ranking.fit(query_column="query_id", item_column="item_id")
 
-ranked = session.rank(partition="test", k=5)
+ranked = session.ranking.rank(partition="test", k=5)
 print(ranked.to_dict())
 
-ev = session.evaluate_ranker(partition="test", k=5)
+ev = session.ranking.evaluate(partition="test", k=5)
 print(ev.metrics)
 
-session.save_ranker_bundle("artifacts/ranker_demo_bundle")
+session.ranking.save_bundle("artifacts/ranker_demo_bundle")
 ```
 
 ---
@@ -93,8 +93,8 @@ session.save_ranker_bundle("artifacts/ranker_demo_bundle")
 | `industry` | `ranking-industry` | `lambdarank_lgbm`, `rank_ndcg_xgb`, `yetirank_catboost` |
 | `torch` | `torch` | `listwise_lite` |
 
-When extras are installed, `fit_ranker()` defaults to the industry backend.
-Use `Session.ranking_capability_matrix()` to inspect what is available.
+When extras are installed, `session.ranking.fit()` defaults to the industry backend.
+Use `session.ranking.capability_matrix()` to inspect what is available.
 
 Prefer `group_split` with `query_id` as `role='group'` so holdout queries
 (and their labels) never appear in train.
@@ -110,7 +110,7 @@ Prefer `group_split` with `query_id` as `role='group'` so holdout queries
 | [RAG](quickstart-rag.md) | Document chunks via embeddings / hybrid retrieve |
 
 Same metric names (nDCG, MRR) can appear in all three: **do not compare**
-`evaluate_ranker`, `evaluate_recommender`, and `rag_evaluate` numbers directly.
+`session.ranking.evaluate`, `session.recommender.evaluate`, and `session.rag.evaluate` numbers directly.
 
 ---
 
@@ -118,4 +118,4 @@ Same metric names (nDCG, MRR) can appear in all three: **do not compare**
 
 - Deep dive: [ranking-deep.md](ranking-deep.md)
 - Benchmark: `benchmarks/ranking/ndcg_lift.py`
-- After LTR PASS: optimisation helpers (R6.9)
+- Related: optimisation helpers

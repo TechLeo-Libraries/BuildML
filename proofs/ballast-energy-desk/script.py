@@ -69,7 +69,7 @@ def main() -> None:
     }
 
     # --- Stage 1: forecast ---
-    fit = session.fit_forecast(
+    fit = session.forecast.fit(
         method="lag_ridge",
         horizon=24,
         lags=[1, 2, 3, 24, 48],
@@ -78,11 +78,11 @@ def main() -> None:
     assert_no_test_in_selection(
         selection_partition="validation", evaluation_partition="test"
     )
-    val_fc = session.evaluate_forecast(
+    val_fc = session.forecast.evaluate(
         partition="validation", strategy="rolling_one_step"
     )
-    test_fc = session.evaluate_forecast(partition="test", strategy="rolling_one_step")
-    gen = session.generate_forecast(horizon=24)
+    test_fc = session.forecast.evaluate(partition="test", strategy="rolling_one_step")
+    gen = session.forecast.generate(horizon=24)
     stages["forecast"] = {
         "status": "ok",
         "fit": metrics_round(fit.to_dict() if hasattr(fit, "to_dict") else {}),
@@ -116,20 +116,20 @@ def main() -> None:
             .split(test_size=0.2, validation_size=0.2, random_state=ctx.seed)
             .scale(method="standard")
         )
-        p_fit = prob_session.fit_probabilistic(
+        p_fit = prob_session.probabilistic.fit(
             estimator="bayesian_ridge",
             conformal=True,
             interval_method="both",
             random_state=ctx.seed,
         )
         try:
-            intervals = prob_session.predict_interval(partition="test", alpha=0.1)
+            intervals = prob_session.probabilistic.predict_interval(partition="test", alpha=0.1)
             interval_payload = metrics_round(
                 intervals.to_dict() if hasattr(intervals, "to_dict") else {}
             )
         except Exception as exc:  # noqa: BLE001
             interval_payload = {"error": f"{type(exc).__name__}: {exc}"}
-        p_ev = prob_session.evaluate_probabilistic(partition="test")
+        p_ev = prob_session.probabilistic.evaluate(partition="test")
         stages["probabilistic"] = {
             "status": "ok",
             "fit": metrics_round(p_fit.to_dict() if hasattr(p_fit, "to_dict") else {}),
@@ -179,7 +179,7 @@ def main() -> None:
         selection_partition="validation", evaluation_partition="test"
     )
     try:
-        alloc = cand_session.fit_decision_policy(
+        alloc = cand_session.decision.fit(
             method="knapsack",
             partition="validation",
             budget=200.0,
@@ -190,7 +190,7 @@ def main() -> None:
             score_column="score",
             knapsack_solver="dp",
         )
-        applied = cand_session.apply_decisions(partition="test")
+        applied = cand_session.decision.apply(partition="test")
         stages["allocation"] = {
             "status": "ok",
             "policy": metrics_round(

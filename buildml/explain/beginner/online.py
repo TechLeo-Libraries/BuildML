@@ -20,8 +20,8 @@ ONLINE_BEGINNER: dict[str, BeginnerLayer] = _index(
         steps=(
             "Split as usual: the chunks come from the training partition.",
             "Fit an initial model on the first chunk to establish the plan.",
-            "Feed subsequent chunks with `partial_fit_online`; each call nudges the model.",
-            "Predict at any point with `predict_online`; the model is always usable.",
+            "Feed subsequent chunks with `session.online.partial_fit`; each call nudges the model.",
+            "Predict at any point with `session.online.predict`; the model is always usable.",
             "Evaluate on held-out rows the incremental updates never touched.",
         ),
         use=(
@@ -43,10 +43,10 @@ ONLINE_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.fit_online(estimator=SGDClassifier(loss='log_loss'), chunk_size=1000)",
+            "session.online.fit(estimator=SGDClassifier(loss='log_loss'), chunk_size=1000)",
             "for chunk in later_chunks:",
-            "    session.partial_fit_online(chunk)",
-            "session.evaluate_online(partition='validation')",
+            "    session.online.partial_fit(chunk)",
+            "session.online.evaluate(partition='validation')",
         ),
         check=(
             "Does your estimator actually support incremental updates?",
@@ -94,11 +94,11 @@ ONLINE_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.fit_online(",
+            "session.online.fit(",
             "    estimator=SGDClassifier(loss='log_loss'),",
             "    classes=['low', 'medium', 'high', 'critical'],   # all of them, up front",
             ")",
-            "print(session.online_plan.classes)",
+            "print(session.online.plan.classes)",
         ),
         check=(
             "Is every class in your problem present in your declared or discovered list?",
@@ -145,8 +145,8 @@ ONLINE_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.partial_fit_online(chunk, disclose_drift=True)",
-            "for note in session.online_plan.update_history[-1].drift_notes:",
+            "session.online.partial_fit(chunk, disclose_drift=True)",
+            "for note in session.online.plan.update_history[-1].drift_notes:",
             "    print(note)",
         ),
         check=(
@@ -168,9 +168,9 @@ ONLINE_BEGINNER: dict[str, BeginnerLayer] = _index(
             "today's answers look nothing like yesterday's."
         ),
         steps=(
-            "Install the online-industry extra and call fit_online(backend='industry').",
+            "Install the online-industry extra and call session.online.fit(backend='industry').",
             "Pick a River estimator matching classification vs regression.",
-            "Feed chunks with partial_fit_online on train rows only.",
+            "Feed chunks with session.online.partial_fit on train rows only.",
             "Read drift_notes on updates: mean_shift is sklearn-only; ADWIN needs River.",
             "Evaluate on validation/test without feeding those rows as updates.",
         ),
@@ -189,12 +189,12 @@ ONLINE_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.fit_online(backend='industry', estimator='river_logistic', chunk_size=500)",
-            "session.partial_fit_online(next_chunk)",
-            "session.evaluate_online(partition='validation')",
+            "session.online.fit(backend='industry', estimator='river_logistic', chunk_size=500)",
+            "session.online.partial_fit(next_chunk)",
+            "session.online.evaluate(partition='validation')",
         ),
         check=(
-            "Which backend and estimator does online_plan report?",
+            "Which backend and estimator does session.online.plan report?",
             "Did any drift note fire on the last chunk?",
         ),
         tools=("fit_online", "partial_fit_online", "evaluate_online", "online_capability_matrix"),
@@ -214,8 +214,8 @@ ONLINE_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         steps=(
             "Require buildml[torch] and a classification target.",
-            "fit_online(backend='torch', estimator='replay_mlp' or 'ewc_mlp').",
-            "partial_fit_online on train chunks; read n_updates and n_seen_rows.",
+            "session.online.fit(backend='torch', estimator='replay_mlp' or 'ewc_mlp').",
+            "session.online.partial_fit on train chunks; read n_updates and n_seen_rows.",
             "Evaluate on holdout without updating there.",
         ),
         use=(
@@ -233,8 +233,8 @@ ONLINE_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.fit_online(backend='torch', estimator='replay_mlp', chunk_size=256)",
-            "session.partial_fit_online(chunk)",
+            "session.online.fit(backend='torch', estimator='replay_mlp', chunk_size=256)",
+            "session.online.partial_fit(chunk)",
         ),
         check=(
             "Is your task classification?",
@@ -257,9 +257,9 @@ ONLINE_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         steps=(
             "Run at least one incremental update so a plan exists.",
-            "Call `save_online_bundle(path)` to store the estimator, the cursor, and the history.",
-            "Reload with `load_online_bundle(path)` when the job restarts.",
-            "Continue with `partial_fit_online` from the recorded position.",
+            "Call `session.online.save_bundle(path)` to store the estimator, the cursor, and the history.",
+            "Reload with `session.online.load_bundle(path)` when the job restarts.",
+            "Continue with `session.online.partial_fit` from the recorded position.",
             "Keep checkpoints separately for the underlying data state.",
         ),
         use=(
@@ -281,10 +281,10 @@ ONLINE_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.save_online_bundle('artifacts/online-model')",
-            "job = Session.ingest(new_chunk).load_online_bundle('artifacts/online-model')",
+            "session.online.save_bundle('artifacts/online-model')",
+            "job = Session.ingest(new_chunk).online.load_bundle('artifacts/online-model')",
             "print(job.online_plan.cursor, len(job.online_plan.update_history))",
-            "job.partial_fit_online(new_chunk)",
+            "job.online.partial_fit(new_chunk)",
         ),
         check=(
             "Where does your cursor point, and where does your stream currently stand?",

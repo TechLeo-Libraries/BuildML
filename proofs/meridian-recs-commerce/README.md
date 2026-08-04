@@ -17,12 +17,12 @@ propensity drives promo spend. The platform:
 
 ## Status
 
-`completed`: run `script.py`; see `results/summary.json` and stage JSONs.
+Run `script.py`. Outputs land under `results/` (summary and stage JSON)..
 
 ## How to run
 
 ```bash
-.\.venv\Scripts\python.exe proofs\meridian-recs-commerce\script.py
+python proofs\meridian-recs-commerce\script.py
 ```
 
 ## Leakage controls

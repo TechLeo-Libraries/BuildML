@@ -23,17 +23,17 @@ def main() -> None:
         .scale(method="standard")
     )
 
-    fit = session.fit_symbolic(source="decision_tree", task="classification")
+    fit = session.symbolic.fit(source="decision_tree", task="classification")
     print("symbolic", fit.n_rules, fit.provenance, fit.train_accuracy)
 
-    pred = session.predict_symbolic(partition="test", return_traces=True)
+    pred = session.symbolic.predict(partition="test", return_traces=True)
     print("trace0", pred.traces[0].chosen_rule_id, pred.traces[0].fired_rule_ids[:3])
 
-    ev = session.evaluate_symbolic(partition="validation")
+    ev = session.symbolic.evaluate(partition="validation")
     print("symbolic_eval", ev.metrics, "coverage", ev.rule_coverage)
 
     out = Path("artifacts") / "symbolic_demo_bundle"
-    session.save_symbolic_bundle(out)
+    session.symbolic.save_bundle(out)
     print("saved", out)
 
     constraints = [
@@ -46,7 +46,7 @@ def main() -> None:
             "priority": 100,
         }
     ]
-    neuro = session.fit_neuro_symbolic(
+    neuro = session.symbolic.fit_neuro(
         mode="constraint_overlay",
         base_estimator="logistic_regression",
         task="classification",
@@ -54,7 +54,7 @@ def main() -> None:
         rule_source="declared",
     )
     print("neuro", neuro.mode, neuro.rule_provenance, neuro.n_rules)
-    nev = session.evaluate_neuro_symbolic(partition="test")
+    nev = session.symbolic.evaluate_neuro(partition="test")
     print("neuro_eval", nev.metrics, "repair_rate", nev.repair_rate)
 
 

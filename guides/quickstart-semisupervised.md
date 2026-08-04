@@ -57,38 +57,38 @@ session._dataset = Dataset.from_transformed(
     roles=dict(session.dataset.roles),
 )
 
-fit = session.fit_semisupervised(method="label_propagation", n_neighbors=7)
+fit = session.semisupervised.fit(method="label_propagation", n_neighbors=7)
 print(fit.n_labeled_train, fit.n_unlabeled_train, fit.backend, fit.method)
 
-preds = session.predict_semisupervised(partition="test")
+preds = session.semisupervised.predict(partition="test")
 print(preds.n_rows, preds.predictions[:5])
 
-ev = session.evaluate_semisupervised(partition="test")
+ev = session.semisupervised.evaluate(partition="test")
 print(ev.n_labeled_eval, ev.metrics)
 
-bundle = session.save_semisupervised_bundle("artifacts/semisupervised_bundle")
+bundle = session.semisupervised.save_bundle("artifacts/semisupervised_bundle")
 ```
 
 Industry pseudo-label (when XGBoost installed):
 
 ```python
-session.fit_semisupervised(
+session.semisupervised.fit(
     backend="industry",
     method="pseudo_label_xgb",
     threshold=0.8,
     max_self_train_iter=10,
 )
-print(session.evaluate_semisupervised(partition="test").metrics)
+print(session.semisupervised.evaluate(partition="test").metrics)
 ```
 
 SSL → semi-supervised pipeline:
 
 ```python
-session.fit_ssl_pretext(method="simclr_tabular", latent_dim=8, epochs=20)
-session.transform_ssl(attach=True, partition="all")
-session.fit_semisupervised(
+session.ssl.fit_pretext(method="simclr_tabular", latent_dim=8, epochs=20)
+session.ssl.transform(attach=True, partition="all")
+session.semisupervised.fit(
     method="self_training",
-    columns=list(session.ssl_plan.representation_columns),
+    columns=list(session.ssl.plan.representation_columns),
     prefer_reduce_components=False,
 )
 ```

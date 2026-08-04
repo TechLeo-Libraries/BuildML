@@ -9,7 +9,10 @@ from buildml.session.mixins._shared import *  # noqa: F403
 
 
 class WorkflowSessionMixin:
-    """Public Session methods for the workflow domain."""
+    """Public Session methods for the workflow domain.
+
+    Preferred namespaced API: ``session.audit.*`` (classical/core dual: flat methods remain first-class without warnings).
+    """
     # mypy: session private attrs (owned by Session.__init__)
     if TYPE_CHECKING:
         _history: Any
@@ -190,6 +193,11 @@ class WorkflowSessionMixin:
         Additive helper over existing ``Session.*_capability_matrix()`` methods.
         Does not remove or rename any public Session API.
 
+        Returns
+        -------
+        dict[str, Any]
+            Domains, preferred facades, tiers, fit routes, and disclosures.
+
         See Also
         --------
         :func:`buildml.session.discovery_ops.list_capabilities`
@@ -208,6 +216,11 @@ class WorkflowSessionMixin:
         Additive discoverability helper. Prefer :meth:`explain` for full teaching
         overlays when the operation is catalogued.
 
+        Returns
+        -------
+        dict[str, Any]
+            Summary, preferred_path, stability_tier, and teaching pointers.
+
         See Also
         --------
         :func:`buildml.session.discovery_ops.describe_method`
@@ -220,6 +233,14 @@ class WorkflowSessionMixin:
     def list_active_domains(self) -> dict[str, Any]:
         """Report which domain artifacts are present on this Session.
 
+        Presence of plan/result attributes is not a maturity score; use
+        capability matrices for backend honesty.
+
+        Returns
+        -------
+        dict[str, Any]
+            Active and idle probed domains plus recent history operations.
+
         See Also
         --------
         :func:`buildml.session.discovery_ops.list_active_domains`
@@ -227,3 +248,18 @@ class WorkflowSessionMixin:
         from buildml.session import discovery_ops
 
         return discovery_ops.list_active_domains(self)
+
+    @staticmethod
+    def list_facades() -> dict[str, Any]:
+        """List namespaced Session facades (``session.fairness``, …).
+
+        Additive discovery helper. See ``docs/session-facade-migration.md``.
+
+        Returns
+        -------
+        dict[str, Any]
+            Facade catalog with tiers, warn policy, and method counts.
+        """
+        from buildml.session.facades import list_facades
+
+        return list_facades()

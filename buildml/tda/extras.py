@@ -49,23 +49,22 @@ def require_giotto(*, feature: str = "Topological Data Analysis (giotto-tda)") -
     return gtda
 
 
+def _runtime_ok(module: str) -> bool:
+    from buildml.dl.extras import _subprocess_import_ok
+
+    return _subprocess_import_ok(module)
+
+
+def giotto_spec_present() -> bool:
+    """Cheap find_spec discovery for giotto-tda (``gtda``)."""
+    return importlib.util.find_spec("gtda") is not None
+
+
 def giotto_available() -> bool:
-    """Return whether ``giotto-tda`` (``gtda``) can be imported on this machine.
-
-    Uses a real import probe because ``find_spec`` alone misses some DLL failures.
-
-    Returns
-    -------
-    bool
-        ``True`` when ``gtda`` imports successfully.
-    """
-    if importlib.util.find_spec("gtda") is None:
+    """Return whether ``giotto-tda`` (``gtda``) imports cleanly (subprocess)."""
+    if not giotto_spec_present():
         return False
-    try:
-        import gtda  # noqa: F401
-    except Exception:
-        return False
-    return True
+    return _runtime_ok("gtda")
 
 
 def tda_industry_available() -> bool:
@@ -164,24 +163,18 @@ def require_tda_stack(*, feature: str = "Topological Data Analysis") -> tuple[An
     return require_ripser(feature=feature), require_persim(feature=feature)
 
 
+def ripser_spec_present() -> bool:
+    """Cheap find_spec discovery for ripser."""
+    return importlib.util.find_spec("ripser") is not None
+
+
+def persim_spec_present() -> bool:
+    """Cheap find_spec discovery for persim."""
+    return importlib.util.find_spec("persim") is not None
+
+
 def tda_available() -> bool:
-    """Return whether both ``ripser`` and ``persim`` can be imported on this machine.
-
-    Uses real import probes because ``find_spec`` alone misses some native
-    library load failures on Windows.
-
-    Returns
-    -------
-    bool
-        ``True`` when the native TDA stack is usable.
-    """
-    if importlib.util.find_spec("ripser") is None:
+    """Return whether both ``ripser`` and ``persim`` import cleanly (subprocess)."""
+    if not ripser_spec_present() or not persim_spec_present():
         return False
-    if importlib.util.find_spec("persim") is None:
-        return False
-    try:
-        import persim  # noqa: F401
-        import ripser  # noqa: F401
-    except Exception:
-        return False
-    return True
+    return _runtime_ok("ripser") and _runtime_ok("persim")

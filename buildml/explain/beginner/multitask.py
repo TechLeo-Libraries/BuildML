@@ -44,8 +44,8 @@ MULTITASK_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         example=(
             "session.set_roles({'churn_risk': 'target', 'upsell_score': 'target'})",
-            "session.fit_multitask(method='multioutput', estimator=HistGradientBoostingRegressor())",
-            "session.evaluate_multitask(partition='validation')   # per-target metrics",
+            "session.multitask.fit(method='multioutput', estimator=HistGradientBoostingRegressor())",
+            "session.multitask.evaluate(partition='validation')   # per-target metrics",
         ),
         check=(
             "Do your targets share the same drivers, or are they unrelated?",
@@ -92,11 +92,11 @@ MULTITASK_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.fit_multitask(",
+            "session.multitask.fit(",
             "    method='classifier_chain',",
             "    order=['has_complaint', 'will_escalate', 'will_churn'],",
             ")",
-            "session.evaluate_multitask(partition='validation')",
+            "session.multitask.evaluate(partition='validation')",
         ),
         check=(
             "Which of your targets is most reliably predictable? Is it first?",
@@ -120,7 +120,7 @@ MULTITASK_BEGINNER: dict[str, BeginnerLayer] = _index(
         steps=(
             "Count your target-role columns.",
             "Exactly one means classical `fit`, `evaluate`, `predict`, and everything built on them.",
-            "Two or more means `fit_multitask` and its evaluate/predict pair.",
+            "Two or more means `session.multitask.fit` and its evaluate/predict pair.",
             "Switching between the two means changing roles with `set_roles`.",
             "If a classical operation errors about the target, check your role assignment first.",
         ),
@@ -146,7 +146,7 @@ MULTITASK_BEGINNER: dict[str, BeginnerLayer] = _index(
             "session.set_roles({'renewed': 'target'})",
             "session.fit(LogisticRegression())              # exactly one target",
             "session.set_roles({'renewed': 'target', 'upsold': 'target'})",
-            "session.fit_multitask(method='multioutput')    # two or more",
+            "session.multitask.fit(method='multioutput')    # two or more",
         ),
         check=(
             "How many columns currently hold the target role?",
@@ -168,8 +168,8 @@ MULTITASK_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         steps=(
             "Fit a multi-task model so a plan exists.",
-            "Call `save_multitask_bundle(path)`.",
-            "Reload with `load_multitask_bundle(path)`.",
+            "Call `session.multitask.save_bundle(path)`.",
+            "Reload with `session.multitask.load_bundle(path)`.",
             "Predict: you get every target back in the recorded order.",
             "Checkpoint separately if you also need the dataset state.",
         ),
@@ -192,9 +192,9 @@ MULTITASK_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.save_multitask_bundle('artifacts/customer-outcomes')",
-            "job = Session.ingest(new_frame).load_multitask_bundle('artifacts/customer-outcomes')",
-            "predictions = job.predict_multitask()",
+            "session.multitask.save_bundle('artifacts/customer-outcomes')",
+            "job = Session.ingest(new_frame).multitask.load_bundle('artifacts/customer-outcomes')",
+            "predictions = job.multitask.predict()",
         ),
         check=(
             "Does your consuming system rely on target order or on target name?",

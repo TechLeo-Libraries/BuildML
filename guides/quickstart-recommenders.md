@@ -57,7 +57,7 @@ session = (
     .split(test_size=0.2, validation_size=0.15, random_state=0)
 )
 
-fit = session.fit_recommender(
+fit = session.recommender.fit(
     method="item_knn",
     user_column="user_id",
     item_column="item_id",
@@ -65,13 +65,13 @@ fit = session.fit_recommender(
 )
 print(fit.to_dict())
 
-recs = session.recommend(partition="test", k=5)
+recs = session.recommender.recommend(partition="test", k=5)
 print(recs.to_dict())
 
-ev = session.evaluate_recommender(partition="test", k=5)
+ev = session.recommender.evaluate(partition="test", k=5)
 print(ev.metrics)
 
-session.save_recommender_bundle("artifacts/recommender_demo_bundle")
+session.recommender.save_bundle("artifacts/recommender_demo_bundle")
 ```
 
 ---
@@ -115,4 +115,4 @@ session.save_recommender_bundle("artifacts/recommender_demo_bundle")
 
 - Deep guide: [recommenders-deep.md](recommenders-deep.md)
 - Distinct tabular ranking path: [Search / LTR](quickstart-ranking.md)
-  (`fit_ranker`: query–item feature rows; not CF)
+  (`session.ranking.fit`: query–item feature rows; not CF)

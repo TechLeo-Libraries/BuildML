@@ -52,28 +52,28 @@ def main() -> None:
     method = "als" if impl_ok else "item_knn"
     try:
         if impl_ok:
-            fit = session.fit_recommender(
+            fit = session.recommender.fit(
                 method="als", feedback="implicit",
                 user_column="user_id", item_column="item_id",
                 random_state=ctx.seed,
             )
         else:
-            fit = session.fit_recommender(
+            fit = session.recommender.fit(
                 method="item_knn",
                 user_column="user_id", item_column="item_id",
                 n_neighbors=25, random_state=ctx.seed,
             )
             method = "item_knn"
     except (MissingExtraError, TypeError, ValueError):
-        fit = session.fit_recommender(
+        fit = session.recommender.fit(
             method="item_knn",
             user_column="user_id", item_column="item_id",
             n_neighbors=25, random_state=ctx.seed,
         )
         method = "item_knn"
-    recs = session.recommend(partition="test", k=5)
-    ev = session.evaluate_recommender(partition="test", k=5)
-    bundle = session.save_recommender_bundle(ctx.artifacts_dir / "rec_bundle")
+    recs = session.recommender.recommend(partition="test", k=5)
+    ev = session.recommender.evaluate(partition="test", k=5)
+    bundle = session.recommender.save_bundle(ctx.artifacts_dir / "rec_bundle")
     write_results(ctx, {
         "status": "completed",
         "data": {"name": "synthetic_movie_ratings", "license": "synthetic/public-domain", "n_rows": int(len(frame))},

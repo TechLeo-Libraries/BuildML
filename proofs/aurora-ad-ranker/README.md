@@ -13,12 +13,12 @@ Aurora ranks ads per query, scores a CTR proxy, and allocates scarce impressions
 
 ## Status
 
-`completed`: run `script.py`; see `results/summary.json` and stage JSONs.
+Run `script.py`. Outputs land under `results/` (summary and stage JSON)..
 
 ## How to run
 
 ```bash
-.\.venv\Scripts\python.exe proofs\aurora-ad-ranker\script.py
+python proofs\aurora-ad-ranker\script.py
 ```
 
 ## Leakage controls

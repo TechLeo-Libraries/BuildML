@@ -97,7 +97,7 @@ def main() -> None:
     write_comparison(
         ctx,
         buildml={
-            "backend": "buildml.Session.fit_rl(tabular_q)",
+            "backend": "buildml.session.rl.fit(tabular_q)",
             "method": "q_learning",
             "test_metrics": bml_metrics,
             "gymnasium_ran": bool(isinstance(probe, dict) and probe.get("ran")),
@@ -108,7 +108,7 @@ def main() -> None:
             "test_metrics": industry_metrics,
             "leakage_controls": [
                 "Random policy uses fresh env rollouts (no Session tabular leakage)",
-                "Same episode/step budget as BuildML evaluate_rl disclosure",
+                "Same episode/step budget as BuildML session.rl.evaluate disclosure",
             ],
         },
         same_split=False,

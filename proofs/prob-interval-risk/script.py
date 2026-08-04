@@ -34,7 +34,7 @@ def main() -> None:
         .split(test_size=0.2, validation_size=0.2, random_state=ctx.seed)
         .scale(method="standard")
     )
-    fit = session.fit_probabilistic(
+    fit = session.probabilistic.fit(
         estimator="bayesian_ridge",
         alpha=0.1,
         conformal=True,
@@ -43,12 +43,12 @@ def main() -> None:
     )
     # Conformal / intervals typically calibrated on validation
     try:
-        intervals = session.predict_interval(partition="test", alpha=0.1)
+        intervals = session.probabilistic.predict_interval(partition="test", alpha=0.1)
         interval_payload = metrics_round(intervals.to_dict() if hasattr(intervals, "to_dict") else {})
     except Exception as exc:  # noqa: BLE001
         interval_payload = {"error": f"{type(exc).__name__}: {exc}"}
-    ev = session.evaluate_probabilistic(partition="test")
-    bundle = session.save_probabilistic_bundle(ctx.artifacts_dir / "prob_bundle")
+    ev = session.probabilistic.evaluate(partition="test")
+    bundle = session.probabilistic.save_bundle(ctx.artifacts_dir / "prob_bundle")
     write_results(ctx, {
         "status": "completed",
         "data": {"name": "synthetic_risk_regression", "license": "synthetic/public-domain", "n_rows": n},

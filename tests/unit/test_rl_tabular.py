@@ -413,11 +413,13 @@ def test_session_tabular_q_fit_act_evaluate_bundle(tmp_path: Path) -> None:
     assert (out / "meta.json").is_file()
 
     other = _tiny_session()
-    other.load_rl_bundle(out, trusted=True)
-    assert other.rl_plan is not None
-    assert other.rl_plan.algorithm == "q_learning"
-    reloaded = other.evaluate_rl(n_episodes=5, max_steps=100)
+    other.rl.load_bundle(out, trusted=True)
+    assert other.rl.plan is not None
+    assert other.rl.plan.algorithm == "q_learning"
+    reloaded = other.rl.evaluate(n_episodes=5, max_steps=100, random_state=0)
     assert reloaded.offline is False
+    assert "mean_return" in reloaded.metrics
+    assert "unseen_state_rate" in reloaded.metrics
 
 
 @requires_gym

@@ -20,9 +20,14 @@ vs EDA / clustering / classical `fit`.
 ## Backends and capability matrix
 
 ```python
+import pandas as pd
+
 from buildml import Session
 
-matrix = Session.anomaly_capability_matrix()
+# Preferred namespaced form on any Session instance.
+# Flat Session.*_capability_matrix classmethods still work for discoverability.
+session = Session.ingest(pd.DataFrame({"x": [0.0]}))  # placeholder; use your frame
+matrix = session.anomaly.capability_matrix()
 print(matrix["backends"]["sklearn"]["methods"])
 print(matrix["backends"]["pyod"]["available"])
 print(matrix["supervised_scorers"])
@@ -46,7 +51,7 @@ probability (not guaranteed calibrated under extreme imbalance).
 
 1. Require a `SplitPlan` (`session.assert_can_fit("train")`).
 2. Fit detector (+ usually threshold) on **train only**.
-3. Optionally tune threshold on **validation** (`tune_anomaly_threshold`).
+3. Optionally tune threshold on **validation** (`session.anomaly.tune_threshold`).
 4. Score / flag / evaluate holdout partitions with a frozen `AnomalyPlan`.
 5. Disclose threshold policy, threshold value, and alert rate every time.
 6. Persist via `buildml.anomaly_bundle.v1` (not a Session checkpoint).
@@ -73,12 +78,12 @@ Score orientation: **higher `anomaly_score` = more anomalous**.
 | `quantile` | Same with explicit `quantile` |
 | `score_threshold` | Absolute cut on anomaly scores |
 | `decision_zero` | One-Class SVM convenience (score threshold 0) |
-| `validation_tuned` | Set by `tune_anomaly_threshold` after fit |
+| `validation_tuned` | Set by `session.anomaly.tune_threshold` after fit |
 
 ```python
-session.fit_anomaly(backend="pyod", method="copod", contamination=0.08)
-session.tune_anomaly_threshold(partition="validation", metric="fbeta", fbeta=2.0)
-ev = session.evaluate_anomaly(partition="test")  # untouched test
+session.anomaly.fit(backend="pyod", method="copod", contamination=0.08)
+session.anomaly.tune_threshold(partition="validation", metric="fbeta", fbeta=2.0)
+ev = session.anomaly.evaluate(partition="test")  # untouched test
 ```
 
 Refuses test-partition tuning unless `allow_test_tuning=True` (exploratory only).
@@ -111,7 +116,7 @@ supervised HGB with validation threshold tuning.
 
 ---
 
-## Out of scope (Phase 1)
+## Out of scope
 
 - Graph fraud / entity networks
 - Online / streaming detectors as a product

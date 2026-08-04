@@ -32,7 +32,7 @@ FORECASTING_NOTES: dict[str, ConceptNote] = {
                 "Production clocks never shuffle the future into the past.",
             ),
             how_buildml_uses=(
-                "Session.fit_forecast refuses random/stratified/group SplitPlan kinds.",
+                "session.forecast.fit refuses random/stratified/group SplitPlan kinds.",
                 "time_split (or chronological inject_split) is required; partition order is checked.",
                 "Lag features at time t use only y[t-lag].",
             ),
@@ -45,14 +45,14 @@ FORECASTING_NOTES: dict[str, ConceptNote] = {
                 "Partitions are disjoint in clock time (train ends before holdout).",
             ),
             failure_modes=(
-                "Using Session.split then fit_forecast.",
+                "Using Session.split then session.forecast.fit.",
                 "Building lags with centered windows that peek ahead.",
             ),
             anti_patterns=(
                 "Random K-fold CV on a single series for the primary forecast claim.",
             ),
             worked_example_pattern=(
-                "set_roles(time+target) → time_split → fit_forecast → evaluate_forecast.",
+                "set_roles(time+target) → time_split → session.forecast.fit → session.forecast.evaluate.",
             ),
             related_concepts=("leakage-boundary", "evaluation-partitions", "forecast-lag-features"),
         ),
@@ -80,7 +80,7 @@ FORECASTING_NOTES: dict[str, ConceptNote] = {
             ),
             how_buildml_uses=(
                 "lag_ridge and lag_hgb build train-only lag matrices.",
-                "generate_forecast recurses: predictions may feed later lags.",
+                "session.forecast.generate recurses: predictions may feed later lags.",
                 "rolling_one_step eval appends holdout actuals after each prediction.",
             ),
             interpretation_rules=(
@@ -99,7 +99,7 @@ FORECASTING_NOTES: dict[str, ConceptNote] = {
                 "Calling lag_hgb a 'sequence model' or Transformer forecaster.",
             ),
             worked_example_pattern=(
-                "fit_forecast(method='lag_ridge', lags=[1,2,3,7]) → generate_forecast(horizon=7).",
+                "session.forecast.fit(method='lag_ridge', lags=[1,2,3,7]) → session.forecast.generate(horizon=7).",
             ),
             related_concepts=("forecast-horizon-generate", "forecast-temporal-leakage"),
         ),
@@ -127,7 +127,7 @@ FORECASTING_NOTES: dict[str, ConceptNote] = {
                 "exog_columns with ETS/Prophet/N-BEATS/auto_arima is refused at fit time.",
             ),
             how_buildml_uses=(
-                "fit_forecast(method='ets'|'arima'|'auto_arima'|'sarimax').",
+                "session.forecast.fit(method='ets'|'arima'|'auto_arima'|'sarimax').",
                 "Prophet/N-BEATS require separate extras; synthetic calendar ds disclosed.",
             ),
             interpretation_rules=(
@@ -137,7 +137,7 @@ FORECASTING_NOTES: dict[str, ConceptNote] = {
             failure_modes=("Short train for seasonal ETS; expecting exog on univariate methods.",),
             anti_patterns=("Labeling auto_arima as full pmdarima without reading warnings.",),
             worked_example_pattern=(
-                "time_split → fit_forecast(method='ets') → evaluate_forecast('validation').",
+                "time_split → session.forecast.fit(method='ets') → session.forecast.evaluate('validation').",
             ),
             related_concepts=("forecast-temporal-leakage", "forecast-univariate-vs-exog"),
         ),
@@ -163,8 +163,8 @@ FORECASTING_NOTES: dict[str, ConceptNote] = {
             ),
             how_buildml_uses=(
                 "exog_columns empty ⇒ univariate disclosures on the plan.",
-                "generate_forecast requires future_exog when exog_columns are set.",
-                "evaluate_forecast may use holdout exog at each scored timestamp.",
+                "session.forecast.generate requires future_exog when exog_columns are set.",
+                "session.forecast.evaluate may use holdout exog at each scored timestamp.",
             ),
             interpretation_rules=(
                 "Read plan.univariate before interpreting generate failures.",
@@ -182,7 +182,7 @@ FORECASTING_NOTES: dict[str, ConceptNote] = {
                 "Claiming multivariate econometric identification from lag_ridge + exog.",
             ),
             worked_example_pattern=(
-                "fit_forecast(exog_columns=['promo']) → generate_forecast(future_exog=...).",
+                "session.forecast.fit(exog_columns=['promo']) → session.forecast.generate(future_exog=...).",
             ),
             related_concepts=("forecast-lag-features", "forecast-horizon-generate"),
         ),
@@ -208,8 +208,8 @@ FORECASTING_NOTES: dict[str, ConceptNote] = {
                 "Error compounds; do not equate with one-step skill.",
             ),
             how_buildml_uses=(
-                "Session.generate_forecast implements recursive generate.",
-                "evaluate_forecast(strategy='origin') scores that protocol on holdout length.",
+                "session.forecast.generate implements recursive generate.",
+                "session.forecast.evaluate(strategy='origin') scores that protocol on holdout length.",
                 "Baselines (naive/seasonal/drift/mean) remain available for reference.",
             ),
             interpretation_rules=(
@@ -225,7 +225,7 @@ FORECASTING_NOTES: dict[str, ConceptNote] = {
                 "Publishing only generate plots without holdout metrics.",
             ),
             worked_example_pattern=(
-                "fit_forecast(horizon=7) → generate_forecast(horizon=7) → inspect predictions.",
+                "session.forecast.fit(horizon=7) → session.forecast.generate(horizon=7) → inspect predictions.",
             ),
             related_concepts=("forecast-eval-protocols", "forecast-lag-features"),
         ),
@@ -251,7 +251,7 @@ FORECASTING_NOTES: dict[str, ConceptNote] = {
                 "Mixing them silently makes model comparisons meaningless.",
             ),
             how_buildml_uses=(
-                "evaluate_forecast(strategy='rolling_one_step'|'origin').",
+                "session.forecast.evaluate(strategy='rolling_one_step'|'origin').",
                 "Metrics always carry strategy and partition in the result.",
             ),
             interpretation_rules=(
@@ -264,7 +264,7 @@ FORECASTING_NOTES: dict[str, ConceptNote] = {
                 "Cherry-picking the friendlier protocol without disclosure.",
             ),
             worked_example_pattern=(
-                "evaluate_forecast(partition='validation', strategy='rolling_one_step').",
+                "session.forecast.evaluate(partition='validation', strategy='rolling_one_step').",
             ),
             related_concepts=("forecast-horizon-generate", "forecast-metric-limits"),
         ),
@@ -289,7 +289,7 @@ FORECASTING_NOTES: dict[str, ConceptNote] = {
                 "MAPE-only dashboards mislead on intermittent or near-zero series.",
             ),
             how_buildml_uses=(
-                "evaluate_forecast reports mae, rmse, mape with disclosures.",
+                "session.forecast.evaluate reports mae, rmse, mape with disclosures.",
                 "MAPE may be NaN when all |actual|≈0.",
             ),
             interpretation_rules=(
@@ -325,11 +325,11 @@ FORECASTING_NOTES: dict[str, ConceptNote] = {
                 "Domain bundles stay complementary to Torch/RAG/classical pipelines.",
             ),
             how_buildml_uses=(
-                "save_forecast_bundle / load_forecast_bundle.",
+                "session.forecast.save_bundle / session.forecast.load_bundle.",
                 "CHECKPOINT_BOUNDARY disclosure on meta.json.",
             ),
             interpretation_rules=(
-                "Reload data/splits separately before evaluate_forecast claims.",
+                "Reload data/splits separately before session.forecast.evaluate claims.",
             ),
             assumptions=("joblib can serialize the sklearn estimator when present.",),
             failure_modes=("Wrong format tag; incomplete directory.",),
@@ -337,7 +337,7 @@ FORECASTING_NOTES: dict[str, ConceptNote] = {
                 "Calling a forecast bundle a digital-twin state snapshot.",
             ),
             worked_example_pattern=(
-                "save_forecast_bundle(path) → load_forecast_bundle(path) → generate_forecast.",
+                "session.forecast.save_bundle(path) → session.forecast.load_bundle(path) → session.forecast.generate.",
             ),
             related_concepts=("forecast-temporal-leakage", "leakage-boundary"),
         ),

@@ -48,7 +48,7 @@ def main() -> None:
         .scale(method="standard")
     )
 
-    fit = session.fit_federated(
+    fit = session.federated.fit(
         backend="native",
         method="fedavg",
         estimator="sgd_classifier",
@@ -63,15 +63,15 @@ def main() -> None:
     )
     print(f"rounds={fit.round_history}")
 
-    ev = session.evaluate_federated(partition="validation", per_client=True)
+    ev = session.federated.evaluate(partition="validation", per_client=True)
     print(f"global metrics={ev.metrics}")
     print(f"n_clients_evaluated={ev.n_clients_evaluated}")
 
-    preds = session.predict_federated(partition="test")
+    preds = session.federated.predict(partition="test")
     print(f"n_predictions={len(preds.predictions)}")
 
     out = Path("artifacts") / "federated_fedavg_bundle"
-    session.save_federated_bundle(out)
+    session.federated.save_bundle(out)
     print(f"saved bundle -> {out}")
 
 

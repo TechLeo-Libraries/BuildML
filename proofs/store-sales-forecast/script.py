@@ -45,7 +45,7 @@ def main() -> None:
 
     analysis_payload: dict = {"statsmodels_available": sm_ok}
     try:
-        analysis = session.analyze_timeseries(
+        analysis = session.timeseries.analyze(
             scope="train",
             seasonal_period=7,
             include_decompose=True,
@@ -61,7 +61,7 @@ def main() -> None:
     except Exception as exc:  # noqa: BLE001
         analysis_payload["error"] = f"{type(exc).__name__}: {exc}"
 
-    fit = session.fit_forecast(
+    fit = session.forecast.fit(
         method="lag_ridge",
         horizon=14,
         lags=[1, 2, 3, 7, 14],
@@ -71,16 +71,16 @@ def main() -> None:
         selection_partition="validation",
         evaluation_partition="test",
     )
-    val_metrics = session.evaluate_forecast(
+    val_metrics = session.forecast.evaluate(
         partition="validation",
         strategy="rolling_one_step",
     )
-    test_metrics = session.evaluate_forecast(
+    test_metrics = session.forecast.evaluate(
         partition="test",
         strategy="rolling_one_step",
     )
-    gen = session.generate_forecast(horizon=14)
-    bundle = session.save_forecast_bundle(ctx.artifacts_dir / "forecast_bundle")
+    gen = session.forecast.generate(horizon=14)
+    bundle = session.forecast.save_bundle(ctx.artifacts_dir / "forecast_bundle")
 
     write_results(
         ctx,
@@ -110,7 +110,7 @@ def main() -> None:
                 "time_split: chronological train → validation → test",
                 "analyze_timeseries scope='train' only",
                 "Forecast model fit on train; selection metrics on validation",
-                "Test evaluate_forecast after model locked",
+                "Test session.forecast.evaluate after model locked",
             ],
             "industry_comparison": {
                 "status": "filled",

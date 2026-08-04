@@ -89,14 +89,22 @@ def export_comparison_metrics(result: AutoMLResult, path: str | Path) -> Path:
     from pathlib import Path as PathType
 
     destination = PathType(path)
+    board = result.leaderboard()
     payload = {
         "ranking_metric": result.ranking_metric,
         "backend": result.config.get("backend", "native"),
         "method": result.method,
         "selection": result.selection,
+        "default_selection_note": (
+            "Default selection is 'cv' (train-fold ranking). "
+            "Use selection='nested' for outer post-selection estimates."
+        ),
         "best_family": result.best_family,
         "best_score": result.best_score,
         "outer_score_mean": result.outer_score_mean,
+        "outer_score_std": result.outer_score_std,
+        "nested_cv_disclosed": result.selection == "nested",
+        "leaderboard": board.to_dict(orient="records"),
         "trials": [
             {
                 "trial": t.trial,
@@ -107,6 +115,7 @@ def export_comparison_metrics(result: AutoMLResult, path: str | Path) -> Path:
                 "std_score": t.std_score,
                 "mean_metrics": dict(t.mean_metrics),
                 "params": dict(t.params),
+                "ensemble_bases": list(t.ensemble_bases),
             }
             for t in result.trials
         ],
@@ -1594,10 +1603,16 @@ def _disclosures(
             f"Optional {ensemble_mode} ensembles of diverse top families were scored "
             "under the same leakage contract."
         )
+    if selection == "cv":
+        tips.append(
+            "Default selection='cv': rankings use train-fold CV means (optimistic vs "
+            "outer holdout). For post-selection claims use selection='nested' "
+            "(outer mean±std) or selection='validation', then confirm on Session test."
+        )
     if selection == "nested":
         tips.append(
-            "Outer nested scores are the post-selection estimate; inner means are "
-            "selection evidence only."
+            "selection='nested' (prominent honesty path): outer nested scores are the "
+            "post-selection estimate; inner means are selection evidence only."
         )
     if selection == "validation":
         tips.append(
@@ -1691,6 +1706,9 @@ def _recommendations(
         )
     if selection == "cv":
         tips.append(
-            "Consider selection='nested' or selection='validation' before strong claims."
+            "Default selection='cv' ranks by train-fold CV only. "
+            "Prefer selection='nested' (prominent outer estimate) or "
+            "selection='validation' before strong post-selection claims; "
+            "then confirm once on Session test."
         )
     return tips

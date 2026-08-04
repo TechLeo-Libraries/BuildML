@@ -41,10 +41,10 @@ def main() -> None:
         })
         .split(test_size=0.2, validation_size=0.2, random_state=ctx.seed)
     )
-    fit = session.fit_synthesizer(method="gaussian_copula", random_state=ctx.seed)
-    sample = session.sample_synthetic(n=200, random_state=ctx.seed)
-    ev = session.evaluate_synthetic(partition="test")
-    bundle = session.save_synthetic_bundle(ctx.artifacts_dir / "synthetic_bundle")
+    fit = session.synthetic.fit(method="gaussian_copula", random_state=ctx.seed)
+    sample = session.synthetic.sample(n=200, random_state=ctx.seed)
+    ev = session.synthetic.evaluate(partition="test")
+    bundle = session.synthetic.save_bundle(ctx.artifacts_dir / "synthetic_bundle")
     write_results(ctx, {
         "status": "completed",
         "data": {

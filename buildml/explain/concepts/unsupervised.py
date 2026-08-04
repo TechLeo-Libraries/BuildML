@@ -33,8 +33,8 @@ UNSUPERVISED_NOTES: dict[str, ConceptNote] = {
                 "Teaching and model cards need an explicit fit-partition disclosure.",
             ),
             how_buildml_uses=(
-                "Session.fit_clusters requires a SplitPlan and fits on train only.",
-                "Session.assign_clusters / evaluate_clusters reuse the frozen ClusterPlan.",
+                "session.unsupervised.fit requires a SplitPlan and fits on train only.",
+                "session.unsupervised.assign / session.unsupervised.evaluate reuse the frozen ClusterPlan.",
                 "Agglomerative and DBSCAN disclose approximate holdout assign strategies.",
             ),
             interpretation_rules=(
@@ -42,7 +42,7 @@ UNSUPERVISED_NOTES: dict[str, ConceptNote] = {
                 "Train-partition metrics are optimistic for model selection.",
             ),
             assumptions=(
-                "A disjoint SplitPlan exists before fit_clusters.",
+                "A disjoint SplitPlan exists before session.unsupervised.fit.",
                 "Feature columns are numeric and imputed before distance-based methods.",
             ),
             failure_modes=(
@@ -53,8 +53,8 @@ UNSUPERVISED_NOTES: dict[str, ConceptNote] = {
                 "Calling sklearn fit_predict on concatenated train+test for 'evaluation'.",
             ),
             worked_example_pattern=(
-                "split → scale → (optional reduce_dimensions) → fit_clusters → "
-                "evaluate_clusters(partition='validation').",
+                "split → scale → (optional reduce_dimensions) → session.unsupervised.fit → "
+                "session.unsupervised.evaluate(partition='validation').",
             ),
             related_concepts=("leakage-boundary", "evaluation-partitions", "principal-components"),
         ),
@@ -81,7 +81,7 @@ UNSUPERVISED_NOTES: dict[str, ConceptNote] = {
                 "External agreement can look strong while missing the decision objective.",
             ),
             how_buildml_uses=(
-                "evaluate_clusters reports internal metrics with explicit disclosures.",
+                "session.unsupervised.evaluate reports internal metrics with explicit disclosures.",
                 "external_label_column adds ARI/NMI only when the caller provides labels.",
                 "Catalog and guides refuse to equate validity with ground truth.",
             ),
@@ -101,7 +101,7 @@ UNSUPERVISED_NOTES: dict[str, ConceptNote] = {
                 "Selecting k solely to maximize train silhouette without holdout assign.",
             ),
             worked_example_pattern=(
-                "fit_clusters → evaluate_clusters on validation → inspect cluster sizes and disclosures.",
+                "session.unsupervised.fit → session.unsupervised.evaluate on validation → inspect cluster sizes and disclosures.",
             ),
             related_concepts=("unsupervised-train-fit-holdout-assign", "evaluation-partitions"),
         ),
@@ -127,7 +127,7 @@ UNSUPERVISED_NOTES: dict[str, ConceptNote] = {
                 "Explained variance remains unsupervised and is not cluster quality.",
             ),
             how_buildml_uses=(
-                "fit_clusters(prefer_reduce_components=True) prefers ReducePlan component columns when present.",
+                "session.unsupervised.fit(prefer_reduce_components=True) prefers ReducePlan component columns when present.",
                 "used_reduce_components is recorded on ClusterFitResult / ClusterPlan.",
                 "EDA PCA screens remain descriptive and separate from Session plans.",
             ),
@@ -147,7 +147,7 @@ UNSUPERVISED_NOTES: dict[str, ConceptNote] = {
                 "Re-fitting PCA on all rows inside a custom clustering script while using Session splits.",
             ),
             worked_example_pattern=(
-                "scale → reduce_dimensions → fit_clusters → evaluate_clusters.",
+                "scale → reduce_dimensions → session.unsupervised.fit → session.unsupervised.evaluate.",
             ),
             related_concepts=("unsupervised-train-fit-holdout-assign", "principal-components", "leakage-boundary"),
         ),
@@ -175,9 +175,9 @@ UNSUPERVISED_NOTES: dict[str, ConceptNote] = {
                 "Catalog lists both: pick by geometry, not by default."
             ),
             how_buildml_uses=(
-                "fit_clusters(method='kmeans'|'gmm'|'dbscan'|'hdbscan'|...).",
+                "session.unsupervised.fit(method='kmeans'|'gmm'|'dbscan'|'hdbscan'|...).",
                 "assign_strategy and noise_rate disclosed for density methods.",
-                "evaluate_clusters reports internal validity, not ground-truth accuracy.",
+                "session.unsupervised.evaluate reports internal validity, not ground-truth accuracy.",
             ),
             interpretation_rules=(
                 "Read cluster_sizes and noise_rate for DBSCAN/HDBSCAN.",
@@ -195,7 +195,7 @@ UNSUPERVISED_NOTES: dict[str, ConceptNote] = {
                 "Picking k solely to maximize train silhouette without holdout assign.",
             ),
             worked_example_pattern=(
-                "scale → fit_clusters(method='hdbscan') → assign_clusters('validation').",
+                "scale → session.unsupervised.fit(method='hdbscan') → session.unsupervised.assign('validation').",
             ),
             related_concepts=("unsupervised-cluster-validity", "unsupervised-train-fit-holdout-assign"),
         ),
@@ -222,26 +222,26 @@ UNSUPERVISED_NOTES: dict[str, ConceptNote] = {
                 "Assign strategy disclosures must travel with agglomerative/DBSCAN plans.",
             ),
             how_buildml_uses=(
-                "save_unsupervised_bundle / load_unsupervised_bundle on Session.",
+                "session.unsupervised.save_bundle / session.unsupervised.load_bundle on Session.",
                 "CHECKPOINT_BOUNDARY string documents complementarity.",
             ),
             interpretation_rules=(
-                "After load_unsupervised_bundle, rebuild or reload the tabular Session separately if needed.",
-                "Confirm feature columns still exist before assign_clusters.",
+                "After session.unsupervised.load_bundle, rebuild or reload the tabular Session separately if needed.",
+                "Confirm feature columns still exist before session.unsupervised.assign.",
             ),
             assumptions=(
                 "joblib can serialize the sklearn estimator in the plan.",
                 "Feature schema at assign time matches the plan columns.",
             ),
             failure_modes=(
-                "Expecting checkpoint_load to restore fit_clusters state.",
+                "Expecting checkpoint_load to restore session.unsupervised.fit state.",
                 "Loading a Torch/RAG bundle as unsupervised.",
             ),
             anti_patterns=(
                 "Hand-copying only centroids without disclosures/assign strategy.",
             ),
             worked_example_pattern=(
-                "fit_clusters → save_unsupervised_bundle → Session().load_unsupervised_bundle → assign_clusters.",
+                "session.unsupervised.fit → session.unsupervised.save_bundle → Session().unsupervised.load_bundle → session.unsupervised.assign.",
             ),
             related_concepts=("unsupervised-train-fit-holdout-assign", "rag-chunk-index-boundary"),
         ),

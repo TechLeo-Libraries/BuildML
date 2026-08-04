@@ -11,16 +11,16 @@ Inline synthetic policy articles + relevance judgments (same pattern as `support
 ## Leakage controls
 
 - Corpus contains policy articles only: not labeled answers
-- Judgments used solely in `rag_evaluate` (not indexed)
+- Judgments used solely in `session.rag.evaluate` (not indexed)
 - EchoGroundedProvider for offline generate (no live LLM required)
 - Industry TF-IDF twin uses the same corpus and judgments
 
 ## BuildML API steps
 
-1. `Session()` → `rag_ingest_corpus` → `rag_chunk`
-2. `rag_embed_and_index` (auto when sentence-transformers present, else hashing)
-3. `rag_retrieve` → `rag_generate` → `rag_evaluate`
-4. `save_rag_bundle`
+1. `Session()` → `session.rag.ingest_corpus` → `session.rag.chunk`
+2. `session.rag.embed_and_index` (auto when sentence-transformers present, else hashing)
+3. `session.rag.retrieve` → `session.rag.generate` → `session.rag.evaluate`
+4. `session.rag.save_bundle`
 
 ## Metrics
 
@@ -28,7 +28,7 @@ Primary retrieval: recall@k, MRR, nDCG@k (see `results/results.json`).
 
 ## Industry comparison (Tier C)
 
-Filled: sklearn `TfidfVectorizer` + cosine twin via `baseline_industry.py` → `results/comparison.json`.
+Industry twin: sklearn `TfidfVectorizer` + cosine twin via `baseline_industry.py` → `results/comparison.json`.
 
 ## Limitations
 

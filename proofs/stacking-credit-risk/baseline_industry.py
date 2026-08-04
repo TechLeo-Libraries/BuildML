@@ -118,7 +118,7 @@ def main() -> None:
     write_comparison(
         ctx,
         buildml={
-            "backend": "buildml.Session.fit_stacking",
+            "backend": "buildml.session.ensemble.fit_stacking",
             "cv": 3,
             "test_metrics": bml_metrics,
         },

@@ -7,7 +7,9 @@ from typing import Any, Literal
 from buildml.causal.extras import (
     causal_industry_available,
     dowhy_available,
+    dowhy_spec_present,
     econml_available,
+    econml_spec_present,
 )
 
 CausalBackendName = Literal["native", "dowhy", "econml"]
@@ -88,6 +90,36 @@ def causal_capability_matrix() -> dict[str, Any]:
                 ),
             },
         },
+        "evaluation_metrics": {
+            "native_nuisance_continuous": [
+                "outcome_rmse",
+                "outcome_mae",
+                "outcome_r2",
+                "propensity_auc",
+                "propensity_brier",
+                "propensity_mean",
+                "propensity_min",
+                "propensity_max",
+            ],
+            "native_nuisance_binary_outcome": [
+                "outcome_accuracy",
+                "outcome_brier",
+                "propensity_auc",
+                "propensity_brier",
+            ],
+            "effect": [
+                "ate",
+                "ate_std",
+                "ate_ci_low",
+                "ate_ci_high",
+            ],
+            "notes": (
+                "Holdout metrics are predictive calibration of nuisances plus "
+                "out-of-sample ATE under declared assumptions — not proof of "
+                "unconfoundedness. DoWhy/EconML paths disclose backend-specific "
+                "extras on the eval result."
+            ),
+        },
         "default_backend_when_installed": _default_backend_when_installed(),
         "install_hints": {
             "causal-industry": (
@@ -102,7 +134,13 @@ def causal_capability_matrix() -> dict[str, Any]:
             "Substituting EDA associations for CausalAssumptions",
             "Proof of unconfoundedness from holdout metrics",
         ],
-        "industry_extra_present": causal_industry_available(),
+        "industry_extra_present": dowhy_spec_present() or econml_spec_present(),
+        "industry_runtime_present": causal_industry_available(),
+        "industry_import_honesty": (
+            "dowhy/econml backend 'available' and industry_runtime_present require "
+            "successful subprocess imports. industry_extra_present / *_spec_present "
+            "are find_spec only — discoverable wheels can still be broken."
+        ),
         "assumption_gate": (
             "All backends require explicit CausalAssumptions with "
             "acknowledge_unconfoundedness and acknowledge_positivity. "

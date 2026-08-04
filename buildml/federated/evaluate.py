@@ -5,12 +5,15 @@ from __future__ import annotations
 from typing import Any, Literal
 
 import numpy as np
+import pandas as pd
 from sklearn.metrics import (
     accuracy_score,
+    balanced_accuracy_score,
     f1_score,
     mean_absolute_error,
     mean_squared_error,
     r2_score,
+    roc_auc_score,
 )
 
 from buildml.core.errors import ValidationError
@@ -140,7 +143,12 @@ def evaluate_federated(
             "dropped from metrics."
         )
         mask = ~y_true.isna()
-        frame = frame.loc[mask]
+        filtered = frame.loc[mask]
+        if not isinstance(filtered, pd.DataFrame):
+            raise ValidationError(
+                "Federated evaluation expected a DataFrame after dropping null targets"
+            )
+        frame = filtered
         y_true = y_true.loc[mask]
         n_rows = int(len(frame))
 
@@ -161,11 +169,13 @@ def evaluate_federated(
 
     x = matrix_from_frame(frame, list(plan.columns))
     pred_raw = plan.estimator_.predict(x)
+    proba = _predict_proba_safe(plan.estimator_, x, task=plan.task)
     metrics = _compute_metrics(
         y_true,
         pred_raw,
         task=plan.task,
         label_encoder=plan.label_encoder_,
+        proba=proba,
     )
 
     n_clients_evaluated = 0
@@ -177,11 +187,13 @@ def evaluate_federated(
                 continue
             cx = matrix_from_frame(cframe, list(plan.columns))
             cpred = plan.estimator_.predict(cx)
+            cproba = _predict_proba_safe(plan.estimator_, cx, task=plan.task)
             per_client_metrics[str(cid)] = _compute_metrics(
                 cframe[plan.target_column],
                 cpred,
                 task=plan.task,
                 label_encoder=plan.label_encoder_,
+                proba=cproba,
             )
             n_clients_evaluated += 1
         disclosures.append(
@@ -208,30 +220,79 @@ def evaluate_federated(
     )
 
 
+def _predict_proba_safe(
+    estimator: Any,
+    x: np.ndarray,
+    *,
+    task: str,
+) -> np.ndarray | None:
+    """Return class probabilities when available; never raise on missing API."""
+    if task != "classification" or not hasattr(estimator, "predict_proba"):
+        return None
+    try:
+        proba = estimator.predict_proba(x)
+    except Exception:  # noqa: BLE001
+        return None
+    return np.asarray(proba)
+
+
 def _compute_metrics(
     y_true: Any,
     pred_raw: np.ndarray,
     *,
     task: str,
     label_encoder: Any,
+    proba: np.ndarray | None = None,
 ) -> dict[str, float]:
+    """Compute non-toy holdout metrics for the global federated model.
+
+    Classification reports accuracy, macro-F1, and balanced accuracy; binary
+    problems additionally report ROC-AUC when probabilities are available.
+    Regression reports R², MAE, and RMSE.
+    """
     if task == "classification":
         if label_encoder is not None:
             y_enc, _, _ = encode_labels(y_true, label_encoder=label_encoder)
             # pred_raw is already encoded class indices from sklearn.
             y_hat = np.asarray(pred_raw)
-            preds_labels = decode_predictions(y_hat, label_encoder)
-            _ = preds_labels
-            acc = float(accuracy_score(y_enc, y_hat))
+            _ = decode_predictions(y_hat, label_encoder)
+            out: dict[str, float] = {
+                "accuracy": float(accuracy_score(y_enc, y_hat)),
+            }
             try:
-                f1 = float(f1_score(y_enc, y_hat, average="macro", zero_division=0))
+                out["f1_macro"] = float(
+                    f1_score(y_enc, y_hat, average="macro", zero_division=0)
+                )
             except Exception:  # noqa: BLE001
-                f1 = float("nan")
-            return {"accuracy": acc, "f1_macro": f1}
+                out["f1_macro"] = float("nan")
+            try:
+                out["balanced_accuracy"] = float(
+                    balanced_accuracy_score(y_enc, y_hat)
+                )
+            except Exception:  # noqa: BLE001
+                out["balanced_accuracy"] = float("nan")
+            if (
+                proba is not None
+                and proba.ndim == 2
+                and proba.shape[1] == 2
+                and len(np.unique(y_enc)) == 2
+            ):
+                try:
+                    out["roc_auc"] = float(roc_auc_score(y_enc, proba[:, 1]))
+                except ValueError:
+                    pass
+            return out
         y_hat = np.asarray(pred_raw)
-        return {
+        out = {
             "accuracy": float(accuracy_score(y_true, y_hat)),
         }
+        try:
+            out["balanced_accuracy"] = float(
+                balanced_accuracy_score(y_true, y_hat)
+            )
+        except Exception:  # noqa: BLE001
+            pass
+        return out
 
     y = np.asarray(y_true, dtype=float)
     y_hat = np.asarray(pred_raw, dtype=float)

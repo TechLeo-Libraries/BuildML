@@ -26,20 +26,20 @@ Algorithms
 
 ``warm_start``
   Fit a pooled ``logistic_regression`` / ``sgd_classifier`` on meta-train
-  rows, then ``adapt_to_task`` clones that init and refits on the support set.
+  rows, then ``session.metalearning.adapt`` clones that init and refits on the support set.
   Not MAML/Reptile second-order meta-gradients.
 
 Session API
 -----------
 
-* ``fit_metalearning``: meta-train on train tasks
-* ``adapt_to_task``: fast adapt to one task support set
-* ``evaluate_metalearning``: episodic holdout metrics
-* ``save_metalearning_bundle`` / ``load_metalearning_bundle`` :
+* ``session.metalearning.fit``: meta-train on train tasks
+* ``session.metalearning.adapt``: fast adapt to one task support set
+* ``session.metalearning.evaluate``: episodic holdout metrics
+* ``session.metalearning.save_bundle`` / ``session.metalearning.load_bundle`` :
   ``buildml.metalearning_bundle.v1``
 
-Properties: ``metalearning_plan``, ``metalearning_fit_result``,
-``metalearning_adapt_result``, ``metalearning_eval_result``.
+Properties: ``session.metalearning.plan``, ``session.metalearning.fit_result``,
+``session.metalearning.adapt_result``, ``session.metalearning.eval_result``.
 
 Task column
 -----------
@@ -47,14 +47,14 @@ Task column
 Prefer ``role="group"`` on the task identifier column, or pass
 ``task_column=`` explicitly. The task column is excluded from features.
 Exactly one ``role="target"`` is required (multi-target joint fitting belongs
-on ``fit_multitask``).
+on ``session.multitask.fit``).
 
 Leakage discipline
 ------------------
 
 * Meta-train requires a split and uses **train only**.
 * Validation/test are never used for meta-training.
-* ``evaluate_metalearning`` discloses when holdout task ids overlap
+* ``session.metalearning.evaluate`` discloses when holdout task ids overlap
   meta-train. Prefer task-disjoint splits or fit-time ``held_out_task_ids``
   when evaluating ``partition="train"``.
 * Null features are refused (impute/scale first).
@@ -65,7 +65,7 @@ Bundles vs checkpoints
 ``buildml.metalearning_bundle.v1`` stores ``MetaLearningPlan``. Session
 checkpoints do **not** embed the meta-learner.
 
-Residuals (honest)
+Known limits
 ------------------
 
 * Classification-focused surface (shared global label space).
@@ -73,5 +73,5 @@ Residuals (honest)
 * No MAML/Reptile second-order loops.
 * Random row splits may place the same task id in train and holdout: disclosed.
 
-Next Phase 2 item after meta-learning (now shipped): **federated learning**
+Related next: federated learning
 (:doc:`federated-deep`).

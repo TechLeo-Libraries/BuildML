@@ -71,21 +71,21 @@ def main() -> None:
     session.encode(method="onehot")
 
     try:
-        session.make_torch_loaders(
+        session.dl.make_loaders(
             batch_size=64,
             normalize=True,
             seed=ctx.seed,
             task="classification",
         )
-        session.fit_torch(epochs=3, learning_rate=1e-2, device="cpu", hidden=(64, 32))
-        val = session.evaluate_torch(partition="validation")
+        session.dl.fit(epochs=3, learning_rate=1e-2, device="cpu", hidden=(64, 32))
+        val = session.dl.evaluate(partition="validation")
         assert_no_test_in_selection(
             selection_partition="validation",
             evaluation_partition="test",
         )
-        test = session.evaluate_torch(partition="test")
+        test = session.dl.evaluate(partition="test")
         try:
-            bundle = session.save_torch_bundle(ctx.artifacts_dir / "torch_bundle")
+            bundle = session.dl.save_bundle(ctx.artifacts_dir / "torch_bundle")
             bundle_path = str(bundle)
         except Exception as exc:  # noqa: BLE001
             bundle_path = f"unavailable: {type(exc).__name__}: {exc}"
@@ -114,7 +114,7 @@ def main() -> None:
             "leakage_controls": [
                 "Stratified split before impute/encode/loaders",
                 "Torch normalize stats from train loader only",
-                "Test evaluate_torch after lock",
+                "Test session.dl.evaluate after lock",
             ],
             "validation_metrics": metrics_round(dict(getattr(val, "metrics", {}) or {})),
             "test_metrics": bml_test,

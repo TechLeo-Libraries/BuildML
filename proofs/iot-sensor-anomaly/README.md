@@ -19,9 +19,9 @@ In-repo synthetic industrial sensors (`load_iot_sensor_anomaly_synthetic`): lice
 ## BuildML API steps
 
 1. `Session.ingest` → `set_roles` → `split` → `scale`
-2. `fit_anomaly` (PyOD HBOS when available, else IsolationForest)
-3. `tune_anomaly_threshold(validation)` → `evaluate_anomaly(test)`
-4. `save_anomaly_bundle`
+2. `session.anomaly.fit` (PyOD HBOS when available, else IsolationForest)
+3. `session.anomaly.tune_threshold(validation)` → `session.anomaly.evaluate(test)`
+4. `session.anomaly.save_bundle`
 
 ## Metrics
 
@@ -29,7 +29,7 @@ Primary labeled holdout: ROC-AUC, average precision, F1, precision, recall.
 
 ## Industry comparison (Tier C)
 
-Filled: sklearn `IsolationForest` twin via `baseline_industry.py` → `results/comparison.json`.
+Industry twin: sklearn `IsolationForest` twin via `baseline_industry.py` → `results/comparison.json`.
 
 ## Limitations
 

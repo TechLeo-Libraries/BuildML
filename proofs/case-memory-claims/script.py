@@ -38,16 +38,16 @@ def main() -> None:
         .split(test_size=0.2, validation_size=0.2, stratify=True, random_state=ctx.seed)
         .scale(method="standard")
     )
-    fit = session.fit_cbr(
+    fit = session.cbr.fit(
         task="classification",
         metric="euclidean",
         reuse="distance_weighted",
         k=5,
         random_state=ctx.seed,
     )
-    retrieved = session.retrieve_cases(partition="test", k=5)
-    ev = session.evaluate_cbr(partition="test")
-    bundle = session.save_cbr_bundle(ctx.artifacts_dir / "cbr_bundle")
+    retrieved = session.cbr.retrieve(partition="test", k=5)
+    ev = session.cbr.evaluate(partition="test")
+    bundle = session.cbr.save_bundle(ctx.artifacts_dir / "cbr_bundle")
     write_results(ctx, {
         "status": "completed",
         "data": {"name": "synthetic_claims", "license": "synthetic/public-domain", "n_rows": n},

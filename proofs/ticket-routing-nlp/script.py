@@ -52,14 +52,14 @@ def main() -> None:
     )
 
     # 1. Corpus health first: a text score is only as honest as the split.
-    profile = session.profile_text_corpus(
+    profile = session.nlp.profile_corpus(
         text_column="body",
         near_duplicate_threshold=0.9,
         detect_languages=True,
     )
 
     # 2. Train-fitted bag-of-n-grams + linear head. Selection reads validation.
-    fit = session.fit_text_classifier(
+    fit = session.nlp.fit_classifier(
         text_column="body",
         vectorizer="tfidf",
         estimator="logistic",
@@ -68,21 +68,21 @@ def main() -> None:
         class_weight="balanced",
         random_state=ctx.seed,
     )
-    validation = session.evaluate_text_classifier(partition="validation")
+    validation = session.nlp.evaluate(partition="validation")
     assert_no_test_in_selection(selection_partition="validation")
 
     # 3. Locked model, then the holdout it never saw.
-    test = session.evaluate_text_classifier(partition="test")
-    predicted = session.predict_text(partition="test")
+    test = session.nlp.evaluate(partition="test")
+    predicted = session.nlp.predict(partition="test")
 
     # 4. Exact token attribution — an identity for a linear head, not an
     #    approximation, and refused outright for hashing / dense backends.
-    interpret = session.interpret_text_prediction(
+    interpret = session.nlp.interpret(
         partition="test", top_k=8, max_documents=5
     )
 
     # 5. Unsupervised structure fitted on train only, then assigned to holdout.
-    topics = session.fit_topics(
+    topics = session.nlp.fit_topics(
         method="nmf",
         n_topics=4,
         text_column="body",
@@ -91,24 +91,24 @@ def main() -> None:
         stopword_language="en",
         random_state=ctx.seed,
     )
-    assigned = session.assign_topics(partition="test")
+    assigned = session.nlp.assign_topics(partition="test")
 
     # 6. Description surfaces that claim no quality metric.
-    keyphrases = session.extract_keyphrases(
+    keyphrases = session.nlp.extract_keyphrases(
         partition="train", method="tfidf", top_n=12, per_document=False
     )
-    summaries = session.summarize_text(
+    summaries = session.nlp.summarize(
         partition="test", method="textrank", n_sentences=2, max_documents=5
     )
-    entities = session.extract_entities(
+    entities = session.nlp.extract_entities(
         partition="test",
         backend="rules",
         gazetteers={"QUEUE_TERM": ["invoice", "courier", "workspace", "hinge"]},
         max_documents=5,
     )
-    sentiment = session.analyze_sentiment(partition="test", backend="lexicon")
+    sentiment = session.nlp.analyze_sentiment(partition="test", backend="lexicon")
 
-    bundle = session.save_nlp_bundle(ctx.artifacts_dir / "nlp_bundle")
+    bundle = session.nlp.save_bundle(ctx.artifacts_dir / "nlp_bundle")
 
     # 7. A reloaded bundle must reproduce the holdout score exactly, which is
     #    what proves the normalization plan travelled with the vectorizer.
@@ -129,8 +129,8 @@ def main() -> None:
             random_state=ctx.seed,
         )
     )
-    reloaded.load_nlp_bundle(bundle, trusted=True)
-    reloaded_test = reloaded.evaluate_text_classifier(partition="test")
+    reloaded.nlp.load_bundle(bundle, trusted=True)
+    reloaded_test = reloaded.nlp.evaluate(partition="test")
     reproduced = bool(
         abs(
             float(reloaded_test.metrics["accuracy"]) - float(test.metrics["accuracy"])

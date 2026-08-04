@@ -28,7 +28,7 @@ def main() -> None:
         .scale(method="standard")
     )
 
-    fit = session.fit_online(
+    fit = session.online.fit(
         estimator="sgd_classifier",
         chunk_size=45,
         n_init=45,
@@ -40,22 +40,22 @@ def main() -> None:
     )
 
     while True:
-        plan = session.online_plan
+        plan = session.online.plan
         assert plan is not None
         remaining = plan.n_train_rows - plan.cursor
         if remaining <= 0:
             break
-        update = session.partial_fit_online(n_rows=min(45, remaining))
+        update = session.online.partial_fit(n_rows=min(45, remaining))
         print(
             f"update#{update.n_updates} chunk={update.n_chunk_rows} "
             f"seen={update.n_seen_rows} mode={update.update_mode}"
         )
 
-    ev = session.evaluate_online(partition="validation")
+    ev = session.online.evaluate(partition="validation")
     print(f"validation metrics={ev.metrics}")
 
     out = Path("artifacts") / "online_partial_fit_bundle"
-    session.save_online_bundle(out)
+    session.online.save_bundle(out)
     print(f"saved bundle → {out}")
 
 

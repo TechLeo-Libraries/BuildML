@@ -36,68 +36,59 @@ ValidationError
     return pyod
 
 
-def pyod_available() -> bool:
-    """Return whether pyod optional dependencies are installed and usable.
-
-Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
-
-Returns
--------
-bool
-    ``True`` when the capability or dependency check succeeds.
-    """
+def pyod_spec_present() -> bool:
+    """Cheap find_spec discovery for PyOD (may still fail at import)."""
     return importlib.util.find_spec("pyod") is not None
 
 
-def lightgbm_available() -> bool:
-    """Return whether lightgbm optional dependencies are installed and usable.
+def pyod_available() -> bool:
+    """Return whether PyOD imports cleanly (subprocess probe).
 
-Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
-
-Returns
--------
-bool
-    ``True`` when the capability or dependency check succeeds.
+    Capability matrices use this for backends.pyod.available so a broken wheel
+    cannot silently report available=True.
     """
+    if not pyod_spec_present():
+        return False
+    from buildml.dl.extras import _subprocess_import_ok
+
+    return _subprocess_import_ok("pyod")
+
+
+def lightgbm_spec_present() -> bool:
+    """Cheap find_spec discovery for LightGBM."""
     return importlib.util.find_spec("lightgbm") is not None
 
 
-def xgboost_available() -> bool:
-    """Return whether xgboost optional dependencies are installed and usable.
+def lightgbm_available() -> bool:
+    """Return whether LightGBM imports cleanly (subprocess probe)."""
+    if not lightgbm_spec_present():
+        return False
+    from buildml.dl.extras import _subprocess_import_ok
 
-Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+    return _subprocess_import_ok("lightgbm")
 
-Returns
--------
-bool
-    ``True`` when the capability or dependency check succeeds.
-    """
+
+def xgboost_spec_present() -> bool:
+    """Cheap find_spec discovery for XGBoost."""
     return importlib.util.find_spec("xgboost") is not None
 
 
+def xgboost_available() -> bool:
+    """Return whether XGBoost imports cleanly (subprocess probe)."""
+    if not xgboost_spec_present():
+        return False
+    from buildml.dl.extras import _subprocess_import_ok
+
+    return _subprocess_import_ok("xgboost")
+
+
 def gradient_boosting_extras_available() -> bool:
-    """Return whether gradient boosting extras optional dependencies are installed and usable.
-
-Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
-
-Returns
--------
-bool
-    ``True`` when the capability or dependency check succeeds.
-    """
+    """True when LightGBM or XGBoost import cleanly at runtime."""
     return lightgbm_available() or xgboost_available()
 
 
 def anomaly_industry_available() -> bool:
-    """True when PyOD or industry supervised GBDT libraries are importable.
-
-Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
-
-Returns
--------
-bool
-    ``True`` when the capability or dependency check succeeds.
-    """
+    """True when PyOD or industry supervised GBDT libraries import cleanly."""
     return pyod_available() or gradient_boosting_extras_available()
 
 

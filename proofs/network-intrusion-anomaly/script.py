@@ -68,7 +68,7 @@ def main() -> None:
     # Prefer PyOD HBOS when installed; else sklearn IsolationForest.
     try:
         if pyod_ok:
-            fit = session.fit_anomaly(
+            fit = session.anomaly.fit(
                 backend="pyod",
                 method="hbos",
                 mode="unsupervised",
@@ -77,7 +77,7 @@ def main() -> None:
             )
             backend_used, method_used = "pyod", "hbos"
         else:
-            fit = session.fit_anomaly(
+            fit = session.anomaly.fit(
                 method="isolation_forest",
                 mode="unsupervised",
                 contamination=0.06,
@@ -85,7 +85,7 @@ def main() -> None:
             )
             backend_used, method_used = "sklearn", "isolation_forest"
     except (MissingExtraError, TypeError, ValueError):
-        fit = session.fit_anomaly(
+        fit = session.anomaly.fit(
             method="isolation_forest",
             mode="unsupervised",
             contamination=0.06,
@@ -97,15 +97,15 @@ def main() -> None:
         selection_partition="validation",
         evaluation_partition="test",
     )
-    tune = session.tune_anomaly_threshold(
+    tune = session.anomaly.tune_threshold(
         partition="validation",
         label_column=LABEL,
         positive_label=1,
         metric="f1",
     )
-    scored = session.score_anomalies(partition="test")
-    ev = session.evaluate_anomaly(partition="test", positive_label=1)
-    bundle = session.save_anomaly_bundle(ctx.artifacts_dir / "anomaly_bundle")
+    scored = session.anomaly.score(partition="test")
+    ev = session.anomaly.evaluate(partition="test", positive_label=1)
+    bundle = session.anomaly.save_bundle(ctx.artifacts_dir / "anomaly_bundle")
 
     labeled = metrics_round(dict(getattr(ev, "labeled_metrics", {}) or {}))
     # Anti perfect-score theater: soft attack margins + label noise should leave

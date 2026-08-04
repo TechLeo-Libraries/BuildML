@@ -229,7 +229,8 @@ def prerequisite_status(session: Any, operation: str) -> dict[str, bool]:
     session:
         The session to inspect. Nothing on it is modified.
     operation:
-        A catalog operation name, such as ``'fit'``.
+        A catalog operation name, such as ``'fit'``, or a facade form
+        (``'classical.fit'`` / ``'session.classical.fit'``).
 
     Returns
     -------
@@ -244,6 +245,9 @@ def prerequisite_status(session: Any, operation: str) -> dict[str, bool]:
     ~buildml.core.errors.ValidationError
         No catalog operation has that name.
     """
+    from buildml.session.facade_registry import resolve_operation_name
+
+    operation = resolve_operation_name(operation)
     spec = get_operation(operation)
     return {item.key: probe(session, item.key)[0] for item in spec.prerequisites}
 
@@ -415,7 +419,8 @@ def explain_before(
     session:
         The session the operation would run against. Nothing is modified.
     operation:
-        A catalog operation name, such as ``'split'``.
+        A catalog operation name, such as ``'split'``, or a facade form
+        (``'data.split'`` / ``'session.data.split'``).
     level:
         ``'beginner'`` (the default), ``'intermediate'``, or ``'advanced'``.
         Controls how much scaffolding the primer renders, never which facts the
@@ -426,7 +431,8 @@ def explain_before(
     ~buildml.explain.schemas.BeforeOperationExplanation
         Purpose, pipeline role, resolved status, prerequisite state and chain,
         appropriateness notes, alternatives, risks, likely state changes, the
-        linked concept notes, and the beginner primer.
+        linked concept notes, and the beginner primer. ``operation`` is always
+        the canonical flat catalog key.
 
     Raises
     ------
@@ -440,6 +446,9 @@ def explain_before(
     explain_after : The same operation, once it has run.
     buildml.explain.learn : The concept behind the call, rather than the call.
     """
+    from buildml.session.facade_registry import resolve_operation_name
+
+    operation = resolve_operation_name(operation)
     spec = get_operation(operation)
     step = next(item for item in resolve_workflow(session) if item.operation == operation)
     appropriateness = list(step.reasons)
@@ -482,7 +491,8 @@ def explain_after(
     session:
         The session whose history is read. Nothing is modified.
     operation:
-        A catalog operation name, such as ``'evaluate'``.
+        A catalog operation name, such as ``'evaluate'``, or a facade form
+        (``'classical.evaluate'`` / ``'session.classical.evaluate'``).
     level:
         ``'beginner'`` (the default), ``'intermediate'``, or ``'advanced'``.
 
@@ -492,6 +502,7 @@ def explain_after(
         The recorded parameters and result summary, why the operation was
         applied, what changed, how to read the outcome, the limitations that
         still apply, the operations now available, and the beginner primer.
+        ``operation`` is always the canonical flat catalog key.
 
     Raises
     ------
@@ -504,6 +515,9 @@ def explain_after(
     --------
     explain_before : The same operation, before it runs.
     """
+    from buildml.session.facade_registry import resolve_operation_name
+
+    operation = resolve_operation_name(operation)
     spec = get_operation(operation)
     primer = primer_for(operation, level=LearningLevel.coerce(level))
     records = [
@@ -576,7 +590,9 @@ def explain(
     session:
         The session to explain. Nothing on it is modified.
     operation:
-        A catalog operation name, or ``None`` to resolve the whole workflow.
+        A catalog operation name (flat or facade form
+        ``domain.method`` / ``session.domain.method``), or ``None`` to resolve
+        the whole workflow.
     moment:
         ``'before'`` to assess a choice not yet made, ``'after'`` to interpret a
         run that already happened. Ignored when ``operation`` is ``None``.
@@ -587,7 +603,8 @@ def explain(
     -------
     BeforeOperationExplanation or AfterOperationExplanation or tuple of WorkflowStep
         The before or after explanation, or the resolved workflow when no
-        operation was named.
+        operation was named. Named explanations always emit the canonical flat
+        operation key.
 
     Raises
     ------

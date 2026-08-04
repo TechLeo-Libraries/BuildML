@@ -12,7 +12,7 @@ Train-only vocabularies and embeddings, filtered link-prediction metrics
 **train** adjacency.
 
 **Not** a Neo4j / graph-database product. **Not** Graph ML node
-classification (`set_graph` / `fit_graph`). **Not** RAG retrieve/generate.
+classification (`session.graph.set_spec` / `session.graph.fit`). **Not** RAG retrieve/generate.
 
 **Proof:** [kg-biomed-linkpred](../proofs/kg-biomed-linkpred/) (+ Tier C co-occurrence PMI twin).
 
@@ -56,7 +56,7 @@ session = (
     .split(test_size=0.2, validation_size=0.1, random_state=0)
 )
 
-fit = session.fit_kg(
+fit = session.kg.fit(
     method="transe",
     head_column="head",
     relation_column="relation",
@@ -69,7 +69,7 @@ fit = session.fit_kg(
 print(fit.to_dict())
 
 # Link prediction: who might Alice work_at?
-preds = session.predict_links(
+preds = session.kg.predict_links(
     mode="tail",
     heads=["Alice"],
     relations=["works_at"],
@@ -78,16 +78,19 @@ preds = session.predict_links(
 print(preds.predictions)
 
 # Symbolic query over train edges (not LLM)
-nbrs = session.query_kg(mode="neighbors", entity="Alice", direction="out")
+nbrs = session.kg.query(mode="neighbors", entity="Alice", direction="out")
 print(nbrs.results)
 
-path = session.query_kg(mode="path", source="Alice", target="London", max_hops=3)
+path = session.kg.query(mode="path", source="Alice", target="London", max_hops=3)
 print(path.results)
 
-ev = session.evaluate_kg(partition="test", k=5)
-print(ev.metrics)
+ev = session.kg.evaluate(partition="test", k=5)
+print(ev.metrics)  # mrr, hits_at_1/3/k, mean_rank (filtered ranking)
 
-session.save_kg_bundle("artifacts/kg_demo_bundle")
+session.kg.save_bundle("artifacts/kg_demo_bundle")
+# Roundtrip: load on a fresh Session with the same split, then re-evaluate
+# other.kg.load_bundle("artifacts/kg_demo_bundle", trusted=True)
+# other.kg.evaluate(partition="test", k=5)
 ```
 
 ---
@@ -96,7 +99,7 @@ session.save_kg_bundle("artifacts/kg_demo_bundle")
 
 | Rule | Detail |
 |------|--------|
-| Split required | `fit_kg` calls `assert_can_fit("train")` |
+| Split required | `session.kg.fit` calls `assert_can_fit("train")` |
 | Train-only materialization | Unique triples, entity/relation vocab, adjacency from train |
 | Negative sampling | Uniform head/tail corruption of **train** triples only (`neg_ratio`) |
 | Holdout | Never updates embeddings; OOV holdout triples skipped at eval |
@@ -109,14 +112,14 @@ session.save_kg_bundle("artifacts/kg_demo_bundle")
 | Path | What it is |
 |------|------------|
 | **KG (this)** | Triples → native or PyKEEN embeddings + symbolic query |
-| Graph ML | Node table + `set_graph` edges → node classification |
+| Graph ML | Node table + `session.graph.set_spec` edges → node classification |
 | RAG | Chunk corpus → embed/retrieve/generate |
 | Recommenders | User–item interactions → top-K CF |
 
 ---
 
-## Tracker
+## Scope notes
 
-- Recommenders **PASS**; LTR **PASS**
-- Knowledge graphs (this guide): **PASS** (R5.6 industry depth)
-- Next: **probabilistic** (R5.7)
+- Related: recommenders and LTR
+- Knowledge graphs (this guide) ship with industry extras when installed
+- Related next: probabilistic ML

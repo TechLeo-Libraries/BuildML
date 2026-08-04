@@ -114,23 +114,35 @@ def stable_baselines3_spec_present() -> bool:
     return importlib.util.find_spec("stable_baselines3") is not None
 
 
-def stable_baselines3_available() -> bool:
-    """Say whether Stable-Baselines3 is available for the ``'gym_sb3'`` mode.
+def stable_baselines3_runtime_available() -> bool:
+    """Return whether Stable-Baselines3 imports cleanly in a child process.
 
-    The public form of :func:`stable_baselines3_spec_present`, and identical to
-    it: the spec check is deliberate, to keep PyTorch out of a capability
-    query.
+    Uses subprocess isolation so a broken torch/SB3 stack cannot hard-crash
+    the host when capability matrices are built.
+    """
+    if not stable_baselines3_spec_present():
+        return False
+    from buildml.dl.extras import _subprocess_import_ok
+
+    return _subprocess_import_ok("stable_baselines3")
+
+
+def stable_baselines3_available() -> bool:
+    """Say whether Stable-Baselines3 is usable for the ``'gym_sb3'`` mode.
+
+    Runtime import probe (subprocess). Use
+    :func:`stable_baselines3_spec_present` for cheap discovery-only flags.
 
     Returns
     -------
     bool
-        ``True`` when the package is installed.
+        ``True`` when the package imports successfully.
 
     See Also
     --------
     rl_industry_available : Whether the whole industry path is usable.
     """
-    return stable_baselines3_spec_present()
+    return stable_baselines3_runtime_available()
 
 
 def imitation_spec_present() -> bool:
@@ -151,36 +163,46 @@ def imitation_spec_present() -> bool:
     return importlib.util.find_spec("imitation") is not None
 
 
-def imitation_available() -> bool:
-    """Say whether the ``imitation`` library is available for neural cloning.
+def imitation_runtime_available() -> bool:
+    """Return whether ``imitation`` imports cleanly in a child process."""
+    if not imitation_spec_present():
+        return False
+    from buildml.dl.extras import _subprocess_import_ok
 
-    The public form of :func:`imitation_spec_present`. This is what backs the
-    ``'bc_mlp'`` and ``'gail_lite'`` methods.
+    return _subprocess_import_ok("imitation")
+
+
+def imitation_available() -> bool:
+    """Say whether the ``imitation`` library is usable for neural cloning.
+
+    Runtime import probe (subprocess). Use :func:`imitation_spec_present` for
+    cheap discovery-only flags. Backs ``'bc_mlp'`` / ``'gail_lite'`` offering.
 
     Returns
     -------
     bool
-        ``True`` when the package is installed.
+        ``True`` when the package imports successfully.
 
     See Also
     --------
     rl_industry_available : Whether the whole industry path is usable.
     """
-    return imitation_spec_present()
+    return imitation_runtime_available()
 
 
 def rl_industry_available() -> bool:
-    """Say whether the whole industry path is usable.
+    """Say whether the whole industry path is usable at runtime.
 
     ``buildml[rl-industry]`` is three packages, and every one of them is needed:
     Gymnasium supplies the environment, Stable-Baselines3 the deep RL
-    algorithms, and ``imitation`` the neural cloning methods. A partial install
-    is not a partial capability, so this reports all-or-nothing.
+    algorithms, and ``imitation`` the neural cloning methods. A partial or
+    broken install is not a partial capability, so this reports all-or-nothing
+    on successful import probes (not find_spec alone).
 
     Returns
     -------
     bool
-        ``True`` only when all three are present.
+        ``True`` only when all three import successfully.
 
     See Also
     --------
@@ -188,8 +210,8 @@ def rl_industry_available() -> bool:
     """
     return (
         gymnasium_available()
-        and stable_baselines3_spec_present()
-        and imitation_spec_present()
+        and stable_baselines3_runtime_available()
+        and imitation_runtime_available()
     )
 
 
@@ -263,11 +285,13 @@ def require_imitation(*, feature: str = "imitation BC/GAIL") -> Any:
 __all__ = [
     "gymnasium_available",
     "imitation_available",
+    "imitation_runtime_available",
     "imitation_spec_present",
     "require_gymnasium",
     "require_imitation",
     "require_stable_baselines3",
     "rl_industry_available",
     "stable_baselines3_available",
+    "stable_baselines3_runtime_available",
     "stable_baselines3_spec_present",
 ]

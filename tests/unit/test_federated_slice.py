@@ -132,6 +132,43 @@ def test_session_fedavg_loop_and_bundle(tmp_path: Path) -> None:
     assert restored.federated_plan.estimator_name == "sgd_classifier"
 
 
+def test_native_bundle_roundtrip_reevaluate(tmp_path: Path) -> None:
+    """Save → load → re-evaluate must reproduce holdout classification metrics."""
+    session = _session()
+    session.federated.fit(
+        backend="native",
+        method="fedavg",
+        estimator="sgd_classifier",
+        n_rounds=4,
+        local_epochs=2,
+        random_state=0,
+    )
+    ev = session.federated.evaluate(partition="test", per_client=True)
+    assert ev.n_rows > 0
+    assert "accuracy" in ev.metrics
+    assert "f1_macro" in ev.metrics
+    assert "balanced_accuracy" in ev.metrics
+
+    bundle = session.federated.save_bundle(tmp_path / "fed_native_bundle")
+    restored = Session.ingest(_frame()).set_roles(
+        {
+            "x": "feature",
+            "y": "feature",
+            "label": "target",
+            "client_id": "group",
+        }
+    )
+    restored._split_plan = session.split_plan
+    restored._dataset = session.dataset
+    restored.federated.load_bundle(bundle, trusted=True)
+    ev2 = restored.federated.evaluate(partition="test", per_client=False)
+    assert ev2.n_rows == ev.n_rows
+    assert ev2.metrics["accuracy"] == pytest.approx(ev.metrics["accuracy"])
+    assert ev2.metrics["f1_macro"] == pytest.approx(ev.metrics["f1_macro"])
+    if "roc_auc" in ev.metrics:
+        assert ev2.metrics["roc_auc"] == pytest.approx(ev.metrics["roc_auc"])
+
+
 def test_refuse_without_split() -> None:
     session = Session.ingest(_frame()).set_roles(
         {

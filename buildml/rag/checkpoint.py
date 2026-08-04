@@ -269,6 +269,8 @@ def load_rag_bundle(path: str | Path) -> RagIndex:
     index_cfg = IndexConfig.from_dict(meta.get("index_config") or {})
 
     backend = embed_cfg.backend
+    load_warnings = list(meta.get("warnings") or ())
+    load_disclosures = list(meta.get("disclosures") or ())
     if backend == "sentence-transformers" and embed_cfg.model_name:
         embedder, resolved_cfg = resolve_embedder(embed_cfg.model_name)
         # Prefer recorded id/dim from disk when dims match.
@@ -286,9 +288,20 @@ def load_rag_bundle(path: str | Path) -> RagIndex:
         embedder, _ = resolve_embedder("hashing", dim=embed_cfg.dim)
         # Keep recorded embedder_id for disclosure honesty even if we rebound hashing.
         if embed_cfg.backend == "callable":
-            # Callable embedders cannot be reconstituted; rebound hashing for query
-            # only when dims match. Callers needing custom encode must re-supply it.
-            pass
+            note = (
+                "Callable embedder cannot be reconstituted from the bundle; "
+                "queries are rebound to hashing and will not match stored vectors. "
+                "Rebuild the index with the callable re-supplied."
+            )
+            load_warnings.append(note)
+            load_disclosures.append(note)
+        elif embed_cfg.backend not in {"hashing", "sentence-transformers", None, ""}:
+            note = (
+                f"Embedder backend {embed_cfg.backend!r} rebounded to hashing on load; "
+                "confirm query embedding space matches stored vectors."
+            )
+            load_warnings.append(note)
+            load_disclosures.append(note)
 
     return RagIndex(
         store=store,
@@ -297,8 +310,8 @@ def load_rag_bundle(path: str | Path) -> RagIndex:
         chunk_config=chunk_cfg,
         index_config=index_cfg,
         n_documents=int(meta.get("n_documents") or len({c.doc_id for c in chunks})),
-        warnings=tuple(meta.get("warnings") or ()),
-        disclosures=tuple(meta.get("disclosures") or ()),
+        warnings=tuple(load_warnings),
+        disclosures=tuple(load_disclosures),
     )
 
 

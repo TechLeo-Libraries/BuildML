@@ -83,7 +83,7 @@ def main() -> None:
     write_comparison(
         ctx,
         buildml={
-            "backend": "buildml.Session.fit_semisupervised",
+            "backend": "buildml.session.semisupervised.fit",
             "method": bml_raw.get("fit", {}).get("method", "label_propagation"),
             "test_metrics": bml_metrics,
         },

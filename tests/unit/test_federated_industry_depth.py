@@ -61,6 +61,13 @@ def test_capability_matrix_native_always_available() -> None:
     assert matrix["backends"]["native"]["available"] is True
     assert "fedavg" in list_federated_methods(backend="native")
     assert matrix["backends"]["native"]["secure_aggregation"] is False
+    assert matrix["backends"]["flower"]["network_runtime"] is False
+    assert "local simulation" in matrix["honesty"].lower() or "local sim" in (
+        matrix["honesty"].lower()
+    )
+    assert "industry_runtime_present" in matrix
+    assert "accuracy" in matrix["evaluation_metrics"]["classification"]
+    assert "roc_auc" in matrix["evaluation_metrics"]["classification"]
 
 
 def test_resolve_backend_native_explicit() -> None:

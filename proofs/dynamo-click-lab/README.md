@@ -13,12 +13,12 @@ Dynamo studies conversion under streaming updates and few-shot new categories:
 
 ## Status
 
-`completed`: run `script.py`; see `results/summary.json` and stage JSONs.
+Run `script.py`. Outputs land under `results/` (summary and stage JSON)..
 
 ## How to run
 
 ```bash
-.\.venv\Scripts\python.exe proofs\dynamo-click-lab\script.py
+python proofs\dynamo-click-lab\script.py
 ```
 
 ## Leakage controls

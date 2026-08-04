@@ -35,7 +35,7 @@ PROBABILISTIC_NOTES: dict[str, ConceptNote] = {
                 "Using validation/test to calibrate intervals is leakage.",
             ),
             how_buildml_uses=(
-                "Session.fit_probabilistic → predict_interval / evaluate_probabilistic.",
+                "session.probabilistic.fit → session.probabilistic.predict_interval / session.probabilistic.evaluate.",
                 "Classical Session.calibration() remains for classical fit(...) classifiers.",
             ),
             interpretation_rules=(
@@ -55,8 +55,8 @@ PROBABILISTIC_NOTES: dict[str, ConceptNote] = {
                 "Advertising a probabilistic-programming platform.",
             ),
             worked_example_pattern=(
-                "fit_probabilistic(estimator='bayesian_ridge', conformal=True) → "
-                "predict_interval('test') → evaluate_probabilistic('validation').",
+                "session.probabilistic.fit(estimator='bayesian_ridge', conformal=True) → "
+                "session.probabilistic.predict_interval('test') → session.probabilistic.evaluate('validation').",
             ),
             related_concepts=(
                 "probabilistic-bayesian-ridge",
@@ -87,7 +87,7 @@ PROBABILISTIC_NOTES: dict[str, ConceptNote] = {
                 "A complete, honest regression uncertainty path without heavy deps.",
             ),
             how_buildml_uses=(
-                "fit_probabilistic(estimator='bayesian_ridge'); "
+                "session.probabilistic.fit(estimator='bayesian_ridge'); "
                 "interval_method may combine posterior_std with split_conformal.",
             ),
             interpretation_rules=(
@@ -98,7 +98,7 @@ PROBABILISTIC_NOTES: dict[str, ConceptNote] = {
             failure_modes=("Strong nonlinearity; heteroscedasticity extremes.",),
             anti_patterns=("Calling BayesianRidge a full hierarchical Bayes model.",),
             worked_example_pattern=(
-                "fit_probabilistic('bayesian_ridge', alpha=0.1, conformal=True).",
+                "session.probabilistic.fit('bayesian_ridge', alpha=0.1, conformal=True).",
             ),
             related_concepts=(
                 "probabilistic-uncertainty",
@@ -124,7 +124,7 @@ PROBABILISTIC_NOTES: dict[str, ConceptNote] = {
             ),
             why_it_matters=("Non-linear uncertainty when BayesianRidge is too rigid.",),
             how_buildml_uses=(
-                "fit_probabilistic(estimator='gaussian_process_regressor'|..._classifier).",
+                "session.probabilistic.fit(estimator='gaussian_process_regressor'|..._classifier).",
             ),
             interpretation_rules=(
                 "GPs scale poorly with large n; disclosures note the cost.",
@@ -133,7 +133,7 @@ PROBABILISTIC_NOTES: dict[str, ConceptNote] = {
             failure_modes=("Large n; poorly scaled features; overclaiming deep GPs.",),
             anti_patterns=("Using GPs as a silent default on huge tables.",),
             worked_example_pattern=(
-                "fit_probabilistic('gaussian_process_regressor', conformal=True).",
+                "session.probabilistic.fit('gaussian_process_regressor', conformal=True).",
             ),
             related_concepts=(
                 "probabilistic-uncertainty",
@@ -163,7 +163,7 @@ PROBABILISTIC_NOTES: dict[str, ConceptNote] = {
                 "without MAPIE as a hard dependency.",
             ),
             how_buildml_uses=(
-                "fit_probabilistic(conformal=True) → predict_interval / evaluate coverage.",
+                "session.probabilistic.fit(conformal=True) → session.probabilistic.predict_interval / evaluate coverage.",
             ),
             interpretation_rules=(
                 "Coverage is marginal under exchangeability; conditional coverage "
@@ -180,8 +180,8 @@ PROBABILISTIC_NOTES: dict[str, ConceptNote] = {
                 "Using Session test as the conformal calibration set.",
             ),
             worked_example_pattern=(
-                "fit_probabilistic(conformal=True, alpha=0.1) → "
-                "evaluate_probabilistic(); read interval_coverage.",
+                "session.probabilistic.fit(conformal=True, alpha=0.1) → "
+                "session.probabilistic.evaluate(); read interval_coverage.",
             ),
             related_concepts=(
                 "probabilistic-uncertainty",
@@ -203,10 +203,10 @@ PROBABILISTIC_NOTES: dict[str, ConceptNote] = {
             ),
             formal_idea=(
                 "Artifacts are complementary: checkpoint_load ↛ probabilistic model; "
-                "load_probabilistic_bundle ↛ dataset rows."
+                "session.probabilistic.load_bundle ↛ dataset rows."
             ),
             why_it_matters=("Mixing artifacts causes silent missing-learner failures.",),
-            how_buildml_uses=("save_probabilistic_bundle / load_probabilistic_bundle.",),
+            how_buildml_uses=("session.probabilistic.save_bundle / session.probabilistic.load_bundle.",),
             interpretation_rules=("Read meta.json format buildml.probabilistic_bundle.v1.",),
             assumptions=("Feature/target columns still match at load time.",),
             failure_modes=("Expecting checkpoint_load to restore ProbabilisticPlan.",),
@@ -214,7 +214,7 @@ PROBABILISTIC_NOTES: dict[str, ConceptNote] = {
                 "Treating federated or online bundles as probabilistic plans.",
             ),
             worked_example_pattern=(
-                "session.save_probabilistic_bundle(path); other.load_probabilistic_bundle(path).",
+                "session.probabilistic.save_bundle(path); other.probabilistic.load_bundle(path).",
             ),
             related_concepts=("probabilistic-uncertainty", "federated-bundle-boundary"),
         ),
@@ -239,7 +239,7 @@ PROBABILISTIC_NOTES: dict[str, ConceptNote] = {
                 "Honest industry defaults when MAPIE is installed.",
             ),
             how_buildml_uses=(
-                "fit_probabilistic(backend='mapie', estimator='cv_plus', task='regression').",
+                "session.probabilistic.fit(backend='mapie', estimator='cv_plus', task='regression').",
             ),
             interpretation_rules=(
                 "Read interval_coverage / set_coverage on holdout; disclosures note train-only fit.",
@@ -248,7 +248,7 @@ PROBABILISTIC_NOTES: dict[str, ConceptNote] = {
             failure_modes=("Missing extra; too-small train for MAPIE cv.",),
             anti_patterns=("Calibrating MAPIE on Session test.",),
             worked_example_pattern=(
-                "fit_probabilistic(backend='mapie', estimator='split', task='regression').",
+                "session.probabilistic.fit(backend='mapie', estimator='split', task='regression').",
             ),
             related_concepts=("probabilistic-split-conformal", "probabilistic-uncertainty"),
         ),
@@ -272,14 +272,14 @@ PROBABILISTIC_NOTES: dict[str, ConceptNote] = {
                 "Strong tabular uncertainty without MCMC.",
             ),
             how_buildml_uses=(
-                "fit_probabilistic(backend='ngboost', estimator='ngboost_regressor').",
+                "session.probabilistic.fit(backend='ngboost', estimator='ngboost_regressor').",
             ),
-            interpretation_rules=("Read nll and crps in evaluate_probabilistic.",),
+            interpretation_rules=("Read nll and crps in session.probabilistic.evaluate.",),
             assumptions=("Numeric features; enough train rows for boosting.",),
             failure_modes=("Missing ngboost extra; binary-only Bernoulli classifier path.",),
             anti_patterns=("Calling NGBoost a Bayesian MCMC posterior.",),
             worked_example_pattern=(
-                "fit_probabilistic(backend='ngboost', estimator='ngboost_regressor', conformal=True).",
+                "session.probabilistic.fit(backend='ngboost', estimator='ngboost_regressor', conformal=True).",
             ),
             related_concepts=("probabilistic-uncertainty", "diagnostic-uncertainty"),
         ),

@@ -77,26 +77,26 @@ def main() -> None:
     docs, judgments = load_support_kb_corpus()
     st_ok = extra_available("sentence_transformers")
     try:
-        rag = Session()
-        rag.rag_ingest_corpus(docs)
-        rag.rag_chunk(size=180, overlap=40)
+        session = Session()
+        session.rag.ingest_corpus(docs)
+        session.rag.chunk(size=180, overlap=40)
         embed_backend = "hashing"
         try:
             if st_ok:
-                rag.rag_embed_and_index(embedder="auto")
+                session.rag.embed_and_index(embedder="auto")
                 embed_backend = "sentence_transformers_or_auto"
             else:
-                rag.rag_embed_and_index(embedder="hashing")
+                session.rag.embed_and_index(embedder="hashing")
         except (MissingExtraError, TypeError, ValueError):
-            rag.rag_embed_and_index(embedder="hashing")
+            session.rag.embed_and_index(embedder="hashing")
             embed_backend = "hashing"
-        sample = rag.rag_retrieve("forgot password reset link expired", k=3, mode="hybrid")
-        answer = rag.rag_generate(
+        sample = session.rag.retrieve("forgot password reset link expired", k=3, mode="hybrid")
+        answer = session.rag.generate(
             "How do I reset a forgotten password?",
             provider=EchoGroundedProvider(),
             k=3,
         )
-        metrics = rag.rag_evaluate(judgments, k=3)
+        metrics = session.rag.evaluate(judgments, k=3)
         stages["rag"] = {
             "status": "ok",
             "embed_backend": embed_backend,
@@ -117,7 +117,7 @@ def main() -> None:
     # --- Stage 2: NLP ticket routing ---
     try:
         tickets, ticket_meta = load_support_tickets_synthetic(n=720, seed=ctx.seed)
-        nlp = (
+        session = (
             Session.ingest(tickets)
             .set_roles(
                 {
@@ -134,12 +134,12 @@ def main() -> None:
                 random_state=ctx.seed,
             )
         )
-        profile = nlp.profile_text_corpus(
+        profile = session.nlp.profile_corpus(
             text_column="body",
             near_duplicate_threshold=0.9,
             detect_languages=True,
         )
-        fit = nlp.fit_text_classifier(
+        fit = session.nlp.fit_classifier(
             text_column="body",
             vectorizer="tfidf",
             estimator="logistic",
@@ -148,9 +148,9 @@ def main() -> None:
             class_weight="balanced",
             random_state=ctx.seed,
         )
-        validation = nlp.evaluate_text_classifier(partition="validation")
+        validation = session.nlp.evaluate(partition="validation")
         assert_no_test_in_selection(selection_partition="validation")
-        test = nlp.evaluate_text_classifier(partition="test")
+        test = session.nlp.evaluate(partition="test")
         stages["nlp"] = {
             "status": "ok",
             "data": ticket_meta,
@@ -181,14 +181,14 @@ def main() -> None:
             .scale(method="standard")
         )
         truth = _mask_train_labels(al, fraction=0.85, seed=ctx.seed, target="label")
-        fit_al = al.fit_active_learner(strategy="margin", batch_size=8, label_budget=32)
+        fit_al = al.active_learning.fit(strategy="margin", batch_size=8, label_budget=32)
         curve = []
         for round_i in range(4):
-            q = al.suggest_query(batch_size=8)
+            q = al.active_learning.suggest_query(batch_size=8)
             if not q.indices:
                 break
             human = [int(truth[i]) for i in q.indices]
-            labeled = al.label_rows(indices=q.indices, labels=human)
+            labeled = al.active_learning.label_rows(indices=q.indices, labels=human)
             curve.append(
                 {
                     "round": round_i,
@@ -197,7 +197,7 @@ def main() -> None:
                     "budget_remaining": int(labeled.budget_remaining),
                 }
             )
-        al_test = al.evaluate_active_learning(partition="test")
+        al_test = al.active_learning.evaluate(partition="test")
         stages["active_learning"] = {
             "status": "ok",
             "data": pool_meta,
@@ -228,7 +228,7 @@ def main() -> None:
             "RAG corpus = KB articles only; judgments never indexed as answers",
             "NLP stratified split before TF-IDF fit; validation for selection",
             "Active-learning queries drawn from train unlabeled pool only",
-            "Test evaluate_text_classifier / evaluate_active_learning after locks",
+            "Test session.nlp.evaluate / session.active_learning.evaluate after locks",
         ],
         "what_fails_if_leakage_ignored": [
             "Indexing judgment answers into RAG inflates recall@k",

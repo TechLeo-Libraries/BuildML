@@ -44,12 +44,12 @@ NLP_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.fit_text_classifier(",
+            "session.nlp.fit_classifier(",
             "    text_column='review',",
             "    normalize_steps=['strip_html', 'lowercase', 'collapse_whitespace'],",
             "    stopword_language='en',",
             ")",
-            "print(session.nlp_text_plan.normalize_plan.to_dict())",
+            "print(session.nlp.text_plan.normalize_plan.to_dict())",
         ),
         check=(
             "Which of your normalization steps could delete something meaningful?",
@@ -97,8 +97,8 @@ NLP_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.fit_text_classifier(vectorizer='tfidf', ngram_range=(1, 2), min_df=2)",
-            "report = session.evaluate_text_classifier(partition='test')",
+            "session.nlp.fit_classifier(vectorizer='tfidf', ngram_range=(1, 2), min_df=2)",
+            "report = session.nlp.evaluate(partition='test')",
             "print(report.metrics, report.oov_rate)",
         ),
         check=(
@@ -146,8 +146,8 @@ NLP_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.fit_text_classifier(estimator='logistic', vectorizer='tfidf')",
-            "expl = session.interpret_text_prediction(top_k=12)",
+            "session.nlp.fit_classifier(estimator='logistic', vectorizer='tfidf')",
+            "expl = session.nlp.interpret(top_k=12)",
             "print(expl.document_attributions[0])",
             "print(expl.global_top_tokens)",
         ),
@@ -196,10 +196,10 @@ NLP_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.fit_topics(method='nmf', n_topics=8, min_df=2, random_state=0)",
-            "for topic in session.nlp_topic_plan.topics:",
+            "session.nlp.fit_topics(method='nmf', n_topics=8, min_df=2, random_state=0)",
+            "for topic in session.nlp.topic_plan.topics:",
             "    print(topic.terms, topic.coherence, topic.train_mass)",
-            "session.assign_topics(partition='test')",
+            "session.nlp.assign_topics(partition='test')",
         ),
         check=(
             "Which topics have low coherence? Those are noise, not themes.",
@@ -246,7 +246,7 @@ NLP_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "result = session.extract_keyphrases(partition='train', method='rake', top_n=20)",
+            "result = session.nlp.extract_keyphrases(partition='train', method='rake', top_n=20)",
             "print(result.corpus_keyphrases)",
             "print(result.document_keyphrases[0])",
         ),
@@ -295,10 +295,10 @@ NLP_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "base = session.analyze_sentiment(backend='lexicon')",
+            "base = session.nlp.analyze_sentiment(backend='lexicon')",
             "print(base.matched_term_rate, base.label_counts)",
-            "session.fit_text_classifier(text_column='review')",
-            "tuned = session.analyze_sentiment(backend='supervised')",
+            "session.nlp.fit_classifier(text_column='review')",
+            "tuned = session.nlp.analyze_sentiment(backend='supervised')",
         ),
         check=(
             "What is your matched-term rate? Below about half, the scores are mostly guesswork.",
@@ -346,7 +346,7 @@ NLP_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "found = session.extract_entities(",
+            "found = session.nlp.extract_entities(",
             "    backend='rules',",
             "    gazetteers={'PRODUCT': ['widget-9', 'widget-12']},",
             ")",
@@ -398,8 +398,8 @@ NLP_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "lead = session.summarize_text(method='lead', n_sentences=3)",
-            "rank = session.summarize_text(method='textrank', n_sentences=3)",
+            "lead = session.nlp.summarize(method='lead', n_sentences=3)",
+            "rank = session.nlp.summarize(method='textrank', n_sentences=3)",
             "print(lead.mean_compression, rank.mean_compression)",
             "print(rank.selected_sentence_indices[0])",
         ),
@@ -448,7 +448,7 @@ NLP_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "langs = session.detect_language(partition='all')",
+            "langs = session.nlp.detect_language(partition='all')",
             "print(langs.dominant_language, langs.undetermined_rate, langs.language_counts)",
             "if langs.dominant_language != 'en':",
             "    ...  # reconsider stopword_language and the sentiment backend",
@@ -500,7 +500,7 @@ NLP_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         example=(
             "session.split(test_size=0.2, random_state=0)",
-            "profile = session.profile_text_corpus(near_duplicate_threshold=0.9)",
+            "profile = session.nlp.profile_corpus(near_duplicate_threshold=0.9)",
             "print(profile.exact_overlap, profile.near_duplicate_pairs, profile.holdout_oov_rate)",
         ),
         check=(
@@ -524,7 +524,7 @@ NLP_BEGINNER: dict[str, BeginnerLayer] = _index(
             "picking the wrong one does not slow you down, it produces the wrong thing."
         ),
         steps=(
-            "Label on the row, text as evidence? Use `fit_text_classifier`.",
+            "Label on the row, text as evidence? Use `session.nlp.fit_classifier`.",
             "Answer lives in a document you must find and cite? Use the RAG surface.",
             "Text is one signal among many tabular columns? Use `text_features`.",
             "Need to update neural network weights on your own text? Use the Torch text path.",
@@ -549,8 +549,8 @@ NLP_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.fit_text_classifier(text_column='ticket')   # classify documents",
-            "session.rag_ingest_corpus(documents)                # grounded answers",
+            "session.nlp.fit_classifier(text_column='ticket')   # classify documents",
+            "session.rag.ingest_corpus(documents)                # grounded answers",
             "session.text_features(column='notes')               # tabular expansion",
         ),
         check=(
@@ -574,8 +574,8 @@ NLP_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         steps=(
             "Fit a text classifier, a topic model, or both.",
-            "Call `save_nlp_bundle(path)`: the normalization plan travels inside it.",
-            "Reload with `load_nlp_bundle(path)` in a Session exposing the same text column name.",
+            "Call `session.nlp.save_bundle(path)`: the normalization plan travels inside it.",
+            "Reload with `session.nlp.load_bundle(path)` in a Session exposing the same text column name.",
             "Loading clears stale fit, evaluation, prediction, and interpretation results so nothing is misattributed.",
             "Evaluate on holdout after loading rather than trusting the recorded metrics for a new dataset.",
         ),
@@ -598,10 +598,10 @@ NLP_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.fit_text_classifier(text_column='review')",
-            "session.save_nlp_bundle('artifacts/review-clf')",
-            "svc = Session.ingest(incoming).load_nlp_bundle('artifacts/review-clf')",
-            "svc.evaluate_text_classifier(partition='test')",
+            "session.nlp.fit_classifier(text_column='review')",
+            "session.nlp.save_bundle('artifacts/review-clf')",
+            "svc = Session.ingest(incoming).nlp.load_bundle('artifacts/review-clf')",
+            "svc.nlp.evaluate(partition='test')",
         ),
         check=(
             "Does the loading Session use the same text column name?",

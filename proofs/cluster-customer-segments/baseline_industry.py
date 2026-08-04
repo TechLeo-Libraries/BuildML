@@ -99,7 +99,7 @@ def main() -> None:
     write_comparison(
         ctx,
         buildml={
-            "backend": "buildml.Session.fit_clusters",
+            "backend": "buildml.session.unsupervised.fit",
             "method": bml_raw.get("method", "kmeans"),
             "test_metrics": bml_metrics,
         },

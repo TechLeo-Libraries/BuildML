@@ -25,7 +25,9 @@ from typing import Any, Literal
 from buildml.cbr.extras import (
     cbr_industry_available,
     faiss_available,
+    faiss_spec_present,
     hnswlib_available,
+    hnswlib_spec_present,
     text_embedding_available,
 )
 from buildml.dl.extras import torch_available, torch_spec_available
@@ -210,7 +212,13 @@ def cbr_capability_matrix() -> dict[str, Any]:
             "torch backend matrix 'available' uses a real import probe "
             "(torch_available); torch_spec_present is find_spec only."
         ),
-        "industry_extra_present": cbr_industry_available(),
+        "industry_extra_present": hnswlib_spec_present() or faiss_spec_present(),
+        "industry_runtime_present": cbr_industry_available(),
+        "industry_import_honesty": (
+            "industry backend 'available' and industry_runtime_present require "
+            "successful imports of hnswlib or faiss. industry_extra_present / "
+            "*_spec_present are find_spec only."
+        ),
     }
 
 

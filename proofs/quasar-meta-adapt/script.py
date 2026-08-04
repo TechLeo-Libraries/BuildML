@@ -91,7 +91,7 @@ def main() -> None:
     backend_note = "prototypical"
     try:
         try:
-            m_fit = meta_session.fit_metalearning(
+            m_fit = meta_session.metalearning.fit(
                 method="prototypical",
                 task_column="category_id",
                 n_way=2,
@@ -100,7 +100,7 @@ def main() -> None:
                 random_state=ctx.seed,
             )
         except (MissingExtraError, TypeError, ValueError) as exc:
-            m_fit = meta_session.fit_metalearning(
+            m_fit = meta_session.metalearning.fit(
                 method="warm_start",
                 task_column="category_id",
                 n_way=2,
@@ -109,7 +109,7 @@ def main() -> None:
                 random_state=ctx.seed,
             )
             backend_note = f"warm_start_fallback({type(exc).__name__})"
-        m_ev = meta_session.evaluate_metalearning(partition="test")
+        m_ev = meta_session.metalearning.evaluate(partition="test")
         stages["metalearning"] = {
             "status": "ok",
             "backend_note": backend_note,
@@ -142,15 +142,15 @@ def main() -> None:
             )
             .scale(method="standard")
         )
-        ssl_fit = ssl_session.fit_ssl_pretext(
+        ssl_fit = ssl_session.ssl.fit_pretext(
             method="masked_tabular", random_state=ctx.seed
         )
         try:
-            ssl_session.finetune_ssl_head(random_state=ctx.seed)
+            ssl_session.ssl.finetune_head(random_state=ctx.seed)
         except Exception:  # noqa: BLE001
             pass
-        ssl_val = ssl_session.evaluate_ssl(partition="validation")
-        ssl_test = ssl_session.evaluate_ssl(partition="test")
+        ssl_val = ssl_session.ssl.evaluate(partition="validation")
+        ssl_test = ssl_session.ssl.evaluate(partition="test")
         stages["ssl"] = {
             "status": "ok",
             "fit": metrics_round(

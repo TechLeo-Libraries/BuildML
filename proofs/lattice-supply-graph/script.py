@@ -122,17 +122,17 @@ def main() -> None:
 
     # --- Stage 1: classical graph ---
     try:
-        session.set_graph(
+        session.graph.set_spec(
             edges,
             source_col="source",
             target_col="target",
             node_id_col="node_id",
         )
-        g_fit = session.fit_graph(
+        g_fit = session.graph.fit(
             method="classical", mode="inductive", random_state=ctx.seed
         )
-        g_val = session.evaluate_graph(partition="validation")
-        g_test = session.evaluate_graph(partition="test")
+        g_val = session.graph.evaluate(partition="validation")
+        g_test = session.graph.evaluate(partition="test")
         stages["graph"] = {
             "status": "ok",
             "fit": metrics_round(g_fit.to_dict() if hasattr(g_fit, "to_dict") else {}),
@@ -154,7 +154,7 @@ def main() -> None:
             .set_roles({"head": "id", "relation": "id", "tail": "id"})
             .split(test_size=0.2, validation_size=0.1, random_state=ctx.seed)
         )
-        kg_fit = kg_session.fit_kg(
+        kg_fit = kg_session.kg.fit(
             method="transe",
             head_column="head",
             relation_column="relation",
@@ -166,8 +166,8 @@ def main() -> None:
             neg_ratio=2,
             random_state=ctx.seed,
         )
-        kg_val = kg_session.evaluate_kg(partition="validation")
-        kg_test = kg_session.evaluate_kg(partition="test")
+        kg_val = kg_session.kg.evaluate(partition="validation")
+        kg_test = kg_session.kg.evaluate(partition="test")
         stages["kg"] = {
             "status": "ok",
             "n_triples": int(len(kg_frame)),

@@ -13,16 +13,16 @@ In-repo synthetic mortgage table (`load_mortgage_default_synthetic`): license-cl
 - Stratified train / validation / test before any fit
 - Impute / encode / scale on train only
 - Stacking OOF meta features from train CV folds only (`cv=3`)
-- Test `evaluate_ensemble` after lock
+- Test `session.ensemble.evaluate` after lock
 - Industry StackingClassifier twin uses the same SplitPlan
 
 ## BuildML API steps
 
 1. `Session.ingest` → `set_roles` → `split` (stratified)
 2. `impute` → `encode` → `scale`
-3. `fit_stacking(LR+RF, cv=3)`
-4. `evaluate_ensemble(validation)` → `evaluate_ensemble(test)`
-5. `save_ensemble_bundle`
+3. `session.ensemble.fit_stacking(LR+RF, cv=3)`
+4. `session.ensemble.evaluate(validation)` → `session.ensemble.evaluate(test)`
+5. `session.ensemble.save_bundle`
 
 ## Metrics
 
@@ -30,7 +30,7 @@ Primary holdout: accuracy, F1, ROC-AUC on test (see `results/results.json`).
 
 ## Industry comparison (Tier C)
 
-Filled: sklearn `StackingClassifier(cv=3)` twin via `baseline_industry.py` → `results/comparison.json`.
+Industry twin: sklearn `StackingClassifier(cv=3)` twin via `baseline_industry.py` → `results/comparison.json`.
 
 ## Limitations
 

@@ -91,7 +91,7 @@ def main() -> None:
         write_comparison(
             ctx,
             buildml={
-                "backend": "buildml.Session.fit_torch/text",
+                "backend": "buildml.session.dl.fit/text",
                 "status": "skipped_missing_extra",
                 "test_metrics": {},
             },

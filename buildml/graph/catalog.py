@@ -5,7 +5,12 @@ from __future__ import annotations
 from typing import Any, Literal
 
 from buildml.dl.extras import torch_available, torch_spec_available
-from buildml.graph.extras import networkx_available, pyg_available, pyg_runtime_available
+from buildml.graph.extras import (
+    networkx_available,
+    networkx_spec_present,
+    pyg_runtime_available,
+    pyg_spec_present,
+)
 
 GraphBackendName = Literal["classical", "gcn", "pyg"]
 
@@ -85,13 +90,17 @@ def graph_capability_matrix() -> dict[str, Any]:
             "Full PyG research algorithm catalog beyond GCN/SAGE/GAT",
             "Link prediction product depth on this surface",
         ],
-        "graph_extra_present": networkx_available(),
+        "graph_extra_present": networkx_spec_present(),
+        "graph_runtime_present": networkx_available(),
         "torch_spec_present": torch_spec_available(),
-        "pyg_extra_present": pyg_available(),
+        "pyg_extra_present": pyg_spec_present(),
         "pyg_runtime_present": pyg_runtime_available(),
         "pyg_import_honesty": (
             "pyg backend 'available' requires torch-geometric install AND a working "
-            "torch import (pyg_runtime_available). pyg_extra_present is find_spec only."
+            "torch import (pyg_runtime_available). pyg_extra_present / "
+            "graph_extra_present / *_spec_present are find_spec only; "
+            "graph_runtime_present / pyg_runtime_present are import probes. "
+            "pyg_available() is an alias of pyg_spec_present for back-compat."
         ),
         "train_only_honesty": (
             "All backends fit with train-node labels only. Inductive fit uses "

@@ -90,7 +90,7 @@ def main() -> None:
     write_comparison(
         ctx,
         buildml={
-            "backend": "buildml.Session.fit_ssl_pretext",
+            "backend": "buildml.session.ssl.fit_pretext",
             "test_metrics": bml_metrics,
         },
         industry={

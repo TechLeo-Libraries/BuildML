@@ -13,12 +13,12 @@ path**, not a graph database product.
      ranking loss and uniform negative sampling.
    - **pykeen** (`buildml[kg-industry]`): PyKEEN pipeline for **TransE**,
      **DistMult**, **RotatE**, and **ComplEx** on train-only triples.
-3. **Link prediction**: `score_triples`, `predict_links(mode='tail'|'head'|'relation')`.
+3. **Link prediction**: `session.kg.score_triples`, `session.kg.predict_links(mode='tail'|'head'|'relation')`.
 4. **Evaluation**: filtered **MRR**, **Hits@1/3/K** (head+tail average).
-5. **Symbolic query**: `query_kg(mode='neighbors'|'typed'|'path')` on
+5. **Symbolic query**: `session.kg.query(mode='neighbors'|'typed'|'path')` on
    train adjacency (BFS, not LLM / Cypher).
-6. **Bundle**: `buildml.kg_bundle.v1` (`meta.json` + `kg_plan.joblib`).
-7. **Capability matrix**: `kg_capability_matrix()` reports honest backend
+6. **Bundle**: `buildml.kg_bundle.v1` (`meta.json` + `session.kg.plan.joblib`).
+7. **Capability matrix**: `session.kg.capability_matrix()` reports honest backend
    availability and install hints.
 
 ## Honesty boundaries
@@ -26,7 +26,7 @@ path**, not a graph database product.
 | Claim | Reality |
 |-------|---------|
 | Neo4j / Cypher product | **No**: in-memory train adjacency + embeddings |
-| Graph ML node classify | **Separate**: `set_graph` / `fit_graph` |
+| Graph ML node classify | **Separate**: `session.graph.set_spec` / `session.graph.fit` |
 | RAG | **Separate**: chunk embed/retrieve/generate |
 | Torch / PyG required (core) | **No**: numpy SGD native fallback |
 | PyKEEN industry models | **Optional**: `pip install 'buildml[kg-industry]'` |
@@ -45,10 +45,10 @@ the default backend becomes `pykeen`.
 
 ```python
 # Core path (no extras)
-session.fit_kg(backend="native", method="transe", ...)
+session.kg.fit(backend="native", method="transe", ...)
 
 # Industry path (requires pykeen)
-session.fit_kg(backend="pykeen", method="rotate", ...)
+session.kg.fit(backend="pykeen", method="rotate", ...)
 ```
 
 Inspect availability:
@@ -68,7 +68,7 @@ print(kg_capability_matrix())
 recorded for parity with native disclosures (PyKEEN controls internal
 corruption counts).
 
-Holdout triples are never used as positives or negatives during `fit_kg`.
+Holdout triples are never used as positives or negatives during `session.kg.fit`.
 Disclosures on `KgFitResult` record backend, `neg_ratio`, and scoring formula.
 
 ## Filtered ranking protocol
@@ -86,30 +86,30 @@ OOV entities/relations are skipped and counted in `n_skipped_unknown`.
 
 | API | Answers |
 |-----|---------|
-| `predict_links` | Soft completions from embeddings |
-| `query_kg` | Exact neighbors / typed / shortest path on **train** edges |
+| `session.kg.predict_links` | Soft completions from embeddings |
+| `session.kg.query` | Exact neighbors / typed / shortest path on **train** edges |
 
-`query_kg` never invents edges. An empty path means no train path within
+`session.kg.query` never invents edges. An empty path means no train path within
 `max_hops`, not model failure.
 
 ## Leakage checklist
 
-- [ ] `split` (or group_split) before `fit_kg`
+- [ ] `split` (or group_split) before `session.kg.fit`
 - [ ] Triple id columns marked `id` / `ignore` so classical `fit()` ignores them
 - [ ] Read fit disclosures for backend and negative sampling
-- [ ] Evaluate with `evaluate_kg`, not training loss alone
-- [ ] Reload via `load_kg_bundle`: Session checkpoints do not embed `KgPlan`
+- [ ] Evaluate with `session.kg.evaluate`, not training loss alone
+- [ ] Reload via `session.kg.load_bundle`: Session checkpoints do not embed `KgPlan`
 
 ## API surface
 
 ```text
-Session.fit_kg(backend=..., method=..., head_column=..., ...)
-Session.score_triples(partition=... | triples=...)
-Session.predict_links(mode=..., heads=..., relations=..., tails=..., k=...)
-Session.query_kg(mode=..., entity=..., source=..., target=..., relation=...)
-Session.evaluate_kg(partition=..., k=...)
-Session.save_kg_bundle(path) / load_kg_bundle(path)
-kg_capability_matrix()
+session.kg.fit(backend=..., method=..., head_column=..., ...)
+session.kg.score_triples(partition=... | triples=...)
+session.kg.predict_links(mode=..., heads=..., relations=..., tails=..., k=...)
+session.kg.query(mode=..., entity=..., source=..., target=..., relation=...)
+session.kg.evaluate(partition=..., k=...)
+session.kg.save_bundle(path) / session.kg.load_bundle(path)
+session.kg.capability_matrix()
 ```
 
 ## Benchmark
@@ -121,11 +121,7 @@ python benchmarks/kg/link_prediction.py
 Writes `benchmarks/kg/results/link_prediction.json` with native runs always
 and PyKEEN runs when installed.
 
-## Tracker
+## Scope notes
 
-Phase 3 application systems: depth-first:
-
-1. Recommendation systems: **PASS**
-2. Search / LTR: **PASS**
-3. Knowledge graphs (this guide): **PASS** (R5.6 industry depth)
-4. Next: **probabilistic** (R5.7)
+Related domains: recommenders, search/LTR, and this knowledge-graph surface
+are shipped with industry extras when installed. Related next: probabilistic ML.

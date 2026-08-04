@@ -9,8 +9,10 @@ from buildml.semisupervised.extras import (
     gradient_boosting_extras_available,
     hf_text_available,
     lightgbm_available,
+    lightgbm_spec_present,
     semisupervised_industry_available,
     xgboost_available,
+    xgboost_spec_present,
 )
 
 SemiSupervisedBackendName = Literal["sklearn", "industry", "torch", "hf"]
@@ -108,10 +110,16 @@ dict[str, Any]
             "Anomaly novelty detection (see buildml.anomaly)",
         ],
         "torch_spec_present": torch_spec_available(),
-        "industry_extra_present": semisupervised_industry_available(),
+        "industry_extra_present": lightgbm_spec_present() or xgboost_spec_present(),
+        "industry_runtime_present": semisupervised_industry_available(),
         "xgboost_present": xgboost_available(),
         "lightgbm_present": lightgbm_available(),
         "hf_text_present": hf_text_available(),
+        "industry_import_honesty": (
+            "industry backend 'available' and industry_runtime_present require "
+            "successful subprocess imports of LightGBM or XGBoost. "
+            "industry_extra_present / *_spec_present are find_spec only."
+        ),
     }
 
 

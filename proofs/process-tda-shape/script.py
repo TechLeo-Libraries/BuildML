@@ -52,7 +52,7 @@ def main() -> None:
         .scale(method="standard")
     )
     try:
-        fit = session.fit_tda(
+        fit = session.tda.fit(
             vectorization="persistence_image", knn=12, n_bins=12,
             head="logistic_regression", random_state=ctx.seed,
         )
@@ -60,9 +60,9 @@ def main() -> None:
         write_results(ctx, {"status": "skipped_missing_extra", "error": str(exc)})
         print("process-tda-shape SKIPPED", exc)
         return
-    val = session.evaluate_tda(partition="validation")
-    test = session.evaluate_tda(partition="test")
-    bundle = session.save_tda_bundle(ctx.artifacts_dir / "tda_bundle")
+    val = session.tda.evaluate(partition="validation")
+    test = session.tda.evaluate(partition="test")
+    bundle = session.tda.save_bundle(ctx.artifacts_dir / "tda_bundle")
     write_results(ctx, {
         "status": "completed",
         "data": {
@@ -77,7 +77,7 @@ def main() -> None:
         "leakage_controls": [
             "Stratified split before any fit",
             "Scale+TDA fit on train only",
-            "Test evaluate_tda after lock",
+            "Test session.tda.evaluate after lock",
         ],
         "industry_comparison": {
             "status": "filled",

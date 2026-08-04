@@ -6,9 +6,11 @@ from typing import Any, Literal
 
 from buildml.automl.extras import (
     autogluon_available,
+    autogluon_spec_present,
     automl_industry_available,
     catboost_available,
     flaml_available,
+    flaml_spec_present,
     gradient_boosting_extras_available,
     lightgbm_available,
     optuna_available,
@@ -115,6 +117,50 @@ def automl_capability_matrix() -> dict[str, Any]:
         },
         "optional_gbdt_families": gbdt,
         "default_backend_when_installed": _default_backend_when_installed(),
+        "default_selection": "cv",
+        "selection_modes": {
+            "cv": {
+                "default": True,
+                "ranking": "train-fold CV means",
+                "notes": (
+                    "Fast exploration. Rankings are optimistic vs a true outer "
+                    "holdout; confirm on Session test after freezing the winner."
+                ),
+            },
+            "nested": {
+                "default": False,
+                "prominent": True,
+                "ranking": "outer train folds after inner selection",
+                "notes": (
+                    "Preferred for post-selection claims. Outer mean±std is the "
+                    "honest estimate; inner means are selection evidence only. "
+                    "Native/Optuna only — industry adapters refuse nested."
+                ),
+            },
+            "validation": {
+                "default": False,
+                "ranking": "Session validation partition",
+                "notes": (
+                    "Requires validation_size in split. Session test still held out."
+                ),
+            },
+        },
+        "reporting": {
+            "leaderboard_fields": [
+                "rank",
+                "family",
+                "recipe_strategy",
+                "kind",
+                "mean_score",
+                "std_score",
+                "gap_to_best",
+                "selection",
+                "outer_score_mean",
+                "outer_score_std",
+                "nested_cv_disclosed",
+            ],
+            "api": "AutoMLResult.leaderboard() / to_frame()",
+        },
         "install_hints": {
             "automl": "pip install 'buildml[automl]'  # Optuna-backed search",
             "automl-industry": (
@@ -128,6 +174,15 @@ def automl_capability_matrix() -> dict[str, Any]:
             "Fully automated AI scientist",
             "Session-global preprocess as safe CV",
         ],
+        "industry_extra_present": flaml_spec_present() or autogluon_spec_present(),
+        "industry_runtime_present": automl_industry_available(),
+        "industry_import_honesty": (
+            "flaml / autogluon / optuna / GBDT family 'available' flags and "
+            "industry_runtime_present use subprocess import probes "
+            "(buildml.automl.extras._runtime_ok). industry_extra_present / "
+            "*_spec_present are find_spec only. Discoverable-but-broken wheels "
+            "report available=False rather than failing late inside search."
+        ),
     }
 
 

@@ -77,7 +77,7 @@ def main() -> None:
         evaluation_partition="test",
     )
     try:
-        result = session.run_automl(
+        result = session.automl.run(
             backend=backend,  # type: ignore[arg-type]
             method="randomized",
             selection="cv",
@@ -99,7 +99,7 @@ def main() -> None:
         )
     except (MissingExtraError, ValueError, TypeError) as exc:
         # Fallback: core families only.
-        result = session.run_automl(
+        result = session.automl.run(
             backend="native",
             method="randomized",
             selection="cv",
@@ -114,9 +114,9 @@ def main() -> None:
         )
         backend = f"native_fallback ({type(exc).__name__}: {exc})"
 
-    val = session.evaluate_automl(partition="validation")
-    test = session.evaluate_automl(partition="test")
-    bundle = session.save_automl_bundle(ctx.artifacts_dir / "automl_bundle")
+    val = session.automl.evaluate(partition="validation")
+    test = session.automl.evaluate(partition="test")
+    bundle = session.automl.save_bundle(ctx.artifacts_dir / "automl_bundle")
 
     best = {}
     if hasattr(result, "to_dict"):
@@ -126,6 +126,10 @@ def main() -> None:
             "best_params": getattr(result, "best_params", None),
             "best_score": getattr(result, "best_score", None),
         }
+    leaderboard_rows = []
+    if hasattr(result, "leaderboard"):
+        board = result.leaderboard(top_n=8)
+        leaderboard_rows = board.to_dict(orient="records")
 
     write_results(
         ctx,
@@ -135,15 +139,22 @@ def main() -> None:
             "split": {"kind": plan.kind, "counts": counts, "stratify": True},
             "capabilities": caps,
             "backend": backend,
+            "selection": getattr(result, "selection", "cv"),
+            "selection_note": (
+                "Default selection='cv' ranks by train-fold CV; "
+                "use selection='nested' for outer post-selection estimates."
+            ),
             "automl_result": best,
+            "leaderboard": leaderboard_rows,
+            "outer_score_mean": getattr(result, "outer_score_mean", None),
             "validation_metrics": metrics_round(dict(val.metrics)),
             "test_metrics": metrics_round(dict(test.metrics)),
             "bundle_path": str(bundle),
             "leakage_controls": [
                 "Stratified split before search",
-                "run_automl selection='cv' on train folds only",
+                "session.automl.run selection='cv' on train folds only",
                 "Session test never enters ranking",
-                "evaluate_automl(test) once after search + refit",
+                "session.automl.evaluate(test) once after search + refit",
             ],
             "industry_comparison": {
                 "status": "filled",

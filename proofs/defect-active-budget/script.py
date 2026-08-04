@@ -53,22 +53,22 @@ def main() -> None:
         schema=schema_from_dataframe(full),
         roles=dict(session.dataset.roles),
     )
-    fit = session.fit_active_learner(strategy="margin", batch_size=8, label_budget=32)
+    fit = session.active_learning.fit(strategy="margin", batch_size=8, label_budget=32)
     curve = []
     for round_i in range(4):
-        q = session.suggest_query(batch_size=8)
+        q = session.active_learning.suggest_query(batch_size=8)
         if not q.indices:
             break
         human = [int(truth.loc[i]) for i in q.indices]
-        labeled = session.label_rows(indices=q.indices, labels=human)
+        labeled = session.active_learning.label_rows(indices=q.indices, labels=human)
         curve.append({
             "round": round_i,
             "n_newly_labeled": int(labeled.n_newly_labeled),
             "n_labeled_now": int(labeled.n_labeled_now),
             "budget_remaining": int(labeled.budget_remaining),
         })
-    test = session.evaluate_active_learning(partition="test")
-    bundle = session.save_active_learning_bundle(ctx.artifacts_dir / "al_bundle")
+    test = session.active_learning.evaluate(partition="test")
+    bundle = session.active_learning.save_bundle(ctx.artifacts_dir / "al_bundle")
     write_results(ctx, {
         "status": "completed",
         "data": {

@@ -34,7 +34,7 @@ CAUSAL_NOTES: dict[str, ConceptNote] = {
                 "EDA associations must never be silently upgraded to effects.",
             ),
             how_buildml_uses=(
-                "Session.declare_causal_assumptions → fit_causal / estimate_causal.",
+                "session.causal.declare_assumptions → session.causal.fit / session.causal.estimate.",
                 "Incomplete objects raise ValidationError.",
             ),
             interpretation_rules=(
@@ -52,9 +52,9 @@ CAUSAL_NOTES: dict[str, ConceptNote] = {
                 "Omitting acknowledgements and expecting defaults to invent causality.",
             ),
             worked_example_pattern=(
-                "declare_causal_assumptions(treatment='t', outcome='y', "
+                "session.causal.declare_assumptions(treatment='t', outcome='y', "
                 "confounders=['x1','x2'], acknowledge_unconfoundedness=True, "
-                "acknowledge_positivity=True) → fit_causal(method='aipw').",
+                "acknowledge_positivity=True) → session.causal.fit(method='aipw').",
             ),
             related_concepts=(
                 "causal-ate-backdoor",
@@ -92,7 +92,7 @@ CAUSAL_NOTES: dict[str, ConceptNote] = {
             assumptions=("No unmeasured confounding given W; positivity; SUTVA-style consistency.",),
             failure_modes=("Hidden confounders; poor overlap; interference.",),
             anti_patterns=("Claiming discovery of the causal graph from Session data.",),
-            worked_example_pattern=("fit_causal(method='aipw') → evaluate_causal('validation').",),
+            worked_example_pattern=("session.causal.fit(method='aipw') → session.causal.evaluate('validation').",),
             related_concepts=("causal-assumptions", "causal-aipw", "causal-t-learner"),
         ),
         _note(
@@ -109,12 +109,12 @@ CAUSAL_NOTES: dict[str, ConceptNote] = {
             ),
             formal_idea="ATÊ = n⁻¹ Σᵢ (μ̂1(Wᵢ) − μ̂0(Wᵢ)).",
             why_it_matters=("Complete, honest outcome-regression path without heavy deps.",),
-            how_buildml_uses=("fit_causal(method='t_learner').",),
+            how_buildml_uses=("session.causal.fit(method='t_learner').",),
             interpretation_rules=("Sensitive to outcome-model misspecification.",),
             assumptions=("Correct outcome regressions + CausalAssumptions.",),
             failure_modes=("Extrapolation when arms have different W support.",),
             anti_patterns=("Skipping propensity diagnostics entirely when overlap is thin.",),
-            worked_example_pattern=("fit_causal(method='t_learner', bootstrap_samples=100).",),
+            worked_example_pattern=("session.causal.fit(method='t_learner', bootstrap_samples=100).",),
             related_concepts=("causal-aipw", "causal-assumptions"),
         ),
         _note(
@@ -131,12 +131,12 @@ CAUSAL_NOTES: dict[str, ConceptNote] = {
             ),
             formal_idea="Horvitz–Thompson-style IPW functional with clipped ê(W).",
             why_it_matters=("Makes overlap failures visible via extreme weights / clips.",),
-            how_buildml_uses=("fit_causal(method='ipw'); evaluate reports propensity AUC/Brier.",),
+            how_buildml_uses=("session.causal.fit(method='ipw'); evaluate reports propensity AUC/Brier.",),
             interpretation_rules=("Clip hits are positivity warnings, not proof of ATE.",),
             assumptions=("Correct propensity + CausalAssumptions.",),
             failure_modes=("Near-violations of positivity; propensity misspecification.",),
             anti_patterns=("Ignoring propensity_min/max disclosures.",),
-            worked_example_pattern=("fit_causal(method='ipw') → refute_causal('placebo_treatment').",),
+            worked_example_pattern=("session.causal.fit(method='ipw') → session.causal.refute('placebo_treatment').",),
             related_concepts=("causal-aipw", "causal-assumptions"),
         ),
         _note(
@@ -153,7 +153,7 @@ CAUSAL_NOTES: dict[str, ConceptNote] = {
             ),
             formal_idea="Efficient influence-function / AIPW estimator for ATE.",
             why_it_matters=("Default method: more robust than pure regression or pure IPW.",),
-            how_buildml_uses=("fit_causal(method='aipw') is the Session default.",),
+            how_buildml_uses=("session.causal.fit(method='aipw') is the Session default.",),
             interpretation_rules=(
                 "Double robustness is about consistency under correct nuisances: "
                 "not immunity to false assumptions.",
@@ -162,8 +162,8 @@ CAUSAL_NOTES: dict[str, ConceptNote] = {
             failure_modes=("Both nuisances wrong; severe overlap failure.",),
             anti_patterns=("Calling AIPW 'assumption-free'.",),
             worked_example_pattern=(
-                "declare_causal_assumptions(...) → fit_causal('aipw') → "
-                "evaluate_causal → save_causal_bundle."
+                "session.causal.declare_assumptions(...) → session.causal.fit('aipw') → "
+                "session.causal.evaluate → session.causal.save_bundle."
             ,),
             related_concepts=("causal-t-learner", "causal-ipw", "causal-assumptions"),
         ),
@@ -183,15 +183,15 @@ CAUSAL_NOTES: dict[str, ConceptNote] = {
             formal_idea="Association ≠ identification.",
             why_it_matters=("Prevents silent upgrading of exploratory plots into policy effects.",),
             how_buildml_uses=(
-                "EDA text remains non-causal; causal methods require declare_causal_assumptions.",
+                "EDA text remains non-causal; causal methods require session.causal.declare_assumptions.",
             ),
             interpretation_rules=("Never paste an EDA finding into a causal claim without new assumptions.",),
             assumptions=("N/A: this note is a product boundary.",),
             failure_modes=("Stakeholder slides that equate MI with ATE.",),
             anti_patterns=("Asking the AI operator to 'infer causality from eda()'.",),
             worked_example_pattern=(
-                "Use eda() for associations; use declare_causal_assumptions + "
-                "fit_causal for effects."
+                "Use eda() for associations; use session.causal.declare_assumptions + "
+                "session.causal.fit for effects."
             ,),
             related_concepts=("causal-assumptions", "feature-importance", "mutual-information"),
         ),
@@ -207,12 +207,12 @@ CAUSAL_NOTES: dict[str, ConceptNote] = {
             intuition=("Reload the table with a checkpoint; reload the effect model with a bundle."),
             formal_idea="Distinct artifact kinds with an explicit compatibility boundary string.",
             why_it_matters=("Mixing artifact kinds causes silent missing-learner failures.",),
-            how_buildml_uses=("save_causal_bundle / load_causal_bundle.",),
+            how_buildml_uses=("session.causal.save_bundle / session.causal.load_bundle.",),
             interpretation_rules=("meta.json disclosures restate assumption requirements.",),
             assumptions=("Bundle format buildml.causal_bundle.v1.",),
             failure_modes=("Expecting checkpoint_load to restore CausalPlan.",),
             anti_patterns=("Treating causal bundles as interchangeable with probabilistic bundles.",),
-            worked_example_pattern=("save_causal_bundle('artifacts/causal_bundle').",),
+            worked_example_pattern=("session.causal.save_bundle('artifacts/causal_bundle').",),
             related_concepts=("causal-assumptions", "leakage-boundary"),
         ),
         _note(
@@ -231,8 +231,8 @@ CAUSAL_NOTES: dict[str, ConceptNote] = {
             formal_idea="Backdoor identification via DoWhy; estimation via backdoor.linear_regression or propensity methods.",
             why_it_matters=("Refutation suite (placebo, random common cause, unobserved confounder) beyond native disclosures.",),
             how_buildml_uses=(
-                "fit_causal(backend='dowhy', method='backdoor_linear'); "
-                "refute_causal(kind='random_common_cause')."
+                "session.causal.fit(backend='dowhy', method='backdoor_linear'); "
+                "session.causal.refute(kind='random_common_cause')."
             ,),
             interpretation_rules=(
                 "Passing refutation is not proof of identification; failing refutation is a warning.",
@@ -240,7 +240,7 @@ CAUSAL_NOTES: dict[str, ConceptNote] = {
             assumptions=("Same CausalAssumptions gate as native; graph reflects declared confounders only.",),
             failure_modes=("Misspecified graph; refutation false negatives.",),
             anti_patterns=("Treating DoWhy refutation p-values as assumption validation.",),
-            worked_example_pattern=("fit_causal(backend='dowhy') → refute_causal('add_unobserved_common_cause').",),
+            worked_example_pattern=("session.causal.fit(backend='dowhy') → session.causal.refute('add_unobserved_common_cause').",),
             related_concepts=("causal-assumptions", "causal-ate-backdoor", "causal-eda-boundary"),
         ),
         _note(
@@ -259,8 +259,8 @@ CAUSAL_NOTES: dict[str, ConceptNote] = {
             formal_idea="DML orthogonal scores for ATE; forest variants for CATE surfaces.",
             why_it_matters=("Heterogeneous effects and policy exploration beyond scalar ATE.",),
             how_buildml_uses=(
-                "fit_causal(backend='econml', method='dml'); "
-                "fit_causal(backend='econml', method='causal_forest')."
+                "session.causal.fit(backend='econml', method='dml'); "
+                "session.causal.fit(backend='econml', method='causal_forest')."
             ,),
             interpretation_rules=(
                 "CATE std describes estimated heterogeneity: not proof of true effect variation.",
@@ -268,7 +268,7 @@ CAUSAL_NOTES: dict[str, ConceptNote] = {
             assumptions=("CausalAssumptions + correct nuisance models under DML theory.",),
             failure_modes=("Weak overlap; forest overfit on small n.",),
             anti_patterns=("Shipping policy_tree output without domain review.",),
-            worked_example_pattern=("fit_causal(backend='econml', method='dml', bootstrap_samples=50).",),
+            worked_example_pattern=("session.causal.fit(backend='econml', method='dml', bootstrap_samples=50).",),
             related_concepts=("causal-assumptions", "causal-ate-backdoor", "causal-aipw"),
         ),
     )

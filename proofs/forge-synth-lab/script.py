@@ -90,11 +90,11 @@ def main() -> None:
         "test": len(plan.test_indices),
     }
     try:
-        s_fit = synth_session.fit_synthesizer(
+        s_fit = synth_session.synthetic.fit(
             method="gaussian_copula", random_state=ctx.seed
         )
-        sample = synth_session.sample_synthetic(n=220, random_state=ctx.seed)
-        s_ev = synth_session.evaluate_synthetic(partition="test")
+        sample = synth_session.synthetic.sample(n=220, random_state=ctx.seed)
+        s_ev = synth_session.synthetic.evaluate(partition="test")
         stages["synthetic"] = {
             "status": "ok",
             "fit": metrics_round(s_fit.to_dict() if hasattr(s_fit, "to_dict") else {}),
@@ -258,11 +258,11 @@ def main() -> None:
             .split(test_size=0.2, validation_size=0.2, random_state=ctx.seed)
             .scale(method="standard")
         )
-        c_fit = clus.fit_clusters(method="kmeans", n_clusters=4, random_state=ctx.seed)
-        c_val = clus.evaluate_clusters(
+        c_fit = clus.unsupervised.fit(method="kmeans", n_clusters=4, random_state=ctx.seed)
+        c_val = clus.unsupervised.evaluate(
             partition="validation", external_label_column="true_family"
         )
-        c_test = clus.evaluate_clusters(
+        c_test = clus.unsupervised.evaluate(
             partition="test", external_label_column="true_family"
         )
         stages["clusters"] = {
@@ -294,7 +294,7 @@ def main() -> None:
         "skip_notes": skip_notes,
         "leakage_controls": [
             "Synthesizer fit on train only",
-            "Fidelity / evaluate_synthetic vs real holdout",
+            "Fidelity / session.synthetic.evaluate vs real holdout",
             "TSTR classifier trained on synthetic rows; metrics on real test",
             "Cluster fit on synthetic sample's own split (external labels eval-only)",
         ],

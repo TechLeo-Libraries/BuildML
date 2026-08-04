@@ -8,6 +8,7 @@ from buildml.synthetic.extras import (
     great_expectations_available,
     sdmetrics_available,
     sdv_available,
+    sdv_spec_present,
     synthetic_industry_available,
 )
 
@@ -120,7 +121,13 @@ dict[str, Any]
             "Full SDV multi-table / relational synthesis",
             "Membership-inference or anonymization audits",
         ],
-        "industry_extra_present": synthetic_industry_available(),
+        "industry_extra_present": sdv_spec_present(),
+        "industry_runtime_present": synthetic_industry_available(),
+        "industry_import_honesty": (
+            "sdv backend 'available' and industry_runtime_present require a "
+            "successful import probe (subprocess on Windows). "
+            "industry_extra_present / sdv_spec_present are find_spec only."
+        ),
         "synthetic_vs_resample": (
             "Synthetic path: reusable generator + optional extend_train merge. "
             "Resample path: in-place class rebalance preprocess."

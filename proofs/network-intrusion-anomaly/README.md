@@ -14,16 +14,16 @@ license-clear. Not the full KDD Cup 1999 corpus.
 
 - Stratified train / validation / test (rare attack class preserved)
 - Unsupervised detector fitted on **train** features only
-- `tune_anomaly_threshold` on **validation** labels only (`allow_test_tuning=False`)
+- `session.anomaly.tune_threshold` on **validation** labels only (`allow_test_tuning=False`)
 - Test scored and evaluated after the threshold is locked
 
 ## BuildML API steps
 
 1. `ingest` → `set_roles` → `split` → `scale`
-2. `fit_anomaly` (PyOD when available, else sklearn IsolationForest)
-3. `tune_anomaly_threshold(partition="validation")`
-4. `score_anomalies` / `evaluate_anomaly` on test
-5. `save_anomaly_bundle`
+2. `session.anomaly.fit` (PyOD when available, else sklearn IsolationForest)
+3. `session.anomaly.tune_threshold(partition="validation")`
+4. `session.anomaly.score` / `session.anomaly.evaluate` on test
+5. `session.anomaly.save_bundle`
 
 ## Metrics
 
@@ -32,7 +32,7 @@ details in `results/results.json`.
 
 ## Industry comparison (Tier C)
 
-Filled: `baseline_industry.py` runs sklearn `IsolationForest` on the **same SplitPlan**, tunes the decision threshold on validation F1, and writes `results/comparison.json`. BuildML path typically uses PyOD HBOS when installed. Deltas are descriptive on one synthetic draw (competitive qualitative bar 5-B).
+Industry twin: `baseline_industry.py` runs sklearn `IsolationForest` on the **same SplitPlan**, tunes the decision threshold on validation F1, and writes `results/comparison.json`. BuildML path typically uses PyOD HBOS when installed. Deltas are descriptive on one synthetic draw (competitive qualitative bar 5-B).
 ## Limitations
 
 Synthetic attacks; labeled eval overstates production unlabeled deployment.

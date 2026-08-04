@@ -43,15 +43,15 @@ session = (
 )
 
 # What can this install actually do, and what would more cost?
-print(Session.nlp_capability_matrix()["default_backend_when_installed"])  # 'sklearn'
+print(session.nlp.capability_matrix()["default_backend_when_installed"])  # 'sklearn'
 
 # 1. Screen the split before trusting any score.
-profile = session.profile_text_corpus(near_duplicate_threshold=0.9)
+profile = session.nlp.profile_corpus(near_duplicate_threshold=0.9)
 print(profile.train_holdout_exact_overlap, profile.findings)
 
 # 2. Fit on train only. Normalization, vocabulary, and document frequencies
 #    are all learned from train; holdout is transform-and-score.
-fit = session.fit_text_classifier(
+fit = session.nlp.fit_classifier(
     text_column="body",
     vectorizer="tfidf",
     estimator="logistic",
@@ -62,32 +62,32 @@ fit = session.fit_text_classifier(
 print(fit.backend, fit.estimator, fit.vocabulary_size, fit.class_counts)
 
 # 3. Choose on validation, then read test once.
-print(session.evaluate_text_classifier(partition="validation").metrics)
-test = session.evaluate_text_classifier(partition="test")
+print(session.nlp.evaluate(partition="validation").metrics)
+test = session.nlp.evaluate(partition="test")
 print(test.metrics, test.per_class, test.oov_rate)
 
-predicted = session.predict_text(partition="test")
+predicted = session.nlp.predict(partition="test")
 
 # 4. Exact token attribution: coefficient x feature value, an identity for a
 #    linear head. Refused outright for hashing and dense backends.
-interpret = session.interpret_text_prediction(partition="test", top_k=8, max_documents=5)
+interpret = session.nlp.interpret(partition="test", top_k=8, max_documents=5)
 for item in interpret.document_attributions[0]:
     print(item.token, round(item.contribution, 4))
 
 # 5. Unsupervised structure fitted on train, assigned to holdout.
-topics = session.fit_topics(method="nmf", n_topics=4, min_df=3)
+topics = session.nlp.fit_topics(method="nmf", n_topics=4, min_df=3)
 print([t.label for t in topics.topics], topics.mean_coherence)  # NPMI on train
-print(session.assign_topics(partition="test").topic_share)
+print(session.nlp.assign_topics(partition="test").topic_share)
 
 # 6. Description surfaces that claim no quality metric.
-print(session.extract_keyphrases(partition="train", method="tfidf", top_n=10).corpus_keyphrases)
-print(session.summarize_text(partition="test", method="textrank", n_sentences=2).summaries[0])
-print(session.extract_entities(partition="test", backend="rules").label_counts)
-print(session.analyze_sentiment(partition="test", backend="lexicon").negative_rate)
-print(session.detect_language(partition="all").dominant_language)
+print(session.nlp.extract_keyphrases(partition="train", method="tfidf", top_n=10).corpus_keyphrases)
+print(session.nlp.summarize(partition="test", method="textrank", n_sentences=2).summaries[0])
+print(session.nlp.extract_entities(partition="test", backend="rules").label_counts)
+print(session.nlp.analyze_sentiment(partition="test", backend="lexicon").negative_rate)
+print(session.nlp.detect_language(partition="all").dominant_language)
 
 # 7. The bundle carries the normalization plan, so a reload scores identically.
-session.save_nlp_bundle("artifacts/nlp_bundle")
+session.nlp.save_bundle("artifacts/nlp_bundle")
 ```
 
 | In scope | Out of scope |
@@ -113,7 +113,7 @@ included in `buildml[production]`.
 **NLP vs its neighbours.** `Session.text_features` writes numeric columns back
 onto the dataset so tabular models can consume text; NLP keeps its representation
 inside the NLP plan. `buildml.rag` ingests and retrieves documents to ground
-generated answers. `Session.make_text_torch_loaders` / `fit_torch` fine-tune
+generated answers. `session.dl.make_text_loaders` / `session.dl.fit` fine-tune
 neural sequence models on token ids. `buildml.ai` calls an external LLM provider
 under an operator policy: NLP never touches the network. Sharing a text column
 does not merge these surfaces.

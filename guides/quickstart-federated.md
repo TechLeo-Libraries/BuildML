@@ -1,8 +1,8 @@
 # Quickstart: Federated learning (local simulation)
 
 Local FedAvg-style simulation on Session data partitioned by a client/group
-column: `fit_federated` runs train-only local updates, aggregates
-`coef_` / `intercept_`, then `evaluate_federated` / `predict_federated` on
+column: `session.federated.fit` runs train-only local updates, aggregates
+`coef_` / `intercept_`, then `session.federated.evaluate` / `session.federated.predict` on
 holdout. Persist via `buildml.federated_bundle.v1`.
 
 **Backends:** `native` (core) or `flower` with `pip install 'buildml[federated-industry]'`.
@@ -51,7 +51,7 @@ session = (
     .scale(method="standard")
 )
 
-fit = session.fit_federated(
+fit = session.federated.fit(
     backend="native",
     method="fedavg",
     estimator="sgd_classifier",
@@ -60,13 +60,15 @@ fit = session.fit_federated(
 )
 print(fit.backend, fit.n_clients, fit.final_train_metric, len(fit.round_history))
 
-ev = session.evaluate_federated(partition="validation", per_client=True)
+ev = session.federated.evaluate(partition="validation", per_client=True)
 print(ev.metrics, ev.n_clients_evaluated)
 
-preds = session.predict_federated(partition="test")
+preds = session.federated.predict(partition="test")
 print(len(preds.predictions))
 
-session.save_federated_bundle("artifacts/federated_bundle")
+session.federated.save_bundle("artifacts/federated_bundle")
+# Roundtrip: load_bundle(..., trusted=True) then evaluate again on the same split.
+# Holdout metrics include accuracy / f1_macro / balanced_accuracy (+ roc_auc when binary).
 ```
 
 | In scope | Out of scope |
@@ -76,5 +78,8 @@ session.save_federated_bundle("artifacts/federated_bundle")
 | sklearn linear/SGD coefficient averaging | Non-linear trees / neural FedAvg |
 | Train-only local updates; holdout eval | Claiming production FL from simulation |
 | Distinct `buildml.federated_bundle.v1` | Session checkpoint embedding the plan |
+| Flower disclosed as **local-sim** | Networked Flower ServerApp from Session |
 
-Next Phase 2 item: **Knowledge graphs (KG)**.
+Flower (`backend='flower'`) uses `flwr` NumPyClient-shaped wiring + weighted
+aggregation helpers but still runs in-process on Session partitions unless you
+operate a real Flower deployment yourself.

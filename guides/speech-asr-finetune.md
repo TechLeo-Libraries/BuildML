@@ -7,10 +7,11 @@
 > ```
 > PyPI `buildml` is legacy 1.x. See [installation](../docs/installation.rst).
 
-BuildML ships an **integration path** for speech: stub-safe ASR for CI,
-optional transformers Whisper-class transcription, and classify
+BuildML ships an **integration path** for speech: environment-aware ASR
+(default prefers **transformers** when `buildml[speech]` is installed; falls
+back to a deterministic **stub** for CI / absent extras), plus classify
 **finetune-lite** / domain adapt on Session partitions. It does **not** train
-Whisper-scale foundation models from scratch.
+Whisper-scale foundation models from scratch. Stub use is always disclosed.
 
 Related: [torch-deep](torch-deep.md), [pretrained-backbones](pretrained-backbones.md),
 [features](../docs/features.rst).
@@ -23,10 +24,14 @@ Foundation-model pretraining needs massive corpora, specialized distributed
 stacks, and months of compute. BuildML’s job here is:
 
 1. Attach audio columns to the same roles/splits as tabular workflows.
-2. Transcribe with a stub (CI) or an optional HF backend.
+2. Transcribe with transformers by default when installed; pass
+   `backend="stub"` for CI / offline fingerprints (always disclosed).
 3. Finetune a small classifier head / domain-adapt with frozen encoders.
 4. **Hard-refuse** “train Whisper from scratch” product expectations via
-   `refuse_speech_foundation_pretrain()`.
+   `session.dl.refuse_speech_pretrain()`.
+
+Catalog: `dl_capability_matrix()["modalities"]["speech"]["default_asr_backend"]`
+is `"transformers"` when the speech stack is present, else `"stub"`.
 
 ---
 
@@ -36,7 +41,7 @@ stacks, and months of compute. BuildML’s job here is:
 import pandas as pd
 
 from buildml import Session
-from buildml.dl.speech import evaluate_asr
+from buildml.dl.speech import evaluate_asr, resolve_default_asr_backend
 
 # In real projects, audio cells are paths or arrays; stub backend tolerates demos.
 df = pd.DataFrame(
@@ -52,16 +57,19 @@ speech = (
     .split(test_size=0.25, stratify=True, random_state=0)
 )
 
-asr = speech.transcribe_speech(audio_column="audio", backend="stub")
-print(asr)
+print("default ASR backend:", resolve_default_asr_backend())
+# Explicit stub for CI / offline (default would prefer transformers when installed):
+asr = speech.dl.transcribe(audio_column="audio", backend="stub")
+print(asr.backend, asr.disclosures[:2])
+assert asr.meta.get("stub") is True
 
 # Score hypotheses vs gold references (string edit distance: not a MOS product).
-# Session path reuses last transcribe_speech texts when hypotheses= is omitted:
-scored = speech.evaluate_asr(
+# Session path reuses last session.dl.transcribe texts when hypotheses= is omitted:
+scored = speech.dl.evaluate_asr(
     references=["hello world", "good morning", "approved", "denied"],
 )
 print(scored.wer, scored.cer)
-assert speech.dl_asr_eval is scored
+assert speech.dl.asr_eval is scored
 
 # Standalone helper (same metrics, no Session required):
 standalone = evaluate_asr(
@@ -72,24 +80,29 @@ standalone = evaluate_asr(
 print(standalone.wer, standalone.cer)
 ```
 
-`evaluate_asr` returns `AsrEvalResult` with corpus WER/CER plus optional
+`session.dl.evaluate_asr` returns `AsrEvalResult` with corpus WER/CER plus optional
 per-utterance rows. It does not download ASR models.
 
 ---
 
 ## Use case B: Transformers Whisper-class transcription
 
+When `transformers` is installed, **omitting `backend=`** (or passing
+`backend="auto"`) resolves to transformers. Name a real model for production
+quality; the library default model id is a tiny testing checkpoint.
+
 ```python
-# Requires network + model download the first time; not used in default CI.
-# asr = speech.transcribe_speech(
+# Requires buildml[speech]; may download weights the first time.
+# asr = speech.dl.transcribe(
 #     audio_column="audio",
-#     backend="transformers",
+#     # backend defaults to transformers when available
 #     model_id="openai/whisper-tiny",
 #     partition="test",
 # )
 ```
 
 Treat downloaded weights as an operator concern (license, cache, GPU).
+Keep CI on `backend="stub"`.
 
 ---
 
@@ -98,14 +111,14 @@ Treat downloaded weights as an operator concern (license, cache, GPU).
 ```python
 from buildml.dl.speech import SpeechContract
 
-speech.make_speech_torch_loaders(
+speech.dl.make_speech_loaders(
     audio_column="audio",
     sample_rate=16000,
     max_samples=16000,
     encoder_dim=64,
 )
-speech.fit_speech_torch(epochs=5, freeze_encoder=True, device="cpu")
-print(speech.dl_speech_result)
+speech.dl.fit_speech(epochs=5, freeze_encoder=True, device="cpu")
+print(speech.dl.speech_result)
 
 # Contract round-trip for bundle / meta persistence:
 contract = SpeechContract(
@@ -130,7 +143,7 @@ across save/load paths.
 ## Use case D: Domain adapt helper
 
 ```python
-speech.domain_adapt_speech_torch(
+speech.dl.domain_adapt_speech(
     epochs=5,
     freeze_encoder=True,
     device="cpu",
@@ -146,7 +159,7 @@ This is explicit **domain adapt**, not continued foundation pretrain.
 
 ```python
 try:
-    speech.refuse_speech_foundation_pretrain()
+    speech.dl.refuse_speech_pretrain()
 except Exception as exc:
     print(type(exc).__name__, exc)
 ```
@@ -160,7 +173,7 @@ data.” The answer is a refuse, not a half-implemented trainer.
 
 ```python
 # pip install "buildml[pretrained]" or buildml[speech]
-# backbone = speech.load_pretrained_backbone(
+# backbone = speech.dl.load_backbone(
 #     "speech", "whisper_encoder", weights="mock", freeze=True
 # )
 ```
@@ -178,8 +191,8 @@ See [pretrained-backbones](pretrained-backbones.md). `weights="mock"` is CI-safe
 | Audio multimodal fusion vs speech path | Different APIs: fusion is not ASR |
 | Missing files in path cells | Loader/transcribe errors: validate paths |
 | Transformers backend | Needs `buildml[speech]` + download |
-| Bundle load | Torch speech loaders are not rebuilt by `load_torch_bundle` |
-| `evaluate_asr` | String WER/CER only: not speech quality / MOS |
+| Bundle load | Torch speech loaders are not rebuilt by `session.dl.load_bundle` |
+| `session.dl.evaluate_asr` | String WER/CER only: not speech quality / MOS |
 
 ---
 

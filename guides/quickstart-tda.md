@@ -40,7 +40,7 @@ session = (
     .scale(method="standard")
 )
 
-fit = session.fit_tda(
+fit = session.tda.fit(
     vectorization="persistence_image",
     knn=12,
     n_bins=12,
@@ -48,13 +48,13 @@ fit = session.fit_tda(
 )
 print(fit.feature_dim, fit.train_score)
 
-feats = session.transform_tda(partition="test")
+feats = session.tda.transform(partition="test")
 print(feats.features.shape)
 
-ev = session.evaluate_tda(partition="validation")
+ev = session.tda.evaluate(partition="validation")
 print(ev.metrics)
 
-session.save_tda_bundle("artifacts/tda_demo_bundle")
+session.tda.save_bundle("artifacts/tda_demo_bundle")
 ```
 
 ---
@@ -70,7 +70,8 @@ session.save_tda_bundle("artifacts/tda_demo_bundle")
 | `persistence_landscape` | gtda | Industry backend only |
 
 ```python
-Session.tda_capability_matrix()  # honest backend / vectorization matrix
+# Preferred on a Session instance; flat Session.*_capability_matrix still works.
+session.tda.capability_matrix()  # honest backend / vectorization matrix
 ```
 
 ---
@@ -86,9 +87,8 @@ Session.tda_capability_matrix()  # honest backend / vectorization matrix
 
 ---
 
-## Next
+## Related
 
-TDA **PASS (R5.9 industry depth)**. Phase 3 application systems start at
-[recommendation systems](quickstart-recommenders.md); after that PASS:
-search/LTR, knowledge graphs, optimisation helpers, synthetic-data: one at a
-time.
+TDA industry depth is shipped. See also
+[recommendation systems](quickstart-recommenders.md), search/LTR, knowledge
+graphs, optimisation helpers, and synthetic-data guides.

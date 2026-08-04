@@ -45,9 +45,9 @@ session = (
     .split(test_size=0.2, validation_size=0.2, stratify=True, random_state=0)
 )
 
-result = session.run_automl(
+result = session.automl.run(
     method="randomized",
-    selection="cv",
+    selection="cv",  # default: train-fold ranking (fast; optimistic vs outer)
     n_trials=12,
     cv=3,
     include_recipe_search=True,
@@ -55,21 +55,25 @@ result = session.run_automl(
     random_state=0,
 )
 result.show()
+print(result.leaderboard().head())
 
-validation = session.evaluate_automl(partition="validation")
-test = session.evaluate_automl(partition="test")
+validation = session.automl.evaluate(partition="validation")
+test = session.automl.evaluate(partition="test")
 print(validation.metrics, test.metrics)
 ```
 
-`run_automl` sets classical `fit_result`, so `evaluate` / `predict` /
+`session.automl.run` sets classical `fit_result`, so `evaluate` / `predict` /
 `save_pipeline` also work.
 
 ---
 
-## Nested selection (honest outer estimate)
+## Nested selection (prominent honesty path)
+
+Default `selection='cv'` ranks by train-fold CV. For post-selection claims use
+**`selection='nested'`** (outer mean±std), then confirm on Session test:
 
 ```python
-nested = session.run_automl(
+nested = session.automl.run(
     method="randomized",
     selection="nested",
     n_trials=8,
@@ -79,7 +83,8 @@ nested = session.run_automl(
     random_state=1,
 )
 print(nested.outer_score_mean, nested.outer_score_std)
-print(session.evaluate_automl(partition="test").metrics)
+print(nested.leaderboard()[["rank", "family", "mean_score", "outer_score_mean", "nested_cv_disclosed"]])
+print(session.automl.evaluate(partition="test").metrics)
 ```
 
 Outer folds stay inside **train**. Session test never enters selection.
@@ -97,12 +102,12 @@ from buildml.automl import automl_capability_matrix
 print(automl_capability_matrix()["backends"])
 
 # FLAML on train only (validation ranking; nested not supported)
-session.run_automl(backend="flaml", selection="validation", time_budget=120)
+session.automl.run(backend="flaml", selection="validation", time_budget=120)
 
 # Deepened Optuna (pruning, study persistence via AutoMLBudget)
 from buildml.automl import AutoMLBudget
 
-session.run_automl(
+session.automl.run(
     backend="optuna",
     n_trials=20,
     budget=AutoMLBudget(
@@ -115,7 +120,7 @@ session.run_automl(
 # Export trial comparison metrics
 from buildml.automl import export_comparison_metrics
 
-export_comparison_metrics(session.automl_result, "artifacts/automl_trials.json")
+export_comparison_metrics(session.automl.result, "artifacts/automl_trials.json")
 ```
 
 Native `backend='native'` remains the leakage-first path with fold-local
@@ -127,7 +132,7 @@ recipe search. Industry adapters bypass recipe strategy search: see
 ## Optional voting of top families
 
 ```python
-session.run_automl(
+session.automl.run(
     method="randomized",
     n_trials=10,
     include_recipe_search=True,
@@ -135,18 +140,18 @@ session.run_automl(
     max_ensemble_bases=3,
     random_state=2,
 )
-print(session.automl_plan.best_kind, session.automl_plan.ensemble_bases)
+print(session.automl.plan.best_kind, session.automl.plan.ensemble_bases)
 ```
 
-Stacking/blending remain separate Session APIs (`fit_stacking` /
-`fit_blending`) when you want those strategies explicitly.
+Stacking/blending remain separate Session APIs (`session.ensemble.fit_stacking` /
+`session.ensemble.fit_blending`) when you want those strategies explicitly.
 
 ---
 
 ## Bundle
 
 ```python
-session.save_automl_bundle(".buildml-artifacts/automl_bundle")
+session.automl.save_bundle(".buildml-artifacts/automl_bundle")
 ```
 
 Distinct from Session checkpoints and classical pipelines. See

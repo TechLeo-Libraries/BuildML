@@ -32,27 +32,27 @@ def main() -> None:
         .scale(method="standard")
     )
 
-    session.declare_causal_assumptions(
+    session.causal.declare_assumptions(
         treatment="t",
         outcome="y",
         confounders=["x1", "x2"],
         acknowledge_unconfoundedness=True,
         acknowledge_positivity=True,
     )
-    fit = session.fit_causal(method="aipw", bootstrap_samples=40)
+    fit = session.causal.fit(method="aipw", bootstrap_samples=40)
     print(
         f"method={fit.method} ate={fit.ate:.4f} "
         f"ci=[{fit.ate_ci_low:.4f}, {fit.ate_ci_high:.4f}]"
     )
 
-    ev = session.evaluate_causal(partition="validation", bootstrap_samples=20)
+    ev = session.causal.evaluate(partition="validation", bootstrap_samples=20)
     print(f"eval ate={ev.ate:.4f} metrics={ev.metrics}")
 
-    ref = session.refute_causal(kind="placebo_treatment")
+    ref = session.causal.refute(kind="placebo_treatment")
     print(f"placebo refute_ate={ref.refute_ate:.4f} shift={ref.ate_shift:.4f}")
 
     out = Path("artifacts") / "causal_aipw_bundle"
-    session.save_causal_bundle(out)
+    session.causal.save_bundle(out)
     print(f"saved bundle -> {out}")
 
 

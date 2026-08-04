@@ -9,7 +9,10 @@ from buildml.session.mixins._shared import *  # noqa: F403
 
 
 class DataSessionMixin:
-    """Public Session methods for the data domain."""
+    """Public Session methods for the data domain.
+
+    Preferred namespaced API: ``session.data.*`` (classical/core dual: flat methods remain first-class without warnings).
+    """
     # mypy: session private attrs (owned by Session.__init__)
     if TYPE_CHECKING:
         _ingest_report: Any

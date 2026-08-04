@@ -1,6 +1,6 @@
 # Symbolic + Neuro-symbolic deep guide
 
-## What shipped
+## Scope
 
 BuildML’s symbolic path is a **Session-native tabular rule engine** plus a
 **neuro-symbolic hybrid** that binds a sklearn or lite torch base estimator to
@@ -8,13 +8,13 @@ those rules.
 
 | Surface | Role |
 | --- | --- |
-| `symbolic_capability_matrix()` | Honest backend / method availability |
-| `fit_symbolic` | Compile declared rules or induce from train |
-| `predict_symbolic` | Decision-list inference + `RuleTrace` |
-| `evaluate_symbolic` | Holdout accuracy/RMSE + rule coverage |
-| `fit_neuro_symbolic` | sklearn/torch + rules in one API |
-| `predict_neuro_symbolic` / `evaluate_neuro_symbolic` | Hybrid score / metrics |
-| `save_symbolic_bundle` / `load_symbolic_bundle` | `buildml.symbolic_bundle.v1` |
+| `session.symbolic.capability_matrix()` | Honest backend / method availability |
+| `session.symbolic.fit` | Compile declared rules or induce from train |
+| `session.symbolic.predict` | Decision-list inference + `RuleTrace` |
+| `session.symbolic.evaluate` | Holdout accuracy/RMSE + rule coverage |
+| `session.symbolic.fit_neuro` | sklearn/torch + rules in one API |
+| `session.symbolic.predict_neuro` / `session.symbolic.evaluate_neuro` | Hybrid score / metrics |
+| `session.symbolic.save_bundle` / `session.symbolic.load_bundle` | `buildml.symbolic_bundle.v1` |
 
 ## Backends
 
@@ -54,7 +54,7 @@ and `repaired`.
 
 ## Optional Z3 constraint verification
 
-Set `verify_constraints=True` on `fit_symbolic` when `z3-solver` is installed
+Set `verify_constraints=True` on `session.symbolic.fit` when `z3-solver` is installed
 (via `buildml[symbolic-industry]`). This runs a **lite SAT check** on hard
 constraint antecedents: not a complete rule-set consistency prover or SMT
 product.

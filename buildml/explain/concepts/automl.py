@@ -33,7 +33,7 @@ AUTOML_NOTES: dict[str, ConceptNote] = {
                 "Teaching cards must disclose catalogs, budget, and non-NAS scope.",
             ),
             how_buildml_uses=(
-                "Session.run_automl searches families + recipe strategies.",
+                "session.automl.run searches families + recipe strategies.",
                 "Session.grid_search / optuna_search remain the single-estimator path.",
                 "Disclosures state finite catalogs and no causal claims.",
             ),
@@ -53,8 +53,8 @@ AUTOML_NOTES: dict[str, ConceptNote] = {
                 "Running Session-global impute/scale then AutoML without the allow flag.",
             ),
             worked_example_pattern=(
-                "split (unpoisoned) → run_automl(method='randomized', selection='cv') "
-                "→ evaluate_automl(partition='test').",
+                "split (unpoisoned) → session.automl.run(method='randomized', selection='cv') "
+                "→ session.automl.evaluate(partition='test').",
             ),
             related_concepts=(
                 "automl-recipe-strategy-search",
@@ -86,7 +86,7 @@ AUTOML_NOTES: dict[str, ConceptNote] = {
                 "Recipe knobs alone cannot change impute/scale/encode strategy enums.",
             ),
             how_buildml_uses=(
-                "run_automl(include_recipe_search=True) enumerates DEFAULT_RECIPE_STRATEGIES.",
+                "session.automl.run(include_recipe_search=True) enumerates DEFAULT_RECIPE_STRATEGIES.",
                 "Same LeakageError refusal as cv_score when Session-global plans exist.",
             ),
             interpretation_rules=(
@@ -101,7 +101,7 @@ AUTOML_NOTES: dict[str, ConceptNote] = {
                 "Fitting Session.impute/encode/scale on full train, then AutoML.",
             ),
             worked_example_pattern=(
-                "ingest → roles → split → run_automl(include_recipe_search=True) "
+                "ingest → roles → split → session.automl.run(include_recipe_search=True) "
                 "without Session-global prep.",
             ),
             related_concepts=(
@@ -131,8 +131,8 @@ AUTOML_NOTES: dict[str, ConceptNote] = {
                 "Train-CV ranks alone are optimistic relative to nested/outer estimates.",
             ),
             how_buildml_uses=(
-                "Session.run_automl(selection=...).",
-                "evaluate_automl(partition='test') for post-selection confirmation.",
+                "session.automl.run(selection=...).",
+                "session.automl.evaluate(partition='test') for post-selection confirmation.",
                 "Nested outer_score_mean/std recorded on AutoMLPlan when selection='nested'.",
             ),
             interpretation_rules=(
@@ -148,7 +148,7 @@ AUTOML_NOTES: dict[str, ConceptNote] = {
                 "Reporting the best trial's train-CV mean as final test performance.",
             ),
             worked_example_pattern=(
-                "run_automl(selection='nested') → evaluate_automl(partition='test').",
+                "session.automl.run(selection='nested') → session.automl.evaluate(partition='test').",
             ),
             related_concepts=(
                 "automl-beyond-hpo",
@@ -176,7 +176,7 @@ AUTOML_NOTES: dict[str, ConceptNote] = {
                 "Operators expect checkpoint_load to restore AutoMLPlan: it does not.",
             ),
             how_buildml_uses=(
-                "save_automl_bundle / load_automl_bundle.",
+                "session.automl.save_bundle / session.automl.load_bundle.",
                 "Prefer save_pipeline when Session-global preprocess plans must travel.",
             ),
             interpretation_rules=(
@@ -186,7 +186,7 @@ AUTOML_NOTES: dict[str, ConceptNote] = {
             failure_modes=("Incomplete bundle missing automl_plan.joblib.",),
             anti_patterns=("Treating AutoML bundles as Session checkpoints.",),
             worked_example_pattern=(
-                "run_automl → save_automl_bundle → load_automl_bundle → evaluate_automl.",
+                "session.automl.run → session.automl.save_bundle → session.automl.load_bundle → session.automl.evaluate.",
             ),
             related_concepts=("automl-beyond-hpo", "ensemble-bundle-boundary"),
         ),
@@ -216,7 +216,7 @@ AUTOML_NOTES: dict[str, ConceptNote] = {
                 "Capability matrix must disclose nested-CV gaps on industry paths.",
             ),
             how_buildml_uses=(
-                "Session.run_automl(backend=...); automl_capability_matrix() for honest docs.",
+                "session.automl.run(backend=...); session.automl.capability_matrix() for honest docs.",
                 "export_comparison_metrics() for trial export.",
             ),
             interpretation_rules=(
@@ -232,8 +232,8 @@ AUTOML_NOTES: dict[str, ConceptNote] = {
                 "Passing Session test rows into industry adapter fit.",
             ),
             worked_example_pattern=(
-                "run_automl(backend='flaml', time_budget=120, selection='validation') "
-                "→ evaluate_automl(partition='test').",
+                "session.automl.run(backend='flaml', time_budget=120, selection='validation') "
+                "→ session.automl.evaluate(partition='test').",
             ),
             related_concepts=(
                 "automl-beyond-hpo",

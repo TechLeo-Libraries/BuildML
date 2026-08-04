@@ -94,7 +94,7 @@ def main() -> None:
         method = "als" if extra_available("implicit") else "item_knn"
         try:
             if method == "als":
-                r_fit = rec_session.fit_recommender(
+                r_fit = rec_session.recommender.fit(
                     method="als",
                     feedback="implicit",
                     user_column="user_id",
@@ -104,7 +104,7 @@ def main() -> None:
             else:
                 raise MissingExtraError("recommenders", "als")
         except (MissingExtraError, TypeError, ValueError):
-            r_fit = rec_session.fit_recommender(
+            r_fit = rec_session.recommender.fit(
                 method="item_knn",
                 user_column="user_id",
                 item_column="item_id",
@@ -112,8 +112,8 @@ def main() -> None:
                 random_state=ctx.seed,
             )
             method = "item_knn"
-        r_val = rec_session.evaluate_recommender(partition="validation", k=5)
-        r_test = rec_session.evaluate_recommender(partition="test", k=5)
+        r_val = rec_session.recommender.evaluate(partition="validation", k=5)
+        r_test = rec_session.recommender.evaluate(partition="test", k=5)
         stages["recommenders"] = {
             "status": "ok",
             "method": method,
@@ -150,7 +150,7 @@ def main() -> None:
         rank_method = "lambdarank" if extra_available("lightgbm") else "pointwise"
         try:
             if rank_method == "lambdarank":
-                rk_fit = ltr_session.fit_ranker(
+                rk_fit = ltr_session.ranking.fit(
                     method="lambdarank",
                     query_column="query_id",
                     item_column="ad_id",
@@ -159,7 +159,7 @@ def main() -> None:
             else:
                 raise MissingExtraError("ranking-industry", "lambdarank")
         except (MissingExtraError, TypeError, ValueError):
-            rk_fit = ltr_session.fit_ranker(
+            rk_fit = ltr_session.ranking.fit(
                 method="pointwise",
                 query_column="query_id",
                 item_column="ad_id",
@@ -167,8 +167,8 @@ def main() -> None:
                 random_state=ctx.seed,
             )
             rank_method = "pointwise"
-        rk_val = ltr_session.evaluate_ranker(partition="validation", k=5)
-        rk_test = ltr_session.evaluate_ranker(partition="test", k=5)
+        rk_val = ltr_session.ranking.evaluate(partition="validation", k=5)
+        rk_test = ltr_session.ranking.evaluate(partition="test", k=5)
         stages["ranking"] = {
             "status": "ok",
             "method": rank_method,
@@ -228,16 +228,16 @@ def main() -> None:
         assert_no_test_in_selection(
             selection_partition="validation", evaluation_partition="test"
         )
-        thr = session.fit_decision_policy(
+        thr = session.decision.fit(
             method="threshold",
             partition="validation",
             fp_cost=1.0,
             fn_cost=3.0,
         )
-        thr_test = session.evaluate_decisions(partition="test")
+        thr_test = session.decision.evaluate(partition="test")
         knap_payload: dict = {"status": "skipped"}
         try:
-            knap = session.fit_decision_policy(
+            knap = session.decision.fit(
                 method="knapsack",
                 partition="validation",
                 budget=60.0,
@@ -246,7 +246,7 @@ def main() -> None:
                 score_source="model_proba",
                 knapsack_solver="dp",
             )
-            applied = session.apply_decisions(partition="test")
+            applied = session.decision.apply(partition="test")
             knap_payload = {
                 "status": "ok",
                 "knapsack_policy": metrics_round(
@@ -260,13 +260,13 @@ def main() -> None:
             }
         except Exception as exc:  # noqa: BLE001
             try:
-                topk = session.fit_decision_policy(
+                topk = session.decision.fit(
                     method="topk",
                     partition="validation",
                     capacity=40,
                     score_source="model_proba",
                 )
-                applied = session.apply_decisions(partition="test")
+                applied = session.decision.apply(partition="test")
                 knap_payload = {
                     "status": "ok_topk_fallback",
                     "error": f"{type(exc).__name__}: {exc}",

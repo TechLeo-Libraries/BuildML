@@ -35,12 +35,12 @@ MULTITASK_NOTES: dict[str, ConceptNote] = {
                 "Using holdout rows to fit is leakage.",
             ),
             how_buildml_uses=(
-                "Session.fit_multitask(backend=..., method=...) → predict/evaluate.",
-                "See multitask_capability_matrix() for honest defaults.",
+                "session.multitask.fit(backend=..., method=...) → predict/evaluate.",
+                "See session.multitask.capability_matrix() for honest defaults.",
             ),
             interpretation_rules=(
                 "Read n_tasks, target_columns, method, task, and disclosures.",
-                "evaluate_multitask reports per_task_metrics plus unweighted means.",
+                "session.multitask.evaluate reports per_task_metrics plus unweighted means.",
             ),
             assumptions=("At least two same-type targets; numeric non-null features.",),
             failure_modes=(
@@ -51,7 +51,7 @@ MULTITASK_NOTES: dict[str, ConceptNote] = {
                 "Claiming deep multi-head MTL from sklearn MultiOutput wrappers.",
             ),
             worked_example_pattern=(
-                "fit_multitask(method='multi_output') → evaluate_multitask('validation').",
+                "session.multitask.fit(method='multi_output') → session.multitask.evaluate('validation').",
             ),
             related_concepts=("multitask-chain", "multitask-target-roles", "leakage-boundary"),
         ),
@@ -75,7 +75,7 @@ MULTITASK_NOTES: dict[str, ConceptNote] = {
                 "Independent MultiOutput ignores label dependence that chains can capture.",
             ),
             how_buildml_uses=(
-                "fit_multitask(method='classifier_chain'|'regressor_chain', order=...).",
+                "session.multitask.fit(method='classifier_chain'|'regressor_chain', order=...).",
             ),
             interpretation_rules=(
                 "Read the chain-order disclosure on the plan; compare to multi_output.",
@@ -84,7 +84,7 @@ MULTITASK_NOTES: dict[str, ConceptNote] = {
             failure_modes=("Passing order= that is not a permutation of targets.",),
             anti_patterns=("Using chains for independent targets without checking whether dependence exists.",),
             worked_example_pattern=(
-                "fit_multitask(method='classifier_chain', order=['t1', 't2']).",
+                "session.multitask.fit(method='classifier_chain', order=['t1', 't2']).",
             ),
             related_concepts=("multitask-multi-output", "multitask-target-roles"),
         ),
@@ -94,7 +94,7 @@ MULTITASK_NOTES: dict[str, ConceptNote] = {
             summary="Multi-task needs ≥2 targets; classical Session.fit still requires exactly one.",
             definition=(
                 "Assign multiple columns role='target' (or pass targets=) for "
-                "fit_multitask. Classical require_target() still enforces a "
+                "session.multitask.fit. Classical require_target() still enforces a "
                 "single target for Session.fit: the paths are distinct."
             ),
             intuition=(
@@ -108,13 +108,13 @@ MULTITASK_NOTES: dict[str, ConceptNote] = {
                 "Collapsing multiple targets into one silently drops tasks.",
             ),
             how_buildml_uses=(
-                "set_roles({..., 't1': 'target', 't2': 'target'}) then fit_multitask.",
+                "set_roles({..., 't1': 'target', 't2': 'target'}) then session.multitask.fit.",
             ),
             interpretation_rules=(
-                "If classical fit raises 'Expected exactly one target', use fit_multitask or drop extras.",
+                "If classical fit raises 'Expected exactly one target', use session.multitask.fit or drop extras.",
             ),
             assumptions=("Target columns exist on the Session frame.",),
-            failure_modes=("Calling fit_multitask with only one target role.",),
+            failure_modes=("Calling session.multitask.fit with only one target role.",),
             anti_patterns=("Expecting Session.fit to auto-switch into multi-output mode.",),
             worked_example_pattern=(
                 "set_roles({'x': 'feature', 't1': 'target', 't2': 'target'})",
@@ -136,16 +136,16 @@ MULTITASK_NOTES: dict[str, ConceptNote] = {
             ),
             formal_idea=(
                 "Artifacts are complementary: checkpoint_load ↛ multitask learner; "
-                "load_multitask_bundle ↛ dataset rows."
+                "session.multitask.load_bundle ↛ dataset rows."
             ),
             why_it_matters=("Mixing artifacts causes silent missing-learner failures.",),
-            how_buildml_uses=("save_multitask_bundle / load_multitask_bundle.",),
+            how_buildml_uses=("session.multitask.save_bundle / session.multitask.load_bundle.",),
             interpretation_rules=("Read meta.json format buildml.multitask_bundle.v1.",),
             assumptions=("Feature contract and target columns still match at load time.",),
             failure_modes=("Expecting checkpoint_load to restore MultiTaskPlan.",),
             anti_patterns=("Treating online or classical pipeline bundles as multi-task plans.",),
             worked_example_pattern=(
-                "session.save_multitask_bundle(path); other.load_multitask_bundle(path).",
+                "session.multitask.save_bundle(path); other.multitask.load_bundle(path).",
             ),
             related_concepts=("multitask-multi-output", "online-bundle-boundary"),
         ),

@@ -52,6 +52,17 @@ def ensemble_capability_matrix() -> dict[str, Any]:
         ],
         "default_strategy": "voting",
         "default_backend_when_installed": "sklearn",
+        "reporting": {
+            "evaluate_enrichment": [
+                "base_contributions",
+                "diversity",
+                "ensemble_report",
+            ],
+            "leakage_safe_defaults": (
+                "evaluate scores train-fitted bases predict-only on the named "
+                "partition; stacking OOF / blend holdout stay inside train at fit."
+            ),
+        },
         "install_hints": {},
         "platform_markers": [],
         "non_goals": [

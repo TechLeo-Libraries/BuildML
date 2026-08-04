@@ -3,6 +3,10 @@
 Native sklearn MultiOutput/Chain paths are always available. Industry GBDT
 multi-target and torch shared-trunk paths require optional extras.
 
+Industry ``*_available`` predicates use subprocess import probes so broken
+native wheels are never reported as ready. Use ``*_spec_present`` for cheap
+discovery disclosure in capability matrices.
+
 See Also
 --------
 buildml.multitask.catalog.multitask_capability_matrix : What is installed here.
@@ -17,93 +21,60 @@ from buildml.core.errors import MissingExtraError
 from buildml.dl.extras import torch_available, torch_spec_available
 
 
-def lightgbm_available() -> bool:
-    """Return whether ``lightgbm`` appears on the import path without importing it.
+def _runtime_ok(module: str) -> bool:
+    from buildml.dl.extras import _subprocess_import_ok
 
-    Gates ``multi_output_lgbm`` without importing lightgbm at module load time.
+    return _subprocess_import_ok(module)
 
-    Returns
-    -------
-    bool
-        ``True`` when ``importlib.util.find_spec('lightgbm')`` succeeds.
-    """
+
+def lightgbm_spec_present() -> bool:
+    """Cheap find_spec discovery for LightGBM."""
     return importlib.util.find_spec("lightgbm") is not None
 
 
-def xgboost_available() -> bool:
-    """Return whether ``xgboost`` appears on the import path without importing it.
-
-    Gates ``multi_output_xgb`` without importing xgboost at module load time.
-
-    Returns
-    -------
-    bool
-        ``True`` when ``importlib.util.find_spec('xgboost')`` succeeds.
-    """
+def xgboost_spec_present() -> bool:
+    """Cheap find_spec discovery for XGBoost."""
     return importlib.util.find_spec("xgboost") is not None
 
 
-def catboost_available() -> bool:
-    """Return whether ``catboost`` appears on the import path without importing it.
-
-    Gates ``multi_output_catboost`` without importing catboost at load time.
-
-    Returns
-    -------
-    bool
-        ``True`` when ``importlib.util.find_spec('catboost')`` succeeds.
-    """
+def catboost_spec_present() -> bool:
+    """Cheap find_spec discovery for CatBoost."""
     return importlib.util.find_spec("catboost") is not None
 
 
+def lightgbm_available() -> bool:
+    """Return whether lightgbm imports cleanly for multi_output_lgbm."""
+    if not lightgbm_spec_present():
+        return False
+    return _runtime_ok("lightgbm")
+
+
+def xgboost_available() -> bool:
+    """Return whether xgboost imports cleanly for multi_output_xgb."""
+    if not xgboost_spec_present():
+        return False
+    return _runtime_ok("xgboost")
+
+
+def catboost_available() -> bool:
+    """Return whether catboost imports cleanly for multi_output_catboost."""
+    if not catboost_spec_present():
+        return False
+    return _runtime_ok("catboost")
+
+
 def gradient_boosting_extras_available() -> bool:
-    """Return whether at least one industry GBDT library is importable.
-
-    Used by the capability matrix to disclose industry multi-target paths.
-
-    Returns
-    -------
-    bool
-        ``True`` when any of lightgbm, xgboost, or catboost is discoverable.
-    """
+    """Return whether at least one industry GBDT library imports cleanly."""
     return lightgbm_available() or xgboost_available() or catboost_available()
 
 
 def multitask_industry_available() -> bool:
-    """Return whether industry GBDT multi-target libraries are importable.
-
-    Industry backends require same-type targets and honest MultiOutput wrappers
-    for classification.
-
-    Returns
-    -------
-    bool
-        ``True`` when at least one GBDT extra is discoverable.
-    """
+    """Return whether industry GBDT multi-target libraries import cleanly."""
     return gradient_boosting_extras_available()
 
 
 def require_xgboost(*, feature: str = "XGBoost multi-target multi-task") -> Any:
-    """Import and return ``xgboost``, or raise :class:`MissingExtraError`.
-
-    Called by the ``multi_output_xgb`` adapter at fit time.
-
-    Parameters
-    ----------
-    feature:
-        Capability name for the error message.
-
-    Returns
-    -------
-    module
-        The imported xgboost module.
-
-    Raises
-    ------
-    MissingExtraError
-        When xgboost is not installed. Install with
-        ``pip install 'buildml[multitask-industry]'``.
-    """
+    """Import and return ``xgboost``, or raise :class:`MissingExtraError`."""
     try:
         import xgboost
     except ImportError as exc:
@@ -112,26 +83,7 @@ def require_xgboost(*, feature: str = "XGBoost multi-target multi-task") -> Any:
 
 
 def require_lightgbm(*, feature: str = "LightGBM multi-target multi-task") -> Any:
-    """Import and return ``lightgbm``, or raise :class:`MissingExtraError`.
-
-    Called by the ``multi_output_lgbm`` adapter at fit time.
-
-    Parameters
-    ----------
-    feature:
-        Capability name for the error message.
-
-    Returns
-    -------
-    module
-        The imported lightgbm module.
-
-    Raises
-    ------
-    MissingExtraError
-        When lightgbm is not installed. Install with
-        ``pip install 'buildml[multitask-industry]'``.
-    """
+    """Import and return ``lightgbm``, or raise :class:`MissingExtraError`."""
     try:
         import lightgbm
     except ImportError as exc:
@@ -140,26 +92,7 @@ def require_lightgbm(*, feature: str = "LightGBM multi-target multi-task") -> An
 
 
 def require_catboost(*, feature: str = "CatBoost multi-target multi-task") -> Any:
-    """Import and return ``catboost``, or raise :class:`MissingExtraError`.
-
-    Called by the ``multi_output_catboost`` adapter at fit time.
-
-    Parameters
-    ----------
-    feature:
-        Capability name for the error message.
-
-    Returns
-    -------
-    module
-        The imported catboost module.
-
-    Raises
-    ------
-    MissingExtraError
-        When catboost is not installed. Install with
-        ``pip install 'buildml[multitask-industry]'``.
-    """
+    """Import and return ``catboost``, or raise :class:`MissingExtraError`."""
     try:
         import catboost
     except ImportError as exc:
@@ -168,25 +101,7 @@ def require_catboost(*, feature: str = "CatBoost multi-target multi-task") -> An
 
 
 def require_torch_multitask(*, feature: str = "Torch shared-trunk multi-head multi-task") -> Any:
-    """Import and return ``torch`` for the shared-trunk multi-head backend.
-
-    Delegates to :func:`buildml.dl.extras.require_torch` with multi-task wording.
-
-    Parameters
-    ----------
-    feature:
-        Capability name for the error message.
-
-    Returns
-    -------
-    module
-        The imported torch module.
-
-    Raises
-    ------
-    MissingExtraError
-        When torch is not installed. Install with ``pip install 'buildml[torch]'``.
-    """
+    """Import and return ``torch`` for the shared-trunk multi-head backend."""
     from buildml.dl.extras import require_torch
 
     return require_torch(feature=feature)
@@ -194,8 +109,10 @@ def require_torch_multitask(*, feature: str = "Torch shared-trunk multi-head mul
 
 __all__ = [
     "catboost_available",
+    "catboost_spec_present",
     "gradient_boosting_extras_available",
     "lightgbm_available",
+    "lightgbm_spec_present",
     "multitask_industry_available",
     "require_catboost",
     "require_lightgbm",
@@ -204,4 +121,5 @@ __all__ = [
     "torch_available",
     "torch_spec_available",
     "xgboost_available",
+    "xgboost_spec_present",
 ]

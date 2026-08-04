@@ -16,7 +16,7 @@ CBR_NOTES: dict[str, ConceptNote] = {
             definition=(
                 "A CaseBase is a collection of cases. Each case has numeric "
                 "(and optional categorical) features plus a solution "
-                "(class label or regression outcome). fit_cbr builds the "
+                "(class label or regression outcome). session.cbr.fit builds the "
                 "memory from Session train only."
             ),
             intuition=(
@@ -32,7 +32,7 @@ CBR_NOTES: dict[str, ConceptNote] = {
                 "Traces show which cases influenced each prediction.",
             ),
             how_buildml_uses=(
-                "Session.fit_cbr → retrieve_cases / predict_cbr / evaluate_cbr.",
+                "session.cbr.fit → session.cbr.retrieve / session.cbr.predict / session.cbr.evaluate.",
             ),
             interpretation_rules=(
                 "Inspect CaseTrace.neighbor_case_ids, distances, weights.",
@@ -47,8 +47,8 @@ CBR_NOTES: dict[str, ConceptNote] = {
                 "Calling CBR 'tabular RAG'.",
             ),
             worked_example_pattern=(
-                "fit_cbr(metric='euclidean', k=5) → "
-                "predict_cbr(return_traces=True).",
+                "session.cbr.fit(metric='euclidean', k=5) → "
+                "session.cbr.predict(return_traces=True).",
             ),
             related_concepts=(
                 "cbr-retrieve-reuse",
@@ -66,7 +66,7 @@ CBR_NOTES: dict[str, ConceptNote] = {
                 "mixed (Gower-style). Reuse: majority or distance-weighted "
                 "vote (classification); distance-weighted mean, local mean, "
                 "or local Ridge (regression). Adapt='offset' is a lite blend. "
-                "retain_cbr appends labeled cases with disclosure and refuses "
+                "session.cbr.retain appends labeled cases with disclosure and refuses "
                 "validation/test indices."
             ),
             intuition=(
@@ -82,7 +82,7 @@ CBR_NOTES: dict[str, ConceptNote] = {
                 "Retain without disclosure or holdout checks is leakage.",
             ),
             how_buildml_uses=(
-                "predict_cbr applies reuse; retain_cbr updates memory.",
+                "session.cbr.predict applies reuse; session.cbr.retain updates memory.",
             ),
             interpretation_rules=(
                 "Read plan.metric / plan.reuse / CaseTrace notes.",
@@ -97,8 +97,8 @@ CBR_NOTES: dict[str, ConceptNote] = {
                 "Treating in-sample train_score as holdout accuracy.",
             ),
             worked_example_pattern=(
-                "fit_cbr(reuse='distance_weighted') → evaluate_cbr → "
-                "retain_cbr(labeled_frame=..., source_disclosure=...).",
+                "session.cbr.fit(reuse='distance_weighted') → session.cbr.evaluate → "
+                "session.cbr.retain(labeled_frame=..., source_disclosure=...).",
             ),
             related_concepts=(
                 "cbr-case-memory",
@@ -141,12 +141,12 @@ CBR_NOTES: dict[str, ConceptNote] = {
                 "Sharing RAG index state with CBR case memory.",
             ),
             anti_patterns=(
-                "Routing CBR through rag_retrieve / rag_generate.",
+                "Routing CBR through session.rag.retrieve / session.rag.generate.",
                 "Requiring buildml[rag] extras for CBR.",
             ),
             worked_example_pattern=(
-                "fit_cbr(...) for tabular kNN reasoning; "
-                "rag_ingest_corpus(...) for document RAG.",
+                "session.cbr.fit(...) for tabular kNN reasoning; "
+                "session.rag.ingest_corpus(...) for document RAG.",
             ),
             related_concepts=(
                 "cbr-case-memory",
@@ -160,11 +160,11 @@ CBR_NOTES: dict[str, ConceptNote] = {
             title="CBR bundle vs Session checkpoint",
             summary="buildml.cbr_bundle.v1 stores CbrPlan; Session checkpoints do not embed the case memory.",
             definition=(
-                "save_cbr_bundle writes meta.json + cbr_plan.joblib. "
+                "session.cbr.save_bundle writes meta.json + cbr_plan.joblib. "
                 "checkpoint_save stores workflow state without the case base."
             ),
             intuition=(
-                "Reload the learner with load_cbr_bundle; reload the workflow "
+                "Reload the learner with session.cbr.load_bundle; reload the workflow "
                 "with checkpoint_load."
             ),
             formal_idea=(
@@ -174,7 +174,7 @@ CBR_NOTES: dict[str, ConceptNote] = {
                 "Prevents silent loss of case memory across restarts.",
             ),
             how_buildml_uses=(
-                "Session.save_cbr_bundle / load_cbr_bundle.",
+                "session.cbr.save_bundle / session.cbr.load_bundle.",
             ),
             interpretation_rules=(
                 "Confirm meta.json format == buildml.cbr_bundle.v1.",
@@ -185,7 +185,7 @@ CBR_NOTES: dict[str, ConceptNote] = {
                 "Treating RAG bundles and CBR bundles as interchangeable.",
             ),
             worked_example_pattern=(
-                "save_cbr_bundle(path) → new Session → load_cbr_bundle(path).",
+                "session.cbr.save_bundle(path) → new Session → session.cbr.load_bundle(path).",
             ),
             related_concepts=(
                 "cbr-case-memory",

@@ -27,7 +27,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 import pandas as pd
 
@@ -258,7 +258,9 @@ def predict_from_pipeline(
     )
 
     # Coerce + validate raw input against the persisted schema contract.
-    contract_stage = "input" if (apply_plans and plan_present) else "features"
+    contract_stage: Literal["input", "features"] = (
+        "input" if (apply_plans and plan_present) else "features"
+    )
     coerced_frame, contract_validation = coerce_score_frame(
         raw_frame,
         bundle.schema_contract,
@@ -325,6 +327,10 @@ def predict_from_pipeline(
 
     # Extra columns are ignored; require a non-empty design matrix.
     x = frame.loc[:, feature_columns]
+    if not isinstance(x, pd.DataFrame):
+        raise ValidationError(
+            "Score feature selection did not produce a DataFrame design matrix"
+        )
     if x.empty and len(frame) > 0:
         raise ValidationError("Score frame has rows but no usable feature columns after selection")
 

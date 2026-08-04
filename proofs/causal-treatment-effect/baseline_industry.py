@@ -109,7 +109,7 @@ def main() -> None:
     write_comparison(
         ctx,
         buildml={
-            "backend": "buildml.Session.fit_causal(aipw)",
+            "backend": "buildml.session.causal.fit(aipw)",
             "test_metrics": bml_metrics,
             "true_ate_approx": 1.8,
         },

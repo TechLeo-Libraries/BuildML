@@ -3,7 +3,7 @@
 > **Install (GitHub 2.x):**
 > `pip install "git+https://github.com/TechLeo-Libraries/BuildML.git"`
 
-Industry depth (R6.1): scarce-label classification with unlabeled train features :
+Industry depth: scarce-label classification with unlabeled train features :
 not anomaly novelty, not self-supervised pretext, not active learning.
 
 ## Contract
@@ -38,13 +38,13 @@ for tabular partial-label tasks; sklearn remains the honest fallback.
 
 ## Session API
 
-`fit_semisupervised` → `predict_semisupervised` → `evaluate_semisupervised` →
-`save_semisupervised_bundle` / `load_semisupervised_bundle`.
+`session.semisupervised.fit` → `session.semisupervised.predict` → `session.semisupervised.evaluate` →
+`session.semisupervised.save_bundle` / `session.semisupervised.load_bundle`.
 
 Industry example:
 
 ```python
-session.fit_semisupervised(
+session.semisupervised.fit(
     backend="industry",
     method="pseudo_label_xgb",
     threshold=0.75,
@@ -55,7 +55,7 @@ session.fit_semisupervised(
 Torch consistency example:
 
 ```python
-session.fit_semisupervised(
+session.semisupervised.fit(
     backend="torch",
     method="fixmatch_tabular",
     epochs=40,
@@ -69,17 +69,17 @@ Self-supervised pretext learns representations on **all** train rows (labels opt
 Semi-supervised fit then uses **partial labels** on those representations:
 
 ```python
-session.fit_ssl_pretext(method="simclr_tabular", latent_dim=16, epochs=30)
-session.transform_ssl(attach=True, partition="all")
-session.fit_semisupervised(
+session.ssl.fit_pretext(method="simclr_tabular", latent_dim=16, epochs=30)
+session.ssl.transform(attach=True, partition="all")
+session.semisupervised.fit(
     method="self_training",
-    columns=list(session.ssl_plan.representation_columns),
+    columns=list(session.ssl.plan.representation_columns),
     prefer_reduce_components=False,
 )
 ```
 
-- `finetune_ssl_head`: labeled train rows only (supervised head).
-- `fit_semisupervised`: uses unlabeled train rows via propagation/pseudo-labels.
+- `session.ssl.finetune_head`: labeled train rows only (supervised head).
+- `session.semisupervised.fit`: uses unlabeled train rows via propagation/pseudo-labels.
 
 ## Leakage discipline
 
@@ -101,7 +101,7 @@ Writes `benchmarks/semisupervised/results/partial_labels.json`.
 - `<2` labeled train rows or a single class among labels
 - Null feature columns (impute/scale first)
 - Missing extra for non-sklearn backend (`MissingExtraError`)
-- Confusing this API with `fit_anomaly(mode="novelty")`
+- Confusing this API with `session.anomaly.fit(mode="novelty")`
 - Expecting a Session checkpoint to embed `SemiSupervisedPlan`
 
 ## Related
@@ -109,4 +109,4 @@ Writes `benchmarks/semisupervised/results/partial_labels.json`.
 - [Quickstart](quickstart-semisupervised.md)
 - [Self-supervised](quickstart-selfsupervised.md) (pretext → head / embeddings)
 - [Anomaly](anomaly-deep.md) (novelty is a different metaphor)
-- Next Phase 2 item: **active learning** (`buildml.activelearning`)
+- Related next: active learning (`buildml.activelearning`)

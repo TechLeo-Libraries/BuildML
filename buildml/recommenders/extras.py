@@ -8,44 +8,34 @@ from typing import Any
 from buildml.core.errors import MissingExtraError
 
 
+def _runtime_ok(module: str) -> bool:
+    from buildml.dl.extras import _subprocess_import_ok
+
+    return _subprocess_import_ok(module)
+
+
+def implicit_spec_present() -> bool:
+    """Cheap find_spec discovery for implicit."""
+    return importlib.util.find_spec("implicit") is not None
+
+
+def lightfm_spec_present() -> bool:
+    """Cheap find_spec discovery for LightFM."""
+    return importlib.util.find_spec("lightfm") is not None
+
+
 def implicit_available() -> bool:
-    """Return whether the implicit library imports cleanly.
-
-    Uses ``find_spec`` first, then attempts a real import because some
-    environments expose a spec but fail at import time.
-
-    Returns
-    -------
-    bool
-        ``True`` when ``implicit`` is importable for ALS/BPR backends.
-    """
-    if importlib.util.find_spec("implicit") is None:
+    """Return whether the implicit library imports cleanly (subprocess probe)."""
+    if not implicit_spec_present():
         return False
-    try:
-        import implicit  # noqa: F401
-    except Exception:
-        return False
-    return True
+    return _runtime_ok("implicit")
 
 
 def lightfm_available() -> bool:
-    """Return whether LightFM imports cleanly for hybrid recommenders.
-
-    Uses ``find_spec`` first, then attempts a real import because wheel
-    availability varies by platform and Python version.
-
-    Returns
-    -------
-    bool
-        ``True`` when ``lightfm`` is importable.
-    """
-    if importlib.util.find_spec("lightfm") is None:
+    """Return whether LightFM imports cleanly (subprocess probe)."""
+    if not lightfm_spec_present():
         return False
-    try:
-        import lightfm  # noqa: F401
-    except Exception:
-        return False
-    return True
+    return _runtime_ok("lightfm")
 
 
 def recommenders_industry_available() -> bool:

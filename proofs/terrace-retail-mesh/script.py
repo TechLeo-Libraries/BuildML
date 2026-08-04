@@ -77,9 +77,9 @@ def main() -> None:
             )
             .split(test_size=0.2, validation_size=0.2, random_state=ctx.seed)
         )
-        fit = mt.fit_multitask(method="multioutput", random_state=ctx.seed)
-        val = mt.evaluate_multitask(partition="validation")
-        test = mt.evaluate_multitask(partition="test")
+        fit = mt.multitask.fit(method="multioutput", random_state=ctx.seed)
+        val = mt.multitask.evaluate(partition="validation")
+        test = mt.multitask.evaluate(partition="test")
         stages["multitask"] = {
             "status": "ok",
             "data": sku_meta,
@@ -103,7 +103,7 @@ def main() -> None:
             .set_roles({"date": "time", "promo": "feature", "sales": "target"})
             .time_split(test_size=0.15, validation_size=0.15)
         )
-        fit_f = fc.fit_forecast(
+        fit_f = fc.forecast.fit(
             method="lag_ridge",
             horizon=14,
             lags=[1, 2, 3, 7, 14],
@@ -112,9 +112,9 @@ def main() -> None:
         assert_no_test_in_selection(
             selection_partition="validation", evaluation_partition="test"
         )
-        val_fc = fc.evaluate_forecast(partition="validation", strategy="rolling_one_step")
-        test_fc = fc.evaluate_forecast(partition="test", strategy="rolling_one_step")
-        gen = fc.generate_forecast(horizon=14)
+        val_fc = fc.forecast.evaluate(partition="validation", strategy="rolling_one_step")
+        test_fc = fc.forecast.evaluate(partition="test", strategy="rolling_one_step")
+        gen = fc.forecast.generate(horizon=14)
         stages["forecast"] = {
             "status": "ok",
             "data": sales_meta,
@@ -155,7 +155,7 @@ def main() -> None:
         method = "als" if impl_ok else "item_knn"
         try:
             if impl_ok:
-                fit_r = rec.fit_recommender(
+                fit_r = rec.recommender.fit(
                     method="als",
                     feedback="implicit",
                     user_column="user_id",
@@ -163,7 +163,7 @@ def main() -> None:
                     random_state=ctx.seed,
                 )
             else:
-                fit_r = rec.fit_recommender(
+                fit_r = rec.recommender.fit(
                     method="item_knn",
                     user_column="user_id",
                     item_column="item_id",
@@ -172,7 +172,7 @@ def main() -> None:
                 )
                 method = "item_knn"
         except (MissingExtraError, TypeError, ValueError):
-            fit_r = rec.fit_recommender(
+            fit_r = rec.recommender.fit(
                 method="item_knn",
                 user_column="user_id",
                 item_column="item_id",
@@ -180,7 +180,7 @@ def main() -> None:
                 random_state=ctx.seed,
             )
             method = "item_knn"
-        ev_r = rec.evaluate_recommender(partition="test", k=5)
+        ev_r = rec.recommender.evaluate(partition="test", k=5)
         stages["recommender"] = {
             "status": "ok",
             "data": rec_meta,
@@ -208,7 +208,7 @@ def main() -> None:
             "Multitask split before multi-output fit",
             "Forecast uses time_split; lag features from past only",
             "Recommender split before ALS / item_knn fit",
-            "Test evaluate_multitask / evaluate_forecast / evaluate_recommender after locks",
+            "Test session.multitask.evaluate / session.forecast.evaluate / session.recommender.evaluate after locks",
         ],
         "what_fails_if_leakage_ignored": [
             "Fitting multitask heads on the full SKU table invents holdout F1",

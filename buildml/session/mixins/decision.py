@@ -9,7 +9,10 @@ from buildml.session.mixins._shared import *  # noqa: F403
 
 
 class DecisionSessionMixin:
-    """Public Session methods for the decision domain."""
+    """Public Session methods for the decision domain.
+
+    Preferred namespaced API: ``session.decision.*`` (domain flat actions emit DeprecationWarning until BuildML 3.0).
+    """
     # mypy: session private attrs (owned by Session.__init__)
     if TYPE_CHECKING:
         _decision_apply_result: Any

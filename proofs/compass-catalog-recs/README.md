@@ -14,12 +14,12 @@ scores item repurchase propensity:
 
 ## Status
 
-`completed`: run `script.py`; see `results/summary.json` and stage JSONs.
+Run `script.py`. Outputs land under `results/` (summary and stage JSON)..
 
 ## How to run
 
 ```bash
-.\.venv\Scripts\python.exe proofs\compass-catalog-recs\script.py
+python proofs\compass-catalog-recs\script.py
 ```
 
 ## Leakage controls
@@ -27,7 +27,7 @@ scores item repurchase propensity:
 - Recommender split before fit; train-only ALS / item_knn
 - Graph node split before classical graph features
 - Classical repurchase scorer uses the same node `inject_split`
-- Test recommend / `evaluate_graph` / evaluate after locks
+- Test recommend / `session.graph.evaluate` / evaluate after locks
 
 ## What fails if leakage is ignored
 

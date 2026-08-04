@@ -109,7 +109,7 @@ def main() -> None:
     if bml_raw.get("status") == "skipped_missing_extra":
         write_comparison(
             ctx,
-            buildml={"backend": "buildml.Session.fit_torch", "status": "skipped_missing_extra", "test_metrics": {}},
+            buildml={"backend": "buildml.session.dl.fit", "status": "skipped_missing_extra", "test_metrics": {}},
             industry={
                 "backend": "sklearn.MLPClassifier",
                 "test_metrics": industry_metrics,
@@ -136,7 +136,7 @@ def main() -> None:
     write_comparison(
         ctx,
         buildml={
-            "backend": "buildml.Session.fit_torch",
+            "backend": "buildml.session.dl.fit",
             "epochs": 3,
             "test_metrics": bml_metrics,
         },

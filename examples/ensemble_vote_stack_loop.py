@@ -32,17 +32,17 @@ def main() -> None:
         .scale(method="standard")
     )
 
-    session.fit_voting(bases, voting="soft").show()
-    print(session.evaluate_ensemble(partition="validation").metrics)
+    session.ensemble.fit_voting(bases, voting="soft").show()
+    print(session.ensemble.evaluate(partition="validation").metrics)
 
-    session.fit_stacking(bases, cv=3).show()
-    print(session.evaluate_ensemble(partition="test").metrics)
+    session.ensemble.fit_stacking(bases, cv=3).show()
+    print(session.ensemble.evaluate(partition="test").metrics)
 
-    session.fit_blending(bases, holdout_fraction=0.2, random_state=0).show()
-    print(session.evaluate_ensemble(partition="test").metrics)
+    session.ensemble.fit_blending(bases, holdout_fraction=0.2, random_state=0).show()
+    print(session.ensemble.evaluate(partition="test").metrics)
 
     out = Path(".buildml-artifacts") / "ensemble_demo_bundle"
-    session.save_ensemble_bundle(out)
+    session.ensemble.save_bundle(out)
     print(f"saved {out}")
 
 

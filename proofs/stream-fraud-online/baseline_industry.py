@@ -94,7 +94,7 @@ def main() -> None:
     write_comparison(
         ctx,
         buildml={
-            "backend": "buildml.Session.fit_online",
+            "backend": "buildml.session.online.fit",
             "test_metrics": bml_metrics,
         },
         industry={

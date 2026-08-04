@@ -205,6 +205,9 @@ FIT_TO_CAPABILITY_MATRIX: dict[str, str] = {
     "rag_ingest_corpus": "rag_capability_matrix",
     "rag_embed_and_index": "rag_capability_matrix",
     "evaluate_fairness": "fairness_capability_matrix",
+    "attach_fairness_to_last_eval": "fairness_capability_matrix",
+    "suggest_fairness_thresholds": "fairness_capability_matrix",
+    "suggest_fairness_reweighing": "fairness_capability_matrix",
 }
 
 
@@ -218,7 +221,7 @@ def load_capability_matrix(operation: str) -> dict[str, Any]:
     Parameters
     ----------
     operation:
-        A Session static method name such as ``forecast_capability_matrix``.
+        A Session static method name such as ``session.forecast.capability_matrix``.
 
     Returns
     -------
@@ -266,7 +269,7 @@ def capability_matrix_api_action(operation: str) -> str:
     Returns
     -------
     str
-        For example ``Session.forecast_capability_matrix()``.
+        For example ``session.forecast.capability_matrix()``.
     """
     return f"Session.{operation}()"
 

@@ -15,18 +15,18 @@ holdout; clustering explores synthetic segment structure. The platform:
 
 ## Status
 
-`completed`: run `script.py`; see `results/summary.json` and stage JSONs.
+Run `script.py`. Outputs land under `results/` (summary and stage JSON)..
 
 ## How to run
 
 ```bash
-.\.venv\Scripts\python.exe proofs\forge-synth-lab\script.py
+python proofs\forge-synth-lab\script.py
 ```
 
 ## Leakage controls
 
 - Synthesizer fit on train only
-- Fidelity / `evaluate_synthetic` vs real holdout
+- Fidelity / `session.synthetic.evaluate` vs real holdout
 - TSTR classifier trained on synthetic rows; metrics on real test
 - Cluster fit on synthetic sample's own split
 

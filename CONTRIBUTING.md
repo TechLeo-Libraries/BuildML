@@ -19,12 +19,19 @@ or editable install for Session 2.x until a 2.x wheel is published.
 
 ## Session architecture
 
-`buildml.Session` is the public facade. Domain orchestration and **canonical
-docstrings** (full Parameters / Raises / Notes / Examples) live in
-`buildml/session/*_ops.py`. Public method signatures live in
-`buildml/session/mixins/` (one mixin per domain) as thin delegates with a short
-summary, Returns, and a `:func:` pointer to the ops function.
-`scripts/audit_docstrings.py` allows that facade shape under
+`buildml.Session` is the public entry point. **Facades are the supported public
+API for domains** in 2.4.x (`session.fairness.evaluate`, `session.anomaly.fit`,
+…). Flat domain actions remain supported-but-deprecated
+(`DeprecationWarning`) until BuildML 3.0; classical core flat methods stay dual
+without warnings. See `docs/session-facade-migration.md`.
+Registry: `scripts/_facade_bindings.json` →
+`python scripts/generate_facade_registry.py`.
+
+Domain orchestration and **canonical docstrings** (full Parameters / Raises /
+Notes / Examples) live in `buildml/session/*_ops.py`. Public method signatures
+live in `buildml/session/mixins/` (one mixin per domain) as thin delegates with
+a short summary, Returns, and a `:func:` pointer to the ops function.
+`scripts/audit_docstrings.py` allows that mixin shape under
 `buildml/session/mixins/` while still requiring summary + description + Returns
 + ops pointer. `session.py` assembles the mixins and owns `__init__` /
 context-manager / core state glue. Do not add fat logic to mixin method bodies.
@@ -98,14 +105,18 @@ mypy --follow-imports=silent buildml/core buildml/_version.py \
   buildml/explain/schemas.py buildml/explain/history.py buildml/explain/sync.py \
   buildml/explain/concepts buildml/explain/capability_status.py \
   buildml/explain/glossary.py buildml/explain/prerequisites.py \
-  buildml/session
+  buildml/session \
+  buildml/fairness buildml/serving buildml/pipeline buildml/online \
+  buildml/federated buildml/activelearning buildml/ensemble buildml/anomaly \
+  buildml/unsupervised buildml/timeseries buildml/causal buildml/reporting \
+  buildml/checkpoint
 pytest -q --cov=buildml --cov-report=term-missing
 python scripts/probe_industry_extras.py --artifact industry-probe.json
 ```
 
 Coverage `fail_under` lives in `pyproject.toml` (`[tool.coverage.report]`) and
-`scripts/coverage_ratchet.json`. It is a one-way ratchet (**60** active, next
-**70**): raise only from a full-suite measure
+`scripts/coverage_ratchet.json`. It is a one-way ratchet (**70** active for
+`2.4.0a3`; prior 60 superseded): raise only from a full-suite measure
 (`python scripts/run_full_coverage.py --update-ratchet` or CI
 `pytest tests --cov=buildml`); do not lower it to silence a regression.
 `requirements.txt` / `requirements-dev.txt` are convenience mirrors of
@@ -179,7 +190,7 @@ Additional conventions:
   `:class:`, and `See Also` rather than duplicating a guide.
 - `scripts/lint_user_copy.py` bans marketing language and Unicode em dashes
   (U+2014). Write plainly; use ASCII punctuation (`:`, `;`, `,`, `.`, or `-`).
-- When a package finishes its depth pass, add it to `ENFORCED_PREFIXES` in
+- When a package meets the docstring standard, add it to `ENFORCED_PREFIXES` in
   `scripts/audit_docstrings.py`. That list is a ratchet: entries are added,
   never removed.
 

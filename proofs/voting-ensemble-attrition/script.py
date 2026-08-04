@@ -64,15 +64,17 @@ def main() -> None:
         "lr": LogisticRegression(max_iter=1000, random_state=ctx.seed),
         "rf": RandomForestClassifier(n_estimators=80, max_depth=6, random_state=ctx.seed),
     }
-    fit = session.fit_voting(bases, voting="soft", task="classification")
-    val = session.evaluate_ensemble(partition="validation")
+    fit = session.ensemble.fit_voting(bases, voting="soft", task="classification")
+    val = session.ensemble.evaluate(partition="validation")
     assert_no_test_in_selection(
         selection_partition="validation",
         evaluation_partition="test",
     )
-    test = session.evaluate_ensemble(partition="test")
-    bundle = session.save_ensemble_bundle(ctx.artifacts_dir / "ensemble_bundle")
+    test = session.ensemble.evaluate(partition="test")
+    bundle = session.ensemble.save_bundle(ctx.artifacts_dir / "ensemble_bundle")
     bml_test = metrics_round(dict(test.metrics))
+    contribs = test.diagnostics.get("base_contributions") or []
+    diversity = test.diagnostics.get("diversity") or {}
     write_results(
         ctx,
         {
@@ -85,10 +87,13 @@ def main() -> None:
             "leakage_controls": [
                 "Stratified split before encode/scale/ensemble fit",
                 "Encode/scale and voting bases fit on train only",
-                "Test evaluate_ensemble after lock",
+                "Test session.ensemble.evaluate after lock",
+                "Base contributions scored predict-only (no refit on test)",
             ],
             "validation_metrics": metrics_round(dict(val.metrics)),
             "test_metrics": bml_test,
+            "base_contributions": contribs,
+            "diversity": diversity,
             "bundle_path": str(bundle),
             "industry_comparison": {
                 "status": "filled",

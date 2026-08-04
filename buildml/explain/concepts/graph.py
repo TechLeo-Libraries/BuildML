@@ -14,7 +14,7 @@ GRAPH_NOTES: dict[str, ConceptNote] = {
             title="Session rows are nodes; edges are attached separately",
             summary="Graph ML uses a node feature table plus an edge list keyed by node_id: not a Neo4j product.",
             definition=(
-                "Each Session dataset row is a node. set_graph attaches an edge "
+                "Each Session dataset row is a node. session.graph.set_spec attaches an edge "
                 "list whose endpoints match a unique node_id column. "
                 "Session.split creates node partitions."
             ),
@@ -31,21 +31,21 @@ GRAPH_NOTES: dict[str, ConceptNote] = {
                 "Triple-based KG learning is a separate Session path (buildml.kg), not Neo4j.",
             ),
             how_buildml_uses=(
-                "Session.set_graph → fit_graph / predict_graph / evaluate_graph.",
+                "session.graph.set_spec → session.graph.fit / session.graph.predict / session.graph.evaluate.",
             ),
             interpretation_rules=(
-                "Read n_edges and disclosures after set_graph.",
+                "Read n_edges and disclosures after session.graph.set_spec.",
                 "node_id must be unique and match edge endpoints.",
             ),
             assumptions=("Caller supplies a coherent edge list for the node table.",),
             failure_modes=("Orphan edges; duplicate node ids; missing node_id column.",),
             anti_patterns=(
-                "Treating this as a knowledge-graph database or fit_kg triples path.",
+                "Treating this as a knowledge-graph database or session.kg.fit triples path.",
                 "Using row index as edge endpoints without a stable id column.",
             ),
             worked_example_pattern=(
-                "set_graph(edges_df, node_id_col='node_id') → "
-                "fit_graph(method='classical', mode='inductive').",
+                "session.graph.set_spec(edges_df, node_id_col='node_id') → "
+                "session.graph.fit(method='classical', mode='inductive').",
             ),
             related_concepts=(
                 "graph-inductive-transductive",
@@ -79,19 +79,19 @@ GRAPH_NOTES: dict[str, ConceptNote] = {
                 "Using test edges during train message passing is a common silent leak.",
             ),
             how_buildml_uses=(
-                "fit_graph(mode='inductive'|'transductive') records disclosures.",
+                "session.graph.fit(mode='inductive'|'transductive') records disclosures.",
             ),
             interpretation_rules=(
                 "Read mode and disclosures before comparing numbers across papers.",
             ),
-            assumptions=("Node split is created before fit_graph.",),
+            assumptions=("Node split is created before session.graph.fit.",),
             failure_modes=("Inductive with no train–train edges.",),
             anti_patterns=(
                 "Calling a full-graph train 'inductive'.",
                 "Using holdout labels in the loss.",
             ),
             worked_example_pattern=(
-                "fit_graph(method='gcn', mode='inductive') → evaluate_graph('test').",
+                "session.graph.fit(method='gcn', mode='inductive') → session.graph.evaluate('test').",
             ),
             related_concepts=(
                 "graph-data-model",
@@ -117,7 +117,7 @@ GRAPH_NOTES: dict[str, ConceptNote] = {
                 "Gives a dependency-light baseline that still respects graph structure.",
             ),
             how_buildml_uses=(
-                "fit_graph(method='classical', include_graph_metrics=True).",
+                "session.graph.fit(method='classical', include_graph_metrics=True).",
             ),
             interpretation_rules=(
                 "Betweenness is skipped for large graphs (n>200).",
@@ -126,7 +126,7 @@ GRAPH_NOTES: dict[str, ConceptNote] = {
             failure_modes=("Missing buildml[graph]; no features and metrics disabled.",),
             anti_patterns=("Computing global centrality on the full graph while claiming inductive.",),
             worked_example_pattern=(
-                "pip install 'buildml[graph]'; fit_graph(method='classical').",
+                "pip install 'buildml[graph]'; session.graph.fit(method='classical').",
             ),
             related_concepts=(
                 "graph-data-model",
@@ -157,7 +157,7 @@ GRAPH_NOTES: dict[str, ConceptNote] = {
                 "preserving leakage disclosures.",
             ),
             how_buildml_uses=(
-                "fit_graph(method='pyg', pyg_model='graphsage', mode='inductive').",
+                "session.graph.fit(method='pyg', pyg_model='graphsage', mode='inductive').",
             ),
             interpretation_rules=(
                 "Read pyg_model and method=pyg in disclosures; not full PyG zoo.",
@@ -170,7 +170,7 @@ GRAPH_NOTES: dict[str, ConceptNote] = {
             ),
             worked_example_pattern=(
                 "pip install 'buildml[graph-pyg]'; "
-                "fit_graph(method='pyg', pyg_model='gat', heads=4).",
+                "session.graph.fit(method='pyg', pyg_model='gat', heads=4).",
             ),
             related_concepts=(
                 "graph-inductive-transductive",
@@ -196,7 +196,7 @@ GRAPH_NOTES: dict[str, ConceptNote] = {
             why_it_matters=(
                 "Avoids PyG's heavy CUDA/Torch coupling while still shipping a real GNN path.",
             ),
-            how_buildml_uses=("fit_graph(method='gcn', epochs=..., hidden_dim=...).",),
+            how_buildml_uses=("session.graph.fit(method='gcn', epochs=..., hidden_dim=...).",),
             interpretation_rules=(
                 "Read train_loss_last and train_accuracy; not a research zoo.",
             ),
@@ -207,7 +207,7 @@ GRAPH_NOTES: dict[str, ConceptNote] = {
                 "Ignoring inductive vs transductive disclosures.",
             ),
             worked_example_pattern=(
-                "pip install 'buildml[torch]'; fit_graph(method='gcn', mode='inductive').",
+                "pip install 'buildml[torch]'; session.graph.fit(method='gcn', mode='inductive').",
             ),
             related_concepts=(
                 "graph-inductive-transductive",
@@ -221,7 +221,7 @@ GRAPH_NOTES: dict[str, ConceptNote] = {
             title="Graph bundles are not Session checkpoints",
             summary="buildml.graph_bundle.v1 stores GraphPlan separately from Session checkpoints.",
             definition=(
-                "save_graph_bundle / load_graph_bundle persist GraphSpec + fitted "
+                "session.graph.save_bundle / session.graph.load_bundle persist GraphSpec + fitted "
                 "estimator/GCN. Session checkpoints do not embed the graph learner."
             ),
             intuition=(
@@ -231,14 +231,14 @@ GRAPH_NOTES: dict[str, ConceptNote] = {
             formal_idea="Distinct artifact formats; complementary, not interchangeable.",
             why_it_matters=("Prevents silent format confusion across domains.",),
             how_buildml_uses=(
-                "Session.save_graph_bundle / load_graph_bundle.",
+                "session.graph.save_bundle / session.graph.load_bundle.",
             ),
             interpretation_rules=("Confirm meta.json format buildml.graph_bundle.v1.",),
             assumptions=("Bundle directory writable/readable.",),
             failure_modes=("Missing meta.json or graph_plan.joblib.",),
             anti_patterns=("Expecting checkpoint_load to restore GraphPlan.",),
             worked_example_pattern=(
-                "save_graph_bundle('artifacts/graph_bundle') → load_graph_bundle(...).",
+                "session.graph.save_bundle('artifacts/graph_bundle') → session.graph.load_bundle(...).",
             ),
             related_concepts=("graph-data-model", "leakage-boundary"),
         ),

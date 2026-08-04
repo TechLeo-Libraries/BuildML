@@ -161,7 +161,7 @@ def main() -> None:
             .set_roles({"head": "id", "relation": "id", "tail": "id"})
             .split(test_size=0.2, validation_size=0.1, random_state=ctx.seed)
         )
-        kg_fit = kg_session.fit_kg(
+        kg_fit = kg_session.kg.fit(
             method="transe",
             head_column="head",
             relation_column="relation",
@@ -173,8 +173,8 @@ def main() -> None:
             neg_ratio=2,
             random_state=ctx.seed,
         )
-        kg_val = kg_session.evaluate_kg(partition="validation")
-        kg_test = kg_session.evaluate_kg(partition="test")
+        kg_val = kg_session.kg.evaluate(partition="validation")
+        kg_test = kg_session.kg.evaluate(partition="test")
         stages["kg"] = {
             "status": "ok",
             "n_triples": int(len(kg_frame)),
@@ -192,30 +192,30 @@ def main() -> None:
     # --- Stage 2: RAG over mesh handbook ---
     docs, judgments = _mesh_corpus()
     try:
-        rag = Session()
-        rag.rag_ingest_corpus(docs)
-        rag.rag_chunk(size=180, overlap=40)
+        session = Session()
+        session.rag.ingest_corpus(docs)
+        session.rag.chunk(size=180, overlap=40)
         embed_backend = "hashing"
         try:
             if extra_available("sentence_transformers"):
-                rag.rag_embed_and_index(embedder="auto")
+                session.rag.embed_and_index(embedder="auto")
                 embed_backend = "sentence_transformers_or_auto"
             else:
-                rag.rag_embed_and_index(embedder="hashing")
+                session.rag.embed_and_index(embedder="hashing")
         except (MissingExtraError, TypeError, ValueError):
-            rag.rag_embed_and_index(embedder="hashing")
+            session.rag.embed_and_index(embedder="hashing")
             embed_backend = "hashing"
-        sample = rag.rag_retrieve(
+        sample = session.rag.retrieve(
             "How often are access reviews run for production systems?",
             k=3,
             mode="hybrid",
         )
-        answer = rag.rag_generate(
+        answer = session.rag.generate(
             "What is the access review cadence?",
             provider=EchoGroundedProvider(),
             k=3,
         )
-        metrics = rag.rag_evaluate(judgments, k=3)
+        metrics = session.rag.evaluate(judgments, k=3)
         stages["rag"] = {
             "status": "ok",
             "embed_backend": embed_backend,
@@ -263,13 +263,13 @@ def main() -> None:
             "validation": len(plan.validation_indices),
             "test": len(plan.test_indices),
         }
-        sym = sym_session.fit_symbolic(
+        sym = sym_session.symbolic.fit(
             source="decision_tree",
             max_depth=3,
             random_state=ctx.seed,
         )
-        sym_val = sym_session.evaluate_symbolic(partition="validation")
-        sym_test = sym_session.evaluate_symbolic(partition="test")
+        sym_val = sym_session.symbolic.evaluate(partition="validation")
+        sym_test = sym_session.symbolic.evaluate(partition="test")
         stages["symbolic"] = {
             "status": "ok",
             "data": guard_meta,

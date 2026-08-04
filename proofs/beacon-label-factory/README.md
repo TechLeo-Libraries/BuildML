@@ -15,12 +15,12 @@ labels are masked; holdouts keep full labels for evaluation. The platform:
 
 ## Status
 
-`completed`: run `script.py`; see `results/summary.json` plus stage JSONs.
+Run `script.py`. Outputs land under `results/` (summary and stage JSON)..
 
 ## How to run
 
 ```bash
-.\.venv\Scripts\python.exe proofs\beacon-label-factory\script.py
+python proofs\beacon-label-factory\script.py
 ```
 
 ## Leakage controls

@@ -27,10 +27,15 @@ def test_describe_method_fairness_and_classical() -> None:
     fair = Session.describe_method("evaluate_fairness")
     assert fair["name"] == "evaluate_fairness"
     assert fair["capability_matrix_operation"] == "fairness_capability_matrix"
+    assert fair["preferred_path"] == "session.fairness.evaluate"
+    assert fair["stability_tier"] == "domain"
+    assert fair["flat_deprecated"] is True
     assert "summary" in fair
     fit = Session.describe_method("fit")
     assert fit["name"] == "fit"
     assert fit["summary"]
+    assert fit["preferred_path"] == "session.classical.fit"
+    assert fit["flat_deprecated"] is False
 
 
 def test_describe_method_unknown_raises() -> None:

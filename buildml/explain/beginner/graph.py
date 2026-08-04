@@ -11,7 +11,7 @@ GRAPH_BEGINNER: dict[str, BeginnerLayer] = _index(
         plain=(
             "Graph machine learning needs two things: a table where each row is an entity (a node) and a "
             "separate list of connections between them (edges). BuildML keeps them separate: your Session "
-            "frame holds the node features, and you attach the edge list with `set_graph`."
+            "frame holds the node features, and you attach the edge list with `session.graph.set_spec`."
         ),
         analogy=(
             "A staff directory and an org chart. The directory lists everyone's details; the chart says who "
@@ -20,7 +20,7 @@ GRAPH_BEGINNER: dict[str, BeginnerLayer] = _index(
         steps=(
             "Make sure each row has a stable identifier column: that is the node ID.",
             "Prepare an edge list: two columns naming the source and target node IDs.",
-            "Call `set_graph(edges, node_id_col=...)` to attach it.",
+            "Call `session.graph.set_spec(edges, node_id_col=...)` to attach it.",
             "BuildML checks that edge endpoints refer to real nodes.",
             "Now graph operations can combine each node's own features with information from its neighbours.",
         ),
@@ -44,8 +44,8 @@ GRAPH_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         example=(
             "session.set_roles({'account_id': 'id', 'is_fraud': 'target'})",
-            "session.set_graph(edges=edge_frame, node_id_col='account_id')",
-            "session.fit_graph(method='classical', random_state=0)",
+            "session.graph.set_spec(edges=edge_frame, node_id_col='account_id')",
+            "session.graph.fit(method='classical', random_state=0)",
         ),
         check=(
             "Does every edge endpoint correspond to a row in your node table?",
@@ -93,9 +93,9 @@ GRAPH_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.fit_graph(method='gcn', mode='inductive', random_state=0)",
-            "session.evaluate_graph(partition='test')",
-            "print(session.graph_plan.mode, session.graph_plan.disclosures)",
+            "session.graph.fit(method='gcn', mode='inductive', random_state=0)",
+            "session.graph.evaluate(partition='test')",
+            "print(session.graph.plan.mode, session.graph.plan.disclosures)",
         ),
         check=(
             "Will new nodes appear after deployment?",
@@ -142,13 +142,13 @@ GRAPH_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.fit_graph(",
+            "session.graph.fit(",
             "    method='classical',",
             "    include_graph_metrics=True,",
             "    classical_estimator='random_forest',",
             "    random_state=0,",
             ")",
-            "session.evaluate_graph(partition='validation')",
+            "session.graph.evaluate(partition='validation')",
         ),
         check=(
             "Do the structural columns appear in your top feature importances?",
@@ -196,11 +196,11 @@ GRAPH_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         example=(
             "# pip install \"buildml[graph-pyg]\"",
-            "session.fit_graph(",
+            "session.graph.fit(",
             "    method='pyg', pyg_model='graphsage',",
             "    n_layers=2, hidden_dim=64, epochs=200, random_state=0,",
             ")",
-            "session.evaluate_graph(partition='test')",
+            "session.graph.evaluate(partition='test')",
         ),
         check=(
             "How many hops away is the information you believe matters?",
@@ -247,11 +247,11 @@ GRAPH_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.fit_graph(",
+            "session.graph.fit(",
             "    method='gcn', n_layers=2, hidden_dim=32,",
             "    epochs=200, random_state=0,",
             ")",
-            "session.evaluate_graph(partition='validation')",
+            "session.graph.evaluate(partition='validation')",
         ),
         check=(
             "How many nodes does your graph have, and will a dense adjacency fit?",
@@ -274,8 +274,8 @@ GRAPH_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         steps=(
             "Fit a graph model so a plan exists.",
-            "Call `save_graph_bundle(path)`.",
-            "Reload with `load_graph_bundle(path)` and reattach a graph with `set_graph`.",
+            "Call `session.graph.save_bundle(path)`.",
+            "Reload with `session.graph.load_bundle(path)` and reattach a graph with `session.graph.set_spec`.",
             "Predict for nodes, remembering that inductive and transductive plans expect different things.",
             "Keep checkpoints separate for the node data.",
         ),
@@ -298,10 +298,10 @@ GRAPH_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.save_graph_bundle('artifacts/fraud-graph')",
-            "job = Session.ingest(nodes_frame).load_graph_bundle('artifacts/fraud-graph')",
-            "job.set_graph(edges=todays_edges, node_id_col='account_id')",
-            "job.predict_graph()",
+            "session.graph.save_bundle('artifacts/fraud-graph')",
+            "job = Session.ingest(nodes_frame).graph.load_bundle('artifacts/fraud-graph')",
+            "job.graph.set_spec(edges=todays_edges, node_id_col='account_id')",
+            "job.graph.predict()",
         ),
         check=(
             "Was your plan fitted inductively or transductively, and does today's graph match that assumption?",

@@ -162,8 +162,12 @@ def ssl_capability_matrix() -> dict[str, Any]:
         Backend availability, default method, catalog rows, and install hints.
     """
     torch_ok = torch_available()
-    st_ok = importlib.util.find_spec("sentence_transformers") is not None
-    tv_ok = importlib.util.find_spec("torchvision") is not None
+    from buildml.dl.extras import _subprocess_import_ok
+
+    st_spec = importlib.util.find_spec("sentence_transformers") is not None
+    tv_spec = importlib.util.find_spec("torchvision") is not None
+    st_ok = bool(torch_ok and st_spec and _subprocess_import_ok("sentence_transformers"))
+    tv_ok = bool(torch_ok and tv_spec and _subprocess_import_ok("torchvision"))
     return {
         "backends": {
             "sklearn": {
@@ -181,18 +185,26 @@ def ssl_capability_matrix() -> dict[str, Any]:
                 "notes": "Tabular contrastive/generative SSL (SimCLR/BYOL/VICReg/MAE/VAE).",
             },
             "hf_text": {
-                "available": torch_ok and st_ok,
+                "available": st_ok,
                 "extra": "ssl",
                 "methods": sorted(TEXT_TORCH_METHODS),
-                "notes": "HF sentence-transformer text SSL (buildml[ssl]).",
+                "notes": (
+                    "HF sentence-transformer text SSL (buildml[ssl]). "
+                    "available requires runtime import probe, not find_spec alone."
+                ),
             },
             "vision": {
-                "available": torch_ok and tv_ok,
+                "available": tv_ok,
                 "extra": "vision",
                 "methods": sorted(VISION_TORCH_METHODS),
-                "notes": "Vision SSL hooks (buildml[vision]).",
+                "notes": (
+                    "Vision SSL hooks (buildml[vision]). "
+                    "available requires runtime import probe, not find_spec alone."
+                ),
             },
         },
+        "sentence_transformers_spec_present": st_spec,
+        "torchvision_spec_present": tv_spec,
         "default_tabular_method": resolve_default_tabular_method(),
         "methods": list(list_ssl_methods()),
         "install_hints": {

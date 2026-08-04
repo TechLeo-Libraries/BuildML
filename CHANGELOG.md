@@ -10,11 +10,101 @@ with pre-release tags for alpha (`aN`) builds.
 
 ### Added
 
+- **KG / causal / federated / RL evaluation depth.** Native evaluation metrics
+  documented in capability matrices (KG filtered MRR/Hits/mean_rank protocol;
+  causal nuisance + ATE metrics including `outcome_mae`; federated
+  `balanced_accuracy` / binary `roc_auc`); Flower adapter no longer eagerly
+  imports `flwr` (local-sim disclosed); federated/RL catalogs mirror KG
+  `industry_extra_present` vs `industry_runtime_present` separation. Bundle
+  save→load→re-score unit tests + Tier A proofs
+  (`logistics-kg-linkpred`, `causal-treatment-effect`, `federated-hospital-sim`,
+  `tabular-q-frozenlake`, `imitation-cartpole-control`).
+- **Ensemble / AutoML / Torch speech depth.** Ensemble evaluate attaches
+  `base_contributions` / `diversity` / `ensemble_report`
+  (`build_ensemble_eval_report`); AutoML `leaderboard()` with nested-CV
+  disclosure + catalog `default_selection='cv'` / prominent `nested`; ASR
+  default prefers transformers when installed (stub disclosed for CI);
+  RAG callable-embedder restore warnings. Guides + proofs updated.
+- **Serve / deploy production surface.** Declarative `ServeConfig` (YAML / env /
+  CLI) in `buildml.serving.config`; HTTP Basic auth alongside API-key/Bearer
+  (either may authorize); OpenAPI/docs default **closed** when auth is enabled;
+  first-party `deploy/serve/Dockerfile` + `docker-compose.example.yml` (non-root,
+  healthcheck, no `--allow-insecure-public-bind`); hardened K8s serve
+  template/renderer with Secret `secretKeyRef`, readiness/liveness probes, and
+  `buildml-serve:local` image from `deploy/serve`. Tests:
+  `tests/unit/test_serving_production.py`.
+- **Fairness observational depth.** Intersectional sensitive columns, bootstrap /
+  stratified-subsample stability bands, per-group classical metrics bridge,
+  richer `FairnessReport` (`to_markdown` / scope / warnings), and opt-in
+  mitigation helpers (`suggest_group_thresholds`, `suggest_reweighing_weights`
+  + Session facades `attach_to_last_eval` / `suggest_thresholds` /
+  `suggest_reweighing`). Catalog discloses observational scope and refuses
+  silent fairness washing / legal certification. Guide:
+  `guides/fairness-deep.md`.
+- **REAL_PUBLIC_DATASET Tier A proofs.** Four leakage-safe proofs on real public
+  tables (not synthetic blobs): `breast-cancer-classical` (sklearn breast_cancer),
+  `diabetes-progression-regression` (sklearn diabetes), `wine-cluster-segments`
+  (sklearn wine + external ARI), `adult-fairness-observational` (OpenML Adult /
+  credit-g with disclosed offline proxy fallback). Loaders and provenance meta in
+  `proofs/_lib/datasets.py`; harness `normalize_dataset_meta` /
+  `refuse_perfect_scores`; wired into `CI_SMOKE_TIER_A` and `proofs/README.md`.
+
+## [2.4.0a3] - 2026-08-04
+
+### Added
+
+- **Namespaced Session facades.** Every domain exposes `session.<attr>.*`
+  (e.g. `session.fairness.evaluate`, `session.anomaly.fit`, `session.rag.retrieve`)
+  delegating to existing flat methods. Catalog via `Session.list_facades()` /
+  `session.<domain>.describe()`. Migration guide:
+  `docs/session-facade-migration.md`.
+- **Facade-aware discovery.** `list_capabilities` / `describe_method` report
+  `preferred_path`, `stability_tier` (`core` | `domain` | `experimental`), and
+  `flat_deprecated`. EDA facade is `session.explore`; workflow/teaching facade
+  is `session.audit` (avoids shadowing flat `eda` / `workflow`).
+- **Dual-form operation resolution.** `resolve_operation_name` accepts flat and
+  facade spellings (`fairness.evaluate` / `session.fairness.evaluate`); wired
+  through explain catalog, resolver, AI tool sync, and generic executor
+  dispatch. Catalog keys remain canonical flat.
+- **Domain-variable shadow warning.** Accessing a facade when the Session is
+  bound to a domain-named local (`rag = Session()`) emits a one-shot
+  `UserWarning` (prefer `session = Session()`).
+- **PyPI 2.x publish checklist.** `docs/pypi-2x-publish.md` (OIDC / ownership
+  one-shot for humans; repo is `2.4.0a3` build/twine ready).
+
+### Changed
+
+- **Domain flat actions deprecated (warnings only).** Calling flat domain
+  methods (e.g. `session.evaluate_fairness`) emits `DeprecationWarning` pointing
+  at the preferred facade. Classical core (`ingest` / `fit` / `evaluate` / ...)
+  remains dual first-class without warnings. Flat domain alias removal is
+  deferred to BuildML 3.0.
+- **Facades are the supported domain API for 2.4.x.** Flat aliases remain
+  supported-but-deprecated until 3.0. Documented in README, `docs/stability.md`,
+  `docs/session-facade-migration.md`, `docs/pypi-2x-publish.md`, and CONTRIBUTING.
+- **Teaching content prefers facades.** Examples, guides, proof READMEs, docs
+  sources, and explain concepts/beginner/overlays teach `session.<domain>.*` as
+  the primary domain path; classical chains may stay flat. See
+  `docs/session-facade-migration.md`.
+- **Coverage floor raised to 70.** `fail_under` 60 → **70** after full-suite
+  measure ~70.71% (`scripts/coverage_ratchet.json`).
+- **CI mypy widened.** Scoped typing expands beyond session/core/explain to
+  packages verified clean with `--follow-imports=silent` (fairness, serving,
+  pipeline, and other clean domains — see `.github/workflows/ci.yml`).
+- **Industry capability honesty.** KG / federated / RL / AutoML / anomaly /
+  probabilistic industry `available` flags prefer runtime import probes;
+  find_spec-only signals disclosed separately.
+- **Synthetic proof score ceilings.** Harder generators + metric ceilings on
+  payment-rail, cluster/SKU, policy/compliance symbolic, credit/mortgage
+  Bernoulli labels, IoT overlap; proofs README clarifies what smoke proves.
+
+### Added
+
 - **CI proof smoke gate.** `python -m proofs._lib.run_all --smoke` runs a fixed
   Tier A subset without `--skip-existing`; GitHub Actions job `proofs-smoke`.
 - **Coverage ratchet process.** Full-suite measure via
   `scripts/run_full_coverage.py` (per-module isolation on Windows + combine):
-  **70.7%** (39539/55914). `fail_under` raised 25 → 60; next planned 70
+  **70.7%** (39539/55914). `fail_under` raised through 60 to **70**
   (`scripts/coverage_ratchet.json`).
 - **Lazy/cached walkthrough capability probes.** Default
   `walkthrough(capability_probe="lazy")` skips inactive domain industry imports;
@@ -25,7 +115,7 @@ with pre-release tags for alpha (`aN`) builds.
 - **Release workflow.** `.github/workflows/release.yml` (manual/tag build +
   optional PyPI publish).
 - **Surface stability policy.** `docs/stability.md` for alpha churn control.
-- **Harder RAG proof corpora.** Adversarial distractors / paraphrases in
+- **Harder RAG proof corpora.** Hard distractors / paraphrases in
   `support-kb-rag` and `policy-handbook-rag` so hashing cannot trivially score
   perfect retrieval metrics.
 - **Proof suite expansion (+30 Tier A, +30 Tier B, +30 Tier C twins).** Inventory
@@ -85,7 +175,7 @@ with pre-release tags for alpha (`aN`) builds.
   native AV/DLL crashes cannot kill the CI parent. Capability matrices expose
   ``platform_markers`` for LightFM / giotto-tda / learn2learn / skope-rules /
   neuralforecast.
-- **Session monolith split (critical maintainability fix).** Public
+- **Session monolith split.** Public
   ``buildml.Session`` API unchanged (474 public attributes preserved). Domain method
   signatures/docstrings moved into ``buildml/session/mixins/`` (34 domain
   mixins + ``_shared`` annotation bag); ``session.py`` is now the thin
@@ -95,8 +185,7 @@ with pre-release tags for alpha (`aN`) builds.
   imports; ``Literal``/``Any`` from ``typing``). Coverage
   ``fail_under`` raised 20 → 25 (classical+checkpoint smoke ~26.5%).
 
-- **Quality / hygiene ratchet pass (critical-evaluation follow-up).** Deleted
-  stale root ``audit_session2.txt`` (outdated docstring residue). Added
+- **Quality / hygiene.** Deleted stale root ``audit_session2.txt``. Added
   ``[tool.coverage.report] fail_under`` (later raised to 25). Widened scoped
   CI mypy to ``buildml/_version.py`` plus ``explain``
   capability/glossary/prerequisites (and fixed ``worked_example_pattern``
@@ -109,45 +198,30 @@ with pre-release tags for alpha (`aN`) builds.
   ``requirements.txt`` / ``requirements-dev.txt`` to ``pyproject.toml`` ranges
   with install-honesty notes; CONTRIBUTING documents coverage/mypy/Windows CI.
 
-- **Fourth adversarial trust-recovery pass (remaining High/Medium polish).**
-  Graph beginner examples aligned to real ``fit_graph`` kwargs (``mode``,
-  ``pyg_model``, ``include_graph_metrics``, ``classical_estimator``); added
-  ``Session.export_round_history`` facade wired to
-  ``buildml.federated.results.export_round_history``; all proof
-  ``industry_comparison`` stubs replaced with honest ``filled`` Tier C notes
-  (baseline_industry.py companions); ``nlp_capability_matrix`` task entries
-  now expose ``backends_available`` gating matching runtime refusal; thin
-  per-detector anomaly concept notes and RL bridge notes (Monte Carlo, n-step
-  TD, actor-critic) linking to REINFORCE/SB3/tabular_q paths.
+- **Graph / federated / Tier C teaching polish.** Graph beginner examples
+  aligned to real ``fit_graph`` kwargs; ``Session.export_round_history`` wired
+  to ``buildml.federated.results.export_round_history``; proof industry
+  comparison stubs filled with Tier C notes; ``nlp_capability_matrix`` exposes
+  ``backends_available``; anomaly / RL teaching notes expanded.
 
-- **Docstring ratchet (mid-size domain batch).** Completed and enforced at 0:
+- **Docstring coverage (mid-size domains).** Enforced at 0 findings for:
   ``online`` (114), ``federated`` (107), ``automl`` (99), ``multitask`` (96),
   ``activelearning`` (95), ``anomaly`` (95), ``synthetic`` (93),
   ``semisupervised`` (90), ``unsupervised`` (83).
-- **Docstring mission complete.** Every audited package: including
-  ``buildml/session/session.py`` and all ``*_ops.py`` facades: is at 0
-  findings. ``buildml/session/`` is now in ``ENFORCED_PREFIXES``; repo-wide
-  ``scripts/audit_docstrings.py --check`` total is 0.
-- **Session ops depth pass.** All 34 ``buildml/session/*_ops.py`` modules plus
-  ``audit``, ``state``, and ``walkthrough`` documented to 0 findings.
-  ``session`` budget ratcheted 1987 → 0.
-- **Docstring budget:** total findings 2859 → 0.
-- **Prior round:** ``kg``, ``causal``, ``forecasting``, ``ranking``,
-  ``selfsupervised``, ``graph``, ``optimize``, ``recommenders``, ``metalearning``.
+- **Docstring audit at 0.** Every audited package (including Session and
+  ``*_ops.py``) passes ``scripts/audit_docstrings.py --check``.
+  ``buildml/session/`` is in ``ENFORCED_PREFIXES``.
 
 ### Added
 
-- **Third adversarial capability pass (foundational gaps).**
-  Forecasting refuses ``exog_columns`` on univariate-only methods (ETS,
-  auto_arima, Prophet, N-BEATS) via ``method_supports_exog``; AI agents get
-  ``time_split`` tool + executor dispatch; ranking accepts ``lambdarank`` →
-  ``lambdarank_lgbm`` alias; DoWhy holdout evaluate re-estimates ATE on the
-  partition; KG evaluate adds relation-prediction ranks; ``dl_capability_matrix``
-  + Session/AI introspection; unsupervised/synthetic explain status embed live
-  matrices; scikit-activeml industry path tries import with native fallback;
-  teaching notes for k-means vs density, ETS/ARIMA, River/torch online paths.
+- **Forecasting / ranking / causal / KG capability gaps.** Forecasting refuses
+  ``exog_columns`` on univariate-only methods via ``method_supports_exog``; AI
+  operator gets ``time_split``; ranking accepts ``lambdarank`` →
+  ``lambdarank_lgbm``; DoWhy holdout evaluate re-estimates ATE; KG evaluate adds
+  relation-prediction ranks; ``dl_capability_matrix`` + Session/AI introspection;
+  unsupervised/synthetic explain status embed live matrices.
 
-- **Capability-matrix walkthrough / audit hooks (second pass).**
+- **Capability-matrix walkthrough / audit hooks.**
   ``buildml/explain/capability_status.py`` centralizes matrix loading,
   domain-status attachment, walkthrough routing, and audit suggestions.
   Domain ``explain_hooks`` status payloads that were missing
@@ -660,7 +734,7 @@ GitHub prerelease / honesty banner only.
   `rag_capability_matrix`, `unsupervised_capability_matrix`,
   `forecast_capability_matrix`, `timeseries_capability_matrix` (+ Session
   static accessors).
-- **R6 refinement sweep (Phase 2 industry depth: complete, R6.1–R6.11):** Each
+- **R6 refinement sweep (industry depth):** Each
   domain ships `*_capability_matrix()`, `backend=` auto-routing (sklearn/native
   fallback when extras absent; industry/torch/ssl/rl adapters default when
   installed), per-domain benchmark smoke, guides/explain/AI allowlist updates,
@@ -731,14 +805,14 @@ GitHub prerelease / honesty banner only.
 - **Bundle format bumps (v2, v1 loadable):** `buildml.ssl_bundle.v2`,
   `buildml.unsupervised_bundle.v2`, `buildml.forecast_bundle.v2`,
   `buildml.tda_bundle.v2`: richer plan metadata for refined domains.
-- **Pass X guides sync:** Refresh ``guides/`` (and Sphinx includes) so Pass W
-  tutorials cover Pass V surfaces without inventing APIs: gated multimodal
+- **Guides sync:** Refresh ``guides/`` (and Sphinx includes) so
+  tutorials cover new surfaces without inventing APIs: gated multimodal
   fusion + frozen ``multimodal_preprocess`` restore, ``evaluate_asr`` /
   ``SpeechContract``, ``list_pretrained_backbones`` / ``attach_backbone_head``,
   serve ``/metadata`` + ``/predict/batch`` + optional local HTTPS, TorchServe
   compose + K8s ConfigMap/GPU + ``emit_k8s_serve_deployment``, and RAG
   faithfulness hooks. Install honesty (GitHub 2.x vs PyPI 1.x) unchanged.
-- **Pass V capability depth:** Deepens real library paths for Torch multimodal
+- **Torch multimodal / RAG depth:** Deepens real library paths for Torch multimodal
   (gated fusion + frozen ``multimodal_preprocess`` restore), speech
   (``evaluate_asr`` WER/CER, ``SpeechContract`` round-trip), pretrained zoo
   (ResNet34/50, ViT-B/32, HuBERT, Whisper-base encoder; ``attach_backbone_head`` /
@@ -746,7 +820,7 @@ GitHub prerelease / honesty banner only.
   optional local HTTPS), K8s emitters (ConfigMap + GPU requests, serve
   Deployment template), TorchServe compose example, and RAG cheap faithfulness
   hooks. Teaching sync + AI tools for new Session APIs. CI stays mock-safe.
-- **Pass W guides depth:** Exhaustive user guide system under ``guides/`` with
+- **Guides depth:** Exhaustive user guide system under ``guides/`` with
   Session-domain → guide map, learning path, and deep tutorials for classical
   E2E, leakage/fold-local recipes/weights/hard-refuse CV, preprocess depth,
   engines, EDA/Teaching Studio, diagnostics/search, artifacts, Torch
@@ -777,7 +851,7 @@ GitHub prerelease / honesty banner only.
 
 ### Fixed
 
-- **Pass U process residuals:** Read the Docs install path now uses
+- **Docs install path:** Read the Docs install path now uses
   `.readthedocs.yaml` `path: .` + `extra_requirements: [docs]` (no longer
   relies on RTD installing via `docs/requirements.txt` alone). Guides add
   GitHub-first install honesty; `guides/README.md` no longer implies hosted
@@ -796,38 +870,38 @@ GitHub prerelease / honesty banner only.
 
 Closes release/process gaps after the depth loop (Passes L–R): bumps the package
 line to **`2.4.0a1`**, documents GitHub-first install until PyPI carries 2.x,
-fixes stale org URLs, wires Pass R CI + AI allowlist parity, hardens public
+fixes stale org URLs, wires pretrained/serve CI + AI allowlist parity, hardens public
 serve binds, and refreshes maintainer / contributor process docs. **Not published
 to PyPI in this cut**: honesty banner only.
 
 ### Added
 
-- **Pass T release/process closure:** version identity `2.4.0a1`; README +
+- **Release / process closure:** version identity `2.4.0a1`; README +
   `docs/installation.rst` install honesty (GitHub 2.x vs PyPI legacy `1.0.9`);
-  `CONTRIBUTING.md` + release checklist pointer; Pass R AI tools/executor/
+  `CONTRIBUTING.md` + release checklist pointer; AI tools/executor/
   planner/autonomy wiring; serve non-loopback bind guard
   (`api_keys` or `allow_insecure_public_bind`); CI torch/serve/pretrained matrix
   runs `tests/unit/test_pass_r_pretrained_serve_k8s.py`.
-- **Pass R pretrained / serve / K8s depth:** curated vision/audio/speech backbone
+- **Pretrained / serve / K8s depth:** curated vision/audio/speech backbone
   hooks (`load_pretrained_backbone`, extras `vision` / `pretrained`, mock CI
   weights); optional API-key/Bearer serving auth; TorchServe pack + TensorRT
   `trtexec` plan helpers; K8s torchrun Job YAML emitter + `deploy/k8s` example;
   `domain_adapt_speech_torch` + `refuse_speech_foundation_pretrain` honesty.
   Not a managed cloud, not live multi-cluster orchestration, not FM-from-scratch.
-- **Pass O speech FM path:** ASR transcription + classify finetune-lite behind
+- **Speech ASR path:** ASR transcription + classify finetune-lite behind
   `buildml[speech]` / Torch. Session APIs `make_speech_torch_loaders`,
   `fit_speech_torch`, `transcribe_speech` (stub CI-safe backend; optional
   transformers Whisper-class). Honest alpha: integration/finetune, not
   training a foundation model from scratch. Teaching sync + AI tools/executor.
-- **Pass O multi-node DDP:** `fit_torch_ddp(..., multi_node=True)` joins
+- **Multi-node DDP:** `fit_torch_ddp(..., multi_node=True)` joins
   torchrun env (`WORLD_SIZE` / `RANK` / `LOCAL_RANK` / `MASTER_ADDR` /
   `MASTER_PORT`); clear misconfig errors; CPU multi-process still requires
   `allow_cpu_ddp=True`. Not Kubernetes multi-cluster orchestration.
-- **Pass O managed serving:** `buildml[serve]` FastAPI server with `/health` +
+- **Managed serving:** `buildml[serve]` FastAPI server with `/health` +
   `/predict` for classical pipeline bundles and TorchScript; CLI
   `buildml-serve` / `python -m buildml.serving` and `Session.serve_bundle`.
   Localhost default; no auth product claim.
-- **Pass L audio multimodal:** extend multimodal fusion to audio path/waveform
+- **Audio multimodal:** extend multimodal fusion to audio path/waveform
   columns fused with tabular and/or text and/or image. Train-only audio
   amplitude mean/std, built-in small 1D-CNN fusion branch (honest alpha: not a
   speech foundation model), Session facades
@@ -836,37 +910,37 @@ to PyPI in this cut**: honesty banner only.
   silent tabular rebuilds, AI tools/executor/autonomy allowlist/planner wiring,
   and teaching-surface sync. `soundfile` is included in `buildml[torch]` (also
   via `buildml[audio]`) for path cells; waveform arrays work with Torch alone.
-  CI torch job runs Pass L tests with `.[torch,onnx]`.
+  CI torch job runs audio multimodal tests with `.[torch,onnx]`.
 
 ### Changed
 
-- **Pass O license:** project license switched from MIT to **Apache-2.0**
+- **License:** project license switched from MIT to **Apache-2.0**
   (`LICENSE`, `NOTICE`, `pyproject.toml`, package `__license__`, README / docs
   mentions).
 
 ### Fixed
 
-- **Pass T URLs:** replace stale `TechLeo-Dev/BuildML` refs with
+- **Repository URLs:** replace stale `TechLeo-Dev/BuildML` refs with
   `TechLeo-Libraries/BuildML`.
-- **Pass Q after Pass P:** Torch classification paths now LabelEncoder-style remap
+- **Torch label remapping:** Torch classification paths now LabelEncoder-style remap
   sparse/non-contiguous integer class ids to contiguous ``0..K-1`` (speech, text,
   tabular, multimodal, CV/search). ``class_labels`` keeps original ids in index
   order so ``n_classes = len(class_labels)`` matches CrossEntropy targets;
-  evaluate confusion matrices decode back to original ids. CI wires Pass Q tests.
-- **Pass P after Pass O:** CI torch job now runs Pass O speech/DDP/serve tests;
+  evaluate confusion matrices decode back to original ids. CI wires label-remap tests.
+- **CI torch job expansions:** CI torch job now runs speech/DDP/serve tests;
   extras matrix covers `buildml[serve]`; multi-node DDP requires `LOCAL_RANK`
   (no silent global-rank→device mapping) and writes parsed `MASTER_*` into the
   process env; DDP rank bundles retain speech/multimodal modality metadata;
   executor speech dispatch + serve CLI localhost/no-auth defaults covered by
   tests; teaching overlay honesty for ASR stub (Torch not required) and
   multi-node `LOCAL_RANK` failures.
-- **Pass N leftovers after Pass M:** torch trainer bundles persist
+- **Torch trainer bundles:** torch trainer bundles persist
   `multimodal_preprocess` (audio/image stats, source SR, layout) with load-path
   honesty (meta restored; DataLoaders not auto-rebuilt); ambiguous 2D waveform
   arrays raise instead of silent flatten; repeat-pad kept as alpha pooling
   choice (documented + short-clip pool-signal test) rather than widening the
   forward/export contract with length-masked pooling.
-- **Pass M adversarial re-audit after Pass L:** short audio clips are
+- **Audio clip handling:** short audio clips are
   repeat-padded (not zero-filled) so default `audio_max_samples` does not wipe
   the 1D-CNN pool; train-only amp stats use pre-pad lengths; media path/array
   columns are refused as inferred text without `audio_column=`/`image_column=`;
@@ -875,7 +949,7 @@ to PyPI in this cut**: honesty banner only.
   multimodal `input_layout` names; AI tool schemas/executor forward
   `audio_sample_rate` / `audio_max_samples` / `audio_source_sample_rate`;
   `docs/features.rst` no longer falsely claims audio multimodal is deferred.
-- **Pass K adversarial re-audit after Pass J:** ONNX export broke on Torch ≥2.9
+- **ONNX export on Torch ≥2.9:** ONNX export broke on Torch ≥2.9
   (`dynamo=True` default requires `onnxscript`). Export now uses
   `dynamo=False` and requires `buildml[onnx]` up front. AI registry/executor
   coverage for `make_image_multimodal_torch_loaders` is regression-tested;
@@ -884,7 +958,7 @@ to PyPI in this cut**: honesty banner only.
 
 ### Added
 
-- **Pass J image multimodal:** extend multimodal fusion beyond tabular⊕text to
+- **Image multimodal:** extend multimodal fusion beyond tabular⊕text to
   include image path/array columns fused with tabular and/or text. Train-only
   image channel mean/std, built-in CNN fusion branch, Session facades
   (`make_multimodal_torch_loaders(..., image_column=)` /
@@ -895,19 +969,19 @@ to PyPI in this cut**: honesty banner only.
 
 ### Fixed
 
-- **Pass H adversarial re-audit after Pass G:** AI registry listed
+- **AI registry / RNG polish:** AI registry listed
   `make_multimodal_torch_loaders` / `search_torch` / `nested_cv_torch` /
   `export_torch` but executor had no dispatch handlers (dead wires). Tool schemas
   now accept `param_grid` / `param_distributions`. Multimodal fusion `forward`
   supports both tuple and dual-arg calling so TorchScript/ONNX export works.
   Randomized Torch search seeds scipy-like `rvs` with an int (not
-  ``numpy.Generator``). CI torch/ai jobs run Pass G tests. README Torch extra
+  ``numpy.Generator``). CI torch/ai jobs run nested-HPO tests. README Torch extra
   row matches shipped depth. Export refuses silent tabular loader rebuild after
   text/multimodal fit.
 
 ### Added
 
-- **Pass G deferred depth:** nested Torch HPO (`Session.nested_cv_torch` /
+- **Nested Torch HPO:** nested Torch HPO (`Session.nested_cv_torch` /
   `search_torch` with fold-local normalize), tabular+text multimodal fusion
   (`make_multimodal_torch_loaders` + built-in fusion module), explicit
   `ai_run_autonomous` operator automation (confirm opt-in, allowlist, max steps,
@@ -918,15 +992,15 @@ to PyPI in this cut**: honesty banner only.
 
 ### Fixed
 
-- **Pass F adversarial re-audit:** closed soft-leakage docstring/concept regressions
-  that Pass E’s line-local lint missed (`nested_cv_score` param docs still claimed
+- **Soft-leakage docstring fixes:** closed soft-leakage docstring/concept regressions
+  that an earlier line-local lint missed (`nested_cv_score` param docs still claimed
   refuse only when no fold-local recipe is provided; Concept Academy still taught
   “without a fold recipe → limited honesty”). Restored UTF-8 in
   `buildml/explain/concepts/*` after cp1252 mojibake (`Â±`, `â†'`, `â€"`, Greek).
   Copy lint now checks adjacent-line windows and rejects mojibake markers.
   Stale DL gate/checklist copy that denied built-in MLP, text loaders, and
   fold-local Torch CV on current HEAD was corrected.
-- **Pass E re-audit:** corrected soft-leakage teaching regressions that still claimed
+- **Soft-leakage teaching fixes:** corrected soft-leakage teaching regressions that still claimed
   a fold-local `PreprocessRecipe` alone bypasses Session-global CV refuse (README,
   guides, workflow guide, overlays). Added copy-lint rule
   `soft-leakage-false-claim`. Overlay tuple bugs (missing trailing commas) fixed.

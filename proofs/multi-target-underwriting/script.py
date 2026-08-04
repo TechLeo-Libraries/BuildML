@@ -38,10 +38,10 @@ def main() -> None:
         })
         .split(test_size=0.2, validation_size=0.2, random_state=ctx.seed)
     )
-    fit = session.fit_multitask(method="multioutput", random_state=ctx.seed)
-    val = session.evaluate_multitask(partition="validation")
-    test = session.evaluate_multitask(partition="test")
-    bundle = session.save_multitask_bundle(ctx.artifacts_dir / "multitask_bundle")
+    fit = session.multitask.fit(method="multioutput", random_state=ctx.seed)
+    val = session.multitask.evaluate(partition="validation")
+    test = session.multitask.evaluate(partition="test")
+    bundle = session.multitask.save_bundle(ctx.artifacts_dir / "multitask_bundle")
     write_results(ctx, {
         "status": "completed",
         "data": {"name": "synthetic_multi_underwriting", "license": "synthetic/public-domain", "n_rows": n},

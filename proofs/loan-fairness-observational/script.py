@@ -44,7 +44,7 @@ def main() -> None:
         .scale(method="standard")
         .fit(LogisticRegression(max_iter=800), task="classification")
     )
-    report = session.evaluate_fairness(
+    report = session.fairness.evaluate(
         sensitive_column="region",
         partition="test",
         positive_label=1,
@@ -76,7 +76,7 @@ def main() -> None:
                 "disclosures": list(report.disclosures),
                 "warnings": list(report.warnings),
             },
-            "capability_matrix": Session.fairness_capability_matrix(),
+            "capability_matrix": session.fairness.capability_matrix(),
             "leakage_controls": [
                 "Classifier fitted on train only",
                 "Fairness metrics computed on holdout test predictions only",

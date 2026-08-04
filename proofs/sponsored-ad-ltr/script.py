@@ -45,7 +45,7 @@ def main() -> None:
     method = "lambdarank" if lgbm else "pointwise"
     try:
         if lgbm:
-            fit = session.fit_ranker(
+            fit = session.ranking.fit(
                 method="lambdarank",
                 query_column="query_id",
                 item_column="ad_id",
@@ -54,7 +54,7 @@ def main() -> None:
         else:
             raise MissingExtraError("ranking-industry", "lambdarank")
     except (MissingExtraError, TypeError, ValueError):
-        fit = session.fit_ranker(
+        fit = session.ranking.fit(
             method="pointwise",
             query_column="query_id",
             item_column="ad_id",
@@ -62,9 +62,9 @@ def main() -> None:
             random_state=ctx.seed,
         )
         method = "pointwise"
-    ranked = session.rank(partition="test", k=5)
-    ev = session.evaluate_ranker(partition="test", k=5)
-    bundle = session.save_ranker_bundle(ctx.artifacts_dir / "ranker_bundle")
+    ranked = session.ranking.rank(partition="test", k=5)
+    ev = session.ranking.evaluate(partition="test", k=5)
+    bundle = session.ranking.save_bundle(ctx.artifacts_dir / "ranker_bundle")
     write_results(
         ctx,
         {

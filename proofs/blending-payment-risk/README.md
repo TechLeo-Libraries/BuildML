@@ -13,16 +13,16 @@ In-repo synthetic payment authorizations (`load_payment_rail_anomaly_synthetic`)
 - Stratified outer train / validation / test before scale / blend
 - Blend holdout carved from train only (`holdout_fraction=0.2`)
 - Session validation / test never used for meta-learner fit
-- Test `evaluate_ensemble` after lock
+- Test `session.ensemble.evaluate` after lock
 - Industry holdout-blend twin uses the same SplitPlan
 
 ## BuildML API steps
 
 1. `Session.ingest` → `set_roles` → `split` (stratified)
 2. `scale`
-3. `fit_blending(LR+RF, holdout_fraction=0.2)`
-4. `evaluate_ensemble(validation)` → `evaluate_ensemble(test)`
-5. `save_ensemble_bundle`
+3. `session.ensemble.fit_blending(LR+RF, holdout_fraction=0.2)`
+4. `session.ensemble.evaluate(validation)` → `session.ensemble.evaluate(test)`
+5. `session.ensemble.save_bundle`
 
 ## Metrics
 
@@ -30,7 +30,7 @@ Primary holdout: accuracy, F1, ROC-AUC on test (see `results/results.json`).
 
 ## Industry comparison (Tier C)
 
-Filled: sklearn holdout-blend twin via `baseline_industry.py` → `results/comparison.json`.
+Industry twin: sklearn holdout-blend twin via `baseline_industry.py` → `results/comparison.json`.
 
 ## Limitations
 

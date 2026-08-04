@@ -43,10 +43,10 @@ PROBABILISTIC_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.fit_probabilistic(method='bayesian_ridge')",
-            "pred = session.predict_probabilistic(partition='test')",
+            "session.probabilistic.fit(method='bayesian_ridge')",
+            "pred = session.probabilistic.predict(partition='test')",
             "print(pred.mean[:5], pred.std[:5])",
-            "intervals = session.predict_interval(coverage=0.9)",
+            "intervals = session.probabilistic.predict_interval(coverage=0.9)",
         ),
         check=(
             "What decision changes if the interval is wide rather than narrow?",
@@ -94,8 +94,8 @@ PROBABILISTIC_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         example=(
             "session.scale(strategy='standard')",
-            "session.fit_probabilistic(method='bayesian_ridge')",
-            "pred = session.predict_probabilistic(partition='validation')",
+            "session.probabilistic.fit(method='bayesian_ridge')",
+            "pred = session.probabilistic.predict(partition='validation')",
             "print(pred.mean[:5], pred.std[:5])",
         ),
         check=(
@@ -144,8 +144,8 @@ PROBABILISTIC_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         example=(
             "session.scale(strategy='standard')",
-            "session.fit_probabilistic(method='gaussian_process', random_state=0)",
-            "pred = session.predict_probabilistic(partition='validation')",
+            "session.probabilistic.fit(method='gaussian_process', random_state=0)",
+            "pred = session.probabilistic.predict(partition='validation')",
             "print(pred.mean[:5], pred.std[:5])   # std grows away from training data",
         ),
         check=(
@@ -195,10 +195,10 @@ PROBABILISTIC_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.fit_probabilistic(",
+            "session.probabilistic.fit(",
             "    method='bayesian_ridge', conformal='split', calibration_size=0.2,",
             ")",
-            "intervals = session.predict_interval(coverage=0.9, partition='test')",
+            "intervals = session.probabilistic.predict_interval(coverage=0.9, partition='test')",
             "print(intervals.lower[:5], intervals.upper[:5], intervals.empirical_coverage)",
         ),
         check=(
@@ -222,9 +222,9 @@ PROBABILISTIC_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         steps=(
             "Fit a probabilistic model, optionally with conformal calibration.",
-            "Call `save_probabilistic_bundle(path)`: the calibration state travels with the estimator.",
-            "Reload with `load_probabilistic_bundle(path)`.",
-            "Call `predict_interval` on new rows and get the same widths you validated.",
+            "Call `session.probabilistic.save_bundle(path)`: the calibration state travels with the estimator.",
+            "Reload with `session.probabilistic.load_bundle(path)`.",
+            "Call `session.probabilistic.predict_interval` on new rows and get the same widths you validated.",
             "Checkpoint separately for the data state.",
         ),
         use=(
@@ -246,9 +246,9 @@ PROBABILISTIC_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.save_probabilistic_bundle('artifacts/demand-uncertainty')",
-            "job = Session.ingest(new_frame).load_probabilistic_bundle('artifacts/demand-uncertainty')",
-            "job.predict_interval(coverage=0.9)",
+            "session.probabilistic.save_bundle('artifacts/demand-uncertainty')",
+            "job = Session.ingest(new_frame).probabilistic.load_bundle('artifacts/demand-uncertainty')",
+            "job.probabilistic.predict_interval(coverage=0.9)",
         ),
         check=(
             "Does your bundle include the conformal calibration state?",
@@ -296,10 +296,10 @@ PROBABILISTIC_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         example=(
             "# pip install \"buildml[probabilistic-industry]\"",
-            "session.fit_probabilistic(",
+            "session.probabilistic.fit(",
             "    method='bayesian_ridge', conformal='cv_plus', cv=5,",
             ")",
-            "print(session.predict_interval(coverage=0.9).empirical_coverage)",
+            "print(session.probabilistic.predict_interval(coverage=0.9).empirical_coverage)",
         ),
         check=(
             "How many model fits will your chosen conformal variant require?",
@@ -347,8 +347,8 @@ PROBABILISTIC_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         example=(
             "# pip install \"buildml[probabilistic-industry]\"",
-            "session.fit_probabilistic(method='ngboost', distribution='normal', random_state=0)",
-            "pred = session.predict_probabilistic(partition='validation')",
+            "session.probabilistic.fit(method='ngboost', distribution='normal', random_state=0)",
+            "pred = session.probabilistic.predict(partition='validation')",
             "print(pred.mean[:5], pred.std[:5])   # std varies per row",
         ),
         check=(

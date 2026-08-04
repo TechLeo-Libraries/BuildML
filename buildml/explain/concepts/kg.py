@@ -13,7 +13,7 @@ KG_NOTES: dict[str, ConceptNote] = {
             key="kg-triples",
             title="Knowledge graphs as (head, relation, tail) triples",
             summary=(
-                "fit_kg learns from train rows of (head, relation, tail); "
+                "session.kg.fit learns from train rows of (head, relation, tail); "
                 "vocabularies and adjacency are train-only."
             ),
             definition=(
@@ -32,12 +32,12 @@ KG_NOTES: dict[str, ConceptNote] = {
                 "Distinct from adjacency+features node classification.",
             ),
             how_buildml_uses=(
-                "Session.fit_kg(method='transe'|'distmult', "
+                "session.kg.fit(method='transe'|'distmult', "
                 "head_column=..., relation_column=..., tail_column=...).",
             ),
             interpretation_rules=(
-                "Prefer evaluate_kg filtered MRR / Hits@K.",
-                "query_kg never sees holdout triples.",
+                "Prefer session.kg.evaluate filtered MRR / Hits@K.",
+                "session.kg.query never sees holdout triples.",
             ),
             assumptions=(
                 "Explicit head/relation/tail columns; split present; ≥2 entities.",
@@ -47,12 +47,12 @@ KG_NOTES: dict[str, ConceptNote] = {
             ),
             anti_patterns=(
                 "Calling this Neo4j / a graph-DB product.",
-                "Confusing with set_graph / fit_graph node classification.",
+                "Confusing with session.graph.set_spec / session.graph.fit node classification.",
                 "Confusing with RAG retrieve/generate.",
             ),
             worked_example_pattern=(
-                "split → fit_kg(method='transe', head_column=..., "
-                "relation_column=..., tail_column=...) → evaluate_kg(k=10).",
+                "split → session.kg.fit(method='transe', head_column=..., "
+                "relation_column=..., tail_column=...) → session.kg.evaluate(k=10).",
             ),
             related_concepts=(
                 "kg-transe-distmult",
@@ -90,13 +90,13 @@ KG_NOTES: dict[str, ConceptNote] = {
                 "Negative sampling must be disclosed; holdout never corrupted in.",
             ),
             how_buildml_uses=(
-                "Session.fit_kg(backend='native'|'pykeen', method='transe'|"
+                "session.kg.fit(backend='native'|'pykeen', method='transe'|"
                 "'distmult'|'rotate'|'complex', embedding_dim=..., "
                 "epochs=..., neg_ratio=...).",
             ),
             interpretation_rules=(
                 "Read disclosures for backend, neg_ratio, and scoring formula.",
-                "Loss alone is not ranking quality: use evaluate_kg.",
+                "Loss alone is not ranking quality: use session.kg.evaluate.",
             ),
             assumptions=("Dense embeddings fit in memory for the train catalog.",),
             failure_modes=("Too few epochs; collapsed embeddings; tiny entity sets.",),
@@ -105,8 +105,8 @@ KG_NOTES: dict[str, ConceptNote] = {
                 "Training negatives from test triples.",
             ),
             worked_example_pattern=(
-                "fit_kg(backend='pykeen', method='rotate', epochs=50) → "
-                "predict_links(mode='tail')."
+                "session.kg.fit(backend='pykeen', method='rotate', epochs=50) → "
+                "session.kg.predict_links(mode='tail')."
             ,),
             related_concepts=("kg-triples", "kg-link-prediction"),
         ),
@@ -114,8 +114,8 @@ KG_NOTES: dict[str, ConceptNote] = {
             key="kg-link-prediction",
             title="Link prediction (score / predict / evaluate)",
             summary=(
-                "score_triples scores full triples; predict_links fills "
-                "tail|head|relation; evaluate_kg reports filtered MRR and Hits@K."
+                "session.kg.score_triples scores full triples; session.kg.predict_links fills "
+                "tail|head|relation; session.kg.evaluate reports filtered MRR and Hits@K."
             ),
             definition=(
                 "Filtered ranking removes other known true triples from the "
@@ -134,8 +134,8 @@ KG_NOTES: dict[str, ConceptNote] = {
                 "Relation prediction is available via mode='relation'.",
             ),
             how_buildml_uses=(
-                "predict_links(mode='tail'|'head'|'relation'); "
-                "evaluate_kg(partition='test', k=...).",
+                "session.kg.predict_links(mode='tail'|'head'|'relation'); "
+                "session.kg.evaluate(partition='test', k=...).",
             ),
             interpretation_rules=(
                 "OOV holdout entities/relations are skipped and disclosed.",
@@ -145,7 +145,7 @@ KG_NOTES: dict[str, ConceptNote] = {
             failure_modes=("All-OOV holdout; k larger than catalog.",),
             anti_patterns=("Reporting raw loss as link-prediction quality.",),
             worked_example_pattern=(
-                "evaluate_kg(k=10) → inspect metrics['mrr'] / hits_at_10."
+                "session.kg.evaluate(k=10) → inspect metrics['mrr'] / hits_at_10."
             ,),
             related_concepts=("kg-triples", "kg-transe-distmult", "leakage-boundary"),
         ),
@@ -153,7 +153,7 @@ KG_NOTES: dict[str, ConceptNote] = {
             key="kg-symbolic-query",
             title="Symbolic neighborhood / path / typed query",
             summary=(
-                "query_kg walks the train adjacency: neighbors, typed "
+                "session.kg.query walks the train adjacency: neighbors, typed "
                 "(entity, relation, ?), or shortest path: not an LLM."
             ),
             definition=(
@@ -172,19 +172,19 @@ KG_NOTES: dict[str, ConceptNote] = {
                 "Holdout edges are intentionally invisible.",
             ),
             how_buildml_uses=(
-                "query_kg(mode='neighbors'|'typed'|'path', entity=..., "
+                "session.kg.query(mode='neighbors'|'typed'|'path', entity=..., "
                 "relation=..., source=..., target=...).",
             ),
             interpretation_rules=(
                 "Empty path means no train path within max_hops: not model failure.",
             ),
-            assumptions=("KgPlan with train adjacency from fit_kg.",),
+            assumptions=("KgPlan with train adjacency from session.kg.fit.",),
             failure_modes=("OOV entities; disconnected train graphs.",),
             anti_patterns=(
-                "Treating query_kg as Cypher/Neo4j or as RAG retrieve.",
+                "Treating session.kg.query as Cypher/Neo4j or as RAG retrieve.",
             ),
             worked_example_pattern=(
-                "query_kg(mode='typed', entity='Alice', relation='works_at')."
+                "session.kg.query(mode='typed', entity='Alice', relation='works_at')."
             ,),
             related_concepts=("kg-triples", "kg-link-prediction"),
         ),
@@ -192,7 +192,7 @@ KG_NOTES: dict[str, ConceptNote] = {
             key="kg-bundle-boundary",
             title="KG bundle vs Session checkpoint / Graph ML / RAG",
             summary=(
-                "save_kg_bundle stores KgPlan as buildml.kg_bundle.v1; "
+                "session.kg.save_bundle stores KgPlan as buildml.kg_bundle.v1; "
                 "checkpoints, Graph ML bundles, and RAG bundles are separate."
             ),
             definition=(
@@ -202,21 +202,21 @@ KG_NOTES: dict[str, ConceptNote] = {
             ),
             intuition=(
                 "Reload workflow state with checkpoint_load; reload the KG "
-                "with load_kg_bundle."
+                "with session.kg.load_bundle."
             ),
             formal_idea=("buildml.kg_bundle.v1 = meta.json + kg_plan.joblib."),
             why_it_matters=("Prevents silent mixing of artifact types.",),
-            how_buildml_uses=("Session.save_kg_bundle / load_kg_bundle.",),
+            how_buildml_uses=("session.kg.save_bundle / session.kg.load_bundle.",),
             interpretation_rules=(
                 "Bundles are complementary to checkpoints, not interchangeable.",
             ),
             assumptions=("A KgPlan exists.",),
             failure_modes=("Expecting Neo4j dump semantics inside the bundle.",),
             anti_patterns=(
-                "Loading a Graph ML or RAG bundle via load_kg_bundle.",
+                "Loading a Graph ML or RAG bundle via session.kg.load_bundle.",
             ),
             worked_example_pattern=(
-                "save_kg_bundle(path) → load_kg_bundle(path) → evaluate_kg()."
+                "session.kg.save_bundle(path) → session.kg.load_bundle(path) → session.kg.evaluate()."
             ,),
             related_concepts=("kg-triples", "checkpoint-boundary"),
         ),

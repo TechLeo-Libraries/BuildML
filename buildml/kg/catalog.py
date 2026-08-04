@@ -4,7 +4,12 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
-from buildml.kg.extras import kg_industry_available, pykeen_available
+from buildml.kg.extras import (
+    kg_industry_available,
+    pykeen_available,
+    pykeen_runtime_available,
+    pykeen_spec_present,
+)
 
 KgBackendName = Literal["native", "pykeen"]
 
@@ -32,7 +37,7 @@ def kg_capability_matrix() -> dict[str, Any]:
                 "filtered_mrr_hits": True,
             },
             "pykeen": {
-                "available": pykeen_available(),
+                "available": pykeen_runtime_available(),
                 "extra": "kg-industry",
                 "methods": ["transe", "distmult", "rotate", "complex"],
                 "embedding_engine": "PyKEEN pipeline (torch)",
@@ -40,9 +45,10 @@ def kg_capability_matrix() -> dict[str, Any]:
                 "symbolic_query": True,
                 "filtered_mrr_hits": True,
                 "notes": (
-                    "RotatE and ComplEx require buildml[kg-industry]. Train-only "
-                    "triples materialized from Session train partition; holdout "
-                    "never enters PyKEEN training factory."
+                    "RotatE and ComplEx require buildml[kg-industry] with a "
+                    "working torch import. Train-only triples materialized from "
+                    "Session train partition; holdout never enters PyKEEN "
+                    "training factory."
                 ),
             },
         },
@@ -53,6 +59,12 @@ def kg_capability_matrix() -> dict[str, Any]:
             "hits_at_k",
             "mean_rank",
         ],
+        "evaluation_protocol": (
+            "Filtered ranking over train (+ holdout) true triples; MRR / Hits "
+            "averaged over head, tail, and relation prediction per holdout "
+            "triple. OOV entities/relations skipped and disclosed. Frozen "
+            "train embeddings — holdout never refits."
+        ),
         "link_prediction_modes": ["tail", "head", "relation"],
         "query_modes": ["neighbors", "path", "typed"],
         "default_backend_when_installed": _default_backend_when_installed(),
@@ -69,11 +81,16 @@ def kg_capability_matrix() -> dict[str, Any]:
             "Full PyG graph learning product scope",
             "Automatic ontology / schema inference",
         ],
-        "industry_extra_present": kg_industry_available(),
+        "industry_extra_present": pykeen_spec_present(),
+        "industry_runtime_present": kg_industry_available(),
+        "pykeen_spec_present": pykeen_spec_present(),
+        "pykeen_runtime_present": pykeen_runtime_available(),
         "pykeen_import_honesty": (
-            "pykeen backend 'available' reflects package install (find_spec). "
-            "PyKEEN training also requires a working torch install: broken "
-            "wheels may fail at require_pykeen / require_torch."
+            "pykeen backend 'available' and industry_runtime_present require a "
+            "successful subprocess import of pykeen plus working torch "
+            "(pykeen_runtime_available). pykeen_spec_present / "
+            "industry_extra_present are find_spec only — discoverable wheels "
+            "can still be broken."
         ),
         "train_only_honesty": (
             "All backends fit on Session train triples only. Vocabularies, "
@@ -83,7 +100,7 @@ def kg_capability_matrix() -> dict[str, Any]:
 
 
 def _default_backend_when_installed() -> str:
-    if pykeen_available():
+    if pykeen_runtime_available():
         return "pykeen"
     return "native"
 

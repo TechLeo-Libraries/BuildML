@@ -139,19 +139,19 @@ def test_t_learner_and_ipw_paths() -> None:
 
 def test_refute_placebo_and_bundle(tmp_path) -> None:
     session = _session()
-    session.declare_causal_assumptions(
+    session.causal.declare_assumptions(
         treatment="t",
         outcome="y",
         confounders=["x1", "x2"],
         acknowledge_unconfoundedness=True,
         acknowledge_positivity=True,
     )
-    fit = session.fit_causal(method="aipw", bootstrap_samples=20)
-    refute = session.refute_causal(kind="placebo_treatment", random_state=0)
+    fit = session.causal.fit(method="aipw", bootstrap_samples=20)
+    refute = session.causal.refute(kind="placebo_treatment", random_state=0)
     assert refute.kind == "placebo_treatment"
     assert abs(refute.refute_ate) < abs(fit.ate) + 1.0
     out = tmp_path / "causal_bundle"
-    session.save_causal_bundle(out)
+    session.causal.save_bundle(out)
     other = (
         Session.ingest(_causal_frame())
         .set_roles(
@@ -160,11 +160,48 @@ def test_refute_placebo_and_bundle(tmp_path) -> None:
         .split(test_size=0.2, validation_size=0.2, random_state=1)
         .scale(method="standard")
     )
-    other.load_causal_bundle(out, trusted=True)
-    assert other.causal_plan is not None
-    assert other.causal_assumptions is not None
-    est = other.estimate_causal(partition="test", bootstrap_samples=10)
+    other.causal.load_bundle(out, trusted=True)
+    assert other.causal.plan is not None
+    assert other.causal.assumptions is not None
+    est = other.causal.estimate(partition="test", bootstrap_samples=10)
     assert np.isfinite(est.ate)
+
+
+def test_native_bundle_roundtrip_reevaluate(tmp_path) -> None:
+    """Save → load → re-evaluate must recover finite ATE + nuisance metrics."""
+    session = _session()
+    session.causal.declare_assumptions(
+        treatment="t",
+        outcome="y",
+        confounders=["x1", "x2"],
+        acknowledge_unconfoundedness=True,
+        acknowledge_positivity=True,
+    )
+    session.causal.fit(method="aipw", bootstrap_samples=30)
+    ev = session.causal.evaluate(partition="validation", bootstrap_samples=15)
+    assert ev.n_rows > 0
+    assert np.isfinite(ev.ate)
+    assert "outcome_rmse" in ev.metrics or "propensity_auc" in ev.metrics
+    assert "outcome_mae" in ev.metrics or "propensity_brier" in ev.metrics
+
+    bundle = tmp_path / "causal_native_bundle"
+    session.causal.save_bundle(bundle)
+
+    other = (
+        Session.ingest(_causal_frame())
+        .set_roles(
+            {"x1": "feature", "x2": "feature", "t": "feature", "y": "target"}
+        )
+        .split(test_size=0.2, validation_size=0.2, random_state=1)
+        .scale(method="standard")
+    )
+    other.causal.load_bundle(bundle, trusted=True)
+    ev2 = other.causal.evaluate(partition="validation", bootstrap_samples=15)
+    assert ev2.n_rows == ev.n_rows
+    assert ev2.ate == pytest.approx(ev.ate, rel=1e-6, abs=1e-6)
+    for key in ("outcome_rmse", "outcome_mae", "propensity_auc"):
+        if key in ev.metrics and key in ev2.metrics:
+            assert ev2.metrics[key] == pytest.approx(ev.metrics[key], rel=1e-6, abs=1e-6)
 
 
 def test_instruments_refused() -> None:

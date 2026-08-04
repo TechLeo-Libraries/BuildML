@@ -69,20 +69,20 @@ def main() -> None:
         skip_notes.append("torch: unavailable")
     else:
         try:
-            session.make_torch_loaders(
+            session.dl.make_loaders(
                 batch_size=64,
                 normalize=True,
                 seed=ctx.seed,
                 task="classification",
             )
-            session.fit_torch(
+            session.dl.fit(
                 epochs=3, learning_rate=1e-2, device="cpu", hidden=(64, 32)
             )
-            t_val = session.evaluate_torch(partition="validation")
+            t_val = session.dl.evaluate(partition="validation")
             assert_no_test_in_selection(
                 selection_partition="validation", evaluation_partition="test"
             )
-            t_test = session.evaluate_torch(partition="test")
+            t_test = session.dl.evaluate(partition="test")
             stages["torch"] = {
                 "status": "ok",
                 "epochs": 3,
@@ -151,20 +151,20 @@ def main() -> None:
         )
         prob_session.impute(strategy="median")
         prob_session.scale(method="standard")
-        p_fit = prob_session.fit_probabilistic(
+        p_fit = prob_session.probabilistic.fit(
             estimator="bayesian_ridge",
             conformal=True,
             interval_method="both",
             random_state=ctx.seed,
         )
         try:
-            intervals = prob_session.predict_interval(partition="test", alpha=0.1)
+            intervals = prob_session.probabilistic.predict_interval(partition="test", alpha=0.1)
             interval_payload = metrics_round(
                 intervals.to_dict() if hasattr(intervals, "to_dict") else {}
             )
         except Exception as exc:  # noqa: BLE001
             interval_payload = {"error": f"{type(exc).__name__}: {exc}"}
-        p_ev = prob_session.evaluate_probabilistic(partition="test")
+        p_ev = prob_session.probabilistic.evaluate(partition="test")
         stages["probabilistic"] = {
             "status": "ok",
             "fit": metrics_round(p_fit.to_dict() if hasattr(p_fit, "to_dict") else {}),

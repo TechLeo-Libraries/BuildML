@@ -6,7 +6,7 @@
 > See [installation](../docs/installation.rst).
 
 Human-in-the-loop labeling on the **train** pool: fit a learner on scarce seed
-labels, `suggest_query` the most uncertain train rows, `label_rows` with
+labels, `session.active_learning.suggest_query` the most uncertain train rows, `session.active_learning.label_rows` with
 **user-provided** labels, refit, evaluate labeled holdout, save a distinct
 bundle. Pool convention matches semi-supervised: **NaN targets** mark unlabeled
 train rows. Validation/test are never the query pool. Core never invents an
@@ -57,7 +57,7 @@ session._dataset = Dataset.from_transformed(
     roles=dict(session.dataset.roles),
 )
 
-fit = session.fit_active_learner(
+fit = session.active_learning.fit(
     strategy="margin",
     base_estimator="logistic_regression",
     batch_size=8,
@@ -66,24 +66,24 @@ fit = session.fit_active_learner(
 print(fit.n_labeled_train, fit.n_unlabeled_pool, fit.strategy)
 
 for round_i in range(3):
-    q = session.suggest_query(batch_size=8)
+    q = session.active_learning.suggest_query(batch_size=8)
     if not q.indices:
         break
     # Example-only simulated oracle: production code must use a human labeler.
     human_labels = [int(truth.loc[i]) for i in q.indices]
-    labeled = session.label_rows(indices=q.indices, labels=human_labels)
+    labeled = session.active_learning.label_rows(indices=q.indices, labels=human_labels)
     print(round_i, labeled.n_newly_labeled, labeled.n_labeled_now, labeled.budget_remaining)
 
-ev = session.evaluate_active_learning(partition="test")
+ev = session.active_learning.evaluate(partition="test")
 print(ev.n_labeled_eval, ev.metrics)
 
-bundle = session.save_active_learning_bundle("artifacts/activelearning_bundle")
+bundle = session.active_learning.save_bundle("artifacts/activelearning_bundle")
 ```
 
 **Strategies:** `least_confidence`, `margin`, `entropy`, `committee` (bagged
 vote entropy), `expected_model_change_lite`.
 
-**Not this API:** semi-supervised propagation (`fit_semisupervised`),
-self-supervised pretext (`fit_ssl_pretext`), or online/`partial_fit` streams
-(`fit_online` / `partial_fit_online`)
-(Phase 2 next).
+**Not this API:** semi-supervised propagation (`session.semisupervised.fit`),
+self-supervised pretext (`session.ssl.fit_pretext`), or online/`partial_fit` streams
+(`session.online.fit` / `session.online.partial_fit`)
+(see active-learning / online guides).

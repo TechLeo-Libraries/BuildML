@@ -83,15 +83,15 @@ def main() -> None:
         skip_notes.append("tda: ripser/persim not importable")
     else:
         try:
-            t_fit = session.fit_tda(
+            t_fit = session.tda.fit(
                 vectorization="persistence_image",
                 knn=12,
                 n_bins=12,
                 head="logistic_regression",
                 random_state=ctx.seed,
             )
-            t_val = session.evaluate_tda(partition="validation")
-            t_test = session.evaluate_tda(partition="test")
+            t_val = session.tda.evaluate(partition="validation")
+            t_test = session.tda.evaluate(partition="test")
             stages["tda"] = {
                 "status": "ok",
                 "fit": metrics_round(t_fit.to_dict() if hasattr(t_fit, "to_dict") else {}),
@@ -120,7 +120,7 @@ def main() -> None:
             .scale(method="standard")
         )
         if extra_available("pyod"):
-            a_fit = a_session.fit_anomaly(
+            a_fit = a_session.anomaly.fit(
                 backend="pyod",
                 method="hbos",
                 mode="unsupervised",
@@ -129,7 +129,7 @@ def main() -> None:
             )
             a_backend = "pyod/hbos"
         else:
-            a_fit = a_session.fit_anomaly(
+            a_fit = a_session.anomaly.fit(
                 method="isolation_forest",
                 mode="unsupervised",
                 contamination=0.08,
@@ -139,13 +139,13 @@ def main() -> None:
         assert_no_test_in_selection(
             selection_partition="validation", evaluation_partition="test"
         )
-        a_tune = a_session.tune_anomaly_threshold(
+        a_tune = a_session.anomaly.tune_threshold(
             partition="validation",
             label_column=TARGET,
             positive_label=0,  # fail / drift is the rare class of interest
             metric="f1",
         )
-        a_ev = a_session.evaluate_anomaly(partition="test", positive_label=0)
+        a_ev = a_session.anomaly.evaluate(partition="test", positive_label=0)
         stages["anomaly"] = {
             "status": "ok",
             "backend": a_backend,

@@ -16,7 +16,7 @@ from buildml.explain.schemas import OperationSpec, Prerequisite
 MULTITASK_PLAN = Prerequisite(
     "multitask-plan",
     "A train-fitted MultiTaskPlan is attached to the Session.",
-    check_hint="Session.multitask_plan is not None.",
+    check_hint="session.multitask.plan is not None.",
 )
 
 _OPERATIONS: tuple[OperationSpec, ...] = (
@@ -97,7 +97,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         ordering=("After split and usually after impute/scale.",),
         alternatives=(
             "Session.fit for a single classical target.",
-            "Session.fit_voting / fit_stacking when combining models, not targets.",
+            "session.ensemble.fit_voting / session.ensemble.fit_stacking when combining models, not targets.",
         ),
         rationale=(
             "Use when several related targets share features and should be learned jointly.",
@@ -120,13 +120,13 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             "Expecting Session.fit to auto-enable multi-output.",
         ),
         state_changes=(
-            "Stores multitask_plan and fit result; clears prior predict/eval slots.",
+            "Stores session.multitask.plan and fit result; clears prior predict/eval slots.",
         ),
         result_reading=(
             "Read n_tasks, target_columns, method, task, disclosures.",
         ),
         next_steps=(
-            "predict_multitask / evaluate_multitask; optionally save_multitask_bundle.",
+            "session.multitask.predict / session.multitask.evaluate; optionally session.multitask.save_bundle.",
         ),
         concepts=(
             "multitask-multi-output",
@@ -163,16 +163,16 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         inputs=("Active MultiTaskPlan.",),
         outputs=("MultiTaskPredictResult (and updated dataset when attach=True).",),
         prerequisites=(DATASET, MULTITASK_PLAN),
-        ordering=("After fit_multitask or load_multitask_bundle.",),
-        alternatives=("evaluate_multitask when you also need metrics.",),
+        ordering=("After session.multitask.fit or session.multitask.load_bundle.",),
+        alternatives=("session.multitask.evaluate when you also need metrics.",),
         rationale=("Use for per-task inference snapshots without mutating the plan.",),
         assumptions=("Feature columns match the plan contract.",),
         failures=("No plan; missing columns; null features; attach without partition='all'.",),
         leakage=("None inherent: still do not train on predictions.",),
         anti_patterns=("Writing predictions back into target roles without disclosure.",),
-        state_changes=("Stores multitask_predict_result; may replace dataset when attach=True.",),
+        state_changes=("Stores session.multitask.predict_result; may replace dataset when attach=True.",),
         result_reading=("Read predictions dict keyed by target column; n_rows; disclosures.",),
-        next_steps=("evaluate_multitask or save_multitask_bundle.",),
+        next_steps=("session.multitask.evaluate or session.multitask.save_bundle.",),
         concepts=("multitask-multi-output",),
     ),
     _operation(
@@ -197,21 +197,21 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         inputs=("Active MultiTaskPlan and labeled evaluation targets.",),
         outputs=("MultiTaskEvalResult.",),
         prerequisites=(DATASET, MULTITASK_PLAN),
-        ordering=("After fit_multitask.",),
+        ordering=("After session.multitask.fit.",),
         alternatives=("Classical Session.evaluate for a single-target FitResult.",),
         rationale=("Use to quantify holdout quality across all tasks.",),
         assumptions=("Holdout has labeled rows for every target column.",),
         failures=("No plan; empty/null evaluation partition.",),
         leakage=(
-            "Using evaluate_multitask metrics to choose which holdout rows to refit on.",
+            "Using session.multitask.evaluate metrics to choose which holdout rows to refit on.",
         ),
         anti_patterns=("Reporting train accuracy as holdout multi-task performance.",),
-        state_changes=("Stores multitask_eval_result.",),
+        state_changes=("Stores session.multitask.eval_result.",),
         result_reading=(
             "Read per_task_metrics, metrics (means), n_rows, disclosures.",
         ),
         next_steps=(
-            "save_multitask_bundle; or compare method='multi_output' vs chains.",
+            "session.multitask.save_bundle; or compare method='multi_output' vs chains.",
         ),
         concepts=(
             "multitask-multi-output",
@@ -229,16 +229,16 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         inputs=("Active MultiTaskPlan.",),
         outputs=("Bundle directory path.",),
         prerequisites=(MULTITASK_PLAN,),
-        ordering=("After a successful fit_multitask.",),
+        ordering=("After a successful session.multitask.fit.",),
         alternatives=("Session.checkpoint_save for workflow resume without the learner.",),
         rationale=("Use when the joint multi-target model must travel separately.",),
         assumptions=("Destination is writable.",),
         failures=("No plan attached.",),
         leakage=("Bundles do not embed holdout rows.",),
         anti_patterns=("Assuming a Session checkpoint embeds the MultiTaskPlan.",),
-        state_changes=("History records save_multitask_bundle.",),
+        state_changes=("History records session.multitask.save_bundle.",),
         result_reading=("Confirm meta.json format buildml.multitask_bundle.v1.",),
-        next_steps=("load_multitask_bundle in another Session.",),
+        next_steps=("session.multitask.load_bundle in another Session.",),
         concepts=("multitask-bundle-boundary",),
     ),
     _operation(
@@ -258,20 +258,20 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             ),
         ),
         inputs=("Bundle directory with meta.json + multitask_plan.joblib.",),
-        outputs=("Session with multitask_plan attached.",),
+        outputs=("Session with session.multitask.plan attached.",),
         prerequisites=(DATASET,),
         ordering=("After ingest/roles/split aligned with the plan feature contract.",),
-        alternatives=("fit_multitask to learn a new plan.",),
+        alternatives=("session.multitask.fit to learn a new plan.",),
         rationale=("Use to resume a multi-target learner.",),
         assumptions=("Feature columns and target columns still match the plan contract.",),
         failures=("Incomplete or wrong-format bundle.",),
         leakage=("Do not treat load as permission to fit on holdout rows.",),
         anti_patterns=("Loading into a Session whose features drifted from the plan.",),
         state_changes=(
-            "Sets multitask_plan; clears fit/predict/eval result slots.",
+            "Sets session.multitask.plan; clears fit/predict/eval result slots.",
         ),
-        result_reading=("Inspect Session.multitask_plan.to_dict().",),
-        next_steps=("predict_multitask / evaluate_multitask.",),
+        result_reading=("Inspect session.multitask.plan.to_dict().",),
+        next_steps=("session.multitask.predict / session.multitask.evaluate.",),
         concepts=("multitask-bundle-boundary",),
     ),
 )

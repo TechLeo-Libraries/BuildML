@@ -32,7 +32,7 @@ METALEARNING_NOTES: dict[str, ConceptNote] = {
                 "Using holdout rows during meta-train is leakage.",
             ),
             how_buildml_uses=(
-                "Session.fit_metalearning → Session.adapt_to_task / evaluate_metalearning.",
+                "session.metalearning.fit → session.metalearning.adapt / session.metalearning.evaluate.",
                 "Task column from role='group' or task_column=.",
             ),
             interpretation_rules=(
@@ -49,8 +49,8 @@ METALEARNING_NOTES: dict[str, ConceptNote] = {
                 "Claiming foundation-model or MAML-at-scale results from tabular prototypes.",
             ),
             worked_example_pattern=(
-                "fit_metalearning(method='prototypical', k_shot=5) → "
-                "evaluate_metalearning('validation').",
+                "session.metalearning.fit(method='prototypical', k_shot=5) → "
+                "session.metalearning.evaluate('validation').",
             ),
             related_concepts=(
                 "metalearning-prototypical",
@@ -79,7 +79,7 @@ METALEARNING_NOTES: dict[str, ConceptNote] = {
                 "A complete, honest few-shot baseline without pretending a neural ProtoNet.",
             ),
             how_buildml_uses=(
-                "fit_metalearning(method='prototypical'); adapt_to_task builds prototypes.",
+                "session.metalearning.fit(method='prototypical'); session.metalearning.adapt builds prototypes.",
             ),
             interpretation_rules=(
                 "Read meta_train_accuracy and per-task episodic accuracy/F1.",
@@ -88,14 +88,14 @@ METALEARNING_NOTES: dict[str, ConceptNote] = {
             failure_modes=("Tasks with a single class or fewer than k_shot+1 rows per class.",),
             anti_patterns=("Marketing this as a learned ProtoNet embedding.",),
             worked_example_pattern=(
-                "fit_metalearning(method='prototypical', k_shot=3, n_episodes=30).",
+                "session.metalearning.fit(method='prototypical', k_shot=3, n_episodes=30).",
             ),
             related_concepts=("metalearning-episodic", "metalearning-warm-start"),
         ),
         _note(
             key="metalearning-warm-start",
             title="Warm-start meta-initialization + support adapt",
-            summary="Pooled sklearn classifier as meta-init; adapt_to_task clones and refits on the support set.",
+            summary="Pooled sklearn classifier as meta-init; session.metalearning.adapt clones and refits on the support set.",
             definition=(
                 "method='warm_start' fits a logistic / SGD classifier on pooled "
                 "meta-train rows, then fast-adapts by cloning and refitting on "
@@ -112,7 +112,7 @@ METALEARNING_NOTES: dict[str, ConceptNote] = {
                 "Gives a practical transfer/init path without claiming full MAML.",
             ),
             how_buildml_uses=(
-                "fit_metalearning(method='warm_start', base_estimator=...); adapt_to_task.",
+                "session.metalearning.fit(method='warm_start', base_estimator=...); session.metalearning.adapt.",
             ),
             interpretation_rules=(
                 "Compare warm_start vs prototypical episodic mean_accuracy on holdout.",
@@ -121,7 +121,7 @@ METALEARNING_NOTES: dict[str, ConceptNote] = {
             failure_modes=("Support too small for the base estimator to refit.",),
             anti_patterns=("Calling warm-start 'MAML' or second-order meta-gradients.",),
             worked_example_pattern=(
-                "fit_metalearning(method='warm_start') → adapt_to_task(task_id=...).",
+                "session.metalearning.fit(method='warm_start') → session.metalearning.adapt(task_id=...).",
             ),
             related_concepts=("metalearning-episodic", "metalearning-prototypical"),
         ),
@@ -146,7 +146,7 @@ METALEARNING_NOTES: dict[str, ConceptNote] = {
                 "Honest deep few-shot baseline without vision ProtoNet claims.",
             ),
             how_buildml_uses=(
-                "fit_metalearning(backend='torch', method='prototypical_torch').",
+                "session.metalearning.fit(backend='torch', method='prototypical_torch').",
             ),
             interpretation_rules=(
                 "Compare meta_train_accuracy and holdout mean_accuracy vs sklearn prototypical.",
@@ -155,7 +155,7 @@ METALEARNING_NOTES: dict[str, ConceptNote] = {
             failure_modes=("Torch missing; insufficient episodic rows.",),
             anti_patterns=("Claiming image ProtoNet or foundation-model meta-learning.",),
             worked_example_pattern=(
-                "fit_metalearning(backend='torch', method='prototypical_torch', k_shot=5)."
+                "session.metalearning.fit(backend='torch', method='prototypical_torch', k_shot=5)."
             ,),
             related_concepts=("metalearning-episodic", "metalearning-prototypical", "metalearning-maml"),
         ),
@@ -180,7 +180,7 @@ METALEARNING_NOTES: dict[str, ConceptNote] = {
                 "second-order MAML-at-scale claims."
             ,),
             how_buildml_uses=(
-                "fit_metalearning(backend='industry', method='maml'); adapt_to_task.",
+                "session.metalearning.fit(backend='industry', method='maml'); session.metalearning.adapt.",
             ),
             interpretation_rules=(
                 "Read inner_steps, meta_train_accuracy, novel_task_ids on eval.",
@@ -191,7 +191,7 @@ METALEARNING_NOTES: dict[str, ConceptNote] = {
                 "Equating with EconML causal meta or full second-order MAML papers.",
             ),
             worked_example_pattern=(
-                "fit_metalearning(backend='industry', method='maml', inner_steps=5)."
+                "session.metalearning.fit(backend='industry', method='maml', inner_steps=5)."
             ,),
             related_concepts=("metalearning-episodic", "metalearning-warm-start"),
         ),
@@ -211,16 +211,16 @@ METALEARNING_NOTES: dict[str, ConceptNote] = {
             ),
             formal_idea=(
                 "Artifacts are complementary: checkpoint_load ↛ meta-learner; "
-                "load_metalearning_bundle ↛ dataset rows."
+                "session.metalearning.load_bundle ↛ dataset rows."
             ),
             why_it_matters=("Mixing artifacts causes silent missing-learner failures.",),
-            how_buildml_uses=("save_metalearning_bundle / load_metalearning_bundle.",),
+            how_buildml_uses=("session.metalearning.save_bundle / session.metalearning.load_bundle.",),
             interpretation_rules=("Read meta.json format buildml.metalearning_bundle.v1.",),
             assumptions=("Feature/task/target columns still match at load time.",),
             failure_modes=("Expecting checkpoint_load to restore MetaLearningPlan.",),
             anti_patterns=("Treating multitask or online bundles as meta-learning plans.",),
             worked_example_pattern=(
-                "session.save_metalearning_bundle(path); other.load_metalearning_bundle(path).",
+                "session.metalearning.save_bundle(path); other.metalearning.load_bundle(path).",
             ),
             related_concepts=("metalearning-episodic", "multitask-bundle-boundary"),
         ),

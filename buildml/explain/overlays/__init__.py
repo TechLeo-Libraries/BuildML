@@ -14,6 +14,7 @@ from buildml.explain.overlays.dl import _OPERATIONS as _DL
 from buildml.explain.overlays.ensemble import _OPERATIONS as _ENSEMBLE
 from buildml.explain.overlays.federated import _OPERATIONS as _FEDERATED
 from buildml.explain.overlays.forecasting import _OPERATIONS as _FORECASTING
+from buildml.explain.overlays.fairness import _OPERATIONS as _FAIRNESS
 from buildml.explain.overlays.graph import _OPERATIONS as _GRAPH
 from buildml.explain.overlays.kg import _OPERATIONS as _KG
 from buildml.explain.overlays.metalearning import _OPERATIONS as _METALEARNING
@@ -67,6 +68,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
     *_SYNTHETIC,
     *_NLP,
     *_AI,
+    *_FAIRNESS,
     *_CAPABILITY,
     *_WORKFLOW,
 )

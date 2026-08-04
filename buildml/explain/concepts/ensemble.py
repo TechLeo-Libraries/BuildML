@@ -31,7 +31,7 @@ ENSEMBLE_NOTES: dict[str, ConceptNote] = {
                 "Teaching cards must disclose strategy, bases, and voting mode.",
             ),
             how_buildml_uses=(
-                "Session.fit_voting builds VotingClassifier/VotingRegressor.",
+                "session.ensemble.fit_voting builds VotingClassifier/VotingRegressor.",
                 "Session.fit still accepts RandomForest as a single estimator.",
                 "Catalog concepts keep the distinction explicit.",
             ),
@@ -44,14 +44,14 @@ ENSEMBLE_NOTES: dict[str, ConceptNote] = {
                 "Soft voting probabilities are calibrated enough to average meaningfully.",
             ),
             failure_modes=(
-                "Calling fit_voting with one estimator.",
+                "Calling session.ensemble.fit_voting with one estimator.",
                 "Soft voting with a base that lacks predict_proba.",
             ),
             anti_patterns=(
                 "Treating RandomForest via Session.fit as the native ensemble product.",
             ),
             worked_example_pattern=(
-                "split → prep → fit_voting({'lr': ..., 'rf': ...}) → evaluate_ensemble.",
+                "split → prep → session.ensemble.fit_voting({'lr': ..., 'rf': ...}) → session.ensemble.evaluate.",
             ),
             related_concepts=("ensemble-stacking-oof", "leakage-boundary", "baselines"),
         ),
@@ -77,7 +77,7 @@ ENSEMBLE_NOTES: dict[str, ConceptNote] = {
                 "Stacking without OOF often overfits the meta-learner.",
             ),
             how_buildml_uses=(
-                "Session.fit_stacking wraps sklearn StackingClassifier/Regressor.",
+                "session.ensemble.fit_stacking wraps sklearn StackingClassifier/Regressor.",
                 "fit_estimator only materializes train rows; Session test stays out.",
                 "Disclosures record cv and passthrough.",
             ),
@@ -97,7 +97,7 @@ ENSEMBLE_NOTES: dict[str, ConceptNote] = {
                 "Scoring stacking meta-features on Session test during fit.",
             ),
             worked_example_pattern=(
-                "split → prep → fit_stacking(..., cv=5) → evaluate_ensemble(partition='test').",
+                "split → prep → session.ensemble.fit_stacking(..., cv=5) → session.ensemble.evaluate(partition='test').",
             ),
             related_concepts=(
                 "ensemble-blending-holdout",
@@ -127,9 +127,9 @@ ENSEMBLE_NOTES: dict[str, ConceptNote] = {
                 "Blending is weaker than stacking OOF but honest when scoped to train.",
             ),
             how_buildml_uses=(
-                "Session.fit_blending uses HoldoutBlendClassifier/Regressor.",
+                "session.ensemble.fit_blending uses HoldoutBlendClassifier/Regressor.",
                 "Disclosures record holdout_fraction, blend_method, and full-train refit.",
-                "Prefer fit_stacking when CV OOF meta features are desired.",
+                "Prefer session.ensemble.fit_stacking when CV OOF meta features are desired.",
             ),
             interpretation_rules=(
                 "Read holdout_fraction beside n_train_rows.",
@@ -147,7 +147,7 @@ ENSEMBLE_NOTES: dict[str, ConceptNote] = {
                 "Calling Session validation the 'blend set' while also reporting it as final eval.",
             ),
             worked_example_pattern=(
-                "split → prep → fit_blending(..., holdout_fraction=0.2) → evaluate_ensemble.",
+                "split → prep → session.ensemble.fit_blending(..., holdout_fraction=0.2) → session.ensemble.evaluate.",
             ),
             related_concepts=(
                 "ensemble-stacking-oof",
@@ -178,12 +178,12 @@ ENSEMBLE_NOTES: dict[str, ConceptNote] = {
                 "Complementary artifacts prevent silent deploy gaps.",
             ),
             how_buildml_uses=(
-                "save_ensemble_bundle / load_ensemble_bundle.",
+                "session.ensemble.save_bundle / session.ensemble.load_bundle.",
                 "save_pipeline still works after fit_* because fit_result is set.",
                 "CHECKPOINT_BOUNDARY prose is embedded in meta.json.",
             ),
             interpretation_rules=(
-                "Reload tabular workflow via checkpoint_load; reload ensemble via load_ensemble_bundle.",
+                "Reload tabular workflow via checkpoint_load; reload ensemble via session.ensemble.load_bundle.",
                 "Use save_pipeline when impute/encode/scale must travel.",
             ),
             assumptions=(
@@ -196,7 +196,7 @@ ENSEMBLE_NOTES: dict[str, ConceptNote] = {
                 "Treating ensemble_bundle.v1 as a Session checkpoint.",
             ),
             worked_example_pattern=(
-                "fit_stacking → save_ensemble_bundle → new Session → load_ensemble_bundle → evaluate.",
+                "session.ensemble.fit_stacking → session.ensemble.save_bundle → new Session → session.ensemble.load_bundle → evaluate.",
             ),
             related_concepts=("unsupervised-bundle-boundary", "leakage-boundary"),
         ),

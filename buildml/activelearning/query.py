@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, cast
 
 import numpy as np
 
@@ -12,7 +12,10 @@ from buildml.data.splits import SplitPlan, assert_fit_partition
 from buildml.activelearning.adapters.scikit_activeml import score_industry_pool
 from buildml.activelearning.adapters.sklearn import score_sklearn_pool
 from buildml.activelearning.adapters.torch_uncertainty import score_torch_pool
-from buildml.activelearning.catalog import resolve_backend_strategy
+from buildml.activelearning.catalog import (
+    ActiveLearningBackendName,
+    resolve_backend_strategy,
+)
 from buildml.activelearning.fit import pool_masks_from_plan
 from buildml.activelearning.results import ActiveLearningPlan, ActiveLearningQueryResult
 from buildml.activelearning.types import ActiveLearningStrategy
@@ -25,7 +28,7 @@ def suggest_query(
     *,
     batch_size: int | None = None,
     strategy: ActiveLearningStrategy | None = None,
-    backend: str | None = None,
+    backend: ActiveLearningBackendName | None = None,
 ) -> ActiveLearningQueryResult:
     """Suggest unlabeled train indices for the user to label.
 
@@ -83,9 +86,11 @@ def suggest_query(
             )
 
     resolved_strategy = strategy or plan.strategy
-    resolved_backend = backend or plan.backend
-    _, resolved_strategy = resolve_backend_strategy(
-        backend=resolved_backend, strategy=resolved_strategy
+    backend_arg = cast(
+        ActiveLearningBackendName | None, backend or plan.backend
+    )
+    resolved_backend, resolved_strategy = resolve_backend_strategy(
+        backend=backend_arg, strategy=resolved_strategy
     )
 
     requested = int(batch_size if batch_size is not None else (plan.config or {}).get("batch_size", 5))

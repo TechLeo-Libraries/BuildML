@@ -10,27 +10,32 @@
 
 1. Ingest judgment rows `(query_id, item_id, features…, relevance)`
 2. Prefer `group_split` on the query id
-3. `fit_ranker` on **train only** (industry backend default when installed)
-4. `rank` to order candidates per query
-5. `evaluate_ranker` with graded nDCG@K, MAP@K, MRR@K
-6. `save_ranker_bundle` / `load_ranker_bundle`
+3. `session.ranking.fit` on **train only** (industry backend default when installed)
+4. `session.ranking.rank` to order candidates per query
+5. `session.ranking.evaluate` with graded nDCG@K, MAP@K, MRR@K
+6. `session.ranking.save_bundle` / `session.ranking.load_bundle`
 
 **Is not:**
 
 - A search-engine product (no crawler, inverted index, or serving stack)
-- RAG (`rag_retrieve` / chunk embeddings / `rag_evaluate`): see [rag-deep.md](rag-deep.md)
-- Recommenders (`fit_recommender` user–item CF): see [recommenders-deep.md](recommenders-deep.md)
+- RAG (`session.rag.retrieve` / chunk embeddings / `session.rag.evaluate`): see [rag-deep.md](rag-deep.md)
+- Recommenders (`session.recommender.fit` user–item CF): see [recommenders-deep.md](recommenders-deep.md)
 - Hyperparameter `evolutionary_search` / classical model search
 
 Metric names may overlap (nDCG, MRR) across RAG / recommenders / LTR; the
-**protocol** differs. Do not mix `rag_evaluate`, `evaluate_recommender`, and
-`evaluate_ranker` numbers.
+**protocol** differs. Do not mix `session.rag.evaluate`, `session.recommender.evaluate`, and
+`session.ranking.evaluate` numbers.
 
 Inspect installed backends:
 
 ```python
+import pandas as pd
+
 from buildml import Session
-Session.ranking_capability_matrix()
+
+# Preferred namespaced form (flat Session.*_capability_matrix still works).
+session = Session.ingest(pd.DataFrame({"q": [0], "item": [1], "rel": [1]}))
+session.ranking.capability_matrix()
 ```
 
 ---
@@ -50,7 +55,7 @@ Each **row** is one labeled judgment. Multiple rows share a `query_id`.
 
 ## Leakage discipline
 
-- `fit_ranker` calls `assert_can_fit("train")`: holdout rows never update weights.
+- `session.ranking.fit` calls `assert_can_fit("train")`: holdout rows never update weights.
 - Prefer `Session.group_split(group_column=query_column)` so **no query id**
   appears in more than one partition (test labels cannot leak into train).
 - Random row `split` is allowed but **disclosed with warnings** when query ids
@@ -127,22 +132,22 @@ Session checkpoints do **not** embed `RankerPlan`. See
 
 ```python
 # After group_split + roles...
-session.fit_ranker(
+session.ranking.fit(
     backend="sklearn",
     method="pointwise",
     query_column="query_id",
     item_column="item_id",
 )
-pw = session.evaluate_ranker(k=5).metrics
+pw = session.ranking.evaluate(k=5).metrics
 
 # Industry default when buildml[ranking-industry] installed:
-session.fit_ranker(
+session.ranking.fit(
     backend="industry",
     method="lambdarank_lgbm",
     query_column="query_id",
     item_column="item_id",
 )
-gbdt = session.evaluate_ranker(k=5).metrics
+gbdt = session.ranking.evaluate(k=5).metrics
 print("pointwise", pw, "lambdarank", gbdt)
 ```
 
@@ -151,11 +156,7 @@ vs sklearn pointwise on synthetic judgments.
 
 ---
 
-## Tracker
+## Scope notes
 
-Phase 3 application systems: depth-first:
-
-1. Recommenders: **PASS**
-2. Search / LTR: **PASS** (R6.8 industry depth)
-3. Knowledge graphs: **PASS**
-4. Optimisation / decision helpers: next (R6.9)
+Related: recommenders, knowledge graphs, and optimisation helpers
+(see their guides). This LTR surface ships industry rankers when installed.

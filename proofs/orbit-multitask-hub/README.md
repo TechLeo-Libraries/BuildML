@@ -14,12 +14,12 @@ targets; a primary buy scorer feeds promo allocation. The platform:
 
 ## Status
 
-`completed`: run `script.py`; see `results/summary.json` and stage JSONs.
+Run `script.py`. Outputs land under `results/` (summary and stage JSON)..
 
 ## How to run
 
 ```bash
-.\.venv\Scripts\python.exe proofs\orbit-multitask-hub\script.py
+python proofs\orbit-multitask-hub\script.py
 ```
 
 ## Leakage controls

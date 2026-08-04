@@ -7,9 +7,11 @@ estimator, and a record of every operation you run. Preprocessing learns from
 the training partition only; validation and test rows receive frozen
 transformations. That train-only boundary is enforced in the API.
 
-**BuildML 2.4 alpha** (`2.4.0a2`) is pre-release software. Public methods, report
+**BuildML 2.4 alpha** (`2.4.0a3`) is pre-release software. Public methods, report
 schemas, and serialized bundle formats may change before a stable 2.x release.
-The public 2.x entry point is `buildml.Session`.
+The public 2.x entry point is `buildml.Session`. For domains, **namespaced
+facades** (`session.<domain>.*`) are the supported public API; flat domain
+aliases are supported-but-deprecated until BuildML 3.0.
 
 | Path | What it is |
 | --- | --- |
@@ -17,7 +19,7 @@ The public 2.x entry point is `buildml.Session`.
 | Torch DL | Optional multimodal / speech / vision extras on the same Session |
 | RAG | Optional retrieve → generate → evaluate |
 | AI operator | Optional LLM-assisted plan/execute with allowlists |
-| R1–R6 industry depth | Optional backends + capability matrices per domain |
+| Industry backends | Optional extras + capability matrices per domain |
 
 ---
 
@@ -26,8 +28,10 @@ The public 2.x entry point is `buildml.Session`.
 **Python 3.10–3.13.**
 
 > **Install honesty:** PyPI `buildml` is still the legacy **1.x** line
-> (`1.0.9`, MIT). It does **not** install Session 2.x. Until a 2.x wheel is
-> published, install from GitHub or an editable checkout:
+> (`1.0.9`, MIT). It does **not** install Session 2.x. This checkout is
+> release-ready as **`2.4.0a3`**; publishing needs human PyPI ownership / OIDC
+> (see [`docs/pypi-2x-publish.md`](docs/pypi-2x-publish.md)). Until that wheel
+> is live, install from GitHub or an editable checkout:
 
 ```bash
 # GitHub (Session 2.x)
@@ -60,16 +64,16 @@ pip install "buildml[production]"   # after GitHub / editable install above
 
 ### `buildml[production]` honesty
 
-R1–R6 industry refinement is **complete** (capability matrices, backend routing,
-benchmark smokes, guides). `buildml[production]` is a **best-effort** meta-extra:
-it pulls domain depth plus `*-industry` adapters: **not** a guarantee that every
-nested industry wheel installs on every platform.
+Industry domains ship with capability matrices, backend routing, benchmark
+smokes, and guides. `buildml[production]` is a **best-effort** meta-extra: it
+pulls domain depth plus `*-industry` adapters. It is **not** a guarantee that
+every nested industry wheel installs on every platform.
 
 On **Python 3.13** (especially Windows) some nested pins are skipped via
 environment markers when upstream wheels are missing or broken (LightFM,
 learn2learn/qpth, giotto-tda, neuralforecast, skope-rules, …). Core sklearn paths
 and markers that resolve still install. Check each domain’s capability matrix
-(e.g. `Session.automl_capability_matrix()`) and the [proof suite](proofs/README.md)
+(e.g. `session.automl.capability_matrix()`) and the [proof suite](proofs/README.md)
 for what actually runs in your environment. For a machine-local inventory of
 importable industry modules (never a hard fail), run:
 
@@ -86,7 +90,7 @@ It does **not** include dashboard, serve, or AI operator extras.
   payloads can execute code on load. Public loaders default to `trusted=False`
   and raise `ValidationError` until you pass `trusted=True` for artifacts you
   created or fully trust: for example `Session.checkpoint_load(path, trusted=True)`,
-  `session.load_anomaly_bundle(path, trusted=True)`,
+  `session.anomaly.load_bundle(path, trusted=True)`,
   `Session().predict_from_pipeline(path, frame, trusted=True)`, or
   `buildml-serve --bundle … --trusted`. Prefer JSON sidecars / parquet /
   `Session.checkpoint_load(..., data_only=True)` (skips plans without needing
@@ -106,6 +110,14 @@ It does **not** include dashboard, serve, or AI operator extras.
 ---
 
 ## A classical workflow
+
+**Facades are the supported public API for domains** in 2.4.x
+(`session.fairness.*`, `session.anomaly.*`, …). Flat domain aliases still work
+but emit `DeprecationWarning` until BuildML 3.0. Classical core is dual on
+purpose: flat `session.fit` / `session.evaluate` / … stay first-class without
+warnings, and `session.classical.*` / `session.data.*` / `session.preprocess.*`
+are equivalent paths — not a secondary API. See
+[`docs/session-facade-migration.md`](docs/session-facade-migration.md).
 
 ```python
 import pandas as pd
@@ -279,7 +291,7 @@ are installed.
 | Unsupervised / ensembles | [unsupervised](guides/quickstart-unsupervised.md), [ensemble](guides/quickstart-ensemble.md) | Core clustering + voting/stacking |
 | AutoML | [automl](guides/quickstart-automl.md) | Native + Optuna; FLAML/AutoGluon via industry |
 | Forecast | [forecasting](guides/quickstart-forecasting.md) | `time_split` lags/baselines |
-| Time-series analysis | [timeseries-analysis](guides/quickstart-timeseries-analysis.md) | `analyze_timeseries` / decompose / diagnostics (no forecast fit) |
+| Time-series analysis | [timeseries-analysis](guides/quickstart-timeseries-analysis.md) | `session.timeseries.analyze` / decompose / diagnostics (no forecast fit) |
 | Anomaly | [anomaly](guides/quickstart-anomaly.md) | IsolationForest / LOF / OCSVM + supervised |
 | Semi / SSL / AL / Online | matching quickstarts | sklearn floor; industry/torch deepen |
 | Multi-task / Meta / Federated | matching quickstarts | MultiOutput / few-shot / FedAvg sim |
@@ -296,7 +308,7 @@ are installed.
 Torch covers tabular MLP, text/sequence, and multimodal fusion; speech
 (`buildml[speech]`) is ASR + finetune-lite: not Whisper-scale FM training from
 scratch. RAG defaults to lexical hashing; semantic embeddings and grounded
-`rag_generate` are first-class when extras resolve. NLP models a text column that
+`session.rag.generate` are first-class when extras resolve. NLP models a text column that
 lives on the dataset: document classification and analysis, distinct from RAG
 retrieval and from Torch fine-tuning. The AI operator defaults to
 propose→confirm→execute: not unconstrained agency.
@@ -312,16 +324,17 @@ metrics lives under [`proofs/`](proofs/README.md): **not** smoke tests.
 
 | Tier | Status | Meaning |
 | --- | --- | --- |
-| A | **57/57** | One deep project per major domain (incl. ensembles + Torch) |
+| A | **62/62** | One deep project per major domain (incl. ensembles + Torch + **REAL_PUBLIC_DATASET** cohort) |
 | B | **36/36** | Named products composing multiple Session surfaces |
-| C | **57/57** | Same-split industry twin + `comparison.json` (qualitative bar 5-B) |
+| C | **58/62** | Same-split industry twin + `comparison.json` (qualitative bar 5-B; real-public cohort may be A-only) |
 
 ```bash
 # Full harness from repo root
 python -m proofs._lib.run_all --tier all
 
-# Single project
+# Single project (synthetic or real public)
 python proofs/loan-approval-classical/script.py
+python proofs/breast-cancer-classical/script.py
 ```
 
 Install domain extras as needed before running (editable install preferred):
@@ -347,7 +360,7 @@ This is pre-release software. Bundle schema version strings, report layouts,
 and method signatures may change before a stable 2.x cut. See
 [`docs/stability.md`](docs/stability.md) for the public-surface freeze policy.
 
-Shipped: observational fairness disparity reports (`evaluate_fairness`) and
+Shipped: observational fairness disparity reports (`session.fairness.evaluate`) and
 optional SHAP attribution (`explain_shap` via `buildml[shap]`). Still out of
 scope: out-of-core sklearn training, legal fairness certification, and
 unconstrained LLM agency. Speech ASR defaults to a CI-safe stub backend;

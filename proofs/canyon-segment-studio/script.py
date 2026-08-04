@@ -101,14 +101,14 @@ def main() -> None:
 
     # --- Stage 1: unsupervised clusters ---
     try:
-        c_fit = session.fit_clusters(method="kmeans", n_clusters=4, random_state=ctx.seed)
+        c_fit = session.unsupervised.fit(method="kmeans", n_clusters=4, random_state=ctx.seed)
         assert_no_test_in_selection(
             selection_partition="validation", evaluation_partition="test"
         )
-        c_val = session.evaluate_clusters(
+        c_val = session.unsupervised.evaluate(
             partition="validation", external_label_column=EXTERNAL
         )
-        c_test = session.evaluate_clusters(
+        c_test = session.unsupervised.evaluate(
             partition="test", external_label_column=EXTERNAL
         )
         stages["clusters"] = {
@@ -168,13 +168,13 @@ def main() -> None:
         assert_no_test_in_selection(
             selection_partition="validation", evaluation_partition="test"
         )
-        thr = prop.fit_decision_policy(
+        thr = prop.decision.fit(
             method="threshold",
             partition="validation",
             fp_cost=1.0,
             fn_cost=2.5,
         )
-        thr_test = prop.evaluate_decisions(partition="test")
+        thr_test = prop.decision.evaluate(partition="test")
         stages["decisions"] = {
             "status": "ok",
             "threshold_policy": metrics_round(
@@ -185,7 +185,7 @@ def main() -> None:
             ),
         }
         try:
-            knap = prop.fit_decision_policy(
+            knap = prop.decision.fit(
                 method="knapsack",
                 partition="validation",
                 budget=70.0,
@@ -194,7 +194,7 @@ def main() -> None:
                 score_source="model_proba",
                 knapsack_solver="dp",
             )
-            applied = prop.apply_decisions(partition="test")
+            applied = prop.decision.apply(partition="test")
             stages["decisions"]["knapsack"] = {
                 "status": "ok",
                 "policy": metrics_round(

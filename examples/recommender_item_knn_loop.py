@@ -44,7 +44,7 @@ def main() -> None:
         .split(test_size=0.2, validation_size=0.15, random_state=0)
     )
 
-    fit = session.fit_recommender(
+    fit = session.recommender.fit(
         method="item_knn",
         user_column="user_id",
         item_column="item_id",
@@ -53,14 +53,14 @@ def main() -> None:
     )
     print("fit", fit.to_dict())
 
-    recs = session.recommend(partition="test", k=5)
+    recs = session.recommender.recommend(partition="test", k=5)
     print("recommend", recs.to_dict())
 
-    ev = session.evaluate_recommender(partition="test", k=5)
+    ev = session.recommender.evaluate(partition="test", k=5)
     print("eval", ev.metrics)
 
     out = Path("artifacts/recommender_demo_bundle")
-    session.save_recommender_bundle(out)
+    session.recommender.save_bundle(out)
     other = (
         Session.ingest(frame)
         .set_roles(
@@ -74,8 +74,8 @@ def main() -> None:
         )
         .split(test_size=0.2, validation_size=0.15, random_state=0)
     )
-    other.load_recommender_bundle(out, trusted=True)
-    print("reloaded eval", other.evaluate_recommender(partition="test", k=5).metrics)
+    other.recommender.load_bundle(out, trusted=True)
+    print("reloaded eval", other.recommender.evaluate(partition="test", k=5).metrics)
 
 
 if __name__ == "__main__":

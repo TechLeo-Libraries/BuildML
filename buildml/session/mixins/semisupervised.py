@@ -9,7 +9,10 @@ from buildml.session.mixins._shared import *  # noqa: F403
 
 
 class SemisupervisedSessionMixin:
-    """Public Session methods for the semisupervised domain."""
+    """Public Session methods for the semisupervised domain.
+
+    Preferred namespaced API: ``session.semisupervised.*`` (domain flat actions emit DeprecationWarning until BuildML 3.0).
+    """
     # mypy: session private attrs (owned by Session.__init__)
     if TYPE_CHECKING:
         _semisupervised_eval_result: Any

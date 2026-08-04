@@ -109,7 +109,7 @@ def main() -> None:
     write_comparison(
         ctx,
         buildml={
-            "backend": "buildml.Session.fit_ranker",
+            "backend": "buildml.session.ranking.fit",
             "method": bml_raw.get("method", "pointwise"),
             "test_metrics": bml_metrics,
         },

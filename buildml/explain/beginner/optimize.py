@@ -44,12 +44,12 @@ OPTIMIZE_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.fit_decision_policy(",
+            "session.decision.fit(",
             "    method='threshold', partition='validation',",
             "    fp_cost=1.0, fn_cost=25.0,",
             ")",
-            "decisions = session.apply_decisions(partition='test')",
-            "session.evaluate_decisions(partition='test')",
+            "decisions = session.decision.apply(partition='test')",
+            "session.decision.evaluate(partition='test')",
         ),
         check=(
             "What is the money value of one false negative in your problem?",
@@ -100,8 +100,8 @@ OPTIMIZE_BEGINNER: dict[str, BeginnerLayer] = _index(
             "costs = [[0, 5, 50],",
             "         [2, 0, 20],",
             "         [80, 30, 0]]   # rows = truth, cols = action",
-            "session.fit_decision_policy(method='cost_matrix', cost_matrix=costs)",
-            "session.apply_decisions(partition='test')",
+            "session.decision.fit(method='cost_matrix', cost_matrix=costs)",
+            "session.decision.apply(partition='test')",
         ),
         check=(
             "Are your model's probabilities calibrated enough to multiply by money?",
@@ -148,11 +148,11 @@ OPTIMIZE_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.fit_decision_policy(",
+            "session.decision.fit(",
             "    method='knapsack', value_column='expected_profit',",
             "    cost_column='contact_cost', budget=10_000.0,",
             ")",
-            "selected = session.apply_decisions(partition='test')",
+            "selected = session.decision.apply(partition='test')",
         ),
         check=(
             "Do your items have meaningfully different costs?",
@@ -175,9 +175,9 @@ OPTIMIZE_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         steps=(
             "Fit a decision policy so a plan exists.",
-            "Call `save_decision_bundle(path)` to persist the rule and its parameters.",
-            "Reload with `load_decision_bundle(path)` wherever the rule is applied.",
-            "Apply it to fresh model scores with `apply_decisions`.",
+            "Call `session.decision.save_bundle(path)` to persist the rule and its parameters.",
+            "Reload with `session.decision.load_bundle(path)` wherever the rule is applied.",
+            "Apply it to fresh model scores with `session.decision.apply`.",
             "Keep the model bundle and the checkpoint separately.",
         ),
         use=(
@@ -199,9 +199,9 @@ OPTIMIZE_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.save_decision_bundle('artifacts/collections-policy')",
-            "app = Session.ingest(scores_frame).load_decision_bundle('artifacts/collections-policy')",
-            "app.apply_decisions()",
+            "session.decision.save_bundle('artifacts/collections-policy')",
+            "app = Session.ingest(scores_frame).decision.load_bundle('artifacts/collections-policy')",
+            "app.decision.apply()",
         ),
         check=(
             "Who owns the cost numbers in your policy, and when were they last reviewed?",

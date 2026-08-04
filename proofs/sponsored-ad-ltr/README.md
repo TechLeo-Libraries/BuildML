@@ -18,9 +18,9 @@ In-repo synthetic ad LTR judgments (`load_ad_ltr_judgments_synthetic`): license-
 ## BuildML API steps
 
 1. `Session.ingest` → `set_roles` → `group_split`
-2. `fit_ranker(method="lambdarank"|"pointwise")`
-3. `rank(test)` → `evaluate_ranker(test, k=5)`
-4. `save_ranker_bundle`
+2. `session.ranking.fit(method="lambdarank"|"pointwise")`
+3. `session.ranking.rank(test)` → `session.ranking.evaluate(test, k=5)`
+4. `session.ranking.save_bundle`
 
 ## Metrics
 
@@ -28,7 +28,7 @@ Primary holdout: nDCG@k on test queries (see `results/results.json`).
 
 ## Industry comparison (Tier C)
 
-Filled: sklearn pointwise Ridge LTR twin via `baseline_industry.py` → `results/comparison.json`.
+Industry twin: sklearn pointwise Ridge LTR twin via `baseline_industry.py` → `results/comparison.json`.
 
 ## Limitations
 

@@ -160,23 +160,62 @@ def _has_api_keys(api_keys: str | list[str] | tuple[str, ...] | None) -> bool:
     return any(str(key).strip() for key in api_keys)
 
 
+def _has_basic_auth(
+    basic_auth: str
+    | tuple[str, str]
+    | list[tuple[str, str]]
+    | dict[str, str]
+    | None,
+) -> bool:
+    if basic_auth is None:
+        return False
+    if isinstance(basic_auth, str):
+        return bool(basic_auth.strip())
+    if isinstance(basic_auth, dict):
+        user = basic_auth.get("username", basic_auth.get("user"))
+        password = basic_auth.get("password", basic_auth.get("pass"))
+        return bool(user and str(user).strip()) and password is not None
+    if isinstance(basic_auth, tuple) and len(basic_auth) == 2:
+        return bool(str(basic_auth[0]).strip())
+    if isinstance(basic_auth, list):
+        return len(basic_auth) > 0
+    return False
+
+
+def _has_auth(
+    api_keys: str | list[str] | tuple[str, ...] | None,
+    basic_auth: str
+    | tuple[str, str]
+    | list[tuple[str, str]]
+    | dict[str, str]
+    | None,
+) -> bool:
+    return _has_api_keys(api_keys) or _has_basic_auth(basic_auth)
+
+
 def _ensure_bind_security(
     host: str,
     *,
     api_keys: str | list[str] | tuple[str, ...] | None,
+    basic_auth: str
+    | tuple[str, str]
+    | list[tuple[str, str]]
+    | dict[str, str]
+    | None = None,
     allow_insecure_public_bind: bool,
 ) -> None:
-    """Refuse non-loopback binds without API keys unless explicitly overridden."""
+    """Refuse non-loopback binds without auth unless explicitly overridden."""
     if _is_loopback_host(host):
         return
-    if _has_api_keys(api_keys):
+    if _has_auth(api_keys, basic_auth):
         return
     if allow_insecure_public_bind:
         return
     raise ValidationError(
         f"Refusing to bind managed serving to non-loopback host {host!r} without "
-        "api_keys. Pass api_keys= (or CLI --api-key) for public/non-localhost binds, "
-        "or set allow_insecure_public_bind=True / --allow-insecure-public-bind to "
+        "api_keys or basic_auth. Pass api_keys= / basic_auth= (or CLI --api-key / "
+        "--basic-auth) for public/non-localhost binds, or set "
+        "allow_insecure_public_bind=True / --allow-insecure-public-bind to "
         "override deliberately. Localhost defaults remain open-with-honesty."
     )
 
@@ -195,7 +234,7 @@ def _ensure_port_available(host: str, port: int) -> None:
 
 
 def serve_bundle(
-    path: str | Path,
+    path: str | Path | None = None,
     *,
     kind: BundleKind | Literal["pipeline", "torchscript"] = "pipeline",
     host: str = "127.0.0.1",
@@ -204,14 +243,21 @@ def serve_bundle(
     blocking: bool = False,
     map_location: str = "cpu",
     api_keys: str | list[str] | tuple[str, ...] | None = None,
+    basic_auth: str
+    | tuple[str, str]
+    | list[tuple[str, str]]
+    | dict[str, str]
+    | None = None,
+    docs_enabled: bool | None = None,
     allow_insecure_public_bind: bool = False,
     ssl_certfile: str | Path | None = None,
     ssl_keyfile: str | Path | None = None,
     trusted: bool = False,
+    config: Any | None = None,
 ) -> ServeHandle:
     """Load a bundle and start serving it, refusing the unsafe configurations.
 
-    Validates the bind target, refuses a public bind without keys, confirms the
+    Validates the bind target, refuses a public bind without auth, confirms the
     port is free, loads the artifact, and starts uvicorn. In the default
     non-blocking mode it waits until the server reports itself started before
     returning, so a successful return means the endpoint is live rather than
@@ -224,7 +270,8 @@ def serve_bundle(
     Parameters
     ----------
     path:
-        The pipeline bundle directory or TorchScript file to serve.
+        The pipeline bundle directory or TorchScript file to serve. Optional
+        when ``config.bundle`` is set.
     kind:
         ``'pipeline'`` or ``'torchscript'``.
     host:
@@ -243,17 +290,25 @@ def serve_bundle(
         Device placement for TorchScript.
     api_keys:
         One key or several, enabling the Bearer and ``X-API-Key`` middleware.
-        Required for any non-loopback bind.
+        Either API keys or Basic auth satisfy non-loopback bind requirements.
+    basic_auth:
+        HTTP Basic credentials (``'user:pass'``, pair, or mapping). Either
+        Basic or API-key may authorize a request when both are configured.
+    docs_enabled:
+        OpenAPI/docs toggle. ``None`` auto-closes docs when auth is enabled.
     allow_insecure_public_bind:
-        Bind a public address with no keys at all. Named at length because it
+        Bind a public address with no auth at all. Named at length because it
         should be conspicuous in review. Only defensible when something in front
-       : a proxy, a service mesh: is doing the authentication.
+        (a proxy, a service mesh) is doing the authentication.
     ssl_certfile:
         A PEM certificate for local HTTPS. Must be paired with ``ssl_keyfile``.
     ssl_keyfile:
         The matching PEM private key. Must be paired with ``ssl_certfile``.
     trusted:
         Must be ``True`` to deserialize the artifact (pickle/joblib/TorchScript).
+    config:
+        Optional :class:`~buildml.serving.config.ServeConfig` base. Explicit
+        kwargs overlay it.
 
     Returns
     -------
@@ -264,7 +319,7 @@ def serve_bundle(
     ------
     ValidationError
         If the host is empty or the port out of range; if a non-loopback host is
-        requested without keys and without the override; if only one of the two
+        requested without auth and without the override; if only one of the two
         TLS files is given, or either does not exist; or if the artifact cannot
         be loaded.
     MissingExtraError
@@ -277,10 +332,11 @@ def serve_bundle(
 
     Notes
     -----
-    **A non-loopback bind without keys is refused, not warned about.** An
+    **A non-loopback bind without auth is refused, not warned about.** An
     unauthenticated prediction endpoint on ``0.0.0.0`` is reachable from
     anywhere that can route to the host, and a warning in a log is not a
-    control. Supply ``api_keys``, or state the override explicitly.
+    control. Supply ``api_keys`` / ``basic_auth``, or state the override
+    explicitly.
 
     **The TLS support here is genuinely local.** Uvicorn will terminate HTTPS
     with the PEM files you give it, and that is all: no certificate issuance,
@@ -320,11 +376,89 @@ def serve_bundle(
     See Also
     --------
     buildml.serving.app.create_serving_app : Building the app without serving.
+    buildml.serving.config.ServeConfig : Declarative YAML/env/CLI config.
     """
+    if config is not None:
+        from buildml.serving.config import ServeConfig
+
+        if not isinstance(config, ServeConfig):
+            raise ValidationError("config must be a ServeConfig instance")
+        overlay: dict[str, Any] = {}
+        if path is not None:
+            overlay["bundle"] = str(path)
+        if kind != "pipeline" or config.kind == "pipeline":
+            overlay["kind"] = kind
+        if host != "127.0.0.1" or config.host == "127.0.0.1":
+            overlay["host"] = host
+        if port != 8080 or config.port == 8080:
+            overlay["port"] = port
+        if title != "BuildML Serve" or config.title == "BuildML Serve":
+            overlay["title"] = title
+        if map_location != "cpu" or config.map_location == "cpu":
+            overlay["map_location"] = map_location
+        if api_keys is not None:
+            overlay["api_keys"] = api_keys
+        if basic_auth is not None:
+            overlay["basic_auth"] = basic_auth
+        if docs_enabled is not None:
+            overlay["docs_enabled"] = docs_enabled
+        if allow_insecure_public_bind:
+            overlay["allow_insecure_public_bind"] = True
+        if ssl_certfile is not None:
+            overlay["ssl_certfile"] = str(ssl_certfile)
+        if ssl_keyfile is not None:
+            overlay["ssl_keyfile"] = str(ssl_keyfile)
+        if trusted:
+            overlay["trusted"] = True
+        elif config.trusted:
+            overlay["trusted"] = True
+        # Prefer config host/port/title/kind when kwargs left at defaults.
+        cfg = config.merge(**overlay)
+        if host == "127.0.0.1" and config.host != "127.0.0.1":
+            cfg = cfg.merge(host=config.host)
+        if port == 8080 and config.port != 8080:
+            cfg = cfg.merge(port=config.port)
+        if title == "BuildML Serve" and config.title != "BuildML Serve":
+            cfg = cfg.merge(title=config.title)
+        if kind == "pipeline" and config.kind != "pipeline":
+            cfg = cfg.merge(kind=config.kind)
+        if map_location == "cpu" and config.map_location != "cpu":
+            cfg = cfg.merge(map_location=config.map_location)
+        if not allow_insecure_public_bind and config.allow_insecure_public_bind:
+            cfg = cfg.merge(allow_insecure_public_bind=True)
+        if ssl_certfile is None and config.ssl_certfile:
+            cfg = cfg.merge(ssl_certfile=config.ssl_certfile)
+        if ssl_keyfile is None and config.ssl_keyfile:
+            cfg = cfg.merge(ssl_keyfile=config.ssl_keyfile)
+        if docs_enabled is None and config.docs_enabled is not None:
+            cfg = cfg.merge(docs_enabled=config.docs_enabled)
+        if api_keys is None and config.api_keys:
+            cfg = cfg.merge(api_keys=list(config.api_keys))
+        if basic_auth is None and config.basic_auth is not None:
+            cfg = cfg.merge(basic_auth=config.basic_auth)
+        path = cfg.require_bundle()
+        kind = cfg.kind  # type: ignore[assignment]
+        host = cfg.host
+        port = cfg.port
+        title = cfg.title
+        map_location = cfg.map_location
+        api_keys = list(cfg.api_keys) if cfg.api_keys else None
+        basic_auth = cfg.basic_auth
+        docs_enabled = cfg.docs_enabled
+        allow_insecure_public_bind = cfg.allow_insecure_public_bind
+        ssl_certfile = cfg.ssl_certfile
+        ssl_keyfile = cfg.ssl_keyfile
+        trusted = cfg.trusted
+    elif path is None:
+        raise ValidationError(
+            "serve_bundle requires path= or a ServeConfig with bundle set"
+        )
+
     _validate_bind_target(host, port)
     _ensure_bind_security(
         host,
         api_keys=api_keys,
+        basic_auth=basic_auth,
         allow_insecure_public_bind=allow_insecure_public_bind,
     )
     cert = None if ssl_certfile is None else Path(ssl_certfile)
@@ -351,6 +485,8 @@ def serve_bundle(
         title=title,
         map_location=map_location,
         api_keys=api_keys,
+        basic_auth=basic_auth,
+        docs_enabled=docs_enabled,
         trusted=trusted,
     )
     tls = cert is not None and key is not None

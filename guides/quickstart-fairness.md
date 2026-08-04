@@ -6,14 +6,16 @@
 > See [installation](../docs/installation.rst).
 
 Holdout group-disparity reporting on a fitted binary classifier: selection
-rates, demographic parity, disparate impact, and equalized odds gaps.
+rates, demographic parity, disparate impact, equalized odds gaps, per-group
+classical metrics, and optional stability bands.
 
 **Boundary:** this is **observational analysis**, not a legal audit, not causal
 fairness, and not automatic bias mitigation. Sensitive columns must be declared
 by the caller. `positive_label` is hard-validated against observed labels so
 string targets with a default `1` raise instead of silent zero rates.
 
-**Proof:** [loan-fairness-observational](../proofs/loan-fairness-observational/).
+**Deep guide:** [fairness-deep.md](fairness-deep.md) ·
+**Proof:** [loan-fairness-observational](../proofs/loan-fairness-observational/) ·
 [Classical quickstart](quickstart-classical.md) ·
 [stability](../docs/stability.md)
 
@@ -39,16 +41,53 @@ session = (
     .fit(LogisticRegression(max_iter=500), task="classification")
 )
 
-print(Session.fairness_capability_matrix()["non_goals"][:2])
+print(session.fairness.capability_matrix()["non_goals"][:2])
 
 # String labels require an explicit positive_label — default 1 would raise.
-report = session.evaluate_fairness(
+report = session.fairness.evaluate(
     sensitive_column="group",
     partition="test",
     positive_label="approved",
+    bootstrap_samples=50,  # optional stability bands
 )
 print(report.demographic_parity_difference)
 print(report.selection_rate_by_group)
+print(report.classical_metrics_by_group["A"]["f1"])
+print(report.to_markdown().splitlines()[0])
+```
+
+Bridge after classical evaluate:
+
+```python
+session.evaluate(partition="test")
+report = session.fairness.attach_to_last_eval(
+    sensitive_column="group",
+    positive_label="approved",
+)
+```
+
+Intersectional keys (composite `group|…`):
+
+```python
+# report = session.fairness.evaluate(
+#     sensitive_column=["group", "region"],
+#     positive_label="approved",
+# )
+```
+
+Opt-in mitigation **suggestions** (not auto-applied, not certification):
+
+```python
+thr = session.fairness.suggest_thresholds(
+    sensitive_column="group",
+    partition="validation",
+    positive_label="approved",
+)
+weights = session.fairness.suggest_reweighing(
+    sensitive_column="group",
+    partition="train",
+    positive_label="approved",
+)
 ```
 
 Discoverability helpers on Session:
@@ -56,6 +95,7 @@ Discoverability helpers on Session:
 ```python
 caps = Session.list_capabilities()
 print([d["domain"] for d in caps["domains"] if d["domain"] == "fairness"])
+# describe_method still keys flat names; preferred call path is session.fairness.evaluate(...)
 print(Session.describe_method("evaluate_fairness")["summary"][:120])
 ```
 
@@ -64,4 +104,4 @@ print(Session.describe_method("evaluate_fairness")["summary"][:120])
 - Legal disparate-impact certification
 - Inferring protected class membership
 - Multi-class / regression fairness suites
-- Automatic reweighing / mitigation products
+- Automatic / silent reweighing or fairness washing

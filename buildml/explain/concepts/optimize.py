@@ -13,7 +13,7 @@ OPTIMIZE_NOTES: dict[str, ConceptNote] = {
             key="decision-operating-point",
             title="Cost-sensitive operating points",
             summary=(
-                "fit_decision_policy(method='threshold') selects a binary "
+                "session.decision.fit(method='threshold') selects a binary "
                 "cutoff on validation using the same engine as tune_threshold."
             ),
             definition=(
@@ -33,11 +33,11 @@ OPTIMIZE_NOTES: dict[str, ConceptNote] = {
                 "Persisting a DecisionPlan separates diagnostics from deployment.",
             ),
             how_buildml_uses=(
-                "Session.fit_decision_policy(method='threshold', partition='validation', "
+                "session.decision.fit(method='threshold', partition='validation', "
                 "fp_cost=..., fn_cost=...); classical Session.tune_threshold remains.",
             ),
             interpretation_rules=(
-                "Prefer validation for selection; evaluate_decisions on test once.",
+                "Prefer validation for selection; session.decision.evaluate on test once.",
                 "allow_test_tuning=True is a dangerous opt-in with disclosure.",
             ),
             assumptions=("Binary probabilistic classifier; split present.",),
@@ -47,8 +47,8 @@ OPTIMIZE_NOTES: dict[str, ConceptNote] = {
                 "Replacing tune_threshold diagnostics with silent test peeks.",
             ),
             worked_example_pattern=(
-                "fit → fit_decision_policy(method='threshold', partition='validation', "
-                "fp_cost=1, fn_cost=5) → evaluate_decisions(partition='test').",
+                "fit → session.decision.fit(method='threshold', partition='validation', "
+                "fp_cost=1, fn_cost=5) → session.decision.evaluate(partition='test').",
             ),
             related_concepts=(
                 "decision-cost-matrix",
@@ -77,7 +77,7 @@ OPTIMIZE_NOTES: dict[str, ConceptNote] = {
                 "User supplies C: BuildML does not invent business costs from test labels.",
             ),
             how_buildml_uses=(
-                "Session.fit_decision_policy(method='cost_matrix', cost_matrix=...).",
+                "session.decision.fit(method='cost_matrix', cost_matrix=...).",
             ),
             interpretation_rules=(
                 "Rows = true class, columns = action; align class_labels with estimator.classes_.",
@@ -86,8 +86,8 @@ OPTIMIZE_NOTES: dict[str, ConceptNote] = {
             failure_modes=("Mismatched label order; estimating C from the test set.",),
             anti_patterns=("Treating this as causal decision analysis.",),
             worked_example_pattern=(
-                "fit multiclass → fit_decision_policy(method='cost_matrix', "
-                "cost_matrix=[[0,1,5],[2,0,1],[5,2,0]]) → evaluate_decisions.",
+                "fit multiclass → session.decision.fit(method='cost_matrix', "
+                "cost_matrix=[[0,1,5],[2,0,1],[5,2,0]]) → session.decision.evaluate.",
             ),
             related_concepts=(
                 "decision-operating-point",
@@ -118,7 +118,7 @@ OPTIMIZE_NOTES: dict[str, ConceptNote] = {
                 "Capacity/budget constraints turn scores into decisions without a MIP suite.",
             ),
             how_buildml_uses=(
-                "fit_decision_policy(method='topk'|'knapsack'|'lp_allocate', ...).",
+                "session.decision.fit(method='topk'|'knapsack'|'lp_allocate', ...).",
             ),
             interpretation_rules=(
                 "LP is continuous: not integer MIP.",
@@ -131,8 +131,8 @@ OPTIMIZE_NOTES: dict[str, ConceptNote] = {
                 "Fitting allocations on test without allow_test_tuning.",
             ),
             worked_example_pattern=(
-                "fit → fit_decision_policy(method='knapsack', partition='validation', "
-                "budget=100, cost_column='cost') → apply_decisions(partition='test').",
+                "fit → session.decision.fit(method='knapsack', partition='validation', "
+                "budget=100, cost_column='cost') → session.decision.apply(partition='test').",
             ),
             related_concepts=(
                 "decision-operating-point",
@@ -149,7 +149,7 @@ OPTIMIZE_NOTES: dict[str, ConceptNote] = {
             ),
             definition=(
                 "A decision bundle persists thresholds, cost matrices, and "
-                "allocation rules. Reload via load_decision_bundle after "
+                "allocation rules. Reload via session.decision.load_bundle after "
                 "restoring data/fit as needed."
             ),
             intuition=(
@@ -161,7 +161,7 @@ OPTIMIZE_NOTES: dict[str, ConceptNote] = {
                 "Prevents silent loss of tuned thresholds across restarts.",
             ),
             how_buildml_uses=(
-                "save_decision_bundle / load_decision_bundle.",
+                "session.decision.save_bundle / session.decision.load_bundle.",
             ),
             interpretation_rules=(
                 "Bundles do not replace FitResult; threshold/cost_matrix apply "
@@ -171,8 +171,8 @@ OPTIMIZE_NOTES: dict[str, ConceptNote] = {
             failure_modes=("Loading a policy onto an unfitted Session for threshold apply.",),
             anti_patterns=("Assuming checkpoint_save embeds the DecisionPlan.",),
             worked_example_pattern=(
-                "fit_decision_policy → save_decision_bundle(path) → "
-                "load_decision_bundle(path) → apply_decisions.",
+                "session.decision.fit → session.decision.save_bundle(path) → "
+                "session.decision.load_bundle(path) → session.decision.apply.",
             ),
             related_concepts=(
                 "decision-operating-point",

@@ -15,7 +15,7 @@ the text, which puts a stated ceiling on achievable accuracy: around 0.86 for
 four balanced queues: so this proof cannot report a suspiciously perfect score.
 
 The sentence pools are finite, so repeated documents are expected and
-`profile_text_corpus` duly reports them: at seed 11 it finds 58 exact and 109
+`session.nlp.profile_corpus` duly reports them: at seed 11 it finds 58 exact and 109
 near-duplicate holdout documents against train, and says the holdout metrics
 are optimistic by that amount. That disclosure is the point of running the
 profile first.
@@ -25,20 +25,20 @@ profile first.
 - Normalization plan, vocabulary, document frequencies, and the head are fitted
   on train only; validation and test are transform-and-score
 - Topic vectorizer and NMF decomposition are fitted on train only, so
-  `assign_topics` on holdout is a pure transform
+  `session.nlp.assign_topics` on holdout is a pure transform
 - Model choice reads validation; test is evaluated once after the model is locked
-- `profile_text_corpus` screens the split for exact and near-duplicate text
+- `session.nlp.profile_corpus` screens the split for exact and near-duplicate text
   contamination and **reports** it rather than silently deduplicating
 
 ## BuildML API steps
 1. `ingest` → `set_roles` → `split(stratify=True)`
-2. `profile_text_corpus`: corpus health and contamination screen
-3. `fit_text_classifier(vectorizer="tfidf", estimator="logistic")`
-4. `evaluate_text_classifier(partition="validation")` → lock → `partition="test"`
-5. `predict_text` → `interpret_text_prediction` (exact token attributions)
-6. `fit_topics` → `assign_topics` (train-fitted, holdout-assigned)
-7. `extract_keyphrases`, `summarize_text`, `extract_entities`, `analyze_sentiment`
-8. `save_nlp_bundle` → reload into a fresh Session and reproduce the holdout score
+2. `session.nlp.profile_corpus`: corpus health and contamination screen
+3. `session.nlp.fit_classifier(vectorizer="tfidf", estimator="logistic")`
+4. `session.nlp.evaluate(partition="validation")` → lock → `partition="test"`
+5. `session.nlp.predict` → `session.nlp.interpret` (exact token attributions)
+6. `session.nlp.fit_topics` → `session.nlp.assign_topics` (train-fitted, holdout-assigned)
+7. `session.nlp.extract_keyphrases`, `session.nlp.summarize`, `session.nlp.extract_entities`, `session.nlp.analyze_sentiment`
+8. `session.nlp.save_bundle` → reload into a fresh Session and reproduce the holdout score
 
 ## Metrics
 See `results/results.json` after a successful run: accuracy, balanced accuracy,
@@ -51,7 +51,7 @@ The reloaded bundle reproduces the test accuracy exactly
 (`bundle_reproduces_holdout_score: true`).
 
 ## Industry comparison (Tier C)
-Filled: `baseline_industry.py` writes `results/comparison.json` against a
+Industry twin: `baseline_industry.py` writes `results/comparison.json` against a
 hand-built `sklearn.Pipeline(TfidfVectorizer + LogisticRegression)` twin on the
 same split indices. The twin matches the model; what it does not provide without
 extra code is the contamination screen, the stored normalization plan, token

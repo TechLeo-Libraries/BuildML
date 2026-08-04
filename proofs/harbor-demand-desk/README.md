@@ -13,20 +13,20 @@ candidates derived from the frozen forecast.
 
 ## Status
 
-`completed`: run `script.py`; see `results/summary.json` plus
+Run `script.py`. Outputs land under `results/` (summary and stage JSON). plus
 `timeseries_analysis.json`, `forecast.json`, `probabilistic.json`,
 `allocation.json`.
 
 ## How to run
 
 ```bash
-.\.venv\Scripts\python.exe proofs\harbor-demand-desk\script.py
+python proofs\harbor-demand-desk\script.py
 ```
 
 ## Leakage controls
 
 - `time_split` chronological train → validation → test
-- `analyze_timeseries(scope="train")` only
+- `session.timeseries.analyze(scope="train")` only
 - Forecast fit on train; selection metrics on validation
 - Probabilistic residual model uses its own internal split
 - Allocation policy selected on a disjoint validation slice of future candidates

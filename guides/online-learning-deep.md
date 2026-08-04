@@ -8,10 +8,10 @@
 
 Session-facing incremental learning with honest backend selection:
 
-1. `fit_online`: warm-start on an initial **train** chunk
-2. `partial_fit_online`: update on subsequent train chunks (or role-aligned frames)
-3. `evaluate_online` / `predict_online`: holdout inference (never for updates)
-4. `save_online_bundle` / `load_online_bundle`: `buildml.online_bundle.v1`
+1. `session.online.fit`: warm-start on an initial **train** chunk
+2. `session.online.partial_fit`: update on subsequent train chunks (or role-aligned frames)
+3. `session.online.evaluate` / `session.online.predict`: holdout inference (never for updates)
+4. `session.online.save_bundle` / `session.online.load_bundle`: `buildml.online_bundle.v1`
 
 Inspect backends with `buildml.online.online_capability_matrix()`.
 
@@ -21,7 +21,7 @@ Inspect backends with `buildml.online.online_capability_matrix()`.
 | `industry` | `buildml[online-industry]` | `river_logistic`, `river_hoeffding`, `river_pa`, … | ADWIN, Page-Hinkley, mean-shift |
 | `torch` | `buildml[torch]` | `replay_mlp`, `ewc_mlp` | mean-shift disclosure |
 
-When extras are installed, `fit_online()` defaults to the industry backend (`river_logistic`) if River is present, else torch (`replay_mlp`), else sklearn (`sgd_classifier`).
+When extras are installed, `session.online.fit()` defaults to the industry backend (`river_logistic`) if River is present, else torch (`replay_mlp`), else sklearn (`sgd_classifier`).
 
 | In scope | Out of scope (next / never-as-product) |
 | --- | --- |
@@ -47,14 +47,14 @@ pip install "buildml[online-industry,torch]"
 
 | Source | API | Cursor |
 | --- | --- | --- |
-| Session train partition | `partial_fit_online(n_rows=…)` | Advances |
-| Explicit train indices | `partial_fit_online(indices=…)` | Advances past max index |
-| External aligned frame | `partial_fit_online(frame=…)` | Unchanged |
+| Session train partition | `session.online.partial_fit(n_rows=…)` | Advances |
+| Explicit train indices | `session.online.partial_fit(indices=…)` | Advances past max index |
+| External aligned frame | `session.online.partial_fit(frame=…)` | Unchanged |
 
 ## Drift-aware evaluate
 
 - `drift_detector='mean_shift'`: compare chunk/holdout feature means vs init (all backends).
-- `drift_detector='adwin'` / `'page_hinkley'`: River error-stream detectors on updates and `evaluate_online(drift_check=True)` (industry backend only).
+- `drift_detector='adwin'` / `'page_hinkley'`: River error-stream detectors on updates and `session.online.evaluate(drift_check=True)` (industry backend only).
 - Results expose `drift_detected` and `drift_notes` on `OnlineEvalResult` and update results.
 
 ## Benchmark
@@ -72,9 +72,9 @@ Compares accuracy over train chunks vs a full-batch SGD refit baseline on synthe
 ## Teaching surfaces
 
 - Concepts: `online-partial-fit`, `online-class-discovery`, `online-drift-disclose`, `online-bundle-boundary`
-- Overlays for all Session ops; AI allowlist: `fit_online`, `partial_fit_online`, `evaluate_online`, save/load bundle
+- Overlays for all Session ops; AI allowlist: `session.online.fit`, `session.online.partial_fit`, `session.online.evaluate`, save/load bundle
 - Walkthrough / audit include online status with backend disclosure
 
-## Phase tracker
+## Scope notes
 
-Phase 2 items 1–4 (semi / self / active / **online industry depth**) are done. **Next:** multi-task learning (R6.4).
+Semi / self / active / online industry depth are shipped. Related next: multi-task learning.

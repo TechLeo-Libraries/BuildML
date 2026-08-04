@@ -118,17 +118,17 @@ def main() -> None:
             )
             .scale(method="standard")
         )
-        causal_session.declare_causal_assumptions(
+        causal_session.causal.declare_assumptions(
             treatment="promo",
             outcome="spend",
             confounders=feats,
             acknowledge_unconfoundedness=True,
             acknowledge_positivity=True,
         )
-        fit_c = causal_session.fit_causal(method="aipw", bootstrap_samples=40)
-        ev_c = causal_session.evaluate_causal(partition="validation", bootstrap_samples=20)
+        fit_c = causal_session.causal.fit(method="aipw", bootstrap_samples=40)
+        ev_c = causal_session.causal.evaluate(partition="validation", bootstrap_samples=20)
         try:
-            refute = causal_session.refute_causal(kind="placebo_treatment")
+            refute = causal_session.causal.refute(kind="placebo_treatment")
             refute_payload = {
                 "kind": "placebo_treatment",
                 "refute_ate": float(refute.refute_ate),
@@ -208,16 +208,16 @@ def main() -> None:
     assert_no_test_in_selection(
         selection_partition="validation", evaluation_partition="test"
     )
-    thr = session.fit_decision_policy(
+    thr = session.decision.fit(
         method="threshold",
         partition="validation",
         fp_cost=1.0,
         fn_cost=4.0,
     )
-    thr_test = session.evaluate_decisions(partition="test")
+    thr_test = session.decision.evaluate(partition="test")
     alloc_payload: dict = {"alloc_status": "skipped"}
     try:
-        knap = session.fit_decision_policy(
+        knap = session.decision.fit(
             method="knapsack",
             partition="validation",
             budget=70.0,
@@ -226,7 +226,7 @@ def main() -> None:
             score_source="model_proba",
             knapsack_solver="dp",
         )
-        applied = session.apply_decisions(partition="test")
+        applied = session.decision.apply(partition="test")
         alloc_payload = {
             "alloc_status": "ok",
             "knapsack_policy": metrics_round(
@@ -240,13 +240,13 @@ def main() -> None:
         }
     except Exception as exc:  # noqa: BLE001
         try:
-            topk = session.fit_decision_policy(
+            topk = session.decision.fit(
                 method="topk",
                 partition="validation",
                 capacity=40,
                 score_source="model_proba",
             )
-            applied = session.apply_decisions(partition="test")
+            applied = session.decision.apply(partition="test")
             alloc_payload = {
                 "alloc_status": "ok_topk_fallback",
                 "error": f"{type(exc).__name__}: {exc}",
@@ -271,7 +271,7 @@ def main() -> None:
         "threshold_test": metrics_round(
             thr_test.to_dict() if hasattr(thr_test, "to_dict") else {}
         ),
-        "capability_matrix": Session.optimize_capability_matrix(),
+        "capability_matrix": session.decision.optimize_capability_matrix(),
         **alloc_payload,
     }
     write_results(ctx, stages["decisions"], filename="decisions.json")
@@ -287,7 +287,7 @@ def main() -> None:
         "skip_notes": skip_notes,
         "leakage_controls": [
             "Shared stratified split before causal / classical / decisions",
-            "Causal assumptions declared before fit_causal",
+            "Causal assumptions declared before session.causal.fit",
             "Promo budget knapsack / threshold tuned on validation only",
             "Test evaluated after each stage locks",
         ],

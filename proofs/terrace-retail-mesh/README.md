@@ -13,12 +13,12 @@ Terrace joins merchandising, demand, and personalization surfaces:
 
 ## Status
 
-`completed`: run `script.py`; see `results/summary.json` and stage JSONs.
+Run `script.py`. Outputs land under `results/` (summary and stage JSON)..
 
 ## How to run
 
 ```bash
-.\.venv\Scripts\python.exe proofs\terrace-retail-mesh\script.py
+python proofs\terrace-retail-mesh\script.py
 ```
 
 ## Leakage controls

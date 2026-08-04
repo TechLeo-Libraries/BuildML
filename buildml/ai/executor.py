@@ -477,6 +477,33 @@ def _redact_exception_message(msg: str, max_length: int = 200) -> str:
     return result
 
 
+def _resolve_session_callable(session: Any, session_method: str) -> Any | None:
+    """Resolve a flat or facade-style Session method reference to a callable.
+
+    Accepts ``evaluate_fairness``, ``fairness.evaluate``, and
+    ``session.fairness.evaluate``. Facade paths traverse the live namespaced
+    view so preferred spellings do not force a deprecated flat alias call.
+    """
+    from buildml.session.facade_registry import DOMAIN_FACADES, resolve_operation_name
+
+    cleaned = str(session_method or "").strip()
+    if not cleaned:
+        return None
+    path = cleaned[len("session.") :] if cleaned.startswith("session.") else cleaned
+    if "." in path:
+        attr, method = path.split(".", 1)
+        if attr in DOMAIN_FACADES and method in DOMAIN_FACADES[attr]["bindings"]:
+            facade = getattr(session, attr, None)
+            target = getattr(facade, method, None) if facade is not None else None
+            if callable(target):
+                return target
+    flat = resolve_operation_name(cleaned)
+    method = getattr(session, flat, None)
+    if method is None:
+        method = getattr(type(session), flat, None)
+    return method if callable(method) else None
+
+
 def _dispatch_tool(
     session: Any,
     call: ToolCall,
@@ -2876,9 +2903,7 @@ def _dispatch_tool(
 
     else:
         if getattr(spec, "read_only", False) and getattr(spec, "session_method", None):
-            method = getattr(session, spec.session_method, None)
-            if method is None:
-                method = getattr(type(session), spec.session_method, None)
+            method = _resolve_session_callable(session, str(spec.session_method))
             if callable(method):
                 if call.arguments:
                     result = method(**call.arguments)

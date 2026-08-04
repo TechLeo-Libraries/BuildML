@@ -112,7 +112,7 @@ def main() -> None:
     write_comparison(
         ctx,
         buildml={
-            "backend": "buildml.nlp/fit_text_classifier(tfidf + logistic)",
+            "backend": "session.nlp.fit_classifier(tfidf + logistic)",
             "validation_metrics": metrics_round(
                 dict(results.get("validation_metrics", {}))
             ),

@@ -42,21 +42,21 @@ session = (
 )
 
 # auto → ETS when statsmodels installed, else lag_ridge
-fit = session.fit_forecast(method="auto", horizon=7, seasonal_period=7)
+fit = session.forecast.fit(method="auto", horizon=7, seasonal_period=7)
 fit.show()
 
-val = session.evaluate_forecast(partition="validation", strategy="rolling_one_step")
-test = session.evaluate_forecast(partition="test", strategy="rolling_origin")
+val = session.forecast.evaluate(partition="validation", strategy="rolling_one_step")
+test = session.forecast.evaluate(partition="test", strategy="rolling_origin")
 print(val.metrics, test.metrics)
 
-gen = session.generate_forecast(horizon=7)
+gen = session.forecast.generate(horizon=7)
 print(gen.predictions)
 
-bundle = session.save_forecast_bundle(".buildml-artifacts/forecast_bundle")
+bundle = session.forecast.save_bundle(".buildml-artifacts/forecast_bundle")
 print(bundle)
 ```
 
-`fit_forecast` **refuses** `session.split(...)` (random/stratified): use
+`session.forecast.fit` **refuses** `session.split(...)` (random/stratified): use
 `time_split`.
 
 ---
@@ -82,8 +82,8 @@ naive = (
     .set_roles({"ts": "time", "y": "target"})
     .time_split(test_size=0.2, validation_size=0.2)
 )
-naive.fit_forecast(method="seasonal_naive", seasonal_period=7, horizon=7)
-print(naive.evaluate_forecast(partition="test").metrics)
+naive.forecast.fit(method="seasonal_naive", seasonal_period=7, horizon=7)
+print(naive.forecast.evaluate(partition="test").metrics)
 ```
 
 ---

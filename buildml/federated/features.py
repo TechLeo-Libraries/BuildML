@@ -355,7 +355,12 @@ def frame_for_client(
     pandas.DataFrame
         Copy of rows where ``client_column == client_id``.
     """
-    return frame.loc[frame[client_column] == client_id].copy()
+    out = frame.loc[frame[client_column] == client_id].copy()
+    if not isinstance(out, pd.DataFrame):
+        raise ValidationError(
+            "frame_for_client expected a DataFrame slice after client filtering"
+        )
+    return out
 
 
 def extract_linear_params(estimator: Any) -> dict[str, np.ndarray]:

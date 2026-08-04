@@ -37,16 +37,16 @@ session = (
     .scale(method="standard")
 )
 
-fit = session.fit_imitation()  # train-only BC
+fit = session.rl.fit_imitation()  # train-only BC
 print(fit.task, fit.train_score)
 
-pred = session.predict_imitation_action(partition="test")
+pred = session.rl.predict_imitation(partition="test")
 print(pred.actions[:5])
 
-ev = session.evaluate_imitation(partition="validation")
+ev = session.rl.evaluate_imitation(partition="validation")
 print(ev.metrics)
 
-session.save_imitation_bundle("artifacts/imitation_demo_bundle")
+session.rl.save_imitation_bundle("artifacts/imitation_demo_bundle")
 ```
 
 ---
@@ -81,7 +81,7 @@ session = (
     .scale(method="standard", columns=["c0", "c1"])
 )
 
-fit = session.fit_rl(
+fit = session.rl.fit(
     mode="contextual_bandit",
     algorithm="linucb",
     action_column="arm",
@@ -89,13 +89,13 @@ fit = session.fit_rl(
 )
 print(fit.n_arms, fit.train_metrics)
 
-act = session.act_rl(partition="test", deterministic=True)
+act = session.rl.act(partition="test", deterministic=True)
 print(act.actions[:5])
 
-ev = session.evaluate_rl(partition="validation")
+ev = session.rl.evaluate(partition="validation")
 print(ev.offline, ev.metrics)  # DM / IPS: offline, not live A/B
 
-session.save_rl_bundle("artifacts/rl_bandit_demo_bundle")
+session.rl.save_bundle("artifacts/rl_bandit_demo_bundle")
 ```
 
 ---
@@ -114,7 +114,7 @@ session = (
     .split(test_size=0.5, random_state=0)
 )
 
-fit = session.fit_rl(
+fit = session.rl.fit(
     mode="gym_reinforce",
     env_id="CartPole-v1",
     n_episodes=200,
@@ -122,10 +122,10 @@ fit = session.fit_rl(
 )
 print(fit.train_metrics)
 
-ev = session.evaluate_rl(n_episodes=20)
+ev = session.rl.evaluate(n_episodes=20)
 print(ev.offline, ev.metrics["mean_return"])
 
-session.save_rl_bundle("artifacts/rl_gym_demo_bundle")
+session.rl.save_bundle("artifacts/rl_gym_demo_bundle")
 ```
 
 ---
@@ -147,7 +147,7 @@ session = (
     .split(test_size=0.5, random_state=0)
 )
 
-fit = session.fit_rl(
+fit = session.rl.fit(
     mode="tabular_q",
     algorithm="q_learning",
     env_id="FrozenLake-v1",
@@ -160,20 +160,20 @@ fit = session.fit_rl(
 )
 print(fit.train_metrics["state_coverage"])
 
-ev = session.evaluate_rl(n_episodes=100)
+ev = session.rl.evaluate(n_episodes=100)
 print(ev.offline, ev.metrics["mean_return"], ev.metrics["unseen_state_rate"])
 
 # Q(s, a) per action for a few states
-print(session.act_rl(observations=[0, 1, 2]).scores)
+print(session.rl.act(observations=[0, 1, 2]).scores)
 
 # Inspect what was actually learned
-q_table = session.rl_plan.policy_.q_table
-print(q_table.shape, session.rl_plan.policy_.greedy_policy_table())
+q_table = session.rl.plan.policy_.q_table
+print(q_table.shape, session.rl.plan.policy_.greedy_policy_table())
 ```
 
 Continuous (Box) observations such as CartPole are binned automatically:
-`fit_rl(mode="tabular_q", env_id="CartPole-v1", n_bins=6, n_episodes=3_000)`.
-Inspect `session.rl_plan.config["discretizer"]` to see the bounds used.
+`session.rl.fit(mode="tabular_q", env_id="CartPole-v1", n_bins=6, n_episodes=3_000)`.
+Inspect `session.rl.plan.config["discretizer"]` to see the bounds used.
 
 ---
 
@@ -190,7 +190,7 @@ session = (
     .split(test_size=0.5, random_state=0)
 )
 
-fit = session.fit_rl(
+fit = session.rl.fit(
     backend="industry",
     mode="gym_sb3",
     algorithm="ppo",
@@ -199,10 +199,10 @@ fit = session.fit_rl(
 )
 print(fit.train_metrics)
 
-ev = session.evaluate_rl(n_episodes=15)
+ev = session.rl.evaluate(n_episodes=15)
 print(ev.metrics["mean_return"])
 
-session.save_rl_bundle("artifacts/rl_sb3_demo_bundle")
+session.rl.save_bundle("artifacts/rl_sb3_demo_bundle")
 ```
 
 ---
@@ -221,4 +221,4 @@ session.save_rl_bundle("artifacts/rl_sb3_demo_bundle")
 
 ## Next
 
-IL+RL industry depth is **PASS** (R6.11). R6 sweep complete. Next: application systems.
+IL+RL industry depth is shipped (Gymnasium / SB3 extras when installed).

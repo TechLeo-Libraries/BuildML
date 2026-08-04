@@ -43,11 +43,11 @@ KG_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.fit_kg(",
+            "session.kg.fit(",
             "    head_column='subject', relation_column='predicate', tail_column='object',",
             "    backend='native', method='transe',",
             ")",
-            "print(len(session.kg_plan.entity_vocab), len(session.kg_plan.relation_vocab))",
+            "print(len(session.kg.plan.entity_vocab), len(session.kg.plan.relation_vocab))",
         ),
         check=(
             "How many distinct entities and relations does your training set contain?",
@@ -94,7 +94,7 @@ KG_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.fit_kg(",
+            "session.kg.fit(",
             "    backend='native', method='distmult',",
             "    embedding_dim=64, n_negatives=10, epochs=100, random_state=0,",
             ")",
@@ -120,8 +120,8 @@ KG_BEGINNER: dict[str, BeginnerLayer] = _index(
             "candidates by how well each fits what you already know."
         ),
         steps=(
-            "Use `score_triples` when you have a complete fact and want its plausibility.",
-            "Use `predict_links` with one slot blank to get a ranked list of completions.",
+            "Use `session.kg.score_triples` when you have a complete fact and want its plausibility.",
+            "Use `session.kg.predict_links` with one slot blank to get a ranked list of completions.",
             "The candidates come from the training vocabulary: nothing outside it can be proposed.",
             "Read the ranking as a shortlist for review, not as a set of asserted facts.",
             "Evaluate with filtered MRR and Hits@K, which ignore other known-true triples in the candidate list.",
@@ -145,9 +145,9 @@ KG_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "scores = session.score_triples([('paris', 'capital_of', 'france')])",
-            "candidates = session.predict_links(head='paris', relation='capital_of', k=10)",
-            "report = session.evaluate_kg(partition='test', k=[1, 3, 10])",
+            "scores = session.kg.score_triples([('paris', 'capital_of', 'france')])",
+            "candidates = session.kg.predict_links(head='paris', relation='capital_of', k=10)",
+            "report = session.kg.evaluate(partition='test', k=[1, 3, 10])",
             "print(report.filtered_mrr, report.hits_at_k)",
         ),
         check=(
@@ -161,7 +161,7 @@ KG_BEGINNER: dict[str, BeginnerLayer] = _index(
     _layer(
         "kg-symbolic-query",
         plain=(
-            "Not every question needs a learned model. `query_kg` walks the recorded training triples "
+            "Not every question needs a learned model. `session.kg.query` walks the recorded training triples "
             "directly: who is connected to this entity, which entities have this specific relation, what is "
             "the shortest chain of relations between these two. Exact answers from stored facts, no "
             "embedding involved."
@@ -196,9 +196,9 @@ KG_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.query_kg(mode='neighbors', entity='paris')",
-            "session.query_kg(mode='typed', entity='paris', relation='capital_of')",
-            "session.query_kg(mode='path', entity='paris', target='berlin', max_depth=4)",
+            "session.kg.query(mode='neighbors', entity='paris')",
+            "session.kg.query(mode='typed', entity='paris', relation='capital_of')",
+            "session.kg.query(mode='path', entity='paris', target='berlin', max_depth=4)",
         ),
         check=(
             "Do you need what is recorded, or what is plausible?",
@@ -221,8 +221,8 @@ KG_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         steps=(
             "Fit a knowledge-graph model so a plan exists.",
-            "Call `save_kg_bundle(path)` to store the embeddings, vocabularies, and adjacency.",
-            "Reload with `load_kg_bundle(path)`.",
+            "Call `session.kg.save_bundle(path)` to store the embeddings, vocabularies, and adjacency.",
+            "Reload with `session.kg.load_bundle(path)`.",
             "Score, predict, or query against the restored plan.",
             "Keep checkpoints and other domain bundles separate.",
         ),
@@ -245,9 +245,9 @@ KG_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.save_kg_bundle('artifacts/product-kg')",
-            "service = Session().load_kg_bundle('artifacts/product-kg')",
-            "service.predict_links(head='sku_1042', relation='compatible_with', k=10)",
+            "session.kg.save_bundle('artifacts/product-kg')",
+            "service = Session().kg.load_bundle('artifacts/product-kg')",
+            "service.kg.predict_links(head='sku_1042', relation='compatible_with', k=10)",
         ),
         check=(
             "Which of the four bundle types does your question actually need?",

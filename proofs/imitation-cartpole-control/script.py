@@ -38,8 +38,21 @@ def main() -> None:
         })
         .split(test_size=0.2, validation_size=0.2, random_state=ctx.seed)
     )
-    fit = session.fit_imitation(method="behavioral_cloning", random_state=ctx.seed)
-    ev = session.evaluate_imitation(partition="test")
+    fit = session.rl.fit_imitation(method="behavioral_cloning", random_state=ctx.seed)
+    ev = session.rl.evaluate_imitation(partition="test")
+    bundle = session.rl.save_imitation_bundle(ctx.artifacts_dir / "il_bundle")
+
+    restored = (
+        Session.ingest(frame)
+        .set_roles({
+            "x": "feature", "x_dot": "feature", "theta": "feature", "theta_dot": "feature",
+            "action": "target",
+        })
+        .split(test_size=0.2, validation_size=0.2, random_state=ctx.seed)
+    )
+    restored.rl.load_imitation_bundle(bundle, trusted=True)
+    ev_reloaded = restored.rl.evaluate_imitation(partition="test")
+
     rl_probe = {
         "gymnasium_available": extra_available("gymnasium"),
         "ran": False,
@@ -47,32 +60,68 @@ def main() -> None:
     }
     if extra_available("gymnasium") and not TORCH_STATUS.get("skip_torch_paths"):
         try:
-            rf = session.fit_rl(mode="gym_reinforce", env_id="CartPole-v1", total_timesteps=1000)
+            rf = session.rl.fit(mode="gym_reinforce", env_id="CartPole-v1", total_timesteps=1000)
+            rl_bundle = session.rl.save_bundle(ctx.artifacts_dir / "rl_gym_bundle")
+            rl_restored = (
+                Session.ingest(frame)
+                .set_roles({
+                    "x": "feature", "x_dot": "feature", "theta": "feature",
+                    "theta_dot": "feature", "action": "target",
+                })
+                .split(test_size=0.2, validation_size=0.2, random_state=ctx.seed)
+            )
+            rl_restored.rl.load_bundle(rl_bundle, trusted=True)
+            rl_ev = rl_restored.rl.evaluate(n_episodes=10, random_state=ctx.seed)
             rl_probe = {
                 "gymnasium_available": True,
                 "ran": True,
                 "fit": metrics_round(rf.to_dict() if hasattr(rf, "to_dict") else {}),
+                "reloaded_eval": metrics_round(
+                    rl_ev.to_dict() if hasattr(rl_ev, "to_dict") else {}
+                ),
+                "bundle_path": str(rl_bundle),
             }
         except (MissingExtraError, TypeError, ValueError) as exc:
             rl_probe["error"] = f"{type(exc).__name__}: {exc}"
     else:
         rl_probe["reason"] = "gymnasium missing and/or torch skip"
-    try:
-        bundle = session.save_imitation_bundle(ctx.artifacts_dir / "il_bundle")
-        bundle_path = str(bundle)
-    except Exception as exc:  # noqa: BLE001
-        bundle_path = f"unavailable: {exc}"
+
     write_results(ctx, {
         "status": "completed",
-        "data": {"name": "synthetic_cartpole_bc", "license": "synthetic/public-domain", "n_rows": n},
+        "data": {
+            "name": "synthetic_cartpole_bc",
+            "license": "synthetic/public-domain",
+            "n_rows": n,
+        },
         "fit": metrics_round(fit.to_dict() if hasattr(fit, "to_dict") else {}),
         "test_metrics": metrics_round(dict(getattr(ev, "metrics", {}) or {})),
+        "reloaded_test_metrics": metrics_round(
+            dict(getattr(ev_reloaded, "metrics", {}) or {})
+        ),
+        "bundle_roundtrip": {
+            "loaded": restored.rl.imitation_plan is not None,
+            "accuracy_match": bool(
+                "accuracy" in (getattr(ev, "metrics", {}) or {})
+                and abs(
+                    float(ev.metrics.get("accuracy", 0.0))
+                    - float(ev_reloaded.metrics.get("accuracy", -1.0))
+                )
+                < 1e-9
+            ),
+        },
         "rl_probe": rl_probe,
         "torch": TORCH_STATUS,
-        "bundle_path": bundle_path,
-        "leakage_controls": ["BC fit on train expert rows", "Test imitation metrics after lock"],
+        "bundle_path": str(bundle),
+        "leakage_controls": [
+            "BC fit on train expert rows",
+            "Test imitation metrics after lock",
+            "Bundle load re-score uses frozen BC policy only",
+        ],
         "industry_comparison": {"status": "filled", "note": "sklearn BC twin; gym optional"},
-        "limitations": ["Synthetic expert; gym RL optional and may skip"],
+        "limitations": [
+            "Synthetic expert; gym RL optional and may skip",
+            "Industry SB3/imitation path is subprocess-gated separately",
+        ],
     })
     print("imitation-cartpole-control OK", getattr(ev, "metrics", ev))
 

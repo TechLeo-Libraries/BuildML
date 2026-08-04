@@ -43,8 +43,8 @@ CBR_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.fit_cbr(metric='euclidean', k=5)",
-            "result = session.predict_cbr(partition='test', return_traces=True)",
+            "session.cbr.fit(metric='euclidean', k=5)",
+            "result = session.cbr.predict(partition='test', return_traces=True)",
             "print(result.traces[0].neighbor_case_ids, result.traces[0].distances)",
         ),
         check=(
@@ -71,7 +71,7 @@ CBR_BEGINNER: dict[str, BeginnerLayer] = _index(
             "Reuse for classification: majority vote, or a vote weighted so closer cases count more.",
             "Reuse for regression: distance-weighted mean, plain local mean, or a small ridge fit on the neighbours.",
             "Adapt: an optional offset that shifts the answer based on how the query differs from its neighbours.",
-            "Retain: `retain_cbr` appends newly labelled cases, requires a source disclosure, and refuses any row from validation or test.",
+            "Retain: `session.cbr.retain` appends newly labelled cases, requires a source disclosure, and refuses any row from validation or test.",
         ),
         use=(
             "Distance-weighted reuse when neighbour quality varies a lot with distance.",
@@ -93,9 +93,9 @@ CBR_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.fit_cbr(reuse='distance_weighted', metric='mixed', k=7)",
-            "session.evaluate_cbr(partition='validation')",
-            "session.retain_cbr(",
+            "session.cbr.fit(reuse='distance_weighted', metric='mixed', k=7)",
+            "session.cbr.evaluate(partition='validation')",
+            "session.cbr.retain(",
             "    labeled_frame=new_resolved_cases,",
             "    source_disclosure='Q3 manually adjudicated claims',",
             ")",
@@ -146,8 +146,8 @@ CBR_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.fit_cbr(k=5)              # tabular case lookup",
-            "session.rag_ingest_corpus(docs)   # document retrieval, separate surface",
+            "session.cbr.fit(k=5)              # tabular case lookup",
+            "session.rag.ingest_corpus(docs)   # document retrieval, separate surface",
         ),
         check=(
             "Is your input a row or a question?",
@@ -169,8 +169,8 @@ CBR_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         steps=(
             "Fit a case base.",
-            "Call `save_cbr_bundle(path)`: cases, metric, `k`, and reuse mode all travel together.",
-            "Reload with `load_cbr_bundle(path)`.",
+            "Call `session.cbr.save_bundle(path)`: cases, metric, `k`, and reuse mode all travel together.",
+            "Reload with `session.cbr.load_bundle(path)`.",
             "Predict and retrieve traces exactly as before.",
             "Use checkpoints separately for the data and workflow.",
         ),
@@ -193,9 +193,9 @@ CBR_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.save_cbr_bundle('artifacts/claims-cases')",
-            "svc = Session.ingest(incoming).load_cbr_bundle('artifacts/claims-cases')",
-            "svc.predict_cbr(return_traces=True)",
+            "session.cbr.save_bundle('artifacts/claims-cases')",
+            "svc = Session.ingest(incoming).cbr.load_bundle('artifacts/claims-cases')",
+            "svc.cbr.predict(return_traces=True)",
         ),
         check=(
             "Has your case memory grown through retain since the bundle was saved?",

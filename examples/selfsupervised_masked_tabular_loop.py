@@ -27,7 +27,7 @@ def main() -> None:
         .scale(method="standard")
     )
 
-    pre = session.fit_ssl_pretext(
+    pre = session.ssl.fit_pretext(
         method="masked_tabular",
         latent_dim=8,
         mask_ratio=0.2,
@@ -36,14 +36,14 @@ def main() -> None:
     )
     print("pretext:", pre.method, "latent=", pre.latent_dim, "mae=", round(pre.reconstruction_mae or 0.0, 4))
 
-    head = session.finetune_ssl_head(estimator="logistic_regression", random_state=0)
+    head = session.ssl.finetune_head(estimator="logistic_regression", random_state=0)
     print("head:", head.estimator_name, "labeled=", head.n_labeled_train)
 
-    ev = session.evaluate_ssl(partition="test")
+    ev = session.ssl.evaluate(partition="test")
     print("eval:", {k: round(v, 4) for k, v in ev.metrics.items()})
 
     out = Path(".buildml-artifacts") / "ssl_bundle"
-    path = session.save_ssl_bundle(out)
+    path = session.ssl.save_bundle(out)
     print("bundle:", path)
 
 

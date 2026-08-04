@@ -31,8 +31,8 @@ ACTIVELEARNING_NOTES: dict[str, ConceptNote] = {
                 "Audits need an explicit pool partition disclosure every round.",
             ),
             how_buildml_uses=(
-                "Session.suggest_query scores only train unlabeled indices.",
-                "label_rows refuses validation/test indices.",
+                "session.active_learning.suggest_query scores only train unlabeled indices.",
+                "session.active_learning.label_rows refuses validation/test indices.",
             ),
             interpretation_rules=(
                 "Always read n_unlabeled_pool and that pool=train.",
@@ -45,7 +45,7 @@ ACTIVELEARNING_NOTES: dict[str, ConceptNote] = {
             ),
             anti_patterns=("Calling the test set 'the unlabeled pool'.",),
             worked_example_pattern=(
-                "After split, blank a fraction of train targets, fit_active_learner, suggest_query.",
+                "After split, blank a fraction of train targets, session.active_learning.fit, session.active_learning.suggest_query.",
             ),
             related_concepts=("activelearning-human-labels", "semisupervised-label-missingness"),
         ),
@@ -54,8 +54,8 @@ ACTIVELEARNING_NOTES: dict[str, ConceptNote] = {
             title="Human-in-the-loop labels (no oracle in core)",
             summary="BuildML suggests indices; humans (or test harnesses) supply labels. Core never invents an oracle.",
             definition=(
-                "suggest_query returns informative indices and uncertainty scores. "
-                "label_rows writes user-provided labels onto Session targets and "
+                "session.active_learning.suggest_query returns informative indices and uncertainty scores. "
+                "session.active_learning.label_rows writes user-provided labels onto Session targets and "
                 "optionally refits. The library does not look up hidden truths."
             ),
             intuition=(
@@ -70,7 +70,7 @@ ACTIVELEARNING_NOTES: dict[str, ConceptNote] = {
                 "Tests may simulate an oracle; docs must disclose that simulation.",
             ),
             how_buildml_uses=(
-                "Session.label_rows requires concrete labels aligned to indices.",
+                "session.active_learning.label_rows requires concrete labels aligned to indices.",
                 "Disclosures on fit/query/label state that labels are user-supplied.",
             ),
             interpretation_rules=(
@@ -78,10 +78,10 @@ ACTIVELEARNING_NOTES: dict[str, ConceptNote] = {
                 "Budget exhaustion returns empty suggestions rather than inventing labels.",
             ),
             assumptions=("A labeling process exists outside BuildML core.",),
-            failure_modes=("Expecting suggest_query to return labels.",),
+            failure_modes=("Expecting session.active_learning.suggest_query to return labels.",),
             anti_patterns=("Shipping a silent oracle that reads holdout truths in production code.",),
             worked_example_pattern=(
-                "q = session.suggest_query(batch_size=5); session.label_rows(indices=q.indices, labels=human_labels).",
+                "q = session.active_learning.suggest_query(batch_size=5); session.active_learning.label_rows(indices=q.indices, labels=human_labels).",
             ),
             related_concepts=("activelearning-train-pool", "activelearning-uncertainty"),
         ),
@@ -110,7 +110,7 @@ ACTIVELEARNING_NOTES: dict[str, ConceptNote] = {
                 "Strategy choice changes which rows burn the annotation budget.",
             ),
             how_buildml_uses=(
-                "Session.fit_active_learner(strategy=...); Session.suggest_query(...).",
+                "session.active_learning.fit(strategy=...); session.active_learning.suggest_query(...).",
             ),
             interpretation_rules=(
                 "Higher returned scores mean higher priority under the chosen strategy.",
@@ -120,7 +120,7 @@ ACTIVELEARNING_NOTES: dict[str, ConceptNote] = {
             failure_modes=("Using committee strategy without a fitted committee_.",),
             anti_patterns=("Random sampling while claiming uncertainty sampling.",),
             worked_example_pattern=(
-                "fit_active_learner(strategy='entropy') → suggest_query(batch_size=10).",
+                "session.active_learning.fit(strategy='entropy') → session.active_learning.suggest_query(batch_size=10).",
             ),
             related_concepts=("activelearning-human-labels", "activelearning-bundle-boundary"),
         ),
@@ -140,18 +140,18 @@ ACTIVELEARNING_NOTES: dict[str, ConceptNote] = {
             ),
             formal_idea=(
                 "Artifacts are complementary: checkpoint_load ↛ active learner; "
-                "load_active_learning_bundle ↛ dataset rows."
+                "session.active_learning.load_bundle ↛ dataset rows."
             ),
             why_it_matters=("Mixing artifacts causes silent missing-learner failures.",),
             how_buildml_uses=(
-                "save_active_learning_bundle / load_active_learning_bundle.",
+                "session.active_learning.save_bundle / session.active_learning.load_bundle.",
             ),
             interpretation_rules=("Read meta.json format buildml.activelearning_bundle.v1.",),
             assumptions=("Feature contract and target role still match at load time.",),
             failure_modes=("Expecting checkpoint_load to restore ActiveLearningPlan.",),
             anti_patterns=("Treating semisupervised bundles as active-learning plans.",),
             worked_example_pattern=(
-                "session.save_active_learning_bundle(path); other.load_active_learning_bundle(path).",
+                "session.active_learning.save_bundle(path); other.active_learning.load_bundle(path).",
             ),
             related_concepts=("activelearning-train-pool", "semisupervised-bundle-boundary"),
         ),

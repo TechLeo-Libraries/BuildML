@@ -129,3 +129,17 @@ def test_finding_rejects_invalid_confidence() -> None:
             confidence=1.1,
         )
 
+
+def test_get_operation_accepts_facade_forms_without_alias_keys() -> None:
+    from buildml.explain.catalog import get_operation
+
+    flat = get_operation("evaluate_fairness")
+    dotted = get_operation("fairness.evaluate")
+    prefixed = get_operation("session.fairness.evaluate")
+    assert flat is dotted is prefixed or (
+        flat.name == dotted.name == prefixed.name == "evaluate_fairness"
+    )
+    assert "fairness.evaluate" not in OPERATION_CATALOG
+    assert "session.fairness.evaluate" not in OPERATION_CATALOG
+    assert set(OPERATION_CATALOG) == _public_session_operations()
+

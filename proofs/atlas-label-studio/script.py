@@ -91,13 +91,13 @@ def main() -> None:
 
     # --- Stage 1: SSL pretext on (mostly unlabeled) train features ---
     try:
-        ssl_fit = session.fit_ssl_pretext(method="masked_tabular", random_state=ctx.seed)
+        ssl_fit = session.ssl.fit_pretext(method="masked_tabular", random_state=ctx.seed)
         try:
-            session.finetune_ssl_head(random_state=ctx.seed)
+            session.ssl.finetune_head(random_state=ctx.seed)
         except Exception:  # noqa: BLE001
             pass
-        ssl_val = session.evaluate_ssl(partition="validation")
-        ssl_test = session.evaluate_ssl(partition="test")
+        ssl_val = session.ssl.evaluate(partition="validation")
+        ssl_test = session.ssl.evaluate(partition="test")
         stages["ssl"] = {
             "status": "ok",
             "torch": TORCH_STATUS,
@@ -124,14 +124,14 @@ def main() -> None:
     )
     _mask_train_labels(semi_session, fraction=0.85, seed=ctx.seed)
     try:
-        semi_fit = semi_session.fit_semisupervised(
+        semi_fit = semi_session.semisupervised.fit(
             method="label_propagation", n_neighbors=7
         )
         assert_no_test_in_selection(
             selection_partition="validation", evaluation_partition="test"
         )
-        semi_val = semi_session.evaluate_semisupervised(partition="validation")
-        semi_test = semi_session.evaluate_semisupervised(partition="test")
+        semi_val = semi_session.semisupervised.evaluate(partition="validation")
+        semi_test = semi_session.semisupervised.evaluate(partition="test")
         stages["semisupervised"] = {
             "status": "ok",
             "fit": {
@@ -163,16 +163,16 @@ def main() -> None:
     )
     _mask_train_labels(al_session, fraction=0.85, seed=ctx.seed)
     try:
-        al_fit = al_session.fit_active_learner(
+        al_fit = al_session.active_learning.fit(
             strategy="margin", batch_size=8, label_budget=40
         )
         curve = []
         for round_i in range(5):
-            q = al_session.suggest_query(batch_size=8)
+            q = al_session.active_learning.suggest_query(batch_size=8)
             if not q.indices:
                 break
             human = [int(truth[i]) for i in q.indices]
-            labeled = al_session.label_rows(indices=q.indices, labels=human)
+            labeled = al_session.active_learning.label_rows(indices=q.indices, labels=human)
             curve.append(
                 {
                     "round": round_i,
@@ -181,7 +181,7 @@ def main() -> None:
                     "budget_remaining": int(labeled.budget_remaining),
                 }
             )
-        al_test = al_session.evaluate_active_learning(partition="test")
+        al_test = al_session.active_learning.evaluate(partition="test")
         stages["active_learning"] = {
             "status": "ok",
             "fit": {

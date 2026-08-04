@@ -95,17 +95,17 @@ def main() -> None:
                 n_estimators=60, max_depth=5, random_state=ctx.seed
             ),
         }
-        fit = session.fit_stacking(
+        fit = session.ensemble.fit_stacking(
             bases,
             final_estimator=LogisticRegression(max_iter=1000, random_state=ctx.seed),
             cv=3,
             task="classification",
         )
-        val = session.evaluate_ensemble(partition="validation")
+        val = session.ensemble.evaluate(partition="validation")
         assert_no_test_in_selection(
             selection_partition="validation", evaluation_partition="test"
         )
-        test = session.evaluate_ensemble(partition="test")
+        test = session.ensemble.evaluate(partition="test")
         stages["stacking"] = {
             "status": "ok",
             "cv": 3,
@@ -141,7 +141,7 @@ def main() -> None:
             selection_partition="cv", evaluation_partition="test"
         )
         try:
-            result = automl_session.run_automl(
+            result = automl_session.automl.run(
                 task="classification",
                 backend=backend,  # type: ignore[arg-type]
                 method="randomized",
@@ -156,7 +156,7 @@ def main() -> None:
                 random_state=ctx.seed,
             )
         except (MissingExtraError, ValueError, TypeError) as exc:
-            result = automl_session.run_automl(
+            result = automl_session.automl.run(
                 task="classification",
                 backend="native",
                 method="randomized",
@@ -171,7 +171,7 @@ def main() -> None:
             )
             backend = f"native_fallback ({type(exc).__name__})"
         try:
-            am_test = automl_session.evaluate_automl(partition="test")
+            am_test = automl_session.automl.evaluate(partition="test")
         except Exception:
             am_test = automl_session.evaluate(partition="test")
         stages["automl"] = {
@@ -210,15 +210,15 @@ def main() -> None:
             .impute(strategy="median")
             .scale(method="standard")
         )
-        causal_session.declare_causal_assumptions(
+        causal_session.causal.declare_assumptions(
             treatment="outreach",
             outcome=TARGET,
             confounders=["ltv", "dti", "credit_score", "note_rate", "term_years"],
             acknowledge_unconfoundedness=True,
             acknowledge_positivity=True,
         )
-        fit_c = causal_session.fit_causal(method="aipw", bootstrap_samples=30)
-        ev_c = causal_session.evaluate_causal(partition="validation", bootstrap_samples=15)
+        fit_c = causal_session.causal.fit(method="aipw", bootstrap_samples=30)
+        ev_c = causal_session.causal.evaluate(partition="validation", bootstrap_samples=15)
         stages["causal"] = {
             "status": "ok",
             "assumptions": {
@@ -260,7 +260,7 @@ def main() -> None:
             "Stratified split before stacking / AutoML / causal",
             "OOF meta features from train CV folds only (cv=3)",
             "AutoML search/selection never uses the test partition",
-            "Causal assumptions declared before fit_causal",
+            "Causal assumptions declared before session.causal.fit",
         ],
         "what_fails_if_leakage_ignored": [
             "Stacking with test in OOF folds invents ensemble ROC",

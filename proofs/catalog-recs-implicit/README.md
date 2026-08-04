@@ -18,9 +18,9 @@ In-repo synthetic catalog interactions (`load_catalog_interactions_synthetic`): 
 ## BuildML API steps
 
 1. `Session.ingest` → `set_roles` → `split`
-2. `fit_recommender(method="als"|"item_knn")`
-3. `recommend(test)` → `evaluate_recommender(test, k=5)`
-4. `save_recommender_bundle`
+2. `session.recommender.fit(method="als"|"item_knn")`
+3. `session.recommender.recommend(test)` → `session.recommender.evaluate(test, k=5)`
+4. `session.recommender.save_bundle`
 
 ## Metrics
 
@@ -28,7 +28,7 @@ Primary holdout: hit-rate@k / nDCG@k (see `results/results.json`).
 
 ## Industry comparison (Tier C)
 
-Filled: item-cosine + popularity cold-start twin via `baseline_industry.py` → `results/comparison.json`.
+Industry twin: item-cosine + popularity cold-start twin via `baseline_industry.py` → `results/comparison.json`.
 
 ## Limitations
 

@@ -33,7 +33,7 @@ RAG_NOTES: dict[str, ConceptNote] = {
             ),
             how_buildml_uses=(
                 "Documents may carry role=index or role=eval_only.",
-                "rag_embed_and_index raises LeakageError when any eval_only document is present.",
+                "session.rag.embed_and_index raises LeakageError when any eval_only document is present.",
                 "Catalog leakage fields warn against indexing labeled eval answers.",
             ),
             interpretation_rules=(
@@ -52,7 +52,7 @@ RAG_NOTES: dict[str, ConceptNote] = {
                 "Indexing eval_only documents to 'make the demo look good'.",
             ),
             worked_example_pattern=(
-                "rag_ingest_corpus(index docs) → rag_embed_and_index → rag_evaluate(qrels on held-out queries).",
+                "session.rag.ingest_corpus(index docs) → session.rag.embed_and_index → session.rag.evaluate(qrels on held-out queries).",
             ),
             related_concepts=("leakage-boundary", "rag-chunk-index-boundary", "evaluation-partitions"),
         ),
@@ -79,8 +79,8 @@ RAG_NOTES: dict[str, ConceptNote] = {
                 "Chunk size/overlap change the retrieval unit; ids must stay deterministic for audits.",
             ),
             how_buildml_uses=(
-                "Session.rag_chunk / rag_embed_and_index build an in-memory RagIndex.",
-                "save_rag_bundle / load_rag_bundle round-trip buildml.rag_bundle.v1.",
+                "session.rag.chunk / session.rag.embed_and_index build an in-memory RagIndex.",
+                "session.rag.save_bundle / session.rag.load_bundle round-trip buildml.rag_bundle.v1.",
                 "Wrong schema ids raise ValidationError with an explicit expected format.",
             ),
             interpretation_rules=(
@@ -92,14 +92,14 @@ RAG_NOTES: dict[str, ConceptNote] = {
                 "Query embedding uses a compatible embedder after load.",
             ),
             failure_modes=(
-                "Passing a Session checkpoint path to load_rag_bundle.",
+                "Passing a Session checkpoint path to session.rag.load_bundle.",
                 "Changing chunk config between index build and eval without rebuilding.",
             ),
             anti_patterns=(
                 "Embedding the vector index inside a Session checkpoint.",
             ),
             worked_example_pattern=(
-                "rag_ingest_corpus → rag_chunk → rag_embed_and_index → save_rag_bundle.",
+                "session.rag.ingest_corpus → session.rag.chunk → session.rag.embed_and_index → session.rag.save_bundle.",
             ),
             related_concepts=("rag-eval-contamination", "reproducibility", "leakage-boundary"),
         ),
@@ -128,7 +128,7 @@ RAG_NOTES: dict[str, ConceptNote] = {
                 "Document-level vs chunk-level relevance change what a hit means.",
             ),
             how_buildml_uses=(
-                "rag_evaluate supports relevance_mode=document (default) or chunk, plus retrieve mode overrides.",
+                "session.rag.evaluate supports relevance_mode=document (default) or chunk, plus retrieve mode overrides.",
                 "evaluate_generation scores faithfulness + answer relevance with EchoGroundedProvider for CI.",
                 "RagEvalResult exposes recall_at_k, mrr, ndcg_at_k, hit_rate_at_k, and disclosures.",
                 "compare_retrieval_configs rebuilds indexes per config row for side-by-side metrics.",
@@ -149,7 +149,7 @@ RAG_NOTES: dict[str, ConceptNote] = {
                 "Reporting only top-1 hit rate as proof the RAG system is production-ready.",
             ),
             worked_example_pattern=(
-                "rag_embed_and_index → rag_evaluate(qrels, k=5) → read recall_at_k, mrr, and ndcg_at_k.",
+                "session.rag.embed_and_index → session.rag.evaluate(qrels, k=5) → read recall_at_k, mrr, and ndcg_at_k.",
             ),
             related_concepts=("rag-eval-contamination", "rag-chunk-index-boundary", "evaluation-partitions"),
         ),

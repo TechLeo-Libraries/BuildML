@@ -14,12 +14,12 @@ Site shifts make the problem non-IID. The platform:
 
 ## Status
 
-`completed`: run `script.py`; see `results/summary.json` and stage JSONs.
+Run `script.py`. Outputs land under `results/` (summary and stage JSON)..
 
 ## How to run
 
 ```bash
-.\.venv\Scripts\python.exe proofs\relay-edge-federated\script.py
+python proofs\relay-edge-federated\script.py
 ```
 
 ## Leakage controls

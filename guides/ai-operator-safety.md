@@ -47,12 +47,12 @@ frame = pd.DataFrame(
 )
 
 session = Session.ingest(frame)
-session.ai_configure(provider="mock")  # CI / offline; or openai + BUILDML_OPENAI_API_KEY
+session.ai.configure(provider="mock")  # CI / offline; or openai + BUILDML_OPENAI_API_KEY
 
-manifest = session.ai_egress_preview()
+manifest = session.ai.egress_preview()
 print(manifest.level, manifest.columns_sent, manifest.rows_sent)
 
-payload = session.ai_dry_run("Suggest next preprocessing steps")
+payload = session.ai.dry_run("Suggest next preprocessing steps")
 print(payload["messages"][0]["role"])
 print(payload["egress_manifest"])
 ```
@@ -74,7 +74,7 @@ Sample egress without `confirm=True` → `ValidationError`.
 
 ```python
 session.set_roles({"age": "feature", "income": "feature", "approved": "target"})
-result = session.ai_advisor("What preprocessing steps should I consider?")
+result = session.ai.advisor("What preprocessing steps should I consider?")
 print(result.answer)
 ```
 
@@ -85,17 +85,17 @@ The advisor cannot execute Session mutations.
 ## Use case C: Plan then confirmed execute
 
 ```python
-plan = session.ai_plan("Split stratified and impute median for classification")
+plan = session.ai.plan("Split stratified and impute median for classification")
 for step in plan.steps:
     print(step.operation, step.description)
 
-proposal = session.ai_execute(
+proposal = session.ai.execute(
     "split",
     {"test_size": 0.25, "stratify": True, "random_state": 0},
 )
 print(proposal.requires_confirmation)
 
-result = session.ai_execute(
+result = session.ai.execute(
     "split",
     {"test_size": 0.25, "stratify": True, "random_state": 0},
     confirm=True,
@@ -108,7 +108,7 @@ print(result.executed)
 ## Use case D: Run a multi-step plan with gates
 
 ```python
-execution = session.ai_run_plan(
+execution = session.ai.run_plan(
     plan,
     auto_confirm_read_only=True,
     stop_on_unconfirmed=True,
@@ -127,8 +127,8 @@ be silently auto-approved.
 ## Use case E: Explicit autonomy (residual risk)
 
 ```python
-session.ai_configure(provider="mock", egress_level="stats_only")
-auto = session.ai_run_autonomous(
+session.ai.configure(provider="mock", egress_level="stats_only")
+auto = session.ai.run_autonomous(
     "split the data and report workflow status",
     confirm_autonomy=True,  # required
     max_steps=5,
@@ -145,17 +145,17 @@ and transcript audit. This is **operator automation**, not open agency.
 ## Transcripts and budgets
 
 ```python
-session.ai_configure(
+session.ai.configure(
     provider="mock",
     max_tokens=10_000,
     max_cost_usd=5.0,
     max_iterations=10,
 )
-print(session.ai_status()["budget"])
+print(session.ai.status()["budget"])
 
-session.save_ai_transcript("artifacts/transcript.json")  # secrets redacted
+session.ai.save_transcript("artifacts/transcript.json")  # secrets redacted
 session2 = Session.ingest(frame)
-session2.load_ai_transcript("artifacts/transcript.json")
+session2.ai.load_transcript("artifacts/transcript.json")
 ```
 
 Transcript ≠ checkpoint ≠ Torch/RAG bundle
@@ -178,7 +178,7 @@ Transcript ≠ checkpoint ≠ Torch/RAG bundle
 
 | Issue | Guidance |
 | --- | --- |
-| AI ops without `ai_configure` | `ValidationError` |
+| AI ops without `session.ai.configure` | `ValidationError` |
 | Sample egress without confirm | `ValidationError` |
 | Unknown tool | Rejected by registry |
 | Autonomy without `confirm_autonomy=True` | Refused |

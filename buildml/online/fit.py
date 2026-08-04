@@ -198,7 +198,7 @@ def fit_online(
                 "unseen train rows were not used in this init fit)."
             )
         else:
-            class_vocab = tuple(classes)
+            class_vocab = tuple(class_vocab)
             disclosures.append(
                 "Classifier classes_ taken from the explicit classes= argument "
                 "on fit_online."

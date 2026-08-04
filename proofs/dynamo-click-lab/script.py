@@ -102,7 +102,7 @@ def main() -> None:
 
     # --- Stage 1: online ---
     try:
-        online = (
+        online_session = (
             Session.ingest(clicks.copy())
             .set_roles({**{c: "feature" for c in feats}, "converted": "target"})
             .inject_split(
@@ -112,7 +112,7 @@ def main() -> None:
             )
             .scale(method="standard")
         )
-        o_fit = online.fit_online(
+        o_fit = online_session.online.fit(
             estimator="sgd_classifier",
             chunk_size=50,
             n_init=50,
@@ -120,12 +120,12 @@ def main() -> None:
         )
         updates = 0
         while True:
-            remaining = online.online_plan.n_train_rows - online.online_plan.cursor
+            remaining = online_session.online.plan.n_train_rows - online_session.online.plan.cursor
             if remaining <= 0:
                 break
-            online.partial_fit_online(n_rows=min(50, remaining))
+            online_session.online.partial_fit(n_rows=min(50, remaining))
             updates += 1
-        o_test = online.evaluate_online(partition="test")
+        o_test = online_session.online.evaluate(partition="test")
         stages["online"] = {
             "status": "ok",
             "data": click_meta,
@@ -159,7 +159,7 @@ def main() -> None:
         )
         backend_note = "prototypical"
         try:
-            m_fit = meta_session.fit_metalearning(
+            m_fit = meta_session.metalearning.fit(
                 method="prototypical",
                 task_column="category_id",
                 n_way=2,
@@ -168,7 +168,7 @@ def main() -> None:
                 random_state=ctx.seed,
             )
         except (MissingExtraError, TypeError, ValueError) as exc:
-            m_fit = meta_session.fit_metalearning(
+            m_fit = meta_session.metalearning.fit(
                 method="warm_start",
                 task_column="category_id",
                 n_way=2,
@@ -177,7 +177,7 @@ def main() -> None:
                 random_state=ctx.seed,
             )
             backend_note = f"warm_start_fallback({type(exc).__name__})"
-        m_ev = meta_session.evaluate_metalearning(partition="test")
+        m_ev = meta_session.metalearning.evaluate(partition="test")
         stages["metalearning"] = {
             "status": "ok",
             "data": meta_meta,
@@ -229,7 +229,7 @@ def main() -> None:
             "Online partial_fit consumes train cursor only",
             "Metalearning group_split by category_id; episodic eval on held-out categories",
             "Classical scorer uses the same clickstream stratified split",
-            "Test evaluate_online / evaluate_metalearning / evaluate after locks",
+            "Test session.online.evaluate / session.metalearning.evaluate / evaluate after locks",
         ],
         "what_fails_if_leakage_ignored": [
             "Streaming updates that include test rows make online metrics meaningless",

@@ -24,8 +24,8 @@ def main() -> None:
         .scale(method="standard")
         .reduce_dimensions(method="pca", n_components=2, prefix="pc")
     )
-    fit = session.fit_clusters(method="kmeans", n_clusters=2, random_state=0)
-    metrics = session.evaluate_clusters(
+    fit = session.unsupervised.fit(method="kmeans", n_clusters=2, random_state=0)
+    metrics = session.unsupervised.evaluate(
         partition="validation",
         external_label_column="segment",
     )
@@ -33,7 +33,7 @@ def main() -> None:
     print("eval:", metrics.to_dict())
 
     out = Path(".buildml-artifacts") / "unsupervised_bundle"
-    path = session.save_unsupervised_bundle(out)
+    path = session.unsupervised.save_bundle(out)
     print("bundle:", path)
 
 

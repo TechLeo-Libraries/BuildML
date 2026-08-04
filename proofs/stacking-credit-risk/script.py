@@ -65,19 +65,19 @@ def main() -> None:
         "lr": LogisticRegression(max_iter=1000, random_state=ctx.seed),
         "rf": RandomForestClassifier(n_estimators=60, max_depth=5, random_state=ctx.seed),
     }
-    fit = session.fit_stacking(
+    fit = session.ensemble.fit_stacking(
         bases,
         final_estimator=LogisticRegression(max_iter=1000, random_state=ctx.seed),
         cv=3,
         task="classification",
     )
-    val = session.evaluate_ensemble(partition="validation")
+    val = session.ensemble.evaluate(partition="validation")
     assert_no_test_in_selection(
         selection_partition="validation",
         evaluation_partition="test",
     )
-    test = session.evaluate_ensemble(partition="test")
-    bundle = session.save_ensemble_bundle(ctx.artifacts_dir / "ensemble_bundle")
+    test = session.ensemble.evaluate(partition="test")
+    bundle = session.ensemble.save_bundle(ctx.artifacts_dir / "ensemble_bundle")
     bml_test = metrics_round(dict(test.metrics))
     write_results(
         ctx,
@@ -91,7 +91,7 @@ def main() -> None:
             "leakage_controls": [
                 "Stratified split before impute/encode/scale/stack",
                 "OOF meta features from train CV folds only (cv=3)",
-                "Test evaluate_ensemble after lock",
+                "Test session.ensemble.evaluate after lock",
             ],
             "validation_metrics": metrics_round(dict(val.metrics)),
             "test_metrics": bml_test,
