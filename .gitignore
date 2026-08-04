@@ -53,6 +53,11 @@ htmlcov/
 __pycache__/
 *.py[cod]
 
+# Secrets / local env (never commit)
+.env
+.env.*
+!.env.example
+
 # Local draft / release scratch (never commit)
 requirements-*-tmp.txt
 .release-notes*
