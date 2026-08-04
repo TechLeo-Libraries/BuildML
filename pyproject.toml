@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "buildml"
-version = "2.4.0a3"
+version = "2.4.0"
 description = "BuildML: a flexible, depth-first toolkit for building ML workflows."
 readme = "README.md"
 license = { text = "Apache-2.0" }
@@ -19,7 +19,7 @@ keywords = [
   "ML toolkit",
 ]
 classifiers = [
-  "Development Status :: 3 - Alpha",
+  "Development Status :: 5 - Production/Stable",
   "Intended Audience :: Developers",
   "Intended Audience :: Science/Research",
   "License :: OSI Approved :: Apache Software License",

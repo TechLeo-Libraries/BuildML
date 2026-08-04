@@ -1,6 +1,6 @@
 # Classical diagnostics and model search
 
-> **Install (GitHub 2.x):**
+> **Install:**
 > `pip install "git+https://github.com/TechLeo-Libraries/BuildML.git"`
 > Optional: `pip install "buildml[viz]"` for plot boards,
 > `"buildml[optuna]"` for `optuna_search`.

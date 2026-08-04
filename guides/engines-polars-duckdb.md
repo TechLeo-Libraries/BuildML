@@ -1,6 +1,6 @@
 # Engines: Pandas, Polars, and DuckDB
 
-> **Install (GitHub 2.x):**
+> **Install:**
 > `pip install "git+https://github.com/TechLeo-Libraries/BuildML.git"`
 > Then: `pip install "buildml[polars]"`, `"buildml[duckdb]"`, or
 > `"buildml[engines]"` for both. See [installation](../docs/installation.rst).

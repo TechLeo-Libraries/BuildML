@@ -5,36 +5,39 @@ BuildML supports Python 3.10 through 3.13.
 
 .. important::
 
-   **Install honesty (2.x):** PyPI ``buildml`` currently publishes the legacy
-   **1.x** line (``1.0.9``, MIT). It does **not** install Session 2.x.
-   Until a 2.x wheel is published, install from GitHub (or a source checkout).
+   **Install (2.4):** ``pip install buildml`` installs Session **2.4.x**
+   (Apache-2.0). Legacy **1.x** remains available only if you pin
+   ``buildml==1.0.9``.
 
-Install BuildML 2.x (GitHub)
-----------------------------
-
-.. code-block:: console
-
-   pip install "git+https://github.com/TechLeo-Libraries/BuildML.git"
-
-Optional extras append the same way as for a local checkout, for example
-``pip install "buildml[torch] @ git+https://github.com/TechLeo-Libraries/BuildML.git"``
-or install extras after an editable checkout (below).
-
-Core installation from PyPI (legacy 1.x only)
----------------------------------------------
+Install BuildML 2.x (PyPI)
+--------------------------
 
 .. code-block:: console
 
    pip install buildml
 
-That command installs **BuildML 1.x** from PyPI. Prefer the GitHub install above
-for Session 2.x.
+Optional extras append the same way, for example ``pip install "buildml[torch]"``.
+
+GitHub tip of main or an editable checkout also work:
+
+.. code-block:: console
+
+   pip install "git+https://github.com/TechLeo-Libraries/BuildML.git"
+   pip install -e ".[dev]"
+
+Legacy 1.x from PyPI
+--------------------
+
+.. code-block:: console
+
+   pip install "buildml==1.0.9"
+
+That pins the old MIT line. Prefer unpinned ``pip install buildml`` for Session 2.x.
 
 Optional dependencies (2.x)
 ---------------------------
 
-Install only the capabilities the workflow uses (after a GitHub / editable
-install of 2.x):
+Install only the capabilities the workflow uses:
 
 .. code-block:: console
 

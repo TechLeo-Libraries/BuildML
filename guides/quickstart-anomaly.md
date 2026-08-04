@@ -1,7 +1,6 @@
 # Anomaly / fraud quickstart
 
-> **Install first (GitHub):** PyPI `buildml` is still legacy 1.x and does **not**
-> install Session 2.x. Install 2.x from GitHub (or an editable checkout).
+> **Install:** Install Session 2.x with `pip install buildml` (2.4.x). Legacy 1.x remains available as `pip install "buildml==1.0.9"`. Install 2.x from GitHub (or an editable checkout).
 > Core sklearn detectors need no extra. Industry depth uses optional extras below.
 > See [installation](../docs/installation.rst).
 
@@ -17,7 +16,7 @@ and alert rates are always disclosed.
 
 ```bash
 # After a GitHub / editable 2.x install:
-pip install "git+https://github.com/TechLeo-Libraries/BuildML.git"
+pip install buildml
 
 # Industry PyOD + XGBoost/LightGBM fraud scorers:
 pip install "buildml[anomaly-industry]"

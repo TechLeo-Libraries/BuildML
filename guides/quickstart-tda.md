@@ -2,8 +2,8 @@
 
 **Proof:** [credit-tda-shape](../proofs/credit-tda-shape/) (+ Tier C logistic twin on raw features).
 
-> **Install (GitHub 2.x):**
-> `pip install "git+https://github.com/TechLeo-Libraries/BuildML.git"`
+> **Install:**
+> `pip install buildml`
 > TDA path: `pip install "buildml[tda]"` (ripser + persim)
 > Industry: `pip install "buildml[tda-industry]"` (giotto-tda + Betti curves)
 > See [installation](../docs/installation.rst).

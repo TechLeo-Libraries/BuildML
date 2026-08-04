@@ -1,8 +1,7 @@
 # Classical quickstart
 
-> **Install first (GitHub):** PyPI `buildml` is still legacy 1.x and does **not**
-> install Session 2.x. Use
-> `pip install "git+https://github.com/TechLeo-Libraries/BuildML.git"`
+> **Install:** Install Session 2.x with `pip install buildml` (2.4.x). Legacy 1.x remains available as `pip install "buildml==1.0.9"`. Use
+> `pip install buildml`
 > (or an editable checkout). See [installation](../docs/installation.rst).
 
 BuildML centers on a `Session` that keeps data, column roles, partition

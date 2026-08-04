@@ -1,8 +1,7 @@
 # AutoML quickstart
 
-> **Install first (GitHub):** PyPI `buildml` is still legacy 1.x and does **not**
-> install Session 2.x. Use
-> `pip install "git+https://github.com/TechLeo-Libraries/BuildML.git"`
+> **Install:** Install Session 2.x with `pip install buildml` (2.4.x). Legacy 1.x remains available as `pip install "buildml==1.0.9"`. Use
+> `pip install buildml`
 > Randomized/grid/evolutionary AutoML is core sklearn: no optional extra.
 > Optuna backend: `buildml[automl]`. Industry adapters (FLAML / AutoGluon) and
 > GBDT families: `buildml[automl-industry]`.

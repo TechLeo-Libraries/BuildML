@@ -1,7 +1,6 @@
 # Semi-supervised quickstart
 
-> **Install first (GitHub):** PyPI `buildml` is still legacy 1.x and does **not**
-> install Session 2.x. Install 2.x from GitHub (or an editable checkout).
+> **Install:** Install Session 2.x with `pip install buildml` (2.4.x). Legacy 1.x remains available as `pip install "buildml==1.0.9"`. Install 2.x from GitHub (or an editable checkout).
 > Core sklearn methods need no extra; industry/torch/HF paths use optional extras.
 > See [installation](../docs/installation.rst).
 
@@ -16,7 +15,7 @@ Unlabeled targets are **NaN missingness** by default (mapped to sklearn `-1` int
 [Self-supervised](quickstart-selfsupervised.md).
 
 ```bash
-pip install "git+https://github.com/TechLeo-Libraries/BuildML.git"
+pip install buildml
 # Optional industry depth:
 pip install "buildml[semisupervised-industry,torch,ssl]"
 ```

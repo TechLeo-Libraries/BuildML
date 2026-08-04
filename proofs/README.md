@@ -41,8 +41,10 @@ feature-scoped workarounds (Tier B `aegis` / `ledger` / decision-heavy products)
 
 ## How to prove BuildML works
 
-1. Install Session 2.x from this checkout (PyPI `buildml` is still legacy 1.x):
+1. Install Session 2.x (PyPI or this checkout):
    ```bash
+   pip install buildml
+   # or for proofs development:
    pip install -e ".[dev]"
    # domain extras as needed, e.g.:
    pip install -e ".[tda,rl,rag,torch]"

@@ -1,6 +1,6 @@
 # AutoML (deep)
 
-> **Install (GitHub 2.x):**
+> **Install:**
 > `pip install "git+https://github.com/TechLeo-Libraries/BuildML.git"`
 > Randomized/grid/evolutionary AutoML is core. Optuna backend needs
 > `buildml[automl]`. Industry adapters need `buildml[automl-industry]`.

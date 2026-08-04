@@ -1,7 +1,6 @@
 # Torch quickstart
 
-> **Install first (GitHub):** PyPI `buildml` is still legacy 1.x and does **not**
-> install Session 2.x. Install 2.x from GitHub (or an editable checkout), then
+> **Install:** Install Session 2.x with `pip install buildml` (2.4.x). Legacy 1.x remains available as `pip install "buildml==1.0.9"`. Install 2.x from GitHub (or an editable checkout), then
 > the Torch extra. See [installation](../docs/installation.rst).
 
 Optional Torch path on the same `Session` as classical ML: tabular loaders,

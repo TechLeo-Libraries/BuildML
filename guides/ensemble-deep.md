@@ -1,6 +1,6 @@
 # Ensemble learning (deep)
 
-> **Install (GitHub 2.x):**
+> **Install:**
 > `pip install "git+https://github.com/TechLeo-Libraries/BuildML.git"`
 > Ensembles are core (sklearn). See [installation](../docs/installation.rst).
 

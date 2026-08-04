@@ -1,7 +1,7 @@
 # Quickstart: Imitation learning + Reinforcement learning
 
-> **Install (GitHub 2.x):**
-> `pip install "git+https://github.com/TechLeo-Libraries/BuildML.git"`
+> **Install:**
+> `pip install buildml`
 > Optional Gymnasium path: `pip install "buildml[rl]"`
 > Industry SB3 + imitation: `pip install "buildml[rl-industry]"`
 > See [installation](../docs/installation.rst).

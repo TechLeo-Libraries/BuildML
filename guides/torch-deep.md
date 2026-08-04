@@ -7,7 +7,7 @@
 > # aliases: buildml[dl], buildml[audio]
 > # ONNX checker: buildml[onnx]
 > ```
-> PyPI `buildml` is legacy 1.x. See [installation](../docs/installation.rst).
+> Install with `pip install buildml`. See [installation](../docs/installation.rst).
 
 Optional deep learning on the **same Session** as classical ML. Classical
 `Session.fit` stays the sklearn path; Torch uses `*_torch` methods and stores

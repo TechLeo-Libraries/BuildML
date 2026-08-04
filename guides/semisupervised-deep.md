@@ -1,6 +1,6 @@
 # Semi-supervised deep guide
 
-> **Install (GitHub 2.x):**
+> **Install:**
 > `pip install "git+https://github.com/TechLeo-Libraries/BuildML.git"`
 
 Industry depth: scarce-label classification with unlabeled train features :

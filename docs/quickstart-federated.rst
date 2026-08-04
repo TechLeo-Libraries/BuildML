@@ -3,7 +3,7 @@ Federated learning quickstart
 
 .. note::
 
-   PyPI ``buildml`` is still legacy 1.x and does **not** install Session 2.x.
+   Install with ``pip install buildml`` (Session 2.4.x).
    Install 2.x from GitHub (or an editable checkout). Federated learning uses
    core sklearn façades: no optional extra. See :doc:`installation`.
 

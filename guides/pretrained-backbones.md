@@ -1,6 +1,6 @@
 # Pretrained backbones
 
-> **Install (GitHub 2.x):**
+> **Install:**
 > ```bash
 > pip install "git+https://github.com/TechLeo-Libraries/BuildML.git"
 > pip install "buildml[pretrained]"   # vision + speech extras

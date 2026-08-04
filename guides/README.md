@@ -5,12 +5,10 @@ User-facing tutorials for BuildML 2.x. Markdown under `guides/` is the
 hosted build is current
 ([buildml.readthedocs.io](https://buildml.readthedocs.io/)).
 
-**Install honesty:** PyPI `buildml` is still legacy **1.x**. Session 2.x
-requires a GitHub or editable install (see
-[installation](../docs/installation.rst)):
+**Install** (see [installation](../docs/installation.rst)):
 
 ```bash
-pip install "git+https://github.com/TechLeo-Libraries/BuildML.git"
+pip install buildml
 # then extras as needed, e.g. pip install "buildml[torch,rag,ai,serve]"
 ```
 

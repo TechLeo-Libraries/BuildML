@@ -1,7 +1,7 @@
 # Quickstart: Synthetic-data systems
 
-> **Install (GitHub 2.x):**
-> `pip install "git+https://github.com/TechLeo-Libraries/BuildML.git"`
+> **Install:**
+> `pip install buildml`
 > Core path: bootstrap + Gaussian copula use numpy/scipy/sklearn.
 > `method='smote'` needs `pip install "buildml[imbalanced]"`.
 > SDV CTGAN/TVAE/CopulaGAN needs `pip install "buildml[synthetic-industry]"`.

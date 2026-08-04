@@ -1,6 +1,6 @@
 # Forecasting deep
 
-> **Install (GitHub 2.x):**
+> **Install:**
 > `pip install "git+https://github.com/TechLeo-Libraries/BuildML.git"`
 > Core lag/baseline always available. Industry defaults:
 > `pip install "buildml[timeseries]"` (statsmodels ETS/ARIMA/SARIMAX).

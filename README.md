@@ -7,11 +7,11 @@ estimator, and a record of every operation you run. Preprocessing learns from
 the training partition only; validation and test rows receive frozen
 transformations. That train-only boundary is enforced in the API.
 
-**BuildML 2.4 alpha** (`2.4.0a3`) is pre-release software. Public methods, report
-schemas, and serialized bundle formats may change before a stable 2.x release.
-The public 2.x entry point is `buildml.Session`. For domains, **namespaced
-facades** (`session.<domain>.*`) are the supported public API; flat domain
-aliases are supported-but-deprecated until BuildML 3.0.
+**BuildML 2.4** (`2.4.0`) is the stable Session 2.x line on PyPI. The public
+entry point is `buildml.Session`. For domains, **namespaced facades**
+(`session.<domain>.*`) are the supported public API; flat domain aliases are
+supported-but-deprecated until BuildML 3.0. See
+[`docs/stability.md`](docs/stability.md).
 
 | Path | What it is |
 | --- | --- |
@@ -27,19 +27,19 @@ aliases are supported-but-deprecated until BuildML 3.0.
 
 **Python 3.10–3.13.**
 
-> **Install honesty:** PyPI `buildml` is still the legacy **1.x** line
-> (`1.0.9`, MIT). It does **not** install Session 2.x. This checkout is
-> release-ready as **`2.4.0a3`**; publishing needs human PyPI ownership / OIDC
-> (see [`docs/pypi-2x-publish.md`](docs/pypi-2x-publish.md)). Until that wheel
-> is live, install from GitHub or an editable checkout:
-
 ```bash
-# GitHub (Session 2.x)
-pip install "git+https://github.com/TechLeo-Libraries/BuildML.git"
+# Session 2.x from PyPI (default)
+pip install buildml
 
 # Editable source checkout (recommended for development / proofs)
 pip install -e ".[dev]"
+
+# GitHub tip of main
+pip install "git+https://github.com/TechLeo-Libraries/BuildML.git"
 ```
+
+Legacy **1.x** (`1.0.9`, MIT) remains on PyPI for pin-only installs:
+`pip install "buildml==1.0.9"`.
 
 ### Optional extras (scannable)
 
@@ -59,7 +59,7 @@ pip install -e ".[dev]"
 | Industry meta | `buildml[production]` | R1–R6 industry extras: **best-effort** (see below) |
 
 ```bash
-pip install "buildml[production]"   # after GitHub / editable install above
+pip install "buildml[production]"
 ```
 
 ### `buildml[production]` honesty

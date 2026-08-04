@@ -8,6 +8,18 @@ with pre-release tags for alpha (`aN`) builds.
 
 ## [Unreleased]
 
+## [2.4.0] - 2026-08-04
+
+First **stable** Session 2.x release on PyPI. `pip install buildml` now resolves
+to 2.4.x (not legacy 1.0.9). Pre-release `2.4.0a3` remains on the index for
+historical pins.
+
+### Changed
+
+- **Graduated from alpha.** Package version `2.4.0` (non-pre-release); PyPI
+  classifier `Development Status :: 5 - Production/Stable`. Install docs teach
+  bare `pip install buildml` for Session 2.x.
+
 ### Added
 
 - **KG / causal / federated / RL evaluation depth.** Native evaluation metrics

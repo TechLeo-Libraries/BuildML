@@ -5,7 +5,7 @@
 > pip install "git+https://github.com/TechLeo-Libraries/BuildML.git"
 > pip install "buildml[ai]"
 > ```
-> PyPI `buildml` is legacy 1.x. See [installation](../docs/installation.rst).
+> Install with `pip install buildml`. See [installation](../docs/installation.rst).
 
 The AI operator guides classical / RAG / Torch workflows through a typed tool
 registry. Default policy is **advisor → plan → propose → confirm → execute**.

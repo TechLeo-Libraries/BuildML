@@ -1,6 +1,6 @@
 # Classical end-to-end
 
-> **Install (GitHub 2.x):** PyPI `buildml` is legacy 1.x. Use
+> **Install:** PyPI `buildml` is legacy 1.x. Use
 > `pip install "git+https://github.com/TechLeo-Libraries/BuildML.git"`
 > (or editable checkout). See [installation](../docs/installation.rst).
 

@@ -1,6 +1,6 @@
 # Session namespaced facades
 
-**Status:** shipped in BuildML `2.4.0a3`  
+**Status:** shipped in BuildML `2.4.0`  
 **Flat domain alias removal:** BuildML `3.0`
 
 ## Why facades exist
@@ -22,7 +22,7 @@ dual and first-class **without** warnings.
 | Version | What lands |
 | --- | --- |
 | `2.4.0a2` | Discovery helpers (`list_capabilities`, `describe_method`, …) |
-| **`2.4.0a3`** | Namespaced facades for all domains; flat domain actions warn; docs / guides / examples / proofs teach facades first |
+| **`2.4.0`** | Namespaced facades for all domains; flat domain actions warn; docs / guides / examples / proofs teach facades first |
 | `2.4.0` (stable intent) | Facades remain preferred; flat aliases still present |
 | **`3.0`** | Flat domain aliases eligible for removal (classical core policy re-evaluated then) |
 
@@ -102,7 +102,7 @@ The migrator rewrites:
   (exact catalog key strings like `"fit_anomaly"` stay flat; ambiguous English
   verbs like rank / recommend are never rewritten as bare tokens)
 
-## Included in 2.4.0a3
+## Included in 2.4.0
 
 - All Session domains have namespaced facades
 - Domain flat actions deprecated with tests

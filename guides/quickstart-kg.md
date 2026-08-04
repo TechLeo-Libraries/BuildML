@@ -1,7 +1,7 @@
 # Quickstart: Knowledge graphs
 
-> **Install (GitHub 2.x):**
-> `pip install "git+https://github.com/TechLeo-Libraries/BuildML.git"`
+> **Install:**
+> `pip install buildml`
 > Core path (numpy TransE / DistMult): no Neo4j, no extra required.
 > Industry path: `pip install 'buildml[kg-industry]'` for PyKEEN RotatE/ComplEx.
 > See [installation](../docs/installation.rst).

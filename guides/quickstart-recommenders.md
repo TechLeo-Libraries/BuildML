@@ -2,8 +2,8 @@
 
 **Proof:** [movie-recs-collaborative](../proofs/movie-recs-collaborative/) (+ Tier C item-cosine twin).
 
-> **Install (GitHub 2.x):**
-> `pip install "git+https://github.com/TechLeo-Libraries/BuildML.git"`
+> **Install:**
+> `pip install buildml`
 > Core path (numpy/sklearn CF + content): no extra required.
 > Industry ALS/BPR + LightFM: `pip install 'buildml[recommenders-industry]'`.
 > See [installation](../docs/installation.rst).

@@ -1,6 +1,6 @@
 # Leakage, fold-local recipes, weights, and hard-refuse CV
 
-> **Install (GitHub 2.x):** PyPI `buildml` is legacy 1.x. Use
+> **Install:** PyPI `buildml` is legacy 1.x. Use
 > `pip install "git+https://github.com/TechLeo-Libraries/BuildML.git"`.
 > See [installation](../docs/installation.rst).
 

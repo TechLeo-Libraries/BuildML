@@ -1,7 +1,6 @@
 # Active learning quickstart
 
-> **Install first (GitHub):** PyPI `buildml` is still legacy 1.x and does **not**
-> install Session 2.x. Install 2.x from GitHub (or an editable checkout).
+> **Install:** Install Session 2.x with `pip install buildml` (2.4.x). Legacy 1.x remains available as `pip install "buildml==1.0.9"`. Install 2.x from GitHub (or an editable checkout).
 > Active learning uses core sklearn: no optional extra is required.
 > See [installation](../docs/installation.rst).
 
@@ -19,7 +18,7 @@ oracle (examples/tests may simulate one).
 [Semi-supervised](quickstart-semisupervised.md).
 
 ```bash
-pip install "git+https://github.com/TechLeo-Libraries/BuildML.git"
+pip install buildml
 ```
 
 ```python

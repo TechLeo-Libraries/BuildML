@@ -5,7 +5,7 @@
 > pip install "git+https://github.com/TechLeo-Libraries/BuildML.git"
 > pip install "buildml[speech]"   # torch + transformers
 > ```
-> PyPI `buildml` is legacy 1.x. See [installation](../docs/installation.rst).
+> Install with `pip install buildml`. See [installation](../docs/installation.rst).
 
 BuildML ships an **integration path** for speech: environment-aware ASR
 (default prefers **transformers** when `buildml[speech]` is installed; falls

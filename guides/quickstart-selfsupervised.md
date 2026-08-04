@@ -1,6 +1,6 @@
 # Self-supervised quickstart
 
-> **Install (GitHub 2.x):**
+> **Install:**
 > `pip install "git+https://github.com/TechLeo-Libraries/BuildML.git#egg=buildml[torch]"`
 
 Industry-default SSL uses **Torch** when installed (`simclr_tabular` default).

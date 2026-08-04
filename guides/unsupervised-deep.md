@@ -1,6 +1,6 @@
 # Unsupervised learning (deep)
 
-> **Install (GitHub 2.x):**
+> **Install:**
 > `pip install "git+https://github.com/TechLeo-Libraries/BuildML.git"`
 > Clustering is core (sklearn). See [installation](../docs/installation.rst).
 

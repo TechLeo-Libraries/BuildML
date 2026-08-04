@@ -2,8 +2,8 @@
 
 **Proof:** [cost-sensitive-collections](../proofs/cost-sensitive-collections/) · Tier B allocation in [harbor-demand-desk](../proofs/harbor-demand-desk/), [aegis-fraud-platform](../proofs/aegis-fraud-platform/), and [ledger-underwriting-studio](../proofs/ledger-underwriting-studio/).
 
-> **Install (GitHub 2.x):**
-> `pip install "git+https://github.com/TechLeo-Libraries/BuildML.git"`
+> **Install:**
+> `pip install buildml`
 > Core path: sklearn + transitive `scipy.optimize` for LP allocation.
 > Industry solvers: `pip install 'buildml[optimize-industry]'` (PuLP, OR-Tools,
 > CVXPY, XGBoost). See [installation](../docs/installation.rst).
