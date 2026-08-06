@@ -1,0 +1,289 @@
+/* —— Readiness Gates deep-dive sidebar / learning panel —— */
+
+.gate-card {
+  cursor: pointer;
+  transition: background-color 120ms ease;
+}
+.gate-card:hover,
+.gate-card:focus-visible {
+  background: color-mix(in srgb, var(--color-accent) 6%, var(--color-bg));
+  outline: none;
+}
+.gate-card__question {
+  font-size: 14.5px;
+  line-height: 1.45;
+  font-weight: 500;
+}
+.gate-card__evidence {
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+.gate-card__learn {
+  margin-top: var(--space-2);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-accent-700);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.gate-card__learn:hover {
+  color: var(--color-accent);
+}
+
+.gate-drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  background: color-mix(in srgb, var(--color-neutral-900) 40%, transparent);
+  z-index: 45;
+}
+.gate-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: min(520px, 100%);
+  height: 100vh;
+  background: var(--color-bg);
+  border-left: 1px solid var(--color-text);
+  z-index: 55;
+  transform: translateX(100%);
+  transition: transform 160ms ease;
+  display: flex;
+  flex-direction: column;
+}
+.gate-drawer.open {
+  transform: translateX(0);
+}
+.gate-drawer__sticky {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--color-bg);
+  border-bottom: 1px solid var(--color-text);
+  padding: var(--space-4);
+}
+.gate-drawer__sticky-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+.gate-drawer__title {
+  margin: var(--space-2) 0 0;
+  font-size: 18px;
+  line-height: 1.35;
+  letter-spacing: -0.01em;
+  text-transform: none;
+  font-weight: 600;
+}
+.gate-drawer__ephemeral {
+  margin: var(--space-3) 0 0;
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--color-neutral-700);
+  font-family: var(--font-mono);
+}
+.gate-drawer__scroll {
+  padding: var(--space-4);
+  overflow: auto;
+  flex: 1;
+}
+
+.gate-learn__section {
+  margin-bottom: var(--space-5);
+}
+.gate-learn__section h3 {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-accent-700);
+  margin: 0 0 var(--space-2);
+}
+.gate-learn__section p {
+  margin: 0 0 var(--space-2);
+  font-size: 13.5px;
+  line-height: 1.55;
+}
+.gate-learn__list {
+  margin: var(--space-2) 0 0;
+  padding-left: 1.15rem;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.gate-learn__list li + li {
+  margin-top: 0.35rem;
+}
+.gate-learn__details {
+  border-top: 1px solid var(--color-divider);
+  border-bottom: 1px solid var(--color-divider);
+  margin: 0 0 var(--space-5);
+  padding: var(--space-3) 0;
+}
+.gate-learn__details + .gate-learn__details {
+  border-top: 0;
+  margin-top: calc(-1 * var(--space-5));
+}
+.gate-learn__details summary {
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-accent-700);
+  list-style: none;
+}
+.gate-learn__details summary::-webkit-details-marker {
+  display: none;
+}
+.gate-learn__details summary::after {
+  content: " +";
+  color: var(--color-neutral-700);
+}
+.gate-learn__details[open] summary::after {
+  content: " −";
+}
+.gate-learn__details-body {
+  margin-top: var(--space-3);
+}
+.gate-level + .gate-level {
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px dotted var(--color-divider);
+}
+.gate-level .om-kick {
+  display: block;
+  margin-bottom: 4px;
+}
+.gate-learn__callout {
+  margin-top: var(--space-3);
+  border-left: 2px solid var(--color-accent);
+  padding-left: var(--space-3);
+}
+.gate-learn__callout--muted {
+  border-left-color: var(--color-neutral-400);
+}
+.gate-learn__callout .om-kick {
+  display: block;
+  margin-bottom: 4px;
+}
+.gate-learn__reading {
+  margin-top: var(--space-3);
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--color-neutral-800);
+}
+
+.gate-code {
+  margin-top: var(--space-3);
+  border: 1px solid var(--color-text);
+  background: color-mix(in srgb, var(--color-neutral-200) 35%, var(--color-bg));
+}
+.gate-code__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--color-divider);
+}
+.gate-code__pre {
+  margin: 0;
+  padding: var(--space-3);
+  overflow: auto;
+  max-height: min(420px, 50vh);
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  line-height: 1.45;
+  white-space: pre;
+}
+.gate-code__pre code {
+  font: inherit;
+}
+
+.gate-calc {
+  border: 1px solid var(--color-divider);
+  padding: var(--space-3);
+}
+.gate-calc__label {
+  font-weight: 600;
+  font-size: 13.5px;
+  margin-bottom: var(--space-2);
+}
+.gate-calc__formula {
+  font-size: 12px;
+  margin-bottom: var(--space-3);
+  color: var(--color-neutral-800);
+}
+.gate-calc__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  margin-bottom: var(--space-3);
+}
+.gate-calc__table th,
+.gate-calc__table td {
+  text-align: left;
+  padding: 4px 6px;
+  border-top: 1px solid var(--color-divider);
+  vertical-align: top;
+}
+.gate-calc__table th {
+  font-family: var(--font-mono);
+  font-weight: 500;
+  color: var(--color-neutral-700);
+  width: 40%;
+}
+.gate-calc__result {
+  font-size: 13.5px;
+  margin-bottom: var(--space-2);
+}
+.gate-calc__result .om-kick {
+  display: inline-block;
+  margin-right: var(--space-2);
+}
+.gate-calc__reading {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+.gate-status-dl {
+  margin: 0;
+}
+.gate-status-dl dt {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-accent-700);
+  margin-top: var(--space-3);
+}
+.gate-status-dl dt:first-child {
+  margin-top: 0;
+}
+.gate-status-dl dd {
+  margin: 4px 0 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+@media (max-width: 720px) {
+  .gate-drawer {
+    width: 100%;
+  }
+  .gate-drawer__title {
+    font-size: 16px;
+  }
+}
+
+@media print {
+  .gate-drawer,
+  .gate-drawer-backdrop,
+  .gate-card__learn {
+    display: none !important;
+  }
+}

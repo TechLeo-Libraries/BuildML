@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="_ds/industry-e7357cdc-dd1f-4728-81c5-00d86b893c68/styles.css" />
+<script src="_ds/industry-e7357cdc-dd1f-4728-81c5-00d86b893c68/_ds_bundle.js"></script>
+<style>
+html,body{margin:0;background:var(--color-bg);color:var(--color-text);font-family:var(--font-body);overflow-x:clip}
+a{color:var(--color-accent-700);text-decoration:none}
+a:hover{color:var(--color-accent);text-decoration:underline}
+.om-mono{font-family:ui-monospace,"SFMono-Regular",Menlo,monospace;font-variant-numeric:tabular-nums}
+.om-slug{font-family:ui-monospace,"SFMono-Regular",Menlo,monospace;font-size:11px;letter-spacing:.04em;white-space:nowrap}
+.om-code{font-family:ui-monospace,"SFMono-Regular",Menlo,monospace;font-size:11.5px;line-height:1.7;white-space:pre;overflow-x:auto;display:block;padding:var(--space-3);border:1px solid var(--color-divider);background:var(--color-neutral-100);color:var(--color-accent-900)}
+.om-entry{scroll-margin-top:120px}
+.om-kick{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--color-accent-700)}
+.om-chip{font-family:ui-monospace,"SFMono-Regular",Menlo,monospace;font-size:10.5px;letter-spacing:.02em;text-decoration:none;display:inline-flex;align-items:center;gap:5px;padding:3px 7px;white-space:nowrap}
+.om-chip:hover{text-decoration:none}
+.om-chip-on{background:var(--color-accent);border:1px solid var(--color-accent);color:var(--color-bg);cursor:pointer}
+.om-chip-on:hover{background:var(--color-accent-600);border-color:var(--color-accent-600);color:var(--color-bg)}
+.om-chip-off{background:transparent;border:1px dashed var(--color-neutral-400);color:var(--color-neutral-700);cursor:pointer}
+.om-chip-off:hover{border-style:solid;border-color:var(--color-accent);color:var(--color-accent-900)}
+@media print{
+  a[href="#"],button{display:none !important}
+  [style*="position:sticky"]{position:static !important;border-bottom:1px solid var(--color-text) !important}
+  html,body{background:#fff}
+  article,section{break-inside:avoid}
+}
+</style>
+</helmet>
+<div style="min-height:100vh;padding:var(--space-6) var(--space-8) var(--space-8);max-width:1180px;margin:0 auto">
+  <header style="display:grid;grid-template-columns:minmax(0,1fr) auto;gap:var(--space-6);align-items:end;border-bottom:2px solid var(--color-text);padding-bottom:var(--space-3)">
+    <div>
+      <div class="om-mono om-kick" style="font-size:11px;letter-spacing:.14em">BuildML {{ academyKicker }}</div>
+      <h1 style="margin:var(--space-2) 0 0;font-size:44px;letter-spacing:-0.01em;text-transform:uppercase">Concept academy</h1>
+    </div>
+    <div style="display:flex;gap:var(--space-2);align-items:center">
+      <a class="btn btn-secondary" href="EDA Sheet - Cockpit.dc.html">← Readiness sheet</a>
+      <a class="btn btn-secondary" href="EDA Sheet - Readiness Gates.dc.html">Readiness gates</a>
+      <a class="btn btn-primary blueprint" href="#" onClick="{{ onPrint }}"><i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>PDF briefing</a>
+    </div>
+  </header>
+
+  <div style="position:sticky;top:0;z-index:6;background:var(--color-bg);border-bottom:1px solid var(--color-text);padding:var(--space-3) 0;display:grid;gap:var(--space-3)">
+    <div style="display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:var(--space-4);align-items:center">
+      <input class="input om-mono" type="search" placeholder="Search the curriculum — a statistic, a pitfall, a column name" value="{{ q }}" onChange="{{ onSearch }}" style="font-size:12.5px;width:100%" />
+      <div style="display:flex;gap:var(--space-2)">
+        <sc-for list="{{ modes }}" as="m" hint-placeholder-count="3">
+          <button class="{{ m.cls }}" onClick="{{ m.on }}" style="font-size:11px;letter-spacing:.06em;text-transform:uppercase">{{ m.label }}</button>
+        </sc-for>
+      </div>
+      <div style="display:flex;gap:var(--space-3);align-items:baseline">
+        <span class="om-mono" style="font-size:11px;color:var(--color-neutral-700);white-space:nowrap">{{ showing }}</span>
+        <button class="btn btn-ghost om-mono" onClick="{{ clearAll }}" style="font-size:11px;letter-spacing:.06em;text-transform:uppercase">Reset</button>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:minmax(0,1fr) auto;gap:var(--space-4);align-items:center">
+      <div style="display:flex;gap:var(--space-2);align-items:center;flex-wrap:wrap">
+        <span class="om-mono om-kick">Stage</span>
+        <sc-for list="{{ stageToggles }}" as="t" hint-placeholder-count="6">
+          <button class="{{ t.cls }}" onClick="{{ t.on }}" style="font-family:ui-monospace,Menlo,monospace;font-size:10.5px;letter-spacing:.04em;padding:3px 8px;cursor:pointer">{{ t.label }}</button>
+        </sc-for>
+      </div>
+      <div style="display:flex;gap:var(--space-4);align-items:center">
+        <span style="display:flex;gap:6px;align-items:center"><span class="om-chip om-chip-on">cited</span><span class="om-mono" style="font-size:10.5px;color:var(--color-neutral-700)">a finding on this session's sheet rests on it</span></span>
+        <span style="display:flex;gap:6px;align-items:center"><span class="om-chip om-chip-off">reference</span><span class="om-mono" style="font-size:10.5px;color:var(--color-neutral-700)">taught, not triggered here</span></span>
+      </div>
+    </div>
+  </div>
+
+  <section class="blueprint" style="position:relative;border:1px solid var(--color-text);margin-top:var(--space-6)">
+    <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+    <div style="display:grid;grid-template-columns:auto minmax(0,1fr);align-items:baseline;gap:var(--space-4);padding:var(--space-3) var(--space-4);border-bottom:1px solid var(--color-text)">
+      <span class="om-mono om-kick" style="letter-spacing:.14em">Contents</span>
+      <span class="om-mono" style="font-size:10.5px;color:var(--color-neutral-700)">six stages, read in order — filled chips are cited by a finding, outlined chips are reference</span>
+    </div>
+    <sc-for list="{{ indexRows }}" as="s" hint-placeholder-count="6">
+      <div style="display:grid;grid-template-columns:200px minmax(0,1fr);gap:var(--space-4);padding:var(--space-3) var(--space-4);border-bottom:1px solid var(--color-divider)">
+        <div>
+          <div style="display:flex;align-items:baseline;gap:var(--space-2)">
+            <span class="om-mono" style="font-size:26px;line-height:1;color:var(--color-accent);letter-spacing:-0.02em">{{ s.n }}</span>
+            <span style="font-family:var(--font-heading);font-size:17px;letter-spacing:.04em;text-transform:uppercase">{{ s.label }}</span>
+          </div>
+          <div class="om-mono" style="font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--color-neutral-700);margin-top:4px">{{ s.countLabel }}</div>
+          <div style="font-size:11.5px;line-height:1.45;color:var(--color-neutral-700);margin-top:6px;max-width:26ch">{{ s.blurb }}</div>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:var(--space-2);align-content:flex-start">
+          <sc-for list="{{ s.chips }}" as="ch" hint-placeholder-count="8">
+            <a class="{{ ch.cls }}" href="{{ ch.href }}" data-slug="{{ ch.slug }}" onClick="{{ ch.on }}">{{ ch.slug }}<sc-if value="{{ ch.cited }}" hint-placeholder-val="{{ false }}"><span class="om-mono" style="font-size:9px;opacity:.75">×{{ ch.count }}</span></sc-if></a>
+          </sc-for>
+        </div>
+      </div>
+    </sc-for>
+  </section>
+
+  <sc-if value="{{ empty }}" hint-placeholder-val="{{ false }}">
+    <div style="margin-top:var(--space-8);padding:var(--space-6);border:1px dashed var(--color-divider);text-align:center">
+      <div class="om-mono" style="font-size:13px">No concept matches the current filters.</div>
+      <button class="btn btn-secondary om-mono" onClick="{{ clearAll }}" style="margin-top:var(--space-3);font-size:11px;letter-spacing:.06em;text-transform:uppercase">Clear filters</button>
+    </div>
+  </sc-if>
+
+  <sc-for list="{{ stages }}" as="s" hint-placeholder-count="4">
+    <div style="display:grid;grid-template-columns:38px minmax(0,1fr);gap:var(--space-6);margin-top:var(--space-8)">
+      <div class="om-mono" style="font-size:12px;letter-spacing:.1em;color:var(--color-accent-700);padding-top:4px">{{ s.n }}</div>
+      <section>
+        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:var(--space-4);border-bottom:1px solid var(--color-divider);padding-bottom:var(--space-2)">
+          <h4 style="margin:0;letter-spacing:.06em;text-transform:uppercase">{{ s.label }} — {{ s.blurb }}</h4>
+          <span class="om-mono" style="font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--color-neutral-700);white-space:nowrap">{{ s.count }}</span>
+        </div>
+        <sc-for list="{{ s.entries }}" as="e" hint-placeholder-count="2">
+          <article class="om-entry" id="{{ e.slug }}" style="display:grid;grid-template-columns:3px minmax(0,1.15fr) minmax(0,1fr);gap:var(--space-6);margin-top:var(--space-6);padding-bottom:var(--space-6);border-bottom:1px solid var(--color-divider)">
+            <sc-if value="{{ e.cited }}" hint-placeholder-val="{{ true }}">
+              <div style="background:var(--color-accent)"></div>
+            </sc-if>
+            <sc-if value="{{ e.uncited }}" hint-placeholder-val="{{ false }}">
+              <div style="border-left:1px dashed var(--color-neutral-400)"></div>
+            </sc-if>
+            <div>
+              <div style="display:flex;align-items:baseline;gap:var(--space-3);flex-wrap:wrap">
+                <h3 class="om-mono" style="margin:0;font-size:20px;letter-spacing:.02em">{{ e.title }}</h3>
+                <sc-if value="{{ e.stageLabel }}" hint-placeholder-val="{{ false }}">
+                  <span class="om-mono" style="font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--color-neutral-700)">stage {{ e.stageLabel }}</span>
+                </sc-if>
+                <sc-for list="{{ e.citations }}" as="c" hint-placeholder-count="1">
+                  <a class="om-chip om-chip-on" href="{{ c.href }}">{{ c.label }}</a>
+                </sc-for>
+                <sc-if value="{{ e.uncited }}" hint-placeholder-val="{{ false }}">
+                  <span class="om-chip om-chip-off">reference — no finding cited it</span>
+                </sc-if>
+              </div>
+              <sc-for list="{{ e.prose }}" as="p" hint-placeholder-count="2">
+                <p style="margin:var(--space-3) 0 0;font-size:14px;line-height:1.6">{{ p.text }}</p>
+              </sc-for>
+              <p class="text-muted" style="margin:var(--space-3) 0 0;font-size:12.5px;line-height:1.6"><span class="om-mono" style="letter-spacing:.06em;text-transform:uppercase">In this session</span> — {{ e.session }}</p>
+              <sc-if value="{{ e.hasDecide }}" hint-placeholder-val="{{ true }}">
+                <p style="margin:var(--space-4) 0 0;font-size:13px;line-height:1.6;border-left:2px solid var(--color-accent);padding:0 0 0 var(--space-3)"><span class="om-mono om-kick" style="display:block;margin-bottom:2px">The decision it forces</span>{{ e.decide }}</p>
+              </sc-if>
+            </div>
+            <div>
+              <div class="om-mono om-kick" style="margin-bottom:var(--space-2)">How to read it</div>
+              <ol style="margin:0 0 var(--space-4);padding-left:1.3em;font-size:12.5px;line-height:1.6;display:grid;gap:var(--space-2)">
+                <sc-for list="{{ e.read }}" as="d" hint-placeholder-count="3">
+                  <li>{{ d.text }}</li>
+                </sc-for>
+              </ol>
+              <div class="om-mono om-kick" style="margin-bottom:var(--space-2)">Worked example</div>
+              <code class="om-code">{{ e.example }}</code>
+              <div class="om-mono om-kick" style="margin:var(--space-4) 0 var(--space-2)">Pitfalls</div>
+              <ul style="margin:0;padding-left:1.1em;font-size:12.5px;line-height:1.6;display:grid;gap:var(--space-2)">
+                <sc-for list="{{ e.pitfalls }}" as="p" hint-placeholder-count="3">
+                  <li>{{ p.text }}</li>
+                </sc-for>
+              </ul>
+            </div>
+          </article>
+        </sc-for>
+      </section>
+    </div>
+  </sc-for>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1240},&quot;dataset&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;churn&quot;,&quot;ops-delay&quot;],&quot;default&quot;:&quot;churn&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Data&quot;}}">
+class Component extends DCLogic {
+  state = { r: null, q: '', mode: 'all', stages: [] };
+
+  componentDidMount() { this.load(); }
+  componentDidUpdate(prev) { if (prev.dataset !== this.props.dataset) this.load(); }
+
+  async load() {
+    const [engine, data] = await Promise.all([
+      import('./eda-engine.js'),
+      import('./eda-datasets.js'),
+    ]);
+    const key = this.props.dataset === 'ops-delay' ? 'opsDelay' : 'churn';
+    this.setState({ r: engine.buildReport(data[key], {
+      academyHref: 'EDA Sheet - Academy.dc.html',
+      cockpitHref: 'EDA Sheet - Cockpit.dc.html',
+    }) }, this.jumpToHash);
+  }
+
+  // Arriving from a gate link: the hash names an entry that does not exist in
+  // the DOM until the report has rendered, so honour it after that render and
+  // offset past the sticky rail.
+  jumpToHash = () => {
+    const slug = decodeURIComponent((location.hash || '').replace('#', ''));
+    if (!slug) return;
+    const go = () => {
+      const el = document.getElementById(slug);
+      if (!el) return;
+      window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 110 });
+      el.animate(
+        [{ background: 'var(--color-accent-100)' }, { background: 'transparent' }],
+        { duration: 1400, easing: 'ease-out' },
+      );
+    };
+    setTimeout(go, 0);
+    setTimeout(go, 160);
+  };
+
+  setMode = m => () => this.setState({ mode: m });
+
+  toggleStage = k => () => this.setState(s => ({
+    stages: s.stages.includes(k) ? s.stages.filter(x => x !== k) : s.stages.concat([k]),
+  }));
+
+  onSearch = e => this.setState({ q: e.target.value });
+
+  clearAll = () => this.setState({ q: '', mode: 'all', stages: [] });
+
+  // A chip may point at an entry the current filters have hidden, so clear
+  // them first and scroll once the full list is back in the DOM.
+  reveal = e => {
+    e.preventDefault();
+    const slug = e.currentTarget.dataset.slug;
+    const jump = () => {
+      const el = document.getElementById(slug);
+      if (!el) return;
+      history.replaceState(null, '', `#${slug}`);
+      window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 110 });
+    };
+    // Scroll only after the re-render that restores the hidden entries has
+    // committed and laid out; an instant scroll survives that commit, a smooth
+    // one gets cancelled by it.
+    this.setState({ q: '', mode: 'all', stages: [] }, () => {
+      setTimeout(jump, 0);
+      setTimeout(jump, 140);
+    });
+  };
+
+  stageKeyOf(s, i) { return s.entries.length ? s.entries[0].stage : i; }
+
+  // Search index: hyphens and punctuation are flattened to spaces so that
+  // "feature importance" finds feature-importance-methods, and each query term
+  // is matched as a prefix, a substring, or within one edit of a real token.
+  index(r) {
+    if (this._idxFor === r) return this._idx;
+    const norm = s => s.toLowerCase().replace(/[^a-z0-9]+/g, ' ').replace(/\s+/g, ' ').trim();
+    const idx = new Map();
+    r.allStages.forEach(s => s.entries.forEach(e => {
+      const body = norm(e.search);
+      const title = norm(`${e.title} ${e.slug}`);
+      idx.set(e.slug, { body: ` ${body} `, title, titleTokens: title.split(' '), tokens: Array.from(new Set(body.split(' '))) });
+    }));
+    this._idxFor = r; this._idx = idx; this._norm = norm;
+    return idx;
+  }
+
+  // Damerau-Levenshtein distance of 1 or less: one insertion, deletion,
+  // substitution or transposition — enough for ordinary typing slips.
+  static near(a, b) {
+    if (a === b) return true;
+    const la = a.length, lb = b.length;
+    if (Math.abs(la - lb) > 1) return false;
+    let i = 0;
+    while (i < Math.min(la, lb) && a[i] === b[i]) i++;
+    let ea = la - 1, eb = lb - 1;
+    while (ea >= i && eb >= i && a[ea] === b[eb]) { ea--; eb--; }
+    if (ea < i && eb < i) return true;
+    if (la === lb) {
+      if (ea === i && eb === i) return true;
+      return ea === i + 1 && eb === i + 1 && a[i] === b[i + 1] && a[i + 1] === b[i];
+    }
+    return (la > lb ? ea === i && eb === i - 1 : eb === i && ea === i - 1);
+  }
+
+  // Prefix or shared-stem match, so "stratify" reaches "stratification" and
+  // "calibrate" reaches "calibration" without a stemmer.
+  static stemMatch(tok, t) {
+    if (tok.length < 4 || t.length < 4) return false;
+    if (tok.indexOf(t) === 0 || t.indexOf(tok) === 0) return true;
+    let i = 0;
+    while (i < Math.min(tok.length, t.length) && tok[i] === t[i]) i++;
+    return i >= 6;
+  }
+
+  score(rec, terms) {
+    let total = 0;
+    for (const t of terms) {
+      let hit = 0;
+      if (rec.title.indexOf(t) !== -1) hit = 4;
+      else if (rec.titleTokens.some(tok => Component.stemMatch(tok, t) || (t.length >= 5 && Component.near(tok, t)))) hit = 3;
+      else if (rec.body.indexOf(` ${t}`) !== -1) hit = 2;
+      else if (rec.body.indexOf(t) !== -1) hit = 1;
+      else if (t.length >= 5 && rec.tokens.some(tok => Component.stemMatch(tok, t) || Component.near(tok, t))) hit = 1;
+      if (!hit) return -1;
+      total += hit;
+    }
+    return total;
+  }
+
+
+  onPrint = e => {
+    e.preventDefault();
+    // Filters and sticky chrome are screen-only affordances; drop them for the
+    // printed briefing, then restore whatever the reader had selected.
+    const before = this.state;
+    this.setState({ printing: true }, () => setTimeout(() => {
+      window.print();
+      this.setState({ printing: false });
+    }, 60));
+  };
+
+  renderVals() {
+    const r = this.state.r;
+    // Pre-load render: return the string holes as empty so the template does
+    // not warn about unresolved values before the report exists.
+    if (!r) return { showing: '', gateKicker: '', academyKicker: '' };
+    const { q, mode, stages: picked } = this.state;
+    const idx = this.index(r);
+    const terms = this._norm(q).split(' ').filter(Boolean);
+
+    const scoreOf = e => (terms.length ? this.score(idx.get(e.slug), terms) : 0);
+    const passes = e =>
+      (mode === 'all' || (mode === 'cited' ? e.cited : !e.cited)) &&
+      (!picked.length || picked.includes(e.stage));
+
+    // Browsing keeps the curriculum's own order, stage by stage. Searching
+    // collapses it into a single list ranked by relevance across all stages.
+    const byStage = r.allStages
+      .map(s => Object.assign({}, s, { entries: s.entries.filter(e => passes(e) && scoreOf(e) >= 0) }))
+      .filter(s => s.entries.length);
+
+    let stages = byStage;
+    if (terms.length) {
+      const hits = [];
+      r.allStages.forEach(s => s.entries.forEach(e => {
+        const sc = scoreOf(e);
+        if (passes(e) && sc >= 0) hits.push(Object.assign({}, e, { _s: sc, stageLabel: `${s.n} ${s.label}` }));
+      }));
+      hits.sort((a, b) => b._s - a._s || a.stage - b.stage);
+      stages = hits.length ? [{
+        key: 'hits', n: '→', label: `Results for “${q.trim()}”`,
+        blurb: 'ranked by relevance across every stage',
+        count: `${hits.length} of ${r.conceptCount} concepts`,
+        entries: hits,
+      }] : [];
+    }
+    const shown = stages.reduce((n, s) => n + s.entries.length, 0);
+
+    const indexRows = r.allStages.map(s => {
+      const cited = s.entries.filter(e => e.cited).length;
+      return {
+        key: s.key, n: s.n, label: s.label, blurb: s.blurb,
+        countLabel: `${cited} cited · ${s.entries.length - cited} reference`,
+        chips: s.entries.map(e => ({
+          key: e.slug, slug: e.slug, href: `#${e.slug}`, cited: e.cited,
+          count: String(e.citeCount), on: this.reveal,
+          cls: e.cited ? 'om-chip om-chip-on' : 'om-chip om-chip-off',
+        })),
+      };
+    });
+
+    const btn = on => on ? 'btn btn-primary' : 'btn btn-secondary';
+    const modes = [
+      { key: 'all', label: `All ${r.conceptCount}`, cls: btn(mode === 'all'), on: this.setMode('all') },
+      { key: 'cited', label: `Cited ${r.citedCount}`, cls: btn(mode === 'cited'), on: this.setMode('cited') },
+      { key: 'ref', label: `Reference ${r.conceptCount - r.citedCount}`, cls: btn(mode === 'ref'), on: this.setMode('ref') },
+    ];
+
+    const stageToggles = r.allStages.map((s, i) => {
+      const k = this.stageKeyOf(s, i);
+      return {
+        key: s.key, label: `${s.n} ${s.label}`, on: this.toggleStage(k),
+        cls: picked.includes(k) ? 'om-chip om-chip-on' : 'om-chip om-chip-off',
+      };
+    });
+
+    return Object.assign({}, r, {
+      onPrint: this.onPrint,
+      q, modes, stageToggles, indexRows, stages,
+      onSearch: this.onSearch, clearAll: this.clearAll,
+      empty: shown === 0,
+      showing: shown === r.conceptCount ? `all ${r.conceptCount} concepts` : `showing ${shown} of ${r.conceptCount}`,
+    });
+  }
+}
+
+</script>
+</body>
+</html>

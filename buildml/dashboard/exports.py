@@ -458,7 +458,7 @@ def _pdf_styles(getSampleStyleSheet, ParagraphStyle, colors, TA_CENTER, TA_LEFT)
             fontSize=22,
             leading=26,
             alignment=TA_CENTER,
-            textColor=colors.HexColor("#0B6E4F"),
+            textColor=colors.HexColor("#5980a6"),
             spaceAfter=6,
         )
     )
@@ -480,7 +480,7 @@ def _pdf_styles(getSampleStyleSheet, ParagraphStyle, colors, TA_CENTER, TA_LEFT)
             fontName="Helvetica-Bold",
             fontSize=16,
             spaceAfter=6,
-            textColor=colors.HexColor("#0B6E4F"),
+            textColor=colors.HexColor("#5980a6"),
         )
     )
     styles.add(
@@ -490,7 +490,7 @@ def _pdf_styles(getSampleStyleSheet, ParagraphStyle, colors, TA_CENTER, TA_LEFT)
             fontName="Helvetica-Bold",
             fontSize=14,
             leading=18,
-            textColor=colors.HexColor("#0B6E4F"),
+            textColor=colors.HexColor("#5980a6"),
             spaceBefore=4,
             spaceAfter=8,
             borderPadding=3,
@@ -1215,7 +1215,13 @@ def _rows_target(report: dict[str, Any]) -> list[dict[str, Any]]:
         for key, value in target.items()
         if not isinstance(value, (dict, list))
     ]
-    balance = target.get("class_balance") or target.get("value_counts") or {}
+    summary = target.get("summary") if isinstance(target.get("summary"), dict) else {}
+    balance = (
+        target.get("class_balance")
+        or target.get("value_counts")
+        or (summary.get("class_counts") if summary else None)
+        or {}
+    )
     if isinstance(balance, dict):
         for key, value in balance.items():
             rows.append({"key": f"class:{key}", "value": value})

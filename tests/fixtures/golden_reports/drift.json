@@ -13,20 +13,38 @@
     "mixed_type_suspect_columns": []
   },
   "recommendations": [
-    {"based_on": ["validation.drift"], "key": "next.drift"}
+    {
+      "based_on": [
+        "quality.duplicates"
+      ],
+      "key": "next.deduplicate"
+    },
+    {
+      "based_on": [
+        "validation.drift"
+      ],
+      "key": "next.drift"
+    },
+    {
+      "based_on": [
+        "outliers.univariate"
+      ],
+      "key": "next.outliers"
+    }
   ],
   "section_ids": [
-    "orientation",
-    "quality",
-    "features",
-    "relationships",
-    "target-validation",
+    "findings-register",
+    "assumptions",
+    "ledger",
+    "recommended-sequence",
     "figures",
-    "next-steps",
     "methods",
     "degraded",
     "appendix"
   ],
-  "shape": [80, 3],
+  "shape": [
+    80,
+    3
+  ],
   "target_type": "classification_target"
 }

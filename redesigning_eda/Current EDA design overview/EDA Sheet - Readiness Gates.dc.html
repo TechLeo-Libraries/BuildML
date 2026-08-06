@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="_ds/industry-e7357cdc-dd1f-4728-81c5-00d86b893c68/styles.css" />
+<script src="_ds/industry-e7357cdc-dd1f-4728-81c5-00d86b893c68/_ds_bundle.js"></script>
+<style>
+html,body{margin:0;background:var(--color-bg);color:var(--color-text);font-family:var(--font-body);overflow-x:clip}
+a{color:var(--color-accent-700);text-decoration:none}
+a:hover{color:var(--color-accent);text-decoration:underline}
+.om-mono{font-family:ui-monospace,"SFMono-Regular",Menlo,monospace;font-variant-numeric:tabular-nums}
+.om-kick{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--color-accent-700)}
+.om-pill{font-family:ui-monospace,"SFMono-Regular",Menlo,monospace;font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;padding:3px 7px;white-space:nowrap;display:inline-block}
+.om-p-clear{background:var(--color-accent);border:1px solid var(--color-accent);color:var(--color-bg)}
+.om-p-open{background:transparent;border:1px solid var(--color-text);color:var(--color-text)}
+.om-p-human{background:var(--color-neutral-200);border:1px dashed var(--color-neutral-500);color:var(--color-neutral-800)}
+.om-p-na{background:transparent;border:1px dotted var(--color-neutral-400);color:var(--color-neutral-700)}
+.om-chip{font-family:ui-monospace,"SFMono-Regular",Menlo,monospace;font-size:10.5px;padding:3px 8px;cursor:pointer;background:transparent;border:1px dashed var(--color-neutral-400);color:var(--color-neutral-700)}
+.om-chip:hover{border-style:solid;border-color:var(--color-accent);color:var(--color-accent-900)}
+.om-chip-on{background:var(--color-accent);border:1px solid var(--color-accent);color:var(--color-bg)}
+.om-chip-on:hover{background:var(--color-accent-600);border-color:var(--color-accent-600);color:var(--color-bg)}
+@media print{
+  a[href="#"],button{display:none !important}
+  [style*="position:sticky"]{position:static !important;border-bottom:1px solid var(--color-text) !important}
+  html,body{background:#fff}
+  article,section{break-inside:avoid}
+}
+</style>
+</helmet>
+<div style="min-height:100vh;padding:var(--space-6) var(--space-8) var(--space-8);max-width:1180px;margin:0 auto">
+  <header style="display:grid;grid-template-columns:minmax(0,1fr) auto;gap:var(--space-6);align-items:end;border-bottom:2px solid var(--color-text);padding-bottom:var(--space-3)">
+    <div>
+      <div class="om-mono om-kick" style="font-size:11px;letter-spacing:.14em">BuildML {{ gateKicker }}</div>
+      <h1 style="margin:var(--space-2) 0 0;font-size:44px;letter-spacing:-0.01em;text-transform:uppercase">Readiness gates</h1>
+    </div>
+    <div style="display:flex;gap:var(--space-2);align-items:center">
+      <a class="btn btn-secondary" href="EDA Sheet - Cockpit.dc.html">← Readiness sheet</a>
+      <a class="btn btn-secondary" href="EDA Sheet - Academy.dc.html">Concept academy</a>
+      <a class="btn btn-primary blueprint" href="#" onClick="{{ onPrint }}"><i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>PDF briefing</a>
+    </div>
+  </header>
+
+  <p style="margin:var(--space-4) 0 0;font-size:15px;line-height:1.6;max-width:80ch">The cockpit reports what this frame contains and the academy explains why it matters. This sheet is the second pass: every question that must be settled before the frame is modelled, with the status the session's own numbers support — and, deliberately, the questions no dataset can answer for you.</p>
+
+  <section class="blueprint" style="position:relative;border:1px solid var(--color-text);margin-top:var(--space-6);display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;background:var(--color-divider)">
+    <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+    <sc-for list="{{ tally }}" as="t" hint-placeholder-count="4">
+      <div style="background:var(--color-bg);padding:var(--space-4)">
+        <div class="om-mono" style="font-size:34px;line-height:1;letter-spacing:-0.02em">{{ t.n }}</div>
+        <div class="om-mono om-kick" style="margin-top:var(--space-2)">{{ t.label }}</div>
+        <div style="font-size:11.5px;line-height:1.45;color:var(--color-neutral-700);margin-top:4px">{{ t.note }}</div>
+      </div>
+    </sc-for>
+  </section>
+
+  <div style="position:sticky;top:0;z-index:6;background:var(--color-bg);border-bottom:1px solid var(--color-text);padding:var(--space-3) 0;margin-top:var(--space-6);display:grid;grid-template-columns:minmax(0,1fr) auto;gap:var(--space-4);align-items:center">
+    <div style="display:flex;gap:var(--space-2);align-items:center;flex-wrap:wrap">
+      <span class="om-mono om-kick">Show</span>
+      <sc-for list="{{ filters }}" as="f" hint-placeholder-count="5">
+        <button class="{{ f.cls }}" onClick="{{ f.on }}">{{ f.label }}</button>
+      </sc-for>
+    </div>
+    <span class="om-mono" style="font-size:11px;color:var(--color-neutral-700);white-space:nowrap">{{ showing }}</span>
+  </div>
+
+  <sc-if value="{{ empty }}" hint-placeholder-val="{{ false }}">
+    <div style="margin-top:var(--space-8);padding:var(--space-6);border:1px dashed var(--color-divider);text-align:center">
+      <div class="om-mono" style="font-size:13px">No gate has that status in this session.</div>
+    </div>
+  </sc-if>
+
+  <sc-for list="{{ groups }}" as="g" hint-placeholder-count="6">
+    <div style="display:grid;grid-template-columns:38px minmax(0,1fr);gap:var(--space-6);margin-top:var(--space-8)">
+      <div class="om-mono" style="font-size:12px;letter-spacing:.1em;color:var(--color-accent-700);padding-top:4px">{{ g.n }}</div>
+      <section>
+        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:var(--space-4);border-bottom:1px solid var(--color-divider);padding-bottom:var(--space-2)">
+          <h4 style="margin:0;letter-spacing:.06em;text-transform:uppercase">{{ g.label }} — {{ g.blurb }}</h4>
+          <span class="om-mono" style="font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--color-neutral-700);white-space:nowrap">{{ g.count }}</span>
+        </div>
+        <sc-for list="{{ g.rows }}" as="r" hint-placeholder-count="4">
+          <article style="display:grid;grid-template-columns:3px 62px minmax(0,1.1fr) minmax(0,1fr);gap:var(--space-4);padding:var(--space-4) 0;border-bottom:1px solid var(--color-divider);align-items:start">
+            <sc-if value="{{ r.isClear }}" hint-placeholder-val="{{ false }}"><div style="background:var(--color-accent)"></div></sc-if>
+            <sc-if value="{{ r.isOpen }}" hint-placeholder-val="{{ true }}"><div style="background:var(--color-text)"></div></sc-if>
+            <sc-if value="{{ r.isHuman }}" hint-placeholder-val="{{ false }}"><div style="border-left:1px dashed var(--color-neutral-500)"></div></sc-if>
+            <sc-if value="{{ r.isNa }}" hint-placeholder-val="{{ false }}"><div style="border-left:1px dotted var(--color-neutral-400)"></div></sc-if>
+            <div class="om-mono" style="font-size:12px;color:var(--color-accent-700);padding-top:2px">{{ r.id }}</div>
+            <div>
+              <div style="font-size:14.5px;line-height:1.45;font-weight:500">{{ r.question }}</div>
+              <div style="display:flex;gap:var(--space-2);align-items:center;flex-wrap:wrap;margin-top:var(--space-2)">
+                <span class="om-pill {{ r.pill }}">{{ r.statusLabel }}</span>
+                <a class="om-mono" href="{{ r.conceptHref }}" style="font-size:10.5px;letter-spacing:.02em">{{ r.concept }} →</a>
+                <sc-for list="{{ r.findings }}" as="f" hint-placeholder-count="1">
+                  <span class="om-mono" style="font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--color-neutral-700)">finding {{ f.label }}</span>
+                </sc-for>
+              </div>
+            </div>
+            <div>
+              <div style="font-size:12.5px;line-height:1.6">{{ r.evidence }}</div>
+              <div style="margin-top:var(--space-2);font-size:12.5px;line-height:1.6;border-left:2px solid var(--color-accent);padding-left:var(--space-3)"><span class="om-mono om-kick" style="display:block;margin-bottom:2px">Closes when</span>{{ r.closes }}</div>
+            </div>
+          </article>
+        </sc-for>
+      </section>
+    </div>
+  </sc-for>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1240},&quot;dataset&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;churn&quot;,&quot;ops-delay&quot;],&quot;default&quot;:&quot;churn&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Data&quot;}}">
+class Component extends DCLogic {
+  state = { r: null, only: 'all' };
+
+  componentDidMount() { this.load(); }
+  componentDidUpdate(prev) { if (prev.dataset !== this.props.dataset) this.load(); }
+
+  async load() {
+    const [engine, data] = await Promise.all([
+      import('./eda-engine.js'),
+      import('./eda-datasets.js'),
+    ]);
+    const key = this.props.dataset === 'ops-delay' ? 'opsDelay' : 'churn';
+    this.setState({ r: engine.buildReport(data[key], {
+      academyHref: 'EDA Sheet - Academy.dc.html',
+      cockpitHref: 'EDA Sheet - Cockpit.dc.html',
+    }) });
+  }
+
+  setOnly = k => () => this.setState({ only: k });
+
+
+  onPrint = e => {
+    e.preventDefault();
+    // Filters and sticky chrome are screen-only affordances; drop them for the
+    // printed briefing, then restore whatever the reader had selected.
+    const before = this.state;
+    this.setState({ printing: true }, () => setTimeout(() => {
+      window.print();
+      this.setState({ printing: false });
+    }, 60));
+  };
+
+  renderVals() {
+    const r = this.state.r;
+    // Pre-load render: return the string holes as empty so the template does
+    // not warn about unresolved values before the report exists.
+    if (!r) return { showing: '', gateKicker: '', academyKicker: '' };
+    const g = r.gates;
+    const only = this.state.only;
+    const pill = { clear: 'om-p-clear', open: 'om-p-open', human: 'om-p-human', na: 'om-p-na' };
+
+    const rows = g.rows
+      .filter(x => only === 'all' || x.status === only)
+      .map(x => Object.assign({}, x, { pill: pill[x.status] }));
+
+    const groups = r.allStages.map((s, i) => {
+      const stage = s.entries.length ? s.entries[0].stage : i;
+      const mine = rows.filter(x => x.stage === stage);
+      const openN = mine.filter(x => x.isOpen || x.isHuman).length;
+      return {
+        key: s.key, n: s.n, label: s.label, blurb: s.blurb, rows: mine,
+        count: `${mine.length} ${mine.length === 1 ? 'gate' : 'gates'} · ${openN} outstanding`,
+      };
+    }).filter(s => s.rows.length);
+
+    const chip = on => on ? 'om-chip om-chip-on' : 'om-chip';
+    const filters = [
+      { key: 'all', label: `All ${g.counts.total}`, cls: chip(only === 'all'), on: this.setOnly('all') },
+      { key: 'open', label: `Open ${g.counts.open}`, cls: chip(only === 'open'), on: this.setOnly('open') },
+      { key: 'human', label: `Needs a decision ${g.counts.human}`, cls: chip(only === 'human'), on: this.setOnly('human') },
+      { key: 'clear', label: `Settled ${g.counts.clear}`, cls: chip(only === 'clear'), on: this.setOnly('clear') },
+      { key: 'na', label: `Not applicable ${g.counts.na}`, cls: chip(only === 'na'), on: this.setOnly('na') },
+    ];
+
+    const tally = [
+      { key: 'a', n: String(g.counts.clear), label: 'settled by the frame', note: `${g.settledPct} of the ${g.counts.answerable} gates this dataset can answer on its own.` },
+      { key: 'b', n: String(g.counts.open), label: 'open and measurable', note: 'Each one names the number that would close it.' },
+      { key: 'c', n: String(g.counts.human), label: 'needs a recorded decision', note: 'No dataset answers these; a person must write the answer down.' },
+      { key: 'd', n: String(g.counts.na), label: 'not applicable here', note: 'Kept visible so the next frame does not inherit the silence.' },
+    ];
+
+    return Object.assign({}, r, {
+      onPrint: this.onPrint,
+      groups, filters, tally,
+      empty: rows.length === 0,
+      showing: only === 'all' ? `all ${g.counts.total} gates` : `${rows.length} of ${g.counts.total} gates`,
+      gateKicker: `${r.engineName} ${r.version} · second pass · ${g.counts.open + g.counts.human} of ${g.counts.total} gates outstanding`,
+    });
+  }
+}
+
+</script>
+</body>
+</html>

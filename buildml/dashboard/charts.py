@@ -9,83 +9,45 @@ from typing import Any, Literal
 
 from buildml.core.errors import MissingExtraError
 from buildml.dashboard.serialize import flagged_column_names
+from buildml.eda.industry_tokens import INDUSTRY_CHART_DARK, INDUSTRY_CHART_LIGHT
 
 ThemeName = Literal["light", "dark"]
 
-# Cool technical palette: not default Plotly blue/orange candy.
-_PALETTE_LIGHT: dict[str, Any] = {
-    "accent": "#0B6E4F",
-    "accent_soft": "#3FAE7F",
-    "ink": "#1C2430",
-    "muted": "#5B6775",
-    "warn": "#B45309",
-    "critical": "#B91C1C",
-    "info": "#1D4E89",
-    "grid": "#D7DEE7",
-    "hover_bg": "#FFFFFF",
-    "hover_ink": "#1C2430",
-    "annotation": "#5B6775",
-    "series": [
-        "#0B6E4F",
-        "#1D4E89",
-        "#B45309",
-        "#6D28D9",
-        "#0F766E",
-        "#9F1239",
-        "#334155",
-        "#A16207",
-    ],
-    "heatmap": [
-        [0.0, "#1D4E89"],
-        [0.5, "#F8FAFC"],
-        [1.0, "#0B6E4F"],
-    ],
-    "gauge_steps": [
-        {"range": [0, 5], "color": "#E8F5EF"},
-        {"range": [5, 10], "color": "#FEF3C7"},
-    ],
-    "gauge_hot": "#FEE2E2",
-}
-
-_PALETTE_DARK: dict[str, Any] = {
-    "accent": "#3DDC97",
-    "accent_soft": "#2A9B6E",
-    "ink": "#E8EEF5",
-    "muted": "#9AA8B8",
-    "warn": "#F0A35A",
-    "critical": "#F07178",
-    "info": "#7DB4F0",
-    "grid": "#2A3340",
-    "hover_bg": "#171C24",
-    "hover_ink": "#E8EEF5",
-    "annotation": "#9AA8B8",
-    "series": [
-        "#3DDC97",
-        "#7DB4F0",
-        "#F0A35A",
-        "#C4B5FD",
-        "#5EEAD4",
-        "#FB7185",
-        "#94A3B8",
-        "#FBBF24",
-    ],
-    "heatmap": [
-        [0.0, "#7DB4F0"],
-        [0.5, "#1D2430"],
-        [1.0, "#3DDC97"],
-    ],
-    "gauge_steps": [
-        {"range": [0, 5], "color": "#163528"},
-        {"range": [5, 10], "color": "#3A2716"},
-    ],
-    "gauge_hot": "#3A1719",
-}
+# Industry steel palette shared with Static EDA / Teaching Studio tokens.
+_PALETTE_LIGHT: dict[str, Any] = dict(INDUSTRY_CHART_LIGHT)
+_PALETTE_DARK: dict[str, Any] = dict(INDUSTRY_CHART_DARK)
 
 _PALETTES: dict[str, dict[str, Any]] = {"light": _PALETTE_LIGHT, "dark": _PALETTE_DARK}
 PALETTE: dict[str, Any] = _PALETTE_LIGHT
 
+# Full EDA figure spine for the Command Cockpit readiness sheet. Order follows
+# analyzer families (quality → univariate → relationships → multivariate →
+# target/drift → outliers). Empty-theater charts are filtered per report by
+# :func:`charts_for_cockpit_report`.
+_COCKPIT_CHART_CANDIDATES: list[str] = [
+    "severity_map",
+    "missing_rates",
+    "role_summary",
+    "skew_profile",
+    "quartile_spread",
+    "normality_flags",
+    "cardinality_entropy",
+    "mi_vs_target",
+    "correlation_heatmap",
+    "spearman_heatmap",
+    "cramers_v_bars",
+    "vif_bars",
+    "pca_variance",
+    "target_balance",
+    "drift_flags",
+    "outlier_rates",
+    "outlier_bounds",
+    "zscore_outlier_rates",
+    "multivariate_anomaly",
+]
+
 DOMAIN_CHART_IDS: dict[str, list[str]] = {
-    "cockpit": ["severity_map", "missing_rates", "role_summary", "mi_vs_target"],
+    "cockpit": list(_COCKPIT_CHART_CANDIDATES),
     "quality": ["missing_rates", "role_summary"],
     "features": [
         "skew_profile",
@@ -107,23 +69,7 @@ DOMAIN_CHART_IDS: dict[str, list[str]] = {
         "zscore_outlier_rates",
         "multivariate_anomaly",
     ],
-    "visuals": [
-        "severity_map",
-        "missing_rates",
-        "skew_profile",
-        "quartile_spread",
-        "mi_vs_target",
-        "vif_bars",
-        "pca_variance",
-        "target_balance",
-        "drift_flags",
-        "outlier_rates",
-        "outlier_bounds",
-        "multivariate_anomaly",
-        "correlation_heatmap",
-        "spearman_heatmap",
-        "cramers_v_bars",
-    ],
+    "visuals": list(_COCKPIT_CHART_CANDIDATES),
     "briefing": [
         "severity_map",
         "missing_rates",
@@ -132,6 +78,10 @@ DOMAIN_CHART_IDS: dict[str, list[str]] = {
         "outlier_rates",
         "correlation_heatmap",
         "spearman_heatmap",
+        "vif_bars",
+        "pca_variance",
+        "drift_flags",
+        "multivariate_anomaly",
     ],
 }
 
@@ -172,8 +122,70 @@ def charts_for_domain(domain_key: str) -> list[str]:
     See Also
     --------
     build_chart_figures : Rendering them.
+    charts_for_cockpit_report : Cockpit list filtered to non-empty data.
     """
     return list(DOMAIN_CHART_IDS.get(domain_key, []))
+
+
+def chart_has_report_data(chart_id: str, report: dict[str, Any]) -> bool:
+    """Return whether *chart_id* would render a non-empty figure for *report*.
+
+    Used to omit empty-theater placeholders from the readiness sheet while still
+    keeping the full candidate list for boards that want explicit empty states.
+    """
+    overview = report.get("overview") or {}
+    quality = report.get("quality") or {}
+    bivariate = report.get("bivariate") or {}
+    multivariate = report.get("multivariate") or {}
+    target = report.get("target") or {}
+    drift = report.get("drift") or {}
+    outliers = report.get("outliers") or {}
+    univariate = report.get("univariate") or {}
+    profiles = univariate.get("per_column") or {}
+    findings = report.get("findings") or []
+
+    checks: dict[str, bool] = {
+        "severity_map": bool(findings),
+        "missing_rates": bool(
+            any(float(v or 0) > 0 for v in (quality.get("missing_rate_by_column") or {}).values())
+        ),
+        "role_summary": bool(overview.get("roles") or overview.get("eligible_feature_columns")),
+        "skew_profile": any(
+            isinstance(p, dict) and p.get("skew") is not None for p in profiles.values()
+        ),
+        "quartile_spread": bool(univariate.get("numeric_describe") or profiles),
+        "normality_flags": any(
+            isinstance(p, dict) and p.get("normality_pvalue") is not None for p in profiles.values()
+        ),
+        "cardinality_entropy": bool(
+            univariate.get("categorical_uniques")
+            or any(
+                isinstance(p, dict) and p.get("n_unique") is not None for p in profiles.values()
+            )
+        ),
+        "mi_vs_target": bool(bivariate.get("mutual_information_vs_target")),
+        "correlation_heatmap": bool(bivariate.get("pearson")),
+        "spearman_heatmap": bool(bivariate.get("spearman")),
+        "cramers_v_bars": bool(bivariate.get("categorical_pairs")),
+        "vif_bars": bool(multivariate.get("vif")),
+        "pca_variance": bool((multivariate.get("pca") or {}).get("explained_variance_ratio")),
+        "target_balance": bool((target.get("summary") or {}).get("class_counts")),
+        "drift_flags": bool(drift.get("available")),
+        "outlier_rates": bool(outliers.get("per_column")),
+        "outlier_bounds": bool(outliers.get("per_column")),
+        "zscore_outlier_rates": bool(outliers.get("per_column")),
+        "multivariate_anomaly": bool(outliers.get("multivariate")),
+    }
+    return bool(checks.get(chart_id, False))
+
+
+def charts_for_cockpit_report(report: dict[str, Any]) -> list[str]:
+    """Cockpit figure ids that have real data for this session (no empty theater)."""
+    return [
+        chart_id
+        for chart_id in _COCKPIT_CHART_CANDIDATES
+        if chart_has_report_data(chart_id, report)
+    ]
 
 
 @contextmanager
@@ -242,8 +254,10 @@ def _layout(fig: Any, *, title: str, height: int = 420) -> Any:
         },
         paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="rgba(0,0,0,0)",
-        font={"family": "Segoe UI, Helvetica Neue, sans-serif", "color": PALETTE["ink"]},
-        margin={"l": 56, "r": 28, "t": 56, "b": 64},
+        font={"family": "Barlow, Segoe UI, Helvetica Neue, sans-serif", "color": PALETTE["ink"]},
+        # Generous margins + automargin keep tick/bar labels from clipping
+        # into neighboring lanes on narrow studio cards.
+        margin={"l": 72, "r": 48, "t": 64, "b": 72},
         height=height,
         legend={"orientation": "h", "yanchor": "bottom", "y": 1.02, "x": 0},
         colorway=PALETTE["series"],
@@ -253,12 +267,14 @@ def _layout(fig: Any, *, title: str, height: int = 420) -> Any:
             "bordercolor": PALETTE["grid"],
         },
         meta={"buildml_theme": "dark" if PALETTE is _PALETTE_DARK else "light"},
+        uniformtext={"minsize": 10, "mode": "hide"},
     )
     fig.update_xaxes(
         showgrid=True,
         gridcolor=PALETTE["grid"],
         zeroline=False,
-        tickfont={"color": PALETTE["ink"]},
+        automargin=True,
+        tickfont={"color": PALETTE["ink"], "size": 11},
         title_font={"color": PALETTE["ink"]},
         linecolor=PALETTE["grid"],
     )
@@ -266,10 +282,51 @@ def _layout(fig: Any, *, title: str, height: int = 420) -> Any:
         showgrid=True,
         gridcolor=PALETTE["grid"],
         zeroline=False,
-        tickfont={"color": PALETTE["ink"]},
+        automargin=True,
+        tickfont={"color": PALETTE["ink"], "size": 11},
         title_font={"color": PALETTE["ink"]},
         linecolor=PALETTE["grid"],
     )
+    return fig
+
+
+def _label_margin(labels: list[str] | tuple[str, ...], *, base: int = 88, per_char: int = 7) -> int:
+    """Left margin wide enough for the longest category tick."""
+    if not labels:
+        return base
+    longest = max(len(str(label)) for label in labels)
+    return int(min(220, max(base, 28 + longest * per_char)))
+
+
+def _finish_hbar(
+    fig: Any,
+    *,
+    labels: list[str] | tuple[str, ...],
+    values: list[float] | tuple[float, ...] | None = None,
+    title: str,
+    height_per: int = 28,
+    base_height: int = 140,
+    xmin: float = 0.0,
+    xmax: float | None = None,
+    pad_ratio: float = 0.18,
+    has_outside_text: bool = False,
+) -> Any:
+    """Collision-safe finish for horizontal bar charts."""
+    n = max(len(labels), 1)
+    height = max(360, height_per * n + base_height)
+    left = _label_margin(labels)
+    right = 64 if has_outside_text else 40
+    if values:
+        peak = max(float(v) for v in values)
+        if xmax is None:
+            xmax = peak * (1.0 + pad_ratio) if peak > 0 else 1.0
+        elif has_outside_text and peak > 0:
+            xmax = max(float(xmax), peak * (1.0 + pad_ratio))
+    _layout(fig, title=title, height=height)
+    fig.update_layout(margin={"l": left, "r": right, "t": 64, "b": 72})
+    fig.update_yaxes(autorange="reversed", automargin=True, tickfont={"size": 11})
+    if xmax is not None:
+        fig.update_xaxes(range=[xmin, xmax], automargin=True)
     return fig
 
 
@@ -517,21 +574,31 @@ def _fig_severity(go: Any, report: dict[str, Any]) -> dict[str, Any]:
         "high": "#C2410C",
         "critical": PALETTE["critical"],
     }
+    ys = [counts[key] for key in order]
+    ymax = max(ys) if ys else 0
     fig = go.Figure(
         data=[
             go.Bar(
                 x=order,
-                y=[counts[key] for key in order],
+                y=ys,
                 marker_color=[colors[key] for key in order],
-                text=[counts[key] for key in order],
+                text=ys,
                 textposition="outside",
+                textfont={"size": 11, "color": PALETTE["ink"]},
+                cliponaxis=False,
+                constraintext="none",
                 hovertemplate="Severity=%{x}<br>Findings=%{y}<extra></extra>",
             )
         ]
     )
-    fig.update_yaxes(title_text="Findings", rangemode="tozero")
-    fig.update_xaxes(title_text="Severity")
-    _layout(fig, title="Finding severity map", height=360)
+    fig.update_yaxes(
+        title_text="Findings",
+        rangemode="tozero",
+        range=[0, ymax * 1.22 + 0.5] if ymax else None,
+    )
+    fig.update_xaxes(title_text="Severity", tickangle=0)
+    _layout(fig, title="Finding severity map", height=380)
+    fig.update_layout(margin={"l": 64, "r": 36, "t": 72, "b": 64})
     _footnote(fig, "Severity ranks workflow impact, not visual emphasis.")
     return fig
 
@@ -553,12 +620,23 @@ def _fig_missing(go: Any, report: dict[str, Any]) -> dict[str, Any]:
             y=list(labels),
             orientation="h",
             marker_color=PALETTE["warn"],
+            text=[f"{v:.1%}" for v in values],
+            textposition="outside",
+            textfont={"size": 10, "color": PALETTE["ink"]},
+            cliponaxis=False,
             hovertemplate="%{y}: %{x:.1%}<extra></extra>",
         )
     )
     fig.update_xaxes(title_text="Missing rate", tickformat=".0%")
-    fig.update_yaxes(autorange="reversed", title_text="")
-    _layout(fig, title="Top missing rates (full frame)", height=max(360, 24 * len(labels) + 120))
+    fig.update_yaxes(title_text="")
+    _finish_hbar(
+        fig,
+        labels=labels,
+        values=values,
+        title="Top missing rates (full frame)",
+        has_outside_text=True,
+        xmax=max(0.05, max(values) * 1.22),
+    )
     return fig
 
 
@@ -582,12 +660,21 @@ def _fig_mi(go: Any, report: dict[str, Any]) -> dict[str, Any]:
             y=list(labels),
             orientation="h",
             marker_color=PALETTE["accent"],
+            text=[f"{v:.3g}" for v in values],
+            textposition="outside",
+            textfont={"size": 10, "color": PALETTE["ink"]},
+            cliponaxis=False,
             hovertemplate="%{y}<br>MI=%{x:.4f}<extra></extra>",
         )
     )
     fig.update_xaxes(title_text="Mutual information (association, not causation)")
-    fig.update_yaxes(autorange="reversed")
-    _layout(fig, title="Mutual information vs target", height=max(380, 24 * len(labels) + 120))
+    _finish_hbar(
+        fig,
+        labels=labels,
+        values=values,
+        title="Mutual information vs target",
+        has_outside_text=True,
+    )
     _footnote(fig, "High MI is a review cue for usefulness or leakage-like proxies.")
     return fig
 
@@ -611,6 +698,10 @@ def _fig_vif(go: Any, report: dict[str, Any]) -> dict[str, Any]:
             y=list(labels),
             orientation="h",
             marker_color=colors,
+            text=[f"{v:.2f}" for v in values],
+            textposition="outside",
+            textfont={"size": 10, "color": PALETTE["ink"]},
+            cliponaxis=False,
             hovertemplate="%{y}<br>VIF=%{x:.2f}<extra></extra>",
         )
     )
@@ -622,8 +713,14 @@ def _fig_vif(go: Any, report: dict[str, Any]) -> dict[str, Any]:
         annotation_position="top",
     )
     fig.update_xaxes(title_text="VIF")
-    fig.update_yaxes(autorange="reversed")
-    _layout(fig, title="Variance inflation factors", height=max(380, 24 * len(labels) + 140))
+    _finish_hbar(
+        fig,
+        labels=labels,
+        values=values,
+        title="Variance inflation factors",
+        has_outside_text=True,
+        xmax=max(5.0, max(values) * 1.22),
+    )
     return fig
 
 
@@ -638,12 +735,17 @@ def _fig_pca(go: Any, report: dict[str, Any]) -> dict[str, Any]:
     for value in ratios:
         total += float(value)
         cumulative.append(total)
+    share = [float(v) for v in ratios]
     fig = go.Figure()
     fig.add_bar(
         x=xs,
-        y=[float(v) for v in ratios],
+        y=share,
         name="Component share",
         marker_color=PALETTE["info"],
+        text=[f"{v:.1%}" for v in share],
+        textposition="outside",
+        textfont={"size": 10, "color": PALETTE["ink"]},
+        cliponaxis=False,
         hovertemplate="%{x}: %{y:.1%}<extra></extra>",
     )
     fig.add_scatter(
@@ -654,33 +756,69 @@ def _fig_pca(go: Any, report: dict[str, Any]) -> dict[str, Any]:
         line={"color": PALETTE["accent"], "width": 2.5},
         hovertemplate="Cumulative %{y:.1%}<extra></extra>",
     )
-    fig.update_yaxes(title_text="Explained variance", tickformat=".0%")
-    _layout(fig, title="PCA explained variance", height=400)
+    ymax = max(max(share, default=0.0), max(cumulative, default=0.0), 0.05)
+    fig.update_yaxes(
+        title_text="Explained variance",
+        tickformat=".0%",
+        range=[0, min(1.15, ymax * 1.22 + 0.02)],
+    )
+    tickangle = -30 if len(xs) > 8 else 0
+    fig.update_xaxes(tickangle=tickangle)
+    _layout(fig, title="PCA explained variance", height=420)
+    fig.update_layout(margin={"l": 64, "r": 36, "t": 72, "b": 80 if tickangle else 64})
     return fig
 
 
 def _fig_target(go: Any, report: dict[str, Any]) -> dict[str, Any]:
     target = report.get("target") or {}
+    summary = target.get("summary") if isinstance(target.get("summary"), dict) else {}
     balance = target.get("class_balance") or target.get("balance") or {}
     if isinstance(balance, dict) and balance:
         labels = [str(k) for k in balance]
         values = [float(balance[k]) for k in balance]
     else:
-        counts = target.get("value_counts") or {}
+        counts = (
+            target.get("value_counts")
+            or (summary.get("class_counts") if summary else None)
+            or {}
+        )
         if not counts:
             return _empty_fig(go, "Target balance", "No classification balance available.")
         labels = [str(k) for k in counts]
         values = [float(counts[k]) for k in counts]
+    ymax = max(values) if values else 0.0
+    texts = []
+    total = sum(values) or 1.0
+    for value in values:
+        share = value / total
+        # Short bar labels — full count/share stays in hover to avoid wrap collisions.
+        texts.append(f"{share:.0%}" if share >= 0.01 else f"{share:.1%}")
     fig = go.Figure(
         go.Bar(
             x=labels,
             y=values,
             marker_color=PALETTE["series"][: len(labels)],
-            hovertemplate="Class=%{x}<br>Value=%{y}<extra></extra>",
+            text=texts,
+            textposition="outside",
+            textfont={"size": 11, "color": PALETTE["ink"]},
+            cliponaxis=False,
+            constraintext="none",
+            hovertemplate="Class=%{x}<br>Count=%{y}<br>Share=%{text}<extra></extra>",
         )
     )
-    fig.update_yaxes(title_text="Count or rate", rangemode="tozero")
-    _layout(fig, title="Target class balance", height=380)
+    fig.update_yaxes(
+        title_text="Count or rate",
+        rangemode="tozero",
+        range=[0, ymax * 1.35 + 0.5] if ymax else None,
+        automargin=True,
+    )
+    tickangle = -30 if len(labels) > 6 else 0
+    fig.update_xaxes(title_text="Class", tickangle=tickangle, automargin=True)
+    _layout(fig, title="Target class balance", height=400)
+    fig.update_layout(
+        margin={"l": 64, "r": 36, "t": 88, "b": 96 if tickangle else 72},
+        uniformtext={"minsize": 10, "mode": "hide"},
+    )
     return fig
 
 
@@ -723,12 +861,21 @@ def _fig_drift(go: Any, report: dict[str, Any]) -> dict[str, Any]:
             y=list(labels),
             orientation="h",
             marker_color=PALETTE["critical"],
+            text=[f"{v:.3g}" for v in values],
+            textposition="outside",
+            textfont={"size": 10, "color": PALETTE["ink"]},
+            cliponaxis=False,
             hovertemplate="%{y}<br>score=%{x:.4f}<extra></extra>",
         )
     )
-    fig.update_yaxes(autorange="reversed")
     fig.update_xaxes(title_text="Drift score / flag intensity")
-    _layout(fig, title="Train/test drift signals", height=max(360, 24 * len(labels) + 120))
+    _finish_hbar(
+        fig,
+        labels=labels,
+        values=values,
+        title="Train/test drift signals",
+        has_outside_text=True,
+    )
     return fig
 
 
@@ -762,6 +909,7 @@ def _fig_outliers(go: Any, report: dict[str, Any]) -> dict[str, Any]:
             customdata=counts,
             text=[f"{rate:.1%}" for rate in values],
             textposition="outside",
+            textfont={"size": 10, "color": PALETTE["ink"]},
             cliponaxis=False,
             hovertemplate="%{y}<br>IQR outlier rate=%{x:.1%}<br>count=%{customdata}<extra></extra>",
         )
@@ -773,14 +921,15 @@ def _fig_outliers(go: Any, report: dict[str, Any]) -> dict[str, Any]:
         annotation_text="5% review flag",
         annotation_position="top",
     )
-    fig.update_yaxes(autorange="reversed")
-    xmax = max(0.05, max(values) * 1.25 if values else 0.05)
-    fig.update_xaxes(
-        title_text="IQR outlier rate (1.5×IQR rule)",
-        tickformat=".0%",
-        range=[0, xmax],
+    fig.update_xaxes(title_text="IQR outlier rate (1.5×IQR rule)", tickformat=".0%")
+    _finish_hbar(
+        fig,
+        labels=labels,
+        values=values,
+        title="Univariate IQR outlier screens",
+        has_outside_text=True,
+        xmax=max(0.05, max(values) * 1.25 if values else 0.05),
     )
-    _layout(fig, title="Univariate IQR outlier screens", height=max(380, 24 * len(labels) + 140))
     _footnote(fig, "Flags are review candidates, not automatic deletion criteria.")
     return fig
 
@@ -828,9 +977,15 @@ def _fig_outlier_bounds(go: Any, report: dict[str, Any]) -> dict[str, Any]:
         ),
         name="IQR fence",
     )
-    fig.update_yaxes(autorange="reversed", title_text="")
+    fig.update_yaxes(title_text="")
     fig.update_xaxes(title_text="Value scale (IQR fence midpoint ± bounds)")
-    _layout(fig, title="IQR fences by feature", height=max(380, 28 * len(labels) + 140))
+    _finish_hbar(
+        fig,
+        labels=labels,
+        title="IQR fences by feature",
+        height_per=32,
+        has_outside_text=False,
+    )
     _footnote(fig, "Fence width reflects robust scale; compare with domain units.")
     return fig
 
@@ -859,18 +1014,20 @@ def _fig_zscore_outliers(go: Any, report: dict[str, Any]) -> dict[str, Any]:
             customdata=counts,
             text=[f"{rate:.1%}" for rate in values],
             textposition="outside",
+            textfont={"size": 10, "color": PALETTE["ink"]},
             cliponaxis=False,
             hovertemplate="%{y}<br>|z|>3 rate=%{x:.1%}<br>count=%{customdata}<extra></extra>",
         )
     )
-    fig.update_yaxes(autorange="reversed")
-    xmax = max(0.05, max(values) * 1.25 if values else 0.05)
-    fig.update_xaxes(
-        title_text="Share of rows with |z-score| > 3",
-        tickformat=".0%",
-        range=[0, xmax],
+    fig.update_xaxes(title_text="Share of rows with |z-score| > 3", tickformat=".0%")
+    _finish_hbar(
+        fig,
+        labels=labels,
+        values=values,
+        title="Gaussian |z| > 3 screens",
+        has_outside_text=True,
+        xmax=max(0.05, max(values) * 1.25 if values else 0.05),
     )
-    _layout(fig, title="Gaussian |z| > 3 screens", height=max(360, 24 * len(labels) + 120))
     _footnote(fig, "Gaussian z-scores are brittle for skewed or heavy-tailed columns.")
     return fig
 
@@ -959,15 +1116,28 @@ def _fig_skew(go: Any, report: dict[str, Any]) -> dict[str, Any]:
             y=labels,
             orientation="h",
             marker_color=colors,
+            text=[f"{v:.2f}" for v in values],
+            textposition="outside",
+            textfont={"size": 10, "color": PALETTE["ink"]},
+            cliponaxis=False,
             hovertemplate="%{y}<br>skew=%{x:.3f}<extra></extra>",
         )
     )
     fig.add_vline(x=0, line_color=PALETTE["muted"], line_width=1)
     fig.add_vline(x=0.75, line_dash="dot", line_color=PALETTE["warn"])
     fig.add_vline(x=-0.75, line_dash="dot", line_color=PALETTE["warn"])
-    fig.update_yaxes(autorange="reversed")
     fig.update_xaxes(title_text="Sample skewness (analysis frame)")
-    _layout(fig, title="Numeric skewness profile", height=max(380, 24 * len(labels) + 140))
+    span = max(abs(v) for v in values) if values else 1.0
+    _finish_hbar(
+        fig,
+        labels=labels,
+        values=[abs(v) for v in values],
+        title="Numeric skewness profile",
+        has_outside_text=True,
+        xmin=-span * 1.25,
+        xmax=span * 1.25,
+        pad_ratio=0.0,
+    )
     _footnote(fig, "Dashed lines at ±0.75 mark moderate skew review cues.")
     return fig
 
@@ -1001,11 +1171,20 @@ def _fig_cardinality(go: Any, report: dict[str, Any]) -> dict[str, Any]:
         name="nunique",
         marker_color=PALETTE["info"],
         customdata=entropies,
+        text=[str(n) for n in nuniques],
+        textposition="outside",
+        textfont={"size": 10, "color": PALETTE["ink"]},
+        cliponaxis=False,
         hovertemplate="%{y}<br>nunique=%{x}<br>entropy=%{customdata:.3f} bits<extra></extra>",
     )
-    fig.update_yaxes(autorange="reversed")
     fig.update_xaxes(title_text="Distinct levels (analysis frame)")
-    _layout(fig, title="Categorical cardinality & entropy", height=max(380, 24 * len(labels) + 140))
+    _finish_hbar(
+        fig,
+        labels=labels,
+        values=[float(n) for n in nuniques],
+        title="Categorical cardinality & entropy",
+        has_outside_text=True,
+    )
     _footnote(fig, "High cardinality widens one-hot encodings; inspect rare-level rates.")
     return fig
 
@@ -1037,6 +1216,10 @@ def _fig_normality(go: Any, report: dict[str, Any]) -> dict[str, Any]:
             orientation="h",
             marker_color=colors,
             customdata=methods,
+            text=[f"{p:.2g}" for p in pvalues],
+            textposition="outside",
+            textfont={"size": 10, "color": PALETTE["ink"]},
+            cliponaxis=False,
             hovertemplate="%{y}<br>p=%{x:.4g}<br>%{customdata}<extra></extra>",
         )
     )
@@ -1047,9 +1230,14 @@ def _fig_normality(go: Any, report: dict[str, Any]) -> dict[str, Any]:
         annotation_text="α=0.05",
         annotation_position="top",
     )
-    fig.update_yaxes(autorange="reversed")
     fig.update_xaxes(title_text="Normality screen p-value", type="log")
-    _layout(fig, title="Normality screens (log p-scale)", height=max(380, 24 * len(labels) + 140))
+    # Log axes: skip forced linear xmax; still reserve label/value lanes.
+    _finish_hbar(
+        fig,
+        labels=labels,
+        title="Normality screens (log p-scale)",
+        has_outside_text=True,
+    )
     _footnote(fig, "p-values are unadjusted screens; large n makes tiny effects 'significant'.")
     return fig
 
@@ -1089,12 +1277,14 @@ def _fig_quartile_spread(go: Any, report: dict[str, Any]) -> dict[str, Any]:
             ),
         )
     fig.update_layout(showlegend=False, boxmode="group")
-    fig.update_yaxes(autorange="reversed", categoryorder="array", categoryarray=labels)
+    fig.update_yaxes(categoryorder="array", categoryarray=labels)
     fig.update_xaxes(title_text="Observed quantiles (q05–q95)")
-    _layout(
+    _finish_hbar(
         fig,
+        labels=labels,
         title="Numeric quartile spread (analysis frame)",
-        height=max(400, 34 * len(labels) + 140),
+        height_per=36,
+        base_height=160,
     )
     _footnote(fig, "Boxes use analyzer quantiles, not re-sampled whiskers from raw rows.")
     return fig
@@ -1152,9 +1342,23 @@ def _fig_corr(
             hovertemplate=f"%{{y}} vs %{{x}}<br>{coeff}=%{{z:.3f}}<extra></extra>",
         )
     )
-    _layout(fig, title=title, height=520)
-    fig.update_xaxes(tickangle=45, tickfont={"color": PALETTE["ink"]})
-    fig.update_yaxes(tickfont={"color": PALETTE["ink"]})
+    n = len(columns)
+    tickangle = -45 if n > 6 else 0
+    _layout(fig, title=title, height=max(480, 28 * n + 180))
+    fig.update_layout(
+        margin={
+            "l": _label_margin(columns, base=96),
+            "r": 48,
+            "t": 64,
+            "b": 110 if tickangle else 72,
+        }
+    )
+    fig.update_xaxes(
+        tickangle=tickangle,
+        tickfont={"color": PALETTE["ink"], "size": 10},
+        automargin=True,
+    )
+    fig.update_yaxes(tickfont={"color": PALETTE["ink"], "size": 10}, automargin=True)
     _footnote(
         fig,
         (
@@ -1198,14 +1402,24 @@ def _fig_cramers(go: Any, report: dict[str, Any]) -> dict[str, Any]:
             y=labels,
             orientation="h",
             marker_color=colors,
+            text=[f"{v:.2f}" for v in values],
+            textposition="outside",
+            textfont={"size": 10, "color": PALETTE["ink"]},
+            cliponaxis=False,
             hovertemplate="%{y}<br>Cramér's V=%{x:.3f}<extra></extra>",
         )
     )
     fig.add_vline(x=0.25, line_dash="dot", line_color=PALETTE["warn"])
     fig.add_vline(x=0.5, line_dash="dot", line_color=PALETTE["critical"])
-    fig.update_yaxes(autorange="reversed")
-    fig.update_xaxes(title_text="Cramér's V (0–1)", range=[0, 1])
-    _layout(fig, title="Cramér's V for categorical pairs", height=max(380, 24 * len(labels) + 140))
+    fig.update_xaxes(title_text="Cramér's V (0–1)")
+    _finish_hbar(
+        fig,
+        labels=labels,
+        values=values,
+        title="Cramér's V for categorical pairs",
+        has_outside_text=True,
+        xmax=1.15,
+    )
     _footnote(fig, "0.25 / 0.5 dashed lines are conventional association review cues, not proof.")
     return fig
 
@@ -1246,10 +1460,25 @@ def _fig_roles(go: Any, report: dict[str, Any]) -> dict[str, Any]:
             hole=0.55,
             marker={"colors": PALETTE["series"]},
             hovertemplate="%{label}<br>n=%{value}<br>%{percent}<extra></extra>",
-            textinfo="label+value",
+            textinfo="percent",
+            textposition="outside",
+            textfont={"size": 11, "color": PALETTE["ink"]},
+            insidetextorientation="horizontal",
+            sort=False,
         )
     )
-    _layout(fig, title="Role / eligibility summary", height=400)
+    _layout(fig, title="Role / eligibility summary", height=420)
+    fig.update_layout(
+        margin={"l": 48, "r": 48, "t": 72, "b": 72},
+        legend={
+            "orientation": "h",
+            "yanchor": "top",
+            "y": -0.08,
+            "x": 0,
+            "font": {"size": 11, "color": PALETTE["ink"]},
+        },
+        uniformtext={"minsize": 10, "mode": "hide"},
+    )
     return fig
 
 

@@ -1,4 +1,4 @@
-"""Tests for the local EDA Teaching Studio app."""
+"""Tests for the local Industry EDA App."""
 
 from __future__ import annotations
 
@@ -310,18 +310,25 @@ def test_fastapi_routes_and_launch_smoke() -> None:
         client = TestClient(create_app())
         home = client.get("/")
         assert home.status_code == 200
-        assert "BuildML EDA Studio" in home.text
-        assert "Teaching Studio" in home.text
+        assert "BuildML EDA App" in home.text
+        assert 'class="sheet"' in home.text
+        assert 'id="sheet-chrome"' in home.text
         assert 'id="domain-nav"' in home.text
         assert "/static/js/app.js" in home.text
-        assert "PDF briefing" in home.text
+        assert "/static/js/learn_ui.js" in home.text
         assert "Offline HTML" in home.text
-        assert "static Plotly chart stills" in home.text
-        assert "offline Teaching Studio snapshot" in home.text
+        assert "PDF briefing" not in home.text
+        assert 'id="csv-export"' not in home.text
+        assert 'id="html-download"' in home.text
+        assert "btn-primary blueprint" in home.text
+        assert "Command cockpit" in home.text
+        assert "Readiness gates" in home.text
+        assert "Concept academy" in home.text
 
         meta = client.get("/api/meta").json()
         assert meta["domains"]
         assert any(d["key"] == "academy" for d in meta["domains"])
+        assert any(d["key"] == "gates" for d in meta["domains"])
         csv_keys = {item["key"] for item in meta["csv_sections"]}
         assert "univariate_numeric" in csv_keys
         assert "outliers" in csv_keys
@@ -329,6 +336,18 @@ def test_fastapi_routes_and_launch_smoke() -> None:
         cockpit = client.get("/api/cockpit").json()
         assert cockpit["teaching"]["worked_example"]["values"]
         assert "definition" in cockpit["teaching"]
+        assert "sheet" in cockpit
+        assert cockpit["sheet"]["kpis"]["readiness"]
+        assert "register" in cockpit["sheet"]
+        assert "ledger" in cockpit["sheet"]
+        assert "sequence" in cockpit["sheet"]
+        assert "assumptions" in cockpit["sheet"]
+        assert cockpit["adapt"]["target_column"] == "y"
+        assert cockpit["sheet"]["adapt"]["task"] == "classification"
+        assert cockpit["sheet"]["session_sentence"]
+        assert "spine_meta" in cockpit["sheet"]
+        meta_adapt = client.get("/api/meta").json()["adapt"]
+        assert meta_adapt["target_column"] == "y"
 
         quality = client.get("/api/domains/quality").json()
         assert quality["teaching"]["pitfalls"]
@@ -346,6 +365,24 @@ def test_fastapi_routes_and_launch_smoke() -> None:
         academy = client.get("/api/domains/academy").json()
         assert academy["domain"]["key"] == "academy"
         assert academy["concepts"]
+        assert academy["stages"]
+        assert "cited_count" in academy
+
+        gates = client.get("/api/gates").json()
+        assert gates["counts"]["total"] >= 40
+        assert gates["groups"]
+        assert gates["persistence"]["human_decisions"] is False
+        assert gates["persistence"]["session_api"] is False
+        assert gates["persistence"]["disk"] is False
+        assert "ephemeral_notice" in gates
+        gates_domain = client.get("/api/domains/gates").json()
+        assert gates_domain["domain"]["key"] == "gates"
+        assert gates_domain["gates"]["counts"]["total"] == gates["counts"]["total"]
+
+        # No write / save endpoints for gate human decisions.
+        assert client.post("/api/gates").status_code in {404, 405}
+        assert client.put("/api/gates").status_code in {404, 405}
+        assert client.patch("/api/gates").status_code in {404, 405}
 
         charts = client.get("/api/charts").json()
         assert "severity_map" in charts
@@ -357,6 +394,18 @@ def test_fastapi_routes_and_launch_smoke() -> None:
         light_ink = ((charts["severity_map"].get("layout") or {}).get("font") or {}).get("color")
         dark_ink = ((dark["severity_map"].get("layout") or {}).get("font") or {}).get("color")
         assert light_ink != dark_ink
+        # Industry steel accents in light catalog
+        light_accent = None
+        for trace in charts["severity_map"].get("data") or []:
+            marker = trace.get("marker") or {}
+            color = marker.get("color")
+            if isinstance(color, str) and color.startswith("#"):
+                light_accent = color
+                break
+        layout_meta = (charts["severity_map"].get("layout") or {}).get("colorway") or []
+        assert "#5980a6" in layout_meta or light_accent == "#5980a6" or any(
+            "#5980a6" in str(trace) for trace in (charts["severity_map"].get("data") or [])
+        ) or ((charts["severity_map"].get("layout") or {}).get("font") or {}).get("color") == "#1d1f20"
 
         csv_resp = client.get("/api/export/csv/findings")
         assert csv_resp.status_code == 200
@@ -373,18 +422,52 @@ def test_fastapi_routes_and_launch_smoke() -> None:
         html_resp = client.get("/api/export/html")
         assert html_resp.status_code == 200
         assert b"__BUILDML_OFFLINE__" in html_resp.content
-        assert b"Teaching Studio" in html_resp.content
+        assert b"sheet-chrome" in html_resp.content
+        assert b"Offline EDA App" in html_resp.content
         assert b"plotly" in html_resp.content.lower()
+        assert b'"gates"' in html_resp.content
+        assert b'"sheet"' in html_resp.content
 
-        # SPA assets
+        # SPA assets — Industry redesign sheet chrome
+        tokens = client.get("/static/css/tokens.css")
+        assert tokens.status_code == 200
+        assert "#5980a6" in tokens.text
+        assert ".blueprint" in tokens.text
         css = client.get("/static/css/app.css")
         assert css.status_code == 200
+        assert "kpi-strip" in css.text
+        assert "spine" in css.text
+        assert "gate-card" in css.text
+        assert "academy-index" in css.text
         js = client.get("/static/js/app.js")
         assert js.status_code == 200
-        assert "Teaching Studio" in js.text or "teachingHtml" in js.text
+        assert "Findings register" in js.text
+        assert "renderCockpit" in js.text
+        assert "renderGates" in js.text
+        assert "renderAcademy" in js.text
+        assert "gateSessionMarks" in js.text
         assert "per_column" in js.text
         assert "charts_dark" in js.text or "theme=" in js.text
         assert "offlineApi" in js.text or "__BUILDML_OFFLINE__" in js.text
+        assert "#5980a6" in js.text
+        assert 'from "./learn_ui.js"' in js.text
+        assert 'from "./cockpit_view.js"' in js.text
+        gates_js = client.get("/static/js/gates_view.js")
+        assert gates_js.status_code == 200
+        assert "Mark for this session" in gates_js.text
+        assert 'from "./learn_ui.js"' in gates_js.text
+        cockpit_js = client.get("/static/js/cockpit_view.js")
+        assert cockpit_js.status_code == 200
+        assert "openCockpitDrawer" in cockpit_js.text
+        assert 'from "./learn_ui.js"' in cockpit_js.text
+        assert "data-ledger-jump" in cockpit_js.text
+        learn_js = client.get("/static/js/learn_ui.js")
+        assert learn_js.status_code == 200
+        assert "sectionScaffold" in learn_js.text
+        assert "localStorage.setItem(\"buildml-eda-gates\"" not in js.text
+        assert "localStorage.setItem(\"buildml-eda-gates\"" not in gates_js.text
+        assert cockpit["sheet"]["ledger"][0]["teaching"]["levels"]
+        assert "cockpit-drawer" in home.text
     finally:
         handle.stop()
         clear_state()
@@ -440,7 +523,8 @@ def test_studio_offline_html_and_theme_catalog(tmp_path: Path) -> None:
     assert "__BUILDML_OFFLINE__" in html
     assert "charts_light" in html
     assert "charts_dark" in html
-    assert "Teaching Studio" in html
+    assert "sheet-chrome" in html
+    assert "Offline EDA App" in html
     # Document shell has no remote script/link tags (plotly is inlined).
     assert "<script src=" not in html
     assert "<link " not in html.split("<style>", 1)[0]

@@ -21,6 +21,7 @@ const PATHS = {
   alert: "M12 9v4m0 4h.01M10.3 4.3 2.6 18a2 2 0 0 0 1.7 3h15.4a2 2 0 0 0 1.7-3L13.7 4.3a2 2 0 0 0-3.4 0Z",
   book: "M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2V5Zm0 14a2 2 0 0 1 2-2h13",
   link: "M10 13a5 5 0 0 0 7.07 0l1.41-1.41a5 5 0 0 0-7.07-7.07L10 5.93m4 4.14a5 5 0 0 0-7.07 0L5.5 11.48a5 5 0 1 0 7.07 7.07L14 17.14",
+  "list-checks": "M3 6h.01M3 12h.01M3 18h.01M8 6h13M8 12h13M8 18h8M3.5 6l.8.8L6 5",
 };
 
 export function iconSvg(name, className = "icon") {

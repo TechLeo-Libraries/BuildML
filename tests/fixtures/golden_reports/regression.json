@@ -9,24 +9,34 @@
   "quality_flags": {
     "constant_columns": [],
     "high_cardinality_columns": [],
-    "id_like_columns": ["target", "x", "x2"],
+    "id_like_columns": [
+      "target",
+      "x",
+      "x2"
+    ],
     "mixed_type_suspect_columns": []
   },
   "recommendations": [
-    {"based_on": ["quality.identifiers"], "key": "next.exclude_ids"}
+    {
+      "based_on": [
+        "quality.identifiers"
+      ],
+      "key": "next.exclude_ids"
+    }
   ],
   "section_ids": [
-    "orientation",
-    "quality",
-    "features",
-    "relationships",
-    "target-validation",
+    "findings-register",
+    "assumptions",
+    "ledger",
+    "recommended-sequence",
     "figures",
-    "next-steps",
     "methods",
     "degraded",
     "appendix"
   ],
-  "shape": [40, 4],
+  "shape": [
+    40,
+    4
+  ],
   "target_type": "regression_target"
 }

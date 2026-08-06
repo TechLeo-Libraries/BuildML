@@ -55,20 +55,27 @@ def test_eda_research_grade_report_and_html(tmp_path: Path) -> None:
     assert report.quality.get("constant_columns")
     assert html_path.exists()
     html = html_path.read_text(encoding="utf-8")
-    assert "BuildML EDA" in html
-    assert "Findings and next steps" in html
-    assert "What was examined" in html
-    assert "Observed result" in html
+    assert "BuildML" in html
+    assert "BUILDML STATIC EDA" in html
+    assert "Findings register" in html
+    assert "What this means" in html
     assert "Why it matters" in html
-    assert "What next" in html
+    assert "What to check next" in html
+    assert "Findings register" in html
+    assert "What each finding assumes" in html
+    assert "Ledger — every computed number" in html
+    assert "Recommended sequence" in html
     assert "<table" in html
     assert "Filter rows" in html
     assert "Sort by" in html
-    assert "bml-theme" in html
+    assert "--color-accent: #5980a6" in html
+    assert "blueprint" in html
+    assert "Readiness Gates" not in html
+    assert "Concept Academy" not in html
     if any(not isinstance(value, dict) for value in report.figures.values()):
         assert "data:image/png;base64," in html
     else:
-        assert "Visualization" in html or "visualization" in html
+        assert "Fig." in html or "figure" in html.lower()
     assert "https://" not in html
     assert "http://" not in html
 

@@ -113,8 +113,8 @@ def explore_dataset(
         Write the rendered figures to this directory. Needs ``include_plots``.
     html_format:
         ``'studio'`` for the offline Teaching Studio snapshot: the same surface
-        as ``session.eda_app()``: or ``'research'`` for the layered shell with
-        embedded Matplotlib figures.
+        as ``session.eda_app()``: or ``'research'`` for the BUILDML STATIC EDA
+        HTML shell with embedded Matplotlib figures.
 
     Returns
     -------

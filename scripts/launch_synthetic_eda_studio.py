@@ -135,11 +135,11 @@ def main() -> None:
             last_error = exc
             continue
     if handle is None:
-        raise RuntimeError(f"Could not bind Teaching Studio near 8765: {last_error}")
+        raise RuntimeError(f"Could not bind EDA App near 8765: {last_error}")
     url_path = ARTIFACTS / "eda_studio_url.txt"
     url_path.write_text(handle.url + "\n", encoding="utf-8")
     print(f"Synthetic CSV: {csv_path}")
-    print(f"Teaching Studio URL: {handle.url}")
+    print(f"EDA App URL: {handle.url}")
     print(f"URL also written to: {url_path}")
     print("Stop with Ctrl+C in this terminal (calls handle.stop()).")
     print("Keeping process alive so the background server stays up...")
@@ -148,7 +148,7 @@ def main() -> None:
             time.sleep(1.0)
     except KeyboardInterrupt:
         handle.stop()
-        print("Stopped Teaching Studio.")
+        print("Stopped EDA App.")
 
 
 if __name__ == "__main__":

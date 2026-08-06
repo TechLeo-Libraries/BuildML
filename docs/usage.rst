@@ -285,7 +285,7 @@ Reports and walkthroughs
 
    # Offline dashboard snapshot (default; needs buildml[dashboard])
    eda = session.eda(export_html="artifacts/eda_studio.html", html_format="studio")
-   # Optional layered research shell with matplotlib embeds
+   # BUILDML STATIC EDA (Industry blueprint) with matplotlib embeds
    research = session.eda(
        include_plots=True,
        export_html="artifacts/eda_research.html",
@@ -302,10 +302,19 @@ Reports and walkthroughs
    )
    walkthrough = session.walkthrough(export_html="artifacts/workflow.html")
 
-``eda_app()`` opens interactive Plotly domain boards with teaching notes and
-concept references. CSV downloads cover major evidence tables. Offline HTML
-downloads a self-contained snapshot of the same dashboard SPA. HTML artifacts
-embed required styles and assets so they open without a network connection.
+``eda_app()`` opens the Industry EDA App (layout ported from the redesign
+readiness sheets): Command cockpit (findings register, assumptions, ledger,
+recommended sequence, figures), Readiness gates (clear / open / human / n/a,
+with a deep-dive learning sidebar per gate), and Concept academy (staged
+ML-engineering learning hub covering every BuildML concept note (~204): plain
+language → calculation → copyable Session examples adapted to this dataset),
+plus secondary domain boards. Gate session
+marks are browser-tab UI state only and are never persisted. Each gate sidebar
+teaches what the question asks, why it matters, how status was derived from the
+live report, optional calculations, and a copy-paste Session example with
+what-to-change guidance. CSV downloads cover major evidence tables. Offline HTML
+downloads a self-contained snapshot of the same App SPA. HTML artifacts embed
+required styles and assets so they open without a network connection.
 
 Engines: pandas, Polars, DuckDB
 -------------------------------

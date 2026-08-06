@@ -3,7 +3,7 @@
 > **Install:**
 > `pip install "git+https://github.com/TechLeo-Libraries/BuildML.git"`
 > Optional: `pip install "buildml[viz]"`, `"buildml[eda]"`,
-> `"buildml[dashboard]"` for plots / Teaching Studio.
+> `"buildml[dashboard]"` for plots / the Industry EDA App.
 > See [installation](../docs/installation.rst).
 
 Explore **before** you mutate. `session.eda()` returns structured findings and
@@ -31,8 +31,22 @@ Session operation to a versioned catalog (kept in sync by CI). That lets you:
 4. Preview a chain without appending history (`dry_run`).
 5. Export an offline audit HTML for review.
 
-The live dashboard (`eda_app`) is an optional FastAPI Teaching Studio with
-Plotly boards: not a replacement for domain judgment.
+The live dashboard (`eda_app`) is an optional FastAPI **Industry EDA App** whose
+chrome and IA are ported from the redesign sheets in
+`redesigning_eda/Current EDA design overview/` (Command cockpit readiness sheet,
+Concept academy, Readiness gates). Tokens are shared with BUILDML STATIC EDA.
+Domain boards remain available as secondary sheets. It is not a replacement for
+domain judgment.
+
+**Concept Academy** is a staged ML-engineering learning hub (00 Framing → 05
+Interpretation, plus 06 Domain depth). It teaches every BuildML `CONCEPT_NOTES`
+entry (~204) as a first-class lesson — beginner → advanced prose, a calculation
+walkthrough bound to this session's numbers (or an honest N/A), a copyable
+BuildML `Session` example, pitfalls, and "what to change for your data" callouts —
+plus the redesign readiness-path slugs that are not themselves catalog keys.
+Cited vs reference chips follow findings on the live report — not a hardcoded demo
+story. Open `#/academy` in the app, or call `build_academy_payload(report.to_dict())`
+from `buildml.dashboard.academy`.
 
 ---
 
@@ -74,7 +88,7 @@ Recommendations **name** Session operations; they do not execute them.
 # Default studio snapshot (dashboard SPA assets embedded when available)
 session.eda(export_html="artifacts/eda_studio.html", html_format="studio")
 
-# Layered research shell with matplotlib embeds (needs buildml[viz] for plots)
+# BUILDML STATIC EDA (Industry blueprint; needs buildml[viz] for plots)
 session.eda(
     include_plots=True,
     export_html="artifacts/eda_research.html",
@@ -87,19 +101,60 @@ HTML artifacts embed required styles/assets so they open offline.
 
 ---
 
-## Use case: live Teaching Studio dashboard
+## Use case: live Industry EDA App
 
 ```python
 # pip install "buildml[dashboard]"  # after GitHub 2.x
 handle = session.eda_app(port=8765, open_browser=True)
 # alias: session.open_eda_dashboard(port=8765)
 print(handle.url)
-# ... explore ...
+# ... explore Cockpit, Readiness Gates, Concept Academy, domain boards ...
 handle.stop()
 ```
 
+Or from a dirty synthetic extract:
+
+```bash
+python scripts/launch_synthetic_eda_studio.py
+```
+
+Surfaces in the App (document sheets, not a sidebar studio):
+
+| Board | Role |
+| --- | --- |
+| Command cockpit | KPI strip · numbered spine: findings register, assumptions, ledger, recommended sequence, figures |
+| Readiness gates | Second-pass tally, sticky filters, stage-grouped gate cards; click a gate for the learning sidebar (beginner→advanced, calculations, copy-paste Session examples, session-local marks only) |
+| Concept academy | Sticky search/stage tools, contents board, two-column concept entries |
+| Domain boards | Quality, features, relationships, multivariate, target, outliers, visuals |
+
+### Dataset adaptability (shared contract)
+
+Narrative must bind to the **live report**, not a demo/churn template. Shared
+helpers live in:
+
+| Layer | Module | Use |
+| --- | --- | --- |
+| Python | `buildml.dashboard.adapt` | `build_adapt_context(report)`, `session_sentence`, `what_to_change`, `list_names`, `target_phrase` |
+| Frontend | `static/js/learn_ui.js` | `callout`, `codeBlock`, `calcBlock`, `whatToChange`, `sectionScaffold`, `wireLearnUi` |
+
+Academy / Gates agents should:
+
+1. Import adaptive facts from `adapt.py` (or read `meta.adapt` / `sheet.adapt` from the API) instead of hardcoding column names like `target_churn`. Prefer `build_gate_context` inputs already flattened in `adapt.build_adapt_context`.
+2. Import presentation from `learn_ui.js` (ESM) **or** use `window.BuildMLLearnUI` (Academy view pattern). Script order in `templates/index.html`: `learn_ui.js` → `gates_view.js` → `academy_view.js` → `app.js`.
+3. Leave curriculum bodies in `academy.py` / `gates.py` / `academy_curriculum/`; only bind session lines, evidence, and worked examples to live `adapt` fields / report numbers.
+4. Offline HTML inlines the same module graph via blob URLs in `offline.py` — keep import rewrite placeholders in sync when adding views.
+
+Cockpit already exposes `sheet.adapt`, `sheet.session_sentence`, `sheet.what_to_change`, and spine meta counts for scannability.
+
+**Gate marks are UI-only.** Toggling “Mark for this session” on a gate stays in
+the open browser tab and is discarded on refresh. BuildML does not write gate
+judgments to the Session, history, disk, or any saved dataset copy (privacy and
+complexity: a durable mark would imply remembering *why* a decision was made).
+
 If the port is busy, pass another port. CSV downloads cover major evidence
-tables in the dashboard UI.
+tables in the App UI. Offline HTML exports the same SPA surface (including
+Gates and Academy); session marks still do not persist inside that file beyond
+the open tab.
 
 ---
 

@@ -8,25 +8,35 @@
   "has_skipped_disclosure": true,
   "quality_flags": {
     "constant_columns": [],
-    "high_cardinality_columns": ["category"],
-    "id_like_columns": ["category"],
+    "high_cardinality_columns": [
+      "category"
+    ],
+    "id_like_columns": [
+      "category"
+    ],
     "mixed_type_suspect_columns": []
   },
   "recommendations": [
-    {"based_on": ["quality.identifiers"], "key": "next.exclude_ids"}
+    {
+      "based_on": [
+        "quality.identifiers"
+      ],
+      "key": "next.exclude_ids"
+    }
   ],
   "section_ids": [
-    "orientation",
-    "quality",
-    "features",
-    "relationships",
-    "target-validation",
+    "findings-register",
+    "assumptions",
+    "ledger",
+    "recommended-sequence",
     "figures",
-    "next-steps",
     "methods",
     "degraded",
     "appendix"
   ],
-  "shape": [120, 3],
+  "shape": [
+    120,
+    3
+  ],
   "target_type": "classification_target"
 }

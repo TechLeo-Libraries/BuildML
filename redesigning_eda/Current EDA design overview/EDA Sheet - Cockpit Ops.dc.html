@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="_ds/industry-e7357cdc-dd1f-4728-81c5-00d86b893c68/styles.css" />
+<script src="_ds/industry-e7357cdc-dd1f-4728-81c5-00d86b893c68/_ds_bundle.js"></script>
+<style>
+html,body{margin:0;background:var(--color-bg);color:var(--color-text);font-family:var(--font-body);overflow-x:clip}
+a{color:var(--color-accent-700);text-decoration:none}
+a:hover{color:var(--color-accent);text-decoration:underline}
+.om-mono{font-family:ui-monospace,"SFMono-Regular",Menlo,monospace;font-variant-numeric:tabular-nums}
+.om-slug{font-family:ui-monospace,"SFMono-Regular",Menlo,monospace;font-size:11px;letter-spacing:.04em;white-space:nowrap}
+.om-led{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:var(--space-3);align-items:baseline;padding:3px 0;border-bottom:1px dotted var(--color-divider)}
+.om-tick{position:absolute;font-size:9px;color:var(--color-neutral-600)}
+.om-cap{font-size:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+</style>
+</helmet>
+<div style="min-height:100vh;padding:var(--space-6) var(--space-8) var(--space-8);max-width:1180px;margin:0 auto">
+  <header style="display:grid;grid-template-columns:minmax(0,1fr) auto;gap:var(--space-6);align-items:end;border-bottom:2px solid var(--color-text);padding-bottom:var(--space-3)">
+    <div>
+      <div class="om-mono" style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--color-accent-700)">BuildML {{ version }} · Exploratory data analysis · {{ session }}</div>
+      <h1 style="margin:var(--space-2) 0 0;font-size:44px;letter-spacing:-0.01em;text-transform:uppercase">Command cockpit — readiness sheet</h1>
+    </div>
+    <div style="display:flex;gap:var(--space-2);align-items:center">
+      <a class="btn btn-ghost" href="EDA Sheet - Academy Ops.dc.html">Concept academy →</a>
+      <a class="btn btn-secondary" href="#">CSV</a>
+      <a class="btn btn-primary blueprint" href="#"><i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>PDF briefing</a>
+    </div>
+  </header>
+
+  <section class="blueprint" style="margin-top:var(--space-8);display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;background:var(--color-divider)">
+    <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+    <div style="background:var(--color-bg);padding:var(--space-4)">
+      <div class="text-muted om-mono" style="font-size:10px;letter-spacing:.1em;text-transform:uppercase">Readiness</div>
+      <div style="font-family:var(--font-heading);font-size:26px;letter-spacing:.02em;text-transform:uppercase;margin-top:2px;color:var(--color-accent-800)">{{ readiness }}</div>
+      <div class="text-muted om-mono" style="font-size:11px">{{ readinessNote }}</div>
+    </div>
+    <div style="background:var(--color-bg);padding:var(--space-4)">
+      <div class="text-muted om-mono" style="font-size:10px;letter-spacing:.1em;text-transform:uppercase">Scope</div>
+      <div class="om-mono" style="font-size:26px;margin-top:2px">{{ scope }}</div>
+      <div class="text-muted om-mono" style="font-size:11px">{{ scopeNote }}</div>
+    </div>
+    <div style="background:var(--color-bg);padding:var(--space-4)">
+      <div class="text-muted om-mono" style="font-size:10px;letter-spacing:.1em;text-transform:uppercase">Completeness</div>
+      <div class="om-mono" style="font-size:26px;margin-top:2px">{{ completeness }}</div>
+      <div class="text-muted om-mono" style="font-size:11px">{{ completenessNote }}</div>
+    </div>
+    <div style="background:var(--color-bg);padding:var(--space-4)">
+      <div class="text-muted om-mono" style="font-size:10px;letter-spacing:.1em;text-transform:uppercase">Runtime</div>
+      <div class="om-mono" style="font-size:26px;margin-top:2px">{{ runtime }}</div>
+      <div class="text-muted om-mono" style="font-size:11px">{{ runtimeNote }}</div>
+    </div>
+  </section>
+
+  <div style="display:grid;grid-template-columns:38px minmax(0,1fr);gap:var(--space-6);margin-top:var(--space-8)">
+    <div class="om-mono" style="font-size:12px;letter-spacing:.1em;color:var(--color-accent-700);padding-top:4px">01</div>
+    <section>
+      <h4 style="margin:0;letter-spacing:.06em;text-transform:uppercase;border-bottom:1px solid var(--color-divider);padding-bottom:var(--space-2)">Findings register</h4>
+      <table class="table" style="margin-top:var(--space-2)">
+        <thead><tr><th style="width:56px">Sev</th><th style="width:168px">Key</th><th>Detail</th><th style="width:150px">Evidence</th><th style="width:158px">Concept</th></tr></thead>
+        <tbody>
+          <sc-for list="{{ findings }}" as="f" hint-placeholder-count="8">
+            <tr id="{{ f.anchor }}">
+              <td>
+                <sc-if value="{{ f.isBlocking }}" hint-placeholder-val="{{ false }}"><span class="tag" style="background:var(--color-accent-800);color:var(--color-bg);text-transform:uppercase;letter-spacing:.06em">{{ f.sevLabel }}</span></sc-if>
+                <sc-if value="{{ f.isMed }}" hint-placeholder-val="{{ true }}"><span class="tag tag-accent" style="text-transform:uppercase;letter-spacing:.06em">{{ f.sevLabel }}</span></sc-if>
+                <sc-if value="{{ f.isLow }}" hint-placeholder-val="{{ false }}"><span class="tag tag-outline" style="text-transform:uppercase;letter-spacing:.06em">{{ f.sevLabel }}</span></sc-if>
+                <sc-if value="{{ f.isInfo }}" hint-placeholder-val="{{ false }}"><span class="tag tag-neutral" style="text-transform:uppercase;letter-spacing:.06em">{{ f.sevLabel }}</span></sc-if>
+              </td>
+              <td class="om-mono" style="font-size:12px">{{ f.key }}</td>
+              <td>{{ f.detail }}</td>
+              <td class="om-mono text-muted" style="font-size:11px">{{ f.evidence }}</td>
+              <td><a class="om-slug" href="{{ f.conceptHref }}">{{ f.concept }} →</a></td>
+            </tr>
+          </sc-for>
+        </tbody>
+      </table>
+    </section>
+  </div>
+
+  <div style="display:grid;grid-template-columns:38px minmax(0,1fr);gap:var(--space-6);margin-top:var(--space-8)">
+    <div class="om-mono" style="font-size:12px;letter-spacing:.1em;color:var(--color-accent-700);padding-top:4px">02</div>
+    <section>
+      <h4 style="margin:0;letter-spacing:.06em;text-transform:uppercase;border-bottom:1px solid var(--color-divider);padding-bottom:var(--space-2)">What each finding assumes</h4>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:var(--space-4) var(--space-8);margin-top:var(--space-4)">
+        <sc-for list="{{ assumptions }}" as="a" hint-placeholder-count="6">
+          <p style="margin:0;font-size:13px;line-height:1.55"><a class="om-slug" href="{{ a.href }}">{{ a.slug }}</a> — {{ a.text }}</p>
+        </sc-for>
+      </div>
+    </section>
+  </div>
+
+  <div style="display:grid;grid-template-columns:38px minmax(0,1fr);gap:var(--space-6);margin-top:var(--space-8)">
+    <div class="om-mono" style="font-size:12px;letter-spacing:.1em;color:var(--color-accent-700);padding-top:4px">03</div>
+    <section>
+      <h4 style="margin:0;letter-spacing:.06em;text-transform:uppercase;border-bottom:1px solid var(--color-divider);padding-bottom:var(--space-2)">Ledger — every computed number</h4>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:var(--space-6) var(--space-8);margin-top:var(--space-4);align-items:start">
+        <sc-for list="{{ ledger }}" as="g" hint-placeholder-count="6">
+          <div>
+            <div class="om-mono" style="font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--color-accent-700);margin-bottom:var(--space-2)">{{ g.title }}</div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:var(--space-4)">
+              <sc-for list="{{ g.cols }}" as="col" hint-placeholder-count="1">
+                <div>
+                  <sc-for list="{{ col.items }}" as="it" hint-placeholder-count="6">
+                    <div class="om-led"><span class="om-mono" style="font-size:12px">{{ it.k }}</span><span class="om-mono" style="font-size:12px">{{ it.v }}</span></div>
+                  </sc-for>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </section>
+  </div>
+
+  <div style="display:grid;grid-template-columns:38px minmax(0,1fr);gap:var(--space-6);margin-top:var(--space-8)">
+    <div class="om-mono" style="font-size:12px;letter-spacing:.1em;color:var(--color-accent-700);padding-top:4px">04</div>
+    <section>
+      <h4 style="margin:0;letter-spacing:.06em;text-transform:uppercase;border-bottom:1px solid var(--color-divider);padding-bottom:var(--space-2)">Recommended sequence</h4>
+      <table class="table" style="margin-top:var(--space-2)">
+        <thead><tr><th style="width:34px">#</th><th style="width:140px">Priority</th><th>Action</th><th style="width:250px">Call</th><th style="width:170px">Based on</th></tr></thead>
+        <tbody>
+          <sc-for list="{{ recommendations }}" as="r" hint-placeholder-count="5">
+            <tr>
+              <td class="om-mono" style="font-size:12px">{{ r.n }}</td>
+              <td class="om-mono" style="font-size:11px">{{ r.when }}</td>
+              <td>{{ r.title }}</td>
+              <td class="om-mono" style="font-size:11px">{{ r.call }}</td>
+              <td class="om-mono" style="font-size:11px">{{ r.basis }}</td>
+            </tr>
+          </sc-for>
+        </tbody>
+      </table>
+      <p class="text-muted" style="margin:var(--space-4) 0 0;font-size:12px;max-width:70ch">Recommendations name Session operations; they do not execute them. Full-dataset descriptive EDA after a split summarises observed rows and is not train-fitted transform evidence.</p>
+    </section>
+  </div>
+
+  <div style="display:grid;grid-template-columns:38px minmax(0,1fr);gap:var(--space-6);margin-top:var(--space-8)">
+    <div class="om-mono" style="font-size:12px;letter-spacing:.1em;color:var(--color-accent-700);padding-top:4px">05</div>
+    <section>
+      <h4 style="margin:0;letter-spacing:.06em;text-transform:uppercase;border-bottom:1px solid var(--color-divider);padding-bottom:var(--space-2)">Figures</h4>
+
+      <sc-for list="{{ wideFigures }}" as="f" hint-placeholder-count="0">
+        <figure class="blueprint" style="margin:var(--space-4) 0 0;padding:var(--space-4)">
+          <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+          <figcaption class="om-mono" style="font-size:10px;letter-spacing:.1em;text-transform:uppercase;margin:0 0 var(--space-3);color:var(--color-accent-700)">Fig. {{ f.n }} — {{ f.caption }} · {{ f.barCount }} columns</figcaption>
+          <div style="max-height:{{ f.chart.maxHeight }};overflow:auto">
+            <div style="position:relative;padding-top:30px">
+              <div style="position:absolute;top:0;bottom:0;left:150px;right:64px">
+                <sc-for list="{{ f.chart.ticks }}" as="t" hint-placeholder-count="4">
+                  <div style="position:absolute;top:30px;bottom:0;left:{{ t.leftPct }}%;border-left:1px dashed var(--color-divider)"></div>
+                </sc-for>
+                <sc-for list="{{ f.chart.ticks }}" as="t" hint-placeholder-count="4">
+                  <div class="om-mono om-tick" style="top:0;left:{{ t.leftPct }}%;transform:translateX(-50%)">{{ t.label }}</div>
+                </sc-for>
+                <sc-if value="{{ f.chart.threshold }}" hint-placeholder-val="{{ false }}">
+                  <div style="position:absolute;top:30px;bottom:0;left:{{ f.chart.threshold.leftPct }}%;border-left:1px dashed var(--color-accent-800)"></div>
+                  <div class="om-mono" style="position:absolute;top:14px;left:{{ f.chart.threshold.leftPct }}%;padding-left:5px;font-size:9px;color:var(--color-accent-800);white-space:nowrap">{{ f.chart.threshold.label }}</div>
+                </sc-if>
+              </div>
+              <sc-for list="{{ f.chart.rows }}" as="r" hint-placeholder-count="12">
+                <div style="display:grid;grid-template-columns:144px minmax(0,1fr) 58px;gap:6px;align-items:center;height:18px">
+                  <div class="om-mono om-cap" style="text-align:right">{{ r.name }}</div>
+                  <div style="position:relative;height:11px;border-left:1px solid var(--color-text)">
+                    <div style="position:absolute;left:0;top:0;bottom:0;width:{{ r.widthPct }}%;background:{{ r.fill }};border:1.5px solid {{ r.stroke }};box-sizing:border-box"></div>
+                  </div>
+                  <div class="om-mono" style="font-size:9px;color:var(--color-accent-800);white-space:nowrap">{{ r.display }}</div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+          <sc-if value="{{ f.sample }}" hint-placeholder-val="{{ false }}">
+            <p class="om-mono" style="margin:var(--space-3) 0 0;font-size:10.5px;line-height:1.5;color:var(--color-accent-800)">{{ f.sample }}</p>
+          </sc-if>
+          <p class="text-muted" style="margin:var(--space-3) 0 0;font-size:11px;line-height:1.5">{{ f.note }} — see <a class="om-slug" href="{{ f.conceptHref }}">{{ f.concept }}</a>.</p>
+        </figure>
+      </sc-for>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(420px,1fr));gap:var(--space-6);margin-top:var(--space-6)">
+        <sc-for list="{{ leadFigures }}" as="f" hint-placeholder-count="2">
+          <figure class="blueprint" style="margin:0;padding:var(--space-4)">
+            <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+            <figcaption class="om-mono" style="font-size:10px;letter-spacing:.1em;text-transform:uppercase;margin:0 0 var(--space-4);color:var(--color-accent-700)">Fig. {{ f.n }} — {{ f.caption }}</figcaption>
+            <sc-if value="{{ f.isEmpty }}" hint-placeholder-val="{{ false }}">
+              <p class="om-mono" style="margin:0;padding:var(--space-6) 0;font-size:12px;line-height:1.6;color:var(--color-neutral-600);border-top:1px dashed var(--color-divider);border-bottom:1px dashed var(--color-divider)">{{ f.empty }}</p>
+            </sc-if>
+            <sc-if value="{{ f.isV }}" hint-placeholder-val="{{ true }}">
+              <div style="display:grid;grid-template-columns:44px minmax(0,1fr);gap:var(--space-2) var(--space-2)">
+                <div style="position:relative;height:158px">
+                  <sc-for list="{{ f.chart.ticks }}" as="t" hint-placeholder-count="4">
+                    <div class="om-mono om-tick" style="right:0;top:{{ t.topPct }}%;transform:translateY(-50%)">{{ t.label }}</div>
+                  </sc-for>
+                </div>
+                <div style="position:relative;height:158px;border-bottom:1px solid var(--color-text)">
+                  <sc-for list="{{ f.chart.ticks }}" as="t" hint-placeholder-count="4">
+                    <div style="position:absolute;left:0;right:0;top:{{ t.topPct }}%;border-top:1px dashed var(--color-divider)"></div>
+                  </sc-for>
+                  <sc-if value="{{ f.chart.threshold }}" hint-placeholder-val="{{ false }}">
+                    <div style="position:absolute;left:0;right:0;top:{{ f.chart.threshold.topPct }}%;border-top:1px dashed var(--color-accent-800)"></div>
+                    <div class="om-mono" style="position:absolute;right:2px;top:{{ f.chart.threshold.topPct }}%;transform:translateY(-115%);font-size:9px;color:var(--color-accent-800)">{{ f.chart.threshold.label }}</div>
+                  </sc-if>
+                  <div style="position:absolute;left:0;right:0;top:0;bottom:0;display:flex;gap:6px">
+                    <sc-for list="{{ f.chart.bars }}" as="b" hint-placeholder-count="6">
+                      <div style="flex:1;position:relative">
+                        <div style="position:absolute;left:0;right:0;bottom:0;height:{{ b.heightPct }}%;background:{{ b.fill }};border:1.5px solid {{ b.stroke }};box-sizing:border-box"></div>
+                        <div class="om-mono" style="position:absolute;left:0;right:0;bottom:{{ b.heightPct }}%;text-align:center;font-size:9px;color:var(--color-accent-800);padding-bottom:3px">{{ b.display }}</div>
+                      </div>
+                    </sc-for>
+                  </div>
+                </div>
+                <div></div>
+                <div style="display:flex;gap:6px">
+                  <sc-for list="{{ f.chart.bars }}" as="b" hint-placeholder-count="6">
+                    <div class="om-mono om-cap" style="flex:1;min-width:0;text-align:center;color:var(--color-text)">{{ b.label }}</div>
+                  </sc-for>
+                </div>
+              </div>
+            </sc-if>
+            <sc-if value="{{ f.sample }}" hint-placeholder-val="{{ false }}">
+              <p class="om-mono" style="margin:var(--space-3) 0 0;font-size:10.5px;line-height:1.5;color:var(--color-accent-800)">{{ f.sample }}</p>
+            </sc-if>
+            <p class="text-muted" style="margin:var(--space-3) 0 0;font-size:11px;line-height:1.5">{{ f.note }} — see <a class="om-slug" href="{{ f.conceptHref }}">{{ f.concept }}</a>.</p>
+          </figure>
+        </sc-for>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:var(--space-6);margin-top:var(--space-6)">
+        <sc-for list="{{ restFigures }}" as="f" hint-placeholder-count="3">
+          <figure class="blueprint" style="margin:0;padding:var(--space-4)">
+            <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+            <figcaption class="om-mono" style="font-size:10px;letter-spacing:.1em;text-transform:uppercase;margin:0 0 var(--space-4);color:var(--color-accent-700)">Fig. {{ f.n }} — {{ f.caption }}</figcaption>
+            <sc-if value="{{ f.isEmpty }}" hint-placeholder-val="{{ false }}">
+              <p class="om-mono" style="margin:0;padding:var(--space-6) 0;font-size:12px;line-height:1.6;color:var(--color-neutral-600);border-top:1px dashed var(--color-divider);border-bottom:1px dashed var(--color-divider)">{{ f.empty }}</p>
+            </sc-if>
+            <sc-if value="{{ f.isH }}" hint-placeholder-val="{{ true }}">
+              <div style="position:relative;padding-top:16px">
+                <div style="position:absolute;top:0;bottom:0;left:78px;right:92px">
+                  <sc-for list="{{ f.chart.ticks }}" as="t" hint-placeholder-count="3">
+                    <div style="position:absolute;top:30px;bottom:0;left:{{ t.leftPct }}%;border-left:1px dashed var(--color-divider)"></div>
+                  </sc-for>
+                  <sc-for list="{{ f.chart.ticks }}" as="t" hint-placeholder-count="3">
+                    <div class="om-mono om-tick" style="top:0;left:{{ t.leftPct }}%;transform:translateX(-50%)">{{ t.label }}</div>
+                  </sc-for>
+                </div>
+                <sc-for list="{{ f.chart.rows }}" as="r" hint-placeholder-count="2">
+                  <div style="display:grid;grid-template-columns:72px minmax(0,1fr) 86px;gap:6px;align-items:center;height:26px">
+                    <div class="om-mono om-cap" style="font-size:10px;text-align:right">{{ r.name }}</div>
+                    <div style="position:relative;height:14px;border-left:1px solid var(--color-text)">
+                      <div style="position:absolute;left:0;top:0;bottom:0;width:{{ r.widthPct }}%;background:{{ r.fill }};border:1.5px solid {{ r.stroke }};box-sizing:border-box"></div>
+                    </div>
+                    <div class="om-mono" style="font-size:10px;color:var(--color-accent-800);white-space:nowrap">{{ r.display }}</div>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-if>
+            <sc-if value="{{ f.isGrouped }}" hint-placeholder-val="{{ false }}">
+              <div style="display:grid;grid-template-columns:38px minmax(0,1fr);gap:var(--space-2)">
+                <div style="position:relative;height:112px">
+                  <sc-for list="{{ f.chart.ticks }}" as="t" hint-placeholder-count="3">
+                    <div class="om-mono om-tick" style="right:0;top:{{ t.topPct }}%;transform:translateY(-50%)">{{ t.label }}</div>
+                  </sc-for>
+                </div>
+                <div style="position:relative;height:112px;border-bottom:1px solid var(--color-text)">
+                  <sc-for list="{{ f.chart.ticks }}" as="t" hint-placeholder-count="3">
+                    <div style="position:absolute;left:0;right:0;top:{{ t.topPct }}%;border-top:1px dashed var(--color-divider)"></div>
+                  </sc-for>
+                  <div style="position:absolute;left:0;right:0;top:0;bottom:0;display:flex;gap:6px">
+                    <sc-for list="{{ f.chart.groups }}" as="g" hint-placeholder-count="3">
+                      <div style="flex:1;display:flex;align-items:flex-end;justify-content:center;gap:2px;height:100%">
+                        <div style="width:40%;height:{{ g.trainPct }}%;border:1.5px solid var(--color-accent-700);box-sizing:border-box"></div>
+                        <div style="width:40%;height:{{ g.testPct }}%;background:var(--color-accent-200);border:1.5px solid var(--color-accent-700);box-sizing:border-box"></div>
+                      </div>
+                    </sc-for>
+                  </div>
+                </div>
+                <div></div>
+                <div style="display:flex;gap:6px">
+                  <sc-for list="{{ f.chart.groups }}" as="g" hint-placeholder-count="3">
+                    <div class="om-mono om-cap" style="flex:1;min-width:0;text-align:center">{{ g.label }}</div>
+                  </sc-for>
+                </div>
+                <div></div>
+                <div style="display:flex;gap:var(--space-4);align-items:center;padding-top:var(--space-2)">
+                  <span style="display:flex;gap:5px;align-items:center"><span style="width:8px;height:8px;border:1.5px solid var(--color-accent-700);box-sizing:border-box"></span><span class="om-mono" style="font-size:9px;color:var(--color-neutral-600)">train</span></span>
+                  <span style="display:flex;gap:5px;align-items:center"><span style="width:8px;height:8px;background:var(--color-accent-200);border:1.5px solid var(--color-accent-700);box-sizing:border-box"></span><span class="om-mono" style="font-size:9px;color:var(--color-neutral-600)">test</span></span>
+                </div>
+              </div>
+            </sc-if>
+            <sc-if value="{{ f.isHist }}" hint-placeholder-val="{{ false }}">
+              <div style="display:grid;grid-template-columns:38px minmax(0,1fr);gap:var(--space-2)">
+                <div style="position:relative;height:112px">
+                  <sc-for list="{{ f.chart.ticks }}" as="t" hint-placeholder-count="3">
+                    <div class="om-mono om-tick" style="right:0;top:{{ t.topPct }}%;transform:translateY(-50%)">{{ t.label }}</div>
+                  </sc-for>
+                </div>
+                <div style="position:relative;height:112px;border-bottom:1px solid var(--color-text)">
+                  <sc-for list="{{ f.chart.ticks }}" as="t" hint-placeholder-count="3">
+                    <div style="position:absolute;left:0;right:0;top:{{ t.topPct }}%;border-top:1px dashed var(--color-divider)"></div>
+                  </sc-for>
+                  <div style="position:absolute;left:0;right:0;top:0;bottom:0;display:flex;gap:2px">
+                    <sc-for list="{{ f.chart.bins }}" as="b" hint-placeholder-count="10">
+                      <div style="flex:1;position:relative">
+                        <div style="position:absolute;left:0;right:0;bottom:0;height:{{ b.heightPct }}%;background:{{ b.fill }};border:1.5px solid {{ b.stroke }};box-sizing:border-box"></div>
+                      </div>
+                    </sc-for>
+                  </div>
+                  <sc-if value="{{ f.chart.cut }}" hint-placeholder-val="{{ false }}">
+                    <div style="position:absolute;top:0;bottom:0;left:{{ f.chart.cut.leftPct }}%;border-left:1px dashed var(--color-accent-800)"></div>
+                    <div class="om-mono" style="position:absolute;top:0;left:{{ f.chart.cut.leftPct }}%;transform:translateX(-100%);padding-right:3px;font-size:9px;color:var(--color-accent-800)">{{ f.chart.cut.label }}</div>
+                  </sc-if>
+                </div>
+                <div></div>
+                <div style="display:flex;justify-content:space-between;gap:var(--space-2)">
+                  <span class="om-mono" style="font-size:9px;color:var(--color-neutral-600)">{{ f.chart.left }}</span>
+                  <span class="om-mono" style="font-size:9px;color:var(--color-neutral-600)">{{ f.chart.right }}</span>
+                </div>
+                <div></div>
+                <div class="om-mono" style="font-size:9px;color:var(--color-text);padding-top:var(--space-1)">{{ f.chart.footnote }}</div>
+              </div>
+            </sc-if>
+            <sc-if value="{{ f.sample }}" hint-placeholder-val="{{ false }}">
+              <p class="om-mono" style="margin:var(--space-3) 0 0;font-size:10.5px;line-height:1.5;color:var(--color-accent-800)">{{ f.sample }}</p>
+            </sc-if>
+            <p class="text-muted" style="margin:var(--space-3) 0 0;font-size:11px;line-height:1.5">{{ f.note }} — see <a class="om-slug" href="{{ f.conceptHref }}">{{ f.concept }}</a>.</p>
+          </figure>
+        </sc-for>
+      </div>
+    </section>
+  </div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1240},&quot;dataset&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;churn&quot;,&quot;ops-delay&quot;],&quot;default&quot;:&quot;ops-delay&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Data&quot;}}">
+class Component extends DCLogic {
+  state = { r: null, err: null };
+
+  componentDidMount() { this.load(); }
+  componentDidUpdate(prev) { if (prev.dataset !== this.props.dataset) this.load(); }
+
+  async load() {
+    try {
+      const [engine, data] = await Promise.all([
+        import('./eda-engine.js'),
+        import('./eda-datasets.js'),
+      ]);
+      const key = this.props.dataset === 'churn' ? 'churn' : 'opsDelay';
+      this.setState({ r: engine.buildReport(data[key], {
+        academyHref: 'EDA Sheet - Academy Ops.dc.html',
+        cockpitHref: 'EDA Sheet - Cockpit Ops.dc.html',
+      }), err: null });
+    } catch (e) {
+      this.setState({ err: String((e && e.message) || e) });
+    }
+  }
+
+  renderVals() {
+    const r = this.state.r;
+    if (!r) return {};
+    const sev = f => Object.assign({}, f, {
+      isBlocking: f.sev === 'crit' || f.sev === 'high',
+      isMed: f.sev === 'med', isLow: f.sev === 'low', isInfo: f.sev === 'info',
+    });
+    const wide = r.figures.filter(f => f.isH && f.chart.count > 7)
+      .map(f => Object.assign({}, f, { barCount: f.chart.count }));
+    const isWide = f => wide.some(w => w.key === f.key);
+    const isLead = f => f.key === 'mi' || f.key === 'vif';
+    return Object.assign({}, r, {
+      findings: r.findings.map(sev),
+      wideFigures: wide,
+      leadFigures: r.figures.filter(f => !isWide(f) && isLead(f)),
+      restFigures: r.figures.filter(f => !isWide(f) && !isLead(f)),
+    });
+  }
+}
+
+</script>
+</body>
+</html>

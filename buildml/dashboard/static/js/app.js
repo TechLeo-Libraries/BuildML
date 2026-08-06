@@ -1,13 +1,46 @@
+/**
+ * BuildML EDA App — Industry readiness sheets.
+ * Layout / IA ported from redesigning_eda/Current EDA design overview/
+ * (Cockpit, Academy, Readiness Gates). Gate marks are UI-only / in-memory.
+ *
+ * Shared learn presentation: import from ./learn_ui.js (also wired in index.html).
+ * Academy / Gates view modules should import the same primitives — do not fork markup.
+ */
 import { hydrateIcons, iconSvg } from "./icons.js";
+import { renderAcademy as renderAcademyView } from "./academy_view.js";
+import {
+  callout,
+  sectionScaffold,
+  whatToChange,
+  wireLearnUi,
+} from "./learn_ui.js";
+import {
+  closeGateDrawer,
+  renderGatesView,
+  wireGateDrawerChrome,
+} from "./gates_view.js";
+import {
+  closeCockpitDrawer,
+  renderAssumptionsBody,
+  renderLedgerBody,
+  wireCockpitDrawerChrome,
+  wireCockpitSheet,
+} from "./cockpit_view.js";
 
 const state = {
   meta: null,
   charts: null,
   chartsTheme: null,
   route: "cockpit",
-  severity: "all",
-  sectionFilter: "",
   sort: { key: null, dir: "asc" },
+  // Ephemeral only: cleared on refresh. Never written to the server or disk.
+  gateSessionMarks: Object.create(null),
+  gateFilter: "all",
+  activeGateIdRef: { current: null },
+  academyMode: "all",
+  academyStages: [],
+  academyQuery: "",
+  sectionFilter: "",
 };
 
 const main = () => document.getElementById("main");
@@ -19,9 +52,7 @@ function currentTheme() {
 
 async function api(path) {
   const offline = offlineBundle();
-  if (offline) {
-    return offlineApi(path, offline);
-  }
+  if (offline) return offlineApi(path, offline);
   const response = await fetch(path);
   if (!response.ok) {
     const detail = await response.text();
@@ -35,6 +66,7 @@ function offlineApi(path, bundle) {
   const pathname = url.pathname;
   if (pathname === "/api/meta") return structuredClone(bundle.meta);
   if (pathname === "/api/cockpit") return structuredClone(bundle.cockpit);
+  if (pathname === "/api/gates") return structuredClone(bundle.gates || bundle.domains?.gates?.gates);
   if (pathname === "/api/charts") {
     const theme = url.searchParams.get("theme") || currentTheme();
     return structuredClone(theme === "dark" ? bundle.charts_dark : bundle.charts_light);
@@ -98,7 +130,7 @@ function offlineApi(path, bundle) {
     };
   }
   if (pathname.startsWith("/api/export/")) {
-    throw new Error("CSV/PDF export requires the live Teaching Studio server.");
+    throw new Error("CSV/PDF export requires the live EDA App server.");
   }
   throw new Error(`Offline snapshot has no route for ${path}`);
 }
@@ -113,45 +145,37 @@ function toast(message) {
   }, 2600);
 }
 
-function setTheme(theme) {
-  document.documentElement.setAttribute("data-theme", theme);
-  localStorage.setItem("buildml-eda-theme", theme);
-  const btn = document.getElementById("theme-toggle");
-  btn.setAttribute("aria-pressed", theme === "dark" ? "true" : "false");
-  btn.querySelector("[data-icon]")?.setAttribute("data-icon", theme === "dark" ? "sun" : "moon");
-  hydrateIcons(btn);
-  // Rebuild figures from the theme-specific catalog so ink, series, heatmaps,
-  // gauges, and annotations all follow the SPA theme.
-  state.charts = null;
-  state.chartsTheme = null;
-  if (document.querySelector("[data-chart-id]")) {
-    void restyleCharts();
-  }
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;");
 }
 
 function themeTokens() {
   const dark = currentTheme() === "dark";
   return {
     dark,
-    ink: dark ? "#E8EEF5" : "#1C2430",
-    muted: dark ? "#9AA8B8" : "#5B6775",
-    grid: dark ? "#2A3340" : "#D7DEE7",
-    hoverBg: dark ? "#171C24" : "#FFFFFF",
-    accent: dark ? "#3DDC97" : "#0B6E4F",
+    ink: dark ? "#E8EEF5" : "#1d1f20",
+    muted: dark ? "#9AA8B8" : "#5d5d60",
+    grid: dark ? "#2A3340" : "#d4d4d7",
+    hoverBg: dark ? "#171C24" : "#f5f5f8",
+    accent: dark ? "#94bce3" : "#5980a6",
     critical: dark ? "#F07178" : "#B91C1C",
     series: dark
-      ? ["#3DDC97", "#7DB4F0", "#F0A35A", "#C4B5FD", "#5EEAD4", "#FB7185", "#94A3B8", "#FBBF24"]
-      : ["#0B6E4F", "#1D4E89", "#B45309", "#6D28D9", "#0F766E", "#9F1239", "#334155", "#A16207"],
+      ? ["#94bce3", "#5980a6", "#F0A35A", "#b5d9fd", "#728fab", "#FB7185", "#98989b", "#FBBF24"]
+      : ["#5980a6", "#2c455d", "#B45309", "#416180", "#728fab", "#9F1239", "#424244", "#A16207"],
     heatmap: dark
       ? [
-          [0.0, "#7DB4F0"],
+          [0.0, "#94bce3"],
           [0.5, "#1D2430"],
-          [1.0, "#3DDC97"],
+          [1.0, "#5980a6"],
         ]
       : [
-          [0.0, "#1D4E89"],
-          [0.5, "#F8FAFC"],
-          [1.0, "#0B6E4F"],
+          [0.0, "#2c455d"],
+          [0.5, "#f5f5f8"],
+          [1.0, "#5980a6"],
         ],
   };
 }
@@ -162,7 +186,7 @@ function chartLayoutOverrides() {
     paper_bgcolor: "rgba(0,0,0,0)",
     plot_bgcolor: "rgba(0,0,0,0)",
     font: {
-      family: "Segoe UI, Helvetica Neue, sans-serif",
+      family: 'Barlow, "Segoe UI", "Helvetica Neue", sans-serif',
       color: t.ink,
     },
     title: { font: { color: t.ink } },
@@ -173,6 +197,7 @@ function chartLayoutOverrides() {
       bordercolor: t.grid,
     },
     legend: { font: { color: t.ink } },
+    uniformtext: { minsize: 10, mode: "hide" },
     coloraxis: {
       colorbar: {
         tickfont: { color: t.ink },
@@ -182,6 +207,7 @@ function chartLayoutOverrides() {
     xaxis: {
       gridcolor: t.grid,
       zeroline: false,
+      automargin: true,
       tickfont: { color: t.ink },
       title: { font: { color: t.ink } },
       linecolor: t.grid,
@@ -189,6 +215,7 @@ function chartLayoutOverrides() {
     yaxis: {
       gridcolor: t.grid,
       zeroline: false,
+      automargin: true,
       tickfont: { color: t.ink },
       title: { font: { color: t.ink } },
       linecolor: t.grid,
@@ -212,20 +239,6 @@ async function ensureCharts() {
   return state.charts;
 }
 
-async function restyleCharts() {
-  const charts = await ensureCharts();
-  document.querySelectorAll("[data-chart-id]").forEach((host) => {
-    const id = host.getAttribute("data-chart-id");
-    const fig = charts?.[id];
-    if (!fig || !window.Plotly) return;
-    const layout = themedLayout(fig.layout);
-    window.Plotly.react(host, themeTraceData(fig.data), layout, {
-      displayModeBar: false,
-      responsive: true,
-    });
-  });
-}
-
 function themedLayout(baseLayout) {
   const overrides = chartLayoutOverrides();
   const base = baseLayout || {};
@@ -240,6 +253,7 @@ function themedLayout(baseLayout) {
     yaxis: { ...(base.yaxis || {}), ...overrides.yaxis },
     legend: { ...(base.legend || {}), ...overrides.legend },
     hoverlabel: { ...(base.hoverlabel || {}), ...overrides.hoverlabel },
+    uniformtext: { ...(base.uniformtext || {}), ...overrides.uniformtext },
   };
   if (Array.isArray(base.annotations)) {
     const muted = overrides.meta.annotation_color;
@@ -248,14 +262,9 @@ function themedLayout(baseLayout) {
       font: { ...(item.font || {}), color: muted },
     }));
   }
-  // Theme multi-axis figures (Plotly may emit xaxis2/yaxis2…).
   for (const key of Object.keys(base)) {
-    if (/^xaxis\d+$/.test(key)) {
-      layout[key] = { ...base[key], ...overrides.xaxis };
-    }
-    if (/^yaxis\d+$/.test(key)) {
-      layout[key] = { ...base[key], ...overrides.yaxis };
-    }
+    if (/^xaxis\d+$/.test(key)) layout[key] = { ...base[key], ...overrides.xaxis };
+    if (/^yaxis\d+$/.test(key)) layout[key] = { ...base[key], ...overrides.yaxis };
   }
   return layout;
 }
@@ -276,31 +285,14 @@ function themeTraceData(data) {
         },
       };
     }
-    if (next.type === "indicator" && next.gauge) {
-      next.gauge = {
-        ...next.gauge,
-        bar: { ...(next.gauge.bar || {}), color: t.accent },
-        threshold: {
-          ...(next.gauge.threshold || {}),
-          line: { ...((next.gauge.threshold && next.gauge.threshold.line) || {}), color: t.critical },
-        },
-      };
-      next.number = { ...(next.number || {}), font: { ...((next.number && next.number.font) || {}), color: t.ink } };
-      next.title = {
-        ...(next.title || {}),
-        font: { ...((next.title && next.title.font) || {}), color: t.ink },
-      };
-    }
-    if (next.marker && typeof next.marker === "object" && !Array.isArray(next.marker.color)) {
-      // Keep explicit multi-color arrays from the server; retint single accent markers.
-      if (typeof next.marker.color === "string" && (next.marker.color.startsWith("#") || next.marker.color.startsWith("rgb"))) {
-        // leave categorical/series colors from themed catalog
+    if (next.type === "bar") {
+      next.constraintext = next.constraintext === "hide" ? "none" : next.constraintext || "none";
+      next.cliponaxis = false;
+      if (next.textposition === "outside" || !next.textposition) {
+        next.textposition = "outside";
       }
     }
-    if (next.line && typeof next.line.color === "string") {
-      // catalog already theme-aware
-    }
-    if (!next.marker && (next.type === "bar" || next.type === "scatter") && !next.marker_color) {
+    if (!next.marker && (next.type === "bar" || next.type === "scatter")) {
       next.marker = { color: t.series[index % t.series.length] };
     }
     return next;
@@ -309,12 +301,12 @@ function themeTraceData(data) {
 
 async function renderChart(host, chartId) {
   host.setAttribute("data-chart-id", chartId);
-  host.innerHTML = `<div class="empty">Loading chart…</div>`;
+  host.innerHTML = `<div class="empty" style="margin:0;padding:var(--space-4)">Loading chart…</div>`;
   try {
     const charts = await ensureCharts();
     const fig = charts[chartId];
     if (!fig) {
-      host.innerHTML = `<div class="empty">Chart unavailable.</div>`;
+      host.innerHTML = `<div class="empty" style="margin:0">Chart unavailable.</div>`;
       return;
     }
     if (!window.Plotly) {
@@ -334,128 +326,529 @@ async function renderChart(host, chartId) {
   }
 }
 
-function escapeHtml(value) {
-  return String(value ?? "")
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;");
+async function mountCharts(root) {
+  const hosts = [...root.querySelectorAll("[data-mount-chart]")];
+  await Promise.all(hosts.map((host) => renderChart(host, host.getAttribute("data-mount-chart"))));
 }
 
-function badge(severity) {
-  const s = String(severity || "info").toLowerCase();
-  return `<span class="badge ${escapeHtml(s)}">${escapeHtml(s)}</span>`;
+function corners() {
+  return `<i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>`;
 }
 
-function csvButtons(sections) {
-  if (!sections?.length) return "";
-  if (offlineBundle()) {
-    return `<div class="chip-row"><span class="chip" title="CSV/PDF exports require the live Teaching Studio server">Offline · exports in live Studio</span></div>`;
+function sevTag(row) {
+  const label = escapeHtml(row.sev_label || row.severity || "info");
+  if (row.is_blocking) return `<span class="tag tag-block">${label}</span>`;
+  if (row.is_med) return `<span class="tag tag-accent">${label}</span>`;
+  if (row.is_low) return `<span class="tag tag-outline">${label}</span>`;
+  return `<span class="tag tag-neutral">${label}</span>`;
+}
+
+function conceptLink(key, label) {
+  if (!key || key === "—") {
+    return `<span class="om-slug text-muted">${escapeHtml(label || "—")}</span>`;
   }
-  return `<div class="chip-row">${sections
-    .map(
-      (key) =>
-        `<a class="chip" href="/api/export/csv/${encodeURIComponent(key)}">${iconSvg("download")} ${escapeHtml(key.replaceAll("_", " "))}</a>`,
-    )
-    .join("")}</div>`;
+  return `<button type="button" class="om-slug" data-concept="${escapeHtml(key)}" style="background:none;border:0;padding:0;cursor:pointer;color:var(--color-accent-700)">${escapeHtml(label || key)} →</button>`;
 }
 
-function paragraphsHtml(text) {
-  return String(text || "")
-    .split(/\n\n+/)
-    .map((part) => part.trim())
-    .filter(Boolean)
-    .map((part) => `<p>${escapeHtml(part)}</p>`)
-    .join("");
+function updateChrome({ kicker, title, actionsHtml }) {
+  const kickerEl = document.getElementById("sheet-kicker");
+  const titleEl = document.getElementById("sheet-title");
+  const actionsEl = document.getElementById("sheet-actions");
+  if (kickerEl) kickerEl.textContent = kicker || "";
+  if (titleEl) titleEl.textContent = title || "";
+  if (actionsEl && actionsHtml != null) actionsEl.innerHTML = actionsHtml;
 }
 
-function listHtml(items) {
-  if (!items?.length) return "";
-  return `<ul>${items.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>`;
-}
+function primaryNavActions(active) {
+  const offline = Boolean(offlineBundle());
+  // App header: Offline HTML is the sole primary export. CSV/PDF stay on API
+  // routes for automation; Static EDA keeps its own print/PDF path.
+  const offlineHtml = offline
+    ? `<span class="btn btn-primary blueprint" title="This file is already an offline snapshot">${corners()}Offline snapshot</span>`
+    : `<a class="btn btn-primary blueprint" id="html-download" href="/api/export/html" title="Download offline HTML snapshot">${corners()}Offline HTML</a>`;
 
-function teachingHtml(studio) {
-  if (!studio) return "";
-  const concepts = (studio.concepts || [])
-    .map((key) => `<button type="button" class="chip" data-concept="${escapeHtml(key)}">${escapeHtml(key)}</button>`)
-    .join("");
-  const worked = studio.worked_example || {};
-  const next = studio.next_action || {};
-  const thresholds = listHtml(studio.thresholds || studio.interpretation_thresholds);
-  const assumptions = listHtml(studio.assumptions || []);
-  const pitfalls = listHtml(studio.pitfalls || []);
-  const interpretation = listHtml(studio.interpretation || []);
-  const checklist = listHtml(studio.practice_checklist || []);
-  const mastery = listHtml(studio.mastery_notes || []);
+  if (active === "cockpit") {
+    return `
+      <a class="btn btn-ghost" href="#/gates">Readiness gates →</a>
+      <a class="btn btn-ghost" href="#/academy">Concept academy →</a>
+      ${offlineHtml}`;
+  }
+  if (active === "gates") {
+    return `
+      <a class="btn btn-ghost" href="#/cockpit">← Readiness sheet</a>
+      <a class="btn btn-ghost" href="#/academy">Concept academy →</a>
+      ${offlineHtml}`;
+  }
+  if (active === "academy") {
+    return `
+      <a class="btn btn-ghost" href="#/cockpit">← Readiness sheet</a>
+      <a class="btn btn-ghost" href="#/gates">Readiness gates →</a>
+      ${offlineHtml}`;
+  }
   return `
-    <section class="panel teaching" aria-labelledby="studio-title">
-      <div class="panel-head">
-        <div>
-          <h2 id="studio-title">Teaching Studio · ${escapeHtml(studio.title)}</h2>
-          <p>What is analyzed, why, how it is computed, thresholds, pitfalls, and a worked example from this dataset.</p>
+    <a class="btn btn-ghost" href="#/cockpit">← Readiness sheet</a>
+    <a class="btn btn-ghost" href="#/gates">Gates</a>
+    <a class="btn btn-ghost" href="#/academy">Academy</a>
+    ${offlineHtml}`;
+}
+
+function renderBoardNav() {
+  const nav = document.getElementById("domain-nav");
+  if (!nav) return;
+  const primary = new Set(["cockpit", "gates", "academy"]);
+  const domains = state.meta?.domains || [];
+  const primaryLinks = domains.filter((d) => primary.has(d.key));
+  const secondary = domains.filter((d) => !primary.has(d.key));
+  nav.innerHTML = [
+    ...primaryLinks.map((domain) => {
+      const current = domain.key === state.route ? ' aria-current="page"' : "";
+      return `<a href="#/${escapeHtml(domain.key)}"${current}>${escapeHtml(domain.title)}</a>`;
+    }),
+    secondary.length
+      ? `<span class="om-mono om-kick" style="margin-left:var(--space-2)">Boards</span>`
+      : "",
+    ...secondary.map((domain) => {
+      const current = domain.key === state.route ? ' aria-current="page"' : "";
+      return `<a href="#/${escapeHtml(domain.key)}"${current}>${escapeHtml(domain.title)}</a>`;
+    }),
+  ].join("");
+}
+
+function figureCards(ids) {
+  if (!ids?.length) return "";
+  return `
+    <div class="figure-grid">
+      ${ids
+        .map(
+          (id, index) => `
+        <figure class="fig-card blueprint">
+          ${corners()}
+          <figcaption>Fig. ${index + 1} — ${escapeHtml(id.replaceAll("_", " "))}</figcaption>
+          <div class="chart-actions">
+            <button type="button" class="btn btn-ghost om-mono" data-expand-chart="${escapeHtml(id)}" style="font-size:11px">Expand</button>
+          </div>
+          <div class="chart-host" data-mount-chart="${escapeHtml(id)}"></div>
+        </figure>`,
+        )
+        .join("")}
+    </div>`;
+}
+
+/* ── Cockpit (EDA Sheet - Cockpit) ─────────────────────────────── */
+
+async function renderCockpit() {
+  const data = await api("/api/cockpit");
+  const sheet = data.sheet || {};
+  const kpis = sheet.kpis || {};
+  const register = sheet.register || [];
+  const assumptions = sheet.assumptions || [];
+  const ledger = sheet.ledger || [];
+  const sequence = sheet.sequence || [];
+  const domainBriefs = sheet.domain_briefs || [];
+  const methods = sheet.methods || [];
+  const degraded = sheet.degraded || [];
+  const narrative = sheet.narrative || data.narrative || [];
+  const meta = sheet.spine_meta || {};
+  const adapt = sheet.adapt || data.adapt || {};
+  const chartIds = sheet.chart_ids || data.chart_ids || [];
+  const version = kpis.version || "";
+  const engine = kpis.engine || data.overview?.engine || adapt.engine || "pandas";
+  const sessionSentence =
+    sheet.session_sentence || adapt.session_sentence || "";
+
+  updateChrome({
+    kicker: `BuildML ${version} · Exploratory data analysis · ${engine}`,
+    title: "Command cockpit — readiness sheet",
+    actionsHtml: primaryNavActions("cockpit"),
+  });
+
+  const adaptChips = [
+    adapt.target_column
+      ? `target · ${adapt.target_column}`
+      : "target · undeclared",
+    adapt.task ? `task · ${adapt.task}` : null,
+    adapt.n_columns != null ? `${adapt.n_columns} columns` : null,
+    adapt.eligible_features
+      ? `${adapt.eligible_features.length} eligible`
+      : null,
+    sheet.coverage?.ledger_items != null
+      ? `${sheet.coverage.ledger_items} ledger numbers`
+      : null,
+    (adapt.skipped_analyzers || []).length
+      ? `${adapt.skipped_analyzers.length} analyzers skipped/n-a`
+      : null,
+  ].filter(Boolean);
+
+  const registerBody = `
+        <div class="table-wrap">
+        <table class="table table--fit table--register">
+          <thead>
+            <tr>
+              <th class="col-sev">Sev</th>
+              <th class="col-key">Key</th>
+              <th class="col-detail">Detail</th>
+              <th class="col-evidence">Evidence</th>
+              <th class="col-concept">Concept</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${
+              register.length
+                ? register
+                    .map((row) => {
+                      const cols = row.affected_columns || [];
+                      const chips = cols.length
+                        ? `<div class="col-chips">${cols
+                            .slice(0, 8)
+                            .map(
+                              (c) =>
+                                `<span class="col-chip om-mono" title="${escapeHtml(String(c))}">${escapeHtml(String(c))}</span>`,
+                            )
+                            .join("")}${
+                            cols.length > 8
+                              ? `<span class="col-chip om-mono text-muted">+${cols.length - 8}</span>`
+                              : ""
+                          }</div>`
+                        : "";
+                      return `
+              <tr id="${escapeHtml(row.anchor || "")}" class="cockpit-register-row"
+                  data-finding-key="${escapeHtml(row.key || "")}" tabindex="0" role="button"
+                  title="Open finding teaching sidebar">
+                <td class="col-sev">${sevTag(row)}</td>
+                <td class="om-mono cell-wrap cell-wrap--key" style="font-size:12px">${escapeHtml(row.key)}</td>
+                <td class="cell-wrap cell-wrap--prose">
+                  ${escapeHtml(row.detail)}
+                  ${(row.caveats || []).length
+                    ? `<div class="sheet-note sheet-note--inline">${escapeHtml((row.caveats || []).join(" · "))}</div>`
+                    : ""}
+                </td>
+                <td class="cell-wrap cell-wrap--evidence">
+                  ${chips}
+                  <div class="om-mono text-muted" style="font-size:11px">${escapeHtml(row.evidence)}</div>
+                </td>
+                <td class="cell-wrap cell-wrap--concept">${conceptLink(row.concept_key || row.concept, row.concept)}</td>
+              </tr>`;
+                    })
+                    .join("")
+                : `<tr><td colspan="5" class="text-muted">No findings raised for this frame.</td></tr>`
+            }
+          </tbody>
+        </table>
         </div>
-        <span class="badge info">${iconSvg("book")} Studio</span>
+        ${
+          narrative.length
+            ? `<details class="sheet-details" style="margin-top:var(--space-3)"><summary class="om-mono om-kick">Narrative summary · ${narrative.length}</summary><ul class="sheet-bullets">${narrative
+                .map((line) => `<li>${escapeHtml(line)}</li>`)
+                .join("")}</ul></details>`
+            : ""
+        }`;
+
+  const assumptionsBody = renderAssumptionsBody(
+    assumptions,
+    sheet.assumptions_purpose || {},
+  );
+  const ledgerBody = renderLedgerBody(
+    ledger,
+    sheet.ledger_purpose || {},
+    sheet.ledger_glossary || {},
+  );
+
+  const sequenceBody = `
+        <div class="table-wrap">
+        <table class="table table--fit table--sequence">
+          <thead>
+            <tr>
+              <th class="col-n">#</th>
+              <th class="col-priority">Priority</th>
+              <th class="col-action">Action</th>
+              <th class="col-call">Call</th>
+              <th class="col-based">Based on</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${
+              sequence.length
+                ? sequence
+                    .map(
+                      (r) => `
+              <tr>
+                <td class="om-mono col-n" style="font-size:12px">${escapeHtml(r.n)}</td>
+                <td class="om-mono cell-wrap" style="font-size:11px">${escapeHtml(r.when)}</td>
+                <td class="cell-wrap cell-wrap--prose">
+                  ${escapeHtml(r.title)}
+                  ${r.rationale ? `<div class="sheet-note sheet-note--inline">${escapeHtml(r.rationale)}</div>` : ""}
+                  ${(r.caveats || []).length
+                    ? `<div class="sheet-note">${escapeHtml((r.caveats || []).join(" · "))}</div>`
+                    : ""}
+                </td>
+                <td class="om-mono cell-wrap" style="font-size:11px">${escapeHtml(r.call)}</td>
+                <td class="om-mono cell-wrap" style="font-size:11px">${escapeHtml(r.basis)}</td>
+              </tr>`,
+                    )
+                    .join("")
+                : `<tr><td colspan="5" class="text-muted">No recommendations produced.</td></tr>`
+            }
+          </tbody>
+        </table>
+        </div>
+        ${whatToChange(sheet.what_to_change || [], { title: "What to change next" })}
+        ${callout(
+          "advanced",
+          "Recommendations name Session operations; they do not execute them. Full-dataset descriptive EDA after a split summarises observed rows and is not train-fitted transform evidence.",
+        )}`;
+
+  const domainsBody = `
+        <div class="domain-brief-grid">
+          ${
+            domainBriefs.length
+              ? domainBriefs
+                  .map(
+                    (brief) => `
+            <article class="domain-brief blueprint">
+              ${corners()}
+              <header class="domain-brief__head">
+                <h5>${escapeHtml(brief.title || brief.key || "")}</h5>
+                <a class="om-slug" href="#/${escapeHtml(brief.board || brief.key || "")}">Board →</a>
+              </header>
+              <p class="domain-brief__summary">${escapeHtml(brief.summary || "")}</p>
+              <ul class="sheet-bullets">
+                ${(brief.highlights || [])
+                  .filter(Boolean)
+                  .map((h) => `<li>${escapeHtml(h)}</li>`)
+                  .join("")}
+              </ul>
+              ${(brief.metrics || []).length
+                ? `<div class="domain-brief__metrics">${(brief.metrics || [])
+                    .map(
+                      (m) =>
+                        `<div class="om-led" title="${escapeHtml(`${m.k} — ${m.v}`)}"><span class="om-led__key om-mono" title="${escapeHtml(m.k)}">${escapeHtml(m.k)}</span><span class="om-led__val om-mono" title="${escapeHtml(m.v)}">${escapeHtml(m.v)}</span></div>`,
+                    )
+                    .join("")}</div>`
+                : ""}
+              ${(brief.findings || []).length
+                ? `<details class="sheet-details"><summary class="om-mono om-kick">Linked findings · ${(brief.findings || []).length}</summary><ul class="sheet-bullets">${(brief.findings || [])
+                    .map((f) => `<li>${escapeHtml(f)}</li>`)
+                    .join("")}</ul></details>`
+                : ""}
+            </article>`,
+                  )
+                  .join("")
+              : `<p class="text-muted">No domain boards produced measurable briefs for this frame.</p>`
+          }
+        </div>`;
+
+  const figuresBody = chartIds.length
+    ? figureCards(chartIds)
+    : `<p class="text-muted">No non-empty figures for this session — empty theater omitted.</p>`;
+
+  const methodStatusCounts = methods.reduce(
+    (acc, card) => {
+      const s = card.status || "skipped";
+      acc[s] = (acc[s] || 0) + 1;
+      return acc;
+    },
+    {},
+  );
+  const methodsBody = `
+        <div class="methods-legend" aria-label="Analyzer status counts">
+          <span class="tag tag-accent">Ran · ${methodStatusCounts.ran || 0}</span>
+          <span class="tag tag-outline">Skipped · ${methodStatusCounts.skipped || 0}</span>
+          <span class="tag tag-neutral">Not applicable · ${methodStatusCounts.not_applicable || 0}</span>
+        </div>
+        <div class="methods-grid">
+          ${
+            methods.length
+              ? methods
+                  .map((card) => {
+                    const status = card.status || "skipped";
+                    const label =
+                      status === "ran"
+                        ? "Ran"
+                        : status === "not_applicable"
+                          ? "Not applicable"
+                          : "Skipped";
+                    const tagCls =
+                      status === "ran"
+                        ? "tag-accent"
+                        : status === "not_applicable"
+                          ? "tag-neutral"
+                          : "tag-outline";
+                    return `
+            <article class="method-card blueprint" data-status="${escapeHtml(status)}">
+              ${corners()}
+              <header class="method-card__head">
+                <h5>${escapeHtml(card.family || "")}</h5>
+                <span class="tag ${tagCls}">${escapeHtml(label)}</span>
+              </header>
+              <p>${escapeHtml(card.summary || "")}</p>
+              ${card.why ? `<p class="text-muted"><span class="assumption-card__label">Why</span> ${escapeHtml(card.why)}</p>` : ""}
+              ${card.detail ? `<details class="sheet-details"><summary class="om-mono om-kick">Technical detail</summary><p class="om-mono" style="font-size:11.5px">${escapeHtml(card.detail)}</p></details>` : ""}
+            </article>`;
+                  })
+                  .join("")
+              : `<p class="text-muted">Methods catalog unavailable.</p>`
+          }
+        </div>
+        ${callout(
+          "advanced",
+          "Associations describe co-occurrence, not causality. Empty analyzer sections are omitted from figures and ledger groups rather than filled with placeholders.",
+          { title: "Caveats" },
+        )}`;
+
+  const degradedBody = `
+        <div class="table-wrap">
+        <table class="table table--fit table--degraded">
+          <thead><tr><th class="col-analysis">Analysis</th><th class="col-reason">Reason</th></tr></thead>
+          <tbody>
+            ${
+              degraded.length
+                ? degraded
+                    .map(
+                      (row) => `
+              <tr>
+                <td class="om-mono cell-wrap" style="font-size:12px">${escapeHtml(row.analysis)}</td>
+                <td class="cell-wrap cell-wrap--prose">${escapeHtml(row.reason)}</td>
+              </tr>`,
+                    )
+                    .join("")
+                : `<tr><td colspan="2" class="text-muted">No degraded or skipped analyses were recorded.</td></tr>`
+            }
+          </tbody>
+        </table>
+        </div>`;
+
+  main().innerHTML = `
+    <section class="kpi-strip blueprint">
+      ${corners()}
+      <div class="kpi">
+        <div class="kpi__label">Readiness</div>
+        <div class="kpi__value">${escapeHtml(kpis.readiness || data.readiness?.status || "—")}</div>
+        <div class="kpi__note">${escapeHtml(kpis.readiness_note || "")}</div>
       </div>
-      <div class="teaching-scroll">
-        <div class="teaching-block"><h3>What is analyzed</h3>${paragraphsHtml(studio.definition)}</div>
-        <div class="teaching-block"><h3>Why it matters</h3>${paragraphsHtml(studio.why)}</div>
-        <div class="teaching-block"><h3>How BuildML computes it</h3>${paragraphsHtml(studio.how)}</div>
-        <div class="teaching-block"><h3>Interpretation rules</h3>${interpretation}</div>
-        ${thresholds ? `<div class="teaching-block"><h3>Thresholds and review cues</h3>${thresholds}</div>` : ""}
-        ${assumptions ? `<div class="teaching-block"><h3>Assumptions</h3>${assumptions}</div>` : ""}
-        <div class="teaching-block"><h3>Pitfalls and anti-patterns</h3>${pitfalls}</div>
-        <div class="worked">
-          <h3>Worked example (this dataset)</h3>
-          <p>${escapeHtml(worked.summary || "")}</p>
-          <p>${escapeHtml(worked.reading || "")}</p>
-          <pre class="mono" style="white-space:pre-wrap;margin:0.6rem 0 0;max-width:100%;overflow:auto">${escapeHtml(JSON.stringify(worked.values || {}, null, 2))}</pre>
-        </div>
-        <div class="teaching-block"><h3>Impact on modeling</h3>${paragraphsHtml(studio.modeling_impact)}</div>
-        ${checklist ? `<div class="teaching-block checklist"><h3>Practice checklist</h3>${checklist}</div>` : ""}
-        ${mastery ? `<div class="teaching-block"><h3>Mastery notes</h3>${mastery}</div>` : ""}
-        <div class="teaching-block">
-          <h3>Next action</h3>
-          <p>${escapeHtml(next.label || "")}</p>
-          <div class="api-chip mono">${escapeHtml(next.api || "")}</div>
-        </div>
-        <div class="teaching-block">
-          <h3>Related concepts</h3>
-          <div class="chip-row">${concepts}</div>
-        </div>
+      <div class="kpi">
+        <div class="kpi__label">Scope</div>
+        <div class="kpi__value om-mono">${escapeHtml(kpis.scope || "—")}</div>
+        <div class="kpi__note">${escapeHtml(kpis.scope_note || "")}</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi__label">Completeness</div>
+        <div class="kpi__value om-mono">${escapeHtml(kpis.completeness || "—")}</div>
+        <div class="kpi__note">${escapeHtml(kpis.completeness_note || "")}</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi__label">Runtime</div>
+        <div class="kpi__value om-mono">${escapeHtml(kpis.runtime || engine)}</div>
+        <div class="kpi__note">${escapeHtml(kpis.runtime_note || "")}</div>
       </div>
     </section>
+
+    <div class="adapt-strip" aria-label="Session-adaptive context">
+      <div class="adapt-strip__label">This session</div>
+      <div>${escapeHtml(sessionSentence)}</div>
+      <div class="adapt-strip__chips">
+        ${adaptChips.map((chip) => `<span class="adapt-chip">${escapeHtml(chip)}</span>`).join("")}
+      </div>
+    </div>
+
+    ${(data.warnings || []).length
+      ? callout(
+          "warning",
+          (data.warnings || []).map((w) => String(w)).join(" · "),
+          { title: "Sampling / scope disclosures" },
+        )
+      : ""}
+
+    ${sectionScaffold({ n: "01", title: "Findings register", meta: meta.register, bodyHtml: registerBody })}
+    ${sectionScaffold({
+      n: "02",
+      title: (sheet.assumptions_purpose && sheet.assumptions_purpose.title) || "What each finding assumes",
+      meta: meta.assumptions,
+      bodyHtml: assumptionsBody,
+      id: "cockpit-section-assumptions",
+    })}
+    ${sectionScaffold({
+      n: "03",
+      title: (sheet.ledger_purpose && sheet.ledger_purpose.title) || "Ledger — every computed number",
+      meta: meta.ledger,
+      bodyHtml: ledgerBody,
+      id: "cockpit-section-ledger",
+    })}
+    ${sectionScaffold({ n: "04", title: "Recommended sequence", meta: meta.sequence, bodyHtml: sequenceBody })}
+    ${sectionScaffold({ n: "05", title: "Domain briefs", meta: meta.domains, bodyHtml: domainsBody })}
+    ${sectionScaffold({ n: "06", title: "Figures", meta: meta.figures, bodyHtml: figuresBody })}
+    ${sectionScaffold({ n: "07", title: "Methods and limitations", meta: meta.methods, bodyHtml: methodsBody })}
+    ${sectionScaffold({ n: "08", title: "Skipped and degraded analyses", meta: meta.degraded, bodyHtml: degradedBody })}
   `;
+  await mountCharts(main());
+  wireConceptChips(main());
+  wireLearnUi(main());
+  wireCockpitSheet(main(), sheet, {
+    onCloseSiblings: () => {
+      closeGateDrawer();
+      closeConcept();
+    },
+  });
 }
 
-function findingsHtml(findings) {
-  const filtered = (findings || []).filter((item) => {
-    if (state.severity !== "all" && String(item.severity).toLowerCase() !== state.severity) return false;
-    if (!state.sectionFilter) return true;
-    const blob = `${item.title} ${item.detail} ${item.key}`.toLowerCase();
-    return blob.includes(state.sectionFilter.toLowerCase());
+/* ── Gates (EDA Sheet - Readiness Gates) ───────────────────────── */
+
+async function renderGates() {
+  const data = await api("/api/gates");
+  const version = state.meta?.session?.version || "";
+  const engine = state.meta?.overview?.engine || "pandas";
+
+  const toggleMark = (id) => {
+    if (state.gateSessionMarks[id]) {
+      delete state.gateSessionMarks[id];
+      toast("Session mark cleared (still not saved anywhere)");
+    } else {
+      state.gateSessionMarks[id] = true;
+      toast("Marked for this browser tab only — refresh clears it");
+    }
+    void renderGates();
+  };
+
+  renderGatesView(main(), data, {
+    sessionMarks: state.gateSessionMarks,
+    filter: state.gateFilter || "all",
+    activeGateIdRef: state.activeGateIdRef,
+    onFilter: (key) => {
+      state.gateFilter = key;
+      void renderGates();
+    },
+    onToggleMark: toggleMark,
+    onOpenConcept: (key) => openConcept(key),
+    onToast: toast,
+    onChrome: ({ outstanding, total }) => {
+      updateChrome({
+        kicker: `${engine} ${version} · second pass · ${outstanding} of ${total} gates outstanding`,
+        title: "Readiness gates",
+        actionsHtml: primaryNavActions("gates"),
+      });
+    },
   });
-  if (!filtered.length) {
-    return `<div class="empty">No findings match the current filters.</div>`;
-  }
-  return `<div class="list">${filtered
-    .map((item) => {
-      const cols = (item.affected_columns || [])
-        .slice(0, 8)
-        .map((c) => `<span class="chip">${escapeHtml(c)}</span>`)
-        .join("");
-      return `
-        <article class="finding" data-finding-key="${escapeHtml(item.key)}">
-          <div class="chip-row">${badge(item.severity)}<span class="mono">${escapeHtml(item.key)}</span></div>
-          <h3>${escapeHtml(item.title)}</h3>
-          <p>${escapeHtml(item.detail)}</p>
-          <div class="finding-links">${cols}</div>
-        </article>`;
-    })
-    .join("")}</div>`;
+  wireConceptChips(main());
 }
+
+/* ── Academy (EDA Sheet - Academy) ─────────────────────────────── */
+
+async function renderAcademy(query) {
+  if (typeof query === "string") state.academyQuery = query;
+  await renderAcademyView({
+    main,
+    api,
+    updateChrome,
+    primaryNavActions,
+    wireConceptChips,
+    toast,
+    state,
+  });
+}
+
+/* ── Domain boards (secondary sheets) ──────────────────────────── */
 
 function tableFromRows(rows, tableId) {
-  if (!rows?.length) return `<div class="empty">No tabular evidence in this section.</div>`;
+  if (!rows?.length) return `<div class="empty" style="margin:0">No tabular evidence in this section.</div>`;
   const keys = Object.keys(rows[0]);
   let sorted = [...rows];
   if (state.sort.key && keys.includes(state.sort.key)) {
@@ -473,19 +866,13 @@ function tableFromRows(rows, tableId) {
         : String(bv).localeCompare(String(av));
     });
   }
-  if (state.sectionFilter) {
-    const needle = state.sectionFilter.toLowerCase();
-    sorted = sorted.filter((row) => JSON.stringify(row).toLowerCase().includes(needle));
-  }
   return `
     <div class="table-wrap">
-      <table class="data" id="${tableId}">
+      <table class="table table--fit" id="${tableId}">
         <thead><tr>${keys
           .map(
             (key) =>
-              `<th scope="col" data-sort-key="${escapeHtml(key)}" aria-sort="${
-                state.sort.key === key ? (state.sort.dir === "asc" ? "ascending" : "descending") : "none"
-              }">${escapeHtml(key)}</th>`,
+              `<th scope="col" data-sort-key="${escapeHtml(key)}">${escapeHtml(key)}</th>`,
           )
           .join("")}</tr></thead>
         <tbody>${sorted
@@ -493,13 +880,16 @@ function tableFromRows(rows, tableId) {
           .map(
             (row) =>
               `<tr>${keys
-                .map((key) => `<td>${escapeHtml(formatCell(row[key]))}</td>`)
+                .map(
+                  (key) =>
+                    `<td class="cell-wrap">${escapeHtml(formatCell(row[key]))}</td>`,
+                )
                 .join("")}</tr>`,
           )
           .join("")}</tbody>
       </table>
     </div>
-    <p class="page-sub">Showing ${Math.min(sorted.length, 200)} of ${sorted.length} rows.</p>
+    <p class="sheet-note">Showing ${Math.min(sorted.length, 200)} of ${sorted.length} rows.</p>
   `;
 }
 
@@ -510,33 +900,10 @@ function formatCell(value) {
   return String(value);
 }
 
-function chartCards(ids) {
-  return `<div class="chart-grid">${ids
-    .map(
-      (id) => `
-      <section class="panel chart-card">
-        <div class="chart-actions">
-          <button type="button" class="icon-btn" data-expand-chart="${escapeHtml(id)}" aria-label="Expand figure">
-            ${iconSvg("expand")}
-          </button>
-        </div>
-        <div class="chart-host" data-mount-chart="${escapeHtml(id)}"></div>
-      </section>`,
-    )
-    .join("")}</div>`;
-}
-
-async function mountCharts(root) {
-  const hosts = [...root.querySelectorAll("[data-mount-chart]")];
-  await Promise.all(hosts.map((host) => renderChart(host, host.getAttribute("data-mount-chart"))));
-}
-
 function rowsFromSection(section) {
   if (!section) return [];
   if (Array.isArray(section)) return section.filter((item) => item && typeof item === "object");
   if (typeof section !== "object") return [];
-
-  // Analyzer truth: univariate/outliers expose per_column maps.
   if (section.per_column && typeof section.per_column === "object" && !Array.isArray(section.per_column)) {
     return Object.entries(section.per_column).map(([column, stats]) => {
       if (stats && typeof stats === "object" && !Array.isArray(stats)) {
@@ -545,10 +912,6 @@ function rowsFromSection(section) {
           if (key === "iqr_bounds" && Array.isArray(value) && value.length === 2) {
             flat.iqr_lower = value[0];
             flat.iqr_upper = value[1];
-          } else if (key === "top_values" && value && typeof value === "object") {
-            const topKey = Object.keys(value)[0];
-            flat.top_value = topKey;
-            flat.top_count = value[topKey];
           } else if (value == null || typeof value !== "object") {
             flat[key] = value;
           }
@@ -558,8 +921,6 @@ function rowsFromSection(section) {
       return { column, value: stats };
     });
   }
-
-  // Prefer nested tabular maps
   for (const key of [
     "vif",
     "numeric",
@@ -573,7 +934,7 @@ function rowsFromSection(section) {
       if (Array.isArray(value)) return value.filter((item) => typeof item === "object");
       if (value && typeof value === "object") {
         return Object.entries(value).map(([k, v]) =>
-          typeof v === "object" && v && !Array.isArray(v) ? { key: k, ...flattenShallow(v) } : { key: k, value: v },
+          typeof v === "object" && v && !Array.isArray(v) ? { key: k, ...v } : { key: k, value: v },
         );
       }
     }
@@ -583,161 +944,55 @@ function rowsFromSection(section) {
     .map(([key, value]) => ({ key, value }));
 }
 
-function flattenShallow(value) {
-  const out = {};
-  for (const [key, nested] of Object.entries(value)) {
-    if (nested == null || typeof nested !== "object") out[key] = nested;
-  }
-  return out;
-}
-
-async function renderCockpit() {
-  const data = await api("/api/cockpit");
-  const overview = data.overview || {};
-  const readiness = data.readiness || {};
-  document.getElementById("filter-bar").hidden = false;
-  main().innerHTML = `
-    <section class="hero-strip">
-      <article class="panel">
-        <div class="panel-head">
-          <div>
-            <h2>Readiness cockpit</h2>
-            <p>Sampling, roles, and severity before you change the pipeline.</p>
-          </div>
-          <span class="badge ${escapeHtml(readiness.status || "review")}">${escapeHtml(readiness.status || "review")}</span>
-        </div>
-        <div class="metric-grid">
-          <div class="metric"><div class="label">Rows</div><div class="value">${escapeHtml(overview.n_rows)}</div></div>
-          <div class="metric"><div class="label">Analysis rows</div><div class="value">${escapeHtml(overview.analysis_rows)}</div></div>
-          <div class="metric"><div class="label">Completeness</div><div class="value">${formatPct(data.quality?.completeness_score)}</div></div>
-          <div class="metric"><div class="label">Blocking findings</div><div class="value">${escapeHtml(readiness.blocking_findings)}</div></div>
-          <div class="metric"><div class="label">Engine</div><div class="value">${escapeHtml(overview.engine || "pandas")}</div></div>
-          <div class="metric"><div class="label">Lazy native</div><div class="value">${escapeHtml(overview.has_lazy_native ? "yes" : "no")}</div></div>
-        </div>
-        <div class="list" style="margin-top:1rem">
-          ${(overview.engine_disclosures || []).map((w) => `<div class="finding">${iconSvg("alert")} ${escapeHtml(w)}</div>`).join("")}
-          ${(data.warnings || []).map((w) => `<div class="finding">${iconSvg("alert")} ${escapeHtml(w)}</div>`).join("") || '<div class="empty">No sampling warnings.</div>'}
-        </div>
-      </article>
-      <article class="panel">
-        <div class="panel-head"><div><h2>Next actions</h2><p>Recommendations cite finding keys.</p></div></div>
-        <div class="list">
-          ${(readiness.next_actions || [])
-            .map(
-              (item) => `
-              <div class="rec">
-                <div class="chip-row">${badge(item.priority || "next")}</div>
-                <h3>${escapeHtml(item.title)}</h3>
-                <p>${escapeHtml(item.rationale)}</p>
-                ${item.api ? `<div class="api-chip mono">session.${escapeHtml(item.api)}(...)</div>` : ""}
-              </div>`,
-            )
-            .join("") || '<div class="empty">No recommendations produced.</div>'}
-        </div>
-      </article>
-    </section>
-    ${chartCards(data.chart_ids || [])}
-    <section class="split-2">
-      <article class="panel">
-        <div class="panel-head">
-          <div><h2>Key findings</h2><p>Drill from claim to affected columns.</p></div>
-          ${csvButtons(["findings", "recommendations", "roles"])}
-        </div>
-        ${findingsHtml(data.findings)}
-      </article>
-      ${teachingHtml(data.teaching)}
-    </section>
-  `;
-  await mountCharts(main());
-  wireConceptChips(main());
-}
-
 async function renderDomain(domainKey) {
   const data = await api(`/api/domains/${domainKey}`);
-  document.getElementById("filter-bar").hidden = false;
+  const domain = data.domain || {};
+  updateChrome({
+    kicker: `BuildML · domain board · ${domain.key || domainKey}`,
+    title: domain.title || domainKey,
+    actionsHtml: primaryNavActions(domainKey),
+  });
+
   const sections = data.sections || {};
   const tables = Object.entries(sections)
-    .map(([name, payload]) => {
+    .map(([name, payload], index) => {
       const rows = rowsFromSection(payload);
+      const n = String(index + 1).padStart(2, "0");
       return `
-        <article class="panel">
-          <div class="panel-head">
-            <div><h2>${escapeHtml(name)}</h2><p>Numeric detail kept visible.</p></div>
-          </div>
-          ${tableFromRows(rows, `table-${name}`)}
-        </article>`;
+        <div class="spine">
+          <div class="spine__n">${n}</div>
+          <section>
+            <div class="spine__head"><h4>${escapeHtml(name)}</h4></div>
+            ${tableFromRows(rows, `table-${name}`)}
+          </section>
+        </div>`;
     })
     .join("");
+
   main().innerHTML = `
-    <section class="panel">
-      <div class="panel-head">
-        <div>
-          <h2>${escapeHtml(data.domain.title)}</h2>
-          <p>${escapeHtml(data.domain.short)}</p>
-        </div>
-        ${csvButtons(data.domain.csv_sections || [])}
-      </div>
-    </section>
-    ${chartCards(data.chart_ids || [])}
-    <section class="split-2">
-      <div class="list">${tables || '<div class="empty">No domain tables.</div>'}</div>
-      ${teachingHtml(data.teaching)}
-    </section>
-    <section class="panel">
-      <div class="panel-head"><div><h2>Domain findings</h2></div></div>
-      ${findingsHtml(data.findings)}
-    </section>
+    <p class="lead">${escapeHtml(domain.short || "")}</p>
+    ${figureCards(data.chart_ids || [])}
+    ${tables || `<div class="empty">No domain tables.</div>`}
   `;
   await mountCharts(main());
   wireConceptChips(main());
   wireTableSort(main());
 }
 
-async function renderAcademy(query = "") {
-  document.getElementById("filter-bar").hidden = true;
-  const data = await api(`/api/concepts${query ? `?q=${encodeURIComponent(query)}` : ""}`);
-  main().innerHTML = `
-    <section class="panel">
-      <div class="panel-head">
-        <div>
-          <h2>Concept Academy</h2>
-          <p>Searchable notes for roles, leakage, partitions, MI, VIF, PCA, drift, and more.</p>
-        </div>
-        ${csvButtons(["concepts"])}
-      </div>
-      <label class="search-field" style="max-width:520px">
-        ${iconSvg("search")}
-        <input id="academy-search" type="search" placeholder="Search concepts" value="${escapeHtml(query)}" />
-      </label>
-      <p class="page-sub" style="margin-top:0.75rem">${data.count} concepts</p>
-    </section>
-    <section class="chart-grid">
-      ${(data.concepts || [])
-        .map(
-          (item) => `
-          <article class="concept-card panel">
-            <div class="chip-row"><span class="badge info">${iconSvg("graduation-cap")} concept</span></div>
-            <h3>${escapeHtml(item.title)}</h3>
-            <p>${escapeHtml(item.summary)}</p>
-            <div class="chip-row" style="margin-top:0.8rem">
-              <button type="button" class="chip" data-concept="${escapeHtml(item.key)}">Open</button>
-              ${(item.related_concepts || [])
-                .slice(0, 4)
-                .map((key) => `<button type="button" class="chip" data-concept="${escapeHtml(key)}">${escapeHtml(key)}</button>`)
-                .join("")}
-            </div>
-          </article>`,
-        )
-        .join("")}
-    </section>
-  `;
-  const input = document.getElementById("academy-search");
-  input?.addEventListener("keydown", (event) => {
-    if (event.key === "Enter") {
-      renderAcademy(input.value.trim());
-    }
-  });
-  wireConceptChips(main());
+/* ── Concept drawer ────────────────────────────────────────────── */
+
+function paragraphsHtml(text) {
+  return String(text || "")
+    .split(/\n\n+/)
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .map((part) => `<p>${escapeHtml(part)}</p>`)
+    .join("");
+}
+
+function listHtml(items) {
+  if (!items?.length) return "";
+  return `<ul>${items.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>`;
 }
 
 function conceptSection(title, itemsOrText) {
@@ -779,14 +1034,11 @@ async function openConcept(key) {
     <div class="drawer-section">
       <h3>Related concepts</h3>
       <div class="chip-row">${(data.related || [])
-        .map((item) => `<button type="button" class="chip" data-concept="${escapeHtml(item.key)}">${escapeHtml(item.title)}</button>`)
-        .join("") || '<span class="page-sub">None listed.</span>'}</div>
-    </div>
-    <div class="drawer-section">
-      <h3>Linked studios</h3>
-      <div class="chip-row">${(data.linked_domains || [])
-        .map((domain) => `<a class="chip" href="#/${escapeHtml(domain)}">${escapeHtml(domain)}</a>`)
-        .join("") || '<span class="page-sub">No studio links.</span>'}</div>
+        .map(
+          (item) =>
+            `<button type="button" class="om-chip" data-concept="${escapeHtml(item.key)}">${escapeHtml(item.title)}</button>`,
+        )
+        .join("") || '<span class="text-muted">None listed.</span>'}</div>
     </div>
   `;
   drawer.classList.add("open");
@@ -794,7 +1046,6 @@ async function openConcept(key) {
   backdrop.hidden = false;
   document.body.style.overflow = "hidden";
   wireConceptChips(document.getElementById("drawer-body"));
-  drawer.querySelector(".drawer-body")?.scrollTo?.(0, 0);
 }
 
 function closeConcept() {
@@ -803,16 +1054,6 @@ function closeConcept() {
   drawer.setAttribute("aria-hidden", "true");
   document.getElementById("drawer-backdrop").hidden = true;
   document.body.style.overflow = "";
-}
-
-function setMobileNavOpen(open) {
-  const sidebar = document.querySelector(".sidebar");
-  const scrim = document.getElementById("mobile-nav-scrim");
-  sidebar?.classList.toggle("open", open);
-  if (scrim) {
-    scrim.hidden = !open;
-    scrim.classList.toggle("open", open);
-  }
 }
 
 function wireConceptChips(root) {
@@ -856,44 +1097,16 @@ function wireTableSort(root) {
   });
 }
 
-function formatPct(value) {
-  const n = Number(value);
-  if (Number.isNaN(n)) return "n/a";
-  return `${(n * 100).toFixed(1)}%`;
-}
-
-function renderNav() {
-  const nav = document.getElementById("domain-nav");
-  nav.innerHTML = (state.meta?.domains || [])
-    .map((domain) => {
-      const current = domain.key === state.route ? ' aria-current="page"' : "";
-      return `<a class="nav-link" href="#/${escapeHtml(domain.key)}"${current}>
-        <span>${iconSvg(domain.icon)}</span>
-        <span class="nav-title">${escapeHtml(domain.title)}</span>
-        <span class="nav-short">${escapeHtml(domain.short)}</span>
-      </a>`;
-    })
-    .join("");
-}
+/* ── Navigation / boot ─────────────────────────────────────────── */
 
 async function navigate(route) {
   state.route = route || "cockpit";
-  const domain = (state.meta?.domains || []).find((item) => item.key === state.route);
-  document.getElementById("page-title").textContent = domain?.title || "BuildML EDA Studio";
-  document.getElementById("page-sub").textContent = domain?.short || "";
-  const pdf = document.getElementById("pdf-download");
-  if (pdf && pdf.tagName === "A") {
-    pdf.href = `/api/export/pdf?view=${encodeURIComponent(state.route)}`;
-  }
-  const offlineHtml = document.getElementById("offline-html-download");
-  if (offlineHtml && offlineHtml.tagName === "A") {
-    offlineHtml.href = "/api/export/html";
-  }
-  renderNav();
-  setMobileNavOpen(false);
+  renderBoardNav();
   try {
     if (state.route === "academy") {
       await renderAcademy();
+    } else if (state.route === "gates") {
+      await renderGates();
     } else if (state.route === "cockpit") {
       await renderCockpit();
     } else {
@@ -906,80 +1119,58 @@ async function navigate(route) {
 }
 
 function currentRoute() {
-  const hash = window.location.hash.replace(/^#\/?/, "");
-  return hash || "cockpit";
+  const raw = window.location.hash.replace(/^#\/?/, "");
+  // Legacy / accidental in-sheet anchors must never become domain routes.
+  // (Previously bare ledger-* hashes were parsed as unknown domain boards.)
+  if (!raw || raw === "cockpit") return "cockpit";
+  if (
+    raw.startsWith("ledger-") ||
+    raw.startsWith("cockpit-ledger-") ||
+    raw.startsWith("cockpit-section-") ||
+    raw.startsWith("f-")
+  ) {
+    return "cockpit";
+  }
+  return raw;
 }
 
 async function boot() {
   hydrateIcons(document);
-  const saved = localStorage.getItem("buildml-eda-theme") || "light";
-  setTheme(saved);
+  // Industry redesign sheets are light-first; keep a theme key for offline parity
+  // without a chrome toggle. Never persist gate marks.
+  document.documentElement.setAttribute("data-theme", "light");
+  try {
+    localStorage.setItem("buildml-eda-theme", "light");
+  } catch {
+    /* private mode */
+  }
 
-  document.getElementById("theme-toggle").addEventListener("click", () => {
-    const next = document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark";
-    setTheme(next);
-  });
-  document.getElementById("drawer-close").addEventListener("click", closeConcept);
-  document.getElementById("drawer-backdrop").addEventListener("click", closeConcept);
-  document.getElementById("nav-toggle").addEventListener("click", () => {
-    const open = !document.querySelector(".sidebar")?.classList.contains("open");
-    setMobileNavOpen(open);
-  });
-  document.getElementById("mobile-nav-scrim")?.addEventListener("click", () => {
-    setMobileNavOpen(false);
-  });
-  document.getElementById("severity-filter").addEventListener("change", (event) => {
-    state.severity = event.target.value;
-    navigate(state.route);
-  });
-  document.getElementById("section-filter").addEventListener("input", (event) => {
-    state.sectionFilter = event.target.value;
-    navigate(state.route);
-  });
-
-  let searchTimer;
-  document.getElementById("global-search").addEventListener("input", (event) => {
-    window.clearTimeout(searchTimer);
-    const q = event.target.value.trim();
-    searchTimer = window.setTimeout(async () => {
-      if (!q) return;
-      if (state.route === "academy") {
-        await renderAcademy(q);
-        return;
-      }
-      const results = await api(`/api/search?q=${encodeURIComponent(q)}`);
-      toast(`${results.findings.length} findings · ${results.concepts.length} concepts`);
-      if (results.domains?.[0]) {
-        // soft-suggest first domain match without forcing navigation
-      }
-      main().insertAdjacentHTML(
-        "afterbegin",
-        `<section class="panel" id="search-panel">
-          <div class="panel-head"><div><h2>Search</h2><p>Matches for “${escapeHtml(q)}”.</p></div></div>
-          <div class="chip-row">
-            ${(results.domains || []).map((d) => `<a class="chip" href="#/${escapeHtml(d.key)}">${escapeHtml(d.title)}</a>`).join("")}
-            ${(results.concepts || []).slice(0, 8).map((c) => `<button type="button" class="chip" data-concept="${escapeHtml(c.key)}">${escapeHtml(c.title)}</button>`).join("")}
-          </div>
-        </section>`,
-      );
-      wireConceptChips(document.getElementById("search-panel"));
-    }, 280);
-  });
-
+  document.getElementById("drawer-close")?.addEventListener("click", closeConcept);
+  document.getElementById("drawer-backdrop")?.addEventListener("click", closeConcept);
+  wireGateDrawerChrome();
+  wireCockpitDrawerChrome();
   window.addEventListener("hashchange", () => navigate(currentRoute()));
   document.addEventListener("keydown", (event) => {
-    if (event.key === "/" && document.activeElement?.tagName !== "INPUT") {
-      event.preventDefault();
-      document.getElementById("global-search").focus();
+    if (event.key !== "Escape") return;
+    const cockpitDrawer = document.getElementById("cockpit-drawer");
+    if (cockpitDrawer?.classList.contains("open")) {
+      closeCockpitDrawer();
+      return;
     }
-    if (event.key === "Escape") closeConcept();
+    const gateDrawer = document.getElementById("gate-drawer");
+    if (gateDrawer?.classList.contains("open")) {
+      closeGateDrawer();
+      state.activeGateIdRef.current = null;
+      return;
+    }
+    closeConcept();
   });
 
   try {
     state.meta = await api("/api/meta");
     await navigate(currentRoute());
   } catch (error) {
-    main().innerHTML = `<div class="error-state">Failed to start studio: ${escapeHtml(error.message)}</div>`;
+    main().innerHTML = `<div class="error-state">Failed to start EDA App: ${escapeHtml(error.message)}</div>`;
   }
 }
 

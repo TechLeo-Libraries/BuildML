@@ -6,11 +6,15 @@ from pathlib import Path
 from typing import Any
 
 from buildml.core.errors import MissingExtraError
+from buildml.dashboard.academy import build_academy_payload
+from buildml.dashboard.adapt import build_adapt_context
 from buildml.dashboard.charts import build_chart_catalog, charts_for_domain
 from buildml.dashboard.domains import DOMAIN_BY_KEY, DOMAINS
 from buildml.dashboard.exports import export_csv, export_pdf, list_csv_sections
+from buildml.dashboard.gates import build_gates_payload
 from buildml.dashboard.offline import export_studio_html
 from buildml.dashboard.serialize import flagged_column_names, json_safe
+from buildml.dashboard.sheet import build_cockpit_sheet
 from buildml.dashboard.state import get_state
 from buildml.dashboard.teaching import build_teaching_studios
 from buildml.explain.concepts import CONCEPT_NOTES, get_concept
@@ -73,11 +77,11 @@ def create_app() -> Any:
     buildml.dashboard.launch.launch_eda_app : The supported way to start this.
     """
     if FastAPI is None or Jinja2Templates is None or StaticFiles is None:
-        raise MissingExtraError("dashboard", "EDA Teaching Studio app")
+        raise MissingExtraError("dashboard", "EDA App")
 
     root = Path(__file__).resolve().parent
     templates = Jinja2Templates(directory=str(root / "templates"))
-    app = FastAPI(title="BuildML EDA Studio", docs_url=None, redoc_url=None)
+    app = FastAPI(title="BuildML EDA App", docs_url=None, redoc_url=None)
     app.mount("/static", StaticFiles(directory=str(root / "static")), name="static")
     plotly_dir = _plotly_static_dir()
     if plotly_dir is not None:
@@ -89,7 +93,7 @@ def create_app() -> Any:
         context = {
             "request": request,
             "title": state.title,
-            "app_name": "BuildML EDA Studio",
+            "app_name": "BuildML EDA App",
         }
         try:
             return templates.TemplateResponse(request, "index.html", context)
@@ -105,6 +109,7 @@ def create_app() -> Any:
     def meta() -> dict[str, Any]:
         state = get_state()
         overview = state.report_dict.get("overview") or {}
+        adapt = build_adapt_context(state.report_dict)
         return json_safe(
             {
                 "title": state.title,
@@ -121,6 +126,8 @@ def create_app() -> Any:
                     "eligible_feature_columns": overview.get("eligible_feature_columns"),
                     "warnings": state.report_dict.get("warnings") or [],
                 },
+                # Shared adaptive snapshot for Academy / Gates / shell chrome.
+                "adapt": adapt,
                 "domains": [
                     {
                         "key": domain.key,
@@ -144,6 +151,8 @@ def create_app() -> Any:
             key = str(item.get("severity", "info")).lower()
             severity_counts[key] = severity_counts.get(key, 0) + 1
         studios = build_teaching_studios(report)
+        sheet = build_cockpit_sheet(report)
+        adapt = sheet.get("adapt") or build_adapt_context(report)
         return json_safe(
             {
                 "overview": report.get("overview") or {},
@@ -160,26 +169,68 @@ def create_app() -> Any:
                 "severity_counts": severity_counts,
                 "readiness": _readiness(report),
                 "teaching": studios["cockpit"],
-                "chart_ids": charts_for_domain("cockpit"),
+                "chart_ids": sheet.get("chart_ids") or charts_for_domain("cockpit"),
+                "sheet": sheet,
+                "adapt": adapt,
             }
         )
+
+    @app.get("/api/gates")
+    def gates() -> dict[str, Any]:
+        """Readiness gates derived from the report. No human-decision write path."""
+        state = get_state()
+        payload = build_gates_payload(state.report_dict)
+        return json_safe(payload)
 
     @app.get("/api/domains/{domain_key}")
     def domain_board(domain_key: str) -> dict[str, Any]:
         if domain_key == "academy":
             academy = DOMAIN_BY_KEY["academy"]
-            return {
-                "domain": {
-                    "key": academy.key,
-                    "title": academy.title,
-                    "short": academy.short,
-                    "icon": academy.icon,
-                    "concept_keys": list(academy.concept_keys),
-                    "csv_sections": list(academy.csv_sections),
-                },
-                "concepts": _concept_index(),
-                "teaching": None,
-            }
+            state = get_state()
+            academy_payload = build_academy_payload(state.report_dict)
+            return json_safe(
+                {
+                    "domain": {
+                        "key": academy.key,
+                        "title": academy.title,
+                        "short": academy.short,
+                        "icon": academy.icon,
+                        "concept_keys": list(academy.concept_keys),
+                        "csv_sections": list(academy.csv_sections),
+                    },
+                    "concepts": academy_payload["concepts"],
+                    "stages": academy_payload["stages"],
+                    "cited_count": academy_payload["cited_count"],
+                    "concept_count": academy_payload["concept_count"],
+                    "curriculum_count": academy_payload.get("curriculum_count"),
+                    "catalog_count": academy_payload.get("catalog_count"),
+                    "catalog_covered": academy_payload.get("catalog_covered"),
+                    "readiness_count": academy_payload.get("readiness_count"),
+                    "extended_count": academy_payload.get("extended_count", 0),
+                    "curriculum_note": academy_payload["curriculum_note"],
+                    "adaptivity": academy_payload.get("adaptivity"),
+                    "context": academy_payload.get("context"),
+                    "teaching": None,
+                }
+            )
+        if domain_key == "gates":
+            gates_domain = DOMAIN_BY_KEY["gates"]
+            state = get_state()
+            payload = build_gates_payload(state.report_dict)
+            return json_safe(
+                {
+                    "domain": {
+                        "key": gates_domain.key,
+                        "title": gates_domain.title,
+                        "short": gates_domain.short,
+                        "icon": gates_domain.icon,
+                        "concept_keys": list(gates_domain.concept_keys),
+                        "csv_sections": list(gates_domain.csv_sections),
+                    },
+                    "gates": payload,
+                    "teaching": None,
+                }
+            )
         domain = DOMAIN_BY_KEY.get(domain_key)
         if domain is None:
             raise HTTPException(status_code=404, detail=f"Unknown domain: {domain_key}")

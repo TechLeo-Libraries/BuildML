@@ -8,10 +8,14 @@ from pathlib import Path
 from typing import Any
 
 from buildml.core.errors import MissingExtraError
+from buildml.dashboard.academy import build_academy_payload
+from buildml.dashboard.adapt import build_adapt_context
 from buildml.dashboard.charts import build_chart_catalog, charts_for_domain
 from buildml.dashboard.domains import DOMAINS
 from buildml.dashboard.exports import list_csv_sections
+from buildml.dashboard.gates import build_gates_payload
 from buildml.dashboard.serialize import flagged_column_names, json_safe
+from buildml.dashboard.sheet import build_cockpit_sheet
 from buildml.dashboard.teaching import build_teaching_studios
 from buildml.explain.concepts import CONCEPT_NOTES, get_concept
 
@@ -82,7 +86,7 @@ def export_studio_html(
         export_studio_html(
             report.to_dict(),
             "artifacts/studio.html",
-            title="Churn dataset · 2026-08",
+            title="Session EDA · readiness sheet",
         )
 
     See Also
@@ -160,6 +164,7 @@ def build_offline_bundle(
         key = str(item.get("severity", "info")).lower()
         severity_counts[key] = severity_counts.get(key, 0) + 1
 
+    sheet = build_cockpit_sheet(report)
     cockpit = {
         "overview": overview,
         "quality": {
@@ -175,8 +180,13 @@ def build_offline_bundle(
         "severity_counts": severity_counts,
         "readiness": _readiness(report),
         "teaching": studios["cockpit"],
-        "chart_ids": charts_for_domain("cockpit"),
+        "chart_ids": sheet.get("chart_ids") or charts_for_domain("cockpit"),
+        "sheet": sheet,
+        "adapt": sheet.get("adapt"),
     }
+
+    academy_payload = build_academy_payload(report)
+    gates_payload = build_gates_payload(report)
 
     domains: dict[str, Any] = {}
     for domain in DOMAINS:
@@ -190,7 +200,32 @@ def build_offline_bundle(
                     "concept_keys": list(domain.concept_keys),
                     "csv_sections": list(domain.csv_sections),
                 },
-                "concepts": _concept_index(),
+                "concepts": academy_payload["concepts"],
+                "stages": academy_payload["stages"],
+                "cited_count": academy_payload["cited_count"],
+                "concept_count": academy_payload["concept_count"],
+                "curriculum_count": academy_payload.get("curriculum_count"),
+                "catalog_count": academy_payload.get("catalog_count"),
+                "catalog_covered": academy_payload.get("catalog_covered"),
+                "readiness_count": academy_payload.get("readiness_count"),
+                "extended_count": academy_payload.get("extended_count", 0),
+                "curriculum_note": academy_payload["curriculum_note"],
+                "adaptivity": academy_payload.get("adaptivity"),
+                "context": academy_payload.get("context"),
+                "teaching": None,
+            }
+            continue
+        if domain.key == "gates":
+            domains["gates"] = {
+                "domain": {
+                    "key": domain.key,
+                    "title": domain.title,
+                    "short": domain.short,
+                    "icon": domain.icon,
+                    "concept_keys": list(domain.concept_keys),
+                    "csv_sections": list(domain.csv_sections),
+                },
+                "gates": gates_payload,
                 "teaching": None,
             }
             continue
@@ -265,6 +300,7 @@ def build_offline_bundle(
                     "eligible_feature_columns": overview.get("eligible_feature_columns"),
                     "warnings": report.get("warnings") or [],
                 },
+                "adapt": sheet.get("adapt") or build_adapt_context(report),
                 "domains": [
                     {
                         "key": domain.key,
@@ -278,6 +314,7 @@ def build_offline_bundle(
             },
             "cockpit": cockpit,
             "domains": domains,
+            "gates": gates_payload,
             "concepts": concepts,
             "concept_details": concept_details,
             "charts_light": build_chart_catalog(report, theme="light"),
@@ -330,30 +367,55 @@ def render_offline_html(bundle: dict[str, Any]) -> str:
     root = Path(__file__).resolve().parent
     tokens = (root / "static" / "css" / "tokens.css").read_text(encoding="utf-8")
     app_css = (root / "static" / "css" / "app.css").read_text(encoding="utf-8")
+    gates_css = (root / "static" / "css" / "gates.css").read_text(encoding="utf-8")
     icons_js = (root / "static" / "js" / "icons.js").read_text(encoding="utf-8")
+    learn_ui_js = (root / "static" / "js" / "learn_ui.js").read_text(encoding="utf-8")
+    gates_view_js = (root / "static" / "js" / "gates_view.js").read_text(encoding="utf-8")
+    academy_view_js = (root / "static" / "js" / "academy_view.js").read_text(encoding="utf-8")
+    cockpit_view_js = (root / "static" / "js" / "cockpit_view.js").read_text(encoding="utf-8")
     app_js = (root / "static" / "js" / "app.js").read_text(encoding="utf-8")
-    # Offline build: rewrite relative icon import to same-document module.
-    app_js = app_js.replace(
-        'from "./icons.js"',
-        'from "#buildml-icons"',
-    )
+    # Offline build: rewrite relative imports to same-document module placeholders.
+    gates_view_js = gates_view_js.replace('from "./learn_ui.js"', 'from "#buildml-learn-ui"')
+    academy_view_js = academy_view_js.replace('from "./learn_ui.js"', 'from "#buildml-learn-ui"')
+    cockpit_view_js = cockpit_view_js.replace('from "./learn_ui.js"', 'from "#buildml-learn-ui"')
+    app_js = app_js.replace('from "./icons.js"', 'from "#buildml-icons"')
+    app_js = app_js.replace('from "./learn_ui.js"', 'from "#buildml-learn-ui"')
+    app_js = app_js.replace('from "./gates_view.js"', 'from "#buildml-gates-view"')
+    app_js = app_js.replace('from "./academy_view.js"', 'from "#buildml-academy-view"')
+    app_js = app_js.replace('from "./cockpit_view.js"', 'from "#buildml-cockpit-view"')
     plotly_js = _read_plotly_min()
     payload = json.dumps(bundle, ensure_ascii=False)
-    title = bundle.get("title") or "BuildML EDA Studio"
+    title = bundle.get("title") or "BuildML EDA App"
     return f"""<!DOCTYPE html>
 <html lang="en" data-theme="light">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>{_escape(title)} · Offline Teaching Studio</title>
-  <style>{tokens}\n{app_css}</style>
+  <title>{_escape(title)} · Offline EDA App</title>
+  <style>{tokens}\n{app_css}\n{gates_css}</style>
   <script>{plotly_js}</script>
   <!-- Inline modules via blob URLs: no network or local server required. -->
   <script type="module">
     const iconsSource = {json.dumps(icons_js)};
+    const learnUiSource = {json.dumps(learn_ui_js)};
+    const gatesViewSource = {json.dumps(gates_view_js)};
+    const academyViewSource = {json.dumps(academy_view_js)};
+    const cockpitViewSource = {json.dumps(cockpit_view_js)};
     const appSource = {json.dumps(app_js)};
     const iconsUrl = URL.createObjectURL(new Blob([iconsSource], {{ type: "text/javascript" }}));
-    const rewritten = appSource.replaceAll("#buildml-icons", iconsUrl);
+    const learnUiUrl = URL.createObjectURL(new Blob([learnUiSource], {{ type: "text/javascript" }}));
+    const gatesViewRewritten = gatesViewSource.replaceAll("#buildml-learn-ui", learnUiUrl);
+    const gatesViewUrl = URL.createObjectURL(new Blob([gatesViewRewritten], {{ type: "text/javascript" }}));
+    const academyViewRewritten = academyViewSource.replaceAll("#buildml-learn-ui", learnUiUrl);
+    const academyViewUrl = URL.createObjectURL(new Blob([academyViewRewritten], {{ type: "text/javascript" }}));
+    const cockpitViewRewritten = cockpitViewSource.replaceAll("#buildml-learn-ui", learnUiUrl);
+    const cockpitViewUrl = URL.createObjectURL(new Blob([cockpitViewRewritten], {{ type: "text/javascript" }}));
+    const rewritten = appSource
+      .replaceAll("#buildml-icons", iconsUrl)
+      .replaceAll("#buildml-learn-ui", learnUiUrl)
+      .replaceAll("#buildml-gates-view", gatesViewUrl)
+      .replaceAll("#buildml-academy-view", academyViewUrl)
+      .replaceAll("#buildml-cockpit-view", cockpitViewUrl);
     const appUrl = URL.createObjectURL(new Blob([rewritten], {{ type: "text/javascript" }}));
     window.__BUILDML_OFFLINE__ = {payload};
     await import(appUrl);
@@ -361,85 +423,39 @@ def render_offline_html(bundle: dict[str, Any]) -> str:
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to main content</a>
-  <div class="app-shell" id="app">
-    <aside class="sidebar" aria-label="Primary">
-      <div class="brand">
-        <div class="brand-mark" aria-hidden="true">
-          <svg width="28" height="28" viewBox="0 0 32 32" fill="none">
-            <rect width="32" height="32" rx="8" fill="var(--accent)"/>
-            <path d="M8 20.5L13.2 11l4.1 7.2L20.8 13 24 20.5" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-        </div>
-        <div>
-          <div class="brand-name">BuildML EDA Studio</div>
-          <div class="brand-sub">Teaching Studio · Offline</div>
-        </div>
+  <div class="sheet" id="app">
+    <header class="sheet-chrome" id="sheet-chrome">
+      <div class="sheet-chrome__brand">
+        <div class="om-mono om-kick" id="sheet-kicker">BuildML · Exploratory data analysis</div>
+        <h1 class="sheet-title" id="sheet-title">Command cockpit — readiness sheet</h1>
       </div>
-      <nav class="nav" id="domain-nav" aria-label="Analysis domains"></nav>
-      <div class="sidebar-foot">
-        <button type="button" class="ghost-btn" id="theme-toggle" aria-pressed="false" title="Toggle theme">
-          <span data-icon="moon" aria-hidden="true"></span>
-          <span>Theme</span>
-        </button>
+      <div class="sheet-chrome__actions" id="sheet-actions">
+        <a class="btn btn-ghost" href="#/gates">Readiness gates →</a>
+        <a class="btn btn-ghost" href="#/academy">Concept academy →</a>
+        <span class="btn btn-secondary">Offline snapshot</span>
       </div>
-    </aside>
-    <div class="main-column">
-      <header class="topbar">
-        <div class="topbar-left">
-          <button type="button" class="icon-btn mobile-nav" id="nav-toggle" aria-label="Open navigation">
-            <span data-icon="menu"></span>
-          </button>
-          <div>
-            <h1 class="page-title" id="page-title">Command cockpit</h1>
-            <p class="page-sub" id="page-sub">Offline snapshot of the Teaching Studio</p>
-          </div>
-        </div>
-        <div class="topbar-actions">
-          <label class="search-field" aria-label="Search findings and concepts">
-            <span data-icon="search" aria-hidden="true"></span>
-            <input id="global-search" type="search" placeholder="Search findings, domains, concepts" autocomplete="off" />
-          </label>
-          <span class="btn btn-secondary" id="pdf-download" title="Open the live Teaching Studio to download PDF/CSV exports.">
-            Offline snapshot
-          </span>
-        </div>
-      </header>
-      <div class="filter-bar" id="filter-bar" hidden>
-        <label>
-          Severity
-          <select id="severity-filter">
-            <option value="all">All</option>
-            <option value="critical">Critical</option>
-            <option value="high">High</option>
-            <option value="medium">Medium</option>
-            <option value="low">Low</option>
-            <option value="info">Info</option>
-          </select>
-        </label>
-        <label>
-          Section filter
-          <input id="section-filter" type="search" placeholder="Filter tables and cards" />
-        </label>
-      </div>
-      <main id="main" tabindex="-1"></main>
-    </div>
+    </header>
+    <nav class="sheet-boards" id="domain-nav" aria-label="EDA boards"></nav>
+    <main id="main" class="sheet-body" tabindex="-1"></main>
   </div>
   <div id="drawer-backdrop" class="drawer-backdrop" hidden></div>
-  <aside id="concept-drawer" class="concept-drawer" aria-hidden="true">
+  <aside id="concept-drawer" class="drawer" aria-hidden="true">
     <div class="drawer-head">
       <h2 id="drawer-title">Concept</h2>
-      <button type="button" class="icon-btn" id="drawer-close" aria-label="Close concept">×</button>
+      <button type="button" class="btn btn-ghost" id="drawer-close" aria-label="Close concept">Close</button>
     </div>
     <div id="drawer-body" class="drawer-body"></div>
   </aside>
-  <dialog id="figure-modal">
-    <form method="dialog">
-      <div class="drawer-head">
-        <h2 id="modal-title">Figure</h2>
-        <button type="submit" class="icon-btn" aria-label="Close figure">×</button>
-      </div>
-      <div id="modal-figure" class="chart-host"></div>
+  <div id="gate-drawer-backdrop" class="gate-drawer-backdrop" hidden></div>
+  <aside id="gate-drawer" class="gate-drawer" aria-hidden="true" aria-label="Gate learning panel"></aside>
+  <div id="cockpit-drawer-backdrop" class="gate-drawer-backdrop" hidden></div>
+  <aside id="cockpit-drawer" class="gate-drawer" aria-hidden="true" aria-label="Cockpit learning panel"></aside>
+  <dialog class="modal" id="figure-modal">
+    <form method="dialog" class="modal-head">
+      <h2 id="modal-title">Figure</h2>
+      <button type="submit" class="btn btn-ghost" aria-label="Close figure">Close</button>
     </form>
+    <div id="modal-figure" class="modal-figure"></div>
   </dialog>
   <div id="toast" class="toast" hidden></div>
 </body>

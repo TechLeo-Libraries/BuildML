@@ -13,20 +13,26 @@
     "mixed_type_suspect_columns": []
   },
   "recommendations": [
-    {"based_on": ["quality.completeness"], "key": "next.impute"}
+    {
+      "based_on": [
+        "quality.completeness"
+      ],
+      "key": "next.impute"
+    }
   ],
   "section_ids": [
-    "orientation",
-    "quality",
-    "features",
-    "relationships",
-    "target-validation",
+    "findings-register",
+    "assumptions",
+    "ledger",
+    "recommended-sequence",
     "figures",
-    "next-steps",
     "methods",
     "degraded",
     "appendix"
   ],
-  "shape": [3, 1],
+  "shape": [
+    3,
+    1
+  ],
   "target_type": null
 }

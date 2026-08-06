@@ -1,4 +1,4 @@
-"""Domain board registry for the EDA Teaching Studio app."""
+"""Domain board registry for the Industry EDA App."""
 
 from __future__ import annotations
 
@@ -65,10 +65,10 @@ DOMAINS: tuple[DomainSpec, ...] = (
     DomainSpec(
         key="cockpit",
         title="Command cockpit",
-        short="Readiness, severity map, next actions",
+        short="Readiness sheet · findings register · ledger",
         icon="gauge",
         report_keys=("overview", "findings", "recommendation_details", "warnings"),
-        concept_keys=("column-roles", "leakage-boundary", "data-splitting"),
+        concept_keys=("column-roles", "leakage-boundary", "data-splitting", "missing-data"),
         csv_sections=("findings", "recommendations", "roles"),
     ),
     DomainSpec(
@@ -135,9 +135,18 @@ DOMAINS: tuple[DomainSpec, ...] = (
         csv_sections=("adaptive_plan",),
     ),
     DomainSpec(
+        key="gates",
+        title="Readiness gates",
+        short="Second pass · clear / open / human / n/a",
+        icon="list-checks",
+        report_keys=(),
+        concept_keys=("data-splitting", "leakage-boundary", "missing-data"),
+        csv_sections=(),
+    ),
+    DomainSpec(
         key="academy",
-        title="Concept Academy",
-        short="Searchable teaching library",
+        title="Concept academy",
+        short="Staged curriculum · cited vs reference",
         icon="graduation-cap",
         report_keys=(),
         concept_keys=(),

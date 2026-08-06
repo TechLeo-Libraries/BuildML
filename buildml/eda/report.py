@@ -221,9 +221,9 @@ class EDAReport:
         Two shells for two audiences. ``'studio'`` produces the offline Teaching
         Studio snapshot: guided, explanatory, the same surface as
         ``session.eda_app()``: and suits someone who needs the analysis
-        explained as well as shown. ``'research'`` produces the layered shell
-        with embedded figures, denser and aimed at a reader who already knows
-        what they are looking at.
+        explained as well as shown. ``'research'`` produces the BUILDML STATIC EDA
+        HTML shell (Industry blueprint) with findings, ledger,
+        recommended Session calls, and embedded figures.
 
         Either way the output is one file with everything inlined, so it can be
         emailed or archived and will still render years later.

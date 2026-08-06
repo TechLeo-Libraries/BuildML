@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="_ds/industry-e7357cdc-dd1f-4728-81c5-00d86b893c68/styles.css" />
+<script src="_ds/industry-e7357cdc-dd1f-4728-81c5-00d86b893c68/_ds_bundle.js"></script>
+<style>
+html,body{margin:0;background:var(--color-bg);color:var(--color-text);font-family:var(--font-body);overflow-x:clip}
+a{color:var(--color-accent-700);text-decoration:none}
+a:hover{color:var(--color-accent)}
+.om-mono{font-family:ui-monospace,"SFMono-Regular",Menlo,monospace;font-variant-numeric:tabular-nums}
+</style>
+</helmet>
+<div style="min-height:100vh;padding:var(--space-6) var(--space-8) var(--space-8);max-width:1180px;margin:0 auto">
+  <header style="display:grid;grid-template-columns:minmax(0,1fr) auto;gap:var(--space-6);align-items:end;border-bottom:2px solid var(--color-text);padding-bottom:var(--space-3)">
+    <div>
+      <div class="om-mono" style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--color-accent-700)">BuildML 2.4.0 · Exploratory data analysis · sheet 1 of 9</div>
+      <h1 style="margin:var(--space-2) 0 0;font-size:44px;letter-spacing:-0.01em;text-transform:uppercase">Command cockpit — readiness sheet</h1>
+    </div>
+    <div style="display:flex;gap:var(--space-2)">
+      <a class="btn btn-secondary" href="#">CSV</a>
+      <a class="btn btn-secondary" href="#">Offline HTML</a>
+      <a class="btn btn-primary blueprint" href="#"><i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>PDF briefing</a>
+    </div>
+  </header>
+
+  <section class="blueprint" style="margin-top:var(--space-8);display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;background:var(--color-divider)">
+    <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+    <div style="background:var(--color-bg);padding:var(--space-4)">
+      <div class="text-muted om-mono" style="font-size:10px;letter-spacing:.1em;text-transform:uppercase">Readiness</div>
+      <div style="font-family:var(--font-heading);font-size:26px;letter-spacing:.02em;text-transform:uppercase;margin-top:2px;color:var(--color-accent-800)">Blocked</div>
+      <div class="text-muted om-mono" style="font-size:11px">1 blocking finding</div>
+    </div>
+    <div style="background:var(--color-bg);padding:var(--space-4)">
+      <div class="text-muted om-mono" style="font-size:10px;letter-spacing:.1em;text-transform:uppercase">Scope</div>
+      <div class="om-mono" style="font-size:26px;margin-top:2px">800 / 800</div>
+      <div class="text-muted om-mono" style="font-size:11px">rows analysed · 11 columns</div>
+    </div>
+    <div style="background:var(--color-bg);padding:var(--space-4)">
+      <div class="text-muted om-mono" style="font-size:10px;letter-spacing:.1em;text-transform:uppercase">Completeness</div>
+      <div class="om-mono" style="font-size:26px;margin-top:2px">94.273%</div>
+      <div class="text-muted om-mono" style="font-size:11px">504 missing cells</div>
+    </div>
+    <div style="background:var(--color-bg);padding:var(--space-4)">
+      <div class="text-muted om-mono" style="font-size:10px;letter-spacing:.1em;text-transform:uppercase">Runtime</div>
+      <div class="om-mono" style="font-size:26px;margin-top:2px">pandas</div>
+      <div class="text-muted om-mono" style="font-size:11px">has_native = false · lazy = false</div>
+    </div>
+  </section>
+
+  <div style="display:grid;grid-template-columns:38px minmax(0,1fr);gap:var(--space-6);margin-top:var(--space-8)">
+    <div class="om-mono" style="font-size:12px;letter-spacing:.1em;color:var(--color-accent-700);padding-top:4px">01</div>
+    <section>
+      <h4 style="margin:0;letter-spacing:.06em;text-transform:uppercase;border-bottom:1px solid var(--color-divider);padding-bottom:var(--space-2)">Findings register</h4>
+      <table class="table" style="margin-top:var(--space-2)">
+        <thead><tr><th style="width:56px">Sev</th><th style="width:168px">Key</th><th>Detail</th><th style="width:150px">Evidence section</th><th style="width:26px">Note</th></tr></thead>
+        <tbody>
+          <tr><td><span class="tag" style="background:var(--color-accent-800);color:var(--color-bg);text-transform:uppercase;letter-spacing:.06em">high</span></td><td class="om-mono" style="font-size:12px">validation.drift</td><td>3 eligible columns met the configured drift flag thresholds.</td><td class="om-mono text-muted" style="font-size:11px">drift.flagged_columns</td><td class="om-mono" style="font-size:11px">¹</td></tr>
+          <tr><td><span class="tag tag-accent" style="text-transform:uppercase;letter-spacing:.06em">med</span></td><td class="om-mono" style="font-size:12px">quality.completeness</td><td>504 cells are missing; observed cell completeness is 94.273%.</td><td class="om-mono text-muted" style="font-size:11px">quality.missing_cells</td><td class="om-mono" style="font-size:11px">²</td></tr>
+          <tr><td><span class="tag tag-accent" style="text-transform:uppercase;letter-spacing:.06em">med</span></td><td class="om-mono" style="font-size:12px">quality.identifiers</td><td>Identifier-like columns have near-unique observed values and are not valid default predictors. Observed: customer_id.</td><td class="om-mono text-muted" style="font-size:11px">quality.id_like_columns</td><td class="om-mono" style="font-size:11px">³</td></tr>
+          <tr><td><span class="tag tag-accent" style="text-transform:uppercase;letter-spacing:.06em">med</span></td><td class="om-mono" style="font-size:12px">quality.constants</td><td>Constant columns contain no observed variation. Observed: constant_flag.</td><td class="om-mono text-muted" style="font-size:11px">quality.constant_columns</td><td class="om-mono" style="font-size:11px">³</td></tr>
+          <tr><td><span class="tag tag-accent" style="text-transform:uppercase;letter-spacing:.06em">med</span></td><td class="om-mono" style="font-size:12px">relationships.vif</td><td>'monthly_spend' has VIF=6.41822 among complete-case eligible numeric features.</td><td class="om-mono text-muted" style="font-size:11px">multivariate.vif</td><td class="om-mono" style="font-size:11px">⁴</td></tr>
+          <tr><td><span class="tag tag-neutral" style="text-transform:uppercase;letter-spacing:.06em">info</span></td><td class="om-mono" style="font-size:12px">relationships.mi_leader</td><td>'risk_score' had the highest estimated mutual information with the target (0.0421364).</td><td class="om-mono text-muted" style="font-size:11px">bivariate.mutual_information</td><td class="om-mono" style="font-size:11px">⁵</td></tr>
+          <tr><td><span class="tag tag-neutral" style="text-transform:uppercase;letter-spacing:.06em">info</span></td><td class="om-mono" style="font-size:12px">outliers.multivariate</td><td>Isolation Forest marked 31 of 617 scored rows (5.024%) as anomalies.</td><td class="om-mono text-muted" style="font-size:11px">outliers.multivariate</td><td class="om-mono" style="font-size:11px">⁶</td></tr>
+          <tr><td><span class="tag tag-neutral" style="text-transform:uppercase;letter-spacing:.06em">info</span></td><td class="om-mono" style="font-size:12px">target.summary</td><td>Observed binary classification for 'target_churn'.</td><td class="om-mono text-muted" style="font-size:11px">target.class_balance</td><td class="om-mono" style="font-size:11px">⁷</td></tr>
+          <tr><td><span class="tag tag-neutral" style="text-transform:uppercase;letter-spacing:.06em">info</span></td><td class="om-mono" style="font-size:12px">eda.scope</td><td>EDA examined 800 of 800 rows across 11 columns.</td><td class="om-mono text-muted" style="font-size:11px">overview</td><td class="om-mono" style="font-size:11px">⁸</td></tr>
+        </tbody>
+      </table>
+    </section>
+  </div>
+
+  <div style="display:grid;grid-template-columns:38px minmax(0,1fr);gap:var(--space-6);margin-top:var(--space-8)">
+    <div class="om-mono" style="font-size:12px;letter-spacing:.1em;color:var(--color-accent-700);padding-top:4px">02</div>
+    <section>
+      <h4 style="margin:0;letter-spacing:.06em;text-transform:uppercase;border-bottom:1px solid var(--color-divider);padding-bottom:var(--space-2)">Notes — what each finding assumes</h4>
+      <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--space-4) var(--space-8);margin-top:var(--space-4)">
+        <p style="margin:0;font-size:13px;line-height:1.55"><span class="om-mono" style="color:var(--color-accent-700)">¹ dataset-drift</span> — Drift is a measured distribution change across defined populations or time windows. Check split construction and time/group effects before changing data.</p>
+        <p style="margin:0;font-size:13px;line-height:1.55"><span class="om-mono" style="color:var(--color-accent-700)">² missing-data</span> — Imputation fills gaps with a train-learned rule; it does not prove missingness is harmless. Missingness mechanisms were not inferred.</p>
+        <p style="margin:0;font-size:13px;line-height:1.55"><span class="om-mono" style="color:var(--color-accent-700)">³ column-roles</span> — Roles label how each column participates in modeling, not what its dtype happens to be. Identifier or future-looking columns left as features create optimistic metrics.</p>
+        <p style="margin:0;font-size:13px;line-height:1.55"><span class="om-mono" style="color:var(--color-accent-700)">⁴ variance-inflation</span> — VIF estimates how much linear dependence among numeric features inflates coefficient variance. VIF is sensitive to the included feature set.</p>
+        <p style="margin:0;font-size:13px;line-height:1.55"><span class="om-mono" style="color:var(--color-accent-700)">⁵ mutual-information</span> — Scores shared information between a feature and the target without assuming linearity. It does not establish direction or causality.</p>
+        <p style="margin:0;font-size:13px;line-height:1.55"><span class="om-mono" style="color:var(--color-accent-700)">⁶ diagnostic-uncertainty</span> — Metrics, curves and importances are sample estimates. Anomaly labels are screening signals, not confirmed data errors.</p>
+        <p style="margin:0;font-size:13px;line-height:1.55"><span class="om-mono" style="color:var(--color-accent-700)">⁷ class-imbalance</span> — Unequal class frequencies change what accuracy and default thresholds can tell you.</p>
+        <p style="margin:0;font-size:13px;line-height:1.55"><span class="om-mono" style="color:var(--color-accent-700)">⁸ data-splitting</span> — A split assigns each row a membership that controls what may train, guide and assess the model. Sampled analyses may not reproduce full-data tail behavior.</p>
+      </div>
+    </section>
+  </div>
+
+  <div style="display:grid;grid-template-columns:38px minmax(0,1fr);gap:var(--space-6);margin-top:var(--space-8)">
+    <div class="om-mono" style="font-size:12px;letter-spacing:.1em;color:var(--color-accent-700);padding-top:4px">03</div>
+    <section>
+      <h4 style="margin:0;letter-spacing:.06em;text-transform:uppercase;border-bottom:1px solid var(--color-divider);padding-bottom:var(--space-2)">Measurements</h4>
+      <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--space-8);margin-top:var(--space-4)">
+        <figure>
+          <figcaption class="om-mono" style="font-size:10px;letter-spacing:.1em;text-transform:uppercase;margin:0 0 var(--space-3);color:var(--color-accent-700)">Table 3.1 — missing rate by column (full frame)</figcaption>
+          <table class="table">
+            <thead><tr><th>Column</th><th style="width:120px">Rate</th><th style="width:150px">Profile</th></tr></thead>
+            <tbody>
+              <tr><td class="om-mono" style="font-size:12px">signup_channel</td><td class="om-mono" style="font-size:12px">25.125%</td><td><div style="height:7px;background:var(--color-neutral-200)"><div style="width:100%;height:100%;background:var(--color-accent-600)"></div></div></td></tr>
+              <tr><td class="om-mono" style="font-size:12px">city</td><td class="om-mono" style="font-size:12px">13.750%</td><td><div style="height:7px;background:var(--color-neutral-200)"><div style="width:55%;height:100%;background:var(--color-accent-500)"></div></div></td></tr>
+              <tr><td class="om-mono" style="font-size:12px">income</td><td class="om-mono" style="font-size:12px">10.875%</td><td><div style="height:7px;background:var(--color-neutral-200)"><div style="width:43%;height:100%;background:var(--color-accent-500)"></div></div></td></tr>
+              <tr><td class="om-mono" style="font-size:12px">age</td><td class="om-mono" style="font-size:12px">7.875%</td><td><div style="height:7px;background:var(--color-neutral-200)"><div style="width:31%;height:100%;background:var(--color-accent-400)"></div></div></td></tr>
+              <tr><td class="om-mono" style="font-size:12px">monthly_spend</td><td class="om-mono" style="font-size:12px">4.750%</td><td><div style="height:7px;background:var(--color-neutral-200)"><div style="width:19%;height:100%;background:var(--color-accent-400)"></div></div></td></tr>
+            </tbody>
+          </table>
+        </figure>
+        <figure>
+          <figcaption class="om-mono" style="font-size:10px;letter-spacing:.1em;text-transform:uppercase;margin:0 0 var(--space-3);color:var(--color-accent-700)">Table 3.2 — mutual information vs target_churn</figcaption>
+          <table class="table">
+            <thead><tr><th>Feature</th><th style="width:120px">MI</th><th style="width:150px">Profile</th></tr></thead>
+            <tbody>
+              <tr><td class="om-mono" style="font-size:12px">risk_score</td><td class="om-mono" style="font-size:12px">0.042136</td><td><div style="height:7px;background:var(--color-neutral-200)"><div style="width:100%;height:100%;background:var(--color-accent-600)"></div></div></td></tr>
+              <tr><td class="om-mono" style="font-size:12px">monthly_spend</td><td class="om-mono" style="font-size:12px">0.038810</td><td><div style="height:7px;background:var(--color-neutral-200)"><div style="width:92%;height:100%;background:var(--color-accent-600)"></div></div></td></tr>
+              <tr><td class="om-mono" style="font-size:12px">income</td><td class="om-mono" style="font-size:12px">0.022442</td><td><div style="height:7px;background:var(--color-neutral-200)"><div style="width:53%;height:100%;background:var(--color-accent-500)"></div></div></td></tr>
+              <tr><td class="om-mono" style="font-size:12px">age</td><td class="om-mono" style="font-size:12px">0.017309</td><td><div style="height:7px;background:var(--color-neutral-200)"><div style="width:41%;height:100%;background:var(--color-accent-500)"></div></div></td></tr>
+              <tr><td class="om-mono" style="font-size:12px">tenure_years</td><td class="om-mono" style="font-size:12px">0.010193</td><td><div style="height:7px;background:var(--color-neutral-200)"><div style="width:24%;height:100%;background:var(--color-accent-400)"></div></div></td></tr>
+              <tr><td class="om-mono" style="font-size:12px">city</td><td class="om-mono" style="font-size:12px">0.004121</td><td><div style="height:7px;background:var(--color-neutral-200)"><div style="width:10%;height:100%;background:var(--color-accent-400)"></div></div></td></tr>
+            </tbody>
+          </table>
+        </figure>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--space-6);margin-top:var(--space-8)">
+        <figure class="blueprint" style="padding:var(--space-4)">
+          <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+          <figcaption class="om-mono" style="font-size:10px;letter-spacing:.1em;text-transform:uppercase;margin:0 0 var(--space-3);color:var(--color-accent-700)">Fig. 3.3 — severity</figcaption>
+          <div style="display:grid;gap:var(--space-2)">
+            <div style="display:grid;grid-template-columns:44px minmax(0,1fr) 20px;gap:var(--space-2);align-items:center"><span class="om-mono text-muted" style="font-size:10px">info</span><div style="height:8px;background:var(--color-neutral-200)"><div style="width:100%;height:100%;background:var(--color-accent-300)"></div></div><span class="om-mono" style="font-size:11px;text-align:right">4</span></div>
+            <div style="display:grid;grid-template-columns:44px minmax(0,1fr) 20px;gap:var(--space-2);align-items:center"><span class="om-mono text-muted" style="font-size:10px">low</span><div style="height:8px;background:var(--color-neutral-200)"></div><span class="om-mono text-muted" style="font-size:11px;text-align:right">0</span></div>
+            <div style="display:grid;grid-template-columns:44px minmax(0,1fr) 20px;gap:var(--space-2);align-items:center"><span class="om-mono text-muted" style="font-size:10px">med</span><div style="height:8px;background:var(--color-neutral-200)"><div style="width:100%;height:100%;background:var(--color-accent-500)"></div></div><span class="om-mono" style="font-size:11px;text-align:right">4</span></div>
+            <div style="display:grid;grid-template-columns:44px minmax(0,1fr) 20px;gap:var(--space-2);align-items:center"><span class="om-mono text-muted" style="font-size:10px">high</span><div style="height:8px;background:var(--color-neutral-200)"><div style="width:25%;height:100%;background:var(--color-accent-800)"></div></div><span class="om-mono" style="font-size:11px;text-align:right">1</span></div>
+            <div style="display:grid;grid-template-columns:44px minmax(0,1fr) 20px;gap:var(--space-2);align-items:center"><span class="om-mono text-muted" style="font-size:10px">crit</span><div style="height:8px;background:var(--color-neutral-200)"></div><span class="om-mono text-muted" style="font-size:11px;text-align:right">0</span></div>
+          </div>
+        </figure>
+        <figure class="blueprint" style="padding:var(--space-4)">
+          <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+          <figcaption class="om-mono" style="font-size:10px;letter-spacing:.1em;text-transform:uppercase;margin:0 0 var(--space-3);color:var(--color-accent-700)">Fig. 3.4 — roles</figcaption>
+          <table class="table">
+            <tbody>
+              <tr><td class="om-mono" style="font-size:12px">feature</td><td class="om-mono" style="font-size:12px;text-align:right">9</td></tr>
+              <tr><td class="om-mono" style="font-size:12px">id</td><td class="om-mono" style="font-size:12px;text-align:right">1</td></tr>
+              <tr><td class="om-mono" style="font-size:12px">target</td><td class="om-mono" style="font-size:12px;text-align:right">1</td></tr>
+              <tr><td class="om-mono text-muted" style="font-size:12px">eligible</td><td class="om-mono" style="font-size:12px;text-align:right">8</td></tr>
+            </tbody>
+          </table>
+        </figure>
+        <figure class="blueprint" style="padding:var(--space-4)">
+          <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+          <figcaption class="om-mono" style="font-size:10px;letter-spacing:.1em;text-transform:uppercase;margin:0 0 var(--space-3);color:var(--color-accent-700)">Fig. 3.5 — screens</figcaption>
+          <table class="table">
+            <tbody>
+              <tr><td class="om-mono" style="font-size:12px">max VIF</td><td class="om-mono" style="font-size:12px;text-align:right">6.418</td></tr>
+              <tr><td class="om-mono" style="font-size:12px">anomaly rate</td><td class="om-mono" style="font-size:12px;text-align:right">5.024%</td></tr>
+              <tr><td class="om-mono" style="font-size:12px">drift flags</td><td class="om-mono" style="font-size:12px;text-align:right">3</td></tr>
+              <tr><td class="om-mono" style="font-size:12px">complete rows</td><td class="om-mono" style="font-size:12px;text-align:right">617</td></tr>
+            </tbody>
+          </table>
+        </figure>
+      </div>
+    </section>
+  </div>
+
+  <div style="display:grid;grid-template-columns:38px minmax(0,1fr);gap:var(--space-6);margin-top:var(--space-8)">
+    <div class="om-mono" style="font-size:12px;letter-spacing:.1em;color:var(--color-accent-700);padding-top:4px">04</div>
+    <section>
+      <h4 style="margin:0;letter-spacing:.06em;text-transform:uppercase;border-bottom:1px solid var(--color-divider);padding-bottom:var(--space-2)">Recommended sequence</h4>
+      <table class="table" style="margin-top:var(--space-2)">
+        <thead><tr><th style="width:34px">#</th><th style="width:140px">Priority</th><th>Action</th><th style="width:250px">Call</th><th style="width:170px">Based on</th></tr></thead>
+        <tbody>
+          <tr><td class="om-mono" style="font-size:12px">1</td><td class="om-mono" style="font-size:11px">before_modeling</td><td>Investigate flagged train/test shifts</td><td class="om-mono" style="font-size:11px">session.explain("split", moment="after")</td><td class="om-mono" style="font-size:11px">validation.drift</td></tr>
+          <tr><td class="om-mono" style="font-size:12px">2</td><td class="om-mono" style="font-size:11px">before_modeling</td><td>Keep identifiers outside feature matrices</td><td class="om-mono" style="font-size:11px">session.set_roles({"customer_id": "id"})</td><td class="om-mono" style="font-size:11px">quality.identifiers</td></tr>
+          <tr><td class="om-mono" style="font-size:12px">3</td><td class="om-mono" style="font-size:11px">before_modeling</td><td>Exclude constant columns</td><td class="om-mono" style="font-size:11px">session.set_roles({"constant_flag": "ignore"})</td><td class="om-mono" style="font-size:11px">quality.constants</td></tr>
+          <tr><td class="om-mono" style="font-size:12px">4</td><td class="om-mono" style="font-size:11px">before_modeling</td><td>Define a train-fitted missing-data strategy</td><td class="om-mono" style="font-size:11px">session.impute(strategy="median")</td><td class="om-mono" style="font-size:11px">quality.completeness</td></tr>
+          <tr><td class="om-mono" style="font-size:12px">5</td><td class="om-mono" style="font-size:11px">next</td><td>Review correlated feature groups</td><td class="om-mono" style="font-size:11px">session.explain("reduce_dimensions")</td><td class="om-mono" style="font-size:11px">relationships.vif</td></tr>
+        </tbody>
+      </table>
+      <p class="text-muted" style="margin:var(--space-4) 0 0;font-size:12px;max-width:70ch">Recommendations name Session operations; they do not execute them. Full-dataset descriptive EDA after a split summarises observed rows and is not train-fitted transform evidence.</p>
+    </section>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1240}}"></script>
+</body>
+</html>

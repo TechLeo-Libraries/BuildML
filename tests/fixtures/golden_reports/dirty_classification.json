@@ -7,29 +7,54 @@
   "has_sampling_disclosure": true,
   "has_skipped_disclosure": true,
   "quality_flags": {
-    "constant_columns": ["constant"],
+    "constant_columns": [
+      "constant"
+    ],
     "high_cardinality_columns": [],
-    "id_like_columns": ["customer_id"],
+    "id_like_columns": [
+      "customer_id"
+    ],
     "mixed_type_suspect_columns": []
   },
   "recommendations": [
-    {"based_on": ["quality.completeness"], "key": "next.impute"},
-    {"based_on": ["quality.constants"], "key": "next.drop_constants"},
-    {"based_on": ["quality.identifiers"], "key": "next.exclude_ids"},
-    {"based_on": ["relationships.vif"], "key": "next.collinearity"}
+    {
+      "based_on": [
+        "quality.completeness"
+      ],
+      "key": "next.impute"
+    },
+    {
+      "based_on": [
+        "quality.constants"
+      ],
+      "key": "next.drop_constants"
+    },
+    {
+      "based_on": [
+        "quality.identifiers"
+      ],
+      "key": "next.exclude_ids"
+    },
+    {
+      "based_on": [
+        "relationships.vif"
+      ],
+      "key": "next.collinearity"
+    }
   ],
   "section_ids": [
-    "orientation",
-    "quality",
-    "features",
-    "relationships",
-    "target-validation",
+    "findings-register",
+    "assumptions",
+    "ledger",
+    "recommended-sequence",
     "figures",
-    "next-steps",
     "methods",
     "degraded",
     "appendix"
   ],
-  "shape": [48, 6],
+  "shape": [
+    48,
+    6
+  ],
   "target_type": "classification_target"
 }

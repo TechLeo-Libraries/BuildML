@@ -18,9 +18,9 @@ def build_teaching_studios(report: dict[str, Any]) -> dict[str, dict[str, Any]]:
 
     That last part is what distinguishes this from a glossary. "Variance
     inflation factor measures collinearity" is a definition anyone can look up.
-    "Your ``total_spend`` has a VIF of 23, which means it is almost perfectly
-    predicted by the other columns, and its coefficient in a linear model would
-    be arbitrary" is the sentence that teaches.
+    "Your highest-VIF column (from *this* report) is almost perfectly predicted
+    by the others, so its coefficient in a linear model would be arbitrary" is
+    the sentence that teaches.
 
     Parameters
     ----------
@@ -1240,11 +1240,11 @@ def _studio_visuals(report: dict[str, Any]) -> dict[str, Any]:
             "When plots and tables disagree, trust neither blindly: recompute the underlying slice.",
         ],
         "next_action": {
-            "label": "Export PDF stills or offline Studio HTML after review",
+            "label": "Export Offline HTML after review",
             "api": (
-                "Use 'PDF briefing' (tables + static Plotly PNG stills) or "
-                "'Offline HTML' in the app header, or "
-                "session.eda(export_html=..., html_format='studio')"
+                "Use 'Offline HTML' in the app header (primary export), or "
+                "session.eda(export_html=..., html_format='studio'). "
+                "Static research HTML keeps Print/PDF briefing; CSV/PDF APIs remain for automation."
             ),
             "parameters": {},
             "evidence_keys": [],

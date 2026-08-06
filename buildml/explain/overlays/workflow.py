@@ -100,7 +100,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             _p(
                 "html_format",
                 "studio | research",
-                "studio=offline Teaching Studio; research=layered report shell.",
+                "studio=offline Teaching Studio; research=BUILDML STATIC EDA HTML shell.",
                 "studio",
             ),
         ),
@@ -110,7 +110,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         ordering=("After role assignment; repeat after major schema changes without mining final test outcomes.",),
         alternatives=(
             "session.eda_app() for the live Teaching Studio.",
-            "html_format='research' for the layered research HTML shell.",
+            "html_format='research' for the BUILDML STATIC EDA HTML shell.",
         ),
         rationale=("Sample only when full analysis is too costly and record what the sample misses.",),
         assumptions=("Statistical flags are screening evidence, not domain conclusions.",),
@@ -149,7 +149,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         ordering=("After eda() or when a fresh exploratory review is needed before modeling.",),
         alternatives=(
             "session.eda(export_html=..., html_format='studio') for an offline Teaching Studio snapshot.",
-            "session.eda(export_html=..., html_format='research') for the layered research HTML shell.",
+            "session.eda(export_html=..., html_format='research') for the BUILDML STATIC EDA HTML shell.",
         ),
         rationale=(
             "Use the live Teaching Studio for interactive review; offline HTML is the same product "
@@ -162,8 +162,9 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         state_changes=("Records launch metadata; does not mutate the dataset.",),
         result_reading=("Start at the cockpit, open Teaching Studio for each domain, then Concept Academy links.",),
         next_steps=(
-            "Export PDF (tables + chart stills), Offline HTML, or CSV for the current view, "
-            "then apply cited Session operations on train only.",
+            "Export Offline HTML from the app header (primary), then apply cited "
+            "Session operations on train only. CSV/PDF APIs remain for automation; "
+            "Static research HTML keeps Print/PDF briefing.",
         ),
         concepts=(
             "column-roles",

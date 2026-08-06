@@ -17,13 +17,11 @@ from buildml.reporting import render_table
 ROOT = Path(__file__).resolve().parents[2]
 GOLDEN = ROOT / "tests" / "fixtures" / "golden_reports"
 SECTION_IDS = (
-    "orientation",
-    "quality",
-    "features",
-    "relationships",
-    "target-validation",
+    "findings-register",
+    "assumptions",
+    "ledger",
+    "recommended-sequence",
     "figures",
-    "next-steps",
     "methods",
     "degraded",
     "appendix",
@@ -155,7 +153,7 @@ class _TinyFigure:
         stream.write(b"\x89PNG\r\n\x1a\ncompact-fixture")
 
 
-def test_eda_html_contract_is_layered_accessible_escaped_and_offline(
+def test_eda_html_contract_is_cockpit_accessible_escaped_and_offline(
     tmp_path: Path,
 ) -> None:
     session, options = _case("dirty_classification")
@@ -174,7 +172,7 @@ def test_eda_html_contract_is_layered_accessible_escaped_and_offline(
     for marker in (
         'role="banner"',
         'role="search"',
-        'aria-label="Report sections"',
+        'aria-label="Search report sections"',
         '<main id="main-content" tabindex="-1">',
         'role="contentinfo"',
         'aria-live="polite"',
@@ -185,13 +183,44 @@ def test_eda_html_contract_is_layered_accessible_escaped_and_offline(
         'addEventListener("input"',
         'addEventListener("keydown"',
         "rows.sort",
-        "bml-theme",
-        "body.bml-dark",
+        "--color-accent: #5980a6",
+        "--color-bg: #f2f2f3",
+        "blueprint",
+        "Findings register",
+        "Ledger — every computed number",
+        "Recommended sequence",
+        "What each finding assumes",
+        "What this means",
+        "Why it matters",
+        "What to check next",
+        "om-header__title",
+        "PDF briefing",
+        'id="bml-csv"',
         "@media print",
         "data:image/png;base64,",
         "Skipped and degraded analyses",
+        "om-methods__grid",
+        "om-callout",
+        "om-assumption-card",
+        "om-ledger-group",
+        "om-search-field",
+        "Type to filter sections by title or keywords",
+        'data-filter-target="assumptions"',
+        'data-filter-target="ledger"',
+        "Methods and limitations",
+        "Caveats",
     ):
         assert marker in html
+    assert "Static EDA — readiness sheet" not in html
+
+    default_destination = tmp_path / "default-title.html"
+    export_eda_html(report.to_dict(), default_destination, max_figures=0)
+    default_html = default_destination.read_text(encoding="utf-8")
+    assert "BUILDML STATIC EDA" in default_html
+    assert "<h1>BUILDML STATIC EDA</h1>" in default_html
+    assert "Static EDA — readiness sheet" not in default_html
+    assert "Readiness Gates" not in html
+    assert "Concept Academy" not in html
     assert "Unsafe &lt;title&gt; &amp; &quot;quote&quot;" in html
     assert "age&lt;unsafe&gt;" in html
     assert not re.search(r'(?:src|href)=["\']https?://', html, flags=re.IGNORECASE)

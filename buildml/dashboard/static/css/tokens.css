@@ -1,61 +1,267 @@
-:root {
-  /* Distinctive local stack (no network font dependency). */
-  --font-sans: "Segoe UI Variable", "Segoe UI", "Avenir Next", "Helvetica Neue", sans-serif;
-  --font-serif: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif;
-  --font-mono: "Cascadia Mono", "Sarasa Mono", "Consolas", ui-monospace, monospace;
+/*
+ * Industry design tokens — shared with Static EDA via buildml.eda.industry_tokens.
+ * Component classes ported from redesigning_eda/.../_ds/industry-.../styles.css
+ * so the live App uses the same chrome as the redesign sheets.
+ */
 
-  --bg: #eef1f5;
-  --bg-elev: #ffffff;
-  --bg-soft: #f5f7fa;
-  --ink: #121820;
-  --ink-soft: #4a5563;
-  --line: #d5dde8;
-  --line-strong: #b7c2d0;
-  --accent: #0b6e4f;
-  --accent-soft: #dff3ea;
-  --accent-ink: #064e38;
-  --info: #1d4e89;
-  --info-soft: #e7f0fa;
-  --warn: #b45309;
-  --warn-soft: #fff1e0;
-  --danger: #b91c1c;
-  --danger-soft: #fde8e8;
-  --ok: #0f766e;
-  --shadow: 0 10px 30px rgba(18, 24, 32, 0.08);
-  --radius: 14px;
-  --radius-sm: 10px;
-  --sidebar-w: 272px;
-  --topbar-h: 76px;
-  --space-1: 0.25rem;
-  --space-2: 0.5rem;
-  --space-3: 0.75rem;
-  --space-4: 1rem;
+@import url("https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;700&family=Barlow+Condensed:wght@400;600&display=swap");
+
+:root {
+  color-scheme: light;
+
+  --color-bg: #f2f2f3;
+  --color-surface: #e9e9ea;
+  --color-text: #1d1f20;
+  --color-accent: #5980a6;
+  --color-accent-2: #728fab;
+  --color-divider: color-mix(in srgb, #1d1f20 16%, transparent);
+
+  --color-neutral-100: #f5f5f8;
+  --color-neutral-200: #e7e7ea;
+  --color-neutral-300: #d4d4d7;
+  --color-neutral-400: #b7b7ba;
+  --color-neutral-500: #98989b;
+  --color-neutral-600: #7a7a7d;
+  --color-neutral-700: #5d5d60;
+  --color-neutral-800: #424244;
+  --color-neutral-900: #2b2b2d;
+
+  --color-accent-100: #eef6ff;
+  --color-accent-200: #d6ebff;
+  --color-accent-300: #b5d9fd;
+  --color-accent-400: #94bce3;
+  --color-accent-500: #749dc4;
+  --color-accent-600: #597ea3;
+  --color-accent-700: #416180;
+  --color-accent-800: #2c455d;
+  --color-accent-900: #1d2d3d;
+
+  --color-accent-2-100: #eef6ff;
+  --color-accent-2-200: #d6ebff;
+  --color-accent-2-300: #bdd8f2;
+  --color-accent-2-400: #9ebbd8;
+  --color-accent-2-500: #7e9cb8;
+  --color-accent-2-600: #627d98;
+  --color-accent-2-700: #486077;
+  --color-accent-2-800: #314457;
+  --color-accent-2-900: #1f2d3a;
+
+  --font-heading: "Barlow Condensed", "Arial Narrow", "Helvetica Neue Condensed",
+    "Franklin Gothic Medium", "Segoe UI", sans-serif;
+  --font-heading-weight: 600;
+  --font-body: "Barlow", "Segoe UI", "Helvetica Neue", system-ui, sans-serif;
+  --font-mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+
+  --space-1: 3.4px;
+  --space-2: 6.8px;
+  --space-3: 10.2px;
+  --space-4: 13.6px;
   --space-5: 1.5rem;
-  --space-6: 2rem;
+  --space-6: 20.4px;
   --space-7: 3rem;
-  --focus: 0 0 0 3px rgba(11, 110, 79, 0.28);
-  --chart-ink: #1c2430;
+  --space-8: 27.2px;
+
+  --radius-sm: 0;
+  --radius-md: 0;
+  --radius-lg: 0;
+  --shadow-sm: 0 1px 2px color-mix(in srgb, #2b2b2d 14%, transparent);
+  --shadow-md: 0 3px 10px color-mix(in srgb, #2b2b2d 16%, transparent);
+  --bml-max: 1180px;
+
+  /* App aliases used by residual helpers */
+  --bg: var(--color-bg);
+  --bg-elev: #ffffff;
+  --bg-soft: var(--color-neutral-100);
+  --ink: var(--color-text);
+  --ink-soft: var(--color-neutral-700);
+  --line: var(--color-neutral-300);
+  --accent: var(--color-accent);
+  --accent-soft: var(--color-accent-100);
+  --accent-ink: var(--color-accent-800);
+  --warn: #b45309;
+  --danger: #b91c1c;
+  --ok: var(--color-accent-600);
+  --focus: 0 0 0 2px var(--color-accent);
+  --chart-ink: var(--color-text);
 }
 
 html[data-theme="dark"] {
-  --bg: #0e1218;
+  color-scheme: dark;
+  --color-bg: #12151a;
+  --color-surface: #1a1f27;
+  --color-text: #e8eef5;
+  --color-accent: #94bce3;
+  --color-accent-2: #749dc4;
+  --color-divider: color-mix(in srgb, #e8eef5 18%, transparent);
+  --color-neutral-100: #1a1f27;
+  --color-neutral-200: #222833;
+  --color-neutral-300: #2a3340;
+  --color-neutral-400: #3a4658;
+  --color-neutral-500: #6b7788;
+  --color-neutral-600: #8a96a8;
+  --color-neutral-700: #9aa8b8;
+  --color-neutral-800: #c5d0dc;
+  --color-neutral-900: #e8eef5;
+  --color-accent-100: #173049;
+  --color-accent-200: #1d2d3d;
+  --color-accent-300: #2c455d;
+  --color-accent-400: #416180;
+  --color-accent-500: #5980a6;
+  --color-accent-600: #749dc4;
+  --color-accent-700: #94bce3;
+  --color-accent-800: #b5d9fd;
+  --color-accent-900: #d6ebff;
+  --bg: var(--color-bg);
   --bg-elev: #171c24;
   --bg-soft: #1d2430;
-  --ink: #e8eef5;
-  --ink-soft: #9aa8b8;
-  --line: #2a3340;
-  --line-strong: #3a4658;
-  --accent: #3ddc97;
-  --accent-soft: #163528;
-  --accent-ink: #d7ffe9;
-  --info: #7db4f0;
-  --info-soft: #173049;
-  --warn: #f0a35a;
-  --warn-soft: #3a2716;
-  --danger: #f07178;
-  --danger-soft: #3a1719;
-  --ok: #5eead4;
-  --shadow: 0 12px 36px rgba(0, 0, 0, 0.35);
-  --focus: 0 0 0 3px rgba(61, 220, 151, 0.28);
-  --chart-ink: #e8eef5;
+  --ink: var(--color-text);
+  --ink-soft: var(--color-neutral-700);
+  --line: var(--color-neutral-300);
+  --accent: var(--color-accent);
+  --accent-soft: var(--color-accent-100);
+  --accent-ink: var(--color-accent-800);
+}
+
+/* Industry DS components (btn / table / tag / blueprint / input) */
+.blueprint {
+  position: relative;
+  border: 1px solid var(--color-divider);
+  border-radius: 0;
+}
+.blueprint > .corner {
+  position: absolute;
+  width: 11px;
+  height: 11px;
+  color: color-mix(in srgb, var(--color-text) 55%, transparent);
+  pointer-events: none;
+}
+.blueprint > .corner::before,
+.blueprint > .corner::after {
+  content: "";
+  position: absolute;
+  background: currentColor;
+}
+.blueprint > .corner::before {
+  left: 5px;
+  top: 0;
+  width: 1px;
+  height: 100%;
+}
+.blueprint > .corner::after {
+  top: 5px;
+  left: 0;
+  width: 100%;
+  height: 1px;
+}
+.blueprint > .corner.tl { top: -6px; left: -6px; }
+.blueprint > .corner.tr { top: -6px; right: -6px; }
+.blueprint > .corner.bl { bottom: -6px; left: -6px; }
+.blueprint > .corner.br { bottom: -6px; right: -6px; }
+
+.text-muted {
+  color: color-mix(in srgb, var(--color-text) 55%, transparent);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+  text-decoration: none;
+  font-family: var(--font-heading);
+  font-weight: var(--font-heading-weight);
+  font-size: 14px;
+  line-height: 1.2;
+  color: var(--color-text);
+  background: transparent;
+  border: 1px solid var(--color-divider);
+  padding: var(--space-2) calc(var(--space-3) * 1.2);
+  border-radius: 0;
+  white-space: nowrap;
+}
+.btn:hover { text-decoration: none; }
+.btn-primary {
+  background: var(--color-accent);
+  color: var(--color-bg);
+  border-color: var(--color-accent);
+}
+.btn-primary:hover { background: var(--color-accent-600); color: var(--color-bg); }
+.btn-secondary:hover {
+  background: color-mix(in srgb, var(--color-text) 7%, transparent);
+}
+.btn-ghost {
+  color: var(--color-accent);
+  border-color: transparent;
+  padding-inline: var(--space-1);
+}
+.btn-ghost:hover {
+  background: color-mix(in srgb, var(--color-accent) 10%, transparent);
+  color: var(--color-accent);
+}
+
+.input {
+  width: 100%;
+  min-height: 36px;
+  padding: 6px 10px;
+  font: inherit;
+  font-size: 14px;
+  color: var(--color-text);
+  caret-color: var(--color-accent);
+  background: var(--color-surface);
+  border: 1px solid var(--color-divider);
+  border-radius: 0;
+}
+.input:focus-visible {
+  border-color: var(--color-accent);
+  outline: none;
+}
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  padding: 3px 10px;
+  border-radius: 0;
+  text-transform: uppercase;
+}
+.tag-accent {
+  background: var(--color-accent-100);
+  color: var(--color-accent-800);
+}
+.tag-neutral {
+  background: var(--color-neutral-100);
+  color: var(--color-neutral-800);
+}
+.tag-outline {
+  border: 1px solid var(--color-accent);
+  color: var(--color-accent);
+}
+.tag-block {
+  background: var(--color-accent-800);
+  color: var(--color-bg);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+.table th {
+  text-align: left;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--color-text) 60%, transparent);
+  padding: var(--space-2);
+  border-bottom: 1px solid var(--color-divider);
+}
+.table td {
+  padding: var(--space-2);
+  border-bottom: 1px solid color-mix(in srgb, var(--color-text) 8%, transparent);
+  vertical-align: top;
+}
+.table tbody tr:hover {
+  background: color-mix(in srgb, var(--color-text) 4%, transparent);
 }

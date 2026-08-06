@@ -56,6 +56,8 @@ def build_findings(sections: dict[str, Any]) -> list[Finding]:
         The analyzer outputs, keyed by section name: ``overview``,
         ``quality``, ``bivariate``, ``multivariate``, ``target``, ``outliers``,
         ``drift``. Missing sections are skipped, so a partial pass works.
+        Findings are emitted only when the corresponding measurement exists
+        (for example MI requires a target; PCA requires enough complete numerics).
 
     Returns
     -------
@@ -144,12 +146,13 @@ def build_findings(sections: dict[str, Any]) -> list[Finding]:
         )
     )
 
-    for key, title, severity, detail in (
+    for key, title, severity, detail, field in (
         (
             "quality.constants",
             "Constant columns",
             FindingSeverity.MEDIUM,
             "Constant columns contain no observed variation in this dataset.",
+            "constant_columns",
         ),
         (
             "quality.identifiers",
@@ -157,9 +160,32 @@ def build_findings(sections: dict[str, Any]) -> list[Finding]:
             FindingSeverity.MEDIUM,
             "Identifier-like columns have near-unique observed values and are "
             "not valid default predictors.",
+            "id_like_columns",
+        ),
+        (
+            "quality.near_constant",
+            "Near-constant columns",
+            FindingSeverity.LOW,
+            "Near-constant columns are dominated by a single observed level.",
+            "quasi_constant_columns",
+        ),
+        (
+            "quality.high_cardinality",
+            "High-cardinality categoricals",
+            FindingSeverity.MEDIUM,
+            "High-cardinality categorical columns can explode encodings and "
+            "fragment rare levels.",
+            "high_cardinality_columns",
+        ),
+        (
+            "quality.mixed_types",
+            "Mixed-type suspect columns",
+            FindingSeverity.LOW,
+            "Text columns mix numeric-looking and non-numeric values, which "
+            "usually signals sentinels or concatenated sources.",
+            "mixed_type_suspect_columns",
         ),
     ):
-        field = "constant_columns" if key.endswith("constants") else "id_like_columns"
         columns = tuple(map(str, quality.get(field, [])))
         if columns:
             findings.append(
@@ -179,6 +205,66 @@ def build_findings(sections: dict[str, Any]) -> list[Finding]:
                     affected_columns=columns,
                 )
             )
+
+    pattern_hits = quality.get("string_pattern_hints") or {}
+    hygiene_cols = [
+        column
+        for column, rates in pattern_hits.items()
+        if any(float(rates.get(name) or 0) >= 0.2 for name in ("email_rate", "url_rate", "phone_rate"))
+        or float(rates.get("blank_like_rate") or 0) >= 0.1
+    ]
+    if hygiene_cols:
+        findings.append(
+            Finding(
+                key="quality.text_hygiene",
+                title="String hygiene signals",
+                detail=(
+                    f"{len(hygiene_cols)} text column(s) show elevated email/URL/phone "
+                    f"or blank-like rates. Observed columns: {', '.join(hygiene_cols[:10])}."
+                ),
+                severity=FindingSeverity.LOW,
+                evidence=(
+                    _evidence(
+                        "quality.string_patterns",
+                        "String pattern hint rates",
+                        {column: pattern_hits[column] for column in hygiene_cols[:20]},
+                        "quality.string_pattern_hints",
+                        ("Pattern detection samples text columns; rare tokens may be missed.",),
+                    ),
+                ),
+                affected_columns=tuple(hygiene_cols),
+            )
+        )
+
+    duplicate_count = int(quality.get("duplicate_row_count") or 0)
+    if duplicate_count:
+        findings.append(
+            Finding(
+                key="quality.duplicates",
+                title="Duplicate rows",
+                detail=(
+                    f"{duplicate_count:,} exact duplicate rows were observed "
+                    f"({float(quality.get('duplicate_row_rate') or 0):.3%} of the frame)."
+                ),
+                severity=(
+                    FindingSeverity.HIGH
+                    if float(quality.get("duplicate_row_rate") or 0) >= 0.05
+                    else FindingSeverity.MEDIUM
+                ),
+                evidence=(
+                    _evidence(
+                        "quality.duplicate_rows",
+                        "Duplicate row count and rate",
+                        {
+                            "duplicate_row_count": duplicate_count,
+                            "duplicate_row_rate": quality.get("duplicate_row_rate"),
+                        },
+                        "quality.duplicate_row_count",
+                        ("Only exact full-row duplicates are counted.",),
+                    ),
+                ),
+            )
+        )
 
     mi = bivariate.get("mutual_information_vs_target") or {}
     if mi:
@@ -206,6 +292,56 @@ def build_findings(sections: dict[str, Any]) -> list[Finding]:
                     ),
                 ),
                 affected_columns=(str(feature),),
+            )
+        )
+
+    top_pairs = bivariate.get("top_abs_pearson_pairs") or []
+    strong_pairs = [
+        pair
+        for pair in top_pairs
+        if abs(float(pair.get("corr") or 0)) >= 0.8
+        and str(pair.get("a")) != str(pair.get("b"))
+    ]
+    if strong_pairs:
+        lead = strong_pairs[0]
+        findings.append(
+            Finding(
+                key="relationships.correlated_pairs",
+                title="Strongly correlated feature pairs",
+                detail=(
+                    f"{len(strong_pairs)} eligible numeric pair(s) reached |Pearson|≥0.8; "
+                    f"strongest was '{lead.get('a')}' vs '{lead.get('b')}' "
+                    f"({float(lead.get('corr') or 0):.6g})."
+                ),
+                severity=FindingSeverity.MEDIUM,
+                evidence=(
+                    _evidence(
+                        "relationships.pearson_pairs",
+                        "Top absolute Pearson pairs",
+                        strong_pairs[:20],
+                        "bivariate.top_abs_pearson_pairs",
+                        (
+                            "Pearson captures linear co-movement and is outlier-sensitive.",
+                            "Association is not evidence of causality.",
+                        ),
+                    ),
+                ),
+                affected_columns=tuple(
+                    {
+                        str(lead.get("a")),
+                        str(lead.get("b")),
+                        *(
+                            str(pair.get("a"))
+                            for pair in strong_pairs[:6]
+                            if pair.get("a") is not None
+                        ),
+                        *(
+                            str(pair.get("b"))
+                            for pair in strong_pairs[:6]
+                            if pair.get("b") is not None
+                        ),
+                    }
+                ),
             )
         )
 
@@ -240,16 +376,115 @@ def build_findings(sections: dict[str, Any]) -> list[Finding]:
             )
         )
 
+    clusters = multivariate.get("correlation_clusters") or []
+    if clusters:
+        findings.append(
+            Finding(
+                key="multivariate.clusters",
+                title="Correlation clusters",
+                detail=(
+                    f"{len(clusters)} correlation cluster(s) were formed among eligible "
+                    f"numeric features (largest size {max(len(group) for group in clusters)})."
+                ),
+                severity=FindingSeverity.INFO,
+                evidence=(
+                    _evidence(
+                        "multivariate.correlation_clusters",
+                        "Correlation clusters",
+                        clusters,
+                        "multivariate.correlation_clusters",
+                        ("Clusters link pairs above threshold via union-find.",),
+                    ),
+                ),
+                affected_columns=tuple(
+                    str(column)
+                    for group in clusters[:4]
+                    for column in group[:6]
+                ),
+            )
+        )
+
+    pca = multivariate.get("pca") or {}
+    variance = pca.get("explained_variance_ratio") or []
+    if variance:
+        findings.append(
+            Finding(
+                key="multivariate.pca",
+                title="PCA variance screen",
+                detail=(
+                    f"PCA on complete-case numeric features reported "
+                    f"{len(variance)} component(s); first component explained "
+                    f"{float(variance[0]):.3%} of variance."
+                ),
+                severity=FindingSeverity.INFO,
+                evidence=(
+                    _evidence(
+                        "multivariate.pca.variance",
+                        "PCA explained variance",
+                        pca,
+                        "multivariate.pca",
+                        (
+                            "Variance explained is not predictive utility.",
+                            f"Based on {multivariate.get('complete_case_rows', 0)} complete rows.",
+                        ),
+                    ),
+                ),
+            )
+        )
+
+    per_column_outliers = outliers.get("per_column") or {}
+    hot_outlier_cols = [
+        (column, float(stats.get("iqr_outlier_rate") or 0))
+        for column, stats in per_column_outliers.items()
+        if float(stats.get("iqr_outlier_rate") or 0) >= 0.05
+    ]
+    hot_outlier_cols.sort(key=lambda item: item[1], reverse=True)
+    if hot_outlier_cols:
+        lead_col, lead_rate = hot_outlier_cols[0]
+        findings.append(
+            Finding(
+                key="outliers.univariate",
+                title="Univariate outlier screen",
+                detail=(
+                    f"{len(hot_outlier_cols)} numeric column(s) had IQR-fence rates "
+                    f"≥5%; highest was '{lead_col}' at {lead_rate:.3%}."
+                ),
+                severity=(
+                    FindingSeverity.MEDIUM
+                    if lead_rate >= 0.15
+                    else FindingSeverity.LOW
+                ),
+                evidence=(
+                    _evidence(
+                        "outliers.iqr_rates",
+                        "IQR outlier rates",
+                        {
+                            column: per_column_outliers[column]
+                            for column, _ in hot_outlier_cols[:20]
+                        },
+                        "outliers.per_column",
+                        (
+                            "IQR fences are a screening convention, not confirmed errors.",
+                            "Skewed columns naturally flag heavy tails.",
+                        ),
+                    ),
+                ),
+                affected_columns=tuple(column for column, _ in hot_outlier_cols[:12]),
+            )
+        )
+
     mv = outliers.get("multivariate") or {}
     if mv:
         rate = float(mv.get("anomaly_rate", 0))
+        anomaly_count = int(mv.get("anomaly_count", mv.get("flagged_row_count", 0)) or 0)
+        scored = int(mv.get("n_rows_scored", mv.get("scored_row_count", 0)) or 0)
         findings.append(
             Finding(
                 key="outliers.multivariate",
                 title="Multivariate anomaly screen",
                 detail=(
-                    f"Isolation Forest marked {int(mv.get('anomaly_count', 0)):,} of "
-                    f"{int(mv.get('n_rows_scored', 0)):,} scored rows ({rate:.3%}) "
+                    f"Isolation Forest marked {anomaly_count:,} of "
+                    f"{scored:,} scored rows ({rate:.3%}) "
                     "as anomalies."
                 ),
                 severity=FindingSeverity.MEDIUM if rate > 0.05 else FindingSeverity.INFO,
@@ -388,6 +623,31 @@ def build_recommendations(findings: list[Finding]) -> list[Recommendation]:
                     based_on=(finding_key,),
                 )
             )
+    if "quality.duplicates" in by_key:
+        recommendations.append(
+            Recommendation(
+                key="next.deduplicate",
+                title="Fix the table grain before splitting",
+                rationale=by_key["quality.duplicates"].detail,
+                priority=ActionPriority.BEFORE_MODELING,
+                based_on=("quality.duplicates",),
+                caveats=("Confirm intended grain; exact-row duplicates are only one form of duplication.",),
+            )
+        )
+    if (
+        "quality.high_cardinality" in by_key
+        and "quality.identifiers" not in by_key
+    ):
+        recommendations.append(
+            Recommendation(
+                key="next.high_cardinality",
+                title="Group or encode high-cardinality categoricals carefully",
+                rationale=by_key["quality.high_cardinality"].detail,
+                priority=ActionPriority.BEFORE_MODELING,
+                based_on=("quality.high_cardinality",),
+                caveats=("Fit grouping or target encoding on training folds only.",),
+            )
+        )
     if (
         "relationships.vif" in by_key
         and by_key["relationships.vif"].severity != FindingSeverity.INFO
@@ -402,6 +662,17 @@ def build_recommendations(findings: list[Finding]) -> list[Recommendation]:
                 caveats=("Compare regularization or feature reduction with validation.",),
             )
         )
+    elif "relationships.correlated_pairs" in by_key:
+        recommendations.append(
+            Recommendation(
+                key="next.correlated_pairs",
+                title="Resolve near-duplicate feature pairs",
+                rationale=by_key["relationships.correlated_pairs"].detail,
+                priority=ActionPriority.NEXT,
+                based_on=("relationships.correlated_pairs",),
+                caveats=("Compare regularization or feature reduction with validation.",),
+            )
+        )
     if "validation.drift" in by_key and by_key["validation.drift"].severity != FindingSeverity.INFO:
         recommendations.append(
             Recommendation(
@@ -411,6 +682,17 @@ def build_recommendations(findings: list[Finding]) -> list[Recommendation]:
                 priority=ActionPriority.BEFORE_MODELING,
                 based_on=("validation.drift",),
                 caveats=("Check split construction and time/group effects before changing data.",),
+            )
+        )
+    if "outliers.univariate" in by_key and by_key["outliers.univariate"].severity != FindingSeverity.INFO:
+        recommendations.append(
+            Recommendation(
+                key="next.outliers",
+                title="Inspect IQR-fence outliers before excluding any",
+                rationale=by_key["outliers.univariate"].detail,
+                priority=ActionPriority.NEXT,
+                based_on=("outliers.univariate",),
+                caveats=("Skewed columns naturally flag heavy tails; do not drop blindly.",),
             )
         )
     if not recommendations:

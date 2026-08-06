@@ -218,8 +218,10 @@ Explanation, audit, and reports
 * Preview operations with ``dry_run``; summarize history and heuristic risks.
 * Export EDA, evaluation, diagnostic, and workflow walkthrough reports as
   local, self-contained HTML.
-* Launch an optional local EDA Teaching Studio dashboard when
-  ``buildml[dashboard]`` is installed.
+* Launch an optional local Industry EDA App (Cockpit / Gates / Academy learning
+  hub covering ~204 BuildML concept notes with dataset-adaptive Session examples,
+  plus domain boards) when ``buildml[dashboard]`` is installed. Gate session
+  marks are UI-only.
 
 Optional extras (same Session)
 ------------------------------
