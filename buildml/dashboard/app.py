@@ -1,4 +1,4 @@
-"""FastAPI application factory for the local EDA Teaching Studio."""
+"""FastAPI application factory for the local Industry EDA App."""
 
 from __future__ import annotations
 
@@ -374,7 +374,7 @@ def create_app() -> Any:
 
     @app.get("/api/export/html")
     def html_export() -> Response:
-        """Download an offline Teaching Studio snapshot (same SPA surface)."""
+        """Download an offline Industry App snapshot (same SPA surface)."""
         import tempfile
 
         state = get_state()

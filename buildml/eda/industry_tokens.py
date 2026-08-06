@@ -1,5 +1,5 @@
 # ruff: noqa: E501
-"""Shared Industry design tokens for Static EDA and the Teaching Studio App.
+"""Shared Industry design tokens for Static EDA and the Industry EDA App.
 
 Single source for the steel / blueprint palette (``#5980a6``), Barlow stacks,
 square corners, and hairline spacing. Static HTML inlines these into

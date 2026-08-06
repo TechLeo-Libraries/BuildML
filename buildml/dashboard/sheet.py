@@ -1,17 +1,16 @@
-"""Cockpit readiness-sheet payload shaped like the Industry redesign prototypes.
+"""Cockpit readiness-sheet payload for the Industry EDA App.
 
-Maps a live Session EDA report into the numbered-spine structures used by
-``redesigning_eda/Current EDA design overview/EDA Sheet - Cockpit.dc.html``:
-KPI strip, findings register, deep assumption footnotes, full ledger groups,
+Maps a live Session EDA report into the numbered cockpit spine (01-08):
+KPI strip, findings register, assumption footnotes, ledger groups,
 recommended sequence, domain briefs, figures meta, methods/limitations, and
 skipped/degraded rows.
 
 Analytic depth is shared with Static EDA via :mod:`buildml.eda.sheet_coverage`
 so App and Static stay aligned. Gate human marks are never part of this
-payload — they stay UI-only in the browser.
+payload; they stay UI-only in the browser.
 
-Copy is dataset-adaptive via :mod:`buildml.dashboard.adapt` — never bound to a
-demo/churn schema.
+Copy is dataset-adaptive via :mod:`buildml.dashboard.adapt` and is never bound
+to a demo/churn schema.
 """
 
 from __future__ import annotations
@@ -180,7 +179,7 @@ def build_assumptions(report: dict[str, Any]) -> list[dict[str, Any]]:
 
 
 def build_ledger(report: dict[str, Any]) -> list[dict[str, Any]]:
-    """Section 03 — every computed number, grouped like the redesign ledger."""
+    """Section 03: every computed number, grouped for the cockpit ledger."""
     groups = build_ledger_groups(report, report.get("findings") or [])
     adapt = build_adapt_context(report)
     skipped = adapt.get("skipped_details") or []

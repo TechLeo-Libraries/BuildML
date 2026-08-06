@@ -13,7 +13,7 @@ from buildml.eda.industry_tokens import INDUSTRY_CHART_DARK, INDUSTRY_CHART_LIGH
 
 ThemeName = Literal["light", "dark"]
 
-# Industry steel palette shared with Static EDA / Teaching Studio tokens.
+# Industry steel palette shared with Static EDA / Industry App tokens.
 _PALETTE_LIGHT: dict[str, Any] = dict(INDUSTRY_CHART_LIGHT)
 _PALETTE_DARK: dict[str, Any] = dict(INDUSTRY_CHART_DARK)
 

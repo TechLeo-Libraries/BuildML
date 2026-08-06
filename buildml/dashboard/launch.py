@@ -1,4 +1,4 @@
-"""Launch helpers for the local EDA Teaching Studio."""
+"""Launch helpers for the local Industry EDA App."""
 
 from __future__ import annotations
 
@@ -15,7 +15,7 @@ from buildml.eda.report import EDAReport
 
 
 class DashboardLaunchError(BuildMLError):
-    """Raised when the local EDA Teaching Studio cannot bind or start."""
+    """Raised when the local Industry EDA App cannot bind or start."""
 
 
 @dataclass(slots=True)
@@ -149,7 +149,7 @@ def launch_eda_app(
     try:
         import uvicorn
     except ImportError as exc:
-        raise MissingExtraError("dashboard", "EDA Teaching Studio app") from exc
+        raise MissingExtraError("dashboard", "Industry EDA App") from exc
 
     _validate_bind_target(host, port)
     _ensure_port_available(host, port)
@@ -284,7 +284,7 @@ def _ensure_port_available(host: str, port: int) -> None:
     except OSError as exc:
         alternate = port + 1 if port < 65535 else 8766
         raise DashboardLaunchError(
-            f"Cannot start EDA Teaching Studio: port {port} on {host} is already in use "
+            f"Cannot start Industry EDA App: port {port} on {host} is already in use "
             f"({exc}). Next actions: stop the other process, or launch on another port, "
             f"e.g. session.eda_app(port={alternate}). "
             "If dependencies are missing, install with: pip install 'buildml[dashboard]'."
@@ -316,7 +316,7 @@ def _wait_until_started(
         return
     alternate = port + 1 if port < 65535 else 8766
     raise DashboardLaunchError(
-        f"EDA Teaching Studio did not become ready on http://{host}:{port}/ "
+        f"Industry EDA App did not become ready on http://{host}:{port}/ "
         f"within {timeout:.0f}s. Confirm nothing else is bound to that port, try "
         f"session.eda_app(port={alternate}), and ensure dependencies are installed with "
         "pip install 'buildml[dashboard]'."
@@ -329,13 +329,13 @@ def _launch_failure(host: str, port: int, exc: BaseException | None) -> Dashboar
     message = str(exc).lower() if exc is not None else ""
     if "address already in use" in message or "10048" in message or "eaddrinuse" in message:
         return DashboardLaunchError(
-            f"Cannot start EDA Teaching Studio: port {port} on {host} is already in use."
+            f"Cannot start Industry EDA App: port {port} on {host} is already in use."
             f"{detail} Next actions: stop the other process, or launch on another port, "
             f"e.g. session.eda_app(port={alternate}). "
             "If dependencies are missing, install with: pip install 'buildml[dashboard]'."
         )
     return DashboardLaunchError(
-        f"EDA Teaching Studio failed to start on http://{host}:{port}/.{detail} "
+        f"Industry EDA App failed to start on http://{host}:{port}/.{detail} "
         f"Try session.eda_app(port={alternate}) or reinstall with "
         "pip install 'buildml[dashboard]'."
     )

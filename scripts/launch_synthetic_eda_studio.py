@@ -1,4 +1,4 @@
-"""Build a rich dirty-classification synthetic dataset and launch Teaching Studio.
+"""Build a rich dirty-classification synthetic dataset and launch the Industry EDA App.
 
 Usage (from repo root, with .venv active)::
 

@@ -1,7 +1,7 @@
 /**
- * Command Cockpit readiness sheet — sections 02/03 redesign + teaching sidebar.
+ * Command Cockpit readiness sheet: sections 02/03 teaching sidebar.
  * Uses learn_ui.js primitives (same bar as Gates). Ledger jump chips never
- * navigate to /api/domains — they scroll in-sheet or open the cockpit drawer.
+ * navigate to /api/domains; they scroll in-sheet or open the cockpit drawer.
  */
 
 import {
@@ -215,7 +215,7 @@ export function renderLedgerBody(ledger, purpose = {}, glossary = {}) {
       }
       ${callout(
         "warning",
-        "Jump chips scroll inside the readiness sheet. They are not domain boards — clicking never calls /api/domains/ledger-*.",
+        "Jump chips scroll inside the readiness sheet. They are not domain boards; clicking never calls /api/domains/ledger-*.",
         { title: "Navigation" },
       )}
     </div>`;

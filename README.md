@@ -257,11 +257,21 @@ appropriate for it.
 ## EDA and reports
 
 ```python
-session.eda(export_html="artifacts/eda.html")
+# Offline Industry App snapshot (default html_format="studio")
+session.eda(export_html="artifacts/eda_studio.html")
+
+# BUILDML STATIC EDA: Industry readiness sheet
+session.eda(
+    include_plots=True,
+    export_html="artifacts/eda_research.html",
+    html_format="research",
+)
 
 # pip install "buildml[dashboard]"
 handle = session.eda_app(port=8765)
 # handle.url -> http://127.0.0.1:8765/
+# Cockpit spine 01-08, Readiness Gates, Concept Academy (~204 catalog lessons)
+# Primary export in the app header: Offline HTML
 
 session.evaluate(
     partition="test",
@@ -271,9 +281,11 @@ session.evaluate(
 ```
 
 Reports surface screening evidence. They do not establish causality, fairness,
-or deployment readiness on their own. Deeper classical topics (target encoding,
-PCA, calibration, learning curves, permutation importance) live in the
-[classical quickstart](guides/quickstart-classical.md) and
+or deployment readiness on their own. Local launch helpers and a multi-dataset
+adaptability check live under `scripts/` (`launch_synthetic_eda_studio.py`,
+`generate_static_eda_preview.py`, `eda_adaptability_gauntlet.py`). See
+[EDA / Teaching Studio](guides/eda-teaching-studio.md), the
+[classical quickstart](guides/quickstart-classical.md), and the
 [workflow guide](docs/workflow-guide.rst).
 
 ---

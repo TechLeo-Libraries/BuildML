@@ -182,7 +182,7 @@ Transcript ≠ checkpoint ≠ Torch/RAG bundle
 | Sample egress without confirm | `ValidationError` |
 | Unknown tool | Rejected by registry |
 | Autonomy without `confirm_autonomy=True` | Refused |
-| Confusing advisor with `eda_app` | Different products: studio is local/offline |
+| Confusing advisor with `eda_app` | Different products: Industry App is local/offline |
 
 ---
 

@@ -87,7 +87,7 @@ VIZ = Prerequisite(
 )
 DASHBOARD = Prerequisite(
     "dashboard-extra",
-    "The optional dashboard dependencies are installed for the local EDA Teaching Studio.",
+    "The optional dashboard dependencies are installed for the local Industry EDA App.",
     status=PrerequisiteStatus.OPTIONAL,
     check_hint="Install buildml[dashboard] before calling Session.eda_app(...).",
 )

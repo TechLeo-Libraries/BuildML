@@ -1,10 +1,10 @@
 /**
- * BuildML EDA App — Industry readiness sheets.
- * Layout / IA ported from redesigning_eda/Current EDA design overview/
- * (Cockpit, Academy, Readiness Gates). Gate marks are UI-only / in-memory.
+ * BuildML EDA App: Industry readiness sheets.
+ * Cockpit spine 01-08, Concept Academy, Readiness Gates, domain boards.
+ * Gate marks are UI-only / in-memory (never persisted).
  *
  * Shared learn presentation: import from ./learn_ui.js (also wired in index.html).
- * Academy / Gates view modules should import the same primitives — do not fork markup.
+ * Academy / Gates view modules should import the same primitives; do not fork markup.
  */
 import { hydrateIcons, iconSvg } from "./icons.js";
 import { renderAcademy as renderAcademyView } from "./academy_view.js";
@@ -458,7 +458,7 @@ async function renderCockpit() {
 
   updateChrome({
     kicker: `BuildML ${version} · Exploratory data analysis · ${engine}`,
-    title: "Command cockpit — readiness sheet",
+    title: "Command cockpit readiness sheet",
     actionsHtml: primaryNavActions("cockpit"),
   });
 
@@ -1136,7 +1136,7 @@ function currentRoute() {
 
 async function boot() {
   hydrateIcons(document);
-  // Industry redesign sheets are light-first; keep a theme key for offline parity
+  // Industry sheets are light-first; keep a theme key for offline parity
   // without a chrome toggle. Never persist gate marks.
   document.documentElement.setAttribute("data-theme", "light");
   try {

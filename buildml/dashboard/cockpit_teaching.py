@@ -497,7 +497,7 @@ def _ledger_example(key: str, items: list[dict[str, str]], ctx: dict[str, Any]) 
             "Pass port=... to eda_app when 8765 is busy.",
         ],
         reading=(
-            "The cockpit sheet and Static EDA share ledger builders — numbers should match "
+            "The cockpit sheet and Static EDA share ledger builders; numbers should match "
             "for the same report dict."
         ),
     )

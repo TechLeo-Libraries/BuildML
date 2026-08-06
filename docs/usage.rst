@@ -283,16 +283,16 @@ Reports and walkthroughs
 
 .. code-block:: python
 
-   # Offline dashboard snapshot (default; needs buildml[dashboard])
+   # Offline Industry App snapshot (default; needs buildml[dashboard])
    eda = session.eda(export_html="artifacts/eda_studio.html", html_format="studio")
-   # BUILDML STATIC EDA (Industry blueprint) with matplotlib embeds
+   # BUILDML STATIC EDA (Industry readiness sheet) with matplotlib embeds
    research = session.eda(
        include_plots=True,
        export_html="artifacts/eda_research.html",
        html_format="research",
        export_figures="artifacts/eda-figures",
    )
-   # Live dashboard (requires: pip install "buildml[dashboard]")
+   # Live Industry EDA App (requires: pip install "buildml[dashboard]")
    handle = session.eda_app(port=8765)  # or session.open_eda_dashboard()
    # If port 8765 is busy: session.eda_app(port=8766)
    evaluation = session.evaluate(
@@ -302,18 +302,18 @@ Reports and walkthroughs
    )
    walkthrough = session.walkthrough(export_html="artifacts/workflow.html")
 
-``eda_app()`` opens the Industry EDA App (layout ported from the redesign
-readiness sheets): Command cockpit (findings register, assumptions, ledger,
-recommended sequence, figures), Readiness gates (clear / open / human / n/a,
-with a deep-dive learning sidebar per gate), and Concept academy (staged
-ML-engineering learning hub covering every BuildML concept note (~204): plain
-language → calculation → copyable Session examples adapted to this dataset),
-plus secondary domain boards. Gate session
-marks are browser-tab UI state only and are never persisted. Each gate sidebar
-teaches what the question asks, why it matters, how status was derived from the
-live report, optional calculations, and a copy-paste Session example with
-what-to-change guidance. CSV downloads cover major evidence tables. Offline HTML
-downloads a self-contained snapshot of the same App SPA. HTML artifacts embed
+``eda_app()`` opens the Industry EDA App: Command cockpit (numbered spine 01-08:
+findings register, assumptions, ledger, recommended sequence, domain briefs,
+figures, methods/limitations, skipped/degraded), Readiness gates (clear / open /
+human / n/a, with a deep-dive learning sidebar per gate), and Concept academy
+(staged ML-engineering learning hub covering every BuildML concept note (~204):
+plain language through calculation through copyable Session examples adapted to
+this dataset), plus secondary domain boards. Gate session marks are browser-tab
+UI state only and are never persisted. Each gate sidebar teaches what the
+question asks, why it matters, how status was derived from the live report,
+optional calculations, and a copy-paste Session example with what-to-change
+guidance. Offline HTML is the primary app-header export (same SPA surface).
+CSV and PDF routes remain on the API for automation. HTML artifacts embed
 required styles and assets so they open without a network connection.
 
 Engines: pandas, Polars, DuckDB

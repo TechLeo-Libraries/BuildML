@@ -1509,7 +1509,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
     _operation(
         "open_eda_dashboard",
         OperationKind.EXPORT,
-        "Alias for eda_app: open the local EDA Teaching Studio in a browser.",
+        "Alias for eda_app: open the local Industry EDA App in a browser.",
         "Provide a memorable name for callers who think in dashboard terms.",
         "Interactive local product surface for EDA teaching and review.",
         (
@@ -1536,8 +1536,8 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         leakage=("Presents full-dataset EDA; does not fit transforms or models.",),
         anti_patterns=("Treating the alias as a second, different product surface.",),
         state_changes=("Records launch metadata through eda_app; does not mutate data.",),
-        result_reading=("Use the returned URL and Teaching Studio / Concept Academy navigation.",),
-        next_steps=("Export PDF/CSV, then apply cited Session operations on train only.",),
+        result_reading=("Use the returned URL; start at Cockpit, then Gates and Concept Academy.",),
+        next_steps=("Export Offline HTML (primary), then apply cited Session operations on train only.",),
         concepts=(
             "column-roles",
             "diagnostic-uncertainty",

@@ -94,13 +94,13 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             _p(
                 "export_html",
                 "str | Path | None",
-                "Optional HTML path (Teaching Studio offline by default).",
+                "Optional HTML path (Industry App offline snapshot by default).",
             ),
             _p("export_figures", "str | Path | None", "Optional matplotlib figure directory."),
             _p(
                 "html_format",
                 "studio | research",
-                "studio=offline Teaching Studio; research=BUILDML STATIC EDA HTML shell.",
+                "studio=offline Industry App snapshot; research=BUILDML STATIC EDA readiness sheet.",
                 "studio",
             ),
         ),
@@ -109,8 +109,8 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         prerequisites=(DATASET, VIZ),
         ordering=("After role assignment; repeat after major schema changes without mining final test outcomes.",),
         alternatives=(
-            "session.eda_app() for the live Teaching Studio.",
-            "html_format='research' for the BUILDML STATIC EDA HTML shell.",
+            "session.eda_app() for the live Industry EDA App.",
+            "html_format='research' for the BUILDML STATIC EDA readiness sheet.",
         ),
         rationale=("Sample only when full analysis is too costly and record what the sample misses.",),
         assumptions=("Statistical flags are screening evidence, not domain conclusions.",),
@@ -125,8 +125,8 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
     _operation(
         "eda_app",
         OperationKind.EXPORT,
-        "Serve a local Teaching Studio app over the current EDA report.",
-        "Inspect domain boards, teaching studios, Concept Academy, and export PDF/CSV evidence.",
+        "Serve a local Industry EDA App over the current EDA report.",
+        "Inspect Cockpit, Readiness Gates, Concept Academy, domain boards; Offline HTML is the primary export.",
         "Interactive local product surface for EDA teaching and review.",
         (
             "Reuse or compute an EDAReport.",
@@ -148,11 +148,11 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         prerequisites=(DATASET, DASHBOARD),
         ordering=("After eda() or when a fresh exploratory review is needed before modeling.",),
         alternatives=(
-            "session.eda(export_html=..., html_format='studio') for an offline Teaching Studio snapshot.",
-            "session.eda(export_html=..., html_format='research') for the BUILDML STATIC EDA HTML shell.",
+            "session.eda(export_html=..., html_format='studio') for an offline Industry App snapshot.",
+            "session.eda(export_html=..., html_format='research') for the BUILDML STATIC EDA readiness sheet.",
         ),
         rationale=(
-            "Use the live Teaching Studio for interactive review; offline HTML is the same product "
+            "Use the live Industry EDA App for interactive review; Offline HTML is the same product "
             "surface without a server.",
         ),
         assumptions=("The app binds to a local loopback port and serves one Session report payload.",),
@@ -160,7 +160,10 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         leakage=("The app presents full-dataset EDA; it does not fit transforms or models.",),
         anti_patterns=("Treating the local app as a deployment dashboard or causal discovery tool.",),
         state_changes=("Records launch metadata; does not mutate the dataset.",),
-        result_reading=("Start at the cockpit, open Teaching Studio for each domain, then Concept Academy links.",),
+        result_reading=(
+            "Start at the Command cockpit spine, open Readiness Gates and Concept Academy, "
+            "then domain boards as needed.",
+        ),
         next_steps=(
             "Export Offline HTML from the app header (primary), then apply cited "
             "Session operations on train only. CSV/PDF APIs remain for automation; "

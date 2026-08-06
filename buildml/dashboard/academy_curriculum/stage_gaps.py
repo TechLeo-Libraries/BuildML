@@ -1,4 +1,4 @@
-"""Extra ML-engineering lessons beyond the redesign's 67 (still staged 00-05)."""
+"""Extra ML-engineering lessons beyond the core readiness spine (stages 00-05)."""
 
 from __future__ import annotations
 

@@ -112,8 +112,8 @@ def explore_dataset(
     export_figures:
         Write the rendered figures to this directory. Needs ``include_plots``.
     html_format:
-        ``'studio'`` for the offline Teaching Studio snapshot: the same surface
-        as ``session.eda_app()``: or ``'research'`` for the BUILDML STATIC EDA
+        ``'studio'`` for the offline Industry App snapshot (same surface as
+        ``session.eda_app()``), or ``'research'`` for the BUILDML STATIC EDA
         HTML shell with embedded Matplotlib figures.
 
     Returns
@@ -319,7 +319,7 @@ def _export_eda_html_path(
     max_plots: int,
     warnings: list[str],
 ) -> Path:
-    """Route HTML export to Teaching Studio offline or research shell."""
+    """Route HTML export to Industry App offline snapshot or Static research sheet."""
     if html_format == "studio":
         try:
             from buildml.dashboard.offline import export_studio_html
@@ -327,12 +327,12 @@ def _export_eda_html_path(
             return export_studio_html(report.to_dict(), path, title="BuildML EDA Studio")
         except MissingExtraError as exc:
             warnings.append(
-                f"Teaching Studio offline export unavailable ({exc}); "
+                f"Industry App offline export unavailable ({exc}); "
                 "falling back to research HTML. Install buildml[dashboard]."
             )
         except Exception as exc:  # pragma: no cover - defensive fallback
             warnings.append(
-                f"Teaching Studio offline export failed ({exc}); falling back to research HTML."
+                f"Industry App offline export failed ({exc}); falling back to research HTML."
             )
     return export_eda_html(
         report.to_dict(),

@@ -68,7 +68,7 @@ h1, h2, h3, h4, h5, h6 {
   top: 1rem;
 }
 
-/* —— Sheet shell (redesign max-width document) —— */
+/* Sheet shell (Industry max-width document) */
 .sheet {
   min-height: 100vh;
   padding: var(--space-6) var(--space-8) var(--space-8);
@@ -135,7 +135,7 @@ h1, h2, h3, h4, h5, h6 {
   margin-top: 0;
 }
 
-/* —— Typography helpers from redesign sheets —— */
+/* Typography helpers for Industry sheets */
 .om-mono {
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;

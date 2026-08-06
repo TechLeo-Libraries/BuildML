@@ -1,9 +1,10 @@
 """Concept Academy learning-hub payload for the Industry EDA App.
 
 Builds a staged, dataset-adaptive curriculum covering every BuildML
-``CONCEPT_NOTES`` entry (~204) plus redesign readiness-path slugs — each as a
-first-class lesson with plain-language teaching, calculations, real BuildML
-Session examples, and live-report evidence. There is no thin "extended" dump.
+``CONCEPT_NOTES`` entry (~204) plus readiness-path curriculum slugs that are
+not themselves catalog keys. Each lesson has plain-language teaching,
+calculations, real BuildML Session examples, and live-report evidence.
+There is no thin "extended" dump.
 """
 
 from __future__ import annotations
@@ -63,7 +64,7 @@ def cited_concept_keys(report: dict[str, Any]) -> dict[str, int]:
 
 
 def cited_curriculum_slugs(report: dict[str, Any]) -> dict[str, int]:
-    """Count findings that cite each curriculum slug (redesign keys)."""
+    """Count findings that cite each curriculum slug (readiness-path keys)."""
     counts: dict[str, int] = {}
     for item in report.get("findings") or []:
         slug = FINDING_CONCEPT_SLUG.get(str(item.get("key", "")))
@@ -320,9 +321,9 @@ def build_academy_payload(report: dict[str, Any]) -> dict[str, Any]:
         "extended_count": 0,
         "curriculum_note": (
             f"All {len(concepts)} lessons are first-class teaching "
-            f"({catalog_n} BuildML CONCEPT_NOTES + redesign readiness slugs). "
+            f"({catalog_n} BuildML CONCEPT_NOTES + readiness-path slugs). "
             "Filled chips are cited by a finding on this session's report; "
-            "outlined chips are reference teaching. Stages 00–05 are the ML "
+            "outlined chips are reference teaching. Stages 00-05 are the ML "
             "readiness spine; 06 is domain depth with the same pedagogical bar."
         ),
         "adaptivity": {

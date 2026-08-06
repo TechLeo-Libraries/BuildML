@@ -1,5 +1,5 @@
 /**
- * Concept Academy learning-hub view (Industry redesign + full CONCEPT_NOTES).
+ * Concept Academy learning-hub view (Industry App + full CONCEPT_NOTES).
  *
  * Performance at ~200+ lessons:
  * - Stages collapse by default (open when filtered / jumped / toggled)

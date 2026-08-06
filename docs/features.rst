@@ -217,11 +217,14 @@ Explanation, audit, and reports
 * Resolve workflow operations as done, available, blocked, or skipped.
 * Preview operations with ``dry_run``; summarize history and heuristic risks.
 * Export EDA, evaluation, diagnostic, and workflow walkthrough reports as
-  local, self-contained HTML.
-* Launch an optional local Industry EDA App (Cockpit / Gates / Academy learning
-  hub covering ~204 BuildML concept notes with dataset-adaptive Session examples,
-  plus domain boards) when ``buildml[dashboard]`` is installed. Gate session
-  marks are UI-only.
+  local, self-contained HTML. ``html_format="research"`` writes BUILDML STATIC
+  EDA (Industry readiness sheet); ``html_format="studio"`` writes an offline
+  Industry App snapshot.
+* Launch an optional local Industry EDA App (Cockpit spine 01-08 / Readiness
+  Gates / Concept Academy covering ~204 BuildML concept notes with
+  dataset-adaptive Session examples, plus domain boards) when
+  ``buildml[dashboard]`` is installed. Offline HTML is the primary app export.
+  Gate session marks are UI-only and are never persisted.
 
 Optional extras (same Session)
 ------------------------------

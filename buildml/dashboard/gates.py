@@ -1,5 +1,5 @@
 # ruff: noqa: E501
-"""Readiness Gates for the EDA Teaching Studio (derived from redesign pack).
+"""Readiness Gates for the Industry EDA App.
 
 Statuses are computed from the live EDA report only. Human/"mark for this
 session" toggles exist exclusively in the SPA client and are never accepted,
@@ -161,7 +161,7 @@ class _GateDef:
 
 
 def resolve_concept_key(slug: str) -> str | None:
-    """Map a redesign curriculum slug to a BuildML concept key, if taught."""
+    """Map a readiness curriculum slug to a BuildML concept key, if taught."""
     if slug in CONCEPT_NOTES:
         return slug
     alias = CONCEPT_ALIASES.get(slug)
@@ -171,7 +171,7 @@ def resolve_concept_key(slug: str) -> str | None:
 
 
 def build_gates_payload(report: dict[str, Any]) -> dict[str, Any]:
-    """Compute readiness gates for the Teaching Studio Gates board.
+    """Compute readiness gates for the Industry EDA App Gates board.
 
     Returns rows, counts, and stage groups. Does not accept or return any
     human decision marks — those stay in the browser for the open App session.

@@ -152,7 +152,7 @@ cross-links.
 | [Leakage, recipes, weights, hard-refuse CV](leakage-cv-recipes.md) | Good/bad examples; fold-local honesty; weight role |
 | [Preprocess depth](preprocess-depth.md) | Encode variants, dates, text features, custom transforms, resample |
 | [Engines (Polars / DuckDB)](engines-polars-duckdb.md) | Prep then sklearn; lifecycle; honesty on out-of-core |
-| [EDA / Teaching Studio](eda-teaching-studio.md) | Findings, HTML, live dashboard, explain/workflow |
+| [EDA / Teaching Studio](eda-teaching-studio.md) | Findings, Static readiness sheet, Industry App, explain/workflow |
 | [Diagnostics & model search](classical-diagnostics-search.md) | Calibration, thresholds, compare_models, grid/random/Optuna/nested |
 | [Artifacts: checkpoints vs bundles](artifacts-checkpoints-bundles.md) | What each artifact contains and does not |
 | [Unsupervised deep](unsupervised-deep.md) | Clustering methods, PCA integration, validity honesty, unsupervised bundles |

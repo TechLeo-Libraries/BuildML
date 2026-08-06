@@ -8,6 +8,16 @@ with pre-release tags for alpha (`aN`) builds.
 
 ## [Unreleased]
 
+### Changed
+
+- **Industry EDA surfaces.** Static research HTML is BUILDML STATIC EDA (Industry
+  readiness sheet, `html_format="research"`). The live dashboard is the Industry
+  EDA App: Cockpit spine 01-08, Readiness Gates (UI-only session marks), Concept
+  Academy (~204 `CONCEPT_NOTES` lessons plus readiness-path slugs), Offline HTML
+  as the primary app export. Shared analytic coverage and adapt helpers keep App
+  and Static aligned. Design-source folder `redesigning_eda/` removed from the
+  tree; launch/preview/gauntlet helpers documented under `scripts/`.
+
 ## [2.4.0] - 2026-08-04
 
 First **stable** Session 2.x release on PyPI. `pip install buildml` now resolves

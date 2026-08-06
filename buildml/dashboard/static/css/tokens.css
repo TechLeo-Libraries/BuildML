@@ -1,7 +1,6 @@
 /*
- * Industry design tokens — shared with Static EDA via buildml.eda.industry_tokens.
- * Component classes ported from redesigning_eda/.../_ds/industry-.../styles.css
- * so the live App uses the same chrome as the redesign sheets.
+ * Industry design tokens shared with Static EDA via buildml.eda.industry_tokens.
+ * Component classes match the Industry blueprint chrome used by the live App.
  */
 
 @import url("https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;700&family=Barlow+Condensed:wght@400;600&display=swap");

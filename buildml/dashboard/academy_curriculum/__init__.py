@@ -1,9 +1,9 @@
-"""EDA → modeling Concept Academy curriculum (Industry redesign + full catalog).
+"""EDA to modeling Concept Academy curriculum (Industry App + full catalog).
 
 The learning hub covers every ``CONCEPT_NOTES`` entry (~204) as a first-class
-lesson, plus redesign readiness-path slugs that are not themselves catalog keys.
-Handcrafted ``stage_*.py`` / ``stage_gaps.py`` lessons win on slug collision;
-``note_binder`` fills the rest at the same pedagogical bar.
+lesson, plus readiness-path curriculum slugs that are not themselves catalog
+keys. Handcrafted ``stage_*.py`` / ``stage_gaps.py`` lessons win on slug
+collision; ``note_binder`` fills the rest at the same pedagogical bar.
 """
 
 from __future__ import annotations
@@ -68,7 +68,7 @@ def curriculum_slugs() -> frozenset[str]:
 
 
 def readiness_slugs() -> frozenset[str]:
-    """Handcrafted redesign + gap slugs (stages 00–05 spine)."""
+    """Handcrafted readiness + gap slugs (stages 00-05 spine)."""
     return frozenset(lesson.slug for lesson in _handcrafted_lessons())
 
 

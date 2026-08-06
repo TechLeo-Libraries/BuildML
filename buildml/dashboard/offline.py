@@ -1,5 +1,5 @@
 # ruff: noqa: E501
-"""Offline Teaching Studio HTML snapshot (same product surface as eda_app)."""
+"""Offline Industry EDA App HTML snapshot (same product surface as eda_app)."""
 
 from __future__ import annotations
 
@@ -97,7 +97,7 @@ def export_studio_html(
     try:
         import plotly  # noqa: F401
     except ImportError as exc:
-        raise MissingExtraError("dashboard", "Teaching Studio offline HTML export") from exc
+        raise MissingExtraError("dashboard", "Industry App offline HTML export") from exc
 
     destination = Path(path)
     destination.parent.mkdir(parents=True, exist_ok=True)
@@ -427,7 +427,7 @@ def render_offline_html(bundle: dict[str, Any]) -> str:
     <header class="sheet-chrome" id="sheet-chrome">
       <div class="sheet-chrome__brand">
         <div class="om-mono om-kick" id="sheet-kicker">BuildML · Exploratory data analysis</div>
-        <h1 class="sheet-title" id="sheet-title">Command cockpit — readiness sheet</h1>
+        <h1 class="sheet-title" id="sheet-title">Command cockpit readiness sheet</h1>
       </div>
       <div class="sheet-chrome__actions" id="sheet-actions">
         <a class="btn btn-ghost" href="#/gates">Readiness gates →</a>
@@ -467,11 +467,11 @@ def _read_plotly_min() -> str:
     try:
         import plotly
     except ImportError as exc:
-        raise MissingExtraError("dashboard", "Teaching Studio offline HTML export") from exc
+        raise MissingExtraError("dashboard", "Industry App offline HTML export") from exc
     package_dir = Path(plotly.__file__).resolve().parent
     matches = list(package_dir.rglob("plotly.min.js"))
     if not matches:
-        raise MissingExtraError("dashboard", "Teaching Studio offline HTML export (plotly.min.js)")
+        raise MissingExtraError("dashboard", "Industry App offline HTML export (plotly.min.js)")
     return matches[0].read_text(encoding="utf-8", errors="ignore")
 
 

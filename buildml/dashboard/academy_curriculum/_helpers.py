@@ -176,7 +176,7 @@ def build_academy_context(report: dict[str, Any]) -> dict[str, Any]:
     ctx["completeness"] = max(0.0, min(1.0, 1.0 - (missing_cells / cells)))
     ctx["memoryMB"] = overview.get("memory_mb") or overview.get("approx_memory_mb")
 
-    # Finding citations keyed by redesign curriculum slug and catalog aliases.
+    # Finding citations keyed by readiness curriculum slug and catalog aliases.
     by_slug: dict[str, list[dict[str, Any]]] = {}
     for item in findings:
         slug = FINDING_CONCEPT_SLUG.get(str(item.get("key") or ""))

@@ -1,6 +1,6 @@
 """Generate a viewable BUILDML STATIC EDA HTML preview.
 
-Reuses the synthetic dirty-classification frame from the Teaching Studio
+Reuses the synthetic dirty-classification frame from the Industry EDA App
 launcher, runs research-format EDA, and writes a self-contained HTML file.
 The sample frame is for preview only; the exporter itself is dataset-agnostic.
 

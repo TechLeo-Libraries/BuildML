@@ -1,5 +1,5 @@
 # ruff: noqa: E501
-"""BUILDML STATIC EDA — Industry blueprint HTML export.
+"""BUILDML STATIC EDA: Industry readiness sheet HTML export.
 
 Exports one offline HTML file that mirrors the Industry design-system spine:
 KPI strip, findings register, assumption notes, ledger, recommended Session API
@@ -7,7 +7,7 @@ sequence, and figures. It deliberately omits Readiness Gates pages, Concept
 Academy navigation, and recorded human gate-status UX.
 
 Teaching content appears only as short inline assumption footnotes derived from
-finding evidence — not as a searchable curriculum product.
+finding evidence, not as a searchable curriculum product.
 
 See Also
 --------

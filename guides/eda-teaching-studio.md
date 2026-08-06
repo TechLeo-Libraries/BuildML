@@ -31,22 +31,21 @@ Session operation to a versioned catalog (kept in sync by CI). That lets you:
 4. Preview a chain without appending history (`dry_run`).
 5. Export an offline audit HTML for review.
 
-The live dashboard (`eda_app`) is an optional FastAPI **Industry EDA App** whose
-chrome and IA are ported from the redesign sheets in
-`redesigning_eda/Current EDA design overview/` (Command cockpit readiness sheet,
-Concept academy, Readiness gates). Tokens are shared with BUILDML STATIC EDA.
-Domain boards remain available as secondary sheets. It is not a replacement for
-domain judgment.
+The live dashboard (`eda_app`) is an optional FastAPI **Industry EDA App** with
+document-sheet IA: Command cockpit (numbered spine 01-08), Readiness Gates,
+Concept Academy, and secondary domain boards. Tokens and analytic coverage are
+shared with **BUILDML STATIC EDA** (`html_format="research"`). It is not a
+replacement for domain judgment.
 
-**Concept Academy** is a staged ML-engineering learning hub (00 Framing → 05
-Interpretation, plus 06 Domain depth). It teaches every BuildML `CONCEPT_NOTES`
-entry (~204) as a first-class lesson — beginner → advanced prose, a calculation
-walkthrough bound to this session's numbers (or an honest N/A), a copyable
-BuildML `Session` example, pitfalls, and "what to change for your data" callouts —
-plus the redesign readiness-path slugs that are not themselves catalog keys.
-Cited vs reference chips follow findings on the live report — not a hardcoded demo
-story. Open `#/academy` in the app, or call `build_academy_payload(report.to_dict())`
-from `buildml.dashboard.academy`.
+**Concept Academy** is a staged ML-engineering learning hub (00 Framing through
+05 Interpretation, plus 06 Domain depth). It teaches every BuildML
+`CONCEPT_NOTES` entry (~204) as a first-class lesson (beginner through advanced
+prose, a calculation walkthrough bound to this session's numbers or an honest
+N/A, a copyable BuildML `Session` example, pitfalls, and "what to change for
+your data" callouts), plus readiness-path curriculum slugs that are not
+themselves catalog keys. Cited vs reference chips follow findings on the live
+report, not a hardcoded demo story. Open `#/academy` in the app, or call
+`build_academy_payload(report.to_dict())` from `buildml.dashboard.academy`.
 
 ---
 
@@ -85,10 +84,10 @@ Recommendations **name** Session operations; they do not execute them.
 ## Use case: offline HTML (studio vs research)
 
 ```python
-# Default studio snapshot (dashboard SPA assets embedded when available)
+# Offline Industry App snapshot (dashboard SPA assets embedded when available)
 session.eda(export_html="artifacts/eda_studio.html", html_format="studio")
 
-# BUILDML STATIC EDA (Industry blueprint; needs buildml[viz] for plots)
+# BUILDML STATIC EDA (Industry readiness sheet; needs buildml[viz] for plots)
 session.eda(
     include_plots=True,
     export_html="artifacts/eda_research.html",
@@ -97,7 +96,17 @@ session.eda(
 )
 ```
 
-HTML artifacts embed required styles/assets so they open offline.
+`html_format="research"` is the Static product: KPI strip, findings register,
+assumptions, ledger, recommended Session calls, figures, methods, and degraded
+rows. It omits Gates, Academy, and human gate-status UX. HTML artifacts embed
+required styles/assets so they open offline.
+
+Local preview from a synthetic dirty frame:
+
+```bash
+python scripts/generate_static_eda_preview.py
+# writes .buildml-artifacts/static_eda_cockpit.html
+```
 
 ---
 
@@ -122,10 +131,15 @@ Surfaces in the App (document sheets, not a sidebar studio):
 
 | Board | Role |
 | --- | --- |
-| Command cockpit | KPI strip · numbered spine: findings register, assumptions, ledger, recommended sequence, figures |
-| Readiness gates | Second-pass tally, sticky filters, stage-grouped gate cards; click a gate for the learning sidebar (beginner→advanced, calculations, copy-paste Session examples, session-local marks only) |
-| Concept academy | Sticky search/stage tools, contents board, two-column concept entries |
+| Command cockpit | KPI strip and numbered spine 01-08: findings register, assumptions, ledger, recommended sequence, domain briefs, figures, methods/limitations, skipped/degraded |
+| Readiness gates | Second-pass tally, sticky filters, stage-grouped gate cards; click a gate for the learning sidebar (beginner through advanced, calculations, copy-paste Session examples). Session marks are UI-only |
+| Concept academy | Sticky search/stage tools, contents board, two-column concept entries (~204 catalog lessons plus readiness-path slugs) |
 | Domain boards | Quality, features, relationships, multivariate, target, outliers, visuals |
+
+**Offline HTML** is the primary export in the app header (same SPA surface,
+including Gates and Academy). CSV and PDF routes remain on the API for
+automation; they are not the primary header action. Static research HTML keeps
+its own Print/PDF path.
 
 ### Dataset adaptability (shared contract)
 
@@ -142,7 +156,7 @@ Academy / Gates agents should:
 1. Import adaptive facts from `adapt.py` (or read `meta.adapt` / `sheet.adapt` from the API) instead of hardcoding column names like `target_churn`. Prefer `build_gate_context` inputs already flattened in `adapt.build_adapt_context`.
 2. Import presentation from `learn_ui.js` (ESM) **or** use `window.BuildMLLearnUI` (Academy view pattern). Script order in `templates/index.html`: `learn_ui.js` → `gates_view.js` → `academy_view.js` → `app.js`.
 3. Leave curriculum bodies in `academy.py` / `gates.py` / `academy_curriculum/`; only bind session lines, evidence, and worked examples to live `adapt` fields / report numbers.
-4. Offline HTML inlines the same module graph via blob URLs in `offline.py` — keep import rewrite placeholders in sync when adding views.
+4. Offline HTML inlines the same module graph via blob URLs in `offline.py`. Keep import rewrite placeholders in sync when adding views.
 
 Cockpit already exposes `sheet.adapt`, `sheet.session_sentence`, `sheet.what_to_change`, and spine meta counts for scannability.
 
@@ -150,11 +164,22 @@ Cockpit already exposes `sheet.adapt`, `sheet.session_sentence`, `sheet.what_to_
 the open browser tab and is discarded on refresh. BuildML does not write gate
 judgments to the Session, history, disk, or any saved dataset copy (privacy and
 complexity: a durable mark would imply remembering *why* a decision was made).
+Session marks also do not persist inside an Offline HTML file beyond the open
+tab.
 
-If the port is busy, pass another port. CSV downloads cover major evidence
-tables in the App UI. Offline HTML exports the same SPA surface (including
-Gates and Academy); session marks still do not persist inside that file beyond
-the open tab.
+If the port is busy, pass another port.
+
+### Adaptability gauntlet (repo script)
+
+To smoke Static research HTML and the App across many frames (real and
+synthetic), from the repo root:
+
+```bash
+python scripts/eda_adaptability_gauntlet.py
+```
+
+Artifacts land under `.buildml-artifacts/gauntlet/` (ignored by git). Exit code
+0 only when every case passes.
 
 ---
 
@@ -224,7 +249,7 @@ session.learn("cross-validation", level="intermediate")
 ```
 
 Concept notes, the glossary, and operation primers are the same objects the
-walkthrough, the studio, and the AI operator's `explain_operation` /
+walkthrough, the Industry App, and the AI operator's `explain_operation` /
 `learn_concept` tools read from, so no surface teaches something another
 contradicts. All of it is static teaching material: it describes ideas and
 BuildML's contract, and inspects none of your data.
@@ -258,7 +283,7 @@ See [diagnostics & search](classical-diagnostics-search.md).
 | `MissingExtraError: dashboard` | Install `buildml[dashboard]` |
 | `MissingExtraError: viz` | Install `buildml[viz]` for plots |
 | Acting on recommendations blindly | Still call Session methods yourself; verify domain fit |
-| Confusing AI advisor with EDA | AI is optional (`buildml[ai]`); EDA/studio work offline |
+| Confusing AI advisor with EDA | AI is optional (`buildml[ai]`); EDA/App work offline |
 
 ---
 

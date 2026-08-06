@@ -1,4 +1,4 @@
-"""Local EDA Teaching Studio app (FastAPI + SPA shell)."""
+"""Local Industry EDA App (FastAPI + SPA shell)."""
 
 from buildml.dashboard.launch import (
     DashboardLaunchError,

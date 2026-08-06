@@ -218,12 +218,12 @@ class EDAReport:
     ) -> Path:
         """Write this report as a self-contained HTML file.
 
-        Two shells for two audiences. ``'studio'`` produces the offline Teaching
-        Studio snapshot: guided, explanatory, the same surface as
-        ``session.eda_app()``: and suits someone who needs the analysis
+        Two shells for two audiences. ``'studio'`` produces the offline Industry
+        App snapshot: guided, explanatory, the same surface as
+        ``session.eda_app()``, and suits someone who needs the analysis
         explained as well as shown. ``'research'`` produces the BUILDML STATIC EDA
-        HTML shell (Industry blueprint) with findings, ledger,
-        recommended Session calls, and embedded figures.
+        Industry readiness sheet with findings, ledger, recommended Session
+        calls, and embedded figures.
 
         Either way the output is one file with everything inlined, so it can be
         emailed or archived and will still render years later.

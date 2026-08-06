@@ -133,7 +133,7 @@ export function whatToChange(items = [], opts = {}) {
 }
 
 /**
- * Numbered spine section scaffold (Industry redesign IA).
+ * Numbered spine section scaffold (Industry sheet IA).
  * @param {{ n: string|number, title: string, meta?: string, bodyHtml: string, id?: string }} opts
  */
 export function sectionScaffold(opts = {}) {

@@ -71,9 +71,9 @@ def eda(
     export_figures:
         Directory to write individual PNG figures into.
     html_format:
-        ``'studio'`` writes the interactive offline studio layout, the same
-        surface :meth:`eda_app` serves. ``'research'`` writes the BUILDML STATIC EDA
-        HTML shell with embedded matplotlib figures.
+        ``'studio'`` writes the offline Industry App snapshot, the same surface
+        :meth:`eda_app` serves. ``'research'`` writes the BUILDML STATIC EDA
+        Industry readiness sheet with embedded matplotlib figures.
 
     Returns
     -------

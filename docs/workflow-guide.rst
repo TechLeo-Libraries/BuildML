@@ -59,8 +59,10 @@ descriptive; it is not automatically valid model-selection evidence.
 
    report = session.eda(
        include_plots=True,
-       export_html="artifacts/eda.html",
+       export_html="artifacts/eda_research.html",
+       html_format="research",
    )
+   # Live Industry App: session.eda_app(port=8765)  # needs buildml[dashboard]
 
 Read each finding's evidence, partition, denominator, severity, and limit.
 Investigate collection errors before treating a statistical association as a

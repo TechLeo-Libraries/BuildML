@@ -235,7 +235,7 @@ def export_pdf(
     # --- Cover / meta ---
     story.append(Spacer(1, 18 * mm))
     story.append(Paragraph(escape_xml(title), styles["BuildMLCover"]))
-    story.append(Paragraph("EDA Teaching Studio briefing", styles["BuildMLCoverSub"]))
+    story.append(Paragraph("Industry EDA App briefing", styles["BuildMLCoverSub"]))
     story.append(Spacer(1, 8 * mm))
     story.append(
         _styled_table(
@@ -264,8 +264,8 @@ def export_pdf(
         Paragraph(
             "This PDF is a structured offline briefing: cover metadata, contents, "
             "findings, domain evidence, static Plotly chart stills (PNG via kaleido), "
-            "Teaching Studio excerpts, and methods/limitations. Interactive hover and "
-            "zoom remain in the live Teaching Studio or offline Studio HTML. "
+            "domain teaching excerpts, and methods/limitations. Interactive hover and "
+            "zoom remain in the live Industry EDA App or Offline HTML export. "
             "Associations do not establish causality; severity ranks workflow impact.",
             styles["BuildMLSmall"],
         )
@@ -279,7 +279,7 @@ def export_pdf(
         "2. Key findings",
         "3. Domain evidence",
         "4. Chart stills",
-        f"5. Teaching Studio · {studio.get('title', domain_key)}",
+        f"5. Domain teaching · {studio.get('title', domain_key)}",
         "6. Quality flags",
         "7. Methods and limitations",
     ]
@@ -383,15 +383,15 @@ def export_pdf(
                 domain_key=domain_key,
                 styles=styles,
                 mm=mm,
-                section_title="4. Chart stills (Teaching Studio)",
+                section_title="4. Chart stills (Industry App)",
             )
         )
 
-    # --- 5. Teaching Studio excerpts ---
+    # --- 5. Domain teaching excerpts ---
     story.append(PageBreak())
     story.append(
         Paragraph(
-            f"5. Teaching Studio · {escape_xml(studio['title'])}",
+            f"5. Domain teaching · {escape_xml(studio['title'])}",
             styles["BuildMLH1"],
         )
     )
@@ -720,7 +720,7 @@ def _chart_story_blocks(
     domain_key: str,
     styles: Any,
     mm: Any,
-    section_title: str = "4. Chart stills (Teaching Studio)",
+    section_title: str = "4. Chart stills (Industry App)",
 ) -> list[Any]:
     """Build ReportLab flowables for static Plotly chart stills."""
     from reportlab.platypus import Image, KeepTogether, Paragraph, Spacer
@@ -745,7 +745,7 @@ def _chart_story_blocks(
     blocks: list[Any] = [
         Paragraph(escape_xml(section_title), heading_style),
         Paragraph(
-            "Static PNG stills of the same Plotly Teaching Studio figures. "
+            "Static PNG stills of the same Plotly Industry App figures. "
             "Captions name the chart; values come from the analysis frame.",
             styles["BuildMLSmall"],
         ),
@@ -797,7 +797,7 @@ def _chart_story_blocks(
             Paragraph(
                 "Chart stills could not be rasterized. Install the dashboard extra with "
                 "kaleido (pip install 'buildml[dashboard]') and retry, or open the "
-                "Teaching Studio for interactive Plotly boards.",
+                "Industry EDA App for interactive Plotly boards.",
                 styles["BuildMLSmall"],
             )
         )

@@ -44,7 +44,7 @@ Install only the capabilities the workflow uses:
    pip install "buildml[viz]"          # matplotlib and seaborn
    pip install "buildml[reports]"      # Sweetviz and ydata-profiling
    pip install "buildml[eda]"          # viz + reports
-   pip install "buildml[dashboard]"    # local interactive EDA dashboard
+   pip install "buildml[dashboard]"    # local Industry EDA App
    pip install "buildml[engines]"      # Polars and DuckDB
    pip install "buildml[optuna]"       # Optuna hyperparameter search
    pip install "buildml[automl]"       # native AutoML (+ Optuna method)

@@ -503,7 +503,7 @@ def test_launch_errors_when_port_in_use() -> None:
 
 
 def test_missing_dashboard_extra_message_mentions_install() -> None:
-    err = MissingExtraError("dashboard", "EDA Teaching Studio app")
+    err = MissingExtraError("dashboard", "Industry EDA App")
     assert "pip install 'buildml[dashboard]'" in str(err)
 
 

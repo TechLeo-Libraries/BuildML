@@ -49,9 +49,18 @@ coverage-full.json
 coverage-full.log
 coverage-full-crashes.json
 htmlcov/
-.buildml-artifacts/
 __pycache__/
 *.py[cod]
+*.pyo
+
+# Local EDA artifacts (studio launch, static preview, adaptability gauntlet)
+.buildml-artifacts/
+*.eda_preview.html
+*_static_eda_preview.html
+
+# One-off local probe scripts (never commit)
+scripts/_tmp*.py
+scripts/_tmp_*.py
 
 # Secrets / local env (never commit)
 .env
