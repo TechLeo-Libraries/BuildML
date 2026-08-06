@@ -42,7 +42,13 @@ _STATIC_REQUIRED = (
     "What each finding assumes",
     "bml-table--fit",
     "bml-cell-wrap",
-    "PDF briefing",  # Static path keeps print/PDF
+    "Offline HTML",  # Static primary export matches App naming
+    'id="bml-offline-html"',
+)
+_STATIC_FORBIDDEN = (
+    "PDF briefing",
+    'id="bml-csv"',
+    "bml-csv-payload",
 )
 _FORBIDDEN_ANY = (
     "Unknown domain: ledger-",
@@ -324,6 +330,9 @@ def _check_static_html(html: str, *, dataset_cols: set[str], name: str) -> list[
     for marker in _STATIC_REQUIRED:
         if marker not in html:
             issues.append(f"static missing marker: {marker}")
+    for bad in _STATIC_FORBIDDEN:
+        if bad in html:
+            issues.append(f"static forbidden export: {bad}")
     for bad in _FORBIDDEN_ANY:
         if bad in html:
             issues.append(f"static forbidden: {bad}")
@@ -436,6 +445,8 @@ def _run_case(
     name: str,
     kind: str,
     builder: Callable[[], tuple[pd.DataFrame, str | None, str | None, str, bool]],
+    *,
+    artifacts_dir: Path,
 ) -> CaseResult:
     from fastapi.testclient import TestClient
 
@@ -443,6 +454,7 @@ def _run_case(
     from buildml.dashboard.state import DashboardState, clear_state, set_state
     from buildml.eda.html_report import export_eda_html
 
+    artifacts_dir.mkdir(parents=True, exist_ok=True)
     result = CaseResult(name=name, kind=kind, task="?", n_rows=0, n_cols=0)
     try:
         frame, target, id_col, task, stratify = builder()
@@ -459,7 +471,7 @@ def _run_case(
         result.findings = len(report.get("findings") or [])
 
         # Static research HTML
-        static_path = ARTIFACTS / f"{name}_static.html"
+        static_path = artifacts_dir / f"{name}_static.html"
         export_eda_html(report, static_path, max_figures=0)
         html = static_path.read_text(encoding="utf-8")
         static_issues = _check_static_html(html, dataset_cols=dataset_cols, name=name)
@@ -542,7 +554,7 @@ def _run_case(
                 "register_sample": (sheet.get("register") or [])[:3],
                 "assumption_sample": (sheet.get("assumptions") or [])[:2],
             }
-            (ARTIFACTS / f"{name}_app.json").write_text(
+            (artifacts_dir / f"{name}_app.json").write_text(
                 json.dumps(snap, indent=2, default=str), encoding="utf-8"
             )
         finally:
@@ -558,14 +570,15 @@ def _run_case(
     return result
 
 
-def _write_summaries(results: list[CaseResult]) -> None:
+def write_summaries(results: list[CaseResult], artifacts_dir: Path) -> dict[str, Any]:
+    artifacts_dir.mkdir(parents=True, exist_ok=True)
     payload = {
         "n_cases": len(results),
         "n_passed": sum(1 for r in results if r.ok),
         "n_failed": sum(1 for r in results if not r.ok),
         "cases": [asdict(r) for r in results],
     }
-    (ARTIFACTS / "summary.json").write_text(
+    (artifacts_dir / "summary.json").write_text(
         json.dumps(payload, indent=2), encoding="utf-8"
     )
 
@@ -585,35 +598,51 @@ def _write_summaries(results: list[CaseResult]) -> None:
             f"{r.findings} | {notes} |"
         )
     lines.append("")
-    (ARTIFACTS / "summary.md").write_text("\n".join(lines), encoding="utf-8")
+    (artifacts_dir / "summary.md").write_text("\n".join(lines), encoding="utf-8")
+    return payload
+
+
+def run_gauntlet(
+    *,
+    artifacts_dir: Path | None = None,
+    quiet: bool = False,
+) -> tuple[list[CaseResult], dict[str, Any]]:
+    """Run all dataset cases; return results and summary payload."""
+    out = Path(artifacts_dir) if artifacts_dir is not None else ARTIFACTS
+    out.mkdir(parents=True, exist_ok=True)
+    if not quiet:
+        print(f"Gauntlet artifacts -> {out.resolve()}")
+    results: list[CaseResult] = []
+    for name, kind, builder in DATASETS:
+        if not quiet:
+            print(f"\n=== {name} ({kind}) ===")
+        result = _run_case(name, kind, builder, artifacts_dir=out)
+        results.append(result)
+        if not quiet:
+            status = "PASS" if result.ok else "FAIL"
+            print(
+                f"  {status}  {result.task}  {result.n_rows}×{result.n_cols}  "
+                f"findings={result.findings}  ledger={result.ledger_groups}  "
+                f"static={result.static_ok} app={result.app_ok}"
+            )
+            for note in result.notes[:6]:
+                if note != "pass":
+                    print(f"    · {note}")
+            for err in result.errors[:4]:
+                print(f"    ! {err}")
+
+    payload = write_summaries(results, out)
+    if not quiet:
+        print(f"\nSummary: {payload['n_passed']}/{payload['n_cases']} passed -> {out / 'summary.md'}")
+    return results, payload
 
 
 def main() -> int:
-    print(f"Gauntlet artifacts -> {ARTIFACTS.resolve()}")
-    results: list[CaseResult] = []
-    for name, kind, builder in DATASETS:
-        print(f"\n=== {name} ({kind}) ===")
-        result = _run_case(name, kind, builder)
-        results.append(result)
-        status = "PASS" if result.ok else "FAIL"
-        print(
-            f"  {status}  {result.task}  {result.n_rows}×{result.n_cols}  "
-            f"findings={result.findings}  ledger={result.ledger_groups}  "
-            f"static={result.static_ok} app={result.app_ok}"
-        )
-        for note in result.notes[:6]:
-            if note != "pass":
-                print(f"    · {note}")
-        for err in result.errors[:4]:
-            print(f"    ! {err}")
-
-    _write_summaries(results)
-    n_ok = sum(1 for r in results if r.ok)
-    print(f"\nSummary: {n_ok}/{len(results)} passed -> {ARTIFACTS / 'summary.md'}")
+    results, payload = run_gauntlet(artifacts_dir=ARTIFACTS, quiet=False)
     if len(results) < 10:
         print("ERROR: fewer than 10 cases ran", file=sys.stderr)
         return 1
-    return 0 if n_ok == len(results) else 1
+    return 0 if payload["n_passed"] == payload["n_cases"] else 1
 
 
 if __name__ == "__main__":

@@ -7,7 +7,7 @@ estimator, and a record of every operation you run. Preprocessing learns from
 the training partition only; validation and test rows receive frozen
 transformations. That train-only boundary is enforced in the API.
 
-**BuildML 2.4** (`2.4.0`) is the stable Session 2.x line on PyPI. The public
+**BuildML 2.5** (`2.5.0`) is the stable Session 2.x line on PyPI. The public
 entry point is `buildml.Session`. For domains, **namespaced facades**
 (`session.<domain>.*`) are the supported public API; flat domain aliases are
 supported-but-deprecated until BuildML 3.0. See
@@ -260,7 +260,7 @@ appropriate for it.
 # Offline Industry App snapshot (default html_format="studio")
 session.eda(export_html="artifacts/eda_studio.html")
 
-# BUILDML STATIC EDA: Industry readiness sheet
+# BUILDML STATIC EDA: Industry readiness sheet (Offline HTML primary in header)
 session.eda(
     include_plots=True,
     export_html="artifacts/eda_research.html",

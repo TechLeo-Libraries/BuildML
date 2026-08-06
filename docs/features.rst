@@ -218,8 +218,8 @@ Explanation, audit, and reports
 * Preview operations with ``dry_run``; summarize history and heuristic risks.
 * Export EDA, evaluation, diagnostic, and workflow walkthrough reports as
   local, self-contained HTML. ``html_format="research"`` writes BUILDML STATIC
-  EDA (Industry readiness sheet); ``html_format="studio"`` writes an offline
-  Industry App snapshot.
+  EDA (Industry readiness sheet) with Offline HTML as the sole header export;
+  ``html_format="studio"`` writes an offline Industry App snapshot.
 * Launch an optional local Industry EDA App (Cockpit spine 01-08 / Readiness
   Gates / Concept Academy covering ~204 BuildML concept notes with
   dataset-adaptive Session examples, plus domain boards) when

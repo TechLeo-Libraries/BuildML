@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "buildml"
-version = "2.4.0"
+version = "2.5.0"
 description = "BuildML: a flexible, depth-first toolkit for building ML workflows."
 readme = "README.md"
 license = { text = "Apache-2.0" }

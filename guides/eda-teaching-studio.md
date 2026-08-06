@@ -138,8 +138,9 @@ Surfaces in the App (document sheets, not a sidebar studio):
 
 **Offline HTML** is the primary export in the app header (same SPA surface,
 including Gates and Academy). CSV and PDF routes remain on the API for
-automation; they are not the primary header action. Static research HTML keeps
-its own Print/PDF path.
+automation; they are not the primary header action. Static research HTML uses
+the same Offline HTML primary in its header (the file is already an offline
+snapshot; the button re-downloads that HTML).
 
 ### Dataset adaptability (shared contract)
 
@@ -169,17 +170,21 @@ tab.
 
 If the port is busy, pass another port.
 
-### Adaptability gauntlet (repo script)
+### Adaptability proofs and gauntlet
 
-To smoke Static research HTML and the App across many frames (real and
-synthetic), from the repo root:
+Tier A proof [`proofs/eda-industry-adaptability/`](../proofs/eda-industry-adaptability/)
+runs Static research HTML plus Dashboard App payloads across 12 frames (sklearn
+real-world tables and synthetic stress cases). Regenerate from the repo root:
 
 ```bash
+python proofs/eda-industry-adaptability/script.py
+# or the convenience smoke script (writes under .buildml-artifacts/gauntlet/):
 python scripts/eda_adaptability_gauntlet.py
 ```
 
-Artifacts land under `.buildml-artifacts/gauntlet/` (ignored by git). Exit code
-0 only when every case passes.
+Proof results land under `proofs/eda-industry-adaptability/results/` (gitignored).
+Gauntlet artifacts under `.buildml-artifacts/gauntlet/` are also ignored. Exit
+code 0 only when every case passes.
 
 ---
 

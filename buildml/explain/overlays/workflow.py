@@ -166,8 +166,8 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         ),
         next_steps=(
             "Export Offline HTML from the app header (primary), then apply cited "
-            "Session operations on train only. CSV/PDF APIs remain for automation; "
-            "Static research HTML keeps Print/PDF briefing.",
+            "Session operations on train only. CSV/PDF APIs remain on the App for "
+            "automation. Static research HTML uses Offline HTML as its sole header export.",
         ),
         concepts=(
             "column-roles",

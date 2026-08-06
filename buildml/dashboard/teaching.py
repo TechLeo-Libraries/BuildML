@@ -1244,7 +1244,8 @@ def _studio_visuals(report: dict[str, Any]) -> dict[str, Any]:
             "api": (
                 "Use 'Offline HTML' in the app header (primary export), or "
                 "session.eda(export_html=..., html_format='studio'). "
-                "Static research HTML keeps Print/PDF briefing; CSV/PDF APIs remain for automation."
+                "Static research HTML also uses Offline HTML as its sole header export; "
+                "CSV/PDF APIs remain on the App for automation."
             ),
             "parameters": {},
             "evidence_keys": [],

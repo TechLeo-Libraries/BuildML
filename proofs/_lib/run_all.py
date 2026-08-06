@@ -88,6 +88,8 @@ TIER_A = [
     "diabetes-progression-regression",
     "wine-cluster-segments",
     "adult-fairness-observational",
+    # Industry EDA surfaces (Static research HTML + Dashboard App)
+    "eda-industry-adaptability",
 ]
 
 TIER_B = [

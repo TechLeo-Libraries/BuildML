@@ -1,12 +1,13 @@
 # BuildML 2.x surface stability policy
 
-BuildML **2.4.0** is the first stable Session 2.x release on PyPI. The Session
-surface is large on purpose. This note is how I keep that surface usable.
+BuildML **2.5.0** continues the stable Session 2.x line on PyPI (first stable
+was **2.4.0**). The Session surface is large on purpose. This note is how I keep
+that surface usable.
 
 ## What “stable” means here
 
-- **`pip install buildml`** installs Session **2.4.x** (not legacy 1.0.9).
-- Public Session / facade APIs in 2.4.x follow SemVer: breaking removals wait
+- **`pip install buildml`** installs Session **2.5.x** (not legacy 1.0.9).
+- Public Session / facade APIs in 2.5.x follow SemVer: breaking removals wait
   for a major bump (see facades → 3.0 below).
 - Optional industry extras remain **best-effort** across platforms; capability
   matrices + runtime probes are the honesty layer. For subprocess use-case

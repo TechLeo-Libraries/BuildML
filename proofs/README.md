@@ -8,7 +8,7 @@ and JSON metrics under `results/` (gitignored).
 
 | Tier | Count | What it proves |
 | --- | ---: | --- |
-| **A** | **62/62** | One named product scenario per major Session domain (incl. ensembles + Torch + fairness + real public datasets) |
+| **A** | **63/63** | One named product scenario per major Session domain (incl. ensembles + Torch + fairness + real public datasets + Industry EDA) |
 | **B** | **36/36** | Cross-domain products composing multiple Session surfaces |
 | **C** | **58/62** | Same-split industry twin + `comparison.json` per Tier A (when present / runnable; real-public cohort may be A-only) |
 
@@ -122,6 +122,7 @@ Tier C is a **same-split industry twin**, not a bake-off for bragging rights.
 | --- | --- | --- |
 | Root overview | [`README.md`](../README.md) | → `proofs/` |
 | Guide index | [`guides/README.md`](../guides/README.md) | Mapping table + per-domain links |
+| Industry EDA | `eda-teaching-studio.md`, `docs/usage.rst` | → `eda-industry-adaptability` (Static + App, 12 datasets) |
 | Classical | `quickstart-classical.md`, `classical-end-to-end.md` | → `loan-approval-classical`, `mortgage-default-classical`, `claim-severity-regression`, `breast-cancer-classical`, `diabetes-progression-regression` |
 | Ensembles | `quickstart-ensemble.md` (when present) | → `voting-ensemble-attrition`, `stacking-credit-risk`, `blending-payment-risk` · Tier B `citadel-ensemble-desk`, `keystone-underwrite-ml` |
 | Torch / DL | `quickstart-dl.md` / Torch guides | → `torch-tabular-underwrite`, `torch-text-intent` · Tier B `nova-torch-bench` |
@@ -217,6 +218,13 @@ Tier C is a **same-split industry twin**, not a bake-off for bragging rights.
 | 59 | [diabetes-progression-regression](diabetes-progression-regression/) | Classical regression | **completed** | **REAL_PUBLIC_DATASET** sklearn diabetes (offline) |
 | 60 | [wine-cluster-segments](wine-cluster-segments/) | Unsupervised | **completed** | **REAL_PUBLIC_DATASET** sklearn wine + external ARI (offline) |
 | 61 | [adult-fairness-observational](adult-fairness-observational/) | Fairness (observational) | **completed** | **REAL_PUBLIC_DATASET** OpenML Adult/credit-g; offline disclosed proxy fallback |
+
+### Industry EDA cohort (62–63)
+
+| # | Project | Domain | Status | Notes |
+| ---: | --- | --- | --- | --- |
+| 62 | [loan-fairness-observational](loan-fairness-observational/) | Fairness (observational) | **completed** | Synthetic credit; sensitive `region` |
+| 63 | [eda-industry-adaptability](eda-industry-adaptability/) | Industry EDA | **completed** | 12 datasets; Static research HTML + App sheet/API; Offline HTML primary |
 
 Each Tier A README includes: business purpose, data source, leakage controls,
 BuildML API steps, metrics, limitations, and an **Industry comparison** section

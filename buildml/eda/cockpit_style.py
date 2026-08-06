@@ -885,18 +885,15 @@ COCKPIT_JS = """
   }
   document.querySelectorAll(".bml-table-wrap").forEach(bindTable);
 
-  const printBtn = document.getElementById("bml-print");
-  if (printBtn) printBtn.addEventListener("click", () => window.print());
-
-  const csvBtn = document.getElementById("bml-csv");
-  const csvPayload = document.getElementById("bml-csv-payload");
-  if (csvBtn && csvPayload) {
-    csvBtn.addEventListener("click", () => {
-      const blob = new Blob([csvPayload.textContent || ""], { type: "text/csv;charset=utf-8" });
+  const offlineBtn = document.getElementById("bml-offline-html");
+  if (offlineBtn) {
+    offlineBtn.addEventListener("click", () => {
+      const html = "<!DOCTYPE html>\\n" + document.documentElement.outerHTML;
+      const blob = new Blob([html], { type: "text/html;charset=utf-8" });
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = csvBtn.getAttribute("data-filename") || "eda-findings.csv";
+      link.download = offlineBtn.getAttribute("data-filename") || "buildml-static-eda.html";
       document.body.appendChild(link);
       link.click();
       link.remove();

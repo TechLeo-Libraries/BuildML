@@ -8,15 +8,29 @@ with pre-release tags for alpha (`aN`) builds.
 
 ## [Unreleased]
 
+## [2.5.0] - 2026-08-06
+
 ### Changed
 
 - **Industry EDA surfaces.** Static research HTML is BUILDML STATIC EDA (Industry
   readiness sheet, `html_format="research"`). The live dashboard is the Industry
   EDA App: Cockpit spine 01-08, Readiness Gates (UI-only session marks), Concept
-  Academy (~204 `CONCEPT_NOTES` lessons plus readiness-path slugs), Offline HTML
-  as the primary app export. Shared analytic coverage and adapt helpers keep App
-  and Static aligned. Design-source folder `redesigning_eda/` removed from the
-  tree; launch/preview/gauntlet helpers documented under `scripts/`.
+  Academy (~204 `CONCEPT_NOTES` lessons plus readiness-path slugs). Shared
+  analytic coverage and adapt helpers keep App and Static aligned. Design-source
+  folder `redesigning_eda/` removed from the tree; launch/preview/gauntlet
+  helpers documented under `scripts/`.
+- **Static Offline HTML primary.** BUILDML STATIC EDA header export is Offline
+  HTML only (re-download of the offline snapshot). CSV and PDF briefing header
+  buttons removed from Static; App keeps Offline HTML as the primary header
+  export with CSV/PDF on API routes for automation.
+
+### Added
+
+- **EDA adaptability proof.** Tier A `proofs/eda-industry-adaptability/` evidences
+  Static research HTML and Dashboard App sheet/API payloads across 12 datasets
+  (sklearn real-world tables plus synthetic stress cases). Regenerates via
+  `python proofs/eda-industry-adaptability/script.py` or
+  `scripts/eda_adaptability_gauntlet.py`. Suite count: Tier A **63/63**.
 
 ## [2.4.0] - 2026-08-04
 

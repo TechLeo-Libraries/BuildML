@@ -1,8 +1,8 @@
 # PyPI 2.x publish notes
 
 **Package:** `buildml`  
-**Current stable:** [`2.4.0`](https://pypi.org/project/buildml/2.4.0/) (Apache-2.0)  
-**Prior pre-release:** `2.4.0a3` (still on the index; pip prefers `2.4.0`)  
+**Current stable:** [`2.5.0`](https://pypi.org/project/buildml/2.5.0/) (Apache-2.0)  
+**Prior stable:** `2.4.0` · **Prior pre-release:** `2.4.0a3`  
 **Legacy line:** `1.0.9` (MIT) — pin only
 
 ## Install for users
@@ -11,7 +11,7 @@
 pip install buildml
 ```
 
-That resolves to Session **2.4.x**. To force legacy 1.x:
+That resolves to Session **2.5.x**. To force legacy 1.x:
 
 ```bash
 pip install "buildml==1.0.9"

@@ -18,7 +18,6 @@ buildml.reporting.html : Shared escape / asset helpers.
 
 from __future__ import annotations
 
-import csv
 import io
 import json
 from collections import defaultdict
@@ -177,7 +176,6 @@ def _render_cockpit(
     ledger_groups = _ledger_groups(report, findings_sorted)
     figure_block, skipped_figures = _figure_assets(report, figures, max_figures=max_figures)
     chart_blocks = _industry_charts(report)
-    csv_text = _findings_csv(findings_sorted)
     warnings = [str(item) for item in (report.get("warnings") or [])]
 
     kicker = (
@@ -288,7 +286,6 @@ def _render_cockpit(
         '    <footer class="om-footer" role="contentinfo">'
         "<p>Generated locally by BuildML. This file does not load network assets. "
         "Recommendations name Session operations; they do not execute them.</p></footer>\n"
-        f'    <script type="application/csv" id="bml-csv-payload">{escape(csv_text, quote=False)}</script>\n'
         f"    <script>{COCKPIT_JS}</script>\n"
         "  </div>\n"
         "</body>\n"
@@ -303,13 +300,13 @@ def _header_inner(kicker: str, heading: str) -> str:
         f"<h1>{heading}</h1>"
         "</div>"
         '<div class="om-tools" aria-label="Export actions">'
-        '<button type="button" class="btn btn-secondary" id="bml-csv" '
-        'data-filename="eda-findings.csv" aria-label="Download findings CSV">CSV</button>'
-        '<button type="button" class="btn btn-primary blueprint" id="bml-print" '
-        'aria-label="Print or save PDF briefing">'
+        '<button type="button" class="btn btn-primary blueprint" id="bml-offline-html" '
+        'data-filename="buildml-static-eda.html" '
+        'aria-label="Download Offline HTML snapshot" '
+        'title="Download this Static EDA file (already offline)">'
         '<i class="corner tl"></i><i class="corner tr"></i>'
         '<i class="corner bl"></i><i class="corner br"></i>'
-        "PDF briefing</button>"
+        "Offline HTML</button>"
         "</div>"
     )
 
@@ -1192,27 +1189,6 @@ def _degraded_body(
         '<thead><tr><th scope="col">Analysis</th><th scope="col">Reason</th></tr></thead>'
         f"<tbody>{table_rows}</tbody></table>"
     )
-
-
-def _findings_csv(findings: Sequence[Mapping[str, Any]]) -> str:
-    buffer = io.StringIO()
-    writer = csv.writer(buffer)
-    writer.writerow(["severity", "key", "title", "detail", "evidence"])
-    for finding in findings:
-        evidence = finding.get("evidence") or []
-        evidence_label = ""
-        if evidence:
-            evidence_label = str(evidence[0].get("source") or evidence[0].get("key") or "")
-        writer.writerow(
-            [
-                finding.get("severity", "info"),
-                finding.get("key", ""),
-                finding.get("title", ""),
-                finding.get("detail", ""),
-                evidence_label,
-            ]
-        )
-    return buffer.getvalue()
 
 
 def _json_block(value: Any) -> str:

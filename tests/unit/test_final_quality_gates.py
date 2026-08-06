@@ -194,8 +194,8 @@ def test_eda_html_contract_is_cockpit_accessible_escaped_and_offline(
         "Why it matters",
         "What to check next",
         "om-header__title",
-        "PDF briefing",
-        'id="bml-csv"',
+        "Offline HTML",
+        'id="bml-offline-html"',
         "@media print",
         "data:image/png;base64,",
         "Skipped and degraded analyses",
@@ -212,6 +212,9 @@ def test_eda_html_contract_is_cockpit_accessible_escaped_and_offline(
     ):
         assert marker in html
     assert "Static EDA — readiness sheet" not in html
+    assert "PDF briefing" not in html
+    assert 'id="bml-csv"' not in html
+    assert "bml-csv-payload" not in html
 
     default_destination = tmp_path / "default-title.html"
     export_eda_html(report.to_dict(), default_destination, max_figures=0)
