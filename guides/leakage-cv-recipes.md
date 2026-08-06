@@ -1,7 +1,7 @@
 # Leakage, fold-local recipes, weights, and hard-refuse CV
 
-> **Install:** PyPI `buildml` is legacy 1.x. Use
-> `pip install "git+https://github.com/TechLeo-Libraries/BuildML.git"`.
+> **Install:** Install Session 2.x with `pip install buildml` (2.5.x on PyPI).
+> Legacy 1.x remains available as `pip install "buildml==1.0.9"`.
 > See [installation](../docs/installation.rst).
 
 Cross-validation is honest only when **every** statistic that should be

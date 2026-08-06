@@ -2,9 +2,9 @@
 
 **Package:** `buildml`  
 **Repo version / GitHub Release:** [`2.5.0`](https://github.com/TechLeo-Libraries/BuildML/releases/tag/v2.5.0) (Apache-2.0)  
-**PyPI latest stable (verify before claiming):** [`https://pypi.org/pypi/buildml/json`](https://pypi.org/pypi/buildml/json) — cut `2.5.0` must show under `releases` before docs say it is live.  
+**PyPI latest stable:** [`2.5.0`](https://pypi.org/project/buildml/2.5.0/) (uploaded; confirm via [`https://pypi.org/pypi/buildml/json`](https://pypi.org/pypi/buildml/json))  
 **Prior stable on index:** `2.4.0` · **Prior pre-release:** `2.4.0a3`  
-**Legacy line:** `1.0.9` (MIT) — pin only
+**Legacy line:** `1.0.9` (MIT; pin only)
 
 ## Install for users
 
@@ -55,12 +55,12 @@ gh secret set PYPI_API_TOKEN  # paste pypi-... token (scope: upload to buildml)
 gh workflow run release.yml --ref v2.5.0 -f dry_run=false
 ```
 
-**C — Local build + twine** (how `2.4.0` landed when OIDC was not configured):
+**C — Local build + twine** (how `2.4.0` and `2.5.0` landed when OIDC was not configured):
 
 ```bash
 python -m build
 python -m twine check dist/*
-python -m twine upload dist/*
+python -m twine upload dist/buildml-<version>*
 ```
 
 4. Verify: `pip index versions buildml` shows the new version as latest, and
@@ -71,5 +71,5 @@ python -m twine upload dist/*
 Tag-push / workflow publish fails with Trusted Publishing
 `invalid-publisher` when PyPI has no matching publisher claims for
 `TechLeo-Libraries/BuildML` + `release.yml`. Fix with path A or B/C above.
-`2.4.0` was uploaded via local twine shortly before the failed OIDC job on
-tag `v2.4.0`.
+`2.4.0` and `2.5.0` were uploaded via local twine when the OIDC job did not
+have a matching publisher.

@@ -4,7 +4,7 @@ Federated learning quickstart
 .. note::
 
    Install with ``pip install buildml`` (Session 2.5.x).
-   Install 2.x from GitHub (or an editable checkout). Federated learning uses
+   Federated learning uses
    core sklearn façades: no optional extra. See :doc:`installation`.
 
 Local FedAvg-style simulation on Session data partitioned by a client/group

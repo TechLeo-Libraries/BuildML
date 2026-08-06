@@ -201,11 +201,11 @@ and pick the next target, and `--path buildml/<pkg>` to audit work in progress.
 
 1. Bump `pyproject.toml` + `buildml/_version.py` together.
 2. Move `[Unreleased]` notes into a dated CHANGELOG section.
-3. Keep install honesty accurate (GitHub vs PyPI) until 2.x is published.
+3. Keep install honesty accurate after each publish (PyPI version vs docs).
 4. Ensure remote CI is green (`test`, `windows-classical`, `engines`, `optuna`,
    `torch`, `rag`, `ai`, `extras`, `benchmarks`).
-5. Publish to PyPI only when credentials are available and intentional; otherwise
-   document the gap and leave the honesty banner.
+5. Publish to PyPI only when credentials are available and intentional; flip
+   docs that claimed a gap once the upload is verified.
 6. Refresh Read the Docs after the tag / docs change.
 
 ## Pull requests

@@ -1,6 +1,6 @@
 # Anomaly / fraud quickstart
 
-> **Install:** Install Session 2.x with `pip install buildml` (2.5.x). Legacy 1.x remains available as `pip install "buildml==1.0.9"`. Install 2.x from GitHub (or an editable checkout).
+> **Install:** Install Session 2.x with `pip install buildml` (2.5.x on PyPI). Legacy 1.x remains available as `pip install "buildml==1.0.9"`.
 > Core sklearn detectors need no extra. Industry depth uses optional extras below.
 > See [installation](../docs/installation.rst).
 

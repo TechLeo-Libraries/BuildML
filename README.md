@@ -7,10 +7,9 @@ estimator, and a record of every operation you run. Preprocessing learns from
 the training partition only; validation and test rows receive frozen
 transformations. That train-only boundary is enforced in the API.
 
-**BuildML 2.5** (`2.5.0`) is the current stable Session 2.x line (GitHub Release
-[`v2.5.0`](https://github.com/TechLeo-Libraries/BuildML/releases/tag/v2.5.0)).
-PyPI may still resolve `2.4.0` until Trusted Publishing / twine upload for
-`2.5.0` completes — see [`docs/pypi-2x-publish.md`](docs/pypi-2x-publish.md).
+**BuildML 2.5** (`2.5.0`) is the current stable Session 2.x line on
+[PyPI](https://pypi.org/project/buildml/2.5.0/) and GitHub Release
+[`v2.5.0`](https://github.com/TechLeo-Libraries/BuildML/releases/tag/v2.5.0).
 The public entry point is `buildml.Session`. For domains, **namespaced facades**
 (`session.<domain>.*`) are the supported public API; flat domain aliases are
 supported-but-deprecated until BuildML 3.0. See

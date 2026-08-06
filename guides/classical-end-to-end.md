@@ -1,8 +1,8 @@
 # Classical end-to-end
 
-> **Install:** PyPI `buildml` is legacy 1.x. Use
-> `pip install "git+https://github.com/TechLeo-Libraries/BuildML.git"`
-> (or editable checkout). See [installation](../docs/installation.rst).
+> **Install:** Install Session 2.x with `pip install buildml` (2.5.x on PyPI).
+> Legacy 1.x remains available as `pip install "buildml==1.0.9"`.
+> See [installation](../docs/installation.rst).
 
 This guide is the deep classical path: **dirty tabular data → roles → split →
 train-fitted preparation → fit → validation diagnostics → holdout evaluate →
