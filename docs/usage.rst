@@ -313,9 +313,11 @@ UI state only and are never persisted. Each gate sidebar teaches what the
 question asks, why it matters, how status was derived from the live report,
 optional calculations, and a copy-paste Session example with what-to-change
 guidance. Offline HTML is the primary app-header export (same SPA surface).
-CSV and PDF routes remain on the API for automation. Static research HTML uses
-the same Offline HTML primary in its header. HTML artifacts embed required
-styles and assets so they open without a network connection.
+CSV and PDF routes remain on the App API for automation; they are not header
+actions. BUILDML STATIC EDA exposes Offline HTML only in its header (no CSV or
+PDF briefing buttons); the button re-downloads the already-offline research
+HTML snapshot. HTML artifacts embed required styles and assets so they open
+without a network connection.
 
 Engines: pandas, Polars, DuckDB
 -------------------------------

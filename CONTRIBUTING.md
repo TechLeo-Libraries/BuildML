@@ -14,13 +14,13 @@ pip install -e ".[dev]"
 Python 3.10–3.13. Optional extras (`torch`, `rag`, `ai`, `serve`, …) match
 `README.md` / `docs/installation.rst`.
 
-**Install:** `pip install buildml` (Session 2.4.x). Prefer an editable checkout
+**Install:** `pip install buildml` (Session 2.5.x). Prefer an editable checkout
 for development.
 
 ## Session architecture
 
 `buildml.Session` is the public entry point. **Facades are the supported public
-API for domains** in 2.4.x (`session.fairness.evaluate`, `session.anomaly.fit`,
+API for domains** in 2.5.x (`session.fairness.evaluate`, `session.anomaly.fit`,
 …). Flat domain actions remain supported-but-deprecated
 (`DeprecationWarning`) until BuildML 3.0; classical core flat methods stay dual
 without warnings. See `docs/session-facade-migration.md`.

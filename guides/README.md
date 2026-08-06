@@ -152,7 +152,7 @@ cross-links.
 | [Leakage, recipes, weights, hard-refuse CV](leakage-cv-recipes.md) | Good/bad examples; fold-local honesty; weight role |
 | [Preprocess depth](preprocess-depth.md) | Encode variants, dates, text features, custom transforms, resample |
 | [Engines (Polars / DuckDB)](engines-polars-duckdb.md) | Prep then sklearn; lifecycle; honesty on out-of-core |
-| [EDA / Teaching Studio](eda-teaching-studio.md) | Findings, Static readiness sheet, Industry App, explain/workflow |
+| [EDA / Teaching Studio](eda-teaching-studio.md) | Findings, Static Offline HTML, Industry App (Cockpit/Gates/Academy), explain/workflow |
 | [Diagnostics & model search](classical-diagnostics-search.md) | Calibration, thresholds, compare_models, grid/random/Optuna/nested |
 | [Artifacts: checkpoints vs bundles](artifacts-checkpoints-bundles.md) | What each artifact contains and does not |
 | [Unsupervised deep](unsupervised-deep.md) | Clustering methods, PCA integration, validity honesty, unsupervised bundles |
@@ -232,12 +232,13 @@ When an API is alpha, guides say so and show the honest limit next to the exampl
 ## Proof suite deep-links
 
 Industry-standard Tier A/B/C projects live under
-[`proofs/`](../proofs/README.md) (**62/62** Tier A, **36/36** Tier B, **58/62**
+[`proofs/`](../proofs/README.md) (**63/63** Tier A, **36/36** Tier B, **58/62**
 Tier C: not smoke). Re-run: `python -m proofs._lib.run_all --tier all`.
 
 | Domain | Proof project |
 | --- | --- |
 | Classical | [loan-approval-classical](../proofs/loan-approval-classical/), [mortgage-default-classical](../proofs/mortgage-default-classical/), [claim-severity-regression](../proofs/claim-severity-regression/), [breast-cancer-classical](../proofs/breast-cancer-classical/) (**REAL_PUBLIC_DATASET**), [diabetes-progression-regression](../proofs/diabetes-progression-regression/) (**REAL_PUBLIC_DATASET**) · Tier B [ledger-underwriting-studio](../proofs/ledger-underwriting-studio/), [cornerstone-mortgage-suite](../proofs/cornerstone-mortgage-suite/) |
+| Industry EDA | [eda-industry-adaptability](../proofs/eda-industry-adaptability/) (12 datasets; Static Offline HTML + App) |
 | Ensembles | [voting-ensemble-attrition](../proofs/voting-ensemble-attrition/), [stacking-credit-risk](../proofs/stacking-credit-risk/), [blending-payment-risk](../proofs/blending-payment-risk/) · Tier B [citadel-ensemble-desk](../proofs/citadel-ensemble-desk/), [keystone-underwrite-ml](../proofs/keystone-underwrite-ml/) |
 | Torch / DL | [torch-tabular-underwrite](../proofs/torch-tabular-underwrite/), [torch-text-intent](../proofs/torch-text-intent/) · Tier B [nova-torch-bench](../proofs/nova-torch-bench/) |
 | AutoML | [churn-automl-search](../proofs/churn-automl-search/) · Tier B [ledger-underwriting-studio](../proofs/ledger-underwriting-studio/), [orbit-multitask-hub](../proofs/orbit-multitask-hub/), [keystone-underwrite-ml](../proofs/keystone-underwrite-ml/) |

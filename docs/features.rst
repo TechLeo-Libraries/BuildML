@@ -1,7 +1,7 @@
 Current capabilities
 ====================
 
-BuildML 2.4.0a2 centers on :class:`buildml.Session` for tabular workflows.
+BuildML 2.5.0 centers on :class:`buildml.Session` for tabular workflows.
 Optional Torch, RAG, and AI operator paths reuse the same Session state, history,
 and explain catalog.
 
@@ -218,13 +218,15 @@ Explanation, audit, and reports
 * Preview operations with ``dry_run``; summarize history and heuristic risks.
 * Export EDA, evaluation, diagnostic, and workflow walkthrough reports as
   local, self-contained HTML. ``html_format="research"`` writes BUILDML STATIC
-  EDA (Industry readiness sheet) with Offline HTML as the sole header export;
+  EDA (Industry readiness sheet) with Offline HTML as the sole header export
+  (no CSV or PDF briefing buttons on Static);
   ``html_format="studio"`` writes an offline Industry App snapshot.
 * Launch an optional local Industry EDA App (Cockpit spine 01-08 / Readiness
   Gates / Concept Academy covering ~204 BuildML concept notes with
   dataset-adaptive Session examples, plus domain boards) when
-  ``buildml[dashboard]`` is installed. Offline HTML is the primary app export.
-  Gate session marks are UI-only and are never persisted.
+  ``buildml[dashboard]`` is installed. Offline HTML is the primary app-header
+  export; CSV/PDF remain on App API routes for automation. Gate session marks
+  are UI-only and are never persisted.
 
 Optional extras (same Session)
 ------------------------------
@@ -350,9 +352,9 @@ Proof suite (Tier A/B/C)
 End-to-end evidence that Session domains work with honest splits and holdout
 metrics lives in the repository ``proofs/`` directory (not thin smoke):
 
-* **Tier A: 62/62:** one deep project per major domain (classical through NLP,
-  plus ensembles, Torch tabular/text, and a **REAL_PUBLIC_DATASET** cohort:
-  breast_cancer / diabetes / wine / Adult fairness)
+* **Tier A: 63/63:** one deep project per major domain (classical through NLP,
+  plus ensembles, Torch tabular/text, Industry EDA adaptability, and a
+  **REAL_PUBLIC_DATASET** cohort: breast_cancer / diabetes / wine / Adult fairness)
 * **Tier B: 36/36:** baseline Aegis/Harbor/Atlas/Pulse/Ledger/Nexus plus 30
   expansion products (Meridian, Helix, Citadel, Nova, Zenith, …)
 * **Tier C: 58/62:** same-split industry twins writing ``comparison.json``
@@ -368,5 +370,5 @@ Domain → proof mappings are in ``guides/README.md`` (rendered here as
 ``pip install -e ".[tda]"``. ``buildml[production]`` remains best-effort on
 Python 3.13 (environment markers skip broken upstream wheels).
 
-Install with ``pip install buildml`` for Session 2.4.x. Legacy 1.x remains
+Install with ``pip install buildml`` for Session 2.5.x. Legacy 1.x remains
 available only under an explicit pin (``buildml==1.0.9``).

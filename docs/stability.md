@@ -29,7 +29,7 @@ that surface usable.
    withdrawn.
 5. **Supported freeze set.** Classical ingest / roles / split / preprocess /
    fit / evaluate / CV / search, checkpoint / pipeline bundles, domain facades,
-   and `*_capability_matrix` names are supported in 2.4.x.
+   and `*_capability_matrix` names are supported in 2.5.x.
 6. **Proofs and CI smoke** (`python -m proofs._lib.run_all --smoke`) must stay
    green on the freeze set. Smoke fails on unexpected `skipped_missing_extra` /
    `partial` result statuses (use `--allow-skip` only for local investigation).

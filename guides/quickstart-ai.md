@@ -1,6 +1,6 @@
 # AI operator quickstart
 
-> **Install:** Install Session 2.x with `pip install buildml` (2.4.x). Legacy 1.x remains available as `pip install "buildml==1.0.9"`. Install 2.x from GitHub (or an editable checkout), then
+> **Install:** Install Session 2.x with `pip install buildml` (2.5.x). Legacy 1.x remains available as `pip install "buildml==1.0.9"`. Install 2.x from GitHub (or an editable checkout), then
 > the AI extra. See [installation](../docs/installation.rst).
 
 Optional LLM-assisted workflow guidance on the same `Session` as classical ML,

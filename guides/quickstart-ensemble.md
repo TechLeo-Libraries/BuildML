@@ -1,6 +1,6 @@
 # Ensemble quickstart
 
-> **Install:** Install Session 2.x with `pip install buildml` (2.4.x). Legacy 1.x remains available as `pip install "buildml==1.0.9"`. Use
+> **Install:** Install Session 2.x with `pip install buildml` (2.5.x). Legacy 1.x remains available as `pip install "buildml==1.0.9"`. Use
 > `pip install buildml`
 > (or an editable checkout). Ensembles use core sklearn: no optional extra.
 > See [installation](../docs/installation.rst).

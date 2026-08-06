@@ -24,9 +24,10 @@ dual and first-class **without** warnings.
 | `2.4.0a2` | Discovery helpers (`list_capabilities`, `describe_method`, …) |
 | **`2.4.0`** | Namespaced facades for all domains; flat domain actions warn; docs / guides / examples / proofs teach facades first |
 | `2.4.0` (stable intent) | Facades remain preferred; flat aliases still present |
+| **`2.5.0`** | Same facade policy continues on the stable Session line |
 | **`3.0`** | Flat domain aliases eligible for removal (classical core policy re-evaluated then) |
 
-## Product rules for 2.4
+## Product rules for 2.4+
 
 1. **Classical core does not warn.**  
    Flat `ingest` / `set_roles` / `split` / preprocess / `fit` / `evaluate` / …
@@ -35,8 +36,8 @@ dual and first-class **without** warnings.
    `session.explore.*` (EDA), `session.audit.*` (workflow / teaching).
 2. **Domain industry methods warn on flat actions.**  
    Prefer `session.<domain>.*`. Result / plan properties do not warn.
-3. **No functionality removed in `2.4.x`.** Deprecation means warnings + docs
-   preference only.
+3. **No functionality removed in `2.4.x` / `2.5.x`.** Deprecation means warnings
+   + docs preference only.
 4. **Name collisions avoided.**  
    - EDA facade attr is `session.explore` (flat method remains `session.eda`)  
    - Workflow / teaching facade attr is `session.audit` (flat method remains
@@ -131,13 +132,13 @@ The migrator rewrites:
 
 ## Deprecation window after 2.4.x
 
-Facades are the supported domain API for 2.4.x. Flat domain aliases stay
-supported-but-deprecated until **3.0**; that removal is out of 2.4 scope.
+Facades are the supported domain API for 2.4.x / 2.5.x. Flat domain aliases stay
+supported-but-deprecated until **3.0**; that removal is out of the 2.x scope.
 
 PyPI 2.x publish readiness is separate: see
 [`docs/pypi-2x-publish.md`](pypi-2x-publish.md).
 
-## Maintainer checklist (before tagging a 2.4.x build)
+## Maintainer checklist (before tagging a 2.x build)
 
 - [x] Facades are the supported public API for domains
 - [x] Flat domain actions emit `DeprecationWarning` (removal deferred to 3.0)

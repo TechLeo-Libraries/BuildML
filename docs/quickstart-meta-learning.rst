@@ -3,7 +3,7 @@ Meta-learning quickstart
 
 .. note::
 
-   Install with ``pip install buildml`` (Session 2.4.x).
+   Install with ``pip install buildml`` (Session 2.5.x).
    Install 2.x from GitHub (or an editable checkout). Meta-learning uses core
    sklearn façades: no optional extra. See :doc:`installation`.
 

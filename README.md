@@ -111,7 +111,7 @@ It does **not** include dashboard, serve, or AI operator extras.
 
 ## A classical workflow
 
-**Facades are the supported public API for domains** in 2.4.x
+**Facades are the supported public API for domains** in 2.5.x
 (`session.fairness.*`, `session.anomaly.*`, …). Flat domain aliases still work
 but emit `DeprecationWarning` until BuildML 3.0. Classical core is dual on
 purpose: flat `session.fit` / `session.evaluate` / … stay first-class without
@@ -283,7 +283,9 @@ session.evaluate(
 Reports surface screening evidence. They do not establish causality, fairness,
 or deployment readiness on their own. Local launch helpers and a multi-dataset
 adaptability check live under `scripts/` (`launch_synthetic_eda_studio.py`,
-`generate_static_eda_preview.py`, `eda_adaptability_gauntlet.py`). See
+`generate_static_eda_preview.py`, `eda_adaptability_gauntlet.py`). Tier A proof:
+[`proofs/eda-industry-adaptability/`](proofs/eda-industry-adaptability/)
+(12 datasets; regenerate via that script or the gauntlet). See
 [EDA / Teaching Studio](guides/eda-teaching-studio.md), the
 [classical quickstart](guides/quickstart-classical.md), and the
 [workflow guide](docs/workflow-guide.rst).
@@ -336,7 +338,7 @@ metrics lives under [`proofs/`](proofs/README.md): **not** smoke tests.
 
 | Tier | Status | Meaning |
 | --- | --- | --- |
-| A | **62/62** | One deep project per major domain (incl. ensembles + Torch + **REAL_PUBLIC_DATASET** cohort) |
+| A | **63/63** | One deep project per major domain (incl. ensembles + Torch + **REAL_PUBLIC_DATASET** cohort + Industry EDA) |
 | B | **36/36** | Named products composing multiple Session surfaces |
 | C | **58/62** | Same-split industry twin + `comparison.json` (qualitative bar 5-B; real-public cohort may be A-only) |
 
@@ -366,11 +368,10 @@ and re-run instructions.
 
 ---
 
-## Alpha status
+## Stability and scope
 
-This is pre-release software. Bundle schema version strings, report layouts,
-and method signatures may change before a stable 2.x cut. See
-[`docs/stability.md`](docs/stability.md) for the public-surface freeze policy.
+BuildML **2.5.0** is the stable Session 2.x line. SemVer applies to the public
+Session / facade surface; see [`docs/stability.md`](docs/stability.md).
 
 Shipped: observational fairness disparity reports (`session.fairness.evaluate`) and
 optional SHAP attribution (`explain_shap` via `buildml[shap]`). Still out of

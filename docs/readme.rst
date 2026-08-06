@@ -23,14 +23,14 @@ on training rows only. Those checks do not establish that a random split matches
 your domain, detect target proxies, or validate externally supplied
 memberships.
 
-Alpha status
-------------
+Stability
+---------
 
-Version ``2.4.0a2`` is under active development. Checkpoint layouts, report
-schemas, and method signatures may change. Pandas remains the canonical
-sklearn-facing materialization path. Polars and DuckDB support conversion and
-engine-aware paths; they do not make every Session operation lazy or
-out-of-core.
+Version ``2.5.0`` is the current stable Session 2.x line on PyPI. See
+:doc:`stability` for the public-surface freeze policy. Pandas remains the
+canonical sklearn-facing materialization path. Polars and DuckDB support
+conversion and engine-aware paths; they do not make every Session operation
+lazy or out-of-core.
 
 Optional Torch, RAG, and AI operator paths install as extras and attach to the
 same Session. Follow the :doc:`index` learning path, the :doc:`guides`

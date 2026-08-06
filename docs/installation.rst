@@ -5,7 +5,7 @@ BuildML supports Python 3.10 through 3.13.
 
 .. important::
 
-   **Install (2.4):** ``pip install buildml`` installs Session **2.4.x**
+   **Install (2.5):** ``pip install buildml`` installs Session **2.5.x**
    (Apache-2.0). Legacy **1.x** remains available only if you pin
    ``buildml==1.0.9``.
 

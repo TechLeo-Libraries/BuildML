@@ -137,10 +137,10 @@ Surfaces in the App (document sheets, not a sidebar studio):
 | Domain boards | Quality, features, relationships, multivariate, target, outliers, visuals |
 
 **Offline HTML** is the primary export in the app header (same SPA surface,
-including Gates and Academy). CSV and PDF routes remain on the API for
-automation; they are not the primary header action. Static research HTML uses
-the same Offline HTML primary in its header (the file is already an offline
-snapshot; the button re-downloads that HTML).
+including Gates and Academy). CSV and PDF routes remain on the App API for
+automation; they are not header actions. BUILDML STATIC EDA exposes **Offline
+HTML only** in its header (no CSV or PDF briefing buttons); the button
+re-downloads the already-offline research HTML snapshot.
 
 ### Dataset adaptability (shared contract)
 
