@@ -97,3 +97,18 @@ Source checkout
    pip install -e ".[dev]"
 
 The development extra includes pytest, Ruff, mypy, build, and coverage tools.
+
+Safe install / runtime verification
+-----------------------------------
+
+Optional native stacks (Torch, industry ANN, …) can hard-crash a process even
+when ``pip install`` succeeded. From a source checkout, stage extras and probe
+with:
+
+.. code-block:: console
+
+   python scripts/verify_runtime_stability.py
+   python scripts/probe_industry_extras.py
+
+See the Markdown guide ``guides/safe-install-and-runtime.md`` (staged venv
+install, ``ok`` / ``fail`` / ``crash`` / ``skip`` statuses).

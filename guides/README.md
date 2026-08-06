@@ -24,7 +24,7 @@ and Tier C `comparison.json` twins. Mapping table at the bottom of this page.
 
 | Stage | Read | Outcome |
 | --- | --- | --- |
-| 0 | [Installation](../docs/installation.rst), [concepts](../docs/concepts.rst), [workflow guide](../docs/workflow-guide.rst) | Vocabulary, install honesty, stage decisions |
+| 0 | [Installation](../docs/installation.rst), [Safe install & runtime](safe-install-and-runtime.md), [concepts](../docs/concepts.rst), [workflow guide](../docs/workflow-guide.rst) | Vocabulary, staged install, stage decisions |
 | 0b | New to machine learning? `session.learn()` then `session.explain("<step>")`: see [EDA / Teaching Studio](eda-teaching-studio.md#teaching-surfaces-explain-learn-workflow-walkthrough). Browse with `Session.list_capabilities()` / `Session.list_facades()` / `Session.describe_method("fit")`. Prefer `session.<domain>.*` facades ([migration](../docs/session-facade-migration.md)) | Plain-language concepts, facades, and operations |
 | 1 | [Classical quickstart](quickstart-classical.md) → [Classical end-to-end](classical-end-to-end.md) | Dirty data → roles → split → prep → fit → evaluate |
 | 2 | [Leakage, recipes, weights, hard-refuse CV](leakage-cv-recipes.md) | Why BuildML refuses poisoned CV; good vs bad patterns |

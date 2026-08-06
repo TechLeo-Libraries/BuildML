@@ -9,7 +9,9 @@ surface is large on purpose. This note is how I keep that surface usable.
 - Public Session / facade APIs in 2.4.x follow SemVer: breaking removals wait
   for a major bump (see facades → 3.0 below).
 - Optional industry extras remain **best-effort** across platforms; capability
-  matrices + runtime probes are the honesty layer.
+  matrices + runtime probes are the honesty layer. For subprocess use-case
+  checks (`ok` / `crash`), see `guides/safe-install-and-runtime.md` and
+  `scripts/verify_runtime_stability.py`.
 - Local serve is a single-deploy path, not a multi-tenant SaaS product.
 
 ## Rules

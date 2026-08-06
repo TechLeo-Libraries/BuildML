@@ -58,6 +58,13 @@ __pycache__/
 .env.*
 !.env.example
 
+# Local runtime / industry probe artifacts
+runtime-stability*.json
+runtime-stability*.md
+runtime-stability*.log
+industry-probe.json
+industry-probe.md
+
 # Local draft / release scratch (never commit)
 requirements-*-tmp.txt
 .release-notes*
