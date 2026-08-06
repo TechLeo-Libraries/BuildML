@@ -53,6 +53,8 @@ feature-scoped workarounds (Tier B `aegis` / `ledger` / decision-heavy products)
    the full harness from the repo root:
    ```bash
    python proofs/loan-approval-classical/script.py
+   # CI proofs-smoke installs .[dev,dashboard] so eda-industry-adaptability runs
+   pip install -e ".[dev,dashboard]"
    python -m proofs._lib.run_all --smoke
    python -m proofs._lib.run_all --tier all
    ```
@@ -62,6 +64,10 @@ feature-scoped workarounds (Tier B `aegis` / `ledger` / decision-heavy products)
    - `--smoke` re-runs the CI Tier A subset and treats `skipped_missing_extra` /
      `partial` as **`unexpected_skip`** (harness exit 1) unless you also
      pass `--allow-skip`.
+   - `CI_SMOKE_TIER_A` includes `eda-industry-adaptability` (Static Offline HTML
+     + App sheet across 12 datasets); CI installs `buildml[dashboard]` for that
+     gate. Unit contracts also live in `tests/unit/test_eda_adaptability.py` and
+     `tests/unit/test_final_quality_gates.py`.
    - Smoke validates **selected runnable Session contracts** and result JSON
      status — not performance certification, public-dataset leaderboard proof,
      or every optional industry wheel.

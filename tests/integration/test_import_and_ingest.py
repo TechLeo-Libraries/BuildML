@@ -11,7 +11,10 @@ from buildml.ingest.detect import MEMORY_SOFT_LIMIT
 
 
 def test_import_exposes_session_and_version() -> None:
-    assert buildml.__version__ == "2.4.0a1"
+    from buildml._version import __version__ as package_version
+
+    assert buildml.__version__ == package_version
+    assert buildml.__version__ == "2.5.0"
     assert buildml.Session is Session
 
 

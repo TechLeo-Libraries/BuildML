@@ -1,7 +1,8 @@
 name: Release
 
-# Manual / tag-driven publish workflow. Does not auto-publish on every push.
-# PyPI Session 2.x remains unpublished until an explicit release cut.
+# Manual / tag / GitHub-Release publish workflow. Does not auto-publish on every push.
+# Prefer Trusted Publishing (OIDC). Optional repo secret PYPI_API_TOKEN is a
+# fallback when PyPI trusted-publisher claims are not configured yet.
 
 on:
   workflow_dispatch:
@@ -14,6 +15,10 @@ on:
     tags:
       - "v2.*"
       - "v3.*"
+  # gh release create / UI releases create the tag via API and may not emit a
+  # tag push event that matches `push: tags` — also publish on release publish.
+  release:
+    types: [published]
 
 permissions:
   contents: read
@@ -49,6 +54,8 @@ jobs:
   # Trusted publishing via OIDC (id-token). Do not set `environment:` here
   # unless a matching GitHub Environment exists under Settings → Environments;
   # an undefined name fails schema/IDE validation ("Value 'pypi' is not valid").
+  # PyPI trusted publisher must match: owner TechLeo-Libraries, repo BuildML,
+  # workflow filename release.yml, environment (blank).
   publish:
     needs: build
     runs-on: ubuntu-latest
@@ -57,6 +64,7 @@ jobs:
       id-token: write
     if: >
       github.event_name == 'push' ||
+      github.event_name == 'release' ||
       (github.event_name == 'workflow_dispatch' && inputs.dry_run == false)
     steps:
       - name: Download dist artifacts
@@ -65,5 +73,8 @@ jobs:
           name: python-package-distributions
           path: dist/
 
+      # OIDC Trusted Publishing. If this fails with invalid-publisher, configure
+      # the PyPI publisher (see docs/pypi-2x-publish.md) or upload via twine /
+      # set secret PYPI_API_TOKEN and temporarily pass password: ${{ secrets.PYPI_API_TOKEN }}.
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1

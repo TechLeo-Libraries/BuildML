@@ -290,8 +290,8 @@ omit = [
 ]
 
 [tool.coverage.report]
-# Active floor (2.4.0a3). Full-suite measure ~70.7% (see coverage_ratchet.json);
-# Linux CI monolith is the gate. Prior floor 60 superseded.
+# Active floor 70 (measured at 2.4.0a3; still current for 2.5.0). Full-suite
+# measure ~70.7% (see coverage_ratchet.json); Linux CI monolith is the gate.
 fail_under = 70
 precision = 1
 skip_empty = true

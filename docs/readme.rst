@@ -26,11 +26,12 @@ memberships.
 Stability
 ---------
 
-Version ``2.5.0`` is the current stable Session 2.x line on PyPI. See
-:doc:`stability` for the public-surface freeze policy. Pandas remains the
-canonical sklearn-facing materialization path. Polars and DuckDB support
-conversion and engine-aware paths; they do not make every Session operation
-lazy or out-of-core.
+Version ``2.5.0`` is the current stable Session 2.x line (GitHub Release
+``v2.5.0``). PyPI may still serve ``2.4.0`` until the ``2.5.0`` upload lands —
+see ``docs/pypi-2x-publish.md``. See :doc:`stability` for the public-surface
+freeze policy. Pandas remains the canonical sklearn-facing materialization
+path. Polars and DuckDB support conversion and engine-aware paths; they do not
+make every Session operation lazy or out-of-core.
 
 Optional Torch, RAG, and AI operator paths install as extras and attach to the
 same Session. Follow the :doc:`index` learning path, the :doc:`guides`

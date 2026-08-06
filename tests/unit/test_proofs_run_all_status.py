@@ -29,6 +29,7 @@ def test_smoke_list_is_substantially_broader_than_legacy_eight() -> None:
     assert "loan-approval-classical" in CI_SMOKE_TIER_A
     assert "loan-fairness-observational" in CI_SMOKE_TIER_A
     assert "stream-fraud-online" in CI_SMOKE_TIER_A
+    assert "eda-industry-adaptability" in CI_SMOKE_TIER_A
 
 
 def test_classify_completed_ok() -> None:

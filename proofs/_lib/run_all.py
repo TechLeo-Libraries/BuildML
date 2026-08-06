@@ -165,6 +165,8 @@ CI_SMOKE_TIER_A: tuple[str, ...] = (
     "diabetes-progression-regression",
     "wine-cluster-segments",
     "adult-fairness-observational",
+    # Industry EDA Static Offline HTML + App sheet (needs buildml[dashboard] in CI)
+    "eda-industry-adaptability",
 )
 
 _SKIP_RESULT_STATUSES = frozenset(

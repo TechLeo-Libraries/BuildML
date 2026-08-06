@@ -23,9 +23,9 @@
     },
     {
       "target": 70,
-      "release": "2.4.0a3",
+      "release": "2.5.0",
       "status": "active",
-      "notes": "Industry-comparable floor. Full-suite Windows isolated combine measured 70.71% (39539/55914); ~0.7pp headroom. Linux CI monolith is the gate."
+      "notes": "Industry-comparable floor (first raised at 2.4.0a3). Full-suite Windows isolated combine measured 70.71% (39539/55914); ~0.7pp headroom. Linux CI monolith is the gate."
     }
   ],
   "how_to_raise": [

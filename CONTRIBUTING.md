@@ -115,10 +115,10 @@ python scripts/probe_industry_extras.py --artifact industry-probe.json
 ```
 
 Coverage `fail_under` lives in `pyproject.toml` (`[tool.coverage.report]`) and
-`scripts/coverage_ratchet.json`. It is a one-way ratchet (**70** active for
-`2.4.0a3`; prior 60 superseded): raise only from a full-suite measure
-(`python scripts/run_full_coverage.py --update-ratchet` or CI
-`pytest tests --cov=buildml`); do not lower it to silence a regression.
+`scripts/coverage_ratchet.json`. It is a one-way ratchet (**70** active since
+`2.4.0a3`, still current for `2.5.0`; prior 60 superseded): raise only from a
+full-suite measure (`python scripts/run_full_coverage.py --update-ratchet` or
+CI `pytest tests --cov=buildml`); do not lower it to silence a regression.
 `requirements.txt` / `requirements-dev.txt` are convenience mirrors of
 `pyproject.toml` ranges; prefer `pip install -e ".[dev]"`.
 

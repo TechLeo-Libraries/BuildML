@@ -4,6 +4,9 @@ on:
   push:
     branches: [main, master]
   pull_request:
+  # Manual re-run when a push was made with a token that skipped workflow events,
+  # or when validating CI wiring without an empty commit.
+  workflow_dispatch:
 
 jobs:
   test:
@@ -78,7 +81,7 @@ jobs:
         run: python scripts/domain_maturity_index.py --check --report
 
       # Coverage fail_under comes from pyproject.toml [tool.coverage.report]
-      # and scripts/coverage_ratchet.json (active 70 for 2.4.0a3).
+      # and scripts/coverage_ratchet.json (active 70; measured at 2.4.0a3).
       - name: Pytest
         run: pytest --cov=buildml --cov-report=term-missing
 
@@ -437,10 +440,11 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Install package (core + pytest tooling)
+      - name: Install package (core + dashboard + pytest tooling)
         run: |
           python -m pip install --upgrade pip
-          pip install -e ".[dev]"
+          # dashboard: eda-industry-adaptability App/Static evidence in CI_SMOKE_TIER_A
+          pip install -e ".[dev,dashboard]"
 
       - name: Tier A proof smoke (no skip-existing)
         run: python -m proofs._lib.run_all --smoke --timeout 600
