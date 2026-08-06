@@ -221,7 +221,7 @@ def _core() -> list[LessonSpec]:
                 "vif = report.to_dict().get(\"multivariate\", {}).get(\"vif\", [])",
                 "print(vif)",
                 "",
-                f"# Example: ignore one collinear column, then re-profile",
+                "# Example: ignore one collinear column, then re-profile",
                 f"drop = \"{_vif_drop(ctx)}\"  # <-- choose from VIF list",
                 "session = session.set_roles({drop: \"ignore\"})",
                 'session.learn("variance-inflation", level="intermediate")',

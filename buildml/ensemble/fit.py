@@ -35,7 +35,8 @@ buildml.model.compare : Deciding whether the ensemble actually beat its parts.
 
 from __future__ import annotations
 
-from typing import Any, Literal, Mapping, Sequence
+from collections.abc import Mapping, Sequence
+from typing import Any, Literal
 
 from sklearn.base import clone
 from sklearn.ensemble import (
@@ -425,7 +426,7 @@ def _package(
     fitted = fit_result.estimator
     final_name = config.final_estimator_name
     if final_name is None and hasattr(fitted, "final_estimator_"):
-        final_name = type(getattr(fitted, "final_estimator_")).__name__
+        final_name = type(fitted.final_estimator_).__name__
 
     blend_method = config.blend_method if strategy == "blending" else None
     if strategy == "blending" and hasattr(fitted, "blend_method"):

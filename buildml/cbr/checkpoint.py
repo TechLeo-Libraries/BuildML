@@ -32,8 +32,8 @@ import joblib
 
 from buildml._version import __version__
 from buildml.cbr.results import CbrEvalResult, CbrFitResult, CbrPlan
-from buildml.core.serialization import joblib_load_trusted
 from buildml.core.errors import ValidationError
+from buildml.core.serialization import joblib_load_trusted
 
 BUNDLE_FORMAT = "buildml.cbr_bundle.v1"
 CHECKPOINT_BOUNDARY = (

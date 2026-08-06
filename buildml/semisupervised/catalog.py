@@ -6,7 +6,6 @@ from typing import Any, Literal
 
 from buildml.dl.extras import torch_available, torch_spec_available
 from buildml.semisupervised.extras import (
-    gradient_boosting_extras_available,
     hf_text_available,
     lightgbm_available,
     lightgbm_spec_present,

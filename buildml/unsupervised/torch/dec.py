@@ -159,7 +159,7 @@ Returns
 FitOutcome
     Return value (FitOutcome) produced by this operation.
     """
-    torch = require_torch(feature=f"Deep clustering ({method.upper()})")
+    require_torch(feature=f"Deep clustering ({method.upper()})")
     import torch
     import torch.nn as nn
     from torch.utils.data import DataLoader, TensorDataset
@@ -193,7 +193,7 @@ FitOutcome
     from sklearn.cluster import KMeans
 
     km = KMeans(n_clusters=n_clusters, random_state=random_state, n_init=10)
-    init_labels = km.fit_predict(z_all)
+    km.fit(z_all)
     centers = torch.as_tensor(km.cluster_centers_, dtype=torch.float32, device=device)
 
     # Phase 2: DEC / IDEC clustering

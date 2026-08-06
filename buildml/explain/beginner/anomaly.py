@@ -3,7 +3,14 @@
 
 from __future__ import annotations
 
-from buildml.explain.beginner._builder import ADVANCED, CORE, FOUNDATION, BeginnerLayer, _index, _layer
+from buildml.explain.beginner._builder import (
+    ADVANCED,
+    CORE,
+    FOUNDATION,
+    BeginnerLayer,
+    _index,
+    _layer,
+)
 
 ANOMALY_BEGINNER: dict[str, BeginnerLayer] = _index(
     _layer(

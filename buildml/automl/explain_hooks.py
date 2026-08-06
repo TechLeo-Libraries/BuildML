@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
+
 def fit_result_summary(result: Any) -> dict[str, Any]:
     """Build a compact history payload from an AutoML search result.
 

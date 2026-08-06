@@ -30,7 +30,6 @@ from typing import Any
 
 from buildml.core.errors import MissingExtraError
 
-
 _SUBPROCESS_IMPORT_CACHE: dict[str, bool] = {}
 
 

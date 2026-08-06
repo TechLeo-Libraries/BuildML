@@ -28,7 +28,8 @@ buildml.cbr.evaluate.evaluate_cbr : Re-scoring after memory has grown.
 
 from __future__ import annotations
 
-from typing import Any, Sequence
+from collections.abc import Sequence
+from typing import Any
 
 import numpy as np
 import pandas as pd

@@ -141,7 +141,6 @@ Raises
 ValidationError
     When preconditions for this operation are not met.
     """
-    import numpy as np
 
     block = frame[list(columns)]
     if block.isna().any().any():

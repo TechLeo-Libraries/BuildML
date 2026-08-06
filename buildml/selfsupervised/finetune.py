@@ -14,13 +14,12 @@ from buildml.data.dataset import Dataset
 from buildml.data.splits import SplitPlan, assert_fit_partition, frame_for_partition
 from buildml.selfsupervised.features import matrix_from_frame
 from buildml.selfsupervised.results import (
+    SelfSupervisedPlan,
     SSLHeadFitResult,
     SSLHeadPlan,
-    SelfSupervisedPlan,
 )
 from buildml.selfsupervised.types import SSLHeadEstimator
 from buildml.semisupervised.features import is_unlabeled_mask
-
 
 _HEADS = {
     "logistic_regression": lambda rs: LogisticRegression(max_iter=500, random_state=rs),

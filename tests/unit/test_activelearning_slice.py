@@ -9,12 +9,12 @@ import pandas as pd
 import pytest
 
 from buildml import Session
+from buildml.activelearning.checkpoint import BUNDLE_FORMAT, load_active_learning_bundle
 from buildml.ai.tools import build_default_registry
 from buildml.core.errors import LeakageError, ValidationError
 from buildml.data.dataset import Dataset
 from buildml.explain.catalog import OPERATION_CATALOG
 from buildml.ingest.detect import schema_from_dataframe
-from buildml.activelearning.checkpoint import BUNDLE_FORMAT, load_active_learning_bundle
 
 
 def _frame(n: int = 200, seed: int = 0) -> pd.DataFrame:

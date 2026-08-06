@@ -10,13 +10,13 @@ import joblib
 
 from buildml._version import __version__
 from buildml.anomaly.results import AnomalyEvalResult, AnomalyFitResult, AnomalyPlan
+from buildml.core.errors import ValidationError
 from buildml.core.serialization import (
     assert_local_load_path,
     attach_payload_sha256,
     joblib_load_trusted,
     read_json_sidecar,
 )
-from buildml.core.errors import ValidationError
 
 BUNDLE_FORMAT = "buildml.anomaly_bundle.v1"
 CHECKPOINT_BOUNDARY = (

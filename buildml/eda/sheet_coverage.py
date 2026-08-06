@@ -12,6 +12,7 @@ import json
 from collections.abc import Mapping, Sequence
 from typing import Any
 
+
 def _flagged_names(flagged: Any) -> list[str]:
     """Accept plain name lists or ``{column: ...}`` rows from analyzers."""
     if not isinstance(flagged, list):

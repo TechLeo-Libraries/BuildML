@@ -28,8 +28,6 @@ buildml.dl.export : Deployment artifacts, a different job.
 
 from __future__ import annotations
 
-from buildml.core.serialization import require_trusted_deserialize
-
 import json
 from dataclasses import dataclass
 from pathlib import Path
@@ -37,6 +35,7 @@ from typing import Any
 
 from buildml._version import __version__
 from buildml.core.errors import ValidationError
+from buildml.core.serialization import require_trusted_deserialize
 from buildml.dl.curves import build_training_curve
 from buildml.dl.extras import require_torch
 from buildml.dl.results import EarlyStopInfo, TrainResult

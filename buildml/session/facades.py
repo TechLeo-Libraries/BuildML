@@ -12,8 +12,9 @@ from __future__ import annotations
 import functools
 import inspect
 import warnings
+from collections.abc import Callable
 from types import MethodType
-from typing import Any, Callable, cast
+from typing import Any, cast
 
 from buildml.session.facade_registry import (
     DEPRECATED_FLAT_ACTIONS,

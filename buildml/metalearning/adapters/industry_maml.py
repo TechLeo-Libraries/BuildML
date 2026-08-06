@@ -10,7 +10,6 @@ import numpy as np
 from buildml.core.errors import ValidationError
 from buildml.metalearning.extras import (
     learn2learn_available,
-    require_learn2learn,
     require_torch_metalearning,
 )
 

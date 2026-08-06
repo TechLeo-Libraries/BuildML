@@ -9,14 +9,14 @@ from typing import Any
 import joblib
 
 from buildml._version import __version__
-from buildml.core.serialization import joblib_load_trusted, require_trusted_deserialize
 from buildml.core.errors import ValidationError
+from buildml.core.serialization import joblib_load_trusted, require_trusted_deserialize
 from buildml.selfsupervised.results import (
-    SSLHeadFitResult,
-    SSLHeadPlan,
     SelfSupervisedEvalResult,
     SelfSupervisedFitResult,
     SelfSupervisedPlan,
+    SSLHeadFitResult,
+    SSLHeadPlan,
 )
 
 BUNDLE_FORMAT_V1 = "buildml.selfsupervised_bundle.v1"

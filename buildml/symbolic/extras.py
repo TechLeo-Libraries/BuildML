@@ -15,7 +15,7 @@ import importlib.util
 from typing import Any
 
 from buildml.core.errors import MissingExtraError
-from buildml.dl.extras import torch_available, torch_spec_available
+from buildml.dl.extras import torch_available
 
 
 def _runtime_ok(module: str) -> bool:

@@ -9,13 +9,13 @@ from typing import Any
 import joblib
 
 from buildml._version import __version__
-from buildml.core.serialization import joblib_load_trusted
-from buildml.core.errors import ValidationError
 from buildml.activelearning.results import (
     ActiveLearningEvalResult,
     ActiveLearningFitResult,
     ActiveLearningPlan,
 )
+from buildml.core.errors import ValidationError
+from buildml.core.serialization import joblib_load_trusted
 
 BUNDLE_FORMAT = "buildml.activelearning_bundle.v1"
 CHECKPOINT_BOUNDARY = (

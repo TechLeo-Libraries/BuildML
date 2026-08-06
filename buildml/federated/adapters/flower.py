@@ -155,8 +155,8 @@ class _BuildMLSklearnClient:
         config: dict[str, Any],
     ) -> tuple[float, int, dict[str, float]]:
         """Evaluate the global model on the client slice (Flower-shaped loss)."""
-        from buildml.federated.fit import _make_estimator
         from buildml.federated.features import encode_labels
+        from buildml.federated.fit import _make_estimator
 
         _ = config
         params = _ndarrays_to_linear(parameters, template=self.global_template)

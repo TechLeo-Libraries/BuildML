@@ -8,7 +8,6 @@ from buildml.dashboard.academy_curriculum._helpers import (
     fmt_n,
     is_classification,
     list_names,
-    target_name,
 )
 from buildml.dashboard.academy_curriculum._types import LessonSpec
 

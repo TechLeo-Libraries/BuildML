@@ -2,13 +2,14 @@
 
 from __future__ import annotations
 
-from typing import Any, Sequence
+from collections.abc import Sequence
+from typing import Any
 
 import numpy as np
 import pandas as pd
 
-from buildml.core.errors import ValidationError
 from buildml.causal.types import CausalAssumptions
+from buildml.core.errors import ValidationError
 from buildml.data.dataset import Dataset
 from buildml.data.splits import SplitPlan, frame_for_partition
 from buildml.semisupervised.features import matrix_from_frame as _matrix_from_frame

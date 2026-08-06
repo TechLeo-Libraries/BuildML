@@ -6,7 +6,6 @@ import importlib.util
 from typing import Any
 
 from buildml.core.errors import MissingExtraError
-from buildml.dl.extras import torch_available
 
 
 def require_pyod(*, feature: str = "PyOD anomaly detectors") -> Any:

@@ -1198,7 +1198,7 @@ def _worked_example_for(
         )
         return _example(
             summary=(
-                f"Missingness in this extract"
+                "Missingness in this extract"
                 + (f" (e.g. {_quote_list(cols)})" if cols else "")
                 + "; impute only on post-split Session state."
             ),
@@ -1500,7 +1500,7 @@ def _worked_example_for(
             "print('drift', rep.get('drift'))\n"
             "print('outliers', rep.get('outliers', {}).get('multivariate'))\n"
             "print('corr_pairs', len(rep.get('bivariate', {}).get('top_abs_pearson_pairs') or []))\n"
-            f"print('n', rep.get('overview', {{}}).get('analysis_rows'))\n"
+            "print('n', rep.get('overview', {}).get('analysis_rows'))\n"
         )
         return _example(
             summary="Pull drift, outlier, and association counts from this report before acting on flags.",

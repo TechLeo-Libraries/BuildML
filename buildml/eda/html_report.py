@@ -32,11 +32,17 @@ from buildml.eda.sheet_coverage import (
     build_degraded_rows,
     build_ledger_groups,
     build_methods_catalog,
+)
+from buildml.eda.sheet_coverage import (
     fmt_int as _fmt_int,
+)
+from buildml.eda.sheet_coverage import (
     fmt_metric as _fmt,
+)
+from buildml.eda.sheet_coverage import (
     fmt_pct as _pct,
 )
-from buildml.reporting.html import encode_asset, escape, element_id
+from buildml.reporting.html import element_id, encode_asset, escape
 
 DEFAULT_MAX_HTML_BYTES = 12 * 1024 * 1024
 DEFAULT_HEADING = "BUILDML STATIC EDA"

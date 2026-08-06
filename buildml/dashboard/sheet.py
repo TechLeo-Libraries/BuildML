@@ -20,11 +20,15 @@ from typing import Any
 from buildml._version import __version__
 from buildml.dashboard.adapt import (
     build_adapt_context,
-    fmt_n as _fmt_n,
-    fmt_pct as _fmt_pct,
     list_names,
     plural,
     what_to_change,
+)
+from buildml.dashboard.adapt import (
+    fmt_n as _fmt_n,
+)
+from buildml.dashboard.adapt import (
+    fmt_pct as _fmt_pct,
 )
 from buildml.dashboard.charts import charts_for_cockpit_report
 from buildml.dashboard.cockpit_teaching import enrich_cockpit_sheet

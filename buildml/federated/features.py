@@ -14,6 +14,8 @@ from buildml.core.validation import validate_column_names
 from buildml.data.dataset import Dataset
 from buildml.semisupervised.features import (
     matrix_from_frame as _matrix_from_frame,
+)
+from buildml.semisupervised.features import (
     resolve_semisupervised_columns,
 )
 

@@ -5,7 +5,10 @@ from buildml.anomaly.adapters.sklearn import (
     build_sklearn_unsupervised_estimator,
     sklearn_anomaly_scores,
 )
-from buildml.anomaly.adapters.supervised import build_supervised_estimator, supervised_anomaly_scores
+from buildml.anomaly.adapters.supervised import (
+    build_supervised_estimator,
+    supervised_anomaly_scores,
+)
 from buildml.anomaly.adapters.torch_ae import (
     TorchAnomalyAutoencoder,
     build_torch_autoencoder,

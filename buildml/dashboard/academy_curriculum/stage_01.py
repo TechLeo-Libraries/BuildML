@@ -291,7 +291,7 @@ def _core() -> list[LessonSpec]:
                 "session = Session.ingest(frame).set_roles({",
                 f'    "{target_name(ctx)}": "target",',
                 f'    "{first_feature(ctx)}": "feature",',
-                f'    f"{{col}}__was_missing": "feature",  # keep the fact of absence',
+                '    f"{col}__was_missing": "feature",  # keep the fact of absence',
                 "})",
                 "session = session.split(test_size=0.2, stratify=True, random_state=0)",
                 "session = session.impute(strategy=\"median\")  # train-fitted",
@@ -450,7 +450,7 @@ def _core() -> list[LessonSpec]:
             ),
             formula="onehot_width ~ sum(n_levels_c - 1) over one-hot columns",
             calculation=lambda ctx: (
-                f"High-cardinality flags: "
+                "High-cardinality flags: "
                 + (
                     "; ".join(
                         f"{h.get('name')} (n~{fmt_n(h.get('distinct'))})"

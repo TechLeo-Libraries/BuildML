@@ -7,8 +7,9 @@ must not be treated as identification evidence.
 
 from __future__ import annotations
 
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from typing import Any, Literal, Mapping, Sequence
+from typing import Any, Literal
 
 from buildml.core.errors import ValidationError
 

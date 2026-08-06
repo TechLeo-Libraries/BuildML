@@ -12,6 +12,7 @@ from buildml.activelearning.adapters.torch_uncertainty import (
 __all__ = [
     "TabularMCDropoutClassifier",
     "build_torch_estimator",
+    "score_industry_native_pool",
     "score_industry_pool",
     "score_sklearn_pool",
     "score_torch_pool",

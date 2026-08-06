@@ -4,8 +4,6 @@ from __future__ import annotations
 
 from typing import Literal
 
-import pandas as pd
-
 from buildml.core.errors import ValidationError
 from buildml.core.types import ColumnRole
 from buildml.data.dataset import Dataset

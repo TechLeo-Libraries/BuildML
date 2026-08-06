@@ -9,7 +9,7 @@ import pandas as pd
 
 from buildml.core.errors import ValidationError
 from buildml.graph.extras import require_networkx
-from buildml.graph.types import GraphMode, GraphSpec
+from buildml.graph.types import GraphMode
 
 
 def compute_graph_metrics(

@@ -28,8 +28,9 @@ ARTIFACTS.mkdir(parents=True, exist_ok=True)
 
 
 def main() -> None:
-    from buildml import Session
     from launch_synthetic_eda_studio import build_synthetic_frame
+
+    from buildml import Session
 
     frame = build_synthetic_frame(n_rows=800, seed=7)
     csv_path = ARTIFACTS / "synthetic_dirty_classification.csv"

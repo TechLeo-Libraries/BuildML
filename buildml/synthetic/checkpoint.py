@@ -9,13 +9,13 @@ from typing import Any
 import joblib
 
 from buildml._version import __version__
-from buildml.core.serialization import joblib_load_trusted
 from buildml.core.errors import ValidationError
+from buildml.core.serialization import joblib_load_trusted
 from buildml.synthetic.results import (
-    SyntheticEvalResult,
-    SyntheticSampleResult,
     SynthesizerFitResult,
     SynthesizerPlan,
+    SyntheticEvalResult,
+    SyntheticSampleResult,
 )
 from buildml.synthetic.types import ColumnSchemaSpec
 

@@ -46,7 +46,12 @@ from typing import Any
 from buildml.core.errors import ValidationError
 from buildml.rag.generate import EchoGroundedProvider, generate_grounded, score_faithfulness
 from buildml.rag.index import RagIndex, build_index
-from buildml.rag.results import ConfigCompareResult, CorpusHandle, RagEvalResult, RagGenerateEvalResult
+from buildml.rag.results import (
+    ConfigCompareResult,
+    CorpusHandle,
+    RagEvalResult,
+    RagGenerateEvalResult,
+)
 from buildml.rag.retrieve import retrieve
 from buildml.rag.types import EvalConfig, RelevanceMode, RetrieveConfig
 

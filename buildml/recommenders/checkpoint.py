@@ -10,13 +10,13 @@ import joblib
 import numpy as np
 
 from buildml._version import __version__
-from buildml.core.serialization import joblib_load_trusted
 from buildml.core.errors import ValidationError
+from buildml.core.serialization import joblib_load_trusted
 from buildml.recommenders.results import (
-    RecommendResult,
     RecommenderEvalResult,
     RecommenderFitResult,
     RecommenderPlan,
+    RecommendResult,
 )
 
 BUNDLE_FORMAT = "buildml.recommender_bundle.v1"

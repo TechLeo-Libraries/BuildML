@@ -9,10 +9,10 @@ import pandas as pd
 import pytest
 
 from buildml import Session
+from buildml.ai.tools import registered_tool_names
 from buildml.core.errors import LeakageError, ValidationError
 from buildml.explain.catalog import OPERATION_CATALOG
 from buildml.federated.checkpoint import BUNDLE_FORMAT, load_federated_bundle
-from buildml.ai.tools import registered_tool_names
 
 
 def _frame(n_clients: int = 6, n_per: int = 36, seed: int = 4) -> pd.DataFrame:

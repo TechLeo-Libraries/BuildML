@@ -2,13 +2,16 @@
 
 from __future__ import annotations
 
-from typing import Any, Sequence
+from collections.abc import Sequence
+from typing import Any
 
 import numpy as np
 
 from buildml.core.errors import ValidationError
 from buildml.data.dataset import Dataset
 from buildml.data.splits import SplitPlan
+from buildml.recommenders.adapters.implicit_lib import score_implicit_model
+from buildml.recommenders.adapters.lightfm import score_lightfm_model
 from buildml.recommenders.features import partition_frame
 from buildml.recommenders.models import (
     popularity_scores,
@@ -18,9 +21,7 @@ from buildml.recommenders.models import (
     score_user_knn,
     top_k_from_scores,
 )
-from buildml.recommenders.adapters.implicit_lib import score_implicit_model
-from buildml.recommenders.adapters.lightfm import score_lightfm_model
-from buildml.recommenders.results import RecommendResult, RecommenderPlan
+from buildml.recommenders.results import RecommenderPlan, RecommendResult
 
 
 def _scores_for_user(

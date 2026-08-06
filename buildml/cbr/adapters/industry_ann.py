@@ -286,7 +286,6 @@ def add_vectors_to_ann_index(
         ids = np.arange(start_id, start_id + data.shape[0], dtype=np.int64)
         index.add_items(data, ids)
         return index
-    import faiss
 
     index.add(data)
     return index

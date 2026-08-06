@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
+import importlib.util
+
 import numpy as np
 import pandas as pd
 import pytest
-
-import importlib.util
 
 from buildml import Session
 from buildml.core.errors import MissingExtraError, ValidationError

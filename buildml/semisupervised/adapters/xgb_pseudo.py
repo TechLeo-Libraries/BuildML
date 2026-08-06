@@ -9,7 +9,7 @@ import numpy as np
 
 from buildml.core.errors import ValidationError
 from buildml.semisupervised.extras import require_lightgbm, require_xgboost
-from buildml.semisupervised.types import IndustrySemiSupervisedMethod, SKLEARN_UNLABELED
+from buildml.semisupervised.types import SKLEARN_UNLABELED, IndustrySemiSupervisedMethod
 
 
 @dataclass

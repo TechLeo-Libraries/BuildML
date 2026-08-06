@@ -11,7 +11,11 @@ from buildml.fairness.groups import extract_sensitive_keys, normalize_sensitive_
 from buildml.fairness.mitigation import (
     GroupThresholdSuggestion,
     ReweighingSuggestion,
+)
+from buildml.fairness.mitigation import (
     suggest_group_thresholds as _suggest_group_thresholds,
+)
+from buildml.fairness.mitigation import (
     suggest_reweighing_weights as _suggest_reweighing_weights,
 )
 from buildml.fairness.results import FairnessReport

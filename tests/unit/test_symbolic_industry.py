@@ -8,8 +8,8 @@ import pytest
 
 from buildml import Session
 from buildml.core.errors import MissingExtraError
-from buildml.symbolic.catalog import symbolic_capability_matrix
 from buildml.dl.extras import torch_spec_available
+from buildml.symbolic.catalog import symbolic_capability_matrix
 from buildml.symbolic.extras import (
     imodels_available,
     skope_rules_available,

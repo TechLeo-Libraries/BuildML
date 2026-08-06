@@ -21,7 +21,7 @@ from buildml.data.splits import SplitPlan, frame_for_partition
 from buildml.synthetic.adapters.sdmetrics_eval import sdmetrics_quality_scores
 from buildml.synthetic.extras import sdmetrics_available
 from buildml.synthetic.features import require_split
-from buildml.synthetic.results import SyntheticEvalResult, SynthesizerPlan
+from buildml.synthetic.results import SynthesizerPlan, SyntheticEvalResult
 from buildml.synthetic.sample import sample_synthetic
 from buildml.synthetic.types import EvalBackend, EvalMode
 
@@ -303,7 +303,7 @@ def _resolve_eval_backend(eval_backend: EvalBackend) -> str:
 def _plan_sdv_metadata(plan: SynthesizerPlan) -> Any | None:
     generator = plan.generator_
     if generator is not None and hasattr(generator, "metadata"):
-        return getattr(generator, "metadata")
+        return generator.metadata
     return None
 
 

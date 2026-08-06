@@ -5,13 +5,13 @@ from __future__ import annotations
 from typing import Any, Literal
 
 from buildml.core.industry_markers import platform_skip_entry
+from buildml.dl.extras import torch_spec_available
 from buildml.metalearning.extras import (
     learn2learn_available,
     learn2learn_spec_present,
     metalearning_industry_available,
     metalearning_torch_available,
 )
-from buildml.dl.extras import torch_spec_available
 
 MetaLearningBackendName = Literal["sklearn", "torch", "industry"]
 

@@ -6,7 +6,6 @@ from typing import Any, Literal
 
 from buildml.kg.extras import (
     kg_industry_available,
-    pykeen_available,
     pykeen_runtime_available,
     pykeen_spec_present,
 )

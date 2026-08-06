@@ -9,9 +9,13 @@ import pandas as pd
 import pytest
 
 from buildml import Session
-from buildml.core.errors import MissingExtraError, ValidationError
+from buildml.core.errors import MissingExtraError
 from buildml.unsupervised.catalog import ALL_CLUSTER_METHODS, list_cluster_methods
-from buildml.unsupervised.checkpoint import BUNDLE_FORMAT, BUNDLE_FORMAT_V1
+from buildml.unsupervised.checkpoint import (
+    BUNDLE_FORMAT,
+    BUNDLE_FORMAT_V1,
+    BUNDLE_FORMAT_V2,
+)
 
 
 def _blob_frame(n_per: int = 50, seed: int = 1) -> pd.DataFrame:

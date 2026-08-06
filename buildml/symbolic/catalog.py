@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
-from buildml.dl.extras import torch_available, torch_spec_available
 from buildml.core.industry_markers import platform_skip_entry
+from buildml.dl.extras import torch_available, torch_spec_available
 from buildml.symbolic.extras import (
     imodels_available,
     imodels_spec_present,

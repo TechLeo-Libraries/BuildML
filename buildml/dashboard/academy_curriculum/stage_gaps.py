@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from buildml.dashboard.academy_curriculum._factory import L, with_starter
 from buildml.dashboard.academy_curriculum._helpers import (
-    first_feature,
     fmt_n,
     is_classification,
     target_name,

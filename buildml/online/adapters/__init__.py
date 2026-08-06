@@ -10,7 +10,7 @@ from buildml.online.adapters.torch_continual import (
     build_torch_continual_estimator,
     resolve_torch_task,
 )
-from buildml.online.types import OnlineBackend, OnlineTask, TorchContinualMethod
+from buildml.online.types import OnlineBackend, OnlineTask
 
 __all__ = [
     "build_online_estimator",

@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from typing import Any, Sequence
+from collections.abc import Sequence
+from typing import Any
 
 import numpy as np
 from sklearn.ensemble import RandomForestClassifier
@@ -14,6 +15,7 @@ from buildml.core.errors import ValidationError
 from buildml.core.types import ColumnRole
 from buildml.data.dataset import Dataset
 from buildml.data.splits import SplitPlan, assert_fit_partition
+from buildml.graph.adapters.pyg import fit_pyg
 from buildml.graph.data import (
     build_adjacency,
     edge_pairs_as_indices,
@@ -25,10 +27,9 @@ from buildml.graph.data import (
     resolve_feature_columns,
     target_array,
 )
+from buildml.graph.extras import require_pyg
 from buildml.graph.features import build_classical_design, compute_graph_metrics
 from buildml.graph.gnn import GCNClassifier
-from buildml.graph.adapters.pyg import fit_pyg
-from buildml.graph.extras import require_pyg
 from buildml.graph.results import GraphFitResult, GraphPlan
 from buildml.graph.types import (
     ClassicalEstimator,

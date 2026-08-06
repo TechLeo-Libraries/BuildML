@@ -14,7 +14,6 @@ from buildml.tda.homology import compute_rips_diagrams, finite_diagram
 from buildml.tda.transform import transform_tda
 from buildml.tda.vectorize import fit_vectorizer_state, vectorize_diagrams
 
-
 pytestmark = pytest.mark.skipif(not tda_available(), reason="buildml[tda] missing")
 
 

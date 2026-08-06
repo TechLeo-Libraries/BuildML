@@ -2,19 +2,20 @@
 
 from __future__ import annotations
 
-from typing import Any, Sequence
+from collections.abc import Sequence
+from typing import Any
 
 import pandas as pd
 
-from buildml.core.errors import ValidationError
-from buildml.data.dataset import Dataset
-from buildml.data.splits import SplitPlan, assert_fit_partition
-from buildml.ingest.detect import schema_from_dataframe
 from buildml.activelearning.fit import fit_active_learner
 from buildml.activelearning.results import (
     ActiveLearningLabelResult,
     ActiveLearningPlan,
 )
+from buildml.core.errors import ValidationError
+from buildml.data.dataset import Dataset
+from buildml.data.splits import SplitPlan, assert_fit_partition
+from buildml.ingest.detect import schema_from_dataframe
 from buildml.semisupervised.features import is_unlabeled_mask
 
 

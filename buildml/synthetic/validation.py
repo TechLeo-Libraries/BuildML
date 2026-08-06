@@ -105,7 +105,9 @@ ValidationError
 
         if kind == "categorical" and spec is not None and spec.categories:
             vocab = set(spec.categories)
-            oov = series.astype("string").fillna("__NA__").map(lambda v: v not in vocab)
+            oov = series.astype("string").fillna("__NA__").map(
+                lambda v, _vocab=vocab: v not in _vocab
+            )
             oov_rate = float(oov.mean())
             metrics[f"oov_rate::{col}"] = oov_rate
             oov_ok = oov_rate <= categorical_oov_tolerance

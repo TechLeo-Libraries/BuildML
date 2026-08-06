@@ -2,13 +2,10 @@
 
 from __future__ import annotations
 
-from typing import Any, cast
+from typing import cast
 
 import numpy as np
 
-from buildml.core.errors import ValidationError
-from buildml.data.dataset import Dataset
-from buildml.data.splits import SplitPlan, assert_fit_partition
 from buildml.activelearning.adapters.scikit_activeml import score_industry_pool
 from buildml.activelearning.adapters.sklearn import score_sklearn_pool
 from buildml.activelearning.adapters.torch_uncertainty import score_torch_pool
@@ -19,6 +16,9 @@ from buildml.activelearning.catalog import (
 from buildml.activelearning.fit import pool_masks_from_plan
 from buildml.activelearning.results import ActiveLearningPlan, ActiveLearningQueryResult
 from buildml.activelearning.types import ActiveLearningStrategy
+from buildml.core.errors import ValidationError
+from buildml.data.dataset import Dataset
+from buildml.data.splits import SplitPlan, assert_fit_partition
 
 
 def suggest_query(

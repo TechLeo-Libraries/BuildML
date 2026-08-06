@@ -1,7 +1,10 @@
 """History / catalog / walkthrough helpers for multi-task operations."""
 from __future__ import annotations
+
 from typing import Any
+
 from buildml.multitask.catalog import multitask_capability_matrix
+
 
 def fit_result_summary(fit_result: Any) -> dict[str, Any]:
     """Build a compact history payload from a multi-task fit result.

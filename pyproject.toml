@@ -308,16 +308,21 @@ extend-exclude = ["buildml/_legacy"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]
+# E501: pedagogical / generated-adjacent long lines (was ~540 of ~750 noise).
+# F841/B007: intentional side-effect binds (require_torch etc.) and loop unpacks.
+# B905: zip(strict=) not required on 3.10-targeted equal-length iterables yet.
+ignore = ["E501", "F841", "B007", "B905"]
 
 [tool.ruff.lint.per-file-ignores]
-# Session ops: long pedagogical docs; Sequence often typed via typing for
-# annotation-bag compatibility; some files still use TYPE_CHECKING Session.
-"buildml/session/*_ops.py" = ["UP035", "UP037", "E501", "F401"]
-"buildml/session/mixins/*.py" = ["F401", "F403", "F405", "UP037", "E501"]
+# Session ops: Sequence often typed via typing for annotation-bag compatibility;
+# some files still use TYPE_CHECKING Session.
+"buildml/session/*_ops.py" = ["UP035", "UP037", "F401"]
+"buildml/session/mixins/*.py" = ["F401", "F403", "F405", "UP037"]
 "buildml/session/mixins/_shared.py" = ["F401"]
 "buildml/session/_imports.py" = ["F401"]
 # Assembler keeps a large TYPE_CHECKING bag for __init__ slot annotations.
-"buildml/session/session.py" = ["E501", "F401", "I001"]
+# E402: facades installed after class body by design.
+"buildml/session/session.py" = ["F401", "I001", "E402"]
 
 [tool.mypy]
 python_version = "3.10"

@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import numpy as np
 import pandas as pd
-import pytest
 
 from buildml import Session
 from buildml.preprocess import DEFAULT_SKIP_ROLES

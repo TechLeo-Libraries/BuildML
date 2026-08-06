@@ -52,8 +52,8 @@ import pandas as pd
 from buildml.core.errors import ValidationError
 from buildml.data.dataset import Dataset
 from buildml.data.splits import PartitionName, SplitPlan, frame_for_partition
-from buildml.rl.adapters.stable_baselines3 import SB3PolicyWrapper, evaluate_sb3_policy
 from buildml.rl.act import act_rl
+from buildml.rl.adapters.stable_baselines3 import SB3PolicyWrapper, evaluate_sb3_policy
 from buildml.rl.bandit import LinUCBPolicy, RewardModelBandit, offline_bandit_metrics
 from buildml.rl.features import encode_discrete_actions, matrix_from_frame
 from buildml.rl.gym_reinforce import LinearSoftmaxPolicy, evaluate_gym_policy

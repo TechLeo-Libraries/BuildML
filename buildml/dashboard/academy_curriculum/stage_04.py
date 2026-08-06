@@ -4,8 +4,6 @@ from __future__ import annotations
 
 from buildml.dashboard.academy_curriculum._factory import L, rows_blurb, with_starter
 from buildml.dashboard.academy_curriculum._helpers import (
-    code_block,
-    first_feature,
     fmt_n,
     fmt_pct,
     is_classification,

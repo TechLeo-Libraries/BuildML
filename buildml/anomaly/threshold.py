@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
-from typing import Any, Literal
+from typing import Any
 
 import numpy as np
 from sklearn.metrics import f1_score, fbeta_score, precision_recall_curve, roc_curve
 
-from buildml.anomaly.fit import anomaly_scores
 from buildml.anomaly.features import matrix_from_frame
+from buildml.anomaly.fit import anomaly_scores
 from buildml.anomaly.results import AnomalyPlan, AnomalyThresholdTuneResult
 from buildml.anomaly.types import ThresholdTuningMetric
 from buildml.core.errors import ValidationError

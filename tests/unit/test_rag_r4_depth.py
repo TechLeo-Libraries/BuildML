@@ -11,7 +11,7 @@ from buildml.rag.chunk import chunk_documents
 from buildml.rag.corpus import corpus_from_documents
 from buildml.rag.defaults import default_embedder_spec, default_retrieve_mode
 from buildml.rag.embed import HashingEmbedder
-from buildml.rag.evaluate import evaluate_generation, evaluate_retrieval
+from buildml.rag.evaluate import evaluate_generation
 from buildml.rag.extras import rag_available
 from buildml.rag.index import build_index
 from buildml.rag.results import Document

@@ -11,7 +11,6 @@ from buildml.tda.catalog import tda_capability_matrix
 from buildml.tda.extras import giotto_available, tda_available
 from buildml.tda.subsample import apply_train_subsample
 
-
 pytestmark = pytest.mark.skipif(not tda_available(), reason="buildml[tda] missing")
 
 

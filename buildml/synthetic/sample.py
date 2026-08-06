@@ -17,7 +17,7 @@ from buildml.synthetic.models import (
     GaussianCopulaGenerator,
     SmoteGenerator,
 )
-from buildml.synthetic.results import SyntheticSampleResult, SynthesizerPlan
+from buildml.synthetic.results import SynthesizerPlan, SyntheticSampleResult
 from buildml.synthetic.types import MergeMode
 
 

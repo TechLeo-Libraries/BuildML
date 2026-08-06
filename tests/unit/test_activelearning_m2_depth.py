@@ -9,13 +9,13 @@ import pandas as pd
 import pytest
 
 from buildml import Session
-from buildml.core.errors import ValidationError
-from buildml.data.dataset import Dataset
-from buildml.ingest.detect import schema_from_dataframe
 from buildml.activelearning.evaluate import evaluate_active_learning
 from buildml.activelearning.fit import fit_active_learner
 from buildml.activelearning.label import label_rows
 from buildml.activelearning.query import suggest_query
+from buildml.core.errors import ValidationError
+from buildml.data.dataset import Dataset
+from buildml.ingest.detect import schema_from_dataframe
 
 
 def _frame(n: int = 160, seed: int = 3) -> pd.DataFrame:

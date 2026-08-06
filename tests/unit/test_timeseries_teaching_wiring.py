@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 from buildml import Session
-from buildml.explain.concepts import CONCEPT_NOTES, get_concept
 from buildml.explain.beginner import BEGINNER_LAYERS
+from buildml.explain.concepts import CONCEPT_NOTES, get_concept
 
 
 def test_timeseries_concepts_have_beginner_layers() -> None:

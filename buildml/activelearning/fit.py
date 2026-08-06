@@ -9,9 +9,6 @@ import pandas as pd
 from sklearn.ensemble import BaggingClassifier, HistGradientBoostingClassifier
 from sklearn.linear_model import LogisticRegression
 
-from buildml.core.errors import ValidationError
-from buildml.data.dataset import Dataset
-from buildml.data.splits import SplitPlan, assert_fit_partition, frame_for_partition
 from buildml.activelearning.adapters.torch_uncertainty import build_torch_estimator
 from buildml.activelearning.catalog import resolve_backend_strategy
 from buildml.activelearning.features import (
@@ -27,6 +24,9 @@ from buildml.activelearning.types import (
     ActiveLearningEstimator,
     ActiveLearningStrategy,
 )
+from buildml.core.errors import ValidationError
+from buildml.data.dataset import Dataset
+from buildml.data.splits import SplitPlan, assert_fit_partition, frame_for_partition
 
 _BASE_ESTIMATORS = {
     "logistic_regression": lambda rs: LogisticRegression(

@@ -10,15 +10,14 @@ import pandas as pd
 import pytest
 
 from buildml import Session
-from buildml.core.errors import MissingExtraError, ValidationError
-from buildml.data.dataset import Dataset
-from buildml.ingest.detect import schema_from_dataframe
 from buildml.activelearning.catalog import (
     activelearning_capability_matrix,
     list_activelearning_strategies,
     resolve_backend_strategy,
 )
-from buildml.activelearning.extras import activelearning_industry_available
+from buildml.core.errors import MissingExtraError, ValidationError
+from buildml.data.dataset import Dataset
+from buildml.ingest.detect import schema_from_dataframe
 
 
 def _torch_spec_present() -> bool:

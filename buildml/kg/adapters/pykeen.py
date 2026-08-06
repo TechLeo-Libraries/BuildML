@@ -127,9 +127,9 @@ def fit_pykeen(
         When pykeen or torch is not installed.
     """
     require_pykeen(feature="PyKEEN KG backend")
+    import torch
     from pykeen.pipeline import pipeline
     from pykeen.triples import TriplesFactory
-    import torch
 
     assert_fit_partition(split_plan, "train")
     assert split_plan is not None

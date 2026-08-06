@@ -10,8 +10,8 @@ import joblib
 
 from buildml._version import __version__
 from buildml.automl.results import AutoMLPlan, AutoMLResult, fit_result_from_plan
-from buildml.core.serialization import joblib_load_trusted
 from buildml.core.errors import ValidationError
+from buildml.core.serialization import joblib_load_trusted
 from buildml.model.supervised import FitResult
 
 BUNDLE_FORMAT = "buildml.automl_bundle.v1"

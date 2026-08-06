@@ -26,6 +26,7 @@ from typing import Any
 import numpy as np
 
 from buildml.cbr.cases import Case, CaseBase, encode_categoricals
+from buildml.cbr.catalog import resolve_backend_metric
 from buildml.cbr.features import (
     classification_accuracy,
     encode_classification_targets,
@@ -38,7 +39,6 @@ from buildml.cbr.features import (
     standardize_fit,
     train_partition_frame,
 )
-from buildml.cbr.catalog import resolve_backend_metric
 from buildml.cbr.predict import predict_cbr
 from buildml.cbr.results import CbrFitResult, CbrPlan
 from buildml.cbr.retrieval_build import build_search_artifacts

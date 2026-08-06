@@ -645,7 +645,7 @@ def build_assumption_teaching(note: dict[str, Any], ctx: dict[str, Any]) -> dict
         "beginner": beginner,
         "evidence": evidence
         or (
-            f"Footnote bound to this session"
+            "Footnote bound to this session"
             + (f" (target={target})" if target else "")
             + f"; theme={theme}."
         ),

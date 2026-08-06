@@ -12,7 +12,11 @@ from buildml import Session
 from buildml.ai.tools import build_default_registry
 from buildml.core.errors import MissingExtraError
 from buildml.forecasting.catalog import list_forecast_methods, resolve_default_method
-from buildml.forecasting.checkpoint import BUNDLE_FORMAT_V2, load_forecast_bundle, save_forecast_bundle
+from buildml.forecasting.checkpoint import (
+    BUNDLE_FORMAT_V2,
+    load_forecast_bundle,
+    save_forecast_bundle,
+)
 from buildml.forecasting.extras import statsmodels_available
 from buildml.forecasting.fit import fit_forecaster
 

@@ -14,8 +14,8 @@ from buildml.causal.results import (
     CausalFitResult,
     CausalPlan,
 )
-from buildml.core.serialization import joblib_load_trusted
 from buildml.core.errors import ValidationError
+from buildml.core.serialization import joblib_load_trusted
 
 BUNDLE_FORMAT = "buildml.causal_bundle.v1"
 CHECKPOINT_BOUNDARY = (

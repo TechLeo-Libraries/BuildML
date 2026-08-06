@@ -10,7 +10,6 @@ from buildml import Session
 from buildml.causal.estimate import estimate_causal
 from buildml.causal.evaluate import evaluate_causal
 from buildml.causal.fit import fit_causal
-from buildml.causal.refute import refute_causal
 from buildml.causal.types import CausalAssumptions
 from buildml.core.errors import ValidationError
 from buildml.explain.sync import REQUIRED_AI_TOOL_SESSION_METHODS

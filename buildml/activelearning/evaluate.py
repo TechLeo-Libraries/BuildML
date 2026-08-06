@@ -11,11 +11,11 @@ from sklearn.metrics import (
     precision_recall_fscore_support,
 )
 
+from buildml.activelearning.features import decode_predictions, matrix_from_frame
+from buildml.activelearning.results import ActiveLearningEvalResult, ActiveLearningPlan
 from buildml.core.errors import ValidationError
 from buildml.data.dataset import Dataset
 from buildml.data.splits import PartitionName, SplitPlan, frame_for_partition
-from buildml.activelearning.features import decode_predictions, matrix_from_frame
-from buildml.activelearning.results import ActiveLearningEvalResult, ActiveLearningPlan
 from buildml.semisupervised.features import is_unlabeled_mask
 
 PartitionOrAll = PartitionName | Literal["all"]

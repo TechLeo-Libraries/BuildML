@@ -844,7 +844,6 @@ def check_ai_tools_vs_catalog(
     catalog_names = _catalog_names(catalog)
     session_names = set(public_session_operations(session_cls))
     from buildml.ai.tools import build_default_registry
-
     from buildml.session.facade_registry import resolve_operation_name
 
     registry = build_default_registry()

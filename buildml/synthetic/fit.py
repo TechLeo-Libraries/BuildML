@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from typing import Any, Sequence
+from collections.abc import Sequence
+from typing import Any
 
 from buildml.core.errors import ValidationError
 from buildml.core.types import ColumnRole
@@ -23,9 +24,8 @@ from buildml.synthetic.models import (
     build_column_specs,
 )
 from buildml.synthetic.results import SynthesizerFitResult, SynthesizerPlan
-from buildml.synthetic.types import SyntheticBackend, SynthesizerConfig, SynthesizerMethod
+from buildml.synthetic.types import SynthesizerConfig, SynthesizerMethod, SyntheticBackend
 from buildml.synthetic.validation import enrich_specs_with_train_stats
-
 
 PRIVACY_DISCLOSURE = (
     "Privacy honesty: synthetic generators are not a differential-privacy "

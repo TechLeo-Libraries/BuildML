@@ -12,9 +12,9 @@ from buildml.data.dataset import Dataset
 from buildml.data.splits import PartitionName, SplitPlan, frame_for_partition
 from buildml.selfsupervised.features import matrix_from_frame
 from buildml.selfsupervised.results import (
-    SSLHeadPlan,
     SelfSupervisedEvalResult,
     SelfSupervisedPlan,
+    SSLHeadPlan,
 )
 from buildml.semisupervised.features import is_unlabeled_mask
 

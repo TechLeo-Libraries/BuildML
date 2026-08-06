@@ -6,7 +6,6 @@ from typing import Any, Literal
 
 from buildml.anomaly.extras import (
     anomaly_industry_available,
-    gradient_boosting_extras_available,
     lightgbm_available,
     lightgbm_spec_present,
     pyod_available,

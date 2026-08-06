@@ -10,15 +10,13 @@ import pandas as pd
 import pytest
 
 from buildml import Session
-import importlib.util
-
 from buildml.core.errors import MissingExtraError, ValidationError
 from buildml.online.catalog import (
     list_online_estimators,
     online_capability_matrix,
     resolve_backend_estimator,
 )
-from buildml.online.extras import online_industry_available, river_available
+from buildml.online.extras import river_available
 from buildml.online.fit import fit_online
 
 

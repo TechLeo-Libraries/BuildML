@@ -35,14 +35,14 @@ from typing import Any, Literal
 import numpy as np
 
 from buildml.cbr.cases import CaseTrace, distance_weights
+from buildml.cbr.results import CbrPlan, CbrPredictResult
+from buildml.cbr.retrieval_engine import retrieve_neighbor_batches
 from buildml.cbr.retrieve import (
     _partition_frame,
     _plan_with_backend,
     encode_query_features,
     neighbor_pack_for_row,
 )
-from buildml.cbr.results import CbrPlan, CbrPredictResult
-from buildml.cbr.retrieval_engine import retrieve_neighbor_batches
 from buildml.core.errors import ValidationError
 from buildml.data.dataset import Dataset
 from buildml.data.splits import PartitionName, SplitPlan

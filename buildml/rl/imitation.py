@@ -66,7 +66,13 @@ from buildml.rl.results import (
     ImitationPlan,
     ImitationPredictResult,
 )
-from buildml.rl.types import ImitationBackend, ImitationConfig, ImitationEstimator, ImitationMethod, ImitationTask
+from buildml.rl.types import (
+    ImitationBackend,
+    ImitationConfig,
+    ImitationEstimator,
+    ImitationMethod,
+    ImitationTask,
+)
 
 PartitionOrAll = PartitionName | Literal["all"]
 

@@ -2,9 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Sequence
-
-import numpy as np
+from collections.abc import Sequence
 
 from buildml.core.errors import ValidationError
 from buildml.data.dataset import Dataset

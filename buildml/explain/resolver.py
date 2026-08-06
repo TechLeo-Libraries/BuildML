@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
-from buildml.explain.catalog import OPERATION_CATALOG, get_operation
 from buildml.explain.capability_status import CAPABILITY_MATRIX_OPERATIONS
+from buildml.explain.catalog import OPERATION_CATALOG, get_operation
 from buildml.explain.concepts import get_concept
 from buildml.explain.pedagogy import primer_for
 from buildml.explain.prerequisites import PROVIDERS, probe

@@ -4,11 +4,11 @@ from __future__ import annotations
 
 import numpy as np
 import pandas as pd
+import pytest
 from sklearn.linear_model import LogisticRegression
 
 from buildml import Session
 from buildml.core.errors import ValidationError
-import pytest
 
 
 def test_list_capabilities_groups_domains() -> None:

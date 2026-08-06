@@ -6,10 +6,10 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from buildml.cbr.cases import pairwise_distances, top_k_indices
-from buildml.cbr.predict import reuse_solutions
-from buildml.cbr.features import standardize_fit
 from buildml import Session
+from buildml.cbr.cases import pairwise_distances, top_k_indices
+from buildml.cbr.features import standardize_fit
+from buildml.cbr.predict import reuse_solutions
 from buildml.core.errors import ValidationError
 
 
