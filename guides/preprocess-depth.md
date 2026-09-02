@@ -19,13 +19,21 @@ synthesize rows for inference.
 
 ---
 
-## Why plans matter
+## What a plan is for
 
-Each step stores a serializable plan (`impute_plan`, `encode_plan`, …).
-`save_pipeline` ships those plans with the estimator so score-time rows see the
-same frozen transforms. `apply_preprocess_plans` replays them on new frames;
-resample plans are **lineage-only** at score time (they do not synthesize rows
-for inference).
+Each step stores a serializable plan (`impute_plan`, `encode_plan`, and
+the rest). `save_pipeline` ships those plans with the estimator so
+score-time rows see the same frozen transforms. `apply_preprocess_plans`
+replays them on a new frame.
+
+That is why you split first. Median age, one-hot levels, and TF-IDF
+vocabulary come from train. Validation and test only receive the frozen
+mapping. If you skip the split, the call fails.
+
+Defaults you will hit without naming them: `impute(strategy="median")`,
+`encode(method="onehot")`. Target encoding on Session train is fine for a
+final model after split. For CV, put `encode="target"` inside
+`PreprocessRecipe` so means refit per fold.
 
 ---
 
@@ -107,9 +115,6 @@ session.encode(method="infrequent", min_frequency=0.2)
 session.encode(method="target", smoothing=10.0, n_folds=5, random_state=0)
 ```
 
-Target encoding on Session train is fine for a **final** model after split. For
-CV, put `encode="target"` inside `PreprocessRecipe` so means refit per fold.
-
 ---
 
 ## Outliers, binning, selection, PCA
@@ -121,11 +126,10 @@ session.select_features(strategy="univariate", k=10)
 session.reduce_dimensions(method="pca", n_components=5, prefix="pc")
 ```
 
-- `action="drop"` on outliers rebuilds splits after removing train rows.
-- Feature selection and PCA fit on train only; dropping input columns is
-  configurable via method kwargs where exposed.
-- Prefer expressing bin/select/reduce inside `PreprocessRecipe` when those
-  steps participate in CV/search knobs (`SAFE_RECIPE_KNOBS`).
+`action="drop"` on outliers rebuilds splits after removing train rows.
+Feature selection and PCA fit on train only. Prefer expressing bin,
+select, and reduce inside `PreprocessRecipe` when those steps participate
+in CV or search knobs (`SAFE_RECIPE_KNOBS`).
 
 ---
 
@@ -159,9 +163,9 @@ session.apply_custom_transform("log1p_nonneg", columns=["income"])
 print(Session.list_transforms())
 ```
 
-**Limit:** custom transforms are never fold-local inside `cv_score`. If you need
-fold-local honesty, keep the logic out of CV or accept Session-global bias with
-eyes open.
+Custom transforms are never fold-local inside `cv_score`. If you need
+fold-local honesty, keep the logic out of CV or accept Session-global
+bias with eyes open.
 
 ---
 
@@ -176,8 +180,8 @@ session.resample(sampler="smote", random_state=0)
 # also: random_oversample, random_undersample, adasyn, borderline_smote
 ```
 
-Validation/test prevalence is unchanged. Pipeline bundles record resample as
-lineage; scoring does not re-synthesize minority rows.
+Validation and test prevalence stay as they were. Pipeline bundles record
+resample as lineage. Scoring does not re-synthesize minority rows.
 
 ---
 

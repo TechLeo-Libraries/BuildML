@@ -22,19 +22,6 @@ own notebook. It can refuse a poisoned CV.
 
 ---
 
-## Why validation vs test
-
-- **Validation:** iterate thresholds, features, model families, early stops.
-- **Test:** score the frozen decision policy once.
-- **CV / search:** folds stay inside **train**; Session test is reserved.
-
-Violating that protocol is the most common way “great offline metrics” fail in
-production: and BuildML cannot stop you from peeking at test in your own code.
-It *can* refuse Session-global prep poisoning of CV
-([leakage guide](leakage-cv-recipes.md)).
-
----
-
 ## Setup shared by examples
 
 ```python
@@ -82,12 +69,16 @@ print(comparison)
 # Winner becomes session.fit_result
 ```
 
-Default `partition="test"` is convenient for a final card: dangerous during
-iterative selection. Prefer validation until the recipe is frozen.
+Default `partition="test"` is convenient for a final card. It is the wrong
+default during iterative selection. Prefer validation until the recipe is
+frozen.
 
 ---
 
 ## Use case: grid, randomized, Optuna, and evolutionary search
+
+Folds stay inside train. Pass the recipe so impute, encode, and scale
+refit per fold. Do not Session-impute first.
 
 ```python
 # Fold-local prep: do not Session-impute first
@@ -179,19 +170,12 @@ session.learning_curve(
 # session.eval_plots(partition="validation", export_html="artifacts/plots.html")
 ```
 
-Permutation importance measures **model reliance**, not causal effect. Select
-thresholds on validation; confirm the fixed policy on test.
+Permutation importance measures model reliance, not causal effect. Select
+thresholds on validation. Confirm the fixed policy on test.
 
----
-
-## evaluate vs eval_plots
-
-| API | Role |
-| --- | --- |
-| `evaluate(...)` | Metrics + diagnostics + optional plot hooks / HTML |
-| `eval_plots(...)` | Adaptive PlotBoard panels (needs `[viz]`) |
-
-Use both when you want a metric card **and** a teaching-oriented board.
+`evaluate(...)` is the metric card plus diagnostics. `eval_plots(...)`
+needs `[viz]` and draws an adaptive PlotBoard. Use both when you want
+numbers and a board.
 
 ---
 

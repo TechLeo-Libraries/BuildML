@@ -1,87 +1,133 @@
-# Multi-task / multi-output deep guide
+# Multi-task / multi-output
 
-## What this is
-
-BuildML multi-task learning fits **multiple targets that share one feature
-matrix** with honest backend routing:
-
-| Backend | Extra | Methods | Targets |
-| --- | --- | --- | --- |
-| `sklearn` | core | `multi_output`, `classifier_chain`, `regressor_chain` | same-type only |
-| `industry` | `multitask-industry` | `multi_output_xgb`, `multi_output_lgbm`, `multi_output_catboost` | same-type only |
-| `torch` | `torch` | `shared_trunk_multihead` | mixed cls+reg supported |
-
-Inspect defaults and availability:
-
-```python
-from buildml.multitask import multitask_capability_matrix
-
-multitask_capability_matrix()
+```bash
+pip install buildml
+# XGBoost / LightGBM / CatBoost multi-target: pip install "buildml[multitask-industry]"
+# shared-trunk multi-head: pip install "buildml[torch]"
 ```
 
-When extras are installed, industry defaults to XGBoost multi-target; core
-sklearn remains the fallback when extras are missing.
+Two or more targets share one feature matrix. Classical `session.fit`
+still expects exactly one target. This path is separate.
 
-This is **not** a universal MTL research platform (no task-affinity search,
-no multi-label binary-relevance zoo, no causal multi-task).
+`session.multitask.fit` defaults to method `multi_output` and base
+estimator `logistic_regression`. That pairing stays sklearn even if
+XGBoost is installed. Pass `method="multi_output_xgb"` with
+`backend=None` to take industry when a GBDT extra imported cleanly.
+Pass `method="shared_trunk_multihead"` with `backend=None` to take
+torch. `backend="industry"` with the default `multi_output` method is
+refused: name an industry method (`multi_output_xgb`,
+`multi_output_lgbm`, or `multi_output_catboost`).
 
-## Leakage discipline
+The API refuses mixed classification plus regression on sklearn and
+industry, fewer than two targets, and a fit without a split. You decide
+which columns are targets (`role="target"` or `targets=`), whether to
+chain them, and whether mixed heads on torch are what you meant.
 
-1. `session.multitask.fit` requires a `SplitPlan` and fits **train only**.
-2. Validation / test are evaluation-only (`session.multitask.evaluate` /
-   `session.multitask.predict` never refit).
-3. Classical `Session.fit` still calls `require_target()` and expects **exactly
-   one** target: multi-task is a distinct Session path.
-4. `split(stratify=True)` also uses `require_target()` (single target). With
-   multiple target roles, split without stratification (or stratify on a
-   temporary single-target setup).
+Short on-ramp: [multi-task quickstart](quickstart-multi-task.md).
+Proof: [multi-target-underwriting](../proofs/multi-target-underwriting/).
 
-## Targets
+## A first joint fit
 
-- Prefer multiple `role="target"` columns, or pass `targets=[...]`.
-- Need **≥ 2** targets.
-- `task="auto"` infers classification vs regression from column dtypes /
-  cardinality.
-- **Sklearn/industry:** mixed classification+regression is refused.
-- **Torch `shared_trunk_multihead`:** mixed targets get separate heads and
-  joint training.
+Prefer two or more `role="target"` columns. `task="auto"` infers
+classification vs regression from dtypes and cardinality. Say the task
+yourself when an integer label would look like a quantity.
+
+`split(stratify=True)` still goes through the single-target gate. With
+several target roles, split without stratification (or stratify on a
+temporary single-target setup, then restore roles).
+
+```python
+import numpy as np
+import pandas as pd
+
+from buildml import Session
+
+rng = np.random.default_rng(0)
+n = 240
+x0 = rng.normal([-1.0, -1.0], 0.55, size=(n // 2, 2))
+x1 = rng.normal([1.2, 1.0], 0.55, size=(n - n // 2, 2))
+frame = pd.DataFrame(np.vstack([x0, x1]), columns=["x", "y"])
+frame["t1"] = [0] * (n // 2) + [1] * (n - n // 2)
+frame["t2"] = ([0, 1] * (n // 2))[:n]
+
+session = (
+    Session.ingest(frame)
+    .set_roles({"x": "feature", "y": "feature", "t1": "target", "t2": "target"})
+    .split(test_size=0.2, validation_size=0.2, random_state=0)
+    .scale(method="standard")
+)
+
+fit = session.multitask.fit(
+    backend="sklearn",
+    method="multi_output",
+    task="classification",
+    base_estimator="logistic_regression",
+)
+print(fit.backend, fit.n_tasks, fit.target_columns)
+
+ev = session.multitask.evaluate(partition="validation")
+print(ev.metrics)
+print(ev.per_task_metrics)
+
+session.multitask.save_bundle("artifacts/multitask_bundle")
+```
+
+`evaluate` defaults to validation. `predict` defaults to test. Neither
+refits. `attach=True` on predict can write columns with prefix
+`multitask_pred` (override with `prediction_prefix=`).
+
+## Backends and methods
+
+| Backend | Extra | Methods | Target mix |
+| --- | --- | --- | --- |
+| `sklearn` | none (`multi_output` default) | `multi_output`, `classifier_chain`, `regressor_chain` | same-type only |
+| `industry` | `buildml[multitask-industry]` | `multi_output_xgb`, `multi_output_lgbm`, `multi_output_catboost` | same-type only |
+| `torch` | `buildml[torch]` | `shared_trunk_multihead` | mixed cls+reg via separate heads |
+
+Industry is available when at least one of XGBoost, LightGBM, or
+CatBoost imports in a subprocess. Chains stay on sklearn. There is no
+ClassifierChain on a GBDT backend.
+
+Torch is a shared MLP trunk with per-task heads and joint training.
+`epochs` defaults to 60, `batch_size` to 64, `device` to `"cpu"`. It is
+not a task-affinity search product.
+
+```python
+session.multitask.capability_matrix()
+```
 
 ## Metrics
 
-`session.multitask.evaluate` returns:
+`evaluate` returns:
 
-- `per_task_metrics[task]`: accuracy / F1 (cls) or MAE / RMSE / R² (reg)
-- `metrics`: unweighted means across tasks of each kind (`mean_accuracy`,
-  `mean_mae`, …). Mixed torch plans report cls and reg aggregates separately.
+- `per_task_metrics[task]`: accuracy / F1 (classification) or MAE / RMSE / R² (regression)
+- `metrics`: unweighted means across tasks of each kind (`mean_accuracy`, `mean_mae`, ...)
 
-## Bundle boundary
+A mixed torch plan reports classification and regression aggregates
+separately. Holdout is never used for fitting.
 
-`buildml.multitask_bundle.v1` stores `MultiTaskPlan` (estimator + target
-contract + per-task label encoders + backend metadata). Session checkpoints do
-**not** embed it. Reload tabular workflow via `checkpoint_load`; reload the
-learner via `session.multitask.load_bundle`.
+## Bundles
 
-See [Artifacts](artifacts-checkpoints-bundles.md).
+`buildml.multitask_bundle.v1` stores the `MultiTaskPlan`: estimator,
+target contract, per-task label encoders, backend metadata. A Session
+checkpoint does not embed it. Reload the table with `checkpoint_load`.
+Reload the learner with `session.multitask.load_bundle`. `trusted=True`
+only for a file you made.
 
-## Teaching surfaces
+[Artifacts](artifacts-checkpoints-bundles.md)
 
-- Concepts: `multitask-multi-output`, `multitask-chain`,
-  `multitask-target-roles`, `multitask-bundle-boundary`
-- Session ops: `session.multitask.fit`, `session.multitask.predict`, `session.multitask.evaluate`,
-  `session.multitask.save_bundle`, `session.multitask.load_bundle`
-- Walkthrough: `multitask_status` (includes capability matrix)
-- AI allowlist: fit / evaluate / save / load
+## When it refuses
 
-## Benchmark
+| What you see | What happened |
+| --- | --- |
+| Fit before a split | Train-only contract |
+| Fewer than two targets | Pass roles or `targets=` |
+| Mixed cls+reg on sklearn/industry | Use torch `shared_trunk_multihead`, or split the problem |
+| `session.fit` with several target roles | Classical fit still calls `require_target()` |
+| Missing extra | Named GBDT or torch method without the extra |
+| Null features | Impute (and usually scale) first |
 
-```bash
-python benchmarks/multitask/multi_target_quality.py
-```
+This is not causal multi-task, federated MTL, or a multi-label
+binary-relevance zoo.
 
-Writes `benchmarks/multitask/results/multi_target_quality.json` comparing
-sklearn vs industry/torch when extras are installed.
-
-## Scope notes
-
-Multi-task industry depth is shipped.
-Related next: **meta-learning**.
+[Multi-task quickstart](quickstart-multi-task.md)

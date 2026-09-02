@@ -1,158 +1,121 @@
-# Recommendation systems (deep)
+# Recommenders deep
 
-Session-shaped collaborative filtering and content-based recommenders with
-leakage discipline, ranking metrics, industry backends, and a dedicated bundle
-boundary.
-
-Honesty: this is **not** a Netflix-scale recsys platform (no streaming feature
-store, no multi-stage industrial cascade). With ``buildml[recommenders-industry]``
-it uses real industry libraries (``implicit`` ALS/BPR, LightFM hybrid) as
-defaults for implicit feedback: not a from-scratch reimplementation.
-
----
-
-## What it is / is not
-
-| Is | Is not |
-|----|--------|
-| User/item/interaction tables → top-K | RAG document retrieve/generate |
-| Train-only CF / SVD / NMF / content | Diagnostic EDA `Recommendation` Findings |
-| implicit ALS/BPR + LightFM (optional extra) | surprise / full recsys platform |
-| Precision@K, Recall@K, nDCG@K, MAP@K | Classical accuracy on engineered rows |
-| `buildml.recommender_bundle.v1` | Session checkpoint payload |
-
-EDA **Recommendation** objects (`buildml.explain.schemas.Recommendation`) are
-teaching advice linked to Findings: they never rank items. RAG
-(`session.rag.retrieve` / `session.rag.generate`) ranks **documents**, not catalog items from
-an interaction matrix.
-
----
-
-## Backend catalog
-
-Inspect honest capabilities:
-
-```python
-from buildml.recommenders import recommender_capability_matrix
-
-print(recommender_capability_matrix())
+```bash
+pip install buildml
+# implicit ALS / BPR: pip install "buildml[recommenders-industry]"
+# LightFM hybrid: pip install "buildml[recommenders-lightfm]"
 ```
 
-| Backend | Extra | Methods | Default when |
-|---------|-------|---------|--------------|
-| `sklearn` | (core) | item_knn, user_knn, svd, nmf, content | explicit feedback |
-| `implicit` | recommenders-industry | als, bpr | implicit feedback when installed |
-| `lightfm` | recommenders-industry | lightfm | hybrid with side features |
+You have user-item interactions and you want top-K items from the
+**train catalog**. `user_column` and `item_column` are required kwargs.
+They are not inferred from roles. Mark them `id` or `ignore` so a later
+classical `fit()` does not treat ids as features.
 
-Install industry backends:
+`session.recommender.fit()` with the mixin defaults (`feedback="explicit"`,
+`method=None`) is item kNN on sklearn. That stays sklearn even when
+`implicit` is installed, because explicit ratings are not an ALS
+problem. `feedback="implicit"` with `method=None` picks ALS when
+`buildml[recommenders-industry]` imported, otherwise sklearn NMF.
+LightFM is `method="lightfm"` (extra `recommenders-lightfm`, not the
+implicit extra). LightFM wheels are skipped on Windows and on Python
+3.13.
 
-```text
-pip install 'buildml[recommenders-industry]'
-```
+This is collaborative filtering and content profiles on a Session split.
+It is not RAG, not learning-to-rank, and not an EDA "recommendation"
+finding (those are teaching notes on the report, they never rank items).
 
-Routing: pass ``method=`` and/or ``backend=``; omit ``method`` to get
-feedback-aware defaults (ALS for implicit when ``implicit`` is installed).
+Short on-ramp: [recommenders quickstart](quickstart-recommenders.md).
+Proof: [movie-recs-collaborative](../proofs/movie-recs-collaborative/).
 
----
+## Fit, recommend, evaluate
 
-## Data model
-
-Interactions are rows with:
-
-1. **User id**: `user_column=` (required kwargs; not a dedicated `ColumnRole`)
-2. **Item id**: `item_column=`
-3. **Rating / signal**: Session `target` or `rating_column=` for explicit;
-   `feedback='implicit'` for presence-only positives
-
-Suggested roles: mark user/item as `id` or `ignore` so classical `fit()` does
-not treat them as features. Optional numeric **item features** support
-`method='content'` and LightFM hybrid (`item_feature_columns=` /
-`user_feature_columns=`).
-
----
-
-## Algorithms
-
-### Core (sklearn / numpy)
-
-- **item_knn**: cosine item–user similarity
-- **user_knn**: cosine user–user similarity
-- **svd** / **nmf**: matrix factorization
-- **content**: rating-weighted item feature profiles
-
-### Industry (`recommenders-industry`)
-
-- **als** / **bpr**: ``implicit`` library on sparse implicit-feedback matrices
-- **lightfm**: hybrid WARP with optional user/item side features
-
-All methods restrict candidates to the **train item catalog** (known-item
-protocol). Holdout-only items are never collaborative candidates.
-
----
-
-## Cold start
-
-| Case | Behavior |
-|------|----------|
-| User absent from train | `cold_start='popularity'` → train popularity list; `'skip'` → empty |
-| Item absent from train | Excluded from candidates and from eval relevant sets (warned) |
-| Warm user, empty scores | Disclosed popularity fallback |
-
----
-
-## Evaluation protocol
-
-For each **warm** holdout user with ≥1 known (train-catalog) holdout item:
-
-1. Relevant set = holdout items ∩ train catalog
-2. Recommend top-K among train items, excluding the user's **train** history
-3. Score Precision@K, Recall@K, nDCG@K, MAP@K
-4. Macro-average over scored users; count cold-start users separately
-
-Never train on test interactions (`assert_can_fit` / `assert_fit_partition`).
-
----
-
-## Bundle boundary
-
-`session.recommender.save_bundle` / `session.recommender.load_bundle` write
-`buildml.recommender_bundle.v1` (`meta.json` + `recommender_plan.joblib`).
-
-Session checkpoints do **not** embed `RecommenderPlan`. Reload workflow via
-`checkpoint_load`, then `session.recommender.load_bundle`.
-
----
-
-## API surface
-
-| Session method | Role |
-|----------------|------|
-| `session.recommender.fit` | Train-only fit (backend/method routing) |
-| `session.recommender.recommend` | Top-K lists |
-| `session.recommender.evaluate` | Holdout ranking metrics |
-| `session.recommender.save_bundle` / `session.recommender.load_bundle` | Persist / restore |
-
-Walkthrough exposes `recommender_status`; AI allowlist includes the five ops.
-
----
-
-## Worked examples
-
-Implicit feedback with industry default (ALS when installed):
+Fit is train-only. For explicit feedback, `rating_column` defaults to
+the Session target. For `feedback="implicit"`, ratings are ignored and
+presence is the signal. `recommend` needs either `partition=` or
+`user_ids=`, not both and not neither. `evaluate` defaults to test with
+`k=10`. `exclude_train_items=True` (the default on `recommend`) hides
+items the user already had in train.
 
 ```python
+import numpy as np
+import pandas as pd
+
+from buildml import Session
+
+rng = np.random.default_rng(0)
+rows = []
+for user in range(40):
+    liked = rng.choice(30, size=8, replace=False)
+    for item in liked:
+        rows.append(
+            {
+                "user_id": f"u{user}",
+                "item_id": f"i{item}",
+                "rating": float(rng.integers(3, 6)),
+                "f1": float(item % 5),
+                "f2": float(item // 5),
+            }
+        )
+frame = pd.DataFrame(rows)
+
+session = (
+    Session.ingest(frame)
+    .set_roles(
+        {
+            "user_id": "id",
+            "item_id": "id",
+            "rating": "target",
+            "f1": "feature",
+            "f2": "feature",
+        }
+    )
+    .split(test_size=0.2, validation_size=0.15, random_state=0)
+)
+
+fit = session.recommender.fit(
+    method="item_knn",
+    user_column="user_id",
+    item_column="item_id",
+    n_neighbors=20,
+)
+print(fit.method, fit.backend)
+
+recs = session.recommender.recommend(partition="test", k=5)
+print(recs.to_dict())
+
+ev = session.recommender.evaluate(partition="test", k=5)
+print(ev.metrics)
+
+session.recommender.save_bundle("artifacts/recommender_bundle")
+```
+
+Candidates are always the train item catalog. A holdout-only item is
+never a collaborative candidate.
+
+## Methods and backends
+
+| Method | Backend | Extra | Typical feedback |
+| --- | --- | --- | --- |
+| `item_knn` (explicit default) | sklearn | core | cosine item-user CF, `n_neighbors=40` |
+| `user_knn` | sklearn | core | cosine user-user CF |
+| `svd` / `nmf` | sklearn | core | matrix factorization, `n_factors=32` |
+| `content` | sklearn | core | rating-weighted item feature profiles (`item_feature_columns=`) |
+| `als` / `bpr` | implicit | `recommenders-industry` | implicit only |
+| `lightfm` | lightfm | `recommenders-lightfm` | hybrid WARP/BPR, optional `user_feature_columns` / `item_feature_columns` |
+
+`backend="implicit"` with `feedback="explicit"` is refused. Use sklearn
+`svd` / `nmf` / `item_knn` for ratings, or LightFM for hybrid.
+
+```python
+# Implicit industry default when implicit is installed:
 session.recommender.fit(
     user_column="user_id",
     item_column="item_id",
     feedback="implicit",
     n_factors=32,
 )
-session.recommender.evaluate(k=10)
-```
 
-Explicit core + industry hybrid:
-
-```python
+# LightFM hybrid when that extra imported:
 session.recommender.fit(
     method="lightfm",
     user_column="user_id",
@@ -162,26 +125,60 @@ session.recommender.fit(
 )
 ```
 
-Core method swap:
+`n_iterations=15` (sklearn-style loops) and `lightfm_epochs=10` are the
+library defaults if you do not pass them.
 
-```python
-for method in ("item_knn", "user_knn", "svd", "nmf"):
-    session.recommender.fit(
-        method=method,
-        user_column="user_id",
-        item_column="item_id",
-        n_neighbors=25,
-        n_factors=16,
-        random_state=0,
-    )
-    print(method, session.recommender.evaluate(k=10).metrics)
-```
+## Cold start
 
-Benchmark: ``python benchmarks/recommenders/ranking_quality.py``
+You pick the policy with `cold_start=` (`"popularity"` default, or
+`"skip"`).
 
----
+| Case | Behavior |
+| --- | --- |
+| User absent from train | popularity list from train, or empty lists if `skip` |
+| Item absent from train | Dropped from candidates and from eval relevant sets, with a warning |
+| Warm user, empty scores | Disclosed popularity fallback |
 
-## Scope notes
+## Evaluation protocol
 
-Recommenders industry depth is shipped. Related: search/LTR, knowledge graphs,
-and causal inference.
+For each **warm** holdout user with at least one holdout item that
+exists in the train catalog:
+
+1. Relevant set = holdout items ∩ train catalog.
+2. Recommend top-K among train items, excluding that user's train
+   history.
+3. Precision@K, Recall@K, nDCG@K, MAP@K.
+4. Macro-average over scored users. Cold-start users are counted
+   separately, not scored as if they were warm.
+
+Those nDCG numbers are known-item recommender metrics. Do not compare
+them to `session.ranking.evaluate` (judgment tables) or
+`session.rag.evaluate` (chunks). Same names, different protocols.
+
+## Bundles
+
+`session.recommender.save_bundle` writes `buildml.recommender_bundle.v1`
+(train catalog, matrix, similarities or factors). A Session checkpoint
+does not embed `RecommenderPlan`. `trusted=True` only for a file you
+made.
+
+Runnable mirror:
+[`examples/recommender_item_knn_loop.py`](../examples/recommender_item_knn_loop.py).
+Benchmark: `python benchmarks/recommenders/ranking_quality.py`.
+
+## When it refuses
+
+| What you see | What happened |
+| --- | --- |
+| `user_column` and `item_column` required | Ids are not inferred from roles |
+| No split | `fit` before `split` |
+| Explicit needs a rating | No `rating_column` and no Session target |
+| `backend='implicit'` requires `feedback='implicit'` | ALS/BPR on explicit ratings |
+| `MissingExtraError` for `recommenders-industry` | You asked for ALS/BPR without `implicit` |
+| `MissingExtraError` for `recommenders-lightfm` | You asked for LightFM without that extra |
+| `recommend()` needs `user_ids` or `partition` | Neither (or both) were passed |
+| Method not valid for backend | Pairing the catalog does not advertise |
+
+[Recommenders quickstart](quickstart-recommenders.md) ·
+[movie-recs-collaborative](../proofs/movie-recs-collaborative/) ·
+[Artifacts](artifacts-checkpoints-bundles.md)

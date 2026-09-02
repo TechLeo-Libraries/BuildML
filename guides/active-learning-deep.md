@@ -1,92 +1,141 @@
-# Active learning deep guide
+# Active learning
 
 ```bash
 pip install buildml
+# BALD / MC-dropout: pip install "buildml[torch]"
+# scikit-activeml host path: pip install "buildml[activelearning-industry]"
 ```
 
-Pool-based active learning on the Session train partition: scarce seed labels,
-uncertainty / committee / CoreSet / BALD queries, human `session.active_learning.label_rows`, budget
-caps, labeled holdout eval, and `buildml.activelearning_bundle.v1`.
+You have a labeled seed and a larger unlabeled train pool. Labels cost
+money or time. You want the next batch of indices to show a human, not a
+guessed label from the library.
 
-**Related:** [Quickstart](quickstart-active-learning.md) ·
-[Semi-supervised](semisupervised-deep.md) ·
-[Artifacts](artifacts-checkpoints-bundles.md).
+`session.active_learning.fit` defaults to strategy `margin` on a sklearn
+logistic. That pairing stays sklearn even if torch or scikit-activeml is
+installed. Pass `strategy="core_set"` (or another industry name) with
+`backend=None` to take the industry path. Pass `strategy="bald"` with
+`backend=None` to take torch, which refuses without `buildml[torch]`.
+`backend="industry"` with the default `margin` strategy is refused:
+the strategy has to belong to that backend.
 
----
+The API refuses to query validation or test, invent an oracle, or score
+unlabeled holdout rows as truth. You decide who labels, when the budget
+stops, and whether each round refits.
 
-## What this is / is not
+Short on-ramp: [active learning quickstart](quickstart-active-learning.md).
+Proof: [active-labeling-budget](../proofs/active-labeling-budget/).
+This is not [semi-supervised](semisupervised-deep.md): that path
+propagates missing labels without a human loop.
 
-| Is | Is not |
-| --- | --- |
-| Human-in-the-loop labeling loop on **train** | Semi-supervised graph propagation |
-| Uncertainty / committee / CoreSet / BALD query strategies | A built-in oracle that peeks at truths |
-| Budget-capped `session.active_learning.suggest_query` → `session.active_learning.label_rows` | Querying validation/test |
-| Distinct AL bundle + explain catalog | Passive NaN-label propagation (`session.semisupervised.fit`) |
+## The loop
 
-Honesty: **labels come from the user**. Library core never invents an oracle.
-Examples and tests may simulate one: always disclose that.
+1. Split on fully labeled data so holdout stays labeled for eval.
+2. Blank a fraction of **train** targets to NaN (or your `unlabeled_marker`).
+3. `session.active_learning.fit` on labeled train only.
+4. `session.active_learning.suggest_query` returns ranked train-pool indices.
+5. A human (or a test harness you disclose as simulated) supplies labels to
+   `session.active_learning.label_rows`.
+6. Repeat until the pool is empty or `label_budget` is spent.
+7. `session.active_learning.evaluate` scores **labeled** holdout rows only.
+8. `session.active_learning.save_bundle` writes `buildml.activelearning_bundle.v1`.
 
-**vs semi-supervised:** Active learning is an *interactive* query loop
-(`session.active_learning.suggest_query` → human `session.active_learning.label_rows` → refit). Semi-supervised learning uses
-*passive* missing labels and propagates/pseudo-labels without an oracle loop.
+`label_budget` defaults to 50. `batch_size` defaults to 5. `auto_refit`
+defaults to True, so `label_rows` refits unless you pass `refit=False`.
 
----
+```python
+import numpy as np
+import pandas as pd
 
-## Backends and install
+from buildml import Session
+from buildml.data.dataset import Dataset
+from buildml.ingest.detect import schema_from_dataframe
+
+rng = np.random.default_rng(0)
+x0 = rng.normal([-1.0, -1.0], 0.55, size=(140, 2))
+x1 = rng.normal([1.2, 1.0], 0.55, size=(140, 2))
+frame = pd.DataFrame(np.vstack([x0, x1]), columns=["x", "y"])
+frame["label"] = [0] * 140 + [1] * 140
+# Hidden copy for this example's simulated oracle only. The library never sees it.
+truth = frame["label"].copy()
+
+session = (
+    Session.ingest(frame)
+    .set_roles({"x": "feature", "y": "feature", "label": "target"})
+    .split(test_size=0.25, stratify=True, random_state=0)
+    .scale(method="standard")
+)
+
+full = session.to_pandas().copy()
+train_idx = list(session.split_plan.train_indices)
+blank = rng.choice(train_idx, size=int(0.85 * len(train_idx)), replace=False)
+full.loc[blank, "label"] = np.nan
+session._dataset = Dataset.from_transformed(
+    session.dataset,
+    full,
+    schema=schema_from_dataframe(full),
+    roles=dict(session.dataset.roles),
+)
+
+fit = session.active_learning.fit(
+    strategy="margin",
+    base_estimator="logistic_regression",
+    batch_size=8,
+    label_budget=24,
+)
+print(fit.n_labeled_train, fit.n_unlabeled_pool, fit.strategy)
+
+for round_i in range(3):
+    q = session.active_learning.suggest_query(batch_size=8)
+    if not q.indices:
+        break
+    human_labels = [int(truth.loc[i]) for i in q.indices]
+    labeled = session.active_learning.label_rows(
+        indices=q.indices, labels=human_labels
+    )
+    print(round_i, labeled.n_newly_labeled, labeled.budget_remaining)
+
+ev = session.active_learning.evaluate(partition="test")
+print(ev.n_labeled_eval, ev.metrics)
+session.active_learning.save_bundle("artifacts/activelearning_bundle")
+```
+
+Fit requires a split. The unlabeled pool is train-target missingness
+(NaN unless you set `unlabeled_marker`). `suggest_query` never returns
+labels. `label_rows` refuses validation/test indices, length mismatches,
+and a spent budget.
+
+## Pool convention
+
+Do the split first, then blank **train** only. If you blank holdout
+targets and treat them as the pool, eval has nothing honest to score.
+
+Production data may already arrive with missing train labels. Same
+contract: holdout should stay labeled if you want `evaluate` to mean
+anything.
+
+## Backends and strategies
 
 | Backend | Extra | Strategies |
 | --- | --- | --- |
-| `sklearn` (default) | none | `least_confidence`, `margin`, `entropy`, `committee`, `expected_model_change_lite` |
-| `industry` | `buildml[activelearning-industry]` | `core_set`, `qbc_kl`, `qbc_variation_ratios` (scikit-activeml) |
-| `torch` | `buildml[torch]` | `bald`, `mc_dropout` (MC-dropout tabular MLP) |
+| `sklearn` | none (this is the `margin` default) | `least_confidence`, `margin`, `entropy`, `committee`, `expected_model_change_lite` |
+| `industry` | none for native CoreSet/QBC; `buildml[activelearning-industry]` for the scikit-activeml host path | `core_set`, `qbc_kl`, `qbc_variation_ratios` |
+| `torch` | `buildml[torch]` | `bald`, `mc_dropout` |
+
+Industry CoreSet and QBC scoring runs in-tree on numpy/sklearn. That
+backend is usable without the extra. The extra is an optional
+scikit-activeml host path. If that import is broken, query scoring
+falls back to the native scorer and says so. Seeing the package name
+on disk is not a promise that skactiveml imports cleanly.
+
+To see what this machine actually has:
 
 ```python
-from buildml.activelearning import activelearning_capability_matrix
-activelearning_capability_matrix()
+session.active_learning.capability_matrix()
 ```
 
-When extras are installed, industry/torch backends become the honest defaults
-for their strategy families. Sklearn remains the fallback when extras are absent.
+### Sklearn scores (higher = query first)
 
----
-
-## Pool convention (aligned with semi-supervised)
-
-After a normal stratified split on fully labeled data, blank a fraction of
-**train** targets to `NaN`. Those rows become the unlabeled pool. Holdout stays
-labeled so `session.active_learning.evaluate` can score honestly.
-
-`unlabeled_marker` overrides the default NaN convention (same helper as
-semi-supervised).
-
----
-
-## API loop
-
-1. `session.active_learning.fit(backend=..., strategy=..., label_budget=...)`: fit on labeled train
-2. `session.active_learning.suggest_query(batch_size=...)`: ranked train-pool indices (no labels)
-3. `session.active_learning.label_rows(indices=..., labels=...)`: **user** labels; auto-refit by default
-4. Repeat until budget exhausted or pool empty
-5. `session.active_learning.evaluate(partition="test")`: labeled holdout only
-6. `session.active_learning.save_bundle(...)`: model + pool indices + query history
-
-`session.active_learning.label_rows` is **Session-primary** and **not AI-allowlisted**: humans (or test
-harnesses that disclose simulation) supply labels.
-
-Leakage guards:
-
-- Fit requires a split (`assert_can_fit`)
-- Pool ⊆ train indices
-- `session.active_learning.label_rows` refuses validation/test indices
-- Eval scores only labeled holdout rows
-
----
-
-## Strategies
-
-### Sklearn backend
-
-| Strategy | Score (higher = query first) |
+| Strategy | Score |
 | --- | --- |
 | `least_confidence` | `1 - max p(y\|x)` |
 | `margin` | `-(p_(1) - p_(2))` |
@@ -94,7 +143,7 @@ Leakage guards:
 | `committee` | Bagged vote entropy |
 | `expected_model_change_lite` | `‖x‖ (1 - p_max)` gradient-magnitude proxy |
 
-### Industry backend (scikit-activeml)
+### Industry
 
 | Strategy | Notes |
 | --- | --- |
@@ -102,54 +151,48 @@ Leakage guards:
 | `qbc_kl` | Query-by-committee with KL divergence |
 | `qbc_variation_ratios` | QBC variation-ratio disagreement |
 
-### Torch backend
+### Torch
 
 | Strategy | Notes |
 | --- | --- |
 | `bald` | Bayesian Active Learning by Disagreement via MC dropout |
 | `mc_dropout` | Predictive entropy from MC-dropout samples |
 
----
+Torch uses a tabular MLP. `epochs` defaults to 60, `mc_samples` to 20,
+`device` to `"cpu"`.
 
-## Budget and disclosures
+## Budget and eval
 
-- `label_budget` caps how many labels `session.active_learning.label_rows` may incorporate
-- Exhausted budgets → `session.active_learning.suggest_query` returns empty indices with a warning
-- Fit / query / label / eval disclosures state that labels are user-supplied
-- Walkthrough exposes `activelearning_status` + capability matrix
+When the budget is exhausted, `suggest_query` returns empty indices and
+a warning. Raise `label_budget` on a new `fit` if you meant a larger
+cap.
 
----
+`evaluate` defaults to `partition="validation"`. Metrics on labeled
+rows: accuracy, macro/weighted F1, macro precision and recall. The pool
+is never scored as if those rows had truth.
 
-## Benchmark
+Do not quote train accuracy after each query as holdout performance.
 
-```bash
-python benchmarks/activelearning/query_efficiency.py
-```
+## Bundles
 
-Produces a label-budget vs test-accuracy curve across sklearn/industry/torch
-backends when extras are installed.
+`buildml.activelearning_bundle.v1` stores the `ActiveLearningPlan`:
+estimator, encoder, labeled and pool indices, query history, budget,
+backend. A Session checkpoint does not embed the learner. Loaders that
+deserialize pickle default to `trusted=False`. Pass `trusted=True` only
+for a file you made.
 
----
+[Artifacts](artifacts-checkpoints-bundles.md)
 
-## Bundle boundary
+## When it refuses
 
-`buildml.activelearning_bundle.v1` stores `ActiveLearningPlan` (estimator,
-encoder, labeled/pool indices, query history, budget, backend). Session
-checkpoints do **not** embed the learner. See [Artifacts](artifacts-checkpoints-bundles.md).
+| What you see | What happened |
+| --- | --- |
+| `ValidationError: No split exists` (or `assert_can_fit`) | `fit` before a split |
+| Query or label on holdout indices | Pool must be train |
+| `MissingExtraError` for torch | `bald` / `mc_dropout` without `buildml[torch]` |
+| Empty `suggest_query` indices | Budget spent or pool empty |
+| `label_rows` length mismatch | `indices` and `labels` are not 1:1 |
 
----
-
-## Failure modes
-
-- Fitting before split
-- Blanking holdout targets and treating them as the pool
-- Expecting `session.active_learning.suggest_query` to return labels
-- Using `session.semisupervised.fit` when you need a human query loop
-- Reporting train accuracy after each query as holdout performance
-- Exceeding `label_budget` without raising it
-
----
-
-## Scope notes
-
-Active-learning industry depth is shipped. Related next: online / continual learning.
+`session.semisupervised.fit` is the wrong tool for a human query loop.
+[Semi-supervised deep](semisupervised-deep.md) ·
+[Active learning quickstart](quickstart-active-learning.md)

@@ -149,12 +149,12 @@ def test_generated_prose_matches_human_tone_fixture_without_duplicates() -> None
 
 
 def test_domain_quickstart_contracts_match_resolvers() -> None:
-    """Bind the 11 domain openings to the catalogs, not to mixin wishful thinking.
+    """Bind quickstart and deep-guide copy to the catalogs, not mixin wishful thinking.
 
     Mixin defaults are the caller-facing knobs. Runtime backend/method can still
     change when ``backend=None`` / ``method=None`` and an extra is installed.
-    These pages must state that resolution, not a constant that is only true on
-    a bare core install.
+    Both the short on-ramp and the long guide must state that resolution, not a
+    constant that is only true on a bare core install.
     """
     import inspect
 
@@ -163,12 +163,15 @@ def test_domain_quickstart_contracts_match_resolvers() -> None:
     from buildml.federated.catalog import resolve_backend as resolve_federated_backend
     from buildml.ranking.catalog import ranking_capability_matrix, resolve_backend_method
     from buildml.ranking.extras import ranking_industry_available
+    from buildml.recommenders.catalog import default_method_for_feedback
+    from buildml.recommenders.extras import implicit_available
     from buildml.session.mixins.cbr import CbrSessionMixin
     from buildml.session.mixins.decision import DecisionSessionMixin
     from buildml.session.mixins.federated import FederatedSessionMixin
     from buildml.session.mixins.kg import KgSessionMixin
     from buildml.session.mixins.probabilistic import ProbabilisticSessionMixin
     from buildml.session.mixins.ranking import RankingSessionMixin
+    from buildml.session.mixins.recommender import RecommenderSessionMixin
     from buildml.session.mixins.rl import RlSessionMixin
     from buildml.session.mixins.symbolic import SymbolicSessionMixin
     from buildml.session.mixins.synthetic import SyntheticSessionMixin
@@ -234,56 +237,143 @@ def test_domain_quickstart_contracts_match_resolvers() -> None:
     synth = inspect.signature(SyntheticSessionMixin.fit_synthesizer)
     assert synth.parameters["method"].default == "gaussian_copula"
 
+    rec = inspect.signature(RecommenderSessionMixin.fit_recommender)
+    assert rec.parameters["method"].default is None
+    assert rec.parameters["feedback"].default == "explicit"
+    assert default_method_for_feedback("explicit") == "item_knn"
+    assert default_method_for_feedback("implicit") == (
+        "als" if implicit_available() else "nmf"
+    )
+
+    forbidden = (
+        "Default is native FedAvg with SGD",
+        "Default is sklearn pointwise.",
+        "Default is exact sklearn kNN",
+        "and `relevance_column` are required",
+        "Default without extras is item kNN",
+    )
+    pages: tuple[tuple[str, tuple[str, ...]], ...] = (
+        (
+            "quickstart-federated.md",
+            ("sgd_classifier", "picks Flower"),
+        ),
+        (
+            "federated-deep.md",
+            ("sgd_classifier", "picks Flower"),
+        ),
+        (
+            "quickstart-ranking.md",
+            ("`relevance_column` defaults", "LightGBM LambdaRank"),
+        ),
+        (
+            "ranking-deep.md",
+            ("`relevance_column` defaults", "LightGBM LambdaRank"),
+        ),
+        (
+            "quickstart-cbr.md",
+            ("industry ANN", "k=5"),
+        ),
+        (
+            "cbr-deep.md",
+            ("industry ANN", "k` is 5"),
+        ),
+        (
+            "quickstart-imitation-rl.md",
+            ("LinUCB", "name a column `reward`"),
+        ),
+        (
+            "imitation-rl-deep.md",
+            ("linucb", "column literally named"),
+        ),
+        (
+            "quickstart-tda.md",
+            ("persistence image", "picks giotto"),
+        ),
+        (
+            "tda-deep.md",
+            ("persistence_image", "giotto"),
+        ),
+        (
+            "quickstart-kg.md",
+            ("native TransE",),
+        ),
+        (
+            "kg-deep.md",
+            ("native TransE", "stays native"),
+        ),
+        (
+            "quickstart-optimize.md",
+            ("prior `session.fit`", "allow_test_tuning=True"),
+        ),
+        (
+            "optimize-deep.md",
+            ("prior `session.fit`", "allow_test_tuning=True"),
+        ),
+        (
+            "quickstart-synthetic.md",
+            ("Gaussian copula", "extend_train", "FitResult"),
+        ),
+        (
+            "synthetic-deep.md",
+            ("gaussian_copula", "extend_train", "FitResult"),
+        ),
+        (
+            "quickstart-timeseries-analysis.md",
+            ("a target", "time_split"),
+        ),
+        (
+            "timeseries-analysis-deep.md",
+            ("a target", "time_split"),
+        ),
+        (
+            "quickstart-probabilistic.md",
+            ("BayesianRidge", "20% of train"),
+        ),
+        (
+            "probabilistic-deep.md",
+            ("bayesian_ridge", "0.2"),
+        ),
+        (
+            "quickstart-symbolic.md",
+            ("decision tree", "fit_neuro"),
+        ),
+        (
+            "symbolic-deep.md",
+            ('source="decision_tree"', "fit_neuro"),
+        ),
+        (
+            "quickstart-recommenders.md",
+            ("item kNN", "picks ALS"),
+        ),
+        (
+            "recommenders-deep.md",
+            ("item kNN", "picks ALS"),
+        ),
+    )
     guides = ROOT / "guides"
-    federated = (guides / "quickstart-federated.md").read_text(encoding="utf-8")
-    ranking = (guides / "quickstart-ranking.md").read_text(encoding="utf-8")
-    cbr_doc = (guides / "quickstart-cbr.md").read_text(encoding="utf-8")
-    rl_doc = (guides / "quickstart-imitation-rl.md").read_text(encoding="utf-8")
-    tda_doc = (guides / "quickstart-tda.md").read_text(encoding="utf-8")
-    kg_doc = (guides / "quickstart-kg.md").read_text(encoding="utf-8")
-    decision_doc = (guides / "quickstart-optimize.md").read_text(encoding="utf-8")
-    synth_doc = (guides / "quickstart-synthetic.md").read_text(encoding="utf-8")
-    ts_doc = (guides / "quickstart-timeseries-analysis.md").read_text(encoding="utf-8")
-    prob_doc = (guides / "quickstart-probabilistic.md").read_text(encoding="utf-8")
-    symbolic_doc = (guides / "quickstart-symbolic.md").read_text(encoding="utf-8")
+    for name, required in pages:
+        text = (guides / name).read_text(encoding="utf-8")
+        flat = re.sub(r"\s+", " ", text)
+        for phrase in forbidden:
+            assert phrase not in text and phrase not in flat, (
+                f"{name} still states {phrase!r}"
+            )
+        for phrase in required:
+            assert phrase in text or phrase in flat, f"{name} is missing {phrase!r}"
 
-    assert "Default is native FedAvg with SGD" not in federated
-    assert "sgd_classifier" in federated
-    assert "picks Flower" in federated
-    assert "at least\ntwo eligible clients" in federated or "at least two eligible clients" in federated
 
-    assert "and `relevance_column` are required" not in ranking
-    assert "`relevance_column` defaults" in ranking
-    assert "`method=None` picks LightGBM LambdaRank" in ranking
-    assert "Default is sklearn pointwise." not in ranking
-
-    assert "Default is exact sklearn kNN" not in cbr_doc
-    assert "industry ANN" in cbr_doc
-    assert "k=5" in cbr_doc
-
-    assert "needs `reward_column`" not in rl_doc
-    assert "name a column `reward`" in rl_doc
-    assert "LinUCB" in rl_doc
-
-    assert "persistence image" in tda_doc
-    assert "buildml[tda]" in tda_doc
-    assert "picks giotto" in tda_doc
-
-    assert "head, relation, tail" in kg_doc or "`(head, relation, tail)`" in kg_doc
-    assert "native TransE" in kg_doc
-
-    assert "prior `session.fit`" in decision_doc
-    assert "allow_test_tuning=True" in decision_doc
-
-    assert "Gaussian copula" in synth_doc
-    assert "extend_train" in synth_doc
-    assert "FitResult" in synth_doc
-
-    assert "a target" in ts_doc
-    assert "time_split" in ts_doc
-
-    assert "BayesianRidge" in prob_doc
-    assert "20% of train" in prob_doc
-
-    assert 'source="decision_tree"' in symbolic_doc or "decision tree" in symbolic_doc
-    assert "fit_neuro" in symbolic_doc
+def test_sphinx_guide_wrappers_include_markdown() -> None:
+    """Read the Docs must render guides/*.md, not a stale RST copy."""
+    docs = ROOT / "docs"
+    wrappers = sorted(docs.glob("quickstart-*.rst"))
+    wrappers.extend(sorted(docs.glob("*-deep.rst")))
+    assert wrappers, "expected Sphinx wrappers under docs/"
+    missing: list[str] = []
+    for path in wrappers:
+        text = path.read_text(encoding="utf-8")
+        if ".. include:: ../guides/" not in text:
+            missing.append(path.name)
+    assert not missing, (
+        "Sphinx wrappers still duplicate Markdown instead of including it: "
+        + ", ".join(missing)
+    )

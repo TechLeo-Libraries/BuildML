@@ -6,9 +6,11 @@ pip install buildml
 ```
 
 `user_column` and `item_column` are required; they are not inferred. Fit
-is train-only. Default without extras is item kNN (explicit) or NMF
-(implicit). This is not RAG, not LTR, and not an EDA recommendation
-finding.
+is train-only. `feedback="explicit"` with `method=None` is item kNN on
+sklearn, even when `implicit` is installed. `feedback="implicit"` with
+`method=None` picks ALS when `buildml[recommenders-industry]` imported,
+otherwise sklearn NMF. This is not RAG, not LTR, and not an EDA
+recommendation finding.
 
 [Recommenders deep](recommenders-deep.md) ·
 [movie-recs-collaborative](../proofs/movie-recs-collaborative/)

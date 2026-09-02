@@ -1,33 +1,36 @@
-# Torch deep guide
+# Torch on the same Session
 
 ```bash
 pip install "buildml[torch]"
 # aliases: buildml[dl], buildml[audio]
-# ONNX checker: buildml[onnx]
+# ASR (not stub): pip install "buildml[speech]"
+# ONNX checker: pip install "buildml[onnx]"
 ```
 
-Optional deep learning on the **same Session** as classical ML. Classical
-`Session.fit` stays the sklearn path; Torch uses `*_torch` methods and stores
-results in `dl_*_result` properties.
+Same rows, roles, and split as classical ML. `session.dl.fit` trains
+a Torch module on loaders you built from that split. It does **not**
+replace `session.fit`. Classical sklearn stays on `session.fit`.
+Torch results live on `session.dl.train_result` and friends.
 
-Short on-ramp: [quickstart-torch](quickstart-torch.md). Speech-specific path:
-[speech-asr-finetune](speech-asr-finetune.md). Pretrained hooks:
-[pretrained-backbones](pretrained-backbones.md). Serve/export packs:
+Loaders need a split. Train-only normalize and vocab come from the
+train partition. Omit `module` and you get a built-in MLP
+(`hidden=(64, 32)`, `dropout=0.1`). Device default is `"auto"`.
+Epochs default to 5. Zoo backbones default to `weights="mock"`
+(random init for plumbing). Speech ASR without `buildml[speech]` is
+a disclosed stub: fingerprints, not transcripts. Foundation-model
+pretrain is refused (`session.dl.refuse_speech_pretrain`).
+
+You choose the module, device, and whether mock weights are enough.
+The API refuses loaders without a split, mixing loader kinds after a
+text/multimodal/speech fit, DDP on one GPU unless
+`allow_cpu_ddp=True`, and FM-from-scratch speech pretrain.
+
+Short on-ramp: [Torch quickstart](quickstart-torch.md). Speech:
+[speech-asr-finetune](speech-asr-finetune.md). Backbones:
+[pretrained-backbones](pretrained-backbones.md). Serve:
 [serve-deploy](serve-deploy.md).
 
----
-
-## Why a Session-native Torch path
-
-1. **Shared roles and splits**: train/val/test membership stays authoritative.
-2. **Train-only normalize / vocab**: loaders fit statistics on train partitions.
-3. **History + explain**: Torch ops appear in the teaching catalog.
-4. **Honest limits**: multimodal fusion and speech finetune-lite are alpha
-   helpers, not foundation-model training products.
-
----
-
-## Use case A: Tabular MLP (custom or built-in)
+## Tabular MLP
 
 ```python
 import pandas as pd
@@ -60,7 +63,7 @@ session = (
     .split(test_size=0.25, validation_size=0.25, stratify=True, random_state=42)
 )
 
-# Optional classical prep first (mutates frame; disclosed on loaders).
+# Optional classical prep first (mutates the frame; disclosed on loaders).
 # session.impute(strategy="median").scale(method="standard")
 
 session.dl.make_loaders(batch_size=4, normalize=True, seed=42)
@@ -80,16 +83,23 @@ print(session.dl.training_curve().disclosures)
 bundle = session.dl.save_bundle("artifacts/torch_bundle")
 ```
 
-Built-in MLP (omit module):
+Built-in MLP (omit the module):
 
 ```python
 session.dl.make_loaders()
 session.dl.fit(epochs=5, device="auto", hidden=(64, 32), dropout=0.1)
 ```
 
----
+`make_loaders` defaults: `batch_size=32`, `normalize=True`,
+`shuffle_train=True`. `apply_plans=True` re-applies already fitted
+classical plans without refitting them. Prefer validation while you
+iterate; every extra look at test spends a little of its independence.
 
-## Use case B: Text / sequence loaders
+## Text loaders
+
+Vocab and length rules come from train. After a text fit, rebuilding
+tabular loaders and calling `session.dl.evaluate` is refused: keep
+loader kind consistent.
 
 ```python
 text_df = pd.DataFrame(
@@ -114,21 +124,19 @@ text_session = (
     .split(test_size=0.25, stratify=True, random_state=0)
 )
 text_session.dl.make_text_loaders(text_column="text", max_len=32, max_vocab=500)
-text_session.dl.fit(epochs=4, device="cpu")  # built-in embedding classifier
+text_session.dl.fit(epochs=4, device="cpu")
 print(text_session.dl.evaluate(partition="test").metrics)
 ```
 
-Vocab and length rules come from **train**. After a text fit, rebuilding tabular
-loaders and calling `session.dl.evaluate` is refused: keep loader kind consistent.
+This is a small embedding classifier on token ids, not Hugging Face
+fine-tuning. Frozen encoder document vectors for sklearn heads live
+on `session.nlp.fit_classifier(backend="embedding")`.
 
----
+## Multimodal fusion
 
-## Use case C: Multimodal fusion (tabular + text)
-
-Default built-in fusion (when `session.dl.fit` omits a module) uses **concat** late
-fusion. Gated late fusion is also available via
-`build_multimodal_fusion(..., fusion="gated")` (aliases: `fusion_type`,
-`fusion_mode`).
+When `session.dl.fit` omits a module after multimodal loaders, the
+built-in fusion is **concat**. Gated late fusion is available via
+`build_multimodal_fusion(..., fusion="gated")`.
 
 ```python
 from buildml.dl.multimodal import build_multimodal_fusion
@@ -156,75 +164,38 @@ mm = (
     .split(test_size=0.25, validation_size=0.25, stratify=True, random_state=0)
 )
 bundle = mm.dl.make_multimodal_loaders(text_column="text")
-# Built-in concat fusion:
-# mm.dl.fit(epochs=5, device="cpu", mixed_precision=False)
-
-# Explicit gated fusion:
-contract = bundle.multimodal_contract
-gated = build_multimodal_fusion(contract, fusion="gated")
+gated = build_multimodal_fusion(bundle.multimodal_contract, fusion="gated")
 mm.dl.fit(gated, epochs=5, device="cpu", mixed_precision=False)
 mm.dl.export("artifacts/mm.ts.pt", format="torchscript")
 ```
 
-### Frozen `multimodal_preprocess` restore
-
-Trainer bundles may persist train-fit multimodal stats (normalize mean/std,
-vocab, image/audio rates/layout) as `multimodal_preprocess`.
-`session.dl.load_bundle` restores that meta for inspection but does **not** rebuild
-DataLoaders. To rebuild loaders with the frozen stats:
+Trainer bundles may persist train-fit multimodal stats as
+`multimodal_preprocess`. `session.dl.load_bundle` restores that meta
+for inspection but does not rebuild DataLoaders. Rebuild with frozen
+stats:
 
 ```python
-# After session.dl.fit / session.dl.load_bundle with multimodal_preprocess present:
 mm.dl.make_multimodal_loaders(
     text_column="text",
-    use_saved_preprocess=True,  # reuses session.dl.train_result.multimodal_preprocess
+    use_saved_preprocess=True,
 )
-# Or pass an explicit contract/dict:
-# mm.dl.make_multimodal_loaders(
-#     text_column="text",
-#     preprocess=mm.dl.train_result.multimodal_preprocess,
-# )
 ```
 
 Do not pass both `preprocess=` and `use_saved_preprocess=True`.
+Missing saved preprocess with that flag raises.
 
----
+Image and audio columns are small fusion branches, not a vision or
+ASR product. `make_image_loaders` needs `image_column` (path or
+array). `make_audio_loaders` needs `audio_column`. Short clips
+repeat-pad to `audio_max_samples`. That is not transcription; see
+the speech path below.
 
-## Use case D: Image multimodal
+## Fold-local CV, search, nested
 
-```python
-# image_column: filesystem path or array cell; train-only normalize stats
-# img.dl.make_image_loaders(
-#     image_column="image", image_size=(32, 32), normalize_images=True
-# )
-# img.dl.fit(epochs=5, device="cpu")
-```
-
-Small CNN branch for fusion: not a full vision FM product. Paths need readable
-files in your environment; array cells work for CI-style tests.
-
----
-
-## Use case E: Audio multimodal
-
-```python
-# pip install "buildml[torch]"  # includes soundfile
-# aud.dl.make_audio_loaders(
-#     audio_column="audio",
-#     audio_sample_rate=16000,
-#     audio_max_samples=16000,
-#     normalize_audio=True,
-# )
-# aud.dl.fit(epochs=5, device="cpu")
-```
-
-Short clips are repeat-padded to `audio_max_samples` so global pooling stays
-informative without a lengths tensor in forward/export. This is **not** ASR;
-see [speech](speech-asr-finetune.md).
-
----
-
-## Use case F: Fold-local CV, search, nested
+Normalize stats are fold-local inside these APIs. Do not tune early
+stopping or architecture on Session test. Classical Session-global
+plans are **not** automatically refit inside
+`session.dl.cross_validate`.
 
 ```python
 cv = session.dl.cross_validate(n_folds=3, epochs=2)
@@ -243,87 +214,88 @@ nested = session.dl.nested_cv(
     inner_cv=2,
     epochs=2,
 )
-print(nested.mean_metrics, getattr(nested, "consensus_params", None))
+print(nested.mean_metrics)
 ```
 
-Normalize stats are fold-local inside these APIs. Do **not** tune early stopping
-or architecture on Session test. Classical Session-global plans are **not**
-automatically refit inside `session.dl.cross_validate`.
+Keep classical CV ([leakage guide](leakage-cv-recipes.md)) and Torch
+CV as separate protocols unless you know the interaction.
 
----
+## AMP, DDP, export, reload
 
-## Use case G: AMP, DDP, export, reload
+AMP is CUDA-only. DDP with one GPU is refused unless
+`allow_cpu_ddp=True`. `load_bundle` needs the same module class.
+Load does not rebuild loaders.
 
 ```python
-# AMP (CUDA only; ignored/safe on CPU when mixed_precision=False)
 # session.dl.fit(TinyMLP(), epochs=5, device="cuda", mixed_precision=True)
-
-# Single-node DDP refuses 1-GPU unless allow_cpu_ddp=True for experiments
 # session.dl.fit_ddp(lambda: TinyMLP(), epochs=5, world_size=2, allow_cpu_ddp=True)
 
-# Multi-node under torchrun:
-# torchrun --nnodes=2 --nproc_per_node=2 --rdzv_endpoint=$MASTER_ADDR:$MASTER_PORT train.py
-# session.dl.fit_ddp(module_factory, multi_node=True, epochs=5)
-
 session.dl.export("artifacts/model.ts.pt", format="torchscript")
-# session.dl.export("artifacts/model.onnx", format="onnx")  # optional buildml[onnx]
+# session.dl.export("artifacts/model.onnx", format="onnx")  # buildml[onnx]
 
 restored = (
     Session.ingest(frame)
     .set_roles({"a": "feature", "b": "feature", "label": "target"})
     .split(test_size=0.25, validation_size=0.25, stratify=True, random_state=42)
 )
-restored.dl.load_bundle(bundle, TinyMLP(), map_location="cpu")
+restored.dl.load_bundle(bundle, TinyMLP(), map_location="cpu", trusted=True)
 restored.dl.make_loaders(batch_size=4, normalize=True, seed=42)
 restored.dl.evaluate(partition="test")
 restored.dl.fit(TinyMLP(), epochs=2, resume=True, device="cpu")
 ```
 
-`session.dl.emit_k8s_ddp`, `session.dl.pack_torchserve`, and `session.dl.prepare_tensorrt` are
-**recipe emitters**: see [serve-deploy](serve-deploy.md).
+`session.dl.emit_k8s_ddp`, `session.dl.pack_torchserve`, and
+`session.dl.prepare_tensorrt` emit recipes. They do not run a
+cluster for you. See [serve-deploy](serve-deploy.md).
 
----
+## Backbones and speech
+
+`session.dl.load_backbone` defaults to `weights="mock"`. That is
+random init for CI. Pass `weights="pretrained"` when you want real
+transfer weights (downloads). Then `session.dl.attach_head(n_classes)`.
+
+```python
+# session.dl.load_backbone("vision", "resnet18", weights="mock", freeze=True)
+# session.dl.attach_head(n_classes=2)
+```
+
+Speech classify: `session.dl.make_speech_loaders` /
+`session.dl.fit_speech` (tiny encoder + head, finetune-lite).
+`domain_adapt_speech` freezes the encoder by default. That is not
+foundation-model continued pretrain.
+
+ASR: `session.dl.transcribe(audio_column=...)`. Backend `auto`
+prefers transformers when `buildml[speech]` is installed, otherwise
+stub. Stub texts are waveform fingerprints. They are disclosed on
+the result. Do not quote them as speech. `session.dl.evaluate_asr`
+scores WER/CER against references (reuses last transcripts if you
+omit hypotheses).
+
+```python
+# session.dl.transcribe(audio_column="wav", backend="stub")
+# session.dl.evaluate_asr(references=["hello world", "yes"])
+try:
+    session.dl.refuse_speech_pretrain()
+except Exception as exc:
+    print(type(exc).__name__, exc)
+```
 
 ## Classical plans vs Torch loaders
 
 | Pattern | Meaning |
 | --- | --- |
-| Prep then `session.dl.make_loaders` | Loaders see mutated frame; disclosed |
-| `apply_plans=True` on loaders | Re-apply fitted classical plans (no refit) |
-| Fold-local classical refit in Torch CV | **Not automatic** |
-
-Prefer keeping classical CV ([leakage guide](leakage-cv-recipes.md)) and Torch
-CV as separate honesty protocols unless you know the interaction.
-
----
+| Prep, then `session.dl.make_loaders` | Loaders see the mutated frame; disclosed |
+| `apply_plans=True` | Re-apply fitted classical plans, no refit |
+| Fold-local classical refit in Torch CV | not automatic |
 
 ## Artifacts
 
 | Artifact | Notes |
 | --- | --- |
-| Checkpoint | No Torch weights |
+| Session checkpoint | no Torch weights |
 | `buildml.torch_bundle.v1` | `meta.json` + `trainer.pt`; load ≠ rebuild loaders |
-| TorchScript / ONNX | Escape hatch via `session.dl.export` |
+| TorchScript / ONNX | `session.dl.export` |
 
----
-
-## Failure modes / limits
-
-- **CPU-first CI**: GPU not a PR merge gate.
-- **No Polars zero-copy** into DataLoaders.
-- **Wrong loader kind after text/multimodal/speech fit** → `ValidationError`.
-- **DDP with 1 GPU** refused unless `allow_cpu_ddp=True`.
-- **Not** Whisper-scale FM pretrain: see speech refuse API.
-- Multimodal image/audio are honest alpha fusion helpers (`concat` / `gated`).
-- `use_saved_preprocess=True` without prior `multimodal_preprocess` meta →
-  `ValidationError`.
-
----
-
-## Related
-
-- [Speech](speech-asr-finetune.md)
-- [Pretrained](pretrained-backbones.md)
-- [Serve & deploy](serve-deploy.md)
-- [Artifacts](artifacts-checkpoints-bundles.md)
-- [AI tools](ai-tools-operator-patterns.md) (Torch tools on the allowlist)
+Wrong loader kind after a text, multimodal, or speech fit raises
+`ValidationError`. There is no Polars zero-copy into DataLoaders.
+GPU is not a PR merge gate; CPU-first is the supported CI path.

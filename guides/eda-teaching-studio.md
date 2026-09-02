@@ -19,32 +19,22 @@ Related: [classical end-to-end](classical-end-to-end.md),
 
 ---
 
-## Why a Teaching Studio exists
+## What you get before a write
 
-ML libraries usually document methods in isolation. BuildML ties every public
-Session operation to a versioned catalog (kept in sync by CI). That lets you:
+Ask what `impute` assumes before you call it. Ask what imputation *is*
+without leaving the Session (`learn`). See which ops are `done` /
+`available` / `blocked` / `skipped`. Preview a chain without appending
+history (`dry_run`). Export an offline HTML for review.
 
-1. Ask “what does `impute` assume?” **before** calling it.
-2. Ask “what *is* imputation?” without leaving the session (`learn`).
-3. See which ops are `done` / `available` / `blocked` / `skipped`.
-4. Preview a chain without appending history (`dry_run`).
-5. Export an offline audit HTML for review.
-
-The live dashboard (`eda_app`) is an optional FastAPI **Industry EDA App** with
-document-sheet IA: Command cockpit (numbered spine 01-08), Readiness Gates,
-Concept Academy, and secondary domain boards. Tokens and analytic coverage are
-shared with **BUILDML STATIC EDA** (`html_format="research"`). It is not a
+The live dashboard (`session.eda_app`) is optional (`buildml[dashboard]`).
+It is a local FastAPI app with a command cockpit, readiness gates, a
+concept academy, and domain boards. Tokens and analytic coverage are
+shared with the static sheet (`html_format="research"`). It is not a
 replacement for domain judgment.
 
-**Concept Academy** is a staged ML-engineering learning hub (00 Framing through
-05 Interpretation, plus 06 Domain depth). It teaches every BuildML
-`CONCEPT_NOTES` entry (~204) as a first-class lesson (beginner through advanced
-prose, a calculation walkthrough bound to this session's numbers or an honest
-N/A, a copyable BuildML `Session` example, pitfalls, and "what to change for
-your data" callouts), plus readiness-path curriculum slugs that are not
-themselves catalog keys. Cited vs reference chips follow findings on the live
-report, not a hardcoded demo story. Open `#/academy` in the app, or call
-`build_academy_payload(report.to_dict())` from `buildml.dashboard.academy`.
+Gate marks stay in the open browser tab. Refreshing drops them. BuildML
+does not write those marks to the Session, history, disk, or a saved
+dataset copy.
 
 ---
 
@@ -76,17 +66,17 @@ for rec in getattr(report, "recommendations", [])[:5] or []:
     print("rec:", rec)
 ```
 
-Recommendations **name** Session operations; they do not execute them.
+Recommendations name Session operations. They do not execute them.
 
 ---
 
 ## Use case: offline HTML (studio vs research)
 
 ```python
-# Offline Industry App snapshot (dashboard SPA assets embedded when available)
+# Offline dashboard snapshot (SPA assets embedded when available)
 session.eda(export_html="artifacts/eda_studio.html", html_format="studio")
 
-# BUILDML STATIC EDA (Industry readiness sheet; needs buildml[viz] for plots)
+# Static sheet (needs buildml[viz] for plots)
 session.eda(
     include_plots=True,
     export_html="artifacts/eda_research.html",
@@ -95,10 +85,11 @@ session.eda(
 )
 ```
 
-`html_format="research"` is the Static product: KPI strip, findings register,
-assumptions, ledger, recommended Session calls, figures, methods, and degraded
-rows. It omits Gates, Academy, and human gate-status UX. HTML artifacts embed
-required styles/assets so they open offline.
+`html_format="research"` is the static product: KPI strip, findings
+register, assumptions, ledger, recommended Session calls, figures,
+methods, and degraded rows. It omits Gates, Academy, and human
+gate-status UX. HTML artifacts embed required styles so they open
+offline.
 
 Local preview from a synthetic dirty frame:
 
@@ -109,14 +100,13 @@ python scripts/generate_static_eda_preview.py
 
 ---
 
-## Use case: live Industry EDA App
+## Use case: live local dashboard
 
 ```python
 # pip install "buildml[dashboard]"
 handle = session.eda_app(port=8765, open_browser=True)
 # alias: session.open_eda_dashboard(port=8765)
 print(handle.url)
-# ... explore Cockpit, Readiness Gates, Concept Academy, domain boards ...
 handle.stop()
 ```
 
@@ -126,64 +116,22 @@ Or from a dirty synthetic extract:
 python scripts/launch_synthetic_eda_studio.py
 ```
 
-Surfaces in the App (document sheets, not a sidebar studio):
-
 | Board | Role |
 | --- | --- |
-| Command cockpit | KPI strip and numbered spine 01-08: findings register, assumptions, ledger, recommended sequence, domain briefs, figures, methods/limitations, skipped/degraded |
-| Readiness gates | Second-pass tally, sticky filters, stage-grouped gate cards; click a gate for the learning sidebar (beginner through advanced, calculations, copy-paste Session examples). Session marks are UI-only |
-| Concept academy | Sticky search/stage tools, contents board, two-column concept entries (~204 catalog lessons plus readiness-path slugs) |
+| Command cockpit | KPI strip and numbered spine: findings, assumptions, ledger, recommended sequence, domain briefs, figures, methods, skipped/degraded |
+| Readiness gates | Stage-grouped gate cards; click a gate for the learning sidebar. Session marks are UI-only |
+| Concept academy | Searchable lessons bound to this Session's numbers where they exist, otherwise an honest N/A |
 | Domain boards | Quality, features, relationships, multivariate, target, outliers, visuals |
 
-**Offline HTML** is the primary export in the app header (same SPA surface,
-including Gates and Academy). CSV and PDF routes remain on the App API for
-automation; they are not header actions. BUILDML STATIC EDA exposes **Offline
-HTML only** in its header (no CSV or PDF briefing buttons); the button
-re-downloads the already-offline research HTML snapshot.
-
-### Dataset adaptability (shared contract)
-
-Narrative must bind to the **live report**, not a demo/churn template. Shared
-helpers live in:
-
-| Layer | Module | Use |
-| --- | --- | --- |
-| Python | `buildml.dashboard.adapt` | `build_adapt_context(report)`, `session_sentence`, `what_to_change`, `list_names`, `target_phrase` |
-| Frontend | `static/js/learn_ui.js` | `callout`, `codeBlock`, `calcBlock`, `whatToChange`, `sectionScaffold`, `wireLearnUi` |
-
-Academy / Gates agents should:
-
-1. Import adaptive facts from `adapt.py` (or read `meta.adapt` / `sheet.adapt` from the API) instead of hardcoding column names like `target_churn`. Prefer `build_gate_context` inputs already flattened in `adapt.build_adapt_context`.
-2. Import presentation from `learn_ui.js` (ESM) **or** use `window.BuildMLLearnUI` (Academy view pattern). Script order in `templates/index.html`: `learn_ui.js` → `gates_view.js` → `academy_view.js` → `app.js`.
-3. Leave curriculum bodies in `academy.py` / `gates.py` / `academy_curriculum/`; only bind session lines, evidence, and worked examples to live `adapt` fields / report numbers.
-4. Offline HTML inlines the same module graph via blob URLs in `offline.py`. Keep import rewrite placeholders in sync when adding views.
-
-Cockpit already exposes `sheet.adapt`, `sheet.session_sentence`, `sheet.what_to_change`, and spine meta counts for scannability.
-
-**Gate marks are UI-only.** Toggling “Mark for this session” on a gate stays in
-the open browser tab and is discarded on refresh. BuildML does not write gate
-judgments to the Session, history, disk, or any saved dataset copy (privacy and
-complexity: a durable mark would imply remembering *why* a decision was made).
-Session marks also do not persist inside an Offline HTML file beyond the open
-tab.
+Offline HTML is the primary export in the app header (same SPA surface,
+including Gates and Academy). CSV and PDF routes stay on the App API for
+automation; they are not header actions. The static sheet exposes Offline
+HTML only in its header.
 
 If the port is busy, pass another port.
 
-### Adaptability proofs and gauntlet
-
-Tier A proof [`proofs/eda-industry-adaptability/`](../proofs/eda-industry-adaptability/)
-runs Static research HTML plus Dashboard App payloads across 12 frames (sklearn
-real-world tables and synthetic stress cases). Regenerate from the repo root:
-
-```bash
-python proofs/eda-industry-adaptability/script.py
-# or the convenience smoke script (writes under .buildml-artifacts/gauntlet/):
-python scripts/eda_adaptability_gauntlet.py
-```
-
-Proof results land under `proofs/eda-industry-adaptability/results/` (gitignored).
-Gauntlet artifacts under `.buildml-artifacts/gauntlet/` are also ignored. Exit
-code 0 only when every case passes.
+Narrative binds to the live report, not a demo template. Cited versus
+reference chips follow findings on the report you actually ran.
 
 ---
 
@@ -204,14 +152,14 @@ print(summary.unresolved_risks)
 walkthrough = session.walkthrough(export_html="artifacts/workflow.html")
 ```
 
-- `available` means API prerequisites pass: **not** “you should run this.”
-- `explain(..., moment="after")` joins catalog text to the latest recorded call.
-- `dry_run` does not append history.
+`available` means API prerequisites pass. It does not mean you should run
+this. `explain(..., moment="after")` joins catalog text to the latest
+recorded call. `dry_run` does not append history.
 
 ### Reading levels
 
-Every explanation is written at three levels; `beginner` is the default and
-assumes no prior machine-learning vocabulary.
+Every explanation is written at three levels. `beginner` is the default
+and assumes no prior machine-learning vocabulary.
 
 ```python
 primer = session.explain("feature_importance").beginner
@@ -228,14 +176,16 @@ session.explain("feature_importance", level="advanced")  # no scaffolding
 ```
 
 The level changes how much is rendered, never what is true: assumptions,
-leakage risks, and failure modes are present at every level. `advanced` drops
-the analogy and the in-line glossary and widens the parameter and pitfall lists.
+leakage risks, and failure modes are present at every level. `advanced`
+drops the analogy and the in-line glossary and widens the parameter and
+pitfall lists.
 
 ### `learn`: the concept behind the call
 
-`explain` answers "what will this do *here, now*". `learn` answers "what is this,
-and what should I understand first". It accepts a concept key, an operation name,
-or the word you tripped over, and forgives spacing and hyphenation.
+`explain` answers what this will do here, now. `learn` answers what this
+is, and what you should understand first. It accepts a concept key, an
+operation name, or the word you tripped over, and forgives spacing and
+hyphenation.
 
 ```python
 session.learn()                       # foundation concepts, in reading order
@@ -252,11 +202,11 @@ session.learn("split")                # an operation name returns its primer
 session.learn("cross-validation", level="intermediate")
 ```
 
-Concept notes, the glossary, and operation primers are the same objects the
-walkthrough, the Industry App, and the AI operator's `explain_operation` /
-`learn_concept` tools read from, so no surface teaches something another
-contradicts. All of it is static teaching material: it describes ideas and
-BuildML's contract, and inspects none of your data.
+Concept notes, the glossary, and operation primers are the same objects
+the walkthrough, the local dashboard, and the AI operator's
+`explain_operation` / `learn_concept` tools read from. All of it is
+static teaching material: it describes ideas and BuildML's contract, and
+inspects none of your data.
 
 ---
 

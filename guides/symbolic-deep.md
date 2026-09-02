@@ -1,103 +1,179 @@
-# Symbolic + Neuro-symbolic deep guide
+# Symbolic and neuro-symbolic deep
 
-## Scope
+```bash
+pip install buildml
+# skope-rules / imodels / Z3 lite: pip install "buildml[symbolic-industry]"
+# concept-bottleneck / neural-additive bases: pip install "buildml[torch]"
+```
 
-BuildML’s symbolic path is a **Session-native tabular rule engine** plus a
-**neuro-symbolic hybrid** that binds a sklearn or lite torch base estimator to
-those rules.
+You want if-then rules over columns, either ones you wrote or ones
+induced from train, with a trace of which rule fired. That is
+`session.symbolic`. The hybrid that wraps a sklearn (or lite Torch) model
+with the same rules is `session.symbolic.fit_neuro`.
 
-| Surface | Role |
-| --- | --- |
-| `session.symbolic.capability_matrix()` | Honest backend / method availability |
-| `session.symbolic.fit` | Compile declared rules or induce from train |
-| `session.symbolic.predict` | Decision-list inference + `RuleTrace` |
-| `session.symbolic.evaluate` | Holdout accuracy/RMSE + rule coverage |
-| `session.symbolic.fit_neuro` | sklearn/torch + rules in one API |
-| `session.symbolic.predict_neuro` / `session.symbolic.evaluate_neuro` | Hybrid score / metrics |
-| `session.symbolic.save_bundle` / `session.symbolic.load_bundle` | `buildml.symbolic_bundle.v1` |
+`session.symbolic.fit()` with no extra knobs uses `source="decision_tree"`
+on the **sklearn** backend. That stays sklearn even when
+`buildml[symbolic-industry]` is installed. Industry export is something
+you ask for with `backend="industry"` or `method="skope_rules"` (or
+`rulefit` / `boosted_rules`). Neuro-symbolic defaults to
+`mode="constraint_overlay"` and `base_estimator="logistic_regression"`:
+sklearn, not Torch, until you name a torch method.
 
-## Backends
+This is tabular rules. It is not Prolog, not a Z3 product, and not an
+expert-system suite. `verify_constraints=True` is a lite SAT check on
+hard antecedents when z3-solver is present, not a proof that the rule
+set is globally consistent.
 
-| Backend | Extra | Symbolic induction | Neuro-symbolic base |
+Short on-ramp: [symbolic quickstart](quickstart-symbolic.md). Proof:
+[policy-rules-neuro-symbolic](../proofs/policy-rules-neuro-symbolic/).
+
+## Induce, predict, evaluate
+
+Fit needs a split and exactly one target. Induction sees **train only**.
+`predict` defaults to test and, with `return_traces=True` (the default),
+returns fired rule ids and the chosen rule. `evaluate` defaults to
+validation: accuracy / F1 for classification, RMSE / R² for regression,
+plus rule coverage.
+
+```python
+import numpy as np
+import pandas as pd
+
+from buildml import Session
+
+rng = np.random.default_rng(0)
+x = rng.normal(size=(220, 2))
+y = (x[:, 0] + 0.3 * x[:, 1] > 0).astype(int)
+frame = pd.DataFrame({"a": x[:, 0], "b": x[:, 1], "y": y})
+
+session = (
+    Session.ingest(frame)
+    .set_roles({"a": "feature", "b": "feature", "y": "target"})
+    .split(test_size=0.2, validation_size=0.2, random_state=0, stratify=True)
+    .scale(method="standard")
+)
+
+fit = session.symbolic.fit(source="decision_tree", task="classification")
+print(fit.backend, fit.n_rules, fit.provenance)
+
+pred = session.symbolic.predict(partition="test", return_traces=True)
+print(pred.traces[0].fired_rule_ids, pred.traces[0].chosen_rule_id)
+
+ev = session.symbolic.evaluate(partition="validation")
+print(ev.metrics, ev.rule_coverage)
+
+session.symbolic.save_bundle("artifacts/symbolic_bundle")
+```
+
+Tree induction uses `max_depth=4`, `min_samples_leaf=5`, `max_rules=32`
+unless you change them. Declared rules are never relabeled as induced.
+
+## Backends and sources
+
+| Backend | Extra | How you get there | What it induces |
 | --- | --- | --- | --- |
-| `sklearn` | none (core) | `declared`, `decision_tree`, `decision_list` | LR / Ridge / RF / DT |
-| `industry` | `symbolic-industry` | `skope_rules`, `rulefit`, `boosted_rules` |: |
-| `torch` | `torch` |: | `concept_bottleneck_lite`, `neural_additive_lite` |
+| `sklearn` (what `fit()` actually runs) | core | `source="declared"`, `"decision_tree"`, or `"decision_list"` | Your rules, sklearn tree paths, or sequential covering |
+| `industry` | `symbolic-industry` | `backend="industry"` or `method=` one of the industry names | `skope_rules` (default industry method when skope-rules imports), else `rulefit`, then `boosted_rules` |
 
-Defaults when installed: industry symbolic backend when skope-rules/imodels
-present; torch neuro-symbolic when torch present; otherwise sklearn.
-
-## Rule sources (disclose provenance)
-
-| `source` / `method` | Provenance | Learning? |
+| `source` / `method` | Provenance stored on the plan | Learns from train? |
 | --- | --- | --- |
-| `declared` | Expert / caller | No |
-| `decision_tree` | `induced_tree` | Yes: train only |
-| `decision_list` | `induced_list` | Yes: sequential covering, train only |
-| `skope_rules` | `induced_skope` | Yes: skope-rules on train |
-| `rulefit` / `boosted_rules` | `induced_*` | Yes: imodels export on train |
+| `declared` | caller / expert | No |
+| `decision_tree` | `induced_tree` | Yes |
+| `decision_list` | `induced_list` | Yes |
+| `skope_rules` | `induced_skope` | Yes |
+| `rulefit` / `boosted_rules` | `induced_*` | Yes |
 
-Induction never uses Session validation/test. Declared rules are never silently
-relabeled as induced.
+`source="decision_tree"` and `source="decision_list"` stay on sklearn
+even if industry extras are present. That is deliberate: auto-preferring
+industry used to drop those sources silently. Pass `method="skope_rules"`
+when you want the industry path.
 
-## Neuro-symbolic modes
+skope-rules is skipped on Python 3.13 (broken `collections.Iterable`).
+imodels and z3-solver still install from `symbolic-industry`.
 
-| Mode | Behavior |
+```python
+# When buildml[symbolic-industry] is installed:
+# session.symbolic.fit(backend="industry", method="skope_rules")
+```
+
+## Neuro-symbolic hybrid
+
+Same split, same train-only rule of the game. `fit_neuro` fits a base
+estimator and binds rules in one of three modes you pick:
+
+| Mode | What happens at predict |
 | --- | --- |
-| `constraint_overlay` | Predict with base model; apply hard/soft rules |
-| `rules_as_features` | Fire rules as binary features; fit on `[X ‖ R]` |
-| `constraint_repair` | Predict; hard constraints repair violations |
+| `constraint_overlay` (default) | Base model predicts; hard/soft rules overlay |
+| `rules_as_features` | Rules fire as binary columns; the base fits on `[X ‖ R]` |
+| `constraint_repair` | Base predicts; hard constraints repair violations |
 
-Soft rules use `soft_strength × rule.strength`. Hard rules override (overlay)
-or repair (repair mode). Traces expose `neural_prediction`, `chosen_rule_id`,
-and `repaired`.
+Soft rules scale by `soft_strength` (default 0.5) times `rule.strength`.
+Hard rules override in overlay and repair in repair mode. Traces expose
+`neural_prediction`, `chosen_rule_id`, and `repaired`.
 
-## Optional Z3 constraint verification
+Sklearn bases: `logistic_regression` (default), `ridge`,
+`random_forest`, `decision_tree`. Torch methods, when you ask:
+`concept_bottleneck_lite`, `neural_additive_lite`. Naming one of those
+as `base_estimator` (or `torch_method`) is what selects `backend="torch"`.
+`backend=None` with the default logistic base stays sklearn even if
+Torch is installed.
 
-Set `verify_constraints=True` on `session.symbolic.fit` when `z3-solver` is installed
-(via `buildml[symbolic-industry]`). This runs a **lite SAT check** on hard
-constraint antecedents: not a complete rule-set consistency prover or SMT
-product.
+```python
+constraints = [
+    {
+        "rule_id": "high_a",
+        "if": [{"column": "a", "op": ">", "value": 1.5}],
+        "then": 1,
+        "hardness": "hard",
+        "kind": "constraint",
+        "priority": 100,
+    }
+]
+neuro = session.symbolic.fit_neuro(
+    backend="sklearn",
+    mode="constraint_overlay",
+    base_estimator="logistic_regression",
+    task="classification",
+    rules=constraints,
+    rule_source="declared",
+)
+print(neuro.mode, neuro.n_rules)
+print(session.symbolic.evaluate_neuro(partition="test").metrics)
+```
 
-## Leakage discipline
+`evaluate_neuro` / `predict_neuro` are the hybrid twins. They do not
+update the pure-symbolic plan.
 
-- Require `SplitPlan` before fit.
-- Fit / induction / conformal-style carves: **train only**.
-- Holdout partitions: evaluate / predict only.
-- Bundles store the plan; Session checkpoints do **not**.
+## Z3 lite check
 
-## Honesty boundary
+`verify_constraints=True` on `session.symbolic.fit` runs a SAT check on
+hard constraint antecedents when z3-solver is installed via
+`symbolic-industry`. Missing Z3 raises `MissingExtraError`. A passing
+check does not mean the whole knowledge base is consistent, complete, or
+causal.
 
-- Structured if-then rules over columns: readable, auditable.
-- Industry backends export interpretable models as rules: not Prolog products.
-- **Not** an AGI symbolic reasoner.
-- **Not** Prolog, ASP, or a full Z3 SMT product.
-- **Not** a fuzzy-logic product or full expert-system suite.
-- Neuro-symbolic here means sklearn/torch lite + rules hybrid: **not** Logic
-  Tensor Networks / differentiable theorem proving.
+## Bundles
 
-## Anti-patterns
+`session.symbolic.save_bundle` writes `buildml.symbolic_bundle.v1`
+(`meta.json` + `symbolic_plan.joblib`). `meta.kind` is `symbolic` or
+`neuro_symbolic`. Session checkpoints do not embed either plan. Load
+with `trusted=True` only for a file you made.
 
-- Inducing rules on the full frame before `split`.
-- Calling `fit()` then hand-applying rules outside Session (no shared plan,
-  no traces, no bundle).
-- Treating induced rules as causal laws.
-- Expecting `checkpoint_load` to restore `SymbolicPlan`.
-- Claiming Z3 lite verification proves global rule-set correctness.
+Runnable mirror: [`examples/symbolic_rules_loop.py`](../examples/symbolic_rules_loop.py).
+Benchmark: `python benchmarks/symbolic/rule_fidelity.py`.
 
-## Bundle boundary
+## When it refuses
 
-See [Artifacts](artifacts-checkpoints-bundles.md). Format:
-`buildml.symbolic_bundle.v1` (`meta.json` + `symbolic_plan.joblib`).
-`meta.kind` is `symbolic` or `neuro_symbolic`.
+| What you see | What happened |
+| --- | --- |
+| No split | `fit` / `fit_neuro` before `split` |
+| No target | Symbolic fit needs exactly one target |
+| `MissingExtraError` for `symbolic-industry` | You asked for industry methods or Z3 without the extra |
+| `MissingExtraError` for `torch` | You asked for a torch neuro backend without Torch |
+| Invalid source for sklearn | Something other than `declared` / `decision_tree` / `decision_list` |
+| Invalid industry method | Name not in the methods that actually imported |
 
-## Benchmark
-
-`benchmarks/symbolic/rule_fidelity.py` compares symbolic holdout accuracy to a
-black-box RandomForest baseline and reports a fidelity ratio plus rule coverage.
-
-## Related
-
-- [Quickstart](quickstart-symbolic.md)
-- [Leakage / CV](leakage-cv-recipes.md)
-- Example: `examples/symbolic_rules_loop.py`
+[Symbolic quickstart](quickstart-symbolic.md) ·
+[policy-rules-neuro-symbolic](../proofs/policy-rules-neuro-symbolic/) ·
+[Artifacts](artifacts-checkpoints-bundles.md) ·
+[Leakage and recipes](leakage-cv-recipes.md)

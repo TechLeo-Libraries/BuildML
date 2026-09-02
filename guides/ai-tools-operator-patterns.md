@@ -4,8 +4,9 @@
 pip install "buildml[ai]"
 ```
 
-This guide is the **operator playbook**: which tools exist, how to chain them
-safely across classical / RAG / Torch, and patterns that avoid silent leakage.
+The operator never gets a Python REPL. Every side effect goes through
+the typed tool registry. This page is the allowlist and the chains that
+stay inside it.
 
 Safety primitives: [ai-operator-safety](ai-operator-safety.md).
 Quickstart: [quickstart-ai](quickstart-ai.md).
@@ -14,9 +15,9 @@ Quickstart: [quickstart-ai](quickstart-ai.md).
 
 ## Why a typed allowlist
 
-The model never gets a Python REPL. Every side effect goes through
-`ToolSpec` entries in `build_default_registry()`. That is the trust boundary:
-prompt injection can *ask* for `os.system`, but the executor cannot run it.
+Every side effect goes through `ToolSpec` entries in
+`build_default_registry()`. That is the trust boundary: prompt injection
+can ask for `os.system`, but the executor cannot run it.
 
 ```python
 from buildml.ai import registered_tool_names
@@ -26,7 +27,7 @@ print(registered_tool_names())
 
 ---
 
-## Tool inventory (default registry)
+## What the default registry exposes
 
 ### Read-only
 
@@ -87,8 +88,8 @@ print(registered_tool_names())
 serving stays out of the LLM allowlist by design. See
 [serve-deploy](serve-deploy.md).
 
-Exact names evolve with the library; CI keeps the teaching catalog synced.
-When unsure, print `registered_tool_names()`.
+When unsure, print `registered_tool_names()`. That list is the source of
+truth for this install.
 
 ---
 

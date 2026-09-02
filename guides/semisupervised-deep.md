@@ -1,48 +1,29 @@
-# Semi-supervised deep guide
+# Semi-supervised (deep)
 
 ```bash
 pip install buildml
+# GBDT pseudo-label: pip install "buildml[semisupervised-industry]"
+# FixMatch: pip install "buildml[torch]"
 ```
 
-Industry depth: scarce-label classification with unlabeled train features :
-not anomaly novelty, not self-supervised pretext, not active learning.
+Scarce labels on train, unlabeled train features still used. Unlabeled
+means target NaN (or your `unlabeled_marker`). Internally that is sklearn
+`-1`. Default `method="label_propagation"` stays sklearn even if XGBoost
+is installed. Holdout labels are for evaluation only.
 
-## Contract
+This is not novelty detection (`session.anomaly`), not pretext
+(`session.ssl`), and not an oracle (`session.active_learning`).
 
-| Concern | Rule |
-| --- | --- |
-| Fit partition | Train only (`assert_can_fit("train")`) |
-| Unlabeled convention | Target NaN/NA/None by default (`unlabeled_marker` optional) |
-| Internal encoding | sklearn `-1` unlabeled + LabelEncoder for observed classes |
-| Holdout labels | Evaluation-only; never invent selection labels from unlabeled holdout |
-| Bundle | `buildml.semisupervised_bundle.v1` ≠ Session checkpoint |
+Short on-ramp: [semi-supervised quickstart](quickstart-semisupervised.md).
 
-## Backends and methods
+## Backends
 
-| Backend | Extra | Methods | Modality |
-| --- | --- | --- | --- |
-| `sklearn` (fallback) | core | `label_propagation`, `label_spreading`, `self_training` | tabular |
-| `industry` | `buildml[semisupervised-industry]` | `pseudo_label_xgb`, `pseudo_label_lgbm` | tabular |
-| `torch` | `buildml[torch]` | `fixmatch_tabular`, `mixmatch_tabular` | tabular |
-| `hf` | `buildml[ssl]` | `text_pseudo_label` | text |
-
-Inspect honest availability:
-
-```python
-from buildml.semisupervised import semisupervised_capability_matrix
-
-print(semisupervised_capability_matrix()["default_backend_when_installed"])
-```
-
-When industry extras are installed, prefer `backend="industry"` or `backend="torch"`
-for tabular partial-label tasks; sklearn remains the honest fallback.
-
-## Session API
-
-`session.semisupervised.fit` → `session.semisupervised.predict` → `session.semisupervised.evaluate` →
-`session.semisupervised.save_bundle` / `session.semisupervised.load_bundle`.
-
-Industry example:
+| Backend | Extra | Methods |
+| --- | --- | --- |
+| `sklearn` | core | `label_propagation`, `label_spreading`, `self_training` |
+| `industry` | `semisupervised-industry` | `pseudo_label_xgb`, `pseudo_label_lgbm` |
+| `torch` | `torch` | `fixmatch_tabular`, `mixmatch_tabular` |
+| `hf` | `ssl` | `text_pseudo_label` |
 
 ```python
 session.semisupervised.fit(
@@ -53,21 +34,19 @@ session.semisupervised.fit(
 )
 ```
 
-Torch consistency example:
+## The loop
 
-```python
-session.semisupervised.fit(
-    backend="torch",
-    method="fixmatch_tabular",
-    epochs=40,
-    threshold=0.75,
-)
-```
+Split first. If you need `stratify=True`, start from fully labeled data,
+then blank **train** targets to simulate scarce labels. Fit on train.
+Predict / evaluate holdout. Bundle: `buildml.semisupervised_bundle.v1`.
+A Session checkpoint does not embed the plan.
 
-## SSL integration (documented pipeline)
+Read `n_labeled_*` / `n_unlabeled_*` beside every metric.
 
-Self-supervised pretext learns representations on **all** train rows (labels optional).
-Semi-supervised fit then uses **partial labels** on those representations:
+## With a pretext
+
+Self-supervised pretext can run on all train rows (labels optional).
+Semi-supervised fit then uses partial labels on those representations:
 
 ```python
 session.ssl.fit_pretext(method="simclr_tabular", latent_dim=16, epochs=30)
@@ -79,35 +58,14 @@ session.semisupervised.fit(
 )
 ```
 
-- `session.ssl.finetune_head`: labeled train rows only (supervised head).
-- `session.semisupervised.fit`: uses unlabeled train rows via propagation/pseudo-labels.
+`session.ssl.finetune_head` is labeled train only. `session.semisupervised.fit`
+uses unlabeled train rows via propagation or pseudo-labels.
 
-## Leakage discipline
+## What usually goes wrong
 
-1. Split first (prefer fully labeled data if you need `stratify=True`).
-2. Blank **train** targets only when simulating scarce labels.
-3. Never use validation/test unlabeled rows to invent labels for selection.
-4. Read `n_labeled_*` / `n_unlabeled_*` beside every metric.
+- Fewer than two labeled train rows, or a single class among labels.
+- Null feature columns: impute/scale first.
+- Missing extra for a non-sklearn backend: `MissingExtraError`.
+- Using validation/test unlabeled rows to invent labels for selection.
 
-## Benchmark
-
-```bash
-python benchmarks/semisupervised/partial_labels.py
-```
-
-Writes `benchmarks/semisupervised/results/partial_labels.json`.
-
-## Failure modes
-
-- `<2` labeled train rows or a single class among labels
-- Null feature columns (impute/scale first)
-- Missing extra for non-sklearn backend (`MissingExtraError`)
-- Confusing this API with `session.anomaly.fit(mode="novelty")`
-- Expecting a Session checkpoint to embed `SemiSupervisedPlan`
-
-## Related
-
-- [Quickstart](quickstart-semisupervised.md)
-- [Self-supervised](quickstart-selfsupervised.md) (pretext → head / embeddings)
-- [Anomaly](anomaly-deep.md) (novelty is a different metaphor)
-- Related next: active learning (`buildml.activelearning`)
+[Self-supervised](selfsupervised-deep.md) · [Active learning](active-learning-deep.md)

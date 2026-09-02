@@ -1,172 +1,201 @@
-# Learning-to-rank (tabular search ranking): deep guide
+# Learning-to-rank deep
 
 ```bash
 pip install buildml
-# GBDT rankers: pip install "buildml[ranking-industry]"
-# torch listwise-lite: pip install "buildml[torch]"
+# LightGBM / XGBoost / CatBoost rankers: pip install "buildml[ranking-industry]"
+# ListNet-style MLP: pip install "buildml[torch]"
 ```
 
-`query_column` and `item_column` are required. `relevance_column` defaults
-to the Session target if you have one. Prefer `group_split` on the query.
-`method=None` picks sklearn pointwise on a core install, or LightGBM
-LambdaRank (then XGB, then CatBoost) when `buildml[ranking-industry]` is
-installed.
+You have labeled query-item rows (a judgment table) and you want a
+ranker that orders candidates for a query. `query_column` and
+`item_column` are required. They are not inferred from roles.
+`relevance_column` defaults to the Session target when you have one.
 
-Short on-ramp: [ranking quickstart](quickstart-ranking.md).
+Prefer `group_split` on the query so a query id does not appear in more
+than one partition. Random row `split` is allowed; overlapping query ids
+are disclosed with warnings because ranking structure can still leak
+even if fit ignores holdout rows.
 
-## What this is (and is not)
+`session.ranking.fit(query_column=..., item_column=...)` with
+`backend=None` and `method=None` picks **LightGBM LambdaRank** when
+`buildml[ranking-industry]` imported (then XGBoost `rank:ndcg`, then
+CatBoost YetiRank). On a core install it is sklearn **pointwise** Ridge.
+That is one of the surfaces where omitting both knobs can select
+industry.
 
-**Is:** a Session-shaped tabular LTR loop :
+This is tabular LTR. It is not a search engine, not
+`session.rag.retrieve`, and not `session.recommender`.
 
-1. Ingest judgment rows `(query_id, item_id, features…, relevance)`
-2. Prefer `group_split` on the query id
-3. `session.ranking.fit` on **train only** (industry backend default when installed)
-4. `session.ranking.rank` to order candidates per query
-5. `session.ranking.evaluate` with graded nDCG@K, MAP@K, MRR@K
-6. `session.ranking.save_bundle` / `session.ranking.load_bundle`
+Short on-ramp: [ranking quickstart](quickstart-ranking.md). Proof:
+[search-relevance-ltr](../proofs/search-relevance-ltr/).
 
-**Is not:**
+## Fit, rank, evaluate
 
-- A search-engine product (no crawler, inverted index, or serving stack)
-- RAG (`session.rag.retrieve` / chunk embeddings / `session.rag.evaluate`): see [rag-deep.md](rag-deep.md)
-- Recommenders (`session.recommender.fit` user–item CF): see [recommenders-deep.md](recommenders-deep.md)
-- Hyperparameter `evolutionary_search` / classical model search
+Each row is one labeled judgment. Several rows share a query id. Mark
+the query `group` (preferred for `group_split`) and the item `id` or
+`ignore`. Features are numeric query-item columns. Relevance must be
+numeric (graded or binary).
 
-Metric names may overlap (nDCG, MRR) across RAG / recommenders / LTR; the
-**protocol** differs. Do not mix `session.rag.evaluate`, `session.recommender.evaluate`, and
-`session.ranking.evaluate` numbers.
-
-Inspect installed backends:
+Fit is train only. Features are standardized on train means and scales.
+`rank` defaults to the **test** partition when you pass neither
+`partition` nor `query_ids` (`k=10`). `evaluate` defaults to test as
+well. Relevance labels at eval time score frozen rankings. They do not
+refit.
 
 ```python
+import numpy as np
 import pandas as pd
 
 from buildml import Session
 
-# Preferred namespaced form (flat Session.*_capability_matrix still works).
-session = Session.ingest(pd.DataFrame({"q": [0], "item": [1], "rel": [1]}))
-session.ranking.capability_matrix()
-```
+rng = np.random.default_rng(0)
+rows = []
+for q in range(40):
+    for item in range(8):
+        f1 = float(rng.normal(q % 5, 1.0))
+        f2 = float(rng.normal(item, 1.0))
+        rel = float(max(0, int(3 - abs(f1 - (q % 5)) + (item % 3 == 0))))
+        rows.append(
+            {
+                "query_id": f"q{q}",
+                "item_id": f"i{item}",
+                "f1": f1,
+                "f2": f2,
+                "bm25": float(rng.random()),
+                "relevance": rel,
+            }
+        )
+frame = pd.DataFrame(rows)
 
----
+session = (
+    Session.ingest(frame)
+    .set_roles(
+        {
+            "query_id": "group",
+            "item_id": "id",
+            "relevance": "target",
+            "f1": "feature",
+            "f2": "feature",
+            "bm25": "feature",
+        }
+    )
+    .group_split(test_size=0.25, validation_size=0.15, random_state=0)
+)
 
-## Data model
-
-| Column | Role suggestion | Meaning |
-|--------|-----------------|---------|
-| `query_column` | `group` (preferred) or `id` | Query / request id |
-| `item_column` | `id` or `ignore` | Item or document id |
-| `relevance_column` | `target` | Graded or binary relevance |
-| feature columns | `feature` | Numeric query–item features |
-
-Each **row** is one labeled judgment. Multiple rows share a `query_id`.
-
----
-
-## Leakage discipline
-
-- `session.ranking.fit` calls `assert_can_fit("train")`: holdout rows never update weights.
-- Prefer `Session.group_split(group_column=query_column)` so **no query id**
-  appears in more than one partition (test labels cannot leak into train).
-- Random row `split` is allowed but **disclosed with warnings** when query ids
-  overlap partitions: ranking structure can still leak even if fit ignores
-  holdout rows.
-- At eval time, relevance labels are used only to **score** frozen rankings,
-  never to refit.
-
----
-
-## Backends and algorithms
-
-### Sklearn fallback (`backend='sklearn'`)
-
-Always available: no extra required.
-
-| `method` | Estimator |
-|----------|-----------|
-| `pointwise` | Ridge (default) or HistGradientBoostingRegressor (`pointwise_estimator='hgb'`) |
-| `pairwise` | RankSVM-lite: LinearSVC on within-query feature differences |
-
-Features are standardized on **train** means/scales only.
-
-### Industry GBDT rankers (`backend='industry'`, `buildml[ranking-industry]`)
-
-**Default backend when LightGBM/XGBoost/CatBoost are installed.**
-
-| `method` | Library | Objective |
-|----------|---------|-----------|
-| `lambdarank_lgbm` | LightGBM | LambdaRank (ndcg metric) |
-| `rank_ndcg_xgb` | XGBoost | `rank:ndcg` |
-| `yetirank_catboost` | CatBoost | YetiRank |
-
-Query groups are sorted contiguously for listwise training; inference scores
-each row independently then sorts within query.
-
-### Torch listwise-lite (`backend='torch'`, `buildml[torch]`)
-
-| `method` | Idea |
-|----------|------|
-| `listwise_lite` | Small MLP + per-query softmax cross-entropy on normalized relevance grades (ListNet-style lite) |
-
----
-
-## Metrics
-
-Macro-averaged over holdout queries that have ≥1 relevant item
-(`relevance > relevance_threshold`):
-
-| Metric | Definition in BuildML LTR |
-|--------|---------------------------|
-| `ndcg_at_k` | Graded nDCG with gain `2^rel − 1` |
-| `map_at_k` | Mean average precision (binaryized grades) |
-| `mrr_at_k` | Mean reciprocal rank of first relevant |
-
-These are **judgment-table** metrics. RAG chunk nDCG and recommender known-item
-nDCG use different candidate sets and protocols.
-
----
-
-## Bundles
-
-Schema `buildml.ranker_bundle.v1`:
-
-- `meta.json`: format, plan summary, optional fit/eval/rank summaries
-- `ranker_plan.joblib`: `RankerPlan` + estimator + standardization
-
-Session checkpoints do **not** embed `RankerPlan`. See
-[artifacts-checkpoints-bundles.md](artifacts-checkpoints-bundles.md).
-
----
-
-## Worked comparison sketch
-
-```python
-# After group_split + roles...
-session.ranking.fit(
+fit = session.ranking.fit(
     backend="sklearn",
     method="pointwise",
     query_column="query_id",
     item_column="item_id",
+    pointwise_estimator="ridge",
 )
-pw = session.ranking.evaluate(k=5).metrics
+print(fit.backend, fit.method)
 
-# Industry default when buildml[ranking-industry] installed:
+ranked = session.ranking.rank(partition="test", k=5)
+print(ranked.n_queries)
+
+ev = session.ranking.evaluate(partition="test", k=5)
+print(ev.metrics)
+
+session.ranking.save_bundle("artifacts/ranker_bundle")
+```
+
+Or omit `backend` and `method` to take the industry default when that
+extra imported:
+
+```python
+session.ranking.fit(query_column="query_id", item_column="item_id")
+```
+
+Need at least four train rows. `query_column` and `item_column` must
+differ and must exist on the frame.
+
+## Backends
+
+| Backend | Extra | Methods |
+| --- | --- | --- |
+| `sklearn` | core | `pointwise`, `pairwise` |
+| `industry` | `ranking-industry` | `lambdarank_lgbm`, `rank_ndcg_xgb`, `yetirank_catboost` |
+| `torch` | `torch` | `listwise_lite` |
+
+Aliases `lambdarank`, `rank_ndcg`, and `yetirank` resolve to the
+canonical names above.
+
+### Sklearn
+
+Always available. `pointwise` is Ridge (`pointwise_estimator="ridge"`)
+or `HistGradientBoostingRegressor` (`"hgb"`). `pairwise` is RankSVM-lite:
+LinearSVC on within-query feature differences, at most
+`max_pairs_per_query=80` oriented pairs per train query, `C=1.0`.
+
+### Industry GBDT
+
+Query groups are sorted contiguously for listwise training. Inference
+scores each row independently, then sorts within query.
+`n_estimators=120`, `learning_rate=0.08`. Default industry method when
+installed is LightGBM, then XGB, then CatBoost, matching what actually
+imported.
+
+```python
 session.ranking.fit(
     backend="industry",
     method="lambdarank_lgbm",
     query_column="query_id",
     item_column="item_id",
 )
-gbdt = session.ranking.evaluate(k=5).metrics
-print("pointwise", pw, "lambdarank", gbdt)
+print(session.ranking.evaluate(k=5).metrics)
 ```
 
-Benchmark: `python benchmarks/ranking/ndcg_lift.py` compares industry default
-vs sklearn pointwise on synthetic judgments.
+### Torch listwise-lite
 
----
+Small MLP plus per-query softmax cross-entropy on normalized relevance
+grades (ListNet-style). `hidden_dim=64`, `epochs=40`, `device="cpu"`.
 
-## Scope notes
+## Metrics
 
-Related: recommenders, knowledge graphs, and optimisation helpers
-(see their guides). This LTR surface ships industry rankers when installed.
+Macro-averaged over holdout queries that have at least one relevant item
+(`relevance > relevance_threshold`, default 0.0):
+
+| Metric | Meaning here |
+| --- | --- |
+| `ndcg_at_k` | Graded nDCG with gain `2^rel - 1` |
+| `map_at_k` | Mean average precision on binaryized grades |
+| `mrr_at_k` | Mean reciprocal rank of the first relevant item |
+
+Those are judgment-table metrics. Recommender known-item nDCG and RAG
+chunk nDCG use different candidate sets. Do not mix
+`session.ranking.evaluate`, `session.recommender.evaluate`, and
+`session.rag.evaluate` numbers.
+
+If you pass `backend=` at `rank` / `evaluate` time, it must match the
+frozen plan. A mismatch raises.
+
+## Bundles
+
+`session.ranking.save_bundle` writes `buildml.ranker_bundle.v1`:
+`meta.json` plus `ranker_plan.joblib` (estimator and train
+standardization). A Session checkpoint does not embed `RankerPlan`.
+`trusted=True` only for a file you made.
+
+Runnable mirror:
+[`examples/ranking_pointwise_loop.py`](../examples/ranking_pointwise_loop.py).
+Benchmark: `python benchmarks/ranking/ndcg_lift.py`.
+
+## When it refuses
+
+| What you see | What happened |
+| --- | --- |
+| `query_column` and `item_column` required | Ids are not inferred from roles |
+| Relevance required | No `relevance_column` and no Session target |
+| Relevance not numeric | Graded or binary labels must be numeric |
+| No split | `fit` before `split` |
+| Fewer than 4 train rows | Not enough judgments to fit |
+| `MissingExtraError` for `ranking-industry` | You asked for a GBDT ranker without that extra |
+| `MissingExtraError` for `torch` | You asked for `listwise_lite` without Torch |
+| Method not valid for backend | Pairing the catalog does not advertise |
+| Backend does not match frozen plan | `rank` / `evaluate` `backend=` disagrees with fit |
+| NaN/Inf features at score | Clean inputs before `rank` |
+
+[Ranking quickstart](quickstart-ranking.md) ·
+[search-relevance-ltr](../proofs/search-relevance-ltr/) ·
+[Artifacts](artifacts-checkpoints-bundles.md)

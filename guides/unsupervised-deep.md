@@ -2,38 +2,21 @@
 
 ```bash
 pip install buildml
+# HDBSCAN / UMAP: pip install "buildml[unsupervised]"
+# DEC / IDEC: pip install "buildml[torch]"
 ```
 
-This guide covers the Session unsupervised path: train-fit clustering, holdout
-assign, geometric evaluation, PCA integration via `reduce_dimensions`, and
-`buildml.unsupervised_bundle.v1`. It matches the depth bar of classical / Torch /
-RAG guides: leakage discipline, disclosures, artifact boundaries, and failure
-modes.
+Cluster on the same Session as classical work. No target is required. Fit
+is train-only. `assign` and `evaluate` need a plan first. Default is
+sklearn KMeans (`n_clusters=8`). PCA stays on `session.reduce_dimensions`;
+you can cluster those train-fitted components.
 
-**Related:** [Quickstart](quickstart-unsupervised.md) ·
-[Preprocess depth](preprocess-depth.md) ·
-[Artifacts](artifacts-checkpoints-bundles.md) ·
-[Leakage](leakage-cv-recipes.md)
+This is not the EDA IsolationForest screen. That stays descriptive. It is
+not `session.anomaly` and not a ground-truth taxonomy.
 
----
+Short on-ramp: [unsupervised quickstart](quickstart-unsupervised.md).
 
-## What this path is (and is not)
-
-| Is | Is not |
-| --- | --- |
-| Train-fitted `ClusterPlan` with holdout assign | Supervised `Session.fit` |
-| Optional use of train-fitted PCA components | A second private PCA implementation |
-| Internal validity + optional external ARI/NMI | Ground-truth taxonomy certification |
-| Distinct unsupervised bundle | Session checkpoint / Torch / RAG bundle |
-| Production-shaped Session API | EDA IsolationForest / correlation-cluster screens |
-
-Causal claims stay out of this path (and out of EDA). A later causal API will
-require explicit estimand/assumption objects: clustering labels are not causal
-effects.
-
----
-
-## Core loop
+## A first loop
 
 ```python
 import numpy as np
@@ -61,52 +44,25 @@ test = session.unsupervised.evaluate(
 )
 print(fit.to_dict())
 print(val.metrics, test.external_metrics)
-session.explain("fit_clusters", moment="after")
 ```
 
-**Leakage contract:** `session.unsupervised.fit` calls `assert_can_fit("train")`. Assign and
-evaluate reuse the frozen plan. Do not `fit_predict` on concatenated partitions
-outside Session and then claim holdout validity.
+`session.unsupervised.fit` calls `assert_can_fit("train")`. Assign and
+evaluate reuse the frozen plan. Do not `fit_predict` on concatenated
+partitions outside Session and then claim holdout validity.
 
----
-
-## Methods and assign strategies
+## Methods
 
 | Method | Backend | Holdout assign | Notes |
 | --- | --- | --- | --- |
-| `kmeans` | sklearn | Native `predict` | `auto_k` elbow selection on train |
+| `kmeans` | sklearn | Native `predict` | `auto_k` elbow on train |
 | `agglomerative` | sklearn | Nearest train centroid | Disclosed approximation |
-| `dbscan` | sklearn | Nearest core within `eps` | Density-driven k |
-| `gmm` | sklearn | Native `predict` | BIC model selection (`auto_k` or fixed k) |
-| `hdbscan` | hdbscan | `approximate_predict` / nearest core | Default density when `[unsupervised]` installed |
-| `spectral` | sklearn | Nearest centroid | **Transductive** on train |
-| `optics` | sklearn | Nearest centroid | **Transductive**; order-driven k |
+| `dbscan` | sklearn | Nearest core within `eps` | Density-driven k; else `-1` |
+| `gmm` | sklearn | Native `predict` | BIC model selection |
+| `hdbscan` | hdbscan | `approximate_predict` / nearest core | Needs `[unsupervised]` |
+| `spectral` | sklearn | Nearest centroid | Transductive on train |
+| `optics` | sklearn | Nearest centroid | Transductive |
 | `mean_shift` | sklearn | Nearest centroid | Bandwidth-driven k |
-| `dec` / `idec` | Torch | Native encoder assign | Requires `[torch]` |
-
-## Dimensionality / viz (`reduce_dimensions`)
-
-| Method | Extra | Holdout transform |
-| --- | --- | --- |
-| `pca` | core | Native |
-| `umap` | `[unsupervised]` | Native `transform` |
-| `tsne` | core | Nearest-neighbor train embed transfer (disclosed) |
-
-## Validation (`session.unsupervised.evaluate`)
-
-- Silhouette, Calinski–Harabasz, Davies–Bouldin (internal geometry)
-- Optional bootstrap stability (`compute_stability=True`) on train subsamples
-- Optional elbow curve (`compute_elbow=True`) for k-means family diagnostics
-- Transductive-method disclosures on spectral/optics/t-SNE paths
-- Bundles: `buildml.unsupervised_bundle.v2` (v1 loadable)
-
-Legacy table (still accurate for the original three methods):
-
-| Method | Fit | Holdout assign | Notes |
-| --- | --- | --- | --- |
-| `kmeans` | sklearn `KMeans` on train | Native `predict` | Primary full API |
-| `agglomerative` | `AgglomerativeClustering` | Nearest train centroid | Disclosed approximation |
-| `dbscan` | `DBSCAN` | Nearest train core within `eps`, else `-1` | `n_clusters` is observed |
+| `dec` / `idec` | Torch | Native encoder assign | Needs `[torch]` |
 
 ```python
 session.unsupervised.fit(method="agglomerative", n_clusters=2, linkage="ward")
@@ -116,12 +72,9 @@ session.unsupervised.fit(method="dbscan", eps=0.8, min_samples=5, n_clusters=Non
 print(session.unsupervised.plan.n_clusters, session.unsupervised.fit_result.warnings)
 ```
 
----
+## PCA stays on `reduce_dimensions`
 
-## PCA integration (do not fork)
-
-`Session.reduce_dimensions(method="pca")` remains the dimensionality-reduction
-plan. Clustering optionally consumes those components:
+Do not fork a second PCA. Cluster the train-fitted components:
 
 ```python
 session = (
@@ -133,106 +86,64 @@ session = (
 )
 session.unsupervised.fit(method="kmeans", n_clusters=2, prefer_reduce_components=True)
 assert session.unsupervised.fit_result.used_reduce_components
-# Explained variance is still unsupervised: not cluster quality:
-print(session.reduce_plan.to_dict()["total_explained_variance"])
 ```
 
-Set `prefer_reduce_components=False` or pass explicit `columns=` to cluster raw
-scaled features instead. Fold-local PCA inside CV remains
-`PreprocessRecipe(reduce="pca")` for **supervised** selection: unsupervised
-clustering is a Session-global plan path today (honest limit).
+Set `prefer_reduce_components=False` or pass `columns=` to cluster raw
+scaled features. Fold-local PCA inside CV remains
+`PreprocessRecipe(reduce="pca")` on the **supervised** path. Clustering
+itself is a Session-global plan.
 
----
+| Reduce method | Extra | Holdout transform |
+| --- | --- | --- |
+| `pca` | core | Native |
+| `umap` | `[unsupervised]` | Native `transform` |
+| `tsne` | core | Nearest-neighbor train embed transfer (disclosed) |
 
-## Assign and attach
+## Assign
 
 ```python
 holdout = session.unsupervised.assign(partition="test")
 print(holdout.labels[:10], holdout.n_noise)
 
-# Attach labels to the full frame (aligned write):
 session.unsupervised.assign(partition="all", attach=True)
 assert "cluster_id" in session.dataset.columns
 ```
 
-`attach=True` requires `partition="all"` so row alignment cannot silently drift.
+`attach=True` requires `partition="all"` so row alignment cannot drift.
 
----
+## Evaluate
 
-## Evaluation honesty
+Internal metrics describe cohesion under the feature geometry:
+silhouette, Calinski-Harabasz, Davies-Bouldin, and `noise_rate` when
+DBSCAN produces `-1`. Optional bootstrap stability
+(`compute_stability=True`) and an elbow curve (`compute_elbow=True`)
+stay on train.
 
-Internal metrics describe cohesion/separation under the feature geometry:
+`external_label_column` adds ARI / NMI **after** fit. Those labels never
+train the clusterer. Agreement is not a causal structure and not ROI.
 
-- `silhouette` (optionally subsampled via `sample_size`)
-- `calinski_harabasz`
-- `davies_bouldin`
-- `noise_rate` when DBSCAN produces `-1`
+Default `evaluate(partition="validation")` falls back to `test` when no
+validation partition was carved.
 
-Optional `external_label_column` adds ARI / NMI **after** fit. Those labels are
-never used to train the clusterer. Agreement ≠ causal structure ≠ business ROI.
+## Bundle
 
-Default `session.unsupervised.evaluate(partition="validation")` falls back to `test` when
-no validation partition was carved.
-
----
-
-## Bundles vs checkpoints
-
-| Artifact | Contains | Does not |
-| --- | --- | --- |
-| `session.unsupervised.save_bundle` | `ClusterPlan`, meta, disclosures | Dataset, splits, classical estimator |
-| `checkpoint_save` | data, roles, splits, history, classical preprocess plans | ClusterPlan / Torch / RAG |
-| `reduce_dimensions` plan | Inside classical `plans.joblib` when checkpointed | Cluster labels |
+`buildml.unsupervised_bundle.v2` (v1 loadable) stores the `ClusterPlan`.
+It does not store the dataset, the split, or a classical estimator.
+`checkpoint_load` will not restore `session.unsupervised.plan`.
 
 ```python
 path = session.unsupervised.save_bundle("artifacts/clusters")
-# Later: re-attach features, then:
 other = Session.ingest(...).set_roles(...).split(...).scale(...)
 other.unsupervised.load_bundle(path)
 other.unsupervised.assign(partition="test")
 ```
 
-Schema: `buildml.unsupervised_bundle.v1`. See
-`buildml.unsupervised.checkpoint.CHECKPOINT_BOUNDARY`.
+## What usually goes wrong
 
----
+- Fit without a split: `LeakageError`.
+- Nulls in features: impute first; scale before distance methods.
+- `n_clusters` larger than train: `ValidationError`.
+- DBSCAN with too-small `eps`: all noise; read the warnings.
+- Publishing silhouette as accuracy.
 
-## Failure modes
-
-- Fitting without a split → `LeakageError` / fit refusal.
-- Nulls in features → impute first; scale before distance methods.
-- `n_clusters` > `n_train` → validation error.
-- DBSCAN with too-small `eps` → all noise; read warnings.
-- Expecting `checkpoint_load` to restore `session.unsupervised.plan` → it will not.
-- Publishing silhouette as “accuracy” → teaching anti-pattern (catalog + concepts).
-
----
-
-## Related guides / non-goals
-
-Related: [ensembles](ensemble-deep.md), [AutoML](automl-deep.md),
-[forecasting](forecasting-deep.md), [anomaly](anomaly-deep.md). Explicit
-non-goals (TTS, swarm zoo, digital twins, AV/robotics product stacks, full COCO
-detection suite, …) stay undocumented as product surfaces.
-
----
-
-## Teaching surface
-
-```python
-from buildml.explain.catalog import OPERATION_CATALOG
-
-for name in (
-    "fit_clusters",
-    "assign_clusters",
-    "evaluate_clusters",
-    "save_unsupervised_bundle",
-    "load_unsupervised_bundle",
-):
-    assert name in OPERATION_CATALOG
-
-session.explain("evaluate_clusters", moment="before")
-```
-
-Concepts: `unsupervised-train-fit-holdout-assign`, `cluster-validity-not-truth`,
-`pca-cluster-integration`, `unsupervised-bundle-boundary`.
+[Preprocess](preprocess-depth.md) · [Artifacts](artifacts-checkpoints-bundles.md)

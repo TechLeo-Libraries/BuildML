@@ -5,9 +5,9 @@ pip install "buildml[serve]"
 # Torch export packs also need buildml[torch]; ONNX checker: buildml[onnx]
 ```
 
-BuildML provides **local managed serving** for classical pipeline bundles and
-TorchScript artifacts, plus **operator-owned recipes** for TorchServe,
-TensorRT (`trtexec`), and Kubernetes torchrun Jobs / serve Deployments. This is
+Local managed serving for classical pipeline bundles and TorchScript
+artifacts, plus operator-owned recipes for TorchServe, TensorRT
+(`trtexec`), and Kubernetes torchrun Jobs / serve Deployments. This is
 not a managed cloud IAM / multi-cluster product.
 
 Related: [artifacts](artifacts-checkpoints-bundles.md), [torch-deep](torch-deep.md),

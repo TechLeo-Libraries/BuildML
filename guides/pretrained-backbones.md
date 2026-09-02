@@ -5,31 +5,20 @@ pip install "buildml[pretrained]"
 # or individually: buildml[vision] / buildml[speech]
 ```
 
-`session.dl.load_backbone` exposes **curated** vision / audio / speech
+`session.dl.load_backbone` exposes curated vision / audio / speech
 encoder hooks with `weights=none|mock|pretrained`, plus
 `session.dl.attach_head` for a linear classify/probe head. Discover the
-shipped catalog with `list_pretrained_backbones()`. This is **not** a full
-Hugging Face / TorchVision zoo product.
+shipped list with `list_pretrained_backbones()`. This is not a full
+Hugging Face / TorchVision zoo. Default `weights="mock"` keeps CI graphs
+deterministic. `pretrained` downloads when you opt in. Multimodal fusion
+and speech finetune-lite are separate paths.
 
 Related: [torch-deep](torch-deep.md), [speech](speech-asr-finetune.md),
 [features](../docs/features.rst).
 
 ---
 
-## Why curated hooks (not a zoo)
-
-A zoo product implies continuous coverage of architectures, weight variants,
-preprocessing contracts, and breaking upstream changes. BuildML instead:
-
-1. Offers a small, tested surface for Session/AI-tool integration.
-2. Defaults to **`weights="mock"`** for CI-safe graphs.
-3. Allows `pretrained` downloads when operators opt in.
-4. Stays explicit that multimodal fusion and speech finetune-lite are separate
-   paths.
-
----
-
-## Catalog: `list_pretrained_backbones`
+## What `list_pretrained_backbones` returns
 
 ```python
 from buildml.dl.zoo import list_pretrained_backbones

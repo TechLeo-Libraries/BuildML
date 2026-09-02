@@ -1,4 +1,4 @@
-# Self-supervised deep guide
+# Self-supervised (deep)
 
 ```bash
 pip install "buildml[torch]"
@@ -6,73 +6,54 @@ pip install "buildml[torch]"
 # vision SSL: pip install "buildml[vision]"
 ```
 
-## Story
+Pretext on train features. Labels are ignored at that step. Then a head
+on labeled train only. Holdout scores the frozen encoder plus head.
+Default when torch is installed is `simclr_tabular`. Evaluate needs
+both pretext and head.
+
+This is not semi-supervised pseudo-labelling and not
+`session.dl.load_backbone` (that path is published-weight probes).
+
+Short on-ramp: [self-supervised quickstart](quickstart-selfsupervised.md).
+
+## The order
 
 ```text
-session.ssl.fit_pretext (train features; labels ignored)
+session.ssl.fit_pretext   (train features; labels ignored)
         ↓
-session.ssl.transform (optional attach of ssl_emb_* columns)
+session.ssl.transform     (optional ssl_emb_* columns)
         ↓
-session.ssl.finetune_head (labeled train only; NaN targets skipped)
+session.ssl.finetune_head (labeled train; NaN targets skipped)
         ↓
-session.ssl.evaluate (labeled holdout only)
+session.ssl.evaluate      (labeled holdout)
 ```
 
-## Method catalog (Session `method=`)
+## Methods
 
 | Method | Modality | Backend | Notes |
 | --- | --- | --- | --- |
-| `simclr_tabular` | tabular | Torch | **Default** when torch installed |
-| `byol_tabular` | tabular | Torch | Bootstrap-your-own-latent |
-| `vicreg_tabular` | tabular | Torch | Variance-invariance-covariance |
+| `simclr_tabular` | tabular | Torch | Default when torch is installed |
+| `byol_tabular` | tabular | Torch | |
+| `vicreg_tabular` | tabular | Torch | |
 | `mae_tabular` | tabular | Torch | Masked autoencoder |
-| `vae_tabular` | tabular | Torch | Variational AE |
+| `vae_tabular` | tabular | Torch | |
 | `hf_text_ssl` | text | sentence-transformers | Pass `text_column=` |
 | `vision_ssl` | vision | torchvision + projector | Pass `image_column=` |
-| `masked_tabular` | tabular | sklearn | **Deprecated**: use Torch methods |
-
-## Contract
-
-| Concern | Rule |
-| --- | --- |
-| Pretext fit | Train features only |
-| Labels during pretext | Ignored |
-| Head fit | Labeled train rows only |
-| Holdout | Frozen encoder + head |
-| Bundle | `buildml.ssl_bundle.v2` (v1 legacy loadable) |
-
-## Migration from legacy sklearn SSL
-
-`method="masked_tabular"` still works but emits `DeprecationWarning`.
-Replace with:
+| `masked_tabular` | tabular | sklearn | Deprecated; use Torch methods |
 
 ```python
 session.ssl.fit_pretext(method="simclr_tabular", latent_dim=16, epochs=40)
 ```
 
-Bundles saved after Torch fit use `buildml.ssl_bundle.v2`. Old
-`buildml.selfsupervised_bundle.v1` bundles load unchanged.
+`method="masked_tabular"` still runs and emits `DeprecationWarning`.
+Bundles after Torch fit use `buildml.ssl_bundle.v2`. Old
+`buildml.selfsupervised_bundle.v1` bundles still load.
 
-## Torch backbone transfer (related)
+## Backbone transfer is a different path
 
-Vision/audio/speech freeze/finetune for downstream supervised heads:
+`session.dl.load_backbone` / `session.dl.attach_head` freeze or finetune
+published weights. `vision_ssl` trains a projector on image columns
+inside this SSL Session path.
 
-- `session.dl.load_backbone`
-- `session.dl.attach_head`
-
-`vision_ssl` trains a projector on image columns inside the SSL Session path;
-backbone transfer remains the path for published-weight linear probes.
-
-## Benchmarks
-
-```bash
-python benchmarks/ssl/linear_probe_tabular.py --epochs 25
-```
-
-Compares linear-probe accuracy across Torch methods vs legacy sklearn.
-
-## Related
-
-- [Quickstart](quickstart-selfsupervised.md)
-- [Pretrained backbones](pretrained-backbones.md)
-- [Artifacts](artifacts-checkpoints-bundles.md)
+[Pretrained backbones](pretrained-backbones.md) ·
+[Semi-supervised](semisupervised-deep.md)

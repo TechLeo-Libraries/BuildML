@@ -1,71 +1,46 @@
 # Time-series analysis (deep)
 
+```bash
+pip install buildml
+# STL / ADF / changepoints: pip install "buildml[timeseries]"
+```
+
 Descriptive analysis on the same Session as forecasting. You still need a
-`time` role, a target, and `time_split`. Nothing here fits a forecast
-model.
+`time` role, a target, and `time_split`. Random, stratified, and group
+splits are refused. Default scope is train. Nothing here fits a forecast
+model. That is `session.forecast`.
 
-## Architecture
+Prophet and N-BEATS extras belong to forecasting, not this surface.
 
-```
-session.timeseries.analyze / ts_decompose / ts_diagnostics
-        ↓
-buildml.timeseries.analyze
-        ↓
-decompose · diagnostics · changepoints · features
-```
+Short on-ramp: [time-series analysis quickstart](quickstart-timeseries-analysis.md)
+· [Forecasting](quickstart-forecasting.md).
 
-Temporal guards reuse `buildml.forecasting.features` (`time_split` required;
-random/stratified/group splits refused).
+## What you get
 
-## Dependency policy
+`session.timeseries.analyze` is the full report. Toggles:
+`include_decompose`, `include_diagnostics`, `include_changepoints`,
+`include_features`. `scope='train'` is the default. `scope='all'`
+includes holdout rows and discloses that.
 
-| Extra | Packages | Enables |
-|-------|----------|---------|
-| *(core)* | numpy/pandas/sklearn | moving-average decompose, numpy ACF/PACF, CUSUM changepoints, rolling stats |
-| `buildml[timeseries]` | statsmodels, scipy, ruptures | STL, classical decompose, ADF/KPSS, Welch spectrum, PELT/binseg |
-| `buildml[timeseries-prophet]` | prophet | *(forecasting only)* |
-| `buildml[timeseries-ml]` | neuralforecast, torch | *(forecasting N-BEATS)* |
+Focused calls: `session.timeseries.decompose` and
+`session.timeseries.diagnostics`.
 
-## APIs
+Core (no extra): moving-average decompose, numpy ACF/PACF, CUSUM
+changepoints, rolling stats. With `buildml[timeseries]`: STL, classical
+decompose, ADF/KPSS, Welch spectrum, PELT/binseg.
 
-### `session.timeseries.analyze`
-
-Full report with toggles:
-
-- `include_decompose`, `include_diagnostics`, `include_changepoints`, `include_features`
-- `scope='train'` (default) or `'all'` (EDA: disclosed leakage risk)
-
-### `session.timeseries.decompose`
-
-STL (default when statsmodels installed), classical additive, or moving-average fallback.
-
-### `session.timeseries.diagnostics`
-
-ACF/PACF arrays (+ confidence intervals with statsmodels), ADF and KPSS p-values.
+STL is the decompose default when statsmodels is installed; otherwise a
+moving-average fallback.
 
 ## Results
 
-`TSAnalysisResult` holds optional sub-results:
+`TSAnalysisResult` can hold:
 
-- `TSDecomposeResult`: trend/seasonal/residual tuples + timestamps
-- `TSDiagnosticsResult`: exportable ACF/PACF for plotting
+- `TSDecomposeResult`: trend / seasonal / residual plus timestamps
+- `TSDiagnosticsResult`: ACF/PACF (and confidence intervals with statsmodels)
 - `TSChangepointResult`: index boundaries
 - `TSFeatureResult`: rolling mean/std, dominant spectral period
 
-## Walkthrough / AI
-
-`session.walkthrough()` includes `timeseries_status`. AI allowlist:
-`session.timeseries.analyze`, `session.timeseries.decompose`, `session.timeseries.diagnostics`.
-
-## Benchmark
-
-```bash
-python benchmarks/timeseries/analysis_smoke.py
-```
-
-Writes `benchmarks/timeseries/results/analysis_smoke.json`.
-
-## Relationship to forecasting
-
-Analysis informs method choice (`ets` vs `arima` vs lag models) but does not
-fit predictors. Use `session.forecast.fit(method='auto')` after train-only analysis.
+Use train-only analysis to choose `ets` vs `arima` vs lag models, then
+`session.forecast.fit`. Do not treat a decompose on `scope='all'` as a
+fit protocol.

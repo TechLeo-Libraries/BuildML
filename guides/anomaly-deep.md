@@ -1,4 +1,4 @@
-# Anomaly / fraud deep
+# Anomaly / fraud (deep)
 
 ```bash
 pip install buildml
@@ -6,32 +6,18 @@ pip install buildml
 # autoencoder: pip install "buildml[torch]"
 ```
 
-Depth guide for the Session anomaly path: backends, modes, thresholds,
-imbalance-honest metrics, validation threshold tuning, bundles, and boundaries
-vs EDA / clustering / classical `fit`.
+A detector on the same Session. Default is sklearn IsolationForest,
+unsupervised. A target is only required for supervised mode, threshold
+tuning, and labeled eval. `method="isolation_forest"` stays sklearn even
+if PyOD is installed. Tuning on test is refused unless
+`allow_test_tuning=True`.
 
-**Related:** [Anomaly quickstart](quickstart-anomaly.md) ·
-[Artifacts](artifacts-checkpoints-bundles.md) ·
-[Unsupervised deep](unsupervised-deep.md) ·
-[Leakage](leakage-cv-recipes.md).
+Higher `anomaly_score` means more anomalous. This is not clustering and
+not a streaming fraud platform.
 
----
+Short on-ramp: [anomaly quickstart](quickstart-anomaly.md).
 
-## Backends and capability matrix
-
-```python
-import pandas as pd
-
-from buildml import Session
-
-# Preferred namespaced form on any Session instance.
-# Flat Session.*_capability_matrix classmethods still work for discoverability.
-session = Session.ingest(pd.DataFrame({"x": [0.0]}))  # placeholder; use your frame
-matrix = session.anomaly.capability_matrix()
-print(matrix["backends"]["sklearn"]["methods"])
-print(matrix["backends"]["pyod"]["available"])
-print(matrix["supervised_scorers"])
-```
+## Backends
 
 | Backend | Extra | Methods | Modes |
 | --- | --- | --- | --- |
@@ -40,85 +26,62 @@ print(matrix["supervised_scorers"])
 | `torch` | `torch` | `autoencoder` | unsupervised, novelty |
 | supervised | core / industry | `supervised_hgb`, `supervised_xgb`, `supervised_lgbm` | supervised |
 
-Score calibration disclosures are recorded on every `AnomalyPlan`:
-sklearn inverts `score_samples`; PyOD uses `decision_function`; torch AE uses
-train-only MSE reconstruction error; supervised scorers emit positive-class
+Score calibration is disclosed on every `AnomalyPlan`: sklearn inverts
+`score_samples`; PyOD uses `decision_function`; torch AE uses train-only
+MSE reconstruction error; supervised scorers emit positive-class
 probability (not guaranteed calibrated under extreme imbalance).
 
----
+```python
+matrix = session.anomaly.capability_matrix()
+print(matrix["backends"]["sklearn"]["methods"])
+print(matrix["backends"]["pyod"]["available"])
+```
 
-## Contract
+## The loop
 
-1. Require a `SplitPlan` (`session.assert_can_fit("train")`).
-2. Fit detector (+ usually threshold) on **train only**.
-3. Optionally tune threshold on **validation** (`session.anomaly.tune_threshold`).
-4. Score / flag / evaluate holdout partitions with a frozen `AnomalyPlan`.
-5. Disclose threshold policy, threshold value, and alert rate every time.
-6. Persist via `buildml.anomaly_bundle.v1` (not a Session checkpoint).
-
-Score orientation: **higher `anomaly_score` = more anomalous**.
-
----
+1. Split first (`assert_can_fit("train")`).
+2. Fit the detector, and usually a threshold, on train only.
+3. Optionally `session.anomaly.tune_threshold` on **validation**.
+4. Score / flag / evaluate holdout with the frozen plan.
+5. Persist `buildml.anomaly_bundle.v1`. That is not a Session checkpoint.
 
 ## Modes
 
-| Mode | Fit rows | Typical methods | Label role during fit |
-| --- | --- | --- | --- |
-| `unsupervised` | All train rows | IF, LOF, OCSVM, PyOD, AE | None |
-| `novelty` | Normal-only train subset | Same unsupervised catalog | Selects fit subset |
-| `supervised` | All labeled train rows | HGB / XGB / LGBM | Binary target required |
+| Mode | Fit rows | Label during fit |
+| --- | --- | --- |
+| `unsupervised` | All train rows | None |
+| `novelty` | Normal-only train subset | Selects the fit subset |
+| `supervised` | All labeled train rows | Binary target required |
 
----
-
-## Threshold policies and validation tuning
+## Thresholds
 
 | Policy | Meaning |
 | --- | --- |
-| `contamination` | τ ≈ train score quantile at `1 - contamination` |
-| `quantile` | Same with explicit `quantile` |
-| `score_threshold` | Absolute cut on anomaly scores |
-| `decision_zero` | One-Class SVM convenience (score threshold 0) |
-| `validation_tuned` | Set by `session.anomaly.tune_threshold` after fit |
+| `contamination` | Train score quantile at `1 - contamination` |
+| `quantile` | Same, with an explicit `quantile` |
+| `score_threshold` | Absolute cut |
+| `decision_zero` | One-Class SVM convenience (cut at 0) |
+| `validation_tuned` | Set by `tune_threshold` after fit |
 
 ```python
 session.anomaly.fit(backend="pyod", method="copod", contamination=0.08)
 session.anomaly.tune_threshold(partition="validation", metric="fbeta", fbeta=2.0)
-ev = session.anomaly.evaluate(partition="test")  # untouched test
+ev = session.anomaly.evaluate(partition="test")
 ```
 
-Refuses test-partition tuning unless `allow_test_tuning=True` (exploratory only).
+## Evaluate
 
----
+Always: `threshold`, `alert_rate`, score summary. When labels exist:
+`average_precision` (PR-AUC), `roc_auc`, thresholded precision / recall /
+f1, and precision/recall at k. Under rare positives, prefer PR-AUC and
+@k over accuracy. None of this is a causal fraud claim.
 
-## Evaluation honesty
+## What usually goes wrong
 
-Always: `threshold`, `alert_rate`, score summary stats.
+- Fit without a split: `LeakageError`.
+- Supervised mode without a target: `ValidationError`.
+- Tuning on test without `allow_test_tuning=True`: refused.
+- Treating this as `session.unsupervised.fit`.
+- Graph / streaming fraud: not this surface.
 
-When labels exist:
-
-- `average_precision` (PR-AUC), `roc_auc`
-- thresholded `precision` / `recall` / `f1`
-- `precision_at_k` / `recall_at_k`
-
-Under rare positives, prefer PR-AUC and @k over accuracy. No causal fraud claims.
-
----
-
-## Benchmark
-
-```bash
-python benchmarks/anomaly/detector_comparison.py
-# writes benchmarks/anomaly/results/detector_comparison.json
-```
-
-Compares sklearn, PyOD (when installed), torch AE (when installed), and
-supervised HGB with validation threshold tuning.
-
----
-
-## Out of scope
-
-- Graph fraud / entity networks
-- Online / streaming detectors as a product
-- Causal fraud attribution
-- Full PyOD algorithm zoo beyond catalog methods
+[Unsupervised](unsupervised-deep.md) · [Leakage](leakage-cv-recipes.md)

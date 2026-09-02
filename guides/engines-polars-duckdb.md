@@ -19,17 +19,15 @@ Related: [classical end-to-end](classical-end-to-end.md),
 
 ---
 
-## Why engines exist
+## What engines are for
 
-Real tables are often larger than a notebook demo. You may want to:
+Real tables are often larger than a notebook demo. Ingest with DuckDB or
+Polars for typed IO, narrow rows and columns with engine-native ops, then
+materialize a design matrix for sklearn only when needed.
 
-1. Ingest with DuckDB/Polars for typed, efficient IO.
-2. Narrow rows/columns with engine-native ops.
-3. Materialize a design matrix for sklearn only when needed.
-
-BuildML records engine/mode in ingest metadata and rebuilds native handles after
-Session preprocess so `Dataset.project` / `prepare_design_matrix` can prefer
-engine ops where implemented.
+BuildML records engine and mode in ingest metadata. After Session
+preprocess it rebuilds native handles so `Dataset.project` /
+`prepare_design_matrix` can prefer engine ops where that path exists.
 
 ---
 
@@ -70,8 +68,8 @@ with Session.ingest(str(path), engine="duckdb") as session:
     print(session.evaluate(partition="test").metrics)
 ```
 
-`portable_filter_expr` builds simple quoted comparisons for Polars and DuckDB.
-Complex SQL remains engine-specific.
+`portable_filter_expr` builds simple quoted comparisons for Polars and
+DuckDB. Complex SQL stays engine-specific.
 
 ---
 
@@ -91,8 +89,9 @@ pdf = session.to_pandas()
 session.sync_native()  # rebuild native from current Pandas frame after edits
 ```
 
-Lazy Polars frames **collect** at `to_pandas()` / sklearn materialization
-boundaries. That is not zero-copy Torch loading and not out-of-core `fit`.
+Lazy Polars frames collect at `to_pandas()` / sklearn materialization
+boundaries. That is not zero-copy Torch loading and not out-of-core
+`fit`.
 
 ---
 
@@ -148,7 +147,7 @@ print(report_session.ingest_report)
 
 | Limit | Honest statement |
 | --- | --- |
-| Out-of-core sklearn | **Not supported**: engines help prep, not lazy `fit` |
+| Out-of-core sklearn | Not supported: engines help prep, not lazy `fit` |
 | Torch loaders | Materialize via Pandas/NumPy bridge: no Polars zero-copy into DataLoaders |
 | DuckDB leaks | Always `close_native()` or `with session:` |
 | Complex SQL | Not portable: keep engine-specific logic outside `portable_filter_expr` |

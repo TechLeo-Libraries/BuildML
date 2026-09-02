@@ -1,62 +1,137 @@
-# Fairness (observational) deep
+# Fairness (observational)
 
-BuildML’s fairness path is an **honest observational audit** on holdout
-predictions from a fitted binary classifier. It reports group disparity gaps,
-optional stability bands, and per-group classical metrics. It does **not**
-certify legal compliance, identify causal discrimination, or silently “fix”
-a model.
+```bash
+pip install buildml
+```
 
-**Quickstart:** [quickstart-fairness.md](quickstart-fairness.md) ·
-**Proof:** [loan-fairness-observational](../proofs/loan-fairness-observational/) ·
-**Capability matrix:** `session.fairness.capability_matrix()`
+You fitted a binary classifier and you want group rates on a holdout
+you trust. `session.fairness.evaluate` reports selection rate,
+demographic parity, disparate impact, equalized odds, and per-group
+classical metrics. That is an observational audit on one split. It
+does not certify legal compliance, prove causal discrimination, or
+change the model.
 
-## Mental model
+You name `sensitive_column`. BuildML will not infer protected class
+from the rest of the table. Default evaluate partition is `test`.
+Default `positive_label` is `1`; string labels need an explicit
+value or the call raises instead of inventing zero rates. Stability
+bands are off until `bootstrap_samples > 1`.
+`session.fairness.suggest_thresholds` and
+`session.fairness.suggest_reweighing` return suggestions only. They
+are not applied.
 
-1. Fit a classical classifier on Session train (`session.fit`).
-2. Declare sensitive column(s) yourself - BuildML never infers protected class.
-3. `session.fairness.evaluate(...)` scores a partition (default `test`):
-  - selection rate by group
-  - demographic parity difference
-  - disparate impact ratio
-  - equalized odds ΔTPR / ΔFPR
-  - per-group accuracy / precision / recall / F1 (and ROC-AUC when scores exist)
-  - optional bootstrap / stratified-subsample stability bands
-4. Read `FairnessReport.to_markdown()` / `to_dict()` including **warnings** and
-   **scope** disclosures.
-5. Optionally explore post-hoc helpers (`suggest_thresholds`,
-   `suggest_reweighing`) - they return suggestions only.
+The API refuses a missing fit, a missing split, a missing sensitive
+column, an empty partition, and a `positive_label` that never appears
+in `y_true`. You still decide which column is sensitive, which
+partition to quote, and whether to act on a suggestion.
+
+Short on-ramp: [fairness quickstart](quickstart-fairness.md). Proof:
+[loan-fairness-observational](../proofs/loan-fairness-observational/).
+
+## Report after fit
+
+```python
+import numpy as np
+import pandas as pd
+from sklearn.linear_model import LogisticRegression
+
+from buildml import Session
+
+rng = np.random.default_rng(0)
+n = 400
+group = np.array(["A"] * (n // 2) + ["B"] * (n // 2))
+x = rng.normal(size=n)
+logits = x + np.where(group == "B", -0.7, 0.0)
+y = np.where(logits > 0, "approved", "denied")
+frame = pd.DataFrame({"x": x, "group": group, "decision": y})
+
+session = (
+    Session.ingest(frame)
+    .set_roles({"x": "feature", "group": "ignore", "decision": "target"})
+    .split(test_size=0.25, validation_size=0.2, stratify=True, random_state=0)
+    .fit(LogisticRegression(max_iter=500), task="classification")
+)
+
+report = session.fairness.evaluate(
+    sensitive_column="group",
+    partition="test",
+    positive_label="approved",
+)
+print(report.demographic_parity_difference)
+print(report.selection_rate_by_group)
+print(report.classical_metrics_by_group["A"]["f1"])
+print(report.to_markdown().splitlines()[0])
+```
+
+Give the sensitive column role `ignore` (or leave it out of the
+design matrix) so the classifier is not trained on the group id you
+later audit. Read `report.warnings` and `report.scope` before you
+quote a gap. Gaps describe one split. They do not prove
+discrimination and they do not excuse the model.
 
 Bridge from classical evaluate without shrinking that API:
 
 ```python
 session.evaluate(partition="test")
-report = session.fairness.attach_to_last_eval(sensitive_column="group")
+report = session.fairness.attach_to_last_eval(
+    sensitive_column="group",
+    positive_label="approved",
+)
 ```
 
-## Intersectional groups
+`attach_to_last_eval` uses the partition of the latest
+`session.evaluate`, or `test` if none exists. It does not rewrite
+classical metrics. The fairness report lives on
+`session.fairness.last_report`.
 
-Pass a list/tuple of columns to compose composite keys (`group|region`):
+## What the report contains
+
+Native metrics (always, given a fitted binary classifier):
+
+- selection rate by group
+- demographic parity difference
+- disparate impact ratio
+- equalized odds ΔTPR / ΔFPR
+- per-group accuracy / precision / recall / F1
+- per-group ROC-AUC when scores exist and both classes appear in
+  that group's labels (`include_classical_metrics=False` turns the
+  classical block off)
+
+Also: `groups`, `support_by_group`, `stability` (or `None`),
+`scope` (`legal_audit=False`, `mitigation_applied=False`, …),
+`warnings`, `disclosures`, plus `to_markdown()` / `to_dict()`.
+
+This path is binary classification only. Multi-class and regression
+fairness suites are out of scope. SHAP (`session.explain_shap`) is
+attribution, not a group disparity metric.
+
+## Intersectional keys
+
+Pass a list of columns. Keys are joined as `group|region`:
 
 ```python
 report = session.fairness.evaluate(
     sensitive_column=["group", "region"],
     partition="test",
-    positive_label=1,
+    positive_label="approved",
 )
-assert report.intersectional
+print(report.intersectional)
 print(report.support_by_group)
 ```
 
-Sparse intersectional cells are expected. Support `< 30` emits warnings;
-prefer stability bands before strong claims.
+Sparse cells are expected. Support under 30 emits warnings. Prefer
+stability bands before a strong claim on a thin slice.
 
 ## Stability bands
 
-Set `bootstrap_samples > 1` (method `bootstrap` or `stratified_subsample`):
+Set `bootstrap_samples > 1`. Methods: `bootstrap` (default) or
+`stratified_subsample`. These describe sampling variability of
+observational gaps on one partition. They are not causal uncertainty.
 
 ```python
 report = session.fairness.evaluate(
     sensitive_column="group",
+    positive_label="approved",
     bootstrap_samples=200,
     stability_method="bootstrap",
     confidence_level=0.95,
@@ -66,84 +141,40 @@ band = report.stability.metrics["demographic_parity_difference"]
 print(band["point"], band["ci_low"], band["ci_high"])
 ```
 
-Bands describe **sampling variability of observational gaps** on one
-partition. They are not causal uncertainty and do not prove fairness.
+## Suggestions that stay suggestions
 
-## Classical metrics bridge
-
-Each group gets accuracy / precision / recall / F1. When the estimator exposes
-`predict_proba`, per-group ROC-AUC is attached when both classes appear in
-that group’s truth labels. Disable with
-`include_classical_metrics=False`.
-
-## Opt-in mitigation helpers (not washing)
-
-Under `buildml.fairness.mitigation` and Session facades:
-
-| Helper | Facade | Returns | Default partition |
-| --- | --- | --- | --- |
-| Threshold equalization | `session.fairness.suggest_thresholds` | per-group thresholds | `validation` |
-| Kamiran–Calders reweighing | `session.fairness.suggest_reweighing` | sample weights | `train` |
+Threshold equalization defaults to `partition="validation"` so you
+are not fishing on test. Reweighing defaults to `train`. Neither
+call rewrites predictions or refits.
 
 ```python
 thr = session.fairness.suggest_thresholds(
     sensitive_column="group",
     partition="validation",
+    positive_label="approved",
     target="demographic_parity",  # or "equal_opportunity"
 )
 weights = session.fairness.suggest_reweighing(
     sensitive_column="group",
     partition="train",
+    positive_label="approved",
 )
 ```
 
-**Hard honesty rules:**
+Applying those thresholds on the same test rows you headline is
+optimistic. Reweighing is a statistical adjustment, not a
+certificate. If you use the weights, pass them into a future
+`session.fit` yourself.
 
-- Helpers never rewrite Session predictions or auto-refit.
-- Applying thresholds on the same test rows you headline is leakage / optimism.
-- Reweighing is a statistical adjustment, not a fairness certificate.
-- Catalog `non_goals` explicitly refuse legal certification and silent washing.
+## Leakage
 
-## Report contract
+Prefer validation for threshold selection and test for one-shot
+reporting. Do not retune thresholds, reweigh, and re-fit against
+the same test rows, then claim an unbiased fairness number.
+Intersectional sparsity is a statistics problem: keep support
+visible.
 
-`FairnessReport` fields of note:
-
-- `groups`, `support_by_group`, rate / gap metrics
-- `classical_metrics_by_group`
-- `stability` (`FairnessStability` or `None`)
-- `scope` (`legal_audit=False`, `mitigation_applied=False`, …)
-- `warnings`, `disclosures`
-- `to_markdown()`, `to_dict()`
-
-## Leakage discipline
-
-- Prefer **validation** for threshold selection; **test** for one-shot reporting.
-- Do not retune thresholds / reweigh / re-fit against the same test rows and
-  then claim an unbiased fairness number.
-- Intersectional sparsity is a statistical problem, not a UI omission - keep
-  support visible.
-
-## Relation to other paths
-
-| Path | Role vs fairness |
-| --- | --- |
-| Classical `evaluate` | Predictive metrics; attach fairness afterward |
-| `error_slices` | Segment error tables; not disparity certification |
-| Causal ML | Counterfactual / ATE under declared assumptions - different product |
-| Decision / optimize | Cost-sensitive thresholds; complementary, not a fairness certificate |
-| SHAP (`explain_shap`) | Attribution; not a group disparity metric |
-
-## Non-goals (explicit)
-
-- Legal disparate-impact certification / regulator filings
-- Causal fair representation learning
-- Multi-class / regression fairness suites
-- Automatic silent bias mitigation
-- Inferring protected class membership
-
-## Scope notes
-
-Shipped for observational use: intersectional keys, stability bands,
-classical bridge, richer reports, opt-in mitigation suggestions, Session
-facade paths (`evaluate`, `attach_to_last_eval`, `suggest_*`). Limits:
-binary classification only; no causal fairness; no legal product.
+`error_slices` is a segment error table, not this report. Causal
+ML estimates under declared assumptions are a different product.
+`session.decision.fit` is cost-sensitive operating points, not a
+fairness certificate.

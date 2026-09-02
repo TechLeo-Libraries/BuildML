@@ -1,43 +1,115 @@
-# Case-based reasoning deep guide
+# Case-based reasoning deep
 
-## Scope
-
-BuildML’s CBR path is a **Session-native tabular case memory** with retrieve →
-reuse/adapt → optional retain, explanation traces, and a dedicated bundle.
-
-| Surface | Role |
-| --- | --- |
-| `session.cbr.fit` | Build case base from Session **train** |
-| `session.cbr.retrieve` | kNN neighbors (no reuse) |
-| `session.cbr.predict` | Retrieve + reuse (+ `CaseTrace`) |
-| `session.cbr.evaluate` | Holdout accuracy/RMSE (+ mean neighbor distance) |
-| `session.cbr.retain` | Lite retain with disclosure; refuse holdout indices |
-| `session.cbr.save_bundle` / `session.cbr.load_bundle` | `buildml.cbr_bundle.v1` |
-| `session.cbr.capability_matrix()` | Honest backend / extra matrix |
-
-## Backends (industry depth)
-
-| `backend` | Extra | Retrieval |
-| --- | --- | --- |
-| `sklearn` (fallback) | core | Exact kNN: euclidean / manhattan / cosine / mixed |
-| `industry` (default when installed) | `buildml[cbr-industry]` | hnswlib (preferred) or faiss ANN on numeric features |
-| `embedding` | `buildml[rag]` or `buildml[ssl]` | sentence-transformer case embeddings (+ optional numeric concat) |
-| `torch` | `buildml[torch]` | Learned metric MLP encoder + kNN |
-
-Pass `backend=` on `session.cbr.fit`, `session.cbr.retrieve`, and `session.cbr.predict`. Case
-influence traces (`CaseTrace`) are preserved for all backends.
-
-```python
-matrix = session.cbr.capability_matrix()
-print(matrix["default_backend_when_installed"])
-
-session.cbr.fit(backend="industry", metric="euclidean", k=5)
-# or backend=None → honest default when cbr-industry is installed
+```bash
+pip install buildml
+# hnswlib ANN: pip install "buildml[cbr-industry]"
+# text case embeddings: pip install "buildml[rag]"   # or buildml[ssl]
+# learned metric encoder: pip install "buildml[torch]"
 ```
 
-Text/hybrid cases:
+You want to answer a new row by retrieving similar **train** cases and
+reusing their labels or numbers, with a trace of which cases mattered.
+The training table is the memory. There is no compressed model in the
+usual sense.
+
+`session.cbr.fit()` with `backend=None` picks the **industry ANN**
+(hnswlib, else faiss) when `buildml[cbr-industry]` is installed, otherwise
+exact sklearn kNN. Default metric is `euclidean`, default `k` is 5,
+default reuse is `distance_weighted`, default adapt is `none`, and
+`standardize=True` fits mean/scale on train only. Torch is never probed
+while inferring a backend: you have to ask for `backend="torch"`.
+
+`session.cbr.retain` will not take validation or test rows. It also
+requires a non-empty `source_disclosure`. This is not RAG: CBR reuses a
+solution from similar cases, it does not retrieve passages for a
+generator.
+
+Short on-ramp: [CBR quickstart](quickstart-cbr.md). Proof:
+[case-memory-claims](../proofs/case-memory-claims/).
+
+## Fit, retrieve, predict, evaluate
+
+Fit needs a split. The case base is train only. `retrieve` and `predict`
+default to test. `evaluate` defaults to validation (accuracy / F1 or
+RMSE / R², plus mean neighbor distance). Task is inferred from the
+target: numeric with more than 20 unique values is treated as
+regression, otherwise classification. Say `task=` yourself when an
+integer label would look like a quantity.
 
 ```python
+import numpy as np
+import pandas as pd
+
+from buildml import Session
+
+rng = np.random.default_rng(0)
+x = rng.normal(size=(220, 2))
+y = (x[:, 0] + 0.3 * x[:, 1] > 0).astype(int)
+frame = pd.DataFrame({"a": x[:, 0], "b": x[:, 1], "y": y})
+
+session = (
+    Session.ingest(frame)
+    .set_roles({"a": "feature", "b": "feature", "y": "target"})
+    .split(test_size=0.2, validation_size=0.2, random_state=0, stratify=True)
+    .scale(method="standard")
+)
+
+fit = session.cbr.fit(
+    task="classification",
+    metric="euclidean",
+    reuse="distance_weighted",
+    k=5,
+)
+print(fit.backend, fit.n_cases, fit.metric)
+
+neighbors = session.cbr.retrieve(partition="test", k=3)
+print(neighbors.traces[0].neighbor_case_ids, neighbors.traces[0].distances)
+
+pred = session.cbr.predict(partition="test", return_traces=True)
+print(pred.traces[0].neighbor_solutions, pred.traces[0].prediction)
+
+ev = session.cbr.evaluate(partition="validation")
+print(ev.metrics, ev.mean_neighbor_distance)
+
+session.cbr.save_bundle("artifacts/cbr_bundle")
+```
+
+Do not quote in-sample `train_score` as holdout performance. A train row
+is usually its own nearest neighbor.
+
+## Backends and metrics
+
+| Backend | Extra | Retrieval | Metrics it will honor |
+| --- | --- | --- | --- |
+| `sklearn` | core | Exact kNN | `euclidean`, `manhattan`, `cosine`, `mixed` |
+| `industry` | `cbr-industry` | hnswlib (preferred) or faiss ANN | `euclidean`, `cosine` |
+| `embedding` | `rag` or `ssl` | sentence-transformer case vectors, then ANN if industry is also installed, else exact cosine kNN | `cosine`, `euclidean` |
+| `torch` | `torch` | Supervised metric MLP on train, then kNN in that space | `euclidean`, `cosine` |
+
+`backend=None` with no text columns and a metric the ANN can compute
+selects industry when it imported, else sklearn. `manhattan` and `mixed`
+force sklearn: approximate indexes do not implement them, and silently
+swapping the metric would change what "similar" means. Text columns
+force `embedding`. Naming an unavailable backend raises
+`MissingExtraError`; inference falls back.
+
+An impossible metric/backend pair raises `ValidationError`. It will not
+substitute cosine because you asked for Manhattan on HNSW.
+
+| `metric` | Meaning |
+| --- | --- |
+| `euclidean` | L2 on (optionally z-scored) numeric or embedding features |
+| `manhattan` | L1; sklearn only |
+| `cosine` | `1 - cosine_similarity` |
+| `mixed` | Gower-style: range-normalized numeric absolute difference plus categorical mismatch; sklearn only |
+
+Categorical columns for `mixed` are the list you pass as
+`categorical_columns=`. Train-fit transforms (mean/scale, ranges,
+vocabularies, encoders, ANN indexes) freeze at `fit` and are reused at
+score and retain. They are never refit on holdout or retained rows.
+
+```python
+# Text / hybrid cases when sentence-transformers are installed:
 session.cbr.fit(
     backend="embedding",
     text_columns=["description"],
@@ -47,72 +119,79 @@ session.cbr.fit(
 )
 ```
 
-## Distance metrics (documented)
+`embedding` without `text_columns` is refused.
 
-| `metric` | Definition |
-| --- | --- |
-| `euclidean` | L2 on (optionally z-scored) numeric or embedding features |
-| `manhattan` | L1 on (optionally z-scored) numeric features (**sklearn only**) |
-| `cosine` | `1 - cosine_similarity` on numeric or embedding features |
-| `mixed` | Gower-style: range-normalized numeric \|Δ\| + categorical mismatch (**sklearn only**) |
+## Reuse and adapt
 
-Categorical columns are **explicit** via `categorical_columns=` (used by
-`mixed` on the sklearn backend). Train-fit transforms (mean/scale, ranges, cat
-vocabularies, encoders, ANN indexes) are frozen at `session.cbr.fit` and reused at
-score/retain time.
-
-## Reuse / adapt
+You pick how neighbors become an answer.
 
 | `reuse` | Task | Behavior |
 | --- | --- | --- |
-| `majority` | classification | Unweighted majority vote |
-| `distance_weighted` | both | Weights `1/(d+ε)` for vote or average |
-| `local_mean` | regression | Unweighted mean of neighbor solutions |
-| `local_ridge` | regression | Tiny Ridge on the k neighbors |
+| `majority` | classification only | Unweighted vote |
+| `distance_weighted` (default) | both | Weights `1/(d+ε)` with `distance_eps=1e-8` |
+| `local_mean` | regression only | Unweighted mean of neighbor solutions |
+| `local_ridge` | regression only | Tiny Ridge on the k neighbors' features |
 
-`adapt='offset'` is a lite blend toward the neighbor mean (regression).
+`adapt="offset"` is a fixed half-and-half blend toward the neighbor mean
+(regression). `adapt="none"` leaves the reuse result as-is. Wrong
+reuse-for-task pairings raise instead of quietly averaging a class
+label.
 
-## CBR ≠ RAG
+Traces (`CaseTrace`) carry neighbor ids, row indices, distances,
+weights, neighbor solutions, and the prediction, on every backend.
 
-| | **CBR** | **RAG** |
-| --- | --- | --- |
-| Memory | Train tabular cases (features + solution) | Text corpus / chunks |
-| Goal | Reuse/adapt a label or numeric outcome | Ground generation / citations |
-| Extras | Core + optional `cbr-industry` / `rag` for embeddings | `buildml[rag]` |
-| Bundle | `buildml.cbr_bundle.v1` | `buildml.rag_bundle.v1` |
-| Traces | `CaseTrace`: which cases influenced the prediction | Chunk citations for generation |
+## Retain
 
-Sharing “nearest neighbors” or sentence-transformers does **not** make CBR a
-RAG submodule. Do not call CBR “tabular RAG.” CBR embeds **cases with
-solutions** for supervised-style reuse; RAG retrieves **documents** for
-grounding LLM output.
+New labeled cases can enter memory after fit. Validation and test
+indices are refused, not warned about: retaining a holdout row makes it
+its own nearest neighbor the next time you score that partition.
+`source_disclosure` is required so the origin of those cases is on the
+plan.
 
-## Leakage discipline
+```python
+new_cases = pd.DataFrame({"a": [0.1, -0.4], "b": [0.2, 0.3], "y": [1, 0]})
+session.cbr.retain(
+    labeled_frame=new_cases,
+    source_disclosure="Human review of production traffic, Q3.",
+)
+```
 
-- Require `SplitPlan` before `session.cbr.fit`.
-- Case memory at fit: **train only**.
-- Holdout partitions: retrieve / predict / evaluate only.
-- `session.cbr.retain` hard-refuses validation/test **label** indices and requires
-  `source_disclosure`.
-- Distance transforms and ANN indexes are never refit on holdout or retained rows.
-- Bundles store the plan; Session checkpoints do **not**.
+Pass either `labeled_frame` or `row_indices`, not both. Null solutions
+are refused. `allow_overlap_with_train=True` (the default) permits
+overlap with existing train ids; turn it off if duplicates should fail.
 
-## Anti-patterns
+## CBR is not RAG
 
-- Building the case base from the full frame before `split`.
-- Retaining Session test rows “to improve accuracy.”
-- Treating in-sample `train_score` as holdout performance (self is usually
-  nearest).
-- Routing CBR through `session.rag.retrieve` / `session.rag.generate`.
-- Expecting `checkpoint_load` to restore `CbrPlan`.
-- Calling embedding backend “RAG” because it uses sentence-transformers.
+CBR memory is train tabular cases with a solution. RAG memory is a text
+corpus for grounding generation. Sharing nearest-neighbor search or
+sentence-transformers does not make this a submodule of
+`session.rag`. The bundles are different:
+`buildml.cbr_bundle.v1` vs `buildml.rag_bundle.v1`. Do not call CBR
+"tabular RAG", and do not route cases through `session.rag.retrieve`.
 
-## Bundle boundary
+## Bundles
 
-See `buildml.cbr.checkpoint.CHECKPOINT_BOUNDARY`. Reload workflow via
-`checkpoint_load`; reload the learner via `session.cbr.load_bundle`.
+`session.cbr.save_bundle` stores the case memory, metric, reuse, and
+frozen transforms. A Session checkpoint does not embed `CbrPlan`. Reload
+the table, then `session.cbr.load_bundle(..., trusted=True)` for a file
+you made.
 
-## Benchmark
+Runnable mirror: [`examples/cbr_knn_loop.py`](../examples/cbr_knn_loop.py).
+Benchmark: `python benchmarks/cbr/retrieval_accuracy.py`.
 
-`benchmarks/cbr/retrieval_accuracy.py`: k vs holdout accuracy and retrieve
-latency for sklearn / industry / torch backends (skips missing extras).
+## When it refuses
+
+| What you see | What happened |
+| --- | --- |
+| No split | `fit` before `split` |
+| `MissingExtraError` for `cbr-industry` | You named `backend="industry"` without the extra |
+| `MissingExtraError` for `rag or ssl` | You named `embedding` without sentence-transformers |
+| Metric not valid for backend | Manhattan/mixed on ANN, or similar mismatch |
+| `embedding` requires `text_columns` | Backend named without text |
+| retain refused holdout index | You tried to absorb validation or test labels |
+| empty `source_disclosure` | Retain without saying where the cases came from |
+| reuse vs task mismatch | `majority` on regression, or `local_mean` on classification |
+
+[CBR quickstart](quickstart-cbr.md) ·
+[case-memory-claims](../proofs/case-memory-claims/) ·
+[Artifacts](artifacts-checkpoints-bundles.md)

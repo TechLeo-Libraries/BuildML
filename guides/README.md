@@ -181,33 +181,16 @@ cross-links.
 - [Sphinx package API](../docs/package.rst)
 - Runnable mirrors (optional): [`examples/`](../examples/)
 
-## Intentional gaps
+## What these pages do not cover
 
-Guides cover **public Session surfaces** and common operator patterns. They do
-**not** claim:
+If a surface is not in the map above, it is not a Session product. That
+includes legal fairness certification, causality from EDA, PyMC/Stan,
+a full Hugging Face zoo, managed cloud IAM, and Whisper-scale pretrain.
+Each domain guide states its own refuse next to the example.
+`session.explain` and `session.learn` cover knob-level detail that would
+drown a tutorial.
 
-- Legal fairness certification / silent automatic bias mitigation (observational
-  `session.fairness.evaluate` + opt-in suggest helpers, and optional
-  `explain_shap` via `buildml[shap]`, are shipped)
-- Causal claims from EDA / associations / feature importance (use the separate
-  assumption-declared causal path: never from EDA alone)
-- PyMC / Stan / NumPyro MCMC or Bayesian deep nets (sklearn BayesianRidge / GP /
-  NB + train-only split conformal is the shipped probabilistic surface)
-- Full Hugging Face / TorchVision zoo productization
-- Managed cloud IAM, multi-cluster orchestration, or Whisper-scale FM training
-- Graph fraud, online streaming fraud platforms, or causal fraud attribution
-  (batch Session anomaly path with disclosed thresholds is the shipped surface)
-- AGI symbolic reasoners, Prolog/Z3 engines, fuzzy-logic products, or full
-  expert-system suites (tabular if-then rules + sklearn hybrid is the shipped
-  symbolic / neuro-symbolic surface)
-- Full econometrics / ARIMA / Torch-sequence forecasting productization
-  (classical lag/baseline Session path is the shipped forecast surface)
-- Neuromorphic/SNN, swarm zoo, digital twins, AV/robotics stacks, TTS, full
-  COCO detection/segmentation suite
-- Exhaustive parameter tables for every knob (use `session.explain(...)`,
-  `session.learn(...)`, and the generated operation catalog kept in sync by CI)
-
-When an API is alpha, guides say so and show the honest limit next to the example.
+When an API is alpha, the page says so.
 
 ---
 

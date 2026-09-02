@@ -1,115 +1,204 @@
-# Knowledge graphs: deep guide
+# Knowledge graphs
 
-Session-shaped knowledge graphs: triples, embeddings, filtered link
-prediction, and symbolic structure queries. This is a **learning/query
-path**, not a graph database product.
+```bash
+pip install buildml
+# RotatE / ComplEx / PyKEEN TransE: pip install "buildml[kg-industry]"
+```
 
-## What BuildML ships
+You have rows that are triples: who, what relation, whom. You want to
+score missing links and ask exact neighborhood questions on the same
+Session split you use for everything else. That is this path. It is not
+Neo4j, not Cypher, not `session.graph` node classification, and not RAG.
 
-1. **Triple store from columns**: `head_column`, `relation_column`,
-   `tail_column` on Session rows. Unique train triples only.
-2. **Embedding backends**
-   - **native** (core): pure-numpy **TransE** and **DistMult** with margin
-     ranking loss and uniform negative sampling.
-   - **pykeen** (`buildml[kg-industry]`): PyKEEN pipeline for **TransE**,
-     **DistMult**, **RotatE**, and **ComplEx** on train-only triples.
-3. **Link prediction**: `session.kg.score_triples`, `session.kg.predict_links(mode='tail'|'head'|'relation')`.
-4. **Evaluation**: filtered **MRR**, **Hits@1/3/K** (head+tail average).
-5. **Symbolic query**: `session.kg.query(mode='neighbors'|'typed'|'path')` on
-   train adjacency (BFS, not LLM / Cypher).
-6. **Bundle**: `buildml.kg_bundle.v1` (`meta.json` + `session.kg.plan.joblib`).
-7. **Capability matrix**: `session.kg.capability_matrix()` reports honest backend
-   availability and install hints.
+`session.kg.fit` needs `head_column`, `relation_column`, and
+`tail_column`. Those names are not inferred. Default method is native
+TransE (`embedding_dim=50`, `epochs=40`, `neg_ratio=1`, `norm="l1"`).
+`method="transe"` or `"distmult"` with `backend=None` stays native even
+when PyKEEN is installed. `method="rotate"` or `"complex"` routes to
+PyKEEN and raises if `buildml[kg-industry]` is missing. Pass
+`backend="pykeen"` yourself when you want PyKEEN TransE or DistMult.
 
-## Honesty boundaries
+Fit always uses unique train triples. Holdout never updates embeddings
+or vocabularies. You choose the operating point (epochs, dim, k). The
+API refuses a missing split, missing triple columns, and a PyKEEN
+method without the extra.
 
-| Claim | Reality |
-|-------|---------|
-| Neo4j / Cypher product | **No**: in-memory train adjacency + embeddings |
-| Graph ML node classify | **Separate**: `session.graph.set_spec` / `session.graph.fit` |
-| RAG | **Separate**: chunk embed/retrieve/generate |
-| Torch / PyG required (core) | **No**: numpy SGD native fallback |
-| PyKEEN industry models | **Optional**: `pip install 'buildml[kg-industry]'` |
-| Production KG platform | **No**: Session-scale complete path |
+Short on-ramp: [KG quickstart](quickstart-kg.md). Proof:
+[kg-biomed-linkpred](../proofs/kg-biomed-linkpred/).
 
-## Backend selection
+## A first loop
+
+```python
+import pandas as pd
+
+from buildml import Session
+
+frame = pd.DataFrame(
+    [
+        ("Alice", "works_at", "Acme"),
+        ("Bob", "works_at", "Acme"),
+        ("Alice", "knows", "Bob"),
+        ("Acme", "located_in", "London"),
+        ("Bob", "lives_in", "London"),
+        ("Carol", "works_at", "Beta"),
+        ("Carol", "knows", "Alice"),
+        ("Beta", "located_in", "Paris"),
+        ("Alice", "lives_in", "London"),
+        ("Bob", "knows", "Carol"),
+        ("Carol", "lives_in", "Paris"),
+        ("Acme", "knows", "Beta"),
+    ],
+    columns=["head", "relation", "tail"],
+)
+
+session = (
+    Session.ingest(frame)
+    .set_roles({"head": "id", "relation": "id", "tail": "id"})
+    .split(test_size=0.2, validation_size=0.1, random_state=0)
+)
+
+fit = session.kg.fit(
+    method="transe",
+    head_column="head",
+    relation_column="relation",
+    tail_column="tail",
+    embedding_dim=32,
+    epochs=40,
+    neg_ratio=1,
+    random_state=0,
+)
+print(fit.backend, fit.n_train_triples, fit.n_entities)
+
+preds = session.kg.predict_links(
+    mode="tail",
+    heads=["Alice"],
+    relations=["works_at"],
+    k=5,
+)
+print(preds.predictions)
+
+nbrs = session.kg.query(mode="neighbors", entity="Alice", direction="out")
+print(nbrs.results)
+
+ev = session.kg.evaluate(partition="test", k=5)
+print(ev.metrics)
+```
+
+Mark the triple columns `id` (or `ignore`) so a later classical
+`session.fit` does not treat them as numeric features. `split` stores
+row positions; `session.kg.fit` materializes unique triples from train
+only. `predict_links` ranks completions from embeddings.
+`session.kg.query` walks train edges only. `evaluate` defaults to
+`partition="test"` and reports filtered MRR, Hits@1/3/K, and mean rank.
+
+## Backends
 
 | Backend | Extra | Methods | Engine |
-|---------|-------|---------|--------|
-| `native` | none | `transe`, `distmult` | numpy SGD |
-| `pykeen` | `kg-industry` | `transe`, `distmult`, `rotate`, `complex` | PyKEEN pipeline |
+| --- | --- | --- | --- |
+| `native` | none | `transe`, `distmult` | numpy SGD, margin ranking, uniform negatives |
+| `pykeen` | `kg-industry` | `transe`, `distmult`, `rotate`, `complex` | PyKEEN pipeline on train triples |
 
-When `backend=None`, `rotate`/`complex` route to PyKEEN; `transe`/`distmult`
-default to `native`. With PyKEEN installed and no explicit backend/method,
-the default backend becomes `pykeen`.
+When `backend=None`:
 
-```python
-# Core path (no extras)
-session.kg.fit(backend="native", method="transe", ...)
-
-# Industry path (requires pykeen)
-session.kg.fit(backend="pykeen", method="rotate", ...)
-```
-
-Inspect availability:
+- `transe` / `distmult` → `native`
+- `rotate` / `complex` → `pykeen` (needs the extra)
+- explicit `backend="pykeen"` with `transe` uses PyKEEN, not native
 
 ```python
-from buildml.kg import kg_capability_matrix
-print(kg_capability_matrix())
+session.kg.fit(
+    backend="native",
+    method="transe",
+    head_column="head",
+    relation_column="relation",
+    tail_column="tail",
+)
+
+# Needs buildml[kg-industry] and a working torch import.
+# session.kg.fit(
+#     backend="pykeen",
+#     method="rotate",
+#     head_column="head",
+#     relation_column="relation",
+#     tail_column="tail",
+# )
 ```
 
-## Negative sampling (disclosed)
+Native negative sampling: for each positive train triple, corrupt head
+or tail (equal chance) by drawing a uniform replacement from the train
+entity catalog, `neg_ratio` times. PyKEEN uses its own sLCWA/LCWA on
+the train factory; `neg_ratio` is recorded for parity. Holdout triples
+are never positives or negatives during fit.
 
-**Native:** for each positive train triple, corrupt **head or tail**
-(equal probability) by sampling a uniform replacement entity from the
-**train** catalog (`neg_ratio` times).
+## Scoring, prediction, and query
 
-**PyKEEN:** sLCWA/LCWA on the train triple factory; `neg_ratio` is
-recorded for parity with native disclosures (PyKEEN controls internal
-corruption counts).
+`session.kg.score_triples` scores a partition or an explicit triple
+list with the frozen plan. Unknown entities or relations are skipped
+and counted.
 
-Holdout triples are never used as positives or negatives during `session.kg.fit`.
-Disclosures on `KgFitResult` record backend, `neg_ratio`, and scoring formula.
+`session.kg.predict_links` fills one slot. Default `mode="tail"`.
+`k` defaults to 10. `filtered=True` removes other known true triples
+from the candidate list except the target fill-in. Modes:
 
-## Filtered ranking protocol
+- `tail`: given head and relation, rank tails
+- `head`: given relation and tail, rank heads
+- `relation`: given head and tail, rank relations
 
-For each holdout triple `(h,r,t)` in the train vocab:
+`session.kg.query` is exact structure on train adjacency, not an LLM
+and not Cypher:
 
-1. Score all train entities as tails for `(h,r,?)` and as heads for `(?,r,t)`.
-2. Remove other known true triples (train ∪ holdout) from the candidate
-   list except the target fill-in.
-3. Record 1-indexed ranks; average MRR and Hits@K over head+tail rankings.
+| Mode | What it answers |
+| --- | --- |
+| `neighbors` (default) | Incident train edges for `entity` (`direction` `out` / `in` / `both`) |
+| `typed` | Neighbors filtered by `relation` |
+| `path` | Shortest path from `source` to `target` within `max_hops` (default 3) |
 
-OOV entities/relations are skipped and counted in `n_skipped_unknown`.
+An empty path means no train path within `max_hops`. The query never
+invents edges.
 
-## Symbolic query vs embeddings
+## Filtered ranking
 
-| API | Answers |
-|-----|---------|
-| `session.kg.predict_links` | Soft completions from embeddings |
-| `session.kg.query` | Exact neighbors / typed / shortest path on **train** edges |
+For each holdout triple `(h, r, t)` whose tokens sit in the train
+vocab:
 
-`session.kg.query` never invents edges. An empty path means no train path within
-`max_hops`, not model failure.
+1. Score all train entities as tails for `(h, r, ?)` and as heads for
+   `(?, r, t)`.
+2. Drop other known true triples (train union holdout) except the
+   target fill-in.
+3. Record 1-indexed ranks; average MRR and Hits@K over those rankings.
 
-## Leakage checklist
+OOV entities and relations are skipped (`n_skipped_unknown` on the
+eval result). Training loss is not a substitute for
+`session.kg.evaluate`.
 
-- [ ] `split` (or group_split) before `session.kg.fit`
-- [ ] Triple id columns marked `id` / `ignore` so classical `fit()` ignores them
-- [ ] Read fit disclosures for backend and negative sampling
-- [ ] Evaluate with `session.kg.evaluate`, not training loss alone
-- [ ] Reload via `session.kg.load_bundle`: Session checkpoints do not embed `KgPlan`
+## What the API refuses
 
-## API surface
+- `head_column` / `relation_column` / `tail_column` omitted or not
+  distinct
+- Fit before `split`
+- Native `rotate` / `complex`
+- PyKEEN when the extra is missing or torch/PyKEEN fails to import
+- Score, predict, query, evaluate, or save without a prior
+  `session.kg.fit`
 
-```text
-session.kg.fit(backend=..., method=..., head_column=..., ...)
-session.kg.score_triples(partition=... | triples=...)
-session.kg.predict_links(mode=..., heads=..., relations=..., tails=..., k=...)
-session.kg.query(mode=..., entity=..., source=..., target=..., relation=...)
-session.kg.evaluate(partition=..., k=...)
-session.kg.save_bundle(path) / session.kg.load_bundle(path)
-session.kg.capability_matrix()
+You still decide epochs, dimension, whether to use PyKEEN, and whether
+a Hits@K on a tiny graph is worth quoting.
+
+## Bundle
+
+`session.kg.save_bundle` writes `buildml.kg_bundle.v1` (`meta.json` plus
+the plan). Session checkpoints do not embed `KgPlan`. Reload with
+`session.kg.load_bundle(..., trusted=True)` on a Session that already
+has the same split if you want to re-evaluate.
+
+```python
+session.kg.save_bundle("artifacts/kg_bundle")
+other = (
+    Session.ingest(frame)
+    .set_roles({"head": "id", "relation": "id", "tail": "id"})
+    .split(test_size=0.2, validation_size=0.1, random_state=0)
+)
+other.kg.load_bundle("artifacts/kg_bundle", trusted=True)
+print(other.kg.evaluate(partition="test", k=5).metrics)
 ```
 
 ## Benchmark
@@ -118,10 +207,5 @@ session.kg.capability_matrix()
 python benchmarks/kg/link_prediction.py
 ```
 
-Writes `benchmarks/kg/results/link_prediction.json` with native runs always
-and PyKEEN runs when installed.
-
-## Scope notes
-
-Related domains: recommenders, search/LTR, and this knowledge-graph surface
-are shipped with industry extras when installed. Related next: probabilistic ML.
+Writes `benchmarks/kg/results/link_prediction.json`. Native always;
+PyKEEN when the extra imports cleanly.

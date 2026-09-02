@@ -4,31 +4,16 @@
 pip install "buildml[speech]"
 ```
 
-BuildML ships an **integration path** for speech: environment-aware ASR
-(default prefers **transformers** when `buildml[speech]` is installed; falls
-back to a deterministic **stub** for CI / absent extras), plus classify
-**finetune-lite** / domain adapt on Session partitions. It does **not** train
-Whisper-scale foundation models from scratch. Stub use is always disclosed.
+You have audio on a Session split. Transcribe it, or train a small
+classify head on the same partitions. When `buildml[speech]` is
+installed, default ASR prefers transformers. Otherwise you get a
+deterministic stub. Stub use is always disclosed. This does not train
+Whisper-scale foundation models from scratch.
+`session.dl.refuse_speech_pretrain()` exists so that ask fails as a
+product call.
 
 Related: [torch-deep](torch-deep.md), [pretrained-backbones](pretrained-backbones.md),
 [features](../docs/features.rst).
-
----
-
-## Why this boundary exists
-
-Foundation-model pretraining needs massive corpora, specialized distributed
-stacks, and months of compute. BuildML’s job here is:
-
-1. Attach audio columns to the same roles/splits as tabular workflows.
-2. Transcribe with transformers by default when installed; pass
-   `backend="stub"` for CI / offline fingerprints (always disclosed).
-3. Finetune a small classifier head / domain-adapt with frozen encoders.
-4. **Hard-refuse** “train Whisper from scratch” product expectations via
-   `session.dl.refuse_speech_pretrain()`.
-
-Catalog: `dl_capability_matrix()["modalities"]["speech"]["default_asr_backend"]`
-is `"transformers"` when the speech stack is present, else `"stub"`.
 
 ---
 
