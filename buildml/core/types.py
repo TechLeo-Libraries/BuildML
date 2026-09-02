@@ -32,31 +32,6 @@ class ColumnRole(str, Enum):
     Assigning roles is how a frame of columns becomes a modelling problem. Each
     role changes what the library will and will not do with the column.
 
-    Attributes
-    ----------
-    FEATURE:
-        An input the model may learn from.
-    TARGET:
-        What is being predicted. Never becomes a feature, and its statistics may
-        only be computed from training rows.
-    GROUP:
-        Rows that belong together: the same patient, customer, or session.
-        Group-aware splitters keep them in one partition, because a model that
-        saw one visit from a patient in training has effectively seen that
-        patient at test time.
-    TIME:
-        The ordering column. Time-series splits use it to keep the future out of
-        the past, which random splitting cannot do.
-    ID:
-        A row identifier. Kept for tracing predictions back to records, excluded
-        from features, because an identifier that correlates with the target
-        gives a model a shortcut that will not exist in production.
-    WEIGHT:
-        Per-row importance, passed through to estimators that accept
-        ``sample_weight``.
-    IGNORE:
-        Present in the data, excluded from everything.
-
     Notes
     -----
     **``ID`` and ``IGNORE`` both exclude a column, for different reasons.** An
@@ -73,12 +48,27 @@ class ColumnRole(str, Enum):
     """
 
     FEATURE = "feature"
+    """An input the model may learn from."""
     TARGET = "target"
+    """What is being predicted. Never becomes a feature, and its statistics may
+    only be computed from training rows."""
     GROUP = "group"
+    """Rows that belong together (the same patient, customer, or session).
+    Group-aware splitters keep them in one partition, because a model that
+    saw one visit from a patient in training has effectively seen that
+    patient at test time."""
     TIME = "time"
+    """The ordering column. Time-series splits use it to keep the future out of
+    the past, which random splitting cannot do."""
     ID = "id"
+    """A row identifier. Kept for tracing predictions back to records, excluded
+    from features, because an identifier that correlates with the target
+    gives a model a shortcut that will not exist in production."""
     WEIGHT = "weight"
+    """Per-row importance, passed through to estimators that accept
+    ``sample_weight``."""
     IGNORE = "ignore"
+    """Present in the data, excluded from everything."""
 
 
 class DataMode(str, Enum):
@@ -148,19 +138,6 @@ class EngineName(str, Enum):
     filter is a filter in all three; only the speed, the memory profile, and the
     availability of laziness differ.
 
-    Attributes
-    ----------
-    PANDAS:
-        Always available, eager, and the widest in library support. The default,
-        and the right answer until the data stops fitting comfortably in memory.
-    POLARS:
-        Faster and considerably leaner, with real lazy execution so a chain of
-        operations is optimised as one plan instead of materialising each step.
-        Requires the ``polars`` extra.
-    DUCKDB:
-        Executes SQL against files without loading them, which makes it the
-        option for data larger than memory. Requires the ``duckdb`` extra.
-
     Notes
     -----
     **Choosing a non-Pandas engine does not remove the Pandas boundary.**
@@ -173,24 +150,20 @@ class EngineName(str, Enum):
     """
 
     PANDAS = "pandas"
+    """Always available, eager, and the widest in library support. The default,
+    and the right answer until the data stops fitting comfortably in memory."""
     POLARS = "polars"
+    """Faster and considerably leaner, with real lazy execution so a chain of
+    operations is optimised as one plan instead of materialising each step.
+    Requires the ``polars`` extra."""
     DUCKDB = "duckdb"
+    """Executes SQL against files without loading them, which makes it the
+    option for data larger than memory. Requires the ``duckdb`` extra."""
 
 
 @dataclass(frozen=True, slots=True)
 class SchemaField:
     """One column's name, type, and whether it may be null.
-
-    Attributes
-    ----------
-    name:
-        The column name as it appears in the data.
-    dtype:
-        The type as a string, in the engine's own spelling, so it round-trips
-        through JSON without a translation layer that could lose information.
-    nullable:
-        Whether nulls are permitted. Defaults to ``True``, which is the safe
-        assumption for ingested data.
 
     See Also
     --------
@@ -198,8 +171,13 @@ class SchemaField:
     """
 
     name: str
+    """The column name as it appears in the data."""
     dtype: str
+    """The type as a string, in the engine's own spelling, so it round-trips
+    through JSON without a translation layer that could lose information."""
     nullable: bool = True
+    """Whether nulls are permitted. Defaults to ``True``, which is the safe
+    assumption for ingested data."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -209,12 +187,6 @@ class TableSchema:
     Order is part of the schema, not incidental. Checkpoint reattach compares a
     saved schema against the current data to decide whether the saved roles and
     splits still apply, and column order is one of the things that has to hold.
-
-    Attributes
-    ----------
-    fields:
-        The columns in order. A tuple, and the dataclass is frozen, so a schema
-        captured at one moment cannot be mutated by later work.
 
     Notes
     -----
@@ -229,6 +201,8 @@ class TableSchema:
     """
 
     fields: tuple[SchemaField, ...] = field(default_factory=tuple)
+    """The columns in order. A tuple, and the dataclass is frozen, so a schema
+    captured at one moment cannot be mutated by later work."""
 
     @property
     def columns(self) -> list[str]:

@@ -107,14 +107,15 @@ def cbr_capability_matrix() -> dict[str, Any]:
             },
             "industry": {
                 "available": cbr_industry_available(),
-                "extra": "cbr-industry",
+                "extra": "cbr-industry or cbr-faiss",
                 "metrics": list(INDUSTRY_METRICS),
                 "modality": "tabular",
                 "retrieval": f"approximate NN via {ann_lib or 'hnswlib|faiss'}",
                 "ann_library": ann_lib,
                 "notes": (
                     "Fast approximate retrieval on standardized numeric features "
-                    "using hnswlib (preferred) or faiss-cpu when installed."
+                    "using hnswlib (buildml[cbr-industry]) or faiss-cpu "
+                    "(buildml[cbr-faiss]) when installed."
                 ),
             },
             "embedding": {
@@ -129,7 +130,7 @@ def cbr_capability_matrix() -> dict[str, Any]:
                 "notes": (
                     "Embed text (or hybrid text+numeric concat) case features with "
                     "sentence-transformers (buildml[rag] or buildml[ssl]). Uses ANN "
-                    "when buildml[cbr-industry] is also installed."
+                    "when buildml[cbr-industry] or buildml[cbr-faiss] is also installed."
                 ),
             },
             "torch": {
@@ -183,7 +184,11 @@ def cbr_capability_matrix() -> dict[str, Any]:
         "install_hints": {
             "cbr-industry": (
                 "pip install 'buildml[cbr-industry]'  "
-                "# hnswlib (preferred) or faiss-cpu approximate case retrieval"
+                "# preferred ANN: hnswlib"
+            ),
+            "cbr-faiss": (
+                "pip install 'buildml[cbr-faiss]'  "
+                "# optional faiss-cpu ANN peer (marker-skipped on Windows / 3.13)"
             ),
             "rag": (
                 "pip install 'buildml[rag]'  "

@@ -35,10 +35,18 @@ Adult rows are capped at 2500 for CI runtime when the full table loads.
 Holdout classification metrics plus observational fairness gaps. Refuses
 perfect accuracy/F1/ROC-AUC ≥ 1.0.
 
+## Industry comparison (Tier C)
+
+Industry twin: sklearn `Pipeline` (`SimpleImputer` + `StandardScaler` +
+`LogisticRegression`) plus holdout group selection rates (demographic
+parity / disparate impact) on the same `SplitPlan` via
+`baseline_industry.py` → `results/comparison.json`. Observational only.
+
 ## How to run
 
 ```bash
 python proofs/adult-fairness-observational/script.py
+python proofs/adult-fairness-observational/baseline_industry.py
 ```
 
 ## Limitations

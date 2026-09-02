@@ -110,7 +110,7 @@ cross-links.
 | [Causal ML](quickstart-causal.md) | core | Declared CausalAssumptions → T-learner / IPW / AIPW ATE → bundle |
 | [Graph ML](quickstart-graph.md) | `buildml[graph]` (+ `torch` for GCN; `graph-pyg` for PyG) | Node classify: NetworkX classical + pure-Torch GCN + PyG GCN/SAGE/GAT; ≠ KG / Neo4j |
 | [Symbolic / neuro-symbolic](quickstart-symbolic.md) | core | Declared/tree/list rules → traces; sklearn hybrid → symbolic bundle |
-| [Case-based reasoning](quickstart-cbr.md) | core + `cbr-industry` | Train case memory → kNN retrieve/reuse (ANN when installed) → traces → CBR bundle (≠ RAG) |
+| [Case-based reasoning](quickstart-cbr.md) | core + `cbr-industry` (or `cbr-faiss`) | Train case memory → kNN retrieve/reuse (ANN when installed) → traces → CBR bundle (≠ RAG) |
 | [Imitation + RL](quickstart-imitation-rl.md) | core (+ `rl`, `rl-industry`) | BC; contextual bandit; tabular Q-learning/SARSA; REINFORCE-lite; SB3 PPO/DQN/A2C + imitation BC/GAIL |
 | [TDA](quickstart-tda.md) | `buildml[tda]` | Local VR persistence → images/landscapes/silhouettes → sklearn head |
 | [Recommenders](quickstart-recommenders.md) | core | User/item CF (kNN, SVD/NMF) + content; ranking metrics; ≠ RAG / EDA Findings |

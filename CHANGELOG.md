@@ -8,6 +8,30 @@ with pre-release tags for alpha (`aN`) builds.
 
 ## [Unreleased]
 
+### Added
+
+- **REAL_PUBLIC_DATASET Tier C twins.** Same-split sklearn industry
+  comparisons for `breast-cancer-classical`, `diabetes-progression-regression`,
+  `wine-cluster-segments`, and `adult-fairness-observational`
+  (`baseline_industry.py` → `results/comparison.json`).
+- **`cbr-faiss` extra.** Optional faiss-cpu ANN peer, marker-skipped on
+  Windows and Python 3.13, same pattern as `recommenders-lightfm`.
+  `buildml[cbr-industry]` stays hnswlib. `production` now also pulls
+  `imbalanced` and `engines`.
+- **Session extra probes.** `scripts/probe_industry_extras.py` now covers
+  `shap`, `imbalanced`, `polars`, `duckdb`, `optuna`, `speech`, `serve`, and
+  `ai`, and no longer treats `faiss` or `optuna` as part of extras that do
+  not install them. Runtime stability gained `imbalanced_resample_smote` and
+  `engines_polars_ingest` use-case probes.
+
+### Fixed
+
+- **Sphinx API inventory.** Enum members and schema fields in
+  `buildml.core.types` are documented once (member/field docstrings), so the
+  package reference no longer emits duplicate-object warnings.
+  Contributor notes `pypi-2x-publish` and `session-facade-migration` sit on a
+  hidden toctree so Read the Docs links resolve without a sidebar entry.
+
 ## [2.5.0] - 2026-08-06
 
 ### Changed

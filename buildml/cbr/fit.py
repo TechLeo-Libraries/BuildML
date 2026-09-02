@@ -370,7 +370,9 @@ def fit_cbr(
     if resolved_backend == "sklearn":
         disclosures.append("Retrieval: exact kNN (numpy/sklearn distances).")
     elif resolved_backend == "industry":
-        disclosures.append("Retrieval: approximate NN when buildml[cbr-industry] present.")
+        disclosures.append(
+            "Retrieval: approximate NN when hnswlib or faiss is present."
+        )
     elif resolved_backend == "embedding":
         disclosures.append(
             "Retrieval: sentence-transformer case embeddings (buildml[rag|ssl])."

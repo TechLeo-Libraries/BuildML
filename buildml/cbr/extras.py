@@ -238,7 +238,8 @@ def require_ann_library(*, feature: str = "CBR approximate nearest-neighbor retr
     Raises
     ------
     MissingExtraError
-        If neither library is usable, naming the ``cbr-industry`` extra.
+        If neither library is usable, naming the ``cbr-industry`` extra
+        (hnswlib). ``cbr-faiss`` also satisfies this gate when faiss imports.
 
     Notes
     -----

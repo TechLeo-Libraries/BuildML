@@ -362,6 +362,17 @@ def test_domain_quickstart_contracts_match_resolvers() -> None:
             assert phrase in text or phrase in flat, f"{name} is missing {phrase!r}"
 
 
+def test_sphinx_contributor_notes_are_in_toctree() -> None:
+    """Contributor notes stay reachable without a visible nav entry."""
+    index = (ROOT / "docs" / "index.rst").read_text(encoding="utf-8")
+    assert "pypi-2x-publish" in index
+    assert "session-facade-migration" in index
+    hidden = index.split(".. toctree::")[-1]
+    assert ":hidden:" in hidden
+    assert "pypi-2x-publish" in hidden
+    assert "session-facade-migration" in hidden
+
+
 def test_sphinx_guide_wrappers_include_markdown() -> None:
     """Read the Docs must render guides/*.md, not a stale RST copy."""
     docs = ROOT / "docs"

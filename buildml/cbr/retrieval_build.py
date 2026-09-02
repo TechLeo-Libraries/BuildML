@@ -184,7 +184,7 @@ def build_search_artifacts(
         notes.append(f"Approximate NN index built with {ann_library} (metric={metric}).")
     elif backend_key == "industry":
         notes.append(
-            "cbr-industry extra missing: falling back to exact kNN on search matrix."
+            "cbr-industry / cbr-faiss extra missing: falling back to exact kNN on search matrix."
         )
 
     return search, ann_index, ann_library, embedder_id, torch_encoder, notes

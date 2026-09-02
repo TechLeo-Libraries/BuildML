@@ -146,7 +146,11 @@ symbolic-industry = [
     "z3-solver>=4.12",
 ]
 cbr-industry = [
-    "hnswlib>=0.8",
+  "hnswlib>=0.8",
+]
+# Split out like recommenders-lightfm: faiss-cpu wheels are best-effort.
+cbr-faiss = [
+  "faiss-cpu>=1.7.4; python_version < '3.13' and sys_platform != 'win32'",
 ]
 shap = [
     "shap>=0.44",
@@ -210,6 +214,9 @@ production = [
   "buildml[probabilistic-industry]",
   "buildml[symbolic-industry]",
   "buildml[cbr-industry]",
+  "buildml[cbr-faiss]",
+  "buildml[imbalanced]",
+  "buildml[engines]",
   "buildml[nlp]",
   "buildml[nlp-industry]",
   "buildml[optimize-industry]",

@@ -33,10 +33,17 @@ Provenance fields are written under `results/results.json` → `data`.
 Holdout accuracy, F1, ROC-AUC (see `results/results.json`). Refuses perfect
 scores (`>= 1.0`) as score ceilings.
 
+## Industry comparison (Tier C)
+
+Industry twin: sklearn `Pipeline` (`SimpleImputer` + `StandardScaler` +
+`LogisticRegression`) on the same `SplitPlan` via `baseline_industry.py` →
+`results/comparison.json`.
+
 ## How to run
 
 ```bash
 python proofs/breast-cancer-classical/script.py
+python proofs/breast-cancer-classical/baseline_industry.py
 ```
 
 ## Limitations

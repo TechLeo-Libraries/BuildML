@@ -5,8 +5,9 @@ pip install buildml
 ```
 
 Train-only case memory, then kNN retrieve / reuse. Default is k=5 and
-euclidean. `backend=None` picks the industry ANN when
-`buildml[cbr-industry]` is installed, otherwise exact sklearn kNN.
+euclidean. `backend=None` picks the industry ANN when hnswlib or faiss
+imports (`buildml[cbr-industry]` or `buildml[cbr-faiss]`), otherwise
+exact sklearn kNN.
 `retain` refuses validation and test rows. This is not RAG.
 
 [CBR deep](cbr-deep.md) ·
@@ -29,7 +30,7 @@ session = (
     .scale(method="standard")
 )
 
-# backend=None → industry ANN when buildml[cbr-industry] installed, else sklearn
+# backend=None → industry ANN when hnswlib or faiss imports, else sklearn
 print(session.cbr.capability_matrix()["default_backend_when_installed"])
 
 fit = session.cbr.fit(
@@ -61,7 +62,8 @@ session.cbr.save_bundle("artifacts/cbr_bundle")
 | CaseTrace explanations (all backends) | Session checkpoint embedding the plan |
 | `buildml.cbr_bundle.v1` | Calling CBR “tabular RAG” |
 
-Optional extras: `buildml[cbr-industry]` (hnswlib ANN), `buildml[rag|ssl]`
+Optional extras: `buildml[cbr-industry]` (hnswlib ANN),
+`buildml[cbr-faiss]` (faiss-cpu peer), `buildml[rag|ssl]`
 (text embeddings), `buildml[torch]` (learned metric encoder). Included in
 `buildml[production]`.
 

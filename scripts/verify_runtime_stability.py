@@ -382,6 +382,61 @@ PROBES: list[tuple[str, str, str]] = [
         ),
     ),
     (
+        "imbalanced_resample_smote",
+        "optional",
+        textwrap.dedent(
+            """\
+            import numpy as np, pandas as pd
+            from buildml import Session
+            from buildml.core.errors import MissingExtraError
+            rng = np.random.default_rng(11)
+            n = 120
+            frame = pd.DataFrame({
+                'a': rng.normal(size=n),
+                'b': rng.normal(size=n),
+                'y': np.array([0] * 100 + [1] * 20),
+            })
+            session = (
+                Session.ingest(frame)
+                .set_roles({'a': 'feature', 'b': 'feature', 'y': 'target'})
+                .split(test_size=0.25, validation_size=0.2, stratify=True, random_state=0)
+            )
+            try:
+                session.resample(sampler='smote', random_state=0)
+            except MissingExtraError as exc:
+                print('SKIP:' + str(exc))
+                raise SystemExit(0)
+            train = session.partition('train')
+            assert train['y'].nunique() == 2
+            print('OK')
+            """
+        ),
+    ),
+    (
+        "engines_polars_ingest",
+        "optional",
+        textwrap.dedent(
+            """\
+            import tempfile
+            from pathlib import Path
+            import pandas as pd
+            from buildml import Session
+            from buildml.core.errors import MissingExtraError
+            frame = pd.DataFrame({'a': [1, 2, 3, 4], 'b': [4, 3, 2, 1], 'y': [0, 1, 0, 1]})
+            with tempfile.TemporaryDirectory() as td:
+                path = Path(td) / 'tiny.csv'
+                frame.to_csv(path, index=False)
+                try:
+                    session = Session.ingest(str(path), engine='polars')
+                except MissingExtraError as exc:
+                    print('SKIP:' + str(exc))
+                    raise SystemExit(0)
+                assert session is not None
+            print('OK')
+            """
+        ),
+    ),
+    (
         "hnswlib_build",
         "optional-native",
         textwrap.dedent(

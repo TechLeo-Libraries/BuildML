@@ -34,7 +34,7 @@ from pathlib import Path
 _SUBPROCESS_MODULES = frozenset({"torch", "sentence_transformers", "pykeen"})
 
 # Extra marker → modules that prove the adapter surface imported.
-# Keep aligned with pyproject optional-dependencies *-industry groups.
+# Keep aligned with pyproject optional-dependencies (industry + Session extras).
 PROBES: dict[str, tuple[str, ...]] = {
     "automl-industry": ("flaml", "autogluon.tabular"),
     "anomaly-industry": ("pyod",),
@@ -56,8 +56,9 @@ PROBES: dict[str, tuple[str, ...]] = {
     "activelearning-industry": ("skactiveml",),
     "semisupervised-industry": ("lightgbm", "xgboost"),
     "multitask-industry": ("lightgbm", "xgboost", "catboost"),
-    "cbr-industry": ("hnswlib", "faiss"),
-    "optimize-industry": ("optuna", "pulp", "ortools", "cvxpy", "xgboost"),
+    "cbr-industry": ("hnswlib",),
+    "cbr-faiss": ("faiss",),
+    "optimize-industry": ("pulp", "ortools", "cvxpy", "xgboost"),
     "timeseries": ("statsmodels", "ruptures"),
     "timeseries-ml": ("neuralforecast",),
     "timeseries-prophet": ("prophet",),
@@ -65,6 +66,14 @@ PROBES: dict[str, tuple[str, ...]] = {
     "torch": ("torch",),
     "rag": ("sentence_transformers",),
     "vision": ("torchvision",),
+    "shap": ("shap",),
+    "imbalanced": ("imblearn",),
+    "polars": ("polars",),
+    "duckdb": ("duckdb",),
+    "optuna": ("optuna",),
+    "speech": ("transformers",),
+    "serve": ("fastapi",),
+    "ai": ("openai",),
 }
 
 # Documented platform / version fragility (mirrors pyproject + industry_markers).
@@ -74,6 +83,7 @@ KNOWN_FRAGILE: dict[str, str] = {
     "learn2learn": "marker: python_version < '3.13'",
     "skope_rules": "marker: python_version < '3.13'",
     "neuralforecast": "marker: python_version < '3.13'",
+    "faiss": "marker: python_version < '3.13' and sys_platform != 'win32'",
     "autosklearn": "often Linux-only; not pinned in BuildML extras",
     "autogluon.tabular": "heavy; may fail on constrained CI images",
 }

@@ -28,10 +28,17 @@ diabetes study sample redistributed with sklearn). Offline; no network.
 
 Holdout R², RMSE, MAE. Refuses R² ≥ 1.0 and non-positive R².
 
+## Industry comparison (Tier C)
+
+Industry twin: sklearn `Pipeline` (`StandardScaler` +
+`HistGradientBoostingRegressor`, Ridge fallback) on the same `SplitPlan`
+via `baseline_industry.py` → `results/comparison.json`.
+
 ## How to run
 
 ```bash
 python proofs/diabetes-progression-regression/script.py
+python proofs/diabetes-progression-regression/baseline_industry.py
 ```
 
 ## Limitations

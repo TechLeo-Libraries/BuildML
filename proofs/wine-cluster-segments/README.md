@@ -31,10 +31,17 @@ external validation label (`role=ignore`).
 Internal cluster quality + external ARI / NMI. Refuses ARI/NMI ≥ 1.0 and
 ARI ≥ 0.98 (anti near-perfect theater).
 
+## Industry comparison (Tier C)
+
+Industry twin: sklearn `StandardScaler` + `PCA` + `KMeans` on the same
+`SplitPlan` via `baseline_industry.py` → `results/comparison.json`.
+Cultivar labels stay evaluation-only.
+
 ## How to run
 
 ```bash
 python proofs/wine-cluster-segments/script.py
+python proofs/wine-cluster-segments/baseline_industry.py
 ```
 
 ## Limitations

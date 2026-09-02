@@ -58,6 +58,12 @@ Legacy 1.x remains available under ``pip install "buildml==1.0.9"`` and as
    history
    sponsor
 
+.. toctree::
+   :hidden:
+
+   pypi-2x-publish
+   session-facade-migration
+
 Indices and tables
 ==================
 

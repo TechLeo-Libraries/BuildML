@@ -45,6 +45,10 @@ _MARKER_SPECS: dict[str, tuple[bool, str]] = {
         _py_lt_313(),
         "python_version < '3.13'",
     ),
+    "faiss": (
+        _py_lt_313() and _not_windows(),
+        "python_version < '3.13' and sys_platform != 'win32'",
+    ),
     "autosklearn": (
         _is_linux(),
         "typically Linux-only (no reliable Win/macOS wheels)",

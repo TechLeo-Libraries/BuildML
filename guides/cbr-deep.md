@@ -3,6 +3,7 @@
 ```bash
 pip install buildml
 # hnswlib ANN: pip install "buildml[cbr-industry]"
+# optional faiss-cpu peer: pip install "buildml[cbr-faiss]"
 # text case embeddings: pip install "buildml[rag]"   # or buildml[ssl]
 # learned metric encoder: pip install "buildml[torch]"
 ```
@@ -13,8 +14,8 @@ The training table is the memory. There is no compressed model in the
 usual sense.
 
 `session.cbr.fit()` with `backend=None` picks the **industry ANN**
-(hnswlib, else faiss) when `buildml[cbr-industry]` is installed, otherwise
-exact sklearn kNN. Default metric is `euclidean`, default `k` is 5,
+(hnswlib if `buildml[cbr-industry]` imported, else faiss if
+`buildml[cbr-faiss]` imported), otherwise exact sklearn kNN. Default metric is `euclidean`, default `k` is 5,
 default reuse is `distance_weighted`, default adapt is `none`, and
 `standardize=True` fits mean/scale on train only. Torch is never probed
 while inferring a backend: you have to ask for `backend="torch"`.
@@ -82,7 +83,7 @@ is usually its own nearest neighbor.
 | Backend | Extra | Retrieval | Metrics it will honor |
 | --- | --- | --- | --- |
 | `sklearn` | core | Exact kNN | `euclidean`, `manhattan`, `cosine`, `mixed` |
-| `industry` | `cbr-industry` | hnswlib (preferred) or faiss ANN | `euclidean`, `cosine` |
+| `industry` | `cbr-industry` or `cbr-faiss` | hnswlib, else faiss ANN | `euclidean`, `cosine` |
 | `embedding` | `rag` or `ssl` | sentence-transformer case vectors, then ANN if industry is also installed, else exact cosine kNN | `cosine`, `euclidean` |
 | `torch` | `torch` | Supervised metric MLP on train, then kNN in that space | `euclidean`, `cosine` |
 
@@ -184,7 +185,7 @@ Benchmark: `python benchmarks/cbr/retrieval_accuracy.py`.
 | What you see | What happened |
 | --- | --- |
 | No split | `fit` before `split` |
-| `MissingExtraError` for `cbr-industry` | You named `backend="industry"` without the extra |
+| `MissingExtraError` for `cbr-industry` | You named `backend="industry"` without hnswlib or faiss |
 | `MissingExtraError` for `rag or ssl` | You named `embedding` without sentence-transformers |
 | Metric not valid for backend | Manhattan/mixed on ANN, or similar mismatch |
 | `embedding` requires `text_columns` | Backend named without text |

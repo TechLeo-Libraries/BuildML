@@ -9,7 +9,7 @@ industry wheel installs on your machine.
 | --- | ---: | --- |
 | **A** | **63/63** | One named product scenario per major Session domain (incl. ensembles + Torch + fairness + real public datasets + Industry EDA) |
 | **B** | **36/36** | Cross-domain products composing multiple Session surfaces |
-| **C** | **58/62** | Same-split industry twin + `comparison.json` per Tier A (when present / runnable; real-public cohort may be A-only) |
+| **C** | **62/62** | Same-split industry twin + `comparison.json` per Tier A (when present / runnable) |
 
 The suite grew by +30 Tier A, +30 Tier B, and +30 Tier C twins beyond the
 baseline cohort (ensembles, Torch/DL, and previously uncomposed Tier B domains).
@@ -219,10 +219,10 @@ Tier C is a **same-split industry twin**, not a bake-off for bragging rights.
 
 | # | Project | Domain | Status | Notes |
 | ---: | --- | --- | --- | --- |
-| 58 | [breast-cancer-classical](breast-cancer-classical/) | Classical supervised | **completed** | **REAL_PUBLIC_DATASET** sklearn breast_cancer (offline) |
-| 59 | [diabetes-progression-regression](diabetes-progression-regression/) | Classical regression | **completed** | **REAL_PUBLIC_DATASET** sklearn diabetes (offline) |
-| 60 | [wine-cluster-segments](wine-cluster-segments/) | Unsupervised | **completed** | **REAL_PUBLIC_DATASET** sklearn wine + external ARI (offline) |
-| 61 | [adult-fairness-observational](adult-fairness-observational/) | Fairness (observational) | **completed** | **REAL_PUBLIC_DATASET** OpenML Adult/credit-g; offline disclosed proxy fallback |
+| 58 | [breast-cancer-classical](breast-cancer-classical/) | Classical supervised | **completed** | **REAL_PUBLIC_DATASET** sklearn breast_cancer (offline); Tier C sklearn Pipeline twin |
+| 59 | [diabetes-progression-regression](diabetes-progression-regression/) | Classical regression | **completed** | **REAL_PUBLIC_DATASET** sklearn diabetes (offline); Tier C sklearn Pipeline twin |
+| 60 | [wine-cluster-segments](wine-cluster-segments/) | Unsupervised | **completed** | **REAL_PUBLIC_DATASET** sklearn wine + external ARI (offline); Tier C KMeans+PCA twin |
+| 61 | [adult-fairness-observational](adult-fairness-observational/) | Fairness (observational) | **completed** | **REAL_PUBLIC_DATASET** OpenML Adult/credit-g; offline disclosed proxy fallback; Tier C sklearn + group-rate twin |
 
 ### Industry EDA cohort (62–63)
 
@@ -293,10 +293,11 @@ For each completed Tier A: `baseline_industry.py` **or** a comparison section
 in `script.py` on the **same split**, writing `results/comparison.json`.
 
 Most Tier A projects ship a Tier C twin (`baseline_industry.py`, or
-embedded comparison for `loan-approval-classical`). Expansion twins follow the
-same `write_comparison` envelope and leakage disclosures as the baseline cohort.
-The **REAL_PUBLIC_DATASET** cohort (breast-cancer / diabetes / wine / adult-fairness)
-is Tier A evidence-first; Tier C twins may be added later.
+embedded comparison for `loan-approval-classical`). Expansion twins and the
+**REAL_PUBLIC_DATASET** cohort follow the same `write_comparison` envelope
+and leakage disclosures as the baseline cohort. `loan-fairness-observational`
+and `eda-industry-adaptability` stay A-only (observational fairness on
+synthetic credit, and EDA surfaces with no model twin).
 
 Re-run Tier C after the matching Tier A `script.py`:
 
