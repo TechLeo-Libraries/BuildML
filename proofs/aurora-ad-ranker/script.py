@@ -1,8 +1,10 @@
-"""Tier B product: Aurora Ad Ranker.
+"""Composition harness script. Not a product BuildML ships.
 
-Composes learning-to-rank over sponsored ads + classical CTR proxy +
-validation-tuned capacity decisions for impression allocation.
+Start with examples/ for a pasteable loop. This file stitches several
+Session surfaces on one synthetic table so the suite can check the seams.
 """
+
+
 
 from __future__ import annotations
 

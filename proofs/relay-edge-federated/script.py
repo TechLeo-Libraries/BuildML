@@ -1,8 +1,10 @@
-"""Tier B product: Relay Edge Federated.
+"""Composition harness script. Not a product BuildML ships.
 
-Composes multi-site FedAvg simulation + probabilistic uncertainty intervals +
-centralized classical baseline disclosure for edge device risk scores.
+Start with examples/ for a pasteable loop. This file stitches several
+Session surfaces on one synthetic table so the suite can check the seams.
 """
+
+
 
 from __future__ import annotations
 

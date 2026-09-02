@@ -8,10 +8,14 @@ from __future__ import annotations
 
 import pandas as pd
 
+from pathlib import Path
+
 from buildml import Session
 
 
 def main() -> None:
+    artifacts = Path(__file__).resolve().parent / '.artifacts'
+    artifacts.mkdir(parents=True, exist_ok=True)
     try:
         import torch
         from torch import nn
@@ -60,7 +64,7 @@ def main() -> None:
     print("validation", validation.metrics)
     print("test", test.metrics)
     print(session.dl.training_curve().disclosures)
-    session.dl.save_bundle("artifacts/torch_bundle")
+    session.dl.save_bundle(Path(__file__).resolve().parent / ".artifacts" / "torch_bundle")
 
 
 if __name__ == "__main__":

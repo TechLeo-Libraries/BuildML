@@ -1,9 +1,10 @@
-"""Tier B product: Meridian Recs Commerce.
+"""Composition harness script. Not a product BuildML ships.
 
-Composes collaborative recommenders + learning-to-rank for category browse
-+ classical supervised purchase propensity (+ optional decision thresholds).
-Honest splits; train-only fitting; holdout eval.
+Start with examples/ for a pasteable loop. This file stitches several
+Session surfaces on one synthetic table so the suite can check the seams.
 """
+
+
 
 from __future__ import annotations
 

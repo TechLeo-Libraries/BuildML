@@ -1,8 +1,10 @@
-"""Tier B product: Vector Control Deck.
+"""Composition harness script. Not a product BuildML ships.
 
-Composes imitation learning (+ optional gym RL) + decision/optimize allocation
-+ classical supervised action baseline. Gymnasium path may skip.
+Start with examples/ for a pasteable loop. This file stitches several
+Session surfaces on one synthetic table so the suite can check the seams.
 """
+
+
 
 from __future__ import annotations
 

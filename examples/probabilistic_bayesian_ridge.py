@@ -15,6 +15,8 @@ from buildml import Session
 
 
 def main() -> None:
+    artifacts = Path(__file__).resolve().parent / '.artifacts'
+    artifacts.mkdir(parents=True, exist_ok=True)
     rng = np.random.default_rng(7)
     x = rng.normal(size=(240, 2))
     y = 1.4 * x[:, 0] - 0.8 * x[:, 1] + rng.normal(scale=0.35, size=240)
@@ -50,7 +52,7 @@ def main() -> None:
     ev = session.probabilistic.evaluate(partition="validation")
     print(f"metrics={ev.metrics}")
 
-    out = Path("artifacts") / "probabilistic_bayesian_ridge_bundle"
+    out = Path(__file__).resolve().parent / ".artifacts" / "probabilistic_bayesian_ridge_bundle"
     session.probabilistic.save_bundle(out)
     print(f"saved bundle -> {out}")
 

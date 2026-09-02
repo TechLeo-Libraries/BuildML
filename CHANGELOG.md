@@ -13,7 +13,9 @@ with pre-release tags for alpha (`aN`) builds.
 - **Proofs and examples are a user contract.** Paste scripts live in
   `examples/` and match the guides. Proofs are evidence for one job, not
   a 63/63 scoreboard or a catalog of shipped products. Composition slugs
-  say they are not products BuildML ships.
+  say they are not products BuildML ships. Core examples run in CI;
+  bundles land in `examples/.artifacts/`; the classical file uses 120
+  rows so printed metrics are not three-row noise.
 
 ### Added
 

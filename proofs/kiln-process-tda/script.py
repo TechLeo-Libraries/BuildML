@@ -1,8 +1,10 @@
-"""Tier B product: Kiln Process TDA.
+"""Composition harness script. Not a product BuildML ships.
 
-Composes TDA shape descriptors + unsupervised clustering + anomaly detection
-for synthetic kiln / manufacturing process clouds. Skips TDA if extras missing.
+Start with examples/ for a pasteable loop. This file stitches several
+Session surfaces on one synthetic table so the suite can check the seams.
 """
+
+
 
 from __future__ import annotations
 

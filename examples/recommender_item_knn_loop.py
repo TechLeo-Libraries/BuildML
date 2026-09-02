@@ -29,6 +29,8 @@ def _synthetic_ratings(n_users: int = 40, n_items: int = 30, seed: int = 0) -> p
 
 
 def main() -> None:
+    artifacts = Path(__file__).resolve().parent / '.artifacts'
+    artifacts.mkdir(parents=True, exist_ok=True)
     frame = _synthetic_ratings()
     session = (
         Session.ingest(frame)
@@ -59,7 +61,7 @@ def main() -> None:
     ev = session.recommender.evaluate(partition="test", k=5)
     print("eval", ev.metrics)
 
-    out = Path("artifacts/recommender_demo_bundle")
+    out = Path(__file__).resolve().parent / ".artifacts" / "recommender_demo_bundle"
     session.recommender.save_bundle(out)
     other = (
         Session.ingest(frame)

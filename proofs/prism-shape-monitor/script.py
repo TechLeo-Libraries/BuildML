@@ -1,8 +1,10 @@
-"""Tier B product: Prism Shape Monitor.
+"""Composition harness script. Not a product BuildML ships.
 
-Composes TDA shape descriptors + unsupervised anomaly + classical supervised
-pass/fail scoring for process monitoring. TDA stage skips if extras missing.
+Start with examples/ for a pasteable loop. This file stitches several
+Session surfaces on one synthetic table so the suite can check the seams.
 """
+
+
 
 from __future__ import annotations
 

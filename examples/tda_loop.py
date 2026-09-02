@@ -15,11 +15,11 @@ from buildml.tda.extras import tda_available
 
 
 def main() -> None:
+    artifacts = Path(__file__).resolve().parent / '.artifacts'
+    artifacts.mkdir(parents=True, exist_ok=True)
     if not tda_available():
-        raise SystemExit(
-            "buildml[tda] required (ripser + persim). "
-            'Install with: pip install "buildml[tda]"'
-        )
+        print("skip: pip install 'buildml[tda]'")
+        return
 
     rng = np.random.default_rng(0)
     a = rng.normal(size=(140, 4))
@@ -51,7 +51,7 @@ def main() -> None:
     ev = session.tda.evaluate(partition="validation")
     print("eval", ev.metrics)
 
-    out = Path("artifacts/tda_demo_bundle")
+    out = Path(__file__).resolve().parent / ".artifacts" / "tda_demo_bundle"
     session.tda.save_bundle(out)
     other = (
         Session.ingest(frame)

@@ -365,12 +365,7 @@ def save_tda_bundle_op(session, path: str | Path) -> Path:
     plan = getattr(session, "_tda_plan", None)
     if plan is None:
         raise ValidationError("No TdaPlan. Call fit_tda(...) first.")
-    out = save_tda_bundle(
-        path,
-        plan,
-        fit_result=getattr(session, "_tda_fit_result", None),
-        eval_result=getattr(session, "_tda_eval_result", None),
-    )
+    out = save_tda_bundle(path, plan)
     session._record(
         "save_tda_bundle",
         {"path": str(path)},

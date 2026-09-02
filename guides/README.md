@@ -24,8 +24,7 @@ Do this much before you pick a domain.
 If machine-learning vocabulary is new, start a Session and run
 `session.learn()`, then `session.explain("split")`. The
 [EDA / Teaching Studio](eda-teaching-studio.md#teaching-surfaces-explain-learn-workflow-walkthrough)
-page is the long form of that. Domain work uses `session.<domain>.*`
-([facade migration](../docs/session-facade-migration.md)).
+page is the long form of that. Domain work lives on `session.<domain>.*`.
 
 After that, pick a domain from the map below. Quickstarts are short
 on-ramps. Deep guides carry use cases, failure modes, and cross-links.
@@ -36,55 +35,10 @@ the [evidence index](../proofs/README.md).
 
 ## Session domain → guide map
 
-Every major `Session` surface maps to at least one deep guide. Quickstarts stay
-short on-ramps; deep guides carry use cases, many examples, failure modes, and
-cross-links.
-
-| Session domain | Primary APIs | Guide(s) |
-| --- | --- | --- |
-| Ingest / roles / splits | `ingest`, `set_roles`, `split`, `group_split`, `time_split`, `inject_split` | [Classical E2E](classical-end-to-end.md), [Leakage](leakage-cv-recipes.md) |
-| Preprocess (Session-global) | `impute`, `encode`, `scale`, `handle_outliers`, `bin`, `select_features`, `text_features`, `reduce_dimensions`, `extract_dates`, `resample`, custom transforms | [Classical E2E](classical-end-to-end.md), [Preprocess depth](preprocess-depth.md) |
-| Classical fit / eval | `fit`, `predict`, `evaluate`, `compare_models` | [Classical E2E](classical-end-to-end.md), [Diagnostics & search](classical-diagnostics-search.md) |
-| CV / search / nested | `cv_score`, `grid_search`, `randomized_search`, `optuna_search`, `evolutionary_search`, `nested_cv_score`, `PreprocessRecipe` | [Leakage](leakage-cv-recipes.md), [Diagnostics & search](classical-diagnostics-search.md) |
-| Diagnostics | `calibration`, `tune_threshold`, `feature_importance`, `error_slices`, `learning_curve`, `eval_plots` | [Diagnostics & search](classical-diagnostics-search.md) |
-| Engines | `with_engine`, `to_engine`, `dataset.filter_expr` / `project` / `aggregate`, DuckDB lifecycle | [Engines](engines-polars-duckdb.md) |
-| EDA / teaching | `eda`, `eda_app`, `explain`, `learn`, `workflow`, `walkthrough`, `dry_run`, `list_capabilities`, `describe_method`, `list_active_domains` | [EDA / Teaching Studio](eda-teaching-studio.md) |
-| Artifacts | `checkpoint_*`, `save_model`, `save_pipeline`, `predict_from_pipeline`, torch/rag/unsupervised/ensemble/automl/forecast/anomaly/semisupervised/ssl/activelearning/online/multitask/metalearning/federated/symbolic/cbr/imitation/rl/ai artifacts | [Artifacts](artifacts-checkpoints-bundles.md) |
-| Unsupervised | `session.unsupervised.fit`, `session.unsupervised.assign`, `session.unsupervised.evaluate`, unsupervised bundle (+ `reduce_dimensions` for PCA) | [Unsupervised quickstart](quickstart-unsupervised.md), [Unsupervised deep](unsupervised-deep.md) |
-| Ensembles | `session.ensemble.fit_voting`, `session.ensemble.fit_stacking`, `session.ensemble.fit_blending`, `session.ensemble.evaluate`, ensemble bundle | [Ensemble quickstart](quickstart-ensemble.md), [Ensemble deep](ensemble-deep.md) |
-| AutoML | `session.automl.run`, `session.automl.evaluate`, automl bundle | [AutoML quickstart](quickstart-automl.md), [AutoML deep](automl-deep.md) |
-| Forecasting | `session.forecast.fit`, `session.forecast.generate`, `session.forecast.evaluate`, forecast bundle | [Forecasting quickstart](quickstart-forecasting.md), [Forecasting deep](forecasting-deep.md) |
-| Time-series analysis | `session.timeseries.analyze`, `session.timeseries.decompose`, `session.timeseries.diagnostics` | [TS analysis quickstart](quickstart-timeseries-analysis.md), [TS analysis deep](timeseries-analysis-deep.md) |
-| Anomaly / fraud | `session.anomaly.fit`, `session.anomaly.score`, `session.anomaly.evaluate`, `session.anomaly.tune_threshold`, anomaly bundle; backends sklearn / PyOD / torch | [Anomaly quickstart](quickstart-anomaly.md), [Anomaly deep](anomaly-deep.md) |
-| Semi-supervised | `session.semisupervised.fit`, `session.semisupervised.predict`, `session.semisupervised.evaluate`, semisupervised bundle | [Semi-supervised quickstart](quickstart-semisupervised.md), [Semi-supervised deep](semisupervised-deep.md) |
-| Self-supervised | `session.ssl.fit_pretext`, `session.ssl.transform`, `session.ssl.finetune_head`, `session.ssl.evaluate`, ssl bundle | [Self-supervised quickstart](quickstart-selfsupervised.md), [Self-supervised deep](selfsupervised-deep.md) |
-| Active learning | `session.active_learning.fit`, `session.active_learning.suggest_query`, `session.active_learning.label_rows`, `session.active_learning.evaluate`, AL bundle | [Active learning quickstart](quickstart-active-learning.md), [Active learning deep](active-learning-deep.md) |
-| Online / continual | `session.online.fit`, `session.online.partial_fit`, `session.online.evaluate`, `session.online.predict`, online bundle | [Online quickstart](quickstart-online-learning.md), [Online deep](online-learning-deep.md) |
-| Multi-task / multi-output | `session.multitask.fit`, `session.multitask.predict`, `session.multitask.evaluate`, multitask bundle | [Multi-task quickstart](quickstart-multi-task.md), [Multi-task deep](multi-task-deep.md) |
-| Meta-learning | `session.metalearning.fit`, `session.metalearning.adapt`, `session.metalearning.evaluate`, metalearning bundle | [Meta-learning quickstart](quickstart-meta-learning.md), [Meta-learning deep](meta-learning-deep.md) |
-| Federated learning | `session.federated.fit`, `session.federated.evaluate`, `session.federated.predict`, federated bundle | [Federated quickstart](quickstart-federated.md), [Federated deep](federated-deep.md) |
-| Bayesian / probabilistic | `session.probabilistic.fit`, `session.probabilistic.predict`, `session.probabilistic.predict_interval`, `session.probabilistic.evaluate`, probabilistic bundle | [Probabilistic quickstart](quickstart-probabilistic.md), [Probabilistic deep](probabilistic-deep.md) |
-| Causal ML | `session.causal.declare_assumptions`, `session.causal.fit`, `session.causal.estimate`, `session.causal.evaluate`, `session.causal.refute`, causal bundle | [Causal quickstart](quickstart-causal.md), [Causal deep](causal-deep.md) |
-| Graph ML | `session.graph.set_spec`, `session.graph.fit`, `session.graph.predict`, `session.graph.evaluate`, graph bundle | [Graph quickstart](quickstart-graph.md), [Graph deep](graph-deep.md) |
-| Symbolic / neuro-symbolic | `session.symbolic.fit`, `session.symbolic.predict`, `session.symbolic.evaluate`, `session.symbolic.fit_neuro`, `session.symbolic.predict_neuro`, `session.symbolic.evaluate_neuro`, symbolic bundle | [Symbolic quickstart](quickstart-symbolic.md), [Symbolic deep](symbolic-deep.md) |
-| Case-based reasoning | `session.cbr.fit`, `session.cbr.retrieve`, `session.cbr.predict`, `session.cbr.evaluate`, `session.cbr.retain`, CBR bundle | [CBR quickstart](quickstart-cbr.md), [CBR deep](cbr-deep.md) |
-| Imitation + RL | `session.rl.fit_imitation`, `session.rl.predict_imitation`, `session.rl.evaluate_imitation`, `session.rl.fit`, `session.rl.act`, `session.rl.evaluate`, IL/RL bundles | [IL+RL quickstart](quickstart-imitation-rl.md), [IL+RL deep](imitation-rl-deep.md) |
-| TDA | `session.tda.fit`, `session.tda.transform`, `session.tda.predict`, `session.tda.evaluate`, TDA bundle | [TDA quickstart](quickstart-tda.md), [TDA deep](tda-deep.md) |
-| Recommenders | `session.recommender.fit`, `session.recommender.recommend`, `session.recommender.evaluate`, recommender bundle | [Recommenders quickstart](quickstart-recommenders.md), [Recommenders deep](recommenders-deep.md) |
-| Search / LTR | `session.ranking.fit`, `session.ranking.rank`, `session.ranking.evaluate`, ranker bundle | [LTR quickstart](quickstart-ranking.md), [LTR deep](ranking-deep.md) |
-| Knowledge graphs | `session.kg.fit`, `session.kg.score_triples`, `session.kg.predict_links`, `session.kg.query`, `session.kg.evaluate`, KG bundle | [KG quickstart](quickstart-kg.md), [KG deep](kg-deep.md) |
-| Optimisation / decisions | `session.decision.fit`, `session.decision.apply`, `session.decision.evaluate`, decision bundle | [Decisions quickstart](quickstart-optimize.md), [Decisions deep](optimize-deep.md) |
-| Fairness / SHAP | `session.fairness.evaluate`, `session.fairness.attach_to_last_eval`, `session.fairness.suggest_thresholds`, `session.fairness.suggest_reweighing`, `session.fairness.capability_matrix`; `explain_shap` (`buildml[shap]`); discovery via `Session.list_capabilities(domain="fairness")` | [Fairness quickstart](quickstart-fairness.md), [Fairness deep](fairness-deep.md), [features](../docs/features.rst), [stability](../docs/stability.md) |
-| Synthetic data | `session.synthetic.fit`, `session.synthetic.sample`, `session.synthetic.evaluate`, `session.synthetic.capability_matrix`, synthetic bundle | [Synthetic quickstart](quickstart-synthetic.md), [Synthetic deep](synthetic-deep.md) |
-| NLP (text column) | `session.nlp.capability_matrix`, `session.nlp.profile_corpus`, `session.nlp.detect_language`, `session.nlp.fit_classifier`, `session.nlp.predict`, `session.nlp.evaluate`, `session.nlp.interpret`, `session.nlp.fit_topics`, `session.nlp.assign_topics`, `session.nlp.extract_keyphrases`, `session.nlp.analyze_sentiment`, `session.nlp.extract_entities`, `session.nlp.summarize`, NLP bundle | [NLP quickstart](quickstart-nlp.md), [NLP deep](nlp-deep.md) |
-| Torch tabular / text | `session.dl.make_loaders`, `session.dl.make_text_loaders`, `session.dl.fit`, `session.dl.evaluate` | [Torch quickstart](quickstart-torch.md), [Torch deep](torch-deep.md) |
-| Torch multimodal | `make_multimodal_*`, image/audio loaders, concat/gated fusion, frozen `multimodal_preprocess` restore | [Torch deep](torch-deep.md) |
-| Torch CV / HPO / AMP / DDP / export | `session.dl.cross_validate`, `session.dl.search`, `session.dl.nested_cv`, `session.dl.fit_ddp`, `session.dl.export` | [Torch deep](torch-deep.md) |
-| Speech | `session.dl.transcribe`, `session.dl.evaluate_asr` (WER/CER), `SpeechContract`, `session.dl.make_speech_loaders`, `session.dl.fit_speech`, `session.dl.domain_adapt_speech`, refuse FM pretrain | [Speech](speech-asr-finetune.md) |
-| Pretrained backbones | `list_pretrained_backbones`, `session.dl.load_backbone`, `session.dl.attach_head` | [Pretrained](pretrained-backbones.md) |
-| RAG | `session.rag.ingest_corpus` … `session.rag.generate` (+ faithfulness), `session.rag.evaluate`, bundle | [RAG quickstart](quickstart-rag.md), [RAG deep](rag-deep.md) |
-| AI operator | `session.ai.configure` … `session.ai.run_autonomous`, transcripts | [AI quickstart](quickstart-ai.md), [AI safety](ai-operator-safety.md), [AI tools](ai-tools-operator-patterns.md) |
-| Serve / packs | `session.dl.serve` (`/metadata`, `/predict/batch`, optional local HTTPS), `session.dl.pack_torchserve`, `session.dl.prepare_tensorrt`, `session.dl.emit_k8s_ddp`, `session.dl.emit_k8s_serve` | [Serve & deploy](serve-deploy.md) |
+Pick a domain from the quickstart table below. Each row is a job, not an
+API dump. The deep page is there when you need failure modes and
+refuses. Method lists live on `session.explain("<name>")` and the
+[package reference](../docs/package.rst).
 
 ---
 

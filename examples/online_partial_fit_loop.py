@@ -15,6 +15,8 @@ from buildml import Session
 
 
 def main() -> None:
+    artifacts = Path(__file__).resolve().parent / '.artifacts'
+    artifacts.mkdir(parents=True, exist_ok=True)
     rng = np.random.default_rng(7)
     x0 = rng.normal([-1.0, -1.0], 0.55, size=(180, 2))
     x1 = rng.normal([1.2, 1.0], 0.55, size=(180, 2))
@@ -54,7 +56,7 @@ def main() -> None:
     ev = session.online.evaluate(partition="validation")
     print(f"validation metrics={ev.metrics}")
 
-    out = Path("artifacts") / "online_partial_fit_bundle"
+    out = Path(__file__).resolve().parent / ".artifacts" / "online_partial_fit_bundle"
     session.online.save_bundle(out)
     print(f"saved bundle → {out}")
 

@@ -291,14 +291,14 @@ shipped paths. They are not stubs for missing APIs.
 Proof suite
 -----------
 
-End-to-end evidence lives in the repository ``proofs/`` directory. It is
-not a smoke folder. Re-run from a source checkout::
+Paste loops live in ``examples/``. End-to-end evidence lives in
+``proofs/``. Re-run the harness from a source checkout::
 
+   python examples/classical_loan_loop.py
    python -m proofs._lib.run_all --tier all
 
-Domain-to-proof mappings are in :doc:`guide-index` and
-``proofs/README.md``. ``buildml[production]`` remains best-effort on
-Python 3.13.
+Domain mappings are in :doc:`guide-index` and ``proofs/README.md``.
+``buildml[production]`` remains best-effort on Python 3.13.
 
 Where to read more
 ------------------

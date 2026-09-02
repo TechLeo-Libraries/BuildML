@@ -11,6 +11,8 @@ from buildml import Session
 
 
 def main() -> None:
+    artifacts = Path(__file__).resolve().parent / '.artifacts'
+    artifacts.mkdir(parents=True, exist_ok=True)
     rng = np.random.default_rng(0)
     n = 120
     t = pd.date_range("2024-01-01", periods=n, freq="D")
@@ -32,7 +34,7 @@ def main() -> None:
     print("eval:", metrics.to_dict())
     print("generate:", gen.to_dict())
 
-    out = Path(".buildml-artifacts") / "forecast_bundle"
+    out = Path(__file__).resolve().parent / ".artifacts" / "forecast_bundle"
     path = session.forecast.save_bundle(out)
     print("bundle:", path)
 

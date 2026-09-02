@@ -14,6 +14,8 @@ from buildml import Session
 
 
 def main() -> None:
+    artifacts = Path(__file__).resolve().parent / '.artifacts'
+    artifacts.mkdir(parents=True, exist_ok=True)
     rng = np.random.default_rng(0)
     x0 = rng.normal([-1.0, -1.0], 0.7, size=(100, 2))
     x1 = rng.normal([1.5, 1.2], 0.7, size=(100, 2))
@@ -42,7 +44,7 @@ def main() -> None:
     ev = session.ssl.evaluate(partition="test")
     print("eval:", {k: round(v, 4) for k, v in ev.metrics.items()})
 
-    out = Path(".buildml-artifacts") / "ssl_bundle"
+    out = Path(__file__).resolve().parent / ".artifacts" / "ssl_bundle"
     path = session.ssl.save_bundle(out)
     print("bundle:", path)
 

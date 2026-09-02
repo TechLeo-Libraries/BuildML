@@ -1,9 +1,10 @@
-"""Tier B product: Pulse Support Copilot.
+"""Composition harness script. Not a product BuildML ships.
 
-Composes RAG retrieval + learning-to-rank over ticket→doc pairs + CBR case
-memory for similar resolved tickets + symbolic guardrails for escalation /
-PII blocks. Leakage discipline at every stage.
+Start with examples/ for a pasteable loop. This file stitches several
+Session surfaces on one synthetic table so the suite can check the seams.
 """
+
+
 
 from __future__ import annotations
 

@@ -5,7 +5,9 @@ can run a loop without copying out of Markdown. They are not proofs: no
 JSON harness, no industry twin. Behavioral guarantees live in `tests/`.
 End-to-end evidence lives in [`proofs/`](../proofs/README.md).
 
-Start here for a 12-row classical loop. Use
+Start here for the classical loop. The guide snippet is a 12-row table
+you can read; the file draws 120 rows so the printed metrics are not
+three-row noise. Use
 [loan-approval-classical](../proofs/loan-approval-classical/) when you
 want the same spine on a fuller synthetic credit table, and
 [breast-cancer-classical](../proofs/breast-cancer-classical/) when you
@@ -25,8 +27,10 @@ python examples/leakage_cv_recipe.py
 python examples/forecast_lag_loop.py
 ```
 
-Bundle reload calls pass `trusted=True` because they load artifacts the
-same script just wrote. Public loaders default to `trusted=False`.
+Bundles write under `examples/.artifacts/` (next to the script), not
+your current working directory. Reload calls pass `trusted=True` because
+they load a file the same script just wrote. Public loaders default to
+`trusted=False`.
 
 There is no paste script for the AI operator: that extra needs a provider
 and confirmation gates. Use [quickstart-ai](../guides/quickstart-ai.md).

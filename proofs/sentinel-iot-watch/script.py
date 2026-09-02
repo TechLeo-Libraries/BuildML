@@ -1,8 +1,10 @@
-"""Tier B product: Sentinel IoT Watch.
+"""Composition harness script. Not a product BuildML ships.
 
-Composes unsupervised anomaly + online partial_fit streaming + lag forecast
-for factory IoT telemetry. Chronological / train-cursor leakage discipline.
+Start with examples/ for a pasteable loop. This file stitches several
+Session surfaces on one synthetic table so the suite can check the seams.
 """
+
+
 
 from __future__ import annotations
 

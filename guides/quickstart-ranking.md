@@ -7,10 +7,10 @@ pip install buildml
 
 `query_column` and `item_column` are required. `relevance_column` defaults
 to the Session target if you have one. Prefer `group_split` on the query
-so test queries stay out of train. With only the core install, the
-default is sklearn pointwise. If `buildml[ranking-industry]` is
-installed, `method=None` picks LightGBM LambdaRank (then XGB, then
-CatBoost). This is not RAG and not `session.recommender`.
+so test queries stay out of train. `method=None` picks LightGBM
+LambdaRank when `buildml[ranking-industry]` imports (then XGB, then
+CatBoost). On a core install it is sklearn pointwise Ridge. This is not
+RAG and not `session.recommender`.
 
 [LTR deep](ranking-deep.md) ·
 Paste: [`examples/ranking_pointwise_loop.py`](../examples/ranking_pointwise_loop.py) ·

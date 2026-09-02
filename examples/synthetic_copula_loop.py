@@ -16,6 +16,8 @@ from buildml import Session
 
 
 def main() -> None:
+    artifacts = Path(__file__).resolve().parent / '.artifacts'
+    artifacts.mkdir(parents=True, exist_ok=True)
     x, y = make_classification(
         n_samples=360,
         n_features=6,
@@ -59,7 +61,7 @@ def main() -> None:
     tstr = session.synthetic.evaluate(mode="tstr", partition="test")
     print("tstr:", tstr.metrics)
 
-    out = Path("artifacts/synthetic_demo_bundle")
+    out = Path(__file__).resolve().parent / ".artifacts" / "synthetic_demo_bundle"
     session.synthetic.save_bundle(out)
     print("bundle:", out.resolve())
 

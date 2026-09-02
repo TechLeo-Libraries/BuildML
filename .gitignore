@@ -55,6 +55,7 @@ __pycache__/
 
 # Local EDA artifacts (studio launch, static preview, adaptability gauntlet)
 .buildml-artifacts/
+examples/.artifacts/
 *.eda_preview.html
 *_static_eda_preview.html
 

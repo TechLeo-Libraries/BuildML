@@ -1,8 +1,10 @@
-"""Tier B product: Canyon Segment Studio.
+"""Composition harness script. Not a product BuildML ships.
 
-Composes unsupervised clustering + classical segment propensity + decision
-thresholds for CRM targeting. External labels eval-only.
+Start with examples/ for a pasteable loop. This file stitches several
+Session surfaces on one synthetic table so the suite can check the seams.
 """
+
+
 
 from __future__ import annotations
 

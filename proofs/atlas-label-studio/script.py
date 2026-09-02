@@ -1,9 +1,10 @@
-"""Tier B product: Atlas Label Studio.
+"""Composition harness script. Not a product BuildML ships.
 
-Composes self-supervised pretext representations + semi-supervised
-propagation on scarce labels + an active-learning budget loop with a
-simulated oracle. Train-pool queries only; holdouts keep labels for eval.
+Start with examples/ for a pasteable loop. This file stitches several
+Session surfaces on one synthetic table so the suite can check the seams.
 """
+
+
 
 from __future__ import annotations
 

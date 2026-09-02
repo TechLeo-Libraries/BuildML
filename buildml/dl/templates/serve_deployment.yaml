@@ -65,7 +65,8 @@ __SA_LINE__      securityContext:
                 --kind "${BUILDML_SERVE_KIND}" \
                 --host 0.0.0.0 \
                 --port __PORT__ \
-                --api-key "${BUILDML_API_KEY}"__TRUSTED_FLAG__
+                --api-key "${BUILDML_API_KEY}" \
+                --trusted
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:

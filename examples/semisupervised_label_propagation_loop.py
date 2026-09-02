@@ -32,6 +32,8 @@ def _mask_train_labels(session: Session, fraction: float = 0.7, seed: int = 0) -
 
 
 def main() -> None:
+    artifacts = Path(__file__).resolve().parent / '.artifacts'
+    artifacts.mkdir(parents=True, exist_ok=True)
     rng = np.random.default_rng(0)
     x0 = rng.normal([-1.0, -1.0], 0.6, size=(120, 2))
     x1 = rng.normal([1.2, 1.0], 0.6, size=(120, 2))
@@ -59,7 +61,7 @@ def main() -> None:
     ev = session.semisupervised.evaluate(partition="test")
     print("eval:", {k: round(v, 4) for k, v in ev.metrics.items()})
 
-    out = Path(".buildml-artifacts") / "semisupervised_bundle"
+    out = Path(__file__).resolve().parent / ".artifacts" / "semisupervised_bundle"
     path = session.semisupervised.save_bundle(out)
     print("bundle:", path)
 

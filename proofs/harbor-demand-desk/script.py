@@ -1,9 +1,10 @@
-"""Tier B product: Harbor Demand Desk.
+"""Composition harness script. Not a product BuildML ships.
 
-Composes train-scoped time-series analysis + lag forecast + probabilistic
-intervals + validation-tuned allocation (knapsack / capacity) for inventory
-or promo budget decisions. Chronological leakage discipline throughout.
+Start with examples/ for a pasteable loop. This file stitches several
+Session surfaces on one synthetic table so the suite can check the seams.
 """
+
+
 
 from __future__ import annotations
 

@@ -11,6 +11,8 @@ from buildml import Session
 
 
 def main() -> None:
+    artifacts = Path(__file__).resolve().parent / '.artifacts'
+    artifacts.mkdir(parents=True, exist_ok=True)
     rng = np.random.default_rng(0)
     x = rng.normal(size=(220, 2))
     y = (x[:, 0] + 0.3 * x[:, 1] > 0).astype(int)
@@ -24,6 +26,7 @@ def main() -> None:
     )
 
     fit = session.cbr.fit(
+        backend="sklearn",
         task="classification",
         metric="euclidean",
         reuse="distance_weighted",
@@ -45,7 +48,7 @@ def main() -> None:
     ev = session.cbr.evaluate(partition="validation")
     print("eval", ev.metrics, "mean_d", ev.mean_neighbor_distance)
 
-    out = Path("artifacts") / "cbr_demo_bundle"
+    out = Path(__file__).resolve().parent / ".artifacts" / "cbr_demo_bundle"
     session.cbr.save_bundle(out)
     print("saved", out)
 

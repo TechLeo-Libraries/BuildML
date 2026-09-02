@@ -14,6 +14,8 @@ from buildml import Session
 
 
 def main() -> None:
+    artifacts = Path(__file__).resolve().parent / '.artifacts'
+    artifacts.mkdir(parents=True, exist_ok=True)
     rng = np.random.default_rng(0)
     n_normal, n_fraud = 200, 20
     normal = rng.normal(0.0, 1.0, size=(n_normal, 2))
@@ -49,7 +51,7 @@ def main() -> None:
     ev = session.anomaly.evaluate(partition="test", positive_label=1)
     print("eval labeled:", {k: round(v, 4) for k, v in ev.labeled_metrics.items()})
 
-    out = Path(".buildml-artifacts") / "anomaly_bundle"
+    out = Path(__file__).resolve().parent / ".artifacts" / "anomaly_bundle"
     path = session.anomaly.save_bundle(out)
     print("bundle:", path)
 

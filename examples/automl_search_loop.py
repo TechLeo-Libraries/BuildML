@@ -12,6 +12,8 @@ from buildml.automl.types import AutoMLBudget
 
 
 def main() -> None:
+    artifacts = Path(__file__).resolve().parent / '.artifacts'
+    artifacts.mkdir(parents=True, exist_ok=True)
     rng = np.random.default_rng(0)
     n = 220
     x1 = rng.normal(size=n)
@@ -41,7 +43,7 @@ def main() -> None:
     print(session.automl.evaluate(partition="validation").metrics)
     print(session.automl.evaluate(partition="test").metrics)
 
-    out = Path(".buildml-artifacts") / "automl_demo_bundle"
+    out = Path(__file__).resolve().parent / ".artifacts" / "automl_demo_bundle"
     session.automl.save_bundle(out)
     print(f"saved {out}")
 

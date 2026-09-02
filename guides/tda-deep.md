@@ -116,8 +116,10 @@ does not replace holdout classification or regression metrics.
 ## Bundles
 
 `session.tda.save_bundle` writes `buildml.tda_bundle.v2` (`meta.json` +
-`tda_plan.joblib`). v1 bundles still load. Session checkpoints do not
-embed `TdaPlan`. `trusted=True` only for a file you made.
+`tda_plan.joblib`). `meta.json` is format, library version, and the
+checkpoint boundary only; the fitted plan stays in joblib. v1 bundles
+still load. Session checkpoints do not embed `TdaPlan`. `trusted=True`
+only for a file you made.
 
 Paste: [`examples/tda_loop.py`](../examples/tda_loop.py).
 Benchmark: `python benchmarks/tda/persistence_pipeline.py`.

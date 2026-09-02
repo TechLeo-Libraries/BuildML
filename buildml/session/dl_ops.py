@@ -2403,15 +2403,15 @@ def emit_k8s_serve_deployment(
     store_name: str | None = None,
     store_field: str | None = None,
     emit_store_document: bool = False,
-    trusted: bool = True,
 ) -> Any:
     """Emit a Kubernetes Deployment+Service YAML for managed serve (template only).
 
     Delegates to :func:`buildml.dl.k8s.write_serve_deployment`. Default image
     ``buildml-serve:local`` matches ``deploy/serve/Dockerfile``. Manifest
     references an operator-created API-key store via ``secretKeyRef`` and
-    never writes key values or ``--allow-insecure-public-bind``. Template
-    only: not a managed cluster orchestrator.
+    never writes key values or ``--allow-insecure-public-bind``. Deserialize
+    opt-in for pickle/joblib bundles is baked into the packaged template.
+    Template only: not a managed cluster orchestrator.
 
     Parameters
     ----------
@@ -2448,8 +2448,6 @@ def emit_k8s_serve_deployment(
         Field name inside that object. ``None`` uses the packaged template default.
     emit_store_document:
         Emit an empty Opaque store stub (no values) when True.
-    trusted:
-        Pass ``--trusted`` in the rendered command when True.
 
     Returns
     -------
@@ -2474,7 +2472,6 @@ def emit_k8s_serve_deployment(
         store_name=store_name,
         store_field=store_field,
         emit_store_document=emit_store_document,
-        trusted=trusted,
     )
     session._dl_k8s_result = result
     session._record(
@@ -2494,7 +2491,6 @@ def emit_k8s_serve_deployment(
             "kind": kind,
             "store_name": store_name,
             "emit_store_document": emit_store_document,
-            "trusted": trusted,
         },
         result_summary=result.to_dict(),
         warnings=tuple(result.limitations),

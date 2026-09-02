@@ -1,8 +1,10 @@
-"""Tier B product: Scaffold Compliance AI.
+"""Composition harness script. Not a product BuildML ships.
 
-Composes symbolic KYC/AML rules + optional neuro-symbolic NAM +
-validation-tuned decision thresholds for escalation review capacity.
+Start with examples/ for a pasteable loop. This file stitches several
+Session surfaces on one synthetic table so the suite can check the seams.
 """
+
+
 
 from __future__ import annotations
 

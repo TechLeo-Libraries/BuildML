@@ -17,6 +17,14 @@ from buildml import Session
 
 
 def main() -> None:
+    artifacts = Path(__file__).resolve().parent / '.artifacts'
+    artifacts.mkdir(parents=True, exist_ok=True)
+    from importlib.util import find_spec
+
+    if find_spec("networkx") is None:
+        print("skip: pip install 'buildml[graph]'")
+        return
+
     rng = np.random.default_rng(3)
     n_per, n = 45, 90
     labels = np.array([0] * n_per + [1] * n_per)
@@ -46,7 +54,7 @@ def main() -> None:
     print("fit", fit.to_dict())
     ev = session.graph.evaluate(partition="validation")
     print("eval", ev.metrics)
-    out = Path("artifacts/graph_classical_bundle")
+    out = Path(__file__).resolve().parent / ".artifacts" / "graph_classical_bundle"
     session.graph.save_bundle(out)
     print("bundle", out)
 

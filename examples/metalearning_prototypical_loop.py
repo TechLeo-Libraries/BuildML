@@ -15,6 +15,8 @@ from buildml import Session
 
 
 def main() -> None:
+    artifacts = Path(__file__).resolve().parent / '.artifacts'
+    artifacts.mkdir(parents=True, exist_ok=True)
     rng = np.random.default_rng(21)
     rows: list[dict[str, object]] = []
     for task in range(10):
@@ -73,7 +75,7 @@ def main() -> None:
     print(f"episodic metrics={ev.metrics}")
     print(f"per-task={ev.per_task_metrics}")
 
-    out = Path("artifacts") / "metalearning_prototypical_bundle"
+    out = Path(__file__).resolve().parent / ".artifacts" / "metalearning_prototypical_bundle"
     session.metalearning.save_bundle(out)
     print(f"saved bundle -> {out}")
 

@@ -16,6 +16,8 @@ from buildml import Session
 
 
 def main() -> None:
+    artifacts = Path(__file__).resolve().parent / '.artifacts'
+    artifacts.mkdir(parents=True, exist_ok=True)
     rng = np.random.default_rng(9)
     n = 280
     x0 = rng.normal([-1.0, -1.0], 0.55, size=(n // 2, 2))
@@ -47,7 +49,7 @@ def main() -> None:
     print(f"aggregate metrics={ev.metrics}")
     print(f"per-task metrics={ev.per_task_metrics}")
 
-    out = Path("artifacts") / "multitask_multioutput_bundle"
+    out = Path(__file__).resolve().parent / ".artifacts" / "multitask_multioutput_bundle"
     session.multitask.save_bundle(out)
     print(f"saved bundle → {out}")
 

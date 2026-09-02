@@ -1,8 +1,10 @@
-"""Tier B product: Compass Catalog Recs.
+"""Composition harness script. Not a product BuildML ships.
 
-Composes collaborative recommenders + classical graph node features over
-item co-purchase edges + classical supervised repurchase scoring.
+Start with examples/ for a pasteable loop. This file stitches several
+Session surfaces on one synthetic table so the suite can check the seams.
 """
+
+
 
 from __future__ import annotations
 

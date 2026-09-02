@@ -38,6 +38,8 @@ def _synthetic_judgments(
 
 
 def main() -> None:
+    artifacts = Path(__file__).resolve().parent / '.artifacts'
+    artifacts.mkdir(parents=True, exist_ok=True)
     frame = _synthetic_judgments()
     session = (
         Session.ingest(frame)
@@ -69,7 +71,7 @@ def main() -> None:
     ev = session.ranking.evaluate(partition="test", k=5)
     print("eval", ev.metrics)
 
-    out = Path("artifacts/ranker_demo_bundle")
+    out = Path(__file__).resolve().parent / ".artifacts" / "ranker_demo_bundle"
     session.ranking.save_bundle(out)
     other = (
         Session.ingest(frame)

@@ -431,7 +431,6 @@ def render_serve_deployment(
     store_name: str | None = None,
     store_field: str | None = None,
     emit_store_document: bool = False,
-    trusted: bool = True,
 ) -> str:
     """Produce the manifest for serving a saved bundle.
 
@@ -441,7 +440,8 @@ def render_serve_deployment(
     writes credential values (no ``stringData``, no placeholders). The default
     image name matches ``deploy/serve/Dockerfile`` (``buildml-serve:local``).
     Non-loopback bind uses an API key from that store and never emits
-    ``--allow-insecure-public-bind``.
+    ``--allow-insecure-public-bind``. Deserialize opt-in for pickle/joblib
+    bundles is part of the packaged template, not a Python-constructed flag.
 
     Parameters
     ----------
@@ -479,8 +479,6 @@ def render_serve_deployment(
         When True, also emit an empty Opaque store object (no ``data`` /
         ``stringData``) so operators can apply the stub and then populate it
         out of band. Default False: create the store with kubectl.
-    trusted:
-        When True (default), pass ``--trusted`` for deserialize opt-in.
 
     Returns
     -------
@@ -524,7 +522,6 @@ def render_serve_deployment(
         raise ValidationError("kind must be 'pipeline' or 'torchscript'")
     sa_line = f"      serviceAccountName: {service_account}\n" if service_account else ""
     gpu_lim = f"\n              nvidia.com/gpu: {int(gpu_limit)}" if gpu_limit else ""
-    trusted_flag = " \\\n                --trusted" if trusted else ""
     template = _load_k8s_template(_SERVE_TEMPLATE_NAME)
     resolved_store = store_name if store_name is not None else _marked_default(
         template, "store-name"
@@ -548,7 +545,6 @@ def render_serve_deployment(
         "__STORE_FIELD__": resolved_field,
         "__SA_LINE__": sa_line,
         "__GPU_LIMIT__": gpu_lim,
-        "__TRUSTED_FLAG__": trusted_flag,
     }
     body = _fill_template(_drop_default_markers(template), mapping)
     if not emit_store_document:
@@ -574,7 +570,6 @@ def write_serve_deployment(
     store_name: str | None = None,
     store_field: str | None = None,
     emit_store_document: bool = False,
-    trusted: bool = True,
 ) -> K8sJobRenderResult:
     """Render a serving manifest and write it to disk.
 
@@ -615,8 +610,6 @@ def write_serve_deployment(
         Field name inside that object. Passed to the renderer.
     emit_store_document:
         Emit an empty Opaque store stub when True. Passed to the renderer.
-    trusted:
-        Pass ``--trusted`` when True. Passed to the renderer.
 
     Returns
     -------
@@ -651,7 +644,6 @@ def write_serve_deployment(
         store_name=store_name,
         store_field=store_field,
         emit_store_document=emit_store_document,
-        trusted=trusted,
     )
     destination.write_text(yaml_text, encoding="utf-8")
     return K8sJobRenderResult(

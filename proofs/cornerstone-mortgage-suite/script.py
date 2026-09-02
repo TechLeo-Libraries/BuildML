@@ -1,8 +1,10 @@
-"""Tier B product: Cornerstone Mortgage Suite.
+"""Composition harness script. Not a product BuildML ships.
 
-Composes classical mortgage default scoring + declared-assumption causal
-treatment effect + validation-tuned cost-sensitive decisions.
+Start with examples/ for a pasteable loop. This file stitches several
+Session surfaces on one synthetic table so the suite can check the seams.
 """
+
+
 
 from __future__ import annotations
 

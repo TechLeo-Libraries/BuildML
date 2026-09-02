@@ -137,8 +137,9 @@ TDA_NOTES: dict[str, ConceptNote] = {
                 "do not embed the TDA transformer."
             ),
             definition=(
-                "A TDA bundle directory holds meta.json + tda_plan.joblib under "
-                "schema buildml.tda_bundle.v2 (v1 bundles remain loadable)."
+                "A TDA bundle directory holds meta.json (format, version, "
+                "boundary only) plus tda_plan.joblib under schema "
+                "buildml.tda_bundle.v2 (v1 bundles remain loadable)."
             ),
             intuition="Save the PH pipeline separately from workflow resume state.",
             formal_idea="TdaPlan is not embedded in a Session checkpoint payload.",

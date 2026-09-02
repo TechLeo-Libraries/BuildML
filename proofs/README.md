@@ -17,9 +17,11 @@ From the repo root, after `pip install buildml` (or `pip install -e ".[dev]"`
 on a checkout):
 
 ```bash
-python proofs/loan-approval-classical/script.py
-python proofs/loan-approval-classical/baseline_industry.py
 python examples/classical_loan_loop.py
+python proofs/loan-approval-classical/script.py
+# twin is inside script.py for this proof; most others use baseline_industry.py
+python proofs/breast-cancer-classical/script.py
+python proofs/breast-cancer-classical/baseline_industry.py
 ```
 
 The harness re-runs many proofs at once. Use it when you are checking the
@@ -129,13 +131,13 @@ python -m proofs._lib.run_all --tier C
 
 ## Composition scripts
 
-Scripts under slugs such as `aegis-fraud-platform` or `harbor-demand-desk`
-compose several Session surfaces on one synthetic table. They are
-harness coverage. They are not fraud platforms, demand desks, or other
-products BuildML ships.
+Do not start here. These slugs compose several Session surfaces on one
+synthetic table so the harness can check the seams. They are not fraud
+platforms, demand desks, or other products BuildML ships. A beginner
+who wants a loop should open [`examples/`](../examples/) instead.
 
-Run one with `python proofs/<slug>/script.py`. The harness list is
-`TIER_B` in [`_lib/run_all.py`](_lib/run_all.py).
+If you still want one: `python proofs/<slug>/script.py`. The slug list
+is `TIER_B` in [`_lib/run_all.py`](_lib/run_all.py).
 
 ## More domain proofs in the harness
 

@@ -1,8 +1,10 @@
-"""Tier B product: Mosaic Warranty Desk.
+"""Composition harness script. Not a product BuildML ships.
 
-Composes CBR case memory + symbolic guardrails + classical supervised
-scoring for synthetic warranty claim approve/deny decisions.
+Start with examples/ for a pasteable loop. This file stitches several
+Session surfaces on one synthetic table so the suite can check the seams.
 """
+
+
 
 from __future__ import annotations
 

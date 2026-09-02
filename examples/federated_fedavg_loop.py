@@ -11,6 +11,8 @@ from buildml import Session
 
 
 def main() -> None:
+    artifacts = Path(__file__).resolve().parent / '.artifacts'
+    artifacts.mkdir(parents=True, exist_ok=True)
     rng = np.random.default_rng(0)
     rows: list[dict[str, object]] = []
     for client in range(8):
@@ -64,7 +66,7 @@ def main() -> None:
     preds = session.federated.predict(partition="test")
     print(f"n_predictions={len(preds.predictions)}")
 
-    out = Path("artifacts") / "federated_fedavg_bundle"
+    out = Path(__file__).resolve().parent / ".artifacts" / "federated_fedavg_bundle"
     session.federated.save_bundle(out)
     print(f"saved bundle -> {out}")
 

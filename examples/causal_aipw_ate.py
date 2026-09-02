@@ -15,6 +15,8 @@ from buildml import Session
 
 
 def main() -> None:
+    artifacts = Path(__file__).resolve().parent / '.artifacts'
+    artifacts.mkdir(parents=True, exist_ok=True)
     rng = np.random.default_rng(11)
     n = 420
     w = rng.normal(size=(n, 2))
@@ -51,7 +53,7 @@ def main() -> None:
     ref = session.causal.refute(kind="placebo_treatment")
     print(f"placebo refute_ate={ref.refute_ate:.4f} shift={ref.ate_shift:.4f}")
 
-    out = Path("artifacts") / "causal_aipw_bundle"
+    out = Path(__file__).resolve().parent / ".artifacts" / "causal_aipw_bundle"
     session.causal.save_bundle(out)
     print(f"saved bundle -> {out}")
 

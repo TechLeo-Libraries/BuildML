@@ -12,6 +12,8 @@ from buildml.rl.extras import gymnasium_available
 
 
 def main() -> None:
+    artifacts = Path(__file__).resolve().parent / '.artifacts'
+    artifacts.mkdir(parents=True, exist_ok=True)
     rng = np.random.default_rng(0)
     x = rng.normal(size=(220, 2))
     action = (x[:, 0] + 0.3 * x[:, 1] > 0).astype(int)
@@ -48,8 +50,8 @@ def main() -> None:
     print("act0", session.rl.act(partition="test").actions[:3])
     print("bandit_eval", session.rl.evaluate(partition="validation").metrics)
 
-    out_il = Path("artifacts") / "imitation_demo_bundle"
-    out_rl = Path("artifacts") / "rl_bandit_demo_bundle"
+    out_il = Path(__file__).resolve().parent / ".artifacts" / "imitation_demo_bundle"
+    out_rl = Path(__file__).resolve().parent / ".artifacts" / "rl_bandit_demo_bundle"
     session.rl.save_imitation_bundle(out_il)
     session.rl.save_bundle(out_rl)
     print("saved", out_il, out_rl)
@@ -77,7 +79,7 @@ def main() -> None:
         )
         print("gym", gfit.train_metrics)
         print("gym_eval", gym_session.rl.evaluate(n_episodes=10).metrics)
-        gym_session.rl.save_bundle(Path("artifacts") / "rl_gym_demo_bundle")
+        gym_session.rl.save_bundle(Path(__file__).resolve().parent / ".artifacts" / "rl_gym_demo_bundle")
 
         tab_session = (
             Session.ingest(frame)
@@ -107,7 +109,7 @@ def main() -> None:
         print("tabular_q", tfit.algorithm, tfit.train_metrics)
         print("tabular_q_eval", tab_session.rl.evaluate(n_episodes=50).metrics)
         print("tabular_q_scores", tab_session.rl.act(observations=[0, 1]).scores)
-        tab_session.rl.save_bundle(Path("artifacts") / "rl_tabular_demo_bundle")
+        tab_session.rl.save_bundle(Path(__file__).resolve().parent / ".artifacts" / "rl_tabular_demo_bundle")
     else:
         print(
             "gymnasium not installed; skip gym_reinforce / tabular_q "

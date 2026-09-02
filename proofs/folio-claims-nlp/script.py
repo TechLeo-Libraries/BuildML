@@ -1,8 +1,10 @@
-"""Tier B product: Folio Claims NLP.
+"""Composition harness script. Not a product BuildML ships.
 
-Composes NLP text classification over claim notes + CBR case memory +
-symbolic guardrails for synthetic P&C claim routing / escalation.
+Start with examples/ for a pasteable loop. This file stitches several
+Session surfaces on one synthetic table so the suite can check the seams.
 """
+
+
 
 from __future__ import annotations
 

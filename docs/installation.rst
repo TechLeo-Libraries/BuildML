@@ -90,7 +90,7 @@ only what the workflow uses.
      - engines + imbalanced + eda + excel + dashboard + optuna + automl
    * - Industry meta
      - ``buildml[production]``
-     - best-effort R1–R6 industry extras (see below)
+     - best-effort industry extras (markers skip known-broken wheels)
 
 Methods name the missing extra when an optional dependency is absent
 (for example ``pip install 'buildml[optuna]'``).

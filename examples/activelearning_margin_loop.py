@@ -19,6 +19,8 @@ from buildml.ingest.detect import schema_from_dataframe
 
 
 def main() -> None:
+    artifacts = Path(__file__).resolve().parent / '.artifacts'
+    artifacts.mkdir(parents=True, exist_ok=True)
     rng = np.random.default_rng(0)
     x0 = rng.normal([-1.0, -1.0], 0.55, size=(140, 2))
     x1 = rng.normal([1.2, 1.0], 0.55, size=(140, 2))
@@ -79,7 +81,7 @@ def main() -> None:
     ev = session.active_learning.evaluate(partition="test")
     print("eval:", {k: round(v, 4) for k, v in ev.metrics.items()})
 
-    out = Path(".buildml-artifacts") / "activelearning_bundle"
+    out = Path(__file__).resolve().parent / ".artifacts" / "activelearning_bundle"
     path = session.active_learning.save_bundle(out)
     print("bundle:", path)
 

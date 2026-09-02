@@ -1,9 +1,10 @@
-"""Tier B product: Nexus Federated Clinical.
+"""Composition harness script. Not a product BuildML ships.
 
-Composes a multi-hospital FedAvg simulation + probabilistic uncertainty
-intervals + honest evaluation disclosures. Local FL only — not a deployed
-cross-silo network.
+Start with examples/ for a pasteable loop. This file stitches several
+Session surfaces on one synthetic table so the suite can check the seams.
 """
+
+
 
 from __future__ import annotations
 

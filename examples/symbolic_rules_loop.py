@@ -11,6 +11,8 @@ from buildml import Session
 
 
 def main() -> None:
+    artifacts = Path(__file__).resolve().parent / '.artifacts'
+    artifacts.mkdir(parents=True, exist_ok=True)
     rng = np.random.default_rng(0)
     x = rng.normal(size=(220, 2))
     y = (x[:, 0] + 0.3 * x[:, 1] > 0).astype(int)
@@ -32,7 +34,7 @@ def main() -> None:
     ev = session.symbolic.evaluate(partition="validation")
     print("symbolic_eval", ev.metrics, "coverage", ev.rule_coverage)
 
-    out = Path("artifacts") / "symbolic_demo_bundle"
+    out = Path(__file__).resolve().parent / ".artifacts" / "symbolic_demo_bundle"
     session.symbolic.save_bundle(out)
     print("saved", out)
 

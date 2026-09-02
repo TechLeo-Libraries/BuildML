@@ -70,6 +70,8 @@ def new_session(frame: pd.DataFrame) -> Session:
 
 
 def main() -> None:
+    artifacts = Path(__file__).resolve().parent / '.artifacts'
+    artifacts.mkdir(parents=True, exist_ok=True)
     frame = build_frame()
     session = new_session(frame)
 
@@ -136,7 +138,7 @@ def main() -> None:
     print("language", session.nlp.detect_language(partition="all").dominant_language)
 
     # 8. Bundle carries the normalization plan, so the reload scores identically.
-    out = Path("artifacts") / "nlp_demo_bundle"
+    out = Path(__file__).resolve().parent / ".artifacts" / "nlp_demo_bundle"
     session.nlp.save_bundle(out)
     reloaded = new_session(frame)
     reloaded.nlp.load_bundle(out, trusted=True)

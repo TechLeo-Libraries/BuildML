@@ -13,6 +13,8 @@ from buildml import Session
 
 
 def main() -> None:
+    artifacts = Path(__file__).resolve().parent / '.artifacts'
+    artifacts.mkdir(parents=True, exist_ok=True)
     rng = np.random.default_rng(0)
     n = 200
     x1 = rng.normal(size=n)
@@ -41,7 +43,7 @@ def main() -> None:
     session.ensemble.fit_blending(bases, holdout_fraction=0.2, random_state=0).show()
     print(session.ensemble.evaluate(partition="test").metrics)
 
-    out = Path(".buildml-artifacts") / "ensemble_demo_bundle"
+    out = Path(__file__).resolve().parent / ".artifacts" / "ensemble_demo_bundle"
     session.ensemble.save_bundle(out)
     print(f"saved {out}")
 

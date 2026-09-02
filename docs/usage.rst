@@ -10,7 +10,8 @@ of a leaked score.
 This page is a few realistic loops. For a chapter-style walkthrough see
 :doc:`quickstart-classical`. For the long classical path (many cases,
 failure modes, persistence) see :doc:`classical-end-to-end`. The full
-map is :doc:`guide-index`.
+map is :doc:`guide-index`. Paste the loops from the repository
+``examples/`` directory. End-to-end evidence is ``proofs/``.
 
 Loan approval
 -------------

@@ -13,6 +13,8 @@ from buildml.preprocess import PreprocessRecipe
 
 
 def main() -> None:
+    artifacts = Path(__file__).resolve().parent / '.artifacts'
+    artifacts.mkdir(parents=True, exist_ok=True)
     rng = np.random.default_rng(0)
     n = 160
     x1 = rng.normal(size=n)
@@ -53,7 +55,7 @@ def main() -> None:
     print("validation:", session.evaluate(partition="validation").metrics)
     print("test:", session.evaluate(partition="test").metrics)
 
-    out = Path(".buildml-artifacts") / "evolutionary_demo_pipeline"
+    out = Path(__file__).resolve().parent / ".artifacts" / "evolutionary_demo_pipeline"
     session.save_pipeline(out, evaluate_partition="test")
     print(f"saved {out}")
 

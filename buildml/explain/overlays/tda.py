@@ -192,7 +192,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         "save_tda_bundle",
         OperationKind.PERSIST,
         "Persist TdaPlan as buildml.tda_bundle.v2 (v1 loadable).",
-        "Write meta.json + tda_plan.joblib.",
+        "Write format-only meta.json + tda_plan.joblib.",
         "TDA bundle save.",
         ("Require TdaPlan.", "Serialize bundle directory."),
         parameters=(_p("path", "str | Path", "Destination directory."),),

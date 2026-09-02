@@ -59,8 +59,18 @@ def _readme_table_scripts() -> set[str]:
     return set(re.findall(r"`([a-z0-9_]+\.py)`", text))
 
 
+def test_proof_index_run_commands_point_at_real_files() -> None:
+    text = (PROOFS / "README.md").read_text(encoding="utf-8")
+    missing = []
+    for slug, name in re.findall(r"python proofs/([a-z0-9-]+)/([A-Za-z0-9_.]+)", text):
+        if not (PROOFS / slug / name).is_file():
+            missing.append(f"proofs/{slug}/{name}")
+    assert not missing, f"proofs/README.md runs missing files: {missing}"
+    assert "loan-approval-classical/baseline_industry.py" not in text
+
+
 def test_every_example_script_is_listed_in_examples_readme() -> None:
-    on_disk = {path.name for path in EXAMPLES.glob("*.py")}
+    on_disk = {path.name for path in EXAMPLES.glob("*.py") if not path.name.startswith("_")}
     listed = _readme_table_scripts()
     missing = sorted(on_disk - listed)
     extra = sorted(listed - on_disk)
@@ -153,3 +163,31 @@ def test_torch_example_skips_without_the_extra() -> None:
     text = (EXAMPLES / "torch_tabular_mlp_loop.py").read_text(encoding="utf-8")
     assert "pip install 'buildml[torch]'" in text
     assert "except ImportError" in text
+
+
+def test_cbr_example_forces_sklearn_backend() -> None:
+    text = (EXAMPLES / "cbr_knn_loop.py").read_text(encoding="utf-8")
+    assert 'backend="sklearn"' in text
+
+
+def test_example_bundles_stay_beside_the_script() -> None:
+    offenders = []
+    for path in EXAMPLES.glob("*.py"):
+        if path.name.startswith("_"):
+            continue
+        text = path.read_text(encoding="utf-8")
+        if 'Path("artifacts"' in text or "Path('artifacts'" in text:
+            offenders.append(path.name)
+        if 'save_bundle("artifacts/' in text:
+            offenders.append(path.name)
+    assert not offenders, f"examples still write cwd artifacts/: {offenders}"
+
+
+def test_composition_scripts_open_with_harness_banner() -> None:
+    slugs = _tier_b_slugs()
+    missing = []
+    for slug in slugs:
+        head = (PROOFS / slug / "script.py").read_text(encoding="utf-8")[:400]
+        if "Not a product BuildML ships" not in head:
+            missing.append(slug)
+    assert not missing, f"composition scripts missing banner: {missing}"

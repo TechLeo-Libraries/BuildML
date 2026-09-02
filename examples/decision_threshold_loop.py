@@ -13,6 +13,8 @@ from buildml import Session
 
 
 def main() -> None:
+    artifacts = Path(__file__).resolve().parent / '.artifacts'
+    artifacts.mkdir(parents=True, exist_ok=True)
     x, y = make_classification(
         n_samples=500,
         n_features=10,
@@ -87,7 +89,7 @@ def main() -> None:
     except Exception as exc:  # LeakageError
         print("blocked test tuning:", type(exc).__name__, str(exc)[:120])
 
-    out = Path("artifacts/decision_demo_bundle")
+    out = Path(__file__).resolve().parent / ".artifacts" / "decision_demo_bundle"
     session.decision.save_bundle(out)
     print("bundle:", out.resolve())
 

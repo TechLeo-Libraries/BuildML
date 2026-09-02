@@ -40,6 +40,8 @@ def _synthetic_triples(seed: int = 0) -> pd.DataFrame:
 
 
 def main() -> None:
+    artifacts = Path(__file__).resolve().parent / '.artifacts'
+    artifacts.mkdir(parents=True, exist_ok=True)
     frame = _synthetic_triples()
     session = (
         Session.ingest(frame)
@@ -86,7 +88,7 @@ def main() -> None:
     ev = session.kg.evaluate(partition="test", k=5)
     print("eval", ev.metrics)
 
-    out = Path("artifacts/kg_demo_bundle")
+    out = Path(__file__).resolve().parent / ".artifacts" / "kg_demo_bundle"
     session.kg.save_bundle(out)
     other = (
         Session.ingest(frame)

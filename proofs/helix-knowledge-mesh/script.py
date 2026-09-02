@@ -1,8 +1,10 @@
-"""Tier B product: Helix Knowledge Mesh.
+"""Composition harness script. Not a product BuildML ships.
 
-Composes knowledge-graph link prediction + RAG retrieval/generate + symbolic
-guardrails for grounded policy answers. Leakage discipline at every stage.
+Start with examples/ for a pasteable loop. This file stitches several
+Session surfaces on one synthetic table so the suite can check the seams.
 """
+
+
 
 from __future__ import annotations
 

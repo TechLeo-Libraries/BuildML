@@ -11,6 +11,8 @@ from buildml import Session
 
 
 def main() -> None:
+    artifacts = Path(__file__).resolve().parent / '.artifacts'
+    artifacts.mkdir(parents=True, exist_ok=True)
     rng = np.random.default_rng(0)
     a = rng.normal([0.0, 0.0], 0.35, size=(60, 2))
     b = rng.normal([2.8, 2.8], 0.35, size=(60, 2))
@@ -32,7 +34,7 @@ def main() -> None:
     print("fit:", fit.to_dict())
     print("eval:", metrics.to_dict())
 
-    out = Path(".buildml-artifacts") / "unsupervised_bundle"
+    out = Path(__file__).resolve().parent / ".artifacts" / "unsupervised_bundle"
     path = session.unsupervised.save_bundle(out)
     print("bundle:", path)
 

@@ -1,9 +1,10 @@
-"""Tier B product: Aegis Fraud Platform.
+"""Composition harness script. Not a product BuildML ships.
 
-Composes graph ring detection + unsupervised anomaly + supervised scoring +
-online stream updates + validation-tuned decision thresholds + optional
-symbolic guardrail rules. Leakage discipline at every stage.
+Start with examples/ for a pasteable loop. This file stitches several
+Session surfaces on one synthetic table so the suite can check the seams.
 """
+
+
 
 from __future__ import annotations
 

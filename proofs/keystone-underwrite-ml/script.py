@@ -1,8 +1,10 @@
-"""Tier B product: Keystone Underwrite ML.
+"""Composition harness script. Not a product BuildML ships.
 
-Composes stacking ensemble + AutoML search + declared-assumption causal
-treatment effect for synthetic mortgage / credit underwriting.
+Start with examples/ for a pasteable loop. This file stitches several
+Session surfaces on one synthetic table so the suite can check the seams.
 """
+
+
 
 from __future__ import annotations
 

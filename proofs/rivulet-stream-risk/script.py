@@ -1,8 +1,10 @@
-"""Tier B product: Rivulet Stream Risk.
+"""Composition harness script. Not a product BuildML ships.
 
-Composes online stream scoring + unsupervised anomaly with validation-tuned
-thresholds + cost-sensitive decision policies for a synthetic payment stream.
+Start with examples/ for a pasteable loop. This file stitches several
+Session surfaces on one synthetic table so the suite can check the seams.
 """
+
+
 
 from __future__ import annotations
 

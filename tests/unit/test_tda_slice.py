@@ -161,5 +161,8 @@ def test_tda_bundle_meta_omits_credential_shaped_keys(tmp_path: Path) -> None:
     assert "nope" not in blob
     assert "api_key" not in blob
     assert "password" not in blob
-    assert meta["plan"]["config"]["knn"] == 8
-    assert meta["plan"]["mapper_summary"]["n_mapper_nodes"] == 3
+    assert set(meta) == {"format", "buildml_version", "compatibility"}
+    assert meta["format"] == "buildml.tda_bundle.v2"
+    assert "plan" not in meta
+    assert "fit" not in meta
+    assert "eval" not in meta

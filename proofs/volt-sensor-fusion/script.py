@@ -1,8 +1,10 @@
-"""Tier B product: Volt Sensor Fusion.
+"""Composition harness script. Not a product BuildML ships.
 
-Composes unsupervised anomaly + optional TDA shape descriptors + classical
-supervised fault scoring for synthetic industrial sensor streams.
+Start with examples/ for a pasteable loop. This file stitches several
+Session surfaces on one synthetic table so the suite can check the seams.
 """
+
+
 
 from __future__ import annotations
 

@@ -965,7 +965,6 @@ class DlSessionMixin:
         store_name: str | None = None,
         store_field: str | None = None,
         emit_store_document: bool = False,
-        trusted: bool = True,
     ) -> Any:
         """Emit a Kubernetes Deployment+Service YAML for managed serve (template only).
 
@@ -998,7 +997,6 @@ class DlSessionMixin:
             store_name=store_name,
             store_field=store_field,
             emit_store_document=emit_store_document,
-            trusted=trusted,
         )
 
     def domain_adapt_speech_torch(

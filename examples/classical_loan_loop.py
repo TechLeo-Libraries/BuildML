@@ -1,22 +1,36 @@
-"""Mirror of guides/classical-end-to-end.md — loan approval loop."""
+"""Mirror of guides/classical-end-to-end.md — loan approval loop.
+
+The guide snippet uses a 12-row table you can read. This file draws 120
+rows so the printed metrics are not three-row noise. It is still a toy,
+not a credit model.
+"""
 
 from __future__ import annotations
 
+import numpy as np
 import pandas as pd
 from sklearn.linear_model import LogisticRegression
 
 from buildml import Session
 
 
-def main() -> None:
-    frame = pd.DataFrame(
-        {
-            "age": [21, None, 35, 40, 29, 33, 52, 47, 31, None, 44, 38],
-            "income": [40, 55, 60, 80, 50, 70, 90, 65, 48, 72, 88, 61],
-            "region": ["N", "S", "N", "W", "S", "N", "W", "S", "N", "S", "W", "N"],
-            "approved": [0, 1, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0],
-        }
+def _toy_loans(n: int = 120, seed: int = 42) -> pd.DataFrame:
+    rng = np.random.default_rng(seed)
+    age = rng.normal(38, 11, size=n).clip(18, 75)
+    age[rng.random(n) < 0.08] = np.nan
+    income = rng.normal(62, 16, size=n).clip(25, 140)
+    region = rng.choice(["N", "S", "W"], size=n)
+    logits = 0.04 * (np.nan_to_num(age, nan=38) - 30) + 0.03 * (income - 50)
+    logits += np.where(region == "W", 0.2, 0.0)
+    approved = (logits + rng.normal(0, 0.7, size=n) > 0).astype(int)
+    return pd.DataFrame(
+        {"age": age, "income": income, "region": region, "approved": approved}
     )
+
+
+def main() -> None:
+    frame = _toy_loans()
+    print(f"toy table n={len(frame)}; read the loop, not a credit score")
 
     session = Session.ingest(frame)
     session.set_roles(
@@ -38,6 +52,8 @@ def main() -> None:
     session.scale(method="standard")
     session.fit(LogisticRegression(max_iter=500), task="classification")
 
+    session.calibration(partition="validation")
+    session.tune_threshold(partition="validation", fp_cost=1.0, fn_cost=5.0)
     val = session.evaluate(partition="validation")
     test = session.evaluate(partition="test")
     print("validation:", val.metrics)

@@ -1,8 +1,10 @@
-"""Tier B product: Orbit Multitask Hub.
+"""Composition harness script. Not a product BuildML ships.
 
-Composes multi-output multitask learning + AutoML/classical search +
-validation-tuned decision thresholds for retail SKU outcomes.
+Start with examples/ for a pasteable loop. This file stitches several
+Session surfaces on one synthetic table so the suite can check the seams.
 """
+
+
 
 from __future__ import annotations
 
