@@ -83,7 +83,7 @@ def _positive_scores(session: Any, partition: str, positive_label: Any) -> Any |
     """Best-effort positive-class scores via ``predict(..., return_proba=True)``."""
     try:
         proba = session.predict(partition=partition, return_proba=True)  # type: ignore[misc]
-    except Exception:  # noqa: BLE001 — scores are optional for AUC bridge
+    except Exception:  # noqa: BLE001 - scores are optional for AUC bridge
         return None
     if proba is None:
         return None

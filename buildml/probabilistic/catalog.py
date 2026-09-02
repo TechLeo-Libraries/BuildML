@@ -130,7 +130,7 @@ def probabilistic_capability_matrix() -> dict[str, Any]:
         "industry_import_honesty": (
             "mapie / ngboost backend 'available' and industry_runtime_present "
             "use subprocess import probes. industry_extra_present / "
-            "*_spec_present are find_spec only — spec-present but broken "
+            "*_spec_present are find_spec only - spec-present but broken "
             "wheels report available=False."
         ),
         "classical_calibration_unchanged": (

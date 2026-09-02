@@ -1,11 +1,8 @@
 # AI operator safety
 
-> **Install (GitHub 2.x + AI):**
-> ```bash
-> pip install "git+https://github.com/TechLeo-Libraries/BuildML.git"
-> pip install "buildml[ai]"
-> ```
-> Install with `pip install buildml`. See [installation](../docs/installation.rst).
+```bash
+pip install "buildml[ai]"
+```
 
 The AI operator guides classical / RAG / Torch workflows through a typed tool
 registry. Default policy is **advisor → plan → propose → confirm → execute**.

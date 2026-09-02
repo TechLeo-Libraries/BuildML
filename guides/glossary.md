@@ -1,11 +1,9 @@
 # BuildML glossary
 
-Terms here describe the current BuildML 2.x API. They are not interchangeable with similarly named
-objects in every machine-learning library.
-
-For general machine-learning vocabulary rather than BuildML's own objects: leakage, stratification,
-calibration, ROC-AUC: call `session.learn("<term>")`, which returns a plain-language definition plus
-the concept note that teaches it and what to read first.
+These are the names this Session uses. They are not always the same object
+as a library of the same name. For general machine-learning words such as
+leakage, stratification, or ROC-AUC, start a Session and run
+`session.learn("<term>")`.
 
 **Action**  
 A concrete, optionally executable response attached to a recommendation. An action names a Session

@@ -1,19 +1,16 @@
 # Online / continual learning quickstart
 
-> **Install:** Install Session 2.x with `pip install buildml` (2.5.x on PyPI). Legacy 1.x remains available as `pip install "buildml==1.0.9"`.
-> Online learning uses core sklearn `partial_fit` estimators: no optional extra.
-> See [installation](../docs/installation.rst).
+```bash
+pip install buildml
+```
 
-Incremental updates on **train chunks**: `session.online.fit` warm-starts on an initial
-chunk, `session.online.partial_fit` updates on subsequent chunks, `session.online.evaluate`
-scores held-out validation/test (never used for updates), then save a distinct
-bundle. Honesty: this is batch/stream-chunk Session updating: **not** a
-distributed streaming platform or lifelong-learning research suite.
+`fit` on a train chunk, then `partial_fit` on later train chunks.
+Validation and test are never updated. Silent full refits are refused
+(`allow_refit_fallback` is off). Default estimator is SGD classifier.
+This is not a distributed streaming product.
 
-**Go deeper:** [Online learning deep](online-learning-deep.md) ·
-
-**Proof:** [stream-fraud-online](../proofs/stream-fraud-online/) (+ Tier C SGD partial_fit). Cross-domain: [aegis-fraud-platform](../proofs/aegis-fraud-platform/).
-[Artifacts](artifacts-checkpoints-bundles.md).
+[Online deep](online-learning-deep.md) ·
+[stream-fraud-online](../proofs/stream-fraud-online/)
 
 ```bash
 pip install buildml

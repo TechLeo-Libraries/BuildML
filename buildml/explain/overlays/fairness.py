@@ -191,7 +191,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         "suggest_fairness_thresholds",
         OperationKind.DIAGNOSTIC,
         "Suggest per-group score thresholds for opt-in post-hoc equalization.",
-        "Return thresholds that target demographic parity or equal opportunity — not auto-applied.",
+        "Return thresholds that target demographic parity or equal opportunity - not auto-applied.",
         "Optional mitigation helper; not legal certification.",
         (
             "Require predict_proba scores on the chosen partition (default validation).",
@@ -236,7 +236,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         result_reading=("Read thresholds_by_group and achieved rates; keep disclosures.",),
         next_steps=("Apply thresholds explicitly in your decision layer if stakeholders agree.",),
         concepts=("leakage-boundary", "diagnostic-uncertainty"),
-        plain="Propose different cut-offs per group — you still choose whether to use them.",
+        plain="Propose different cut-offs per group - you still choose whether to use them.",
         when_to_use=("Exploring post-hoc rate equalization with full disclosure.",),
         when_not_to_use=("When you need certification or automatic mitigation products.",),
         mini_example=(
@@ -247,7 +247,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         "suggest_fairness_reweighing",
         OperationKind.DIAGNOSTIC,
         "Suggest Kamiran–Calders sample weights for opt-in train rebalancing.",
-        "Return per-row weights — BuildML does not auto-fit with them.",
+        "Return per-row weights - BuildML does not auto-fit with them.",
         "Optional mitigation helper; not legal certification.",
         (
             "Compute (group, label) weights on the chosen partition (default train).",
@@ -285,7 +285,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         result_reading=("Inspect weight_table and disclosures before any re-fit.",),
         next_steps=("Pass weights into a future fit only under a declared protocol.",),
         concepts=("leakage-boundary",),
-        plain="Compute sample weights that balance group–label mass — you decide whether to use them.",
+        plain="Compute sample weights that balance group–label mass - you decide whether to use them.",
         when_to_use=("Exploring train-time rebalancing with honest documentation.",),
         when_not_to_use=("When you need automatic mitigation or legal certification.",),
         mini_example=(

@@ -1,12 +1,9 @@
 # Serve and deploy recipes
 
-> **Install (GitHub 2.x + serve):**
-> ```bash
-> pip install "git+https://github.com/TechLeo-Libraries/BuildML.git"
-> pip install "buildml[serve]"
-> # Torch export packs also need buildml[torch]; ONNX checker: buildml[onnx]
-> ```
-> See [installation](../docs/installation.rst).
+```bash
+pip install "buildml[serve]"
+# Torch export packs also need buildml[torch]; ONNX checker: buildml[onnx]
+```
 
 BuildML provides **local managed serving** for classical pipeline bundles and
 TorchScript artifacts, plus **operator-owned recipes** for TorchServe,

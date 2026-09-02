@@ -81,7 +81,7 @@ def cited_curriculum_slugs(report: dict[str, Any]) -> dict[str, int]:
 def _safe_call(fn: Any, ctx: dict[str, Any], default: str = "") -> str:
     try:
         value = fn(ctx)
-    except Exception:  # noqa: BLE001 — adaptive binders must not break the board
+    except Exception:  # noqa: BLE001 - adaptive binders must not break the board
         return default
     return str(value) if value is not None else default
 
@@ -178,7 +178,7 @@ def _build_curriculum_entry(
         session_line = (
             f"Cited by {cite_count} finding(s) on this session's report."
             if cite_count
-            else "Reference teaching for this stage — not triggered by a finding here."
+            else "Reference teaching for this stage - not triggered by a finding here."
         )
 
     is_readiness = lesson.slug in readiness

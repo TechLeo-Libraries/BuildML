@@ -1,11 +1,8 @@
 # BuildML guides
 
-User-facing tutorials for BuildML 2.x. Markdown under `guides/` is the
-**canonical** source; Sphinx renders the same files on Read the Docs when the
-hosted build is current
-([buildml.readthedocs.io](https://buildml.readthedocs.io/)).
-
-**Install** (see [installation](../docs/installation.rst)):
+These are the tutorials. Markdown here is the source. Read the Docs
+renders the same files at
+[buildml.readthedocs.io](https://buildml.readthedocs.io/).
 
 ```bash
 pip install buildml
@@ -14,41 +11,26 @@ pip install buildml
 
 Apache-2.0 · [TechLeo-Libraries/BuildML](https://github.com/TechLeo-Libraries/BuildML)
 
-**Deep proofs (not smoke):** see the [proof suite](../proofs/README.md) for
-industry-standard Tier A/B/C projects with holdout metrics, leakage controls,
-and Tier C `comparison.json` twins. Mapping table at the bottom of this page.
+## Start here
 
----
+Do this much before you pick a domain.
 
-## Suggested learning path
-
-| Stage | Read | Outcome |
+| | Read | What you should be able to do |
 | --- | --- | --- |
-| 0 | [Installation](../docs/installation.rst), [Safe install & runtime](safe-install-and-runtime.md), [concepts](../docs/concepts.rst), [workflow guide](../docs/workflow-guide.rst) | Vocabulary, staged install, stage decisions |
-| 0b | New to machine learning? `session.learn()` then `session.explain("<step>")`: see [EDA / Teaching Studio](eda-teaching-studio.md#teaching-surfaces-explain-learn-workflow-walkthrough). Browse with `Session.list_capabilities()` / `Session.list_facades()` / `Session.describe_method("fit")`. Prefer `session.<domain>.*` facades ([migration](../docs/session-facade-migration.md)) | Plain-language concepts, facades, and operations |
-| 1 | [Classical quickstart](quickstart-classical.md) → [Classical end-to-end](classical-end-to-end.md) | Dirty data → roles → split → prep → fit → evaluate |
-| 2 | [Leakage, recipes, weights, hard-refuse CV](leakage-cv-recipes.md) | Why BuildML refuses poisoned CV; good vs bad patterns |
-| 3 | [Engines](engines-polars-duckdb.md), [EDA / Teaching Studio](eda-teaching-studio.md) | Prep at scale; explore before mutating |
-| 4 | [Diagnostics & model search](classical-diagnostics-search.md), [Artifacts](artifacts-checkpoints-bundles.md) | Calibration, CV/HPO, checkpoint vs pipeline |
-| 5 | Optional: [Torch](quickstart-torch.md) → [Torch deep](torch-deep.md), [Speech](speech-asr-finetune.md), [Pretrained](pretrained-backbones.md) | DL on the same Session |
-| 6 | Optional: [Unsupervised](quickstart-unsupervised.md) → [Unsupervised deep](unsupervised-deep.md) | Clustering, PCA integration, eval, bundle |
-| 7 | Optional: [Ensembles](quickstart-ensemble.md) → [Ensemble deep](ensemble-deep.md) | Voting, stacking, holdout blending, bundle |
-| 8 | Optional: [AutoML](quickstart-automl.md) → [AutoML deep](automl-deep.md) | Family + recipe search beyond HPO, nested/validation, bundle |
-| 9 | Optional: [Forecasting](quickstart-forecasting.md) → [Forecasting deep](forecasting-deep.md) | time_split lag/baseline forecasts, eval, bundle |
-| 9b | Optional: [TS analysis](quickstart-timeseries-analysis.md) → [TS analysis deep](timeseries-analysis-deep.md) | Stationarity / seasonality / change points / decompose (analysis-only; not `session.forecast.fit`) |
-| 10 | Optional: [Anomaly](quickstart-anomaly.md) → [Anomaly deep](anomaly-deep.md) | IsolationForest/LOF/OCSVM + supervised fraud path, bundle |
-| 11 | Optional: [Semi-supervised](quickstart-semisupervised.md) → [Semi-supervised deep](semisupervised-deep.md) | Scarce labels + unlabeled train; propagation / self-training |
-| 12 | Optional: [Self-supervised](quickstart-selfsupervised.md) → [Self-supervised deep](selfsupervised-deep.md) | Masked tabular pretext → embeddings → head |
-| 13 | Optional: [Active learning](quickstart-active-learning.md) → [Active learning deep](active-learning-deep.md) | Train-pool query → human labels → refit → eval |
-| 14 | Optional: [Online / continual](quickstart-online-learning.md) → [Online deep](online-learning-deep.md) | Train-chunk `partial_fit` → eval → bundle |
-| 15 | Optional: [Multi-task](quickstart-multi-task.md) → [Multi-task deep](multi-task-deep.md) | sklearn / industry GBDT / torch multi-head → per-task eval → bundle |
-| 16 | Optional: [Meta-learning](quickstart-meta-learning.md) → [Meta-learning deep](meta-learning-deep.md) | Episodic few-shot → adapt → eval → bundle |
-| 17 | Optional: [Federated](quickstart-federated.md) → [Federated deep](federated-deep.md) | Local FedAvg/FedProx → eval → bundle |
-| 18 | Optional: [NLP](quickstart-nlp.md) → [NLP deep](nlp-deep.md) | Profile a corpus → classify documents → attribute tokens → topics/keyphrases/summaries/entities/sentiment → bundle |
-| 19 | Optional: [RAG](quickstart-rag.md) → [RAG deep](rag-deep.md) | Retrieve, grounded generate, eval, bundle |
-| 20 | Optional: [AI](quickstart-ai.md) → [AI safety](ai-operator-safety.md) → [AI tools](ai-tools-operator-patterns.md) | Advisor → confirm → execute; autonomy caps |
-| 21 | Optional: [Serve & deploy recipes](serve-deploy.md) | Local FastAPI, TorchServe/TRT/K8s templates |
-| ∞ | [Glossary](glossary.md), [features](../docs/features.rst) | Terms and capability boundaries |
+| 1 | [Installation](../docs/installation.rst), then [a first Session](../docs/usage.rst) | Install, run ingest → roles → split → prepare → fit → evaluate |
+| 2 | [Concepts](../docs/concepts.rst) and the [workflow guide](../docs/workflow-guide.rst) | Know why the order exists, and when random split is the wrong split |
+| 3 | [Classical quickstart](quickstart-classical.md), then [leakage and recipes](leakage-cv-recipes.md) | Repeat the loop on messier data; understand why CV refuses poisoned prep |
+
+If machine-learning vocabulary is new, start a Session and run
+`session.learn()`, then `session.explain("split")`. The
+[EDA / Teaching Studio](eda-teaching-studio.md#teaching-surfaces-explain-learn-workflow-walkthrough)
+page is the long form of that. Domain work uses `session.<domain>.*`
+([facade migration](../docs/session-facade-migration.md)).
+
+After that, pick a domain from the map below. Quickstarts are short
+on-ramps. Deep guides carry use cases, failure modes, and cross-links.
+Proof projects for each domain sit at the bottom of this page and in
+the [proof suite](../proofs/README.md).
 
 ---
 

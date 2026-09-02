@@ -1,16 +1,15 @@
 # Self-supervised quickstart
 
-> **Install:**
-> `pip install "git+https://github.com/TechLeo-Libraries/BuildML.git#egg=buildml[torch]"`
+```bash
+pip install "buildml[torch]"
+```
 
-Industry-default SSL uses **Torch** when installed (`simclr_tabular` default).
-Legacy sklearn `masked_tabular` remains as deprecated fallback.
+Pretext on train ignores labels. `evaluate` needs `fit_pretext` and
+`finetune_head`. Default tabular path is Torch when that extra is in.
+This is not BERT-from-scratch and not `session.nlp`.
 
-**Go deeper:** [Self-supervised deep](selfsupervised-deep.md) ·
-
-**Proof:** [ssl-representation-probe](../proofs/ssl-representation-probe/) (+ Tier C PCA probe). Cross-domain: [atlas-label-studio](../proofs/atlas-label-studio/).
-[Pretrained backbones](pretrained-backbones.md) ·
-[Artifacts](artifacts-checkpoints-bundles.md).
+[Self-supervised deep](selfsupervised-deep.md) ·
+[ssl-representation-probe](../proofs/ssl-representation-probe/)
 
 ```bash
 pip install "buildml[torch]"

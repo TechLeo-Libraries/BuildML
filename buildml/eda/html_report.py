@@ -49,7 +49,7 @@ DEFAULT_HEADING = "BUILDML STATIC EDA"
 _LEGACY_DEFAULT_TITLES = frozenset(
     {
         "BuildML EDA Report",
-        "Static EDA — readiness sheet",
+        "Static EDA - readiness sheet",
         DEFAULT_HEADING,
     }
 )
@@ -209,7 +209,7 @@ def _render_cockpit(
         _spine(
             "03",
             "ledger",
-            "Ledger — every computed number",
+            "Ledger - every computed number",
             _ledger_block(ledger_groups),
             search_extra="ledger metrics frame quality vif pca drift",
         ),
@@ -656,7 +656,7 @@ def _ledger_block(groups: Sequence[Mapping[str, Any]]) -> str:
             continue
         rows = "".join(
             f'<div class="om-led" data-ledger-row data-search="{escape(f"{key} {value}")}" '
-            f'title="{escape(f"{key} — {value}")}">'
+            f'title="{escape(f"{key} - {value}")}">'
             f'<span class="om-led__key om-mono" title="{escape(str(key))}">{escape(key)}</span>'
             f'<span class="om-led__val om-mono" title="{escape(str(value))}">{escape(value)}</span></div>'
             for key, value in items
@@ -738,7 +738,7 @@ def _recommendations_table(
     rows = []
     for index, recommendation in enumerate(recommendations, start=1):
         based = recommendation.get("based_on") or []
-        basis = ", ".join(str(item) for item in based) if based else "—"
+        basis = ", ".join(str(item) for item in based) if based else " - "
         priority = str(recommendation.get("priority") or "next")
         if hasattr(priority, "value"):
             priority = str(priority)
@@ -784,7 +784,7 @@ def _industry_charts(report: Mapping[str, Any]) -> str:
 
     def _next_caption(body: str) -> str:
         nonlocal fig_n
-        caption = f"Fig. 5.{fig_n} — {body}"
+        caption = f"Fig. 5.{fig_n} - {body}"
         fig_n += 1
         return caption
 
@@ -871,7 +871,7 @@ def _industry_charts(report: Mapping[str, Any]) -> str:
                     _next_caption(f"distribution summary of {target.get('column')}"),
                     [(key, abs(value)) for key, value in stat_items],
                     display=lambda value: _fmt(value),
-                    note="Continuous target — class balance does not apply. Magnitudes are |stat| for display.",
+                    note="Continuous target - class balance does not apply. Magnitudes are |stat| for display.",
                 )
             )
 
@@ -1072,7 +1072,7 @@ def _figure_assets(
             f'<figure class="blueprint om-figure">'
             f'<i class="corner tl"></i><i class="corner tr"></i>'
             f'<i class="corner bl"></i><i class="corner br"></i>'
-            f"<figcaption>Fig. M.{index} — {escape(name)}</figcaption>"
+            f"<figcaption>Fig. M.{index} - {escape(name)}</figcaption>"
             f'<img src="{uri}" alt="{escape(name)}">'
             "</figure>"
         )

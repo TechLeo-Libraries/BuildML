@@ -2,7 +2,7 @@
 
 Handcrafted stage_*.py lessons win when their slug matches a note key.
 Everything else is generated here from the merged ConceptNote (beginner →
-advanced) plus session-adaptive binders — never a one-line extended stub.
+advanced) plus session-adaptive binders - never a one-line extended stub.
 """
 
 from __future__ import annotations
@@ -121,7 +121,7 @@ def _decide(note: Any) -> str:
 
 
 def _applies_hint(key: str, ctx: Ctx) -> str:
-    """Honest applicability line — N/A when the live frame cannot speak to it."""
+    """Honest applicability line - N/A when the live frame cannot speak to it."""
     task = str(ctx.get("task") or "")
     has_target = bool(ctx.get("has_target"))
     analyzers = ctx.get("analyzers") or {}
@@ -130,7 +130,7 @@ def _applies_hint(key: str, ctx: Ctx) -> str:
         "decision-"
     ):
         if is_regression(ctx):
-            return "N/A for this regression target — classification / decision thresholds do not apply."
+            return "N/A for this regression target - classification / decision thresholds do not apply."
         if not has_target:
             return "N/A until a classification target role is declared."
         if is_classification(ctx):
@@ -140,16 +140,16 @@ def _applies_hint(key: str, ctx: Ctx) -> str:
         if not has_target and key == "mutual-information":
             return "N/A for MI-vs-target until a target role is set."
         if key == "variance-inflation" and not analyzers.get("vif"):
-            return "VIF analyzer unavailable or skipped on this report — treat as reference teaching."
+            return "VIF analyzer unavailable or skipped on this report - treat as reference teaching."
         if key == "mutual-information" and not analyzers.get("mi"):
-            return "MI analyzer unavailable or skipped — treat as reference teaching."
+            return "MI analyzer unavailable or skipped - treat as reference teaching."
 
     if key in {"dataset-drift"} and not analyzers.get("drift"):
-        return "Drift screen not present on this report — reference teaching until partitions exist."
+        return "Drift screen not present on this report - reference teaching until partitions exist."
 
     if key.startswith("nlp-") or key == "text-features":
         cats = ctx.get("categorical") or []
-        # Heuristic: no strong text signal in overview — still teach, mark honesty.
+        # Heuristic: no strong text signal in overview - still teach, mark honesty.
         return (
             f"Session has {fmt_n(len(cats))} categorical/text-like columns to audit for text workflows; "
             "if your corpus lives outside this table, treat this as domain reference."
@@ -157,20 +157,20 @@ def _applies_hint(key: str, ctx: Ctx) -> str:
 
     if key.startswith(("rl-", "imitation-", "graph-", "kg-", "tda-", "federated-", "rag-")):
         return (
-            "Domain concept — this tabular EDA session may not exercise it directly; "
+            "Domain concept - this tabular EDA session may not exercise it directly; "
             "the lesson still teaches the BuildML contract so you can apply it when that surface is in play."
         )
 
     if key.startswith("forecast-") or key.startswith("ts-"):
         return (
-            "Time-series / forecast concept — apply when a time role or ordered index exists; "
+            "Time-series / forecast concept - apply when a time role or ordered index exists; "
             "otherwise keep as reference for temporal projects."
         )
 
     if not has_target and any(
         token in key for token in ("target", "supervised", "calibr", "baseline", "metric")
     ):
-        return "No target declared — supervised reading is reference until roles are set."
+        return "No target declared - supervised reading is reference until roles are set."
 
     return ""
 
@@ -263,20 +263,20 @@ def _calculation(key: str, note: Any, ctx: Ctx) -> str:
                 f"VIF table present for: {names}. Flag columns with VIF much greater than 5-10."
             )
         else:
-            lines.append(apply or "VIF not available — need complete numeric cases.")
+            lines.append(apply or "VIF not available - need complete numeric cases.")
     elif key == "cross-validation":
         lines.append(
             f"With n={fmt_n(rows)}, k-fold uses ≈{fmt_n(max(rows // 5, 1))} rows per fold at k=5; "
             "group/time CV replaces random folds when rows are dependent."
         )
     elif key.startswith("probabilistic-") or "calibr" in key:
-        holdout = fmt_n(int(0.2 * rows)) if rows else "—"
+        holdout = fmt_n(int(0.2 * rows)) if rows else " - "
         lines.append(
             "Calibration compares predicted probabilities to observed frequencies "
             f"on held-out rows (n≈{holdout} if test_size=0.2)."
         )
     else:
-        # Lift formal idea + session scope — still a real walkthrough, not a stub.
+        # Lift formal idea + session scope - still a real walkthrough, not a stub.
         if note.formal_idea:
             lines.append(note.formal_idea)
         lines.append(
@@ -319,7 +319,7 @@ def _tool_calls(note: Any, key: str) -> list[str]:
 
 def _example_code(key: str, note: Any, ctx: Ctx) -> str:
     header = [
-        "# Worked BuildML Session example — change paths/columns to your data.",
+        "# Worked BuildML Session example - change paths/columns to your data.",
         *[f"# Pattern: {step}" for step in (note.worked_example_pattern or ())[:3]],
     ]
     mini = [str(line) for line in (note.mini_example or ())[:6]]

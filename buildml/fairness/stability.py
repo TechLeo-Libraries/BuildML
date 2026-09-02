@@ -50,7 +50,7 @@ def estimate_gap_stability(
     """Estimate percentile CI / bands for DP, DI, and equalized-odds gaps.
 
     Resampling is over rows of the evaluated partition only. Bands describe
-    sampling variability of observational gaps — they are not causal
+    sampling variability of observational gaps - they are not causal
     uncertainty and do not certify fairness.
 
     Parameters

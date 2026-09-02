@@ -1,8 +1,18 @@
 # Learning-to-rank (tabular search ranking): deep guide
 
-> Core Session path with sklearn fallback; industry GBDT rankers via
-> `buildml[ranking-industry]`; torch listwise-lite via `buildml[torch]`.
-> Quickstart: [quickstart-ranking.md](quickstart-ranking.md).
+```bash
+pip install buildml
+# GBDT rankers: pip install "buildml[ranking-industry]"
+# torch listwise-lite: pip install "buildml[torch]"
+```
+
+`query_column` and `item_column` are required. `relevance_column` defaults
+to the Session target if you have one. Prefer `group_split` on the query.
+`method=None` picks sklearn pointwise on a core install, or LightGBM
+LambdaRank (then XGB, then CatBoost) when `buildml[ranking-industry]` is
+installed.
+
+Short on-ramp: [ranking quickstart](quickstart-ranking.md).
 
 ## What this is (and is not)
 

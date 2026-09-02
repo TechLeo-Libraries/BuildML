@@ -112,7 +112,7 @@ def federated_capability_matrix() -> dict[str, Any]:
         "flwr_import_honesty": (
             "flower backend 'available' and industry_runtime_present require a "
             "successful subprocess flwr import (flwr_runtime_available). "
-            "flwr_spec_present / industry_extra_present are find_spec only — "
+            "flwr_spec_present / industry_extra_present are find_spec only - "
             "discoverable wheels can still be broken."
         ),
         "honesty": (

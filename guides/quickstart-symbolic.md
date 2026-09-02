@@ -1,18 +1,15 @@
-# Quickstart: Symbolic + Neuro-symbolic AI
+# Symbolic / neuro-symbolic quickstart
 
-Session path for **tabular if-then rules** and a **base-model + rules hybrid**.
-Induce rules from train (sklearn tree/list or industry skope-rules/imodels) or
-compile expert-declared rules; predict with explanation traces; persist via
-`buildml.symbolic_bundle.v1`.
+```bash
+pip install buildml
+```
 
-Honesty: **not** an AGI symbolic reasoner, Prolog engine, or full Z3 SMT product.
-Core stays light (numpy / pandas / sklearn). Optional industry depth via
-`buildml[symbolic-industry]`; torch neuro-symbolic via `buildml[torch]`.
+Tabular if-then rules, declared or induced from train. Default source is
+a decision tree. `fit_neuro` is the sklearn hybrid overlay. Not Prolog,
+not a Z3 product. `verify_constraints=True` is a lite check only.
 
-**Proof:** [policy-rules-neuro-symbolic](../proofs/policy-rules-neuro-symbolic/) (+ Tier C DecisionTree twin). Cross-domain: [pulse-support-copilot](../proofs/pulse-support-copilot/).
-
-**Go deeper:** [Symbolic deep](symbolic-deep.md) ·
-[Artifacts](artifacts-checkpoints-bundles.md)
+[Symbolic deep](symbolic-deep.md) ·
+[policy-rules-neuro-symbolic](../proofs/policy-rules-neuro-symbolic/)
 
 ```python
 import numpy as np

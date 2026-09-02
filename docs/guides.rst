@@ -45,6 +45,7 @@ guides carry use cases, many examples, failure modes, and cross-links.
    quickstart-kg
    quickstart-optimize
    quickstart-synthetic
+   quickstart-fairness
    quickstart-nlp
    quickstart-torch
    quickstart-rag
@@ -86,6 +87,7 @@ guides carry use cases, many examples, failure modes, and cross-links.
    kg-deep
    optimize-deep
    synthetic-deep
+   fairness-deep
    nlp-deep
 
 .. toctree::

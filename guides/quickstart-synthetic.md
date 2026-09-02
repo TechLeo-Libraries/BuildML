@@ -1,19 +1,17 @@
-# Quickstart: Synthetic-data systems
+# Synthetic data quickstart
 
-> **Install:**
-> `pip install buildml`
-> Core path: bootstrap + Gaussian copula use numpy/scipy/sklearn.
-> `method='smote'` needs `pip install "buildml[imbalanced]"`.
-> SDV CTGAN/TVAE/CopulaGAN needs `pip install "buildml[synthetic-industry]"`.
-> See [installation](../docs/installation.rst).
+```bash
+pip install buildml
+# SMOTE: pip install "buildml[imbalanced]"
+# SDV: pip install "buildml[synthetic-industry]"
+```
 
-Session path for **train-fitted tabular generators**: native bootstrap / copula /
-SMOTE, plus optional SDV industry backends when installed.
+Train-fitted generators. Default is native Gaussian copula. This is not
+`session.resample` and not differential privacy. `extend_train` merge
+clears a classical `FitResult`.
 
-**Distinct from** `Session.resample` (class-balance preprocess).
-**Not** differential privacy.
-
-**Proof:** [synthetic-privacy-utility](../proofs/synthetic-privacy-utility/) (+ Tier C column-bootstrap twin).
+[Synthetic deep](synthetic-deep.md) ·
+[synthetic-privacy-utility](../proofs/synthetic-privacy-utility/)
 
 Runnable mirror: [`examples/synthetic_copula_loop.py`](../examples/synthetic_copula_loop.py).
 Deep guide: [synthetic-deep.md](synthetic-deep.md).

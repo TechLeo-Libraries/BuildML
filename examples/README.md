@@ -4,11 +4,12 @@ Small scripts that mirror guide snippets for copy-paste outside Markdown.
 These are **not** a CI gate; prefer `tests/` for behavioral guarantees and
 `proofs/` for end-to-end product evidence.
 
-**Install (GitHub 2.x):**
+**Install:**
 
 ```bash
-pip install "git+https://github.com/TechLeo-Libraries/BuildML.git"
-# or from a checkout: pip install -e ".[dev]"
+pip install buildml
+# from a checkout: pip install -e ".[dev]"
+# tip of main: pip install "git+https://github.com/TechLeo-Libraries/BuildML.git"
 ```
 
 Bundle reload calls pass `trusted=True` because they load artifacts the same

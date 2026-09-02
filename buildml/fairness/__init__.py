@@ -3,7 +3,7 @@
 Observational metrics only: not a legal audit, not causal fairness, and not a
 certification product. Callers must declare sensitive column(s) and interpret
 gaps in domain context. Optional mitigation helpers return weights/thresholds
-explicitly — they never silently rewrite predictions.
+explicitly - they never silently rewrite predictions.
 """
 
 from buildml.fairness.catalog import fairness_capability_matrix

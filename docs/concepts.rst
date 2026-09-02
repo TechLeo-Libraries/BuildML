@@ -1,293 +1,267 @@
 Concept guide
 =============
 
-The canonical short notes live in ``buildml.explain.CONCEPT_NOTES`` and are
-returned by ``buildml.explain.get_concept(key)``. Session operation entries
-link to those keys. This guide expands the choices that require project
-judgment.
+A few ideas decide whether a BuildML run is trustworthy. This page is
+those ideas. The short in-library notes live in
+``buildml.explain.CONCEPT_NOTES`` and come back through
+``session.learn("leakage")`` (or whatever word tripped you up). Use that
+when you are already in a Session. Use this page when you want the
+judgment written out.
 
-Roles and feature contracts
----------------------------
+Roles
+-----
 
-A role states how a column may be used. Dtype is not enough: an integer may be
-a measurement, category, identifier, group key, or timestamp surrogate.
-Review target, feature, identifier, group, time, weight, and ignored roles
-before target-aware analysis.
+A role says how a column may be used. Dtype is not enough. An integer
+can be a measurement, a category, an identifier, a group key, or a
+stand-in for time. Columns you do not name default to ``feature``.
+Only the names you pass to ``set_roles`` change.
 
-Do not proceed when a feature would be unavailable at prediction time, was
-created after the outcome, or is a direct proxy for the target. BuildML
-validates role names and uses roles to select target/features. It cannot infer
-the real-world availability or meaning of a field.
+Review target, feature, identifier, group, time, weight, and ignored
+roles before you do anything target-aware. Supervised ``fit`` wants
+exactly one ``target``.
 
-Canonical catalog keys: ``column-roles`` and ``feature-schema``.
+Do not continue when a feature would be unavailable at prediction time,
+was created after the outcome, or is a direct proxy for the target.
+BuildML validates role names and uses them to pick target and features.
+It cannot infer what a field means in the real world.
+
+In a Session: ``session.learn("column-roles")``.
 
 Leakage and partitions
 ----------------------
 
-Leakage occurs when development receives information unavailable at the
-prediction point being simulated. BuildML's ``impute``, ``encode``, ``scale``,
+Leakage is when development sees information that would not exist at the
+prediction point you are simulating. ``impute``, ``encode``, ``scale``,
 ``resample``, and ``fit`` require a split. Replacement statistics,
-vocabularies, scale parameters, synthetic samples, and estimator parameters
-are learned from training rows.
+vocabularies, scale parameters, synthetic samples, and estimator
+parameters are learned from training rows.
 
-``split`` supports random and stratified membership. Random splitting assumes
-independent, exchangeable rows. It is misleading for repeated customers,
-households, devices, locations, matched records, or future prediction when
-related rows or periods cross the boundary. In those cases, stop and design
-the boundary outside BuildML, then call ``inject_split``. BuildML checks
-indices for overlap, duplicates, range, and stored membership; it cannot prove
-that groups or time windows were defined correctly.
+Random ``split`` assumes independent, exchangeable rows. That is the
+wrong tool for repeated customers, households, devices, locations,
+matched records, or predicting the future when related rows or periods
+cross the boundary. In those cases, design the boundary yourself, then
+call ``group_split``, ``time_split``, or ``inject_split``.
+``group_split``'s sizes count groups, not rows.
+``time_split`` holds out the most recent rows.
+``inject_split`` takes positional indices (``0`` to ``n-1``), not
+DataFrame labels, and refuses overlap. BuildML cannot prove that groups
+or time windows were defined correctly.
 
-Use validation for model, feature, hyperparameter, calibration, and threshold
-choices. Use test once those choices are fixed. Repeatedly reading test results
-turns test into selection data.
+Use validation for model, feature, hyperparameter, calibration, and
+threshold choices. Use test once those choices are fixed. Reading test
+results over and over turns test into selection data.
 
-Canonical catalog keys: ``leakage-boundary``, ``data-splitting``, and
-``evaluation-partitions``.
+In a Session: ``session.learn("leakage")``.
 
 EDA interpretation
 ------------------
 
-``Session.eda`` can report quality issues, distributions, associations,
-outliers, target relationships, multivariate screens, and partition drift.
-These are prompts for investigation:
+``session.eda()`` can report quality issues, distributions, associations,
+outliers, target relationships, multivariate screens, and partition
+drift. Treat those as prompts, not conclusions:
 
 * correlation and mutual information do not establish causation;
-* a statistical flag can be negligible in effect size or unstable in a small
-  sample;
+* a statistical flag can be tiny in effect or unstable in a small sample;
 * outliers may be valid rare cases rather than errors;
-* full-data or test-aware exploration can leak choices into evaluation;
+* exploring the full table, or peeking at test, can leak choices into
+  evaluation;
 * sampled EDA can miss rare categories and tails;
-* drift identifies changed distributions, not the resulting change in model
-  quality.
+* drift identifies changed distributions, not the resulting change in
+  model quality.
 
-Do not proceed to model claims when the observation unit, target timing,
-duplicate policy, missingness mechanism, or partition design remains
-unresolved. BuildML records findings, evidence, recommendations, and
-limitations separately. Recommendations never mutate Session state.
+Do not move to model claims while the observation unit, target timing,
+duplicate policy, missingness mechanism, or partition design is still
+unresolved. Findings, evidence, recommendations, and limitations are
+recorded separately. Recommendations never mutate Session state.
 
-Canonical catalog keys: ``diagnostic-uncertainty`` and ``dataset-drift``.
+In a Session: ``session.learn("diagnostic-uncertainty")``.
 
 Preprocessing order
 -------------------
 
-Split first. A common order is impute, encode, then scale, but the estimator
-and data semantics determine whether each stage belongs:
+Split first. A common order is impute, encode, then scale, but the
+estimator and the data decide whether each stage belongs:
 
-* skip imputation when the estimator handles missing values and that behavior
-  is understood;
-* use one-hot encoding for unordered low-cardinality categories; ordinal
-  encoding invents numeric order unless the category is truly ordered;
-* scaling matters for distance, margin, and regularized linear methods, but
-  usually not for tree split ordering;
-* resampling changes training prevalence and must not change validation or
-  test rows;
-* date parts can expose future or post-outcome information even though their
-  calculation is deterministic.
+* skip imputation when the estimator handles missing values and you
+  understand that behavior;
+* use one-hot encoding for unordered low-cardinality categories;
+  ordinal encoding invents numeric order unless the category is truly
+  ordered;
+* scaling matters for distance, margin, and regularized linear methods,
+  and usually not for tree split ordering;
+* resampling changes training prevalence and must not change validation
+  or test rows;
+* date parts can expose future or post-outcome information even though
+  the calculation is deterministic.
 
-Do not continue after a schema-changing operation until generated columns,
-unknown-category behavior, null counts, and the estimator feature contract
-have been checked. BuildML stores fitted plans and preserves frozen
-train-derived parameters across partitions. It does not package all
-preprocessing into the saved estimator bundle for deployment.
+After a schema-changing operation, check generated columns,
+unknown-category behavior, null counts, and the estimator feature
+contract before you continue. BuildML stores fitted plans and keeps
+frozen train-derived parameters across partitions.
 
-Canonical catalog keys: ``missing-data``, ``categorical-encoding``,
-``feature-scaling``, ``class-imbalance``, and ``feature-schema``.
+In a Session: ``session.learn("missing-data")``.
 
-Baselines, model fit, and selection
------------------------------------
+Baselines, fit, and selection
+-----------------------------
 
-A baseline anchors whether model complexity improves the chosen metric. For
-classification, compare against prevalence or a simple policy. For regression,
-compare against a train-derived central prediction. Evaluate candidates under
-the same preparation, partitions, and metric.
+A baseline tells you whether complexity improved the metric you chose.
+For classification, compare against prevalence or a simple policy. For
+regression, compare against a train-derived central prediction. Evaluate
+candidates under the same preparation, partitions, and metric.
 
-``fit`` clones and trains one sklearn-compatible estimator on training rows.
-``compare_models`` trains named candidates and ranks on one partition. Prefer
-validation for ranking; its current default partition is test, so override
-that default during iterative selection. The top-ranked candidate becomes the
-active fit.
+``fit`` clones and trains one sklearn-compatible estimator on training
+rows. ``compare_models`` trains named candidates and ranks on one
+partition. Prefer validation for ranking. The current default partition
+for ``compare_models`` is test, so override that during iterative
+selection. The top-ranked candidate becomes the active fit.
 
 Do not proceed from a rounded score difference alone. Check variation,
-failure slices, complexity, latency, calibration, and whether the gain exceeds
-the baseline by enough to matter.
+failure slices, complexity, latency, calibration, and whether the gain
+beats the baseline by enough to matter.
 
-Canonical catalog keys: ``baselines``, ``model-selection``, and
-``overfitting``.
+In a Session: ``session.learn("baselines")``.
 
 Evaluation, calibration, thresholds, and importance
 ---------------------------------------------------
 
-Always read a metric with its partition, sample count, positive class or
-target unit, and baseline. Accuracy can hide minority-class failure. ROC and
-precision-recall answer different questions under class imbalance. Regression
+Read a metric with its partition, sample count, positive class or target
+unit, and baseline. Accuracy can hide minority-class failure. ROC and
+precision-recall answer different questions under imbalance. Regression
 averages can hide asymmetric or subgroup errors.
 
-Calibration asks whether predicted probabilities match observed frequencies;
-it is separate from ranking quality. Fit calibrators on validation or
-cross-validation data and assess them elsewhere. Threshold selection is a
-decision-policy choice tied to false-positive and false-negative costs.
-``tune_threshold`` reports a sweep (and optional expected-cost minimization
-via ``fp_cost`` / ``fn_cost``) but does not change estimator prediction
-behavior; choose on validation and confirm the fixed threshold on test.
-``error_slices`` localizes holdout errors by one or more segment columns and
-keeps small-n segments out of the primary ranking.
+Calibration asks whether predicted probabilities match observed
+frequencies. That is separate from ranking quality. Fit calibrators on
+validation or cross-validation data and assess them elsewhere.
 
-Permutation importance measures score change when a feature is shuffled. It
-can split reliance among correlated features and is unstable on small
-partitions. It does not measure causal effect or universal relevance.
+Threshold selection is a decision-policy choice tied to false-positive
+and false-negative costs. ``tune_threshold`` reports a sweep (and
+optional expected-cost minimization via ``fp_cost`` / ``fn_cost``) but
+does not change estimator prediction behavior. Choose on validation and
+confirm the fixed threshold on test.
 
-Do not make a release claim when the relevant partition is too small, the
-positive class has inadequate support, the deployment prevalence differs
-materially, or the test partition influenced prior choices.
+``error_slices`` localizes holdout errors by one or more segment
+columns and keeps small-n segments out of the primary ranking.
 
-Canonical catalog keys: ``probability-calibration``, ``thresholds``,
-``feature-importance``, and ``diagnostic-uncertainty``.
+Permutation importance measures score change when a feature is shuffled.
+It can split reliance among correlated features and is unstable on small
+partitions. It does not measure causal effect.
+
+Do not make a release claim when the relevant partition is too small,
+the positive class has inadequate support, deployment prevalence differs
+materially, or the test partition already influenced prior choices.
+
+In a Session: ``session.learn("probability-calibration")``.
 
 Drift
 -----
 
-Drift compares defined populations or periods. Interpret effect size, sample
-support, missingness, and collection changes together. Train-test drift can
-mean an invalid split, temporal change, or a different population. Feature
-drift without labels does not measure model-quality drift.
+Drift compares defined populations or periods. Read effect size, sample
+support, missingness, and collection changes together. Train-test drift
+can mean an invalid split, temporal change, or a different population.
+Feature drift without labels does not measure model-quality drift.
 
 Stop automated comparison when schemas, units, category meanings, or
-observation definitions differ. BuildML's EDA drift analyzer compares stored
-partitions; it cannot establish that they represent production windows.
+observation definitions differ. BuildML's EDA drift analyzer compares
+stored partitions. It cannot establish that they represent production
+windows.
 
-Canonical catalog key: ``dataset-drift``.
+In a Session: ``session.learn("dataset-drift")``.
 
 Checkpoints and reproducibility
 -------------------------------
 
 A checkpoint stores canonical data, roles, split membership, operation
-history, metadata, and ``MANIFEST.json`` hashes. ``checkpoint_load`` validates
-the bundle. ``data_only=True`` deliberately discards prior workflow semantics.
+history, metadata, and ``MANIFEST.json`` hashes. ``checkpoint_load``
+validates the bundle. ``data_only=True`` discards prior workflow
+semantics on purpose.
 
-A checkpoint is not a model artifact. ``save_model`` stores the active fitted
-estimator and feature contract separately. Do not load an untrusted model
-bundle because its serialization is pickle-compatible. Do not resume when
-reattach validation reports incompatible or missing required state.
+A checkpoint is not a model artifact. ``save_model`` stores the active
+fitted estimator and feature contract separately. Do not load an
+untrusted model bundle; its serialization is pickle-compatible. Do not
+resume when reattach validation reports incompatible or missing required
+state.
 
-History records calls made through Session; it is not complete source-data
-provenance and does not prove that methodological choices were valid.
+History records calls made through Session. It is not complete
+source-data provenance and does not prove that methodological choices
+were valid.
 
-Canonical catalog keys: ``checkpoint-integrity`` and ``reproducibility``.
+In a Session: ``session.learn("checkpoint-integrity")``.
 
-Teaching surfaces: explain, learn, workflow, walkthrough, dry_run
------------------------------------------------------------------
+Teaching surfaces
+-----------------
 
-BuildML maintains a versioned **operation catalog** for every public Session
-callable. Each entry covers definition, purpose, pipeline role, mechanism,
-parameters, prerequisites, usual ordering, alternatives, assumptions, failure
-modes, leakage risks, state changes, and result reading. Shared background
-lives in **concept notes** (``buildml.explain.CONCEPT_NOTES``), linked from
-catalog entries by key.
+BuildML keeps a versioned operation catalog for every public Session
+callable. Each entry covers definition, purpose, pipeline role,
+mechanism, parameters, prerequisites, usual ordering, alternatives,
+assumptions, failure modes, leakage risks, state changes, and how to
+read the result.
 
-``Session.explain(operation, moment="before"|"after")`` joins catalog text to
-live Session state. A ``before`` explanation lists what must already be true
-and what could go wrong. An ``after`` explanation adds the latest recorded
-call, parameters, and state transition. Explanations report what BuildML
-knows; they cannot prove that a partition matches deployment or that roles
-exclude target proxies.
+``session.explain(operation, moment="before"|"after")`` joins that
+catalog to live Session state. A ``before`` explanation lists what must
+already be true and what could go wrong. An ``after`` explanation adds
+the latest recorded call. Explanations report what BuildML knows. They
+cannot prove that a partition matches deployment or that roles exclude
+target proxies.
 
-Reading levels
-~~~~~~~~~~~~~~
+``explain`` and ``learn`` both accept ``level="beginner"`` (the
+default), ``"intermediate"``, or ``"advanced"``. The level changes how
+much scaffolding you see, never which facts are true. Assumptions,
+leakage risks, and failure modes appear at every level.
 
-``explain`` and ``learn`` both accept ``level="beginner"`` (the default),
-``"intermediate"``, or ``"advanced"``. Every operation explanation carries a
-``beginner`` **operation primer**: a plain-language summary, an analogy, the
-steps in order, prerequisites stated in ordinary words, what each key parameter
-means in practice, the common pitfalls, an in-line glossary of the jargon the
-answer itself used, and a worked example. The primer is derived from the same
-catalog entry and concept notes as the expert sections, so the two cannot drift;
-an operation may override any section with hand-written prose.
+``session.learn(topic)`` answers the question that comes before
+``explain``: what is this, and what should I understand first. The topic
+may be a concept key (``"leakage-boundary"``), an operation name
+(``"split"``), or a piece of jargon (``"stratified"``). Spacing and
+hyphenation are forgiven. Called with no topic it returns the foundation
+concepts in reading order.
 
-The level controls how much scaffolding is rendered, never which facts are
-true. Assumptions, leakage risks, and failure modes appear at every level;
-``advanced`` drops the analogy and glossary and widens the parameter and pitfall
-lists.
+``session.workflow()`` resolves every cataloged operation to one of
+``done``, ``available``, ``blocked``, or ``skipped``. Available means
+prerequisites pass, not that you should run the step.
 
-Learning a concept rather than a call
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``session.walkthrough()`` joins workflow status, history, and unresolved
+catalog risks, and can export offline HTML.
 
-``Session.learn(topic, level=...)`` answers the question that comes before
-``explain``: what *is* this, and what should be understood first. The topic may
-be a concept key (``"leakage-boundary"``), an operation name (``"split"``), or a
-piece of jargon (``"stratified"``), with spacing and hyphenation forgiven.
-Called with no topic it returns the foundation concepts in reading order.
+``session.dry_run(...)`` previews operations without mutating state.
+``session.summarize_history()`` counts operations and surfaces heuristic
+unresolved risks. Those risks are review cues, not proof of invalid
+results.
 
-The returned ``LearningBrief`` carries the resolved subject plus ``read_first``
-and ``read_next`` concept notes, so a newcomer gets a reading order rather than
-an index. Concept notes themselves are layered: plain summary, analogy,
-beginner steps, when to use and when not to, misconceptions with corrections, a
-worked example, self-check questions, and the technical material. Teaching
-content is static: it explains ideas and BuildML's contract, and inspects none
-of your data.
+Engines
+-------
 
-``Session.workflow()`` resolves every cataloged operation to one of:
-
-* ``done``: recorded in history or satisfied by current state;
-* ``available``: prerequisites pass (not a recommendation to run);
-* ``blocked``: prerequisites fail, with a reason;
-* ``skipped``: not applicable given current task or configuration.
-
-``Session.walkthrough()`` combines workflow resolution, operation history,
-unresolved catalog risks, and optional offline HTML export. It is the audit
-view for handoff or self-review after a long session.
-
-``Session.dry_run(...)`` previews one or more operations without mutating
-state or appending history. ``Session.summarize_history()`` counts operations,
-surfaces heuristic unresolved risks, and lists suggested next steps from the
-prerequisite graph. Risks are review cues, not proof of invalid results.
-
-``Session.eda()`` and ``session.eda_app()`` add findings (observations with
-severity), evidence, and read-only recommendations. A **finding** states what
-was observed, on which partition, with what measure, and with stated limits. A
-**recommendation** proposes a response but does not mutate the Session.
-
-Canonical catalog keys: ``operation-catalog``, ``workflow-resolution``, and
-``diagnostic-uncertainty``.
-
-Engines at a practical level
-----------------------------
-
-Three engines appear in current APIs: **Pandas** (default canonical frame),
-**Polars**, and **DuckDB**. Path ingest with ``engine="polars"`` or
-``engine="duckdb"`` loads natively when the extra is installed. Session
-preprocess steps still materialize through Pandas for sklearn; native handles
-are rebuilt after transforms so ``Dataset.project``, ``Dataset.aggregate``,
-and ``prepare_design_matrix`` can prefer engine ops where implemented.
+Three engines appear in current APIs: **Pandas** (the default canonical
+frame), **Polars**, and **DuckDB**. Path ingest with
+``engine="polars"`` or ``engine="duckdb"`` loads natively when the extra
+is installed. Session preprocess still materializes through Pandas for
+sklearn.
 
 Practical guidance:
 
-* Stay on Pandas for small and medium frames and the simplest mental model.
-* Use Polars or DuckDB when filtering, projecting, or aggregating large files
-  before sklearn materialization.
-* Use ``portable_filter_expr`` for simple predicates shared across Polars and
-  DuckDB; keep complex SQL engine-specific.
-* Close DuckDB with ``with session:`` or ``session.close_native()``: root
-  datasets own the connection.
-* Lazy Polars ``LazyFrame`` plans collect at sklearn boundaries; that is not
-  out-of-core training.
+* Stay on Pandas for small and medium frames and the simplest mental
+  model.
+* Use Polars or DuckDB when filtering, projecting, or aggregating large
+  files before sklearn materialization.
+* Use ``portable_filter_expr`` for simple predicates shared across
+  Polars and DuckDB. Keep complex SQL engine-specific.
+* Close DuckDB with ``with session:`` or ``session.close_native()``.
+* Lazy Polars ``LazyFrame`` plans collect at sklearn boundaries. That is
+  not out-of-core training.
 
-Checkpoint sidecars optionally store Parquet snapshots so restore can reattach
-a native handle without eager rebuild from the Pandas export. Sidecar layout,
-compression, and row thresholds are configurable on ``checkpoint_save``.
-
-Canonical catalog keys: ``data-engines`` and ``materialization-gates``.
+In a Session: ``session.learn("data-engines")``.
 
 Imbalance and resampling
 ------------------------
 
-Class imbalance affects which metrics matter and whether resampling helps.
-``Session.resample`` alters **training rows only** after a split. Validation
-and test partitions stay untouched. Resampling changes training prevalence; compare
-against a non-resampled baseline on the same partitions before claiming gain.
+Class imbalance affects which metrics matter and whether resampling
+helps. ``session.resample`` alters **training rows only** after a split.
+Validation and test stay untouched. Resampling changes training
+prevalence. Compare against a non-resampled baseline on the same
+partitions before you claim a gain.
 
-``resample_strategies()`` lists available samplers and when each is reasonable.
-Resample plans are recorded for lineage and appear in pipeline bundles, but
-they are not reapplied automatically at score time.
+``resample_strategies()`` lists available samplers and when each is
+reasonable. Resample plans are recorded for lineage and appear in
+pipeline bundles, but they are not reapplied automatically at score
+time.
 
-Canonical catalog key: ``class-imbalance``.
+In a Session: ``session.learn("class-imbalance")``.

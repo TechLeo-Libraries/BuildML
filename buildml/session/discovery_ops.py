@@ -140,7 +140,7 @@ def list_capabilities(
         "facades": list_facades(),
         "disclosures": (
             "Additive discovery API over existing Session.*_capability_matrix() "
-            "and explain catalog — does not reduce the public surface.",
+            "and explain catalog - does not reduce the public surface.",
             "include_matrices=True may import optional industry stacks.",
             "Prefer session.<domain>.* facades; flat domain actions are deprecated "
             "until BuildML 3.0 (see docs/session-facade-migration.md).",
@@ -284,7 +284,7 @@ def describe_method(name: str, session_type: type | None = None) -> dict[str, An
 def list_active_domains(session: Any) -> dict[str, Any]:
     """Report which domain artifacts are present on a live Session.
 
-    This is a presence probe over plan/result attributes and recent history —
+    This is a presence probe over plan/result attributes and recent history - 
     not a maturity score and not a substitute for capability matrices.
 
     Parameters
@@ -332,7 +332,7 @@ def list_active_domains(session: Any) -> dict[str, Any]:
         "idle_probed_domains": idle,
         "history_operations": history_ops,
         "disclosures": (
-            "Presence of private plan/result attributes — not a maturity score.",
+            "Presence of private plan/result attributes - not a maturity score.",
         ),
     }
 

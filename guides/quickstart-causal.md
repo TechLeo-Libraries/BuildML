@@ -1,24 +1,19 @@
-# Quickstart: Causal ML
+# Causal ML quickstart
 
-Session path for **assumption-declared** backdoor ATE estimation: declare
-`CausalAssumptions`, fit train-only models (native / DoWhy / EconML when
-installed), estimate effects with optional bootstrap CIs, run sensitivity
-checks, and persist via `buildml.causal_bundle.v1`.
+```bash
+pip install buildml
+# DoWhy / EconML: pip install "buildml[causal-industry]"
+```
 
-**Critical boundary:** EDA / associations / feature importance remain
-**associational**. They never identify causal effects and never populate
-`CausalAssumptions`. Estimation **refuses** without an explicit declaration
-(including unconfoundedness + positivity acknowledgements).
+Backdoor ATE only, and only after you declare it.
+`session.causal.declare_assumptions` needs `treatment`, `outcome`,
+`confounders`, and explicit unconfoundedness plus positivity
+acknowledgements. Without that declaration the fit refuses. EDA never
+fills this in. Instruments are refused: IV and front-door are not
+implemented. Default method is native AIPW.
 
-Honesty: native sklearn nuisances ship with core BuildML. Install
-`buildml[causal-industry]` for DoWhy refutation and EconML DML/CATE/policy
-paths. **Not** causal discovery, **not** IV / front-door (instruments refused).
-
-**Go deeper:** [Causal deep](causal-deep.md) ·
-
-**Proof:** [causal-treatment-effect](../proofs/causal-treatment-effect/) (+ Tier C sklearn AIPW twin).
-[EDA / Teaching Studio](eda-teaching-studio.md) (still non-causal) ·
-[Artifacts](artifacts-checkpoints-bundles.md)
+[Causal deep](causal-deep.md) ·
+[causal-treatment-effect](../proofs/causal-treatment-effect/)
 
 ```python
 import numpy as np

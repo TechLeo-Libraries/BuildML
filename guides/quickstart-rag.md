@@ -1,10 +1,9 @@
 # RAG quickstart
 
-> **Install:** Install Session 2.x with `pip install buildml` (2.5.x on PyPI). Legacy 1.x remains available as `pip install "buildml==1.0.9"`, then
-> the RAG extra. See [installation](../docs/installation.rst).
-
-Optional retrieval path on the same `Session` as classical ML and Torch: history,
-explain catalog, and distinct artifact kinds.
+Core hashing retrieval runs without an extra. Semantic embeddings need
+`buildml[rag]`. Documents marked `eval_only` are refused at index
+(`LeakageError`) so labeled answers never enter the corpus. This is not
+a hosted vector database and not the NLP text-column path.
 
 **Recommended install (semantic defaults):**
 

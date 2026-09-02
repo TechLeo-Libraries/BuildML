@@ -1,18 +1,15 @@
-# Quickstart: Knowledge graphs
+# Knowledge graphs quickstart
 
-> **Install:**
-> `pip install buildml`
-> Core path (numpy TransE / DistMult): no Neo4j, no extra required.
-> Industry path: `pip install 'buildml[kg-industry]'` for PyKEEN RotatE/ComplEx.
-> See [installation](../docs/installation.rst).
+```bash
+pip install buildml
+# PyKEEN: pip install "buildml[kg-industry]"
+```
 
-Session knowledge-graph learning on `(head, relation, tail)` triples.
-Train-only vocabularies and embeddings, filtered link-prediction metrics
-(MRR, Hits@K), and symbolic neighborhood / path / typed queries over the
-**train** adjacency.
+`(head, relation, tail)` columns are required; they are not inferred.
+Default is native TransE. Fit is train-only. This is not Neo4j and not
+`session.graph`.
 
-**Not** a Neo4j / graph-database product. **Not** Graph ML node
-classification (`session.graph.set_spec` / `session.graph.fit`). **Not** RAG retrieve/generate.
+[KG deep](kg-deep.md)
 
 **Proof:** [kg-biomed-linkpred](../proofs/kg-biomed-linkpred/) (+ Tier C co-occurrence PMI twin).
 

@@ -1,37 +1,24 @@
 # Classical end-to-end
 
-> **Install:** Install Session 2.x with `pip install buildml` (2.5.x on PyPI).
-> Legacy 1.x remains available as `pip install "buildml==1.0.9"`.
-> See [installation](../docs/installation.rst).
+```bash
+pip install buildml
+```
 
-This guide is the deep classical path: **dirty tabular data → roles → split →
-train-fitted preparation → fit → validation diagnostics → holdout evaluate →
-pipeline bundle**. For the short on-ramp, see
-[quickstart-classical](quickstart-classical.md). For leakage and fold-local CV,
-see [leakage-cv-recipes](leakage-cv-recipes.md).
+This is the long classical path: a dirty table, roles, a split, train-only
+preparation, a model, validation choices, one test number, and a pipeline
+bundle. The short version is [quickstart-classical](quickstart-classical.md).
+Fold-local CV is [leakage and recipes](leakage-cv-recipes.md).
 
-Classical flat calls (`session.fit`, `session.evaluate`, …) remain the preferred
-DX; `session.classical.fit` / `session.classical.evaluate` exist as a dual
-namespaced path and are not required here.
+`session.fit` and `session.evaluate` stay first-class. `session.classical.*`
+is the same work under a namespace, not a second API.
 
-## Why Session order exists
+The order is the product. Roles say what a column is; the library will not
+guess deployment meaning. The split exists before any fit-capable step.
+Preparation learns on train and freezes plans. Validation is for choices.
+Test is for a fixed policy. `assert_can_fit("train")` backs impute, encode,
+scale, resample, and `fit`. Skip the split and the call fails.
 
-Supervised ML fails quietly when preparation statistics (medians, category
-levels, scale parameters) are computed on rows that later pretend to be
-“unseen.” BuildML makes that failure loud:
-
-1. **Roles** declare what each column *is* (feature, target, group, time,
-   weight, id, ignore): the library will not infer deployment semantics.
-2. **Split** creates partition membership before any fit-capable step.
-3. **Preparation** learns on train only and freezes plans for other partitions.
-4. **Fit / evaluate** respect partition purpose: validation for choices, test
-   for a fixed policy.
-
-`assert_can_fit("train")` backs impute, encode, scale, resample, and `fit`.
-Skipping split raises rather than leaking.
-
-Cross-links: [concepts](../docs/concepts.rst),
-[workflow-guide](../docs/workflow-guide.rst), [glossary](glossary.md).
+[Concepts](../docs/concepts.rst) · [workflow guide](../docs/workflow-guide.rst)
 
 ---
 
@@ -126,7 +113,7 @@ session = (
 
 print(session.partition("train")["is_fraud"].mean())  # prevalence
 
-# Requires: pip install "buildml[imbalanced]"  (after GitHub 2.x install)
+# Requires: pip install "buildml[imbalanced]"
 session.encode(method="onehot")
 session.resample(sampler="smote", random_state=0)
 session.fit(RandomForestClassifier(n_estimators=100, random_state=0))

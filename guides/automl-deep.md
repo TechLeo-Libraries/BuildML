@@ -1,10 +1,10 @@
 # AutoML (deep)
 
-> **Install:**
-> `pip install "git+https://github.com/TechLeo-Libraries/BuildML.git"`
-> Randomized/grid/evolutionary AutoML is core. Optuna backend needs
-> `buildml[automl]`. Industry adapters need `buildml[automl-industry]`.
-> See [installation](../docs/installation.rst).
+```bash
+pip install buildml
+# Optuna: pip install "buildml[automl]"
+# industry adapters: pip install "buildml[automl-industry]"
+```
 
 This guide covers Session AutoML: joint model-family and fold-local preprocess
 strategy search beyond single-estimator HPO, with leakage discipline, nested /

@@ -1,10 +1,9 @@
 # BuildML Proof Suite
 
-Deep proofs that BuildML Session contracts work end-to-end on the executed
-configuration — not thin unit tests, and **not** a claim that every optional
-industry wheel is healthy on every host. Each project uses honest splits,
-train-only fitting, holdout evaluation, persisted artifacts where applicable,
-and JSON metrics under `results/` (gitignored).
+These projects show the Session contracts running end to end: a real
+split, train-only fit, a holdout number, and JSON under `results/`
+(gitignored). They are not smoke tests. They are not a claim that every
+industry wheel installs on your machine.
 
 | Tier | Count | What it proves |
 | --- | ---: | --- |
@@ -41,7 +40,7 @@ feature-scoped workarounds (Tier B `aegis` / `ledger` / decision-heavy products)
 
 ## How to prove BuildML works
 
-1. Install Session 2.x (PyPI or this checkout):
+1. Install (PyPI or this checkout):
    ```bash
    pip install buildml
    # or for proofs development:

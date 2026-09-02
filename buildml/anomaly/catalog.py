@@ -118,7 +118,7 @@ dict[str, Any]
         "industry_import_honesty": (
             "pyod / supervised_xgb / supervised_lgbm 'available' and "
             "industry_runtime_present use subprocess import probes. "
-            "industry_extra_present / *_spec_present are find_spec only — "
+            "industry_extra_present / *_spec_present are find_spec only - "
             "a discoverable wheel that fails to import reports available=False."
         ),
     }

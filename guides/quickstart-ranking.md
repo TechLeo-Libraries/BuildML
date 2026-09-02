@@ -1,19 +1,19 @@
-# Quickstart: Search / learning-to-rank (LTR)
+# Learning-to-rank quickstart
 
-**Proof:** [search-relevance-ltr](../proofs/search-relevance-ltr/) (+ Tier C Ridge pointwise twin).
+```bash
+pip install buildml
+# GBDT rankers: pip install "buildml[ranking-industry]"
+```
 
-> **Install:**
-> `pip install buildml`
-> Core sklearn path: no extra required. For GBDT rankers:
-> `pip install "buildml[ranking-industry]"`.
-> See [installation](../docs/installation.rst).
+`query_column` and `item_column` are required. `relevance_column` defaults
+to the Session target if you have one. Prefer `group_split` on the query
+so test queries stay out of train. With only the core install, the
+default is sklearn pointwise. If `buildml[ranking-industry]` is
+installed, `method=None` picks LightGBM LambdaRank (then XGB, then
+CatBoost). This is not RAG and not `session.recommender`.
 
-Session tabular learning-to-rank on query–item (or query–document) feature
-rows with relevance labels. Train-only fit, query-group split disclosure,
-and per-query ranking metrics (nDCG@K, MAP@K, MRR@K).
-
-**Not** a search-engine product. **Not** RAG retrieve/generate (chunk index +
-embedding nDCG). **Not** recommendation systems (`session.recommender.fit` user–item CF).
+[LTR deep](ranking-deep.md) ·
+[search-relevance-ltr](../proofs/search-relevance-ltr/)
 
 Runnable mirror: [`examples/ranking_pointwise_loop.py`](../examples/ranking_pointwise_loop.py).
 Deep guide: [ranking-deep.md](ranking-deep.md).

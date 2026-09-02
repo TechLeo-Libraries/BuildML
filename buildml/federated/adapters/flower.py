@@ -355,7 +355,7 @@ def fit_flower(
         [
             "Flower backend: NumPyClient-shaped local fit on Session client "
             "partitions + flwr weighted ndarray aggregation.",
-            "Honesty: still an in-process local simulation on Session data — "
+            "Honesty: still an in-process local simulation on Session data - "
             "not a networked Flower ServerApp/ClientApp unless you operate one "
             "separately.",
             "No cryptographic secure aggregation; orchestrator sees client updates.",

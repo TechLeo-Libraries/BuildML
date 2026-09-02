@@ -1,10 +1,10 @@
 # Anomaly / fraud deep
 
-> **Install:**
-> `pip install "git+https://github.com/TechLeo-Libraries/BuildML.git"`
-> Core sklearn only: no optional extra. Industry depth:
-> `pip install 'buildml[anomaly-industry]'` (PyOD + XGB/LGBM) and/or
-> `pip install 'buildml[torch]'` (autoencoder). See [installation](../docs/installation.rst).
+```bash
+pip install buildml
+# PyOD / GBDT: pip install "buildml[anomaly-industry]"
+# autoencoder: pip install "buildml[torch]"
+```
 
 Depth guide for the Session anomaly path: backends, modes, thresholds,
 imbalance-honest metrics, validation threshold tuning, bundles, and boundaries

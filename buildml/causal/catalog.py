@@ -115,7 +115,7 @@ def causal_capability_matrix() -> dict[str, Any]:
             ],
             "notes": (
                 "Holdout metrics are predictive calibration of nuisances plus "
-                "out-of-sample ATE under declared assumptions — not proof of "
+                "out-of-sample ATE under declared assumptions - not proof of "
                 "unconfoundedness. DoWhy/EconML paths disclose backend-specific "
                 "extras on the eval result."
             ),
@@ -139,7 +139,7 @@ def causal_capability_matrix() -> dict[str, Any]:
         "industry_import_honesty": (
             "dowhy/econml backend 'available' and industry_runtime_present require "
             "successful subprocess imports. industry_extra_present / *_spec_present "
-            "are find_spec only — discoverable wheels can still be broken."
+            "are find_spec only - discoverable wheels can still be broken."
         ),
         "assumption_gate": (
             "All backends require explicit CausalAssumptions with "

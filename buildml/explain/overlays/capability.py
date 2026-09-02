@@ -328,7 +328,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         honesty=(
             "Metric availability is not legal clearance; observational gaps are not "
             "causal bias proofs. Opt-in threshold/reweighing helpers return suggestions "
-            "only — they do not certify fairness or silently rewrite predictions."
+            "only - they do not certify fairness or silently rewrite predictions."
         ),
         next_steps=(
             "session.fairness.evaluate; session.fairness.attach_to_last_eval; "

@@ -1,20 +1,18 @@
-# Quickstart: Imitation learning + Reinforcement learning
+# Imitation + RL quickstart
 
-> **Install:**
-> `pip install buildml`
-> Optional Gymnasium path: `pip install "buildml[rl]"`
-> Industry SB3 + imitation: `pip install "buildml[rl-industry]"`
-> See [installation](../docs/installation.rst).
+```bash
+pip install buildml
+# Gymnasium: pip install "buildml[rl]"
+# SB3: pip install "buildml[rl-industry]"
+```
 
-Behavioral cloning from demonstration tables, contextual bandits on logged
-`(context, action, reward)` rows, and optional small Gymnasium loops: tabular
-TD control (Q-learning / SARSA / Expected SARSA / Double Q-learning) and
-REINFORCE-lite. **Not** a MuJoCo / robotics / multi-agent platform.
+Two surfaces on `session.rl`: `fit_imitation` (behavioral cloning) and
+`fit` (default LinUCB bandit). The bandit needs a numeric reward: pass
+`reward_column`, or name a column `reward`. Gym loops do not fit on
+tabular partitions. Not robotics, not batch offline RL.
 
-**Proof:** [imitation-cartpole-control](../proofs/imitation-cartpole-control/) (+ Tier C sklearn BC twin; Gymnasium optional via `buildml[rl]`).
-
-Runnable mirror: [`examples/imitation_rl_loop.py`](../examples/imitation_rl_loop.py).
-Deep guide: [imitation-rl-deep.md](imitation-rl-deep.md).
+[Imitation + RL deep](imitation-rl-deep.md) ·
+[imitation-cartpole-control](../proofs/imitation-cartpole-control/)
 
 ---
 

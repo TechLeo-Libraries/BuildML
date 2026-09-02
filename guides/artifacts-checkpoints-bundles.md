@@ -1,12 +1,17 @@
-# Artifacts: checkpoints vs bundles vs Torch/RAG/AI
+# Artifacts: checkpoints vs bundles
 
-> **Install:**
-> `pip install "git+https://github.com/TechLeo-Libraries/BuildML.git"`
-> See [installation](../docs/installation.rst).
+```bash
+pip install buildml
+```
 
-BuildML separates **workflow resume** from **deployable scoring** from
-**domain-specific trainer/index/transcript** artifacts. Mixing them causes
-silent gaps (no weights in a checkpoint, no dataset in a pipeline).
+A checkpoint resumes the data workflow. A pipeline bundle scores new rows.
+A domain bundle holds that domain's fitted plan. They do not embed each
+other. Load a checkpoint expecting weights, or a pipeline expecting the
+table, and you will get a silent gap.
+
+Pickle / joblib / torch loaders default to `trusted=False`. Pass
+`trusted=True` only for a file you made. RAG bundles are JSONL / NumPy and
+do not use that gate.
 
 ---
 

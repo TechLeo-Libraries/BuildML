@@ -98,5 +98,5 @@ def _safe_roc_auc(y_true_bool: np.ndarray, scores: np.ndarray) -> float | None:
         from sklearn.metrics import roc_auc_score
 
         return float(roc_auc_score(y_true_bool.astype(int), scores))
-    except Exception:  # noqa: BLE001 — keep report resilient
+    except Exception:  # noqa: BLE001 - keep report resilient
         return None

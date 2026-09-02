@@ -23,7 +23,7 @@ NA = "na"
 
 GATE_STATUS_LABELS: dict[str, str] = {
     CLEAR: "settled by the frame",
-    OPEN: "open — measurable",
+    OPEN: "open - measurable",
     HUMAN: "needs a human judgment",
     NA: "not applicable",
 }
@@ -174,7 +174,7 @@ def build_gates_payload(report: dict[str, Any]) -> dict[str, Any]:
     """Compute readiness gates for the Industry EDA App Gates board.
 
     Returns rows, counts, and stage groups. Does not accept or return any
-    human decision marks — those stay in the browser for the open App session.
+    human decision marks - those stay in the browser for the open App session.
     """
     ctx = build_gate_context(report)
     findings = list(report.get("findings") or [])
@@ -599,7 +599,7 @@ def _r00_6(c: dict[str, Any]) -> dict[str, str]:
     return {
         "status": HUMAN,
         "evidence": f"No sensitivity classification is attached to any of the {c['colCount']} columns.",
-        "closes": "An inventory naming personal, protected and neither — plus which are kept for evaluation only.",
+        "closes": "An inventory naming personal, protected and neither - plus which are kept for evaluation only.",
     }
 
 
@@ -611,7 +611,7 @@ def _r01_1(c: dict[str, Any]) -> dict[str, str]:
     blob = ", ".join(f"{n} {t}" for t, n in sorted(counts.items())) or "no columns"
     return {
         "status": HUMAN,
-        "evidence": f"{blob} — as loaded, not as asserted.",
+        "evidence": f"{blob} - as loaded, not as asserted.",
         "closes": "An explicit dtype per column at load time.",
     }
 
@@ -712,12 +712,12 @@ def _r01_6(c: dict[str, Any]) -> dict[str, str]:
                 f"{len(high)} categorical {_plural(len(high), 'column')} exceed 20 levels; "
                 f"one-hot would add about {_fmt_n(added)} columns."
             ),
-            "closes": "Group-rare, in-fold target encoding or attribute replacement — plus an unseen-level policy.",
+            "closes": "Group-rare, in-fold target encoding or attribute replacement - plus an unseen-level policy.",
         }
     return {
         "status": CLEAR,
         "evidence": "No categorical column exceeds 20 observed levels.",
-        "closes": "Group-rare, in-fold target encoding or attribute replacement — plus an unseen-level policy.",
+        "closes": "Group-rare, in-fold target encoding or attribute replacement - plus an unseen-level policy.",
     }
 
 
@@ -750,12 +750,12 @@ def _r01_8(c: dict[str, Any]) -> dict[str, str]:
                 f"{mixed} mixed-type and {varia} case-variant {_plural(total, 'column')}; "
                 "level counts on this sheet use raw strings."
             ),
-            "closes": "Strip, normalise, case-fold, recount — and the same transform at prediction time.",
+            "closes": "Strip, normalise, case-fold, recount - and the same transform at prediction time.",
         }
     return {
         "status": HUMAN,
         "evidence": "No mixed-type or case-variant columns were observed; no normalisation was applied either.",
-        "closes": "Strip, normalise, case-fold, recount — and the same transform at prediction time.",
+        "closes": "Strip, normalise, case-fold, recount - and the same transform at prediction time.",
     }
 
 
@@ -943,7 +943,7 @@ def _r02_7(c: dict[str, Any]) -> dict[str, str]:
     return {
         "status": CLEAR if ratio >= 10 else OPEN,
         "evidence": (
-            f"{_fmt_n(c['rows'])} rows over {c['eligible']} eligible features — about "
+            f"{_fmt_n(c['rows'])} rows over {c['eligible']} eligible features - about "
             f"{round(ratio)} rows per feature before encoding."
         ),
         "closes": "Above about ten after encoding, reached by removing redundancy and coarsening categories first.",
@@ -1035,7 +1035,7 @@ def _r03_3(c: dict[str, Any]) -> dict[str, str]:
     return {
         "status": OPEN,
         "evidence": (
-            f"Every statistic here — medians, correlations, VIF, MI{anomaly} — "
+            f"Every statistic here - medians, correlations, VIF, MI{anomaly} - "
             f"was computed on the full {_fmt_n(c['rows'])} rows."
         ),
         "closes": "A pipeline object below the split that the cross-validator refits per fold.",
@@ -1091,7 +1091,7 @@ def _r03_6(c: dict[str, Any]) -> dict[str, str]:
         return {
             "status": OPEN,
             "evidence": (
-                f"{group['name']} identifies {_fmt_n(groups)} groups — about "
+                f"{group['name']} identifies {_fmt_n(groups)} groups - about "
                 f"{(c['rows'] / groups):.1f} rows each."
             ),
             "closes": "A group-aware split and cross-validation, or a recorded finding that rows are independent.",
@@ -1172,7 +1172,7 @@ def _r03_11(c: dict[str, Any]) -> dict[str, str]:
         }
     return {
         "status": CLEAR,
-        "evidence": "No column met the configured thresholds — an absence of flags at your threshold.",
+        "evidence": "No column met the configured thresholds - an absence of flags at your threshold.",
         "closes": "The split, the ingestion and the population ruled out in that order, and the shift named.",
     }
 
@@ -1258,7 +1258,7 @@ def _r04_3(c: dict[str, Any]) -> dict[str, str]:
     )
     return {
         "status": OPEN,
-        "evidence": f"{parts} — accuracy is uninformative at this balance.",
+        "evidence": f"{parts} - accuracy is uninformative at this balance.",
         "closes": "A ranking metric plus precision and recall at a stated threshold; class weights preferred to resampling.",
     }
 
@@ -1373,7 +1373,7 @@ def _r05_2(c: dict[str, Any]) -> dict[str, str]:
 def _r05_3(c: dict[str, Any]) -> dict[str, str]:
     eligible = max(1, int(c.get("eligible") or 1))
     ratio = c["rows"] / eligible
-    regime = " — the regime where variance usually dominates" if ratio < 20 else ""
+    regime = " - the regime where variance usually dominates" if ratio < 20 else ""
     return {
         "status": OPEN,
         "evidence": f"About {round(ratio)} rows per feature{regime}; no curve has been drawn.",
@@ -1415,7 +1415,7 @@ _GATE_DEFS: tuple[_GateDef, ...] = (
     _gate("00.1", 0, "Is there one written sentence saying who acts on this model’s output, and when?", "problem-framing", _r00_1),
     _gate("00.2", 0, "Is it written down what one row represents, and does a key prove it is unique?", "unit-of-analysis", _r00_2),
     _gate("00.3", 0, "Do we know which rows the extract filtered out before we saw it?", "population-and-sampling-frame", _r00_3),
-    _gate("00.4", 0, "Is the label’s exact rule recorded — what counts as positive, measured from when, over how long?", "target-definition", _r00_4),
+    _gate("00.4", 0, "Is the label’s exact rule recorded - what counts as positive, measured from when, over how long?", "target-definition", _r00_4),
     _gate("00.5", 0, "For each column, do we know its source system and whether its value exists at prediction time?", "provenance-and-lineage", _r00_5),
     _gate("00.6", 0, "Has someone listed which columns are personal or legally protected?", "sensitive-attributes", _r00_6),
     _gate("01.1", 1, "Was each column’s type set deliberately, rather than guessed by the CSV loader?", "dtypes-and-storage", _r01_1),
@@ -1427,27 +1427,27 @@ _GATE_DEFS: tuple[_GateDef, ...] = (
     _gate("01.7", 1, "Does each numeric column have an allowed min/max, with codes like -999 turned into missing?", "measurement-units-and-ranges", _r01_7),
     _gate("01.8", 1, "Were text columns trimmed and case-folded before their category levels were counted?", "text-hygiene", _r01_8),
     _gate("01.9", 1, "For every join that built this table, do we know it added or dropped no rows unexpectedly?", "join-integrity", _r01_9),
-    _gate("01.10", 1, "Are contradictions between columns tested — end before start, parts not summing to total?", "cross-field-consistency", _r01_10),
+    _gate("01.10", 1, "Are contradictions between columns tested - end before start, parts not summing to total?", "cross-field-consistency", _r01_10),
     _gate("01.11", 1, "Were date columns parsed with an explicit format and timezone, and does the span look right?", "datetime-parsing", _r01_11),
     _gate("01.12", 1, "Do we know how coarsely each number was recorded, and whether values pile up at a cap?", "precision-and-heaping", _r01_12),
-    _gate("02.1", 2, "Has each numeric column been read as a distribution — quartiles and histogram — not just a mean?", "univariate-distributions", _r02_1),
+    _gate("02.1", 2, "Has each numeric column been read as a distribution - quartiles and histogram - not just a mean?", "univariate-distributions", _r02_1),
     _gate("02.2", 2, "For each skewed column, is there a decision to transform it or not, and why?", "skew-and-transforms", _r02_2),
     _gate("02.3", 2, "Have columns that are just re-expressions of other columns been removed?", "derived-and-redundant-columns", _r02_3),
     _gate("02.4", 2, "Are features independent enough that a model’s coefficients can be trusted?", "variance-inflation", _r02_4),
     _gate("02.5", 2, "Has each feature’s relationship to the target been checked for curves and reversals, not just straight lines?", "non-linearity-and-binning", _r02_5),
     _gate("02.6", 2, "Was each headline relationship re-checked inside subgroups, in case it reverses?", "confounding-and-subgroups", _r02_6),
-    _gate("02.7", 2, "Are there enough rows per feature — after encoding — for a model to learn rather than memorise?", "sparsity-and-dimensionality", _r02_7),
+    _gate("02.7", 2, "Are there enough rows per feature - after encoding - for a model to learn rather than memorise?", "sparsity-and-dimensionality", _r02_7),
     _gate("02.8", 2, "Is there a recorded decision on whether to scale features, based on the model chosen?", "feature-scaling", _r02_8),
     _gate("03.1", 3, "Does the train/test split respect time order and repeated entities, rather than splitting at random?", "data-splitting", _r03_1),
     _gate("03.2", 3, "Will each split keep the target’s class balance, and was that verified after splitting?", "stratification", _r03_2),
-    _gate("03.3", 3, "Is every step that learns from data — imputer, encoder, scaler — fitted after the split, not before?", "pipeline-order", _r03_3),
+    _gate("03.3", 3, "Is every step that learns from data - imputer, encoder, scaler - fitted after the split, not before?", "pipeline-order", _r03_3),
     _gate("03.4", 3, "Has every column been confirmed knowable at prediction time, with no post-outcome values?", "leakage", _r03_4),
     _gate("03.5", 3, "Do the split and every window feature look only backwards in time?", "temporal-structure", _r03_5),
     _gate("03.6", 3, "If rows repeat the same entity, does the split keep that entity on one side?", "group-structure", _r03_6),
     _gate("03.7", 3, "Are the rows used to pick the model different from the rows used to report its score?", "nested-validation", _r03_7),
     _gate("03.8", 3, "Is this sample large enough to detect a difference small enough to matter?", "sample-size-and-power", _r03_8),
     _gate("03.9", 3, "Given how many statistics were screened, are the strongest results corrected for chance?", "multiple-comparisons", _r03_9),
-    _gate("03.10", 3, "Could someone else re-run this and get the same numbers — seed, library versions, data snapshot?", "reproducibility", _r03_10),
+    _gate("03.10", 3, "Could someone else re-run this and get the same numbers - seed, library versions, data snapshot?", "reproducibility", _r03_10),
     _gate("03.11", 3, "For each drift flag, was the split and the pipeline ruled out before blaming the data?", "dataset-drift", _r03_11),
     _gate("03.12", 3, "Is each outlier explained as an error, a rare true event, a subgroup, or a sentinel code?", "outlier-screens", _r03_12),
     _gate("04.1", 4, "Was the scoring metric written down before the first model was fitted?", "metric-selection", _r04_1),

@@ -1,17 +1,16 @@
 # Time-series analysis quickstart
 
-> **Install:** Core analysis uses moving-average / numpy fallbacks. For industry
-> defaults (STL, ADF/KPSS, ruptures changepoints):
-> `pip install "buildml[timeseries]"` on your Session 2.x checkout.
+```bash
+pip install buildml
+# STL / ADF / changepoints: pip install "buildml[timeseries]"
+```
 
-Descriptive time-series analysis on the same `Session`: `time` role +
-`time_split`, train-only scope by default, decomposition, diagnostics,
-changepoints, and spectral features: distinct from `session.forecast.fit`.
+A `time` role, a target, and `time_split` are required, same refuse as
+forecast. Default scope is train. No forecast model is fitted here.
+That is `session.forecast`.
 
-**Go deeper:** [Time-series analysis deep](timeseries-analysis-deep.md) ·
-
-**Proof:** [store-sales-forecast](../proofs/store-sales-forecast/) (train-scoped analysis) · [harbor-demand-desk](../proofs/harbor-demand-desk/).
-[Forecasting quickstart](quickstart-forecasting.md).
+[TS analysis deep](timeseries-analysis-deep.md) ·
+[Forecasting](quickstart-forecasting.md)
 
 ---
 

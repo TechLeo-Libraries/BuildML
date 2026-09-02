@@ -134,7 +134,7 @@ def automl_capability_matrix() -> dict[str, Any]:
                 "notes": (
                     "Preferred for post-selection claims. Outer mean±std is the "
                     "honest estimate; inner means are selection evidence only. "
-                    "Native/Optuna only — industry adapters refuse nested."
+                    "Native/Optuna only - industry adapters refuse nested."
                 ),
             },
             "validation": {

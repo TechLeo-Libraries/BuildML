@@ -1,17 +1,15 @@
 # Ensemble quickstart
 
-> **Install:** Install Session 2.x with `pip install buildml` (2.5.x). Legacy 1.x remains available as `pip install "buildml==1.0.9"`. Use
-> `pip install buildml`
-> (or an editable checkout). Ensembles use core sklearn: no optional extra.
-> See [installation](../docs/installation.rst).
+```bash
+pip install buildml
+```
 
-Native voting, stacking, and holdout blending on the Session: not merely
-passing a `RandomForest` to `Session.fit`.
+Voting, stacking, and holdout blending. You need a target and at least two
+named estimators. Stacking CV and blend holdouts stay inside train. The
+winner is written to `fit_result`, so classical `evaluate` still works.
+This is not `session.fit(RandomForest(...))` and not AutoML.
 
-**Go deeper:** [Ensemble deep](ensemble-deep.md) ·
-[Classical E2E](classical-end-to-end.md) ·
-[Leakage](leakage-cv-recipes.md) ·
-[Artifacts](artifacts-checkpoints-bundles.md).
+[Ensemble deep](ensemble-deep.md)
 
 ---
 

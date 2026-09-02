@@ -1,29 +1,18 @@
 # Anomaly / fraud quickstart
 
-> **Install:** Install Session 2.x with `pip install buildml` (2.5.x on PyPI). Legacy 1.x remains available as `pip install "buildml==1.0.9"`.
-> Core sklearn detectors need no extra. Industry depth uses optional extras below.
-> See [installation](../docs/installation.rst).
-
-Leakage-safe anomaly scoring on the same `Session` as classical ML: history,
-explain catalog, capability matrix, and a distinct anomaly bundle. Thresholds
-and alert rates are always disclosed.
-
-**Go deeper:** [Anomaly deep](anomaly-deep.md) ·
-
-**Proof:** [network-intrusion-anomaly](../proofs/network-intrusion-anomaly/) (+ Tier C IsolationForest twin). Cross-domain: [aegis-fraud-platform](../proofs/aegis-fraud-platform/).
-[Artifacts](artifacts-checkpoints-bundles.md) ·
-[Unsupervised](quickstart-unsupervised.md) (separate clustering API).
-
 ```bash
-# After a GitHub / editable 2.x install:
 pip install buildml
-
-# Industry PyOD + XGBoost/LightGBM fraud scorers:
-pip install "buildml[anomaly-industry]"
-
-# Torch tabular autoencoder path:
-pip install "buildml[torch]"
+# PyOD: pip install "buildml[anomaly-industry]"
+# torch AE: pip install "buildml[torch]"
 ```
+
+Default is sklearn IsolationForest, unsupervised. A target is only required
+for supervised mode, threshold tuning, and labeled eval. Tuning on test is
+refused unless `allow_test_tuning=True`. This is not clustering and not a
+streaming fraud platform.
+
+[Anomaly deep](anomaly-deep.md) ·
+[network-intrusion-anomaly](../proofs/network-intrusion-anomaly/)
 
 Classical `Session.fit` stays unchanged. Anomaly methods are
 `session.anomaly.fit` / `session.anomaly.score` / `session.anomaly.evaluate` /

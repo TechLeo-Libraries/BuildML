@@ -1,21 +1,15 @@
 # Active learning quickstart
 
-> **Install:** Install Session 2.x with `pip install buildml` (2.5.x on PyPI). Legacy 1.x remains available as `pip install "buildml==1.0.9"`.
-> Active learning uses core sklearn: no optional extra is required.
-> See [installation](../docs/installation.rst).
+```bash
+pip install buildml
+```
 
-Human-in-the-loop labeling on the **train** pool: fit a learner on scarce seed
-labels, `session.active_learning.suggest_query` the most uncertain train rows, `session.active_learning.label_rows` with
-**user-provided** labels, refit, evaluate labeled holdout, save a distinct
-bundle. Pool convention matches semi-supervised: **NaN targets** mark unlabeled
-train rows. Validation/test are never the query pool. Core never invents an
-oracle (examples/tests may simulate one).
+Query the train pool, then you label. Unlabeled means target NaN.
+Validation and test are never queried. The core does not invent an
+oracle. Default strategy is margin. `label_budget` defaults to 50.
 
-**Go deeper:** [Active learning deep](active-learning-deep.md) ·
-
-**Proof:** [active-labeling-budget](../proofs/active-labeling-budget/) (+ Tier C margin twin). Cross-domain: [atlas-label-studio](../proofs/atlas-label-studio/).
-[Artifacts](artifacts-checkpoints-bundles.md) ·
-[Semi-supervised](quickstart-semisupervised.md).
+[Active learning deep](active-learning-deep.md) ·
+[active-labeling-budget](../proofs/active-labeling-budget/)
 
 ```bash
 pip install buildml

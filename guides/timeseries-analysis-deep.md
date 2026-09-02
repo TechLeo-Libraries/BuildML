@@ -1,6 +1,8 @@
 # Time-series analysis (deep)
 
-Phase R3 analysis plugin: distinct Session surface from forecasting.
+Descriptive analysis on the same Session as forecasting. You still need a
+`time` role, a target, and `time_split`. Nothing here fits a forecast
+model.
 
 ## Architecture
 

@@ -1,11 +1,11 @@
 # Forecasting deep
 
-> **Install:**
-> `pip install "git+https://github.com/TechLeo-Libraries/BuildML.git"`
-> Core lag/baseline always available. Industry defaults:
-> `pip install "buildml[timeseries]"` (statsmodels ETS/ARIMA/SARIMAX).
-> Prophet: `buildml[timeseries-prophet]`. N-BEATS: `buildml[timeseries-ml]`.
-> See [installation](../docs/installation.rst).
+```bash
+pip install buildml
+# ETS / ARIMA: pip install "buildml[timeseries]"
+# Prophet: pip install "buildml[timeseries-prophet]"
+# N-BEATS: pip install "buildml[timeseries-ml]"
+```
 
 Depth guide for BuildML's classical forecasting Session path: temporal roles,
 leakage discipline, lag/baseline models, generate vs evaluate protocols,

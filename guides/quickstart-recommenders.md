@@ -1,22 +1,17 @@
-# Quickstart: Recommendation systems
+# Recommenders quickstart
 
-**Proof:** [movie-recs-collaborative](../proofs/movie-recs-collaborative/) (+ Tier C item-cosine twin).
+```bash
+pip install buildml
+# ALS / BPR: pip install "buildml[recommenders-industry]"
+```
 
-> **Install:**
-> `pip install buildml`
-> Core path (numpy/sklearn CF + content): no extra required.
-> Industry ALS/BPR + LightFM: `pip install 'buildml[recommenders-industry]'`.
-> See [installation](../docs/installation.rst).
+`user_column` and `item_column` are required; they are not inferred. Fit
+is train-only. Default without extras is item kNN (explicit) or NMF
+(implicit). This is not RAG, not LTR, and not an EDA recommendation
+finding.
 
-Session collaborative filtering and optional content-based scoring on
-user/item/interaction tables. Train-only fit, known-item protocol, cold-start
-disclosure, and ranking metrics (Precision@K, Recall@K, nDCG@K, MAP@K).
-
-**Not** a Netflix-scale recsys platform. **Not** RAG retrieve/generate.
-**Not** diagnostic EDA `Recommendation` Finding objects (teaching advice).
-
-Runnable mirror: [`examples/recommender_item_knn_loop.py`](../examples/recommender_item_knn_loop.py).
-Deep guide: [recommenders-deep.md](recommenders-deep.md).
+[Recommenders deep](recommenders-deep.md) ·
+[movie-recs-collaborative](../proofs/movie-recs-collaborative/)
 
 ---
 

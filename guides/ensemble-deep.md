@@ -1,8 +1,8 @@
 # Ensemble learning (deep)
 
-> **Install:**
-> `pip install "git+https://github.com/TechLeo-Libraries/BuildML.git"`
-> Ensembles are core (sklearn). See [installation](../docs/installation.rst).
+```bash
+pip install buildml
+```
 
 This guide covers native Session ensembles: voting, stacking, and holdout
 blending with leakage-safe meta-learner fitting, classical evaluation, and
@@ -115,7 +115,7 @@ Prefer stacking when you want CV OOF meta features instead of one holdout.
 - `session.ensemble.evaluate`: supervised metrics + ensemble disclosures
 - **Base-learner contributions** and **diversity** on the same partition
   (`diagnostics["base_contributions"]`, `diagnostics["diversity"]`,
-  `diagnostics["ensemble_report"]`) — predict-only scoring of train-fitted
+  `diagnostics["ensemble_report"]`) - predict-only scoring of train-fitted
   bases (no refit during evaluate; Session test never re-enters fitting)
 - `evaluate` / `predict`: same estimator path
 - `save_pipeline` / `save_model`: classical artifacts

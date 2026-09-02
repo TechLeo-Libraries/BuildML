@@ -1,8 +1,8 @@
 # Meta-learning deep guide
 
-> **Install:**
-> `pip install "git+https://github.com/TechLeo-Libraries/BuildML.git"`
-> See [installation](../docs/installation.rst).
+```bash
+pip install buildml
+```
 
 Practical Session-facing meta-learning for tabular few-shot / episodic
 protocols. This is **not** a foundation-model meta-learning platform, **not**

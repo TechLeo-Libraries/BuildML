@@ -1,19 +1,16 @@
-# Quickstart: Topological Data Analysis (TDA)
+# TDA quickstart
 
-**Proof:** [credit-tda-shape](../proofs/credit-tda-shape/) (+ Tier C logistic twin on raw features).
+```bash
+pip install "buildml[tda]"
+```
 
-> **Install:**
-> `pip install buildml`
-> TDA path: `pip install "buildml[tda]"` (ripser + persim)
-> Industry: `pip install "buildml[tda-industry]"` (giotto-tda + Betti curves)
-> See [installation](../docs/installation.rst).
+Local Vietoris-Rips on train neighborhoods, then a sklearn head. Default
+vectorization is a persistence image. Needs `buildml[tda]`. If
+`buildml[tda-industry]` is installed, `backend=None` picks giotto for
+that default image. Not a Mapper suite.
 
-Local Vietoris–Rips persistence on kNN train neighborhoods, train-fitted
-vectorization (persistence images / landscapes / silhouettes), and an optional
-sklearn head. **Not** a Mapper research suite or every TDA paper.
-
-Runnable mirror: [`examples/tda_loop.py`](../examples/tda_loop.py).
-Deep guide: [tda-deep.md](tda-deep.md).
+[TDA deep](tda-deep.md) ·
+[credit-tda-shape](../proofs/credit-tda-shape/)
 
 ---
 

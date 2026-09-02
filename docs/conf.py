@@ -174,7 +174,7 @@ texinfo_documents = [
         "BuildML Documentation",
         author,
         "buildml",
-        "Stateful classical machine-learning workflows.",
+        "A Session for ML workflows that will not leak training into the holdout.",
         "Miscellaneous",
     ),
 ]

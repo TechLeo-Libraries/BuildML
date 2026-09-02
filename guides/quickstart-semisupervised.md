@@ -1,18 +1,16 @@
 # Semi-supervised quickstart
 
-> **Install:** Install Session 2.x with `pip install buildml` (2.5.x on PyPI). Legacy 1.x remains available as `pip install "buildml==1.0.9"`.
-> Core sklearn methods need no extra; industry/torch/HF paths use optional extras.
-> See [installation](../docs/installation.rst).
+```bash
+pip install buildml
+```
 
-Scarce labels + abundant unlabeled train rows on the same `Session`: history,
-explain catalog, capability matrix, and a distinct semi-supervised bundle.
-Unlabeled targets are **NaN missingness** by default (mapped to sklearn `-1` internally).
+Scarce labels plus unlabeled train rows. Unlabeled means target NaN
+(mapped to sklearn `-1`). Default is label propagation. Evaluate uses
+labeled holdout rows only. This is not active learning and not SSL
+pretext.
 
-**Go deeper:** [Semi-supervised deep](semisupervised-deep.md) ·
-
-**Proof:** [semi-label-efficiency](../proofs/semi-label-efficiency/) (+ Tier C LabelPropagation). Cross-domain: [atlas-label-studio](../proofs/atlas-label-studio/).
-[Artifacts](artifacts-checkpoints-bundles.md) ·
-[Self-supervised](quickstart-selfsupervised.md).
+[Semi-supervised deep](semisupervised-deep.md) ·
+[semi-label-efficiency](../proofs/semi-label-efficiency/)
 
 ```bash
 pip install buildml

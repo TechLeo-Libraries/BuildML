@@ -1,17 +1,24 @@
 # Classical diagnostics and model search
 
-> **Install:**
-> `pip install "git+https://github.com/TechLeo-Libraries/BuildML.git"`
-> Optional: `pip install "buildml[viz]"` for plot boards,
-> `"buildml[optuna]"` for `optuna_search`.
-> See [installation](../docs/installation.rst).
+```bash
+pip install buildml
+# plots: pip install "buildml[viz]"
+# optuna_search: pip install "buildml[optuna]"
+```
 
-After a honest split and fit, BuildML helps you **inspect** models (calibration,
-thresholds, importance, slices) and **select** among estimators/hyperparameters
-without scoring Session test inside inner loops.
+After a split and a fit, these calls inspect the model and choose among
+estimators without putting Session test inside an inner loop.
 
-Related: [leakage-cv-recipes](leakage-cv-recipes.md),
-[classical-end-to-end](classical-end-to-end.md).
+`compare_models` ranks on **test** unless you pass `partition="validation"`.
+The winner becomes the Session's fitted model. `cv_score` and search cut
+folds from train only. Session-global prep before those calls is refused
+([leakage and recipes](leakage-cv-recipes.md)).
+
+Validation is for thresholds, features, and families. Test is for the
+frozen policy, once. BuildML cannot stop you from peeking at test in your
+own notebook. It can refuse a poisoned CV.
+
+[Classical end-to-end](classical-end-to-end.md)
 
 ---
 

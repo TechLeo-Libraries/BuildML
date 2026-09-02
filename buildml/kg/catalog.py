@@ -62,7 +62,7 @@ def kg_capability_matrix() -> dict[str, Any]:
             "Filtered ranking over train (+ holdout) true triples; MRR / Hits "
             "averaged over head, tail, and relation prediction per holdout "
             "triple. OOV entities/relations skipped and disclosed. Frozen "
-            "train embeddings — holdout never refits."
+            "train embeddings - holdout never refits."
         ),
         "link_prediction_modes": ["tail", "head", "relation"],
         "query_modes": ["neighbors", "path", "typed"],
@@ -88,7 +88,7 @@ def kg_capability_matrix() -> dict[str, Any]:
             "pykeen backend 'available' and industry_runtime_present require a "
             "successful subprocess import of pykeen plus working torch "
             "(pykeen_runtime_available). pykeen_spec_present / "
-            "industry_extra_present are find_spec only — discoverable wheels "
+            "industry_extra_present are find_spec only - discoverable wheels "
             "can still be broken."
         ),
         "train_only_honesty": (

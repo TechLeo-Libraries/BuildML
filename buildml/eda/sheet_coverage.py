@@ -38,7 +38,7 @@ def fmt_metric(value: Any) -> str:
 
 def fmt_int(value: Any) -> str:
     if value is None:
-        return "—"
+        return " - "
     try:
         return f"{int(value):,}"
     except (TypeError, ValueError):
@@ -352,7 +352,7 @@ def build_ledger_groups(
     summary = target.get("summary") or {}
     screens: list[tuple[str, str]] = [
         ("target column", str(target.get("column") or "not declared")),
-        ("task", str(summary.get("type") or summary.get("task") or "—")),
+        ("task", str(summary.get("type") or summary.get("task") or " - ")),
     ]
     class_counts = summary.get("class_counts") or {}
     if isinstance(class_counts, dict) and class_counts:
@@ -548,7 +548,7 @@ def build_methods_catalog(report: Mapping[str, Any]) -> list[dict[str, str]]:
                 "after role exclusions."
             ),
             "detail": (
-                f"Sampling: {'yes — later screens use the analysis frame' if sampled else 'none — full frame used'}. "
+                f"Sampling: {'yes - later screens use the analysis frame' if sampled else 'none - full frame used'}. "
                 f"Mode: {overview.get('mode') or 'session'} · engine: {overview.get('engine') or 'pandas'}."
             ),
             "why": "",
@@ -847,7 +847,7 @@ def build_methods_catalog(report: Mapping[str, Any]) -> list[dict[str, str]]:
 
 
 def build_degraded_rows(report: Mapping[str, Any]) -> list[dict[str, str]]:
-    """Analyses that were skipped, unavailable, or empty — no empty-theater claims."""
+    """Analyses that were skipped, unavailable, or empty - no empty-theater claims."""
     rows: list[dict[str, str]] = [
         {"analysis": "report warning", "reason": str(warning)}
         for warning in report.get("warnings") or []
@@ -1139,7 +1139,7 @@ def build_domain_briefs(report: Mapping[str, Any]) -> list[dict[str, Any]]:
                 "findings": _findings_for("outliers."),
                 "metrics": [
                     {"k": "univariate cols", "v": fmt_int(len(per_col))},
-                    {"k": "anomalies", "v": fmt_int(flagged) if flagged is not None else "—"},
+                    {"k": "anomalies", "v": fmt_int(flagged) if flagged is not None else " - "},
                 ],
             }
         )

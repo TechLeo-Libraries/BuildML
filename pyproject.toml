@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "buildml"
 version = "2.5.0"
-description = "BuildML: a flexible, depth-first toolkit for building ML workflows."
+description = "A Python Session for ML workflows that will not leak training into the holdout."
 readme = "README.md"
 license = { text = "Apache-2.0" }
 authors = [

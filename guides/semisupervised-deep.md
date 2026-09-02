@@ -1,7 +1,8 @@
 # Semi-supervised deep guide
 
-> **Install:**
-> `pip install "git+https://github.com/TechLeo-Libraries/BuildML.git"`
+```bash
+pip install buildml
+```
 
 Industry depth: scarce-label classification with unlabeled train features :
 not anomaly novelty, not self-supervised pretext, not active learning.

@@ -1,24 +1,17 @@
-# Quickstart: Natural language processing (NLP)
+# NLP quickstart
 
-Session path for a **text column that lives on the dataset**: screen the corpus,
-fit a single-label document classifier on train, read the holdout once, attribute
-the decision to exact tokens, then layer unsupervised description: topics,
-keyphrases, extractive summaries, entities, sentiment, language: and persist via
-`buildml.nlp_bundle.v1`.
+```bash
+pip install buildml
+# encoders: pip install "buildml[nlp]"
+```
 
-Honesty: **document-level** modelling. Not sequence labelling, not multi-label,
-not generation, not translation, not transformer fine-tuning, and **not RAG**.
-Core stays light (numpy / pandas / scikit-learn bag-of-n-grams, plus a native
-tokenizer, stemmer, sentiment lexicon, and language detector); neural backends
-activate only when `buildml[nlp]` is installed and are never the default.
+A text column on the Session table. Classifier fit is train-only and needs
+a target plus a `text_column` (or exactly one string feature). Default
+backend is sklearn bag-of-n-grams even when extras are installed. Not
+sequence labelling, not generation, not Torch fine-tuning, and not RAG.
 
-**Proof:** [ticket-routing-nlp](../proofs/ticket-routing-nlp/) (+ Tier C
-`sklearn.Pipeline(TfidfVectorizer + LogisticRegression)` twin).
-
-**Go deeper:** [NLP deep](nlp-deep.md) ·
-[Artifacts](artifacts-checkpoints-bundles.md) ·
-[Preprocess depth](preprocess-depth.md) (for `text_features`) ·
-[RAG quickstart](quickstart-rag.md) (for retrieval)
+[NLP deep](nlp-deep.md) ·
+[ticket-routing-nlp](../proofs/ticket-routing-nlp/)
 
 ```python
 import pandas as pd

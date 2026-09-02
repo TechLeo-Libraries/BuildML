@@ -248,7 +248,7 @@ def rl_capability_matrix() -> dict[str, Any]:
             "industry_runtime_present require successful subprocess import "
             "probes for Stable-Baselines3 and imitation (plus a working "
             "Gymnasium import). industry_extra_present / "
-            "rl_industry_extra_present / *_spec_present are find_spec only — "
+            "rl_industry_extra_present / *_spec_present are find_spec only - "
             "discoverable wheels can still be broken."
         ),
     }

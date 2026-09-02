@@ -5,87 +5,150 @@ BuildML supports Python 3.10 through 3.13.
 
 .. important::
 
-   **Install (2.5):** ``pip install buildml`` installs Session **2.5.x**
-   (Apache-2.0). Legacy **1.x** remains available only if you pin
+   **Default install:** ``pip install buildml`` installs Session **2.5.x**
+   (Apache-2.0). You are done when this works::
+
+      python -c "from buildml import Session; print(Session)"
+
+   Legacy **1.x** remains available only if you pin
    ``buildml==1.0.9``.
 
-Install BuildML 2.x (PyPI)
---------------------------
+Install from PyPI
+-----------------
 
 .. code-block:: console
 
    pip install buildml
 
-Optional extras append the same way, for example ``pip install "buildml[torch]"``.
+That is the current stable Session line. Optional extras append the same
+way, for example ``pip install "buildml[torch]"``.
 
-GitHub tip of main or an editable checkout also work:
+GitHub tip of main, or an editable checkout:
 
 .. code-block:: console
 
    pip install "git+https://github.com/TechLeo-Libraries/BuildML.git"
    pip install -e ".[dev]"
 
-Legacy 1.x from PyPI
---------------------
+Extras by job
+-------------
+
+The core install is NumPy, Pandas, PyArrow, and scikit-learn. Install
+only what the workflow uses.
+
+.. list-table::
+   :header-rows: 1
+   :widths: 28 36 36
+
+   * - If you need
+     - Install
+     - Adds
+   * - Plots and static EDA
+     - ``buildml[viz]``, ``[reports]``, ``[eda]``
+     - matplotlib / seaborn; Sweetviz / profiling
+   * - Local EDA app
+     - ``buildml[dashboard]``
+     - Industry EDA App on localhost
+   * - Polars / DuckDB
+     - ``buildml[engines]``
+     - engine adapters for ingest and prep
+   * - Search / AutoML
+     - ``buildml[optuna]``, ``[automl]``
+     - Optuna; native AutoML
+   * - Imbalance resample
+     - ``buildml[imbalanced]``
+     - imbalanced-learn
+   * - Excel input
+     - ``buildml[excel]``
+     - spreadsheet ingest
+   * - Time-series analysis depth
+     - ``buildml[timeseries]``, ``[timeseries-prophet]``, ``[timeseries-ml]``
+     - statsmodels / Prophet / neuralforecast when wheels resolve
+   * - Torch / speech / vision
+     - ``buildml[torch]``, ``[speech]``, ``[vision]``, ``[pretrained]``
+     - tabular + multimodal DL; ASR; backbones
+   * - RAG
+     - ``buildml[rag]``, ``[rag-advanced]``
+     - dense / rerank backends; LangChain hooks
+   * - AI operator
+     - ``buildml[ai]``
+     - LLM operator (bring your own key)
+   * - Serve / ONNX
+     - ``buildml[serve]``, ``[onnx]``
+     - local FastAPI serve; ONNX checker
+   * - Graph / RL / TDA
+     - ``buildml[graph]``, ``[graph-pyg]``, ``[rl]``, ``[tda]``
+     - NetworkX / PyG; Gymnasium; ripser / persim
+   * - NLP encoders
+     - ``buildml[nlp]``, ``[nlp-industry]``
+     - sentence-transformers / langdetect / NLTK; spaCy NER
+   * - SHAP
+     - ``buildml[shap]``
+     - ``explain_shap``
+   * - Classical bundle
+     - ``buildml[all-classical]``
+     - engines + imbalanced + eda + excel + dashboard + optuna + automl
+   * - Industry meta
+     - ``buildml[production]``
+     - best-effort R1–R6 industry extras (see below)
+
+Methods name the missing extra when an optional dependency is absent
+(for example ``pip install 'buildml[optuna]'``).
+
+If an extra fails to install
+----------------------------
+
+``buildml[production]`` is best-effort. It is not a guarantee that every
+nested industry wheel installs on every platform.
+
+On **Python 3.13**, especially Windows, some nested pins are skipped
+with environment markers when upstream wheels are missing or broken
+(LightFM, learn2learn / qpth, giotto-tda, neuralforecast, skope-rules,
+and similar). Core sklearn paths still install. Check the domain
+capability matrix (``session.automl.capability_matrix()``, and the same
+pattern on other facades).
+
+Prefer **Python 3.11 or 3.12** for Torch and heavy industry extras.
+Always use a project virtual environment. The staged-install guide is
+``guides/safe-install-and-runtime.md``.
+
+From a source checkout:
 
 .. code-block:: console
 
-   pip install "buildml==1.0.9"
+   python scripts/probe_industry_extras.py
+   python scripts/verify_runtime_stability.py
 
-That pins the old MIT line. Prefer unpinned ``pip install buildml`` for Session 2.x.
+``probe_industry_extras.py`` reports what imports. It never hard-fails.
+It does not include dashboard, serve, or AI operator extras.
+``verify_runtime_stability.py`` runs subprocess probes (``ok`` /
+``fail`` / ``crash`` / ``skip``) because some native stacks can
+hard-crash a process even after ``pip install`` succeeded.
 
-Optional dependencies (2.x)
----------------------------
+Engines
+-------
 
-Install only the capabilities the workflow uses:
+Path ingest with ``engine="polars"`` or ``engine="duckdb"`` loads
+through the engine without a Pandas-first pass. With Polars and
+``mode="lazy"``, ``Dataset.native`` may be a LazyFrame that collects on
+``to_pandas()`` / sklearn materialization. That is not out-of-core
+sklearn training. DuckDB Arrow / IPC paths use PyArrow when they can.
+Checkpoint load rebuilds an eager native handle from the Parquet payload
+when engine metadata allows.
 
-.. code-block:: console
+Loading saved artifacts
+-----------------------
 
-   pip install "buildml[viz]"          # matplotlib and seaborn
-   pip install "buildml[reports]"      # Sweetviz and ydata-profiling
-   pip install "buildml[eda]"          # viz + reports
-   pip install "buildml[dashboard]"    # local Industry EDA App
-   pip install "buildml[engines]"      # Polars and DuckDB
-   pip install "buildml[optuna]"       # Optuna hyperparameter search
-   pip install "buildml[automl]"       # native AutoML (+ Optuna method)
-   pip install "buildml[imbalanced]"   # imbalanced-learn
-   pip install "buildml[excel]"        # Excel input
-   pip install "buildml[timeseries]"   # statsmodels / ruptures TS analysis depth
-   pip install "buildml[timeseries-prophet]"
-   pip install "buildml[timeseries-ml]"  # neuralforecast when wheels resolve
-   pip install "buildml[graph]"        # NetworkX graph ML
-   pip install "buildml[graph-pyg]"    # PyG GCN/SAGE/GAT (needs torch)
-   pip install "buildml[nlp]"          # text encoders / langdetect / NLTK helpers
-   pip install "buildml[torch]"        # Torch DL path (alias: buildml[dl])
-   pip install "buildml[speech]"       # ASR + speech finetune-lite (+ transformers)
-   pip install "buildml[vision]"       # torchvision pretrained vision hooks
-   pip install "buildml[pretrained]"   # vision + speech pretrained extras
-   pip install "buildml[serve]"        # managed local FastAPI model serving
-   pip install "buildml[onnx]"         # optional ONNX checker for export_torch
-   pip install "buildml[rag]"          # optional dense/rerank backends
-   pip install "buildml[rl]"           # optional Gymnasium tabular Q-learning + REINFORCE-lite
-   pip install "buildml[tda]"          # ripser + persim persistent homology
-   pip install "buildml[ai]"           # LLM operator (alias: buildml[llm])
-   pip install "buildml[shap]"         # optional SHAP attribution (explain_shap)
-   pip install "buildml[all-classical]"
-   pip install "buildml[production]"   # best-effort R1-R6 industry meta-extra
+Checkpoint, pipeline, and domain bundle loaders that deserialize pickle,
+joblib, or torch default to ``trusted=False`` and raise until you pass
+``trusted=True`` for a file you created or fully trust. A SHA-256 in the
+manifest can detect tampering after save. It does not make a malicious
+author safe. Prefer JSON sidecars, parquet, or
+``Session.checkpoint_load(..., data_only=True)`` when provenance is
+unclear.
 
-The core install includes NumPy, Pandas, PyArrow, and scikit-learn. Plotting
-methods, ``session.eda_app()``, engine adapters, ``session.optuna_search()``,
-and ``nested_cv_score(..., inner_search="optuna")`` name the missing extra when
-an optional dependency is unavailable (for example
-``pip install 'buildml[optuna]'``). ``buildml[production]`` is best-effort: some
-nested industry wheels are skipped by environment markers on Python 3.13 /
-Windows. Check each domain capability matrix and
-``python scripts/probe_industry_extras.py`` for what actually imports.
-
-Path ingest with ``engine="polars"`` or ``engine="duckdb"`` loads through the
-engine without a Pandas-first pass. With Polars and ``mode="lazy"``,
-``Dataset.native`` may be a LazyFrame that collects on ``to_pandas()`` /
-sklearn materialization: not out-of-core sklearn training. DuckDB Arrow/IPC
-paths use PyArrow rather than a Pandas Feather bridge when feasible. Checkpoint
-load rebuilds an eager native handle from the Parquet payload when engine
-metadata allows.
+See :doc:`artifacts-checkpoints-bundles` and
+:doc:`ai-operator-safety`.
 
 Source checkout
 ---------------
@@ -96,19 +159,15 @@ Source checkout
    cd BuildML
    pip install -e ".[dev]"
 
-The development extra includes pytest, Ruff, mypy, build, and coverage tools.
+The development extra includes pytest, Ruff, mypy, build, and coverage
+tools.
 
-Safe install / runtime verification
------------------------------------
-
-Optional native stacks (Torch, industry ANN, …) can hard-crash a process even
-when ``pip install`` succeeded. From a source checkout, stage extras and probe
-with:
+Legacy 1.x
+----------
 
 .. code-block:: console
 
-   python scripts/verify_runtime_stability.py
-   python scripts/probe_industry_extras.py
+   pip install "buildml==1.0.9"
 
-See the Markdown guide ``guides/safe-install-and-runtime.md`` (staged venv
-install, ``ok`` / ``fail`` / ``crash`` / ``skip`` statuses).
+That pins the old MIT line. Prefer unpinned ``pip install buildml`` for
+Session 2.x. See :doc:`legacy`.

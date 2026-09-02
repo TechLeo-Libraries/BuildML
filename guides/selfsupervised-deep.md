@@ -1,9 +1,10 @@
-# Self-supervised deep guide (Phase R1: Torch industry depth)
+# Self-supervised deep guide
 
-> **Install:**
-> `pip install "buildml[torch]"` for tabular contrastive/generative SSL defaults.
-> `pip install "buildml[ssl]"` adds sentence-transformers for text SSL.
-> `pip install "buildml[vision]"` for vision SSL backbones.
+```bash
+pip install "buildml[torch]"
+# text SSL: pip install "buildml[ssl]"
+# vision SSL: pip install "buildml[vision]"
+```
 
 ## Story
 

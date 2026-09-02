@@ -19,7 +19,7 @@ from buildml.dl.extras import torch_available, torch_spec_available
 
 # Process-wide cache for subprocess import probes. In-process import of
 # skactiveml can hard-crash (Windows access violation via torch/skorch) which
-# is not catchable with try/except — never probe in-process for availability.
+# is not catchable with try/except - never probe in-process for availability.
 _SKACTIVEML_IMPORTABLE_CACHE: bool | None = None
 
 

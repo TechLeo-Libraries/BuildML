@@ -1,8 +1,8 @@
 # Active learning deep guide
 
-> **Install:**
-> `pip install "git+https://github.com/TechLeo-Libraries/BuildML.git"`
-> See [installation](../docs/installation.rst).
+```bash
+pip install buildml
+```
 
 Pool-based active learning on the Session train partition: scarce seed labels,
 uncertainty / committee / CoreSet / BALD queries, human `session.active_learning.label_rows`, budget

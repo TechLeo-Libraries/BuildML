@@ -1,13 +1,12 @@
 # RAG deep guide
 
-> **Install (GitHub 2.x + RAG):**
-> ```bash
-> pip install "git+https://github.com/TechLeo-Libraries/BuildML.git"
-> pip install "buildml[rag]"   # sentence-transformers for semantic backends
-> ```
-> Default when ``buildml[rag]`` is installed: **sentence-transformers** embeddings
-> and **hybrid BM25+dense** retrieval. Explicit ``embedder="hashing"`` remains for
-> CI / lexical-only paths. See [installation](../docs/installation.rst).
+```bash
+pip install "buildml[rag]"
+```
+
+Default when `buildml[rag]` is installed: sentence-transformers embeddings
+and hybrid BM25+dense retrieval. Explicit `embedder="hashing"` remains for
+CI / lexical-only paths.
 
 Retrieval-augmented generation on the same Session spine: history, explain,
 and distinct artifact kinds. Short on-ramp: [quickstart-rag](quickstart-rag.md).

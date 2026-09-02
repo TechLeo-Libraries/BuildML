@@ -141,7 +141,7 @@ def _warn_domain_variable_shadow(session: Any, facade_attr: str) -> None:
                     stacklevel=4,
                 )
                 return
-    except Exception:  # noqa: BLE001 — best-effort DX warning only
+    except Exception:  # noqa: BLE001 - best-effort DX warning only
         return
 
 

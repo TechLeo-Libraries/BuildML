@@ -791,7 +791,7 @@ def _fig_target(go: Any, report: dict[str, Any]) -> dict[str, Any]:
     total = sum(values) or 1.0
     for value in values:
         share = value / total
-        # Short bar labels — full count/share stays in hover to avoid wrap collisions.
+        # Short bar labels - full count/share stays in hover to avoid wrap collisions.
         texts.append(f"{share:.0%}" if share >= 0.01 else f"{share:.1%}")
     fig = go.Figure(
         go.Bar(

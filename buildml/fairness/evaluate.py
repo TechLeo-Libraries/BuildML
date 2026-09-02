@@ -244,7 +244,7 @@ def evaluate_fairness(
         "Metrics are descriptive binary-classification gaps only; no mitigation applied "
         "by evaluate_fairness.",
         "Optional mitigation helpers (threshold equalization / reweighing) are opt-in "
-        "and disclosed separately — they are not certification.",
+        "and disclosed separately - they are not certification.",
     )
     if intersectional:
         disclosures = disclosures + (

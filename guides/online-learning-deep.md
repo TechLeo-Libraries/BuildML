@@ -1,8 +1,8 @@
 # Online / continual learning (deep)
 
-> **Install:**
-> `pip install "git+https://github.com/TechLeo-Libraries/BuildML.git"`
-> Core sklearn path: no optional extra. Industry + torch backends below.
+```bash
+pip install buildml
+```
 
 ## What this is
 

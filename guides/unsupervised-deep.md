@@ -1,8 +1,8 @@
 # Unsupervised learning (deep)
 
-> **Install:**
-> `pip install "git+https://github.com/TechLeo-Libraries/BuildML.git"`
-> Clustering is core (sklearn). See [installation](../docs/installation.rst).
+```bash
+pip install buildml
+```
 
 This guide covers the Session unsupervised path: train-fit clustering, holdout
 assign, geometric evaluation, PCA integration via `reduce_dimensions`, and

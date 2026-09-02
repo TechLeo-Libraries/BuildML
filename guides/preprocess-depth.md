@@ -1,14 +1,21 @@
 # Preprocess depth
 
-> **Install:**
-> `pip install "git+https://github.com/TechLeo-Libraries/BuildML.git"`
-> Optional: `pip install "buildml[imbalanced]"` for resample.
-> See [installation](../docs/installation.rst).
+```bash
+pip install buildml
+# resample: pip install "buildml[imbalanced]"
+```
 
-Session-global preparation fits on **train** and freezes plans for other
-partitions. For fold-local prep inside CV, use `PreprocessRecipe`
-([leakage-cv-recipes](leakage-cv-recipes.md)) instead of calling these methods
-before `cv_score`.
+These are the Session-global steps: they fit on train and freeze plans for
+everyone else. `impute`, `encode`, and `scale` with `columns=None` touch
+`feature`-role columns of the matching dtype. `id`, `target`, `group`,
+`time`, `weight`, and `ignore` stay as they are unless you name them.
+
+If you need those same steps inside CV, do not call them here first. Use a
+`PreprocessRecipe` on unpoisoned data
+([leakage and recipes](leakage-cv-recipes.md)). Session-global prep, then
+CV, is refused. `resample` and `apply_custom_transform` are never
+fold-local. Resample plans are lineage-only at score time: they do not
+synthesize rows for inference.
 
 ---
 
@@ -161,7 +168,6 @@ eyes open.
 ## Resample strategies (train only)
 
 ```python
-# After GitHub 2.x install:
 # pip install "buildml[imbalanced]"
 for row in session.resample_strategies():
     print(row["sampler"], row.get("when") or row)

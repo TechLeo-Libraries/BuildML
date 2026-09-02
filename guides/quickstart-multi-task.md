@@ -1,20 +1,15 @@
 # Multi-task / multi-output quickstart
 
-> **Install:** Install Session 2.x with `pip install buildml` (2.5.x on PyPI). Legacy 1.x remains available as `pip install "buildml==1.0.9"`.
-> Core sklearn MultiOutput / Chain needs no extra; industry GBDT and torch
-> multi-head use optional extras. See [installation](../docs/installation.rst).
+```bash
+pip install buildml
+```
 
-Shared-feature multi-target fitting: assign multiple `role="target"` columns
-(or pass `targets=`), `session.multitask.fit` on train only, then
-`session.multitask.evaluate` / `session.multitask.predict` on holdout, and save a distinct
-bundle. Backends: **sklearn** (core), **industry** (`buildml[multitask-industry]`),
-**torch** (`buildml[torch]` for shared-trunk multi-head). Classical
-`Session.fit` remains single-target.
+Two or more target columns of the same type. Mixed classification plus
+regression is refused on sklearn/industry. Classical `session.fit` stays
+single-target. Default is sklearn `multi_output`.
 
-**Proof:** [multi-target-underwriting](../proofs/multi-target-underwriting/) (+ Tier C MultiOutputClassifier twin).
-
-**Go deeper:** [Multi-task deep](multi-task-deep.md) ·
-[Artifacts](artifacts-checkpoints-bundles.md).
+[Multi-task deep](multi-task-deep.md) ·
+[multi-target-underwriting](../proofs/multi-target-underwriting/)
 
 ```bash
 pip install buildml

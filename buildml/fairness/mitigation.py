@@ -75,7 +75,7 @@ def suggest_group_thresholds(
     Operates on **scores/probabilities already produced** by a fitted model.
     Callers must apply the returned thresholds themselves (e.g. in a decision
     policy). Retuning thresholds on the same test rows you will report is a
-    leakage / honesty risk — prefer validation for selection.
+    leakage / honesty risk - prefer validation for selection.
 
     Parameters
     ----------
@@ -195,7 +195,7 @@ def suggest_group_thresholds(
         "Thresholds are suggestions derived from the provided scores; BuildML "
         "does not rewrite Session predictions.",
         "Selecting thresholds on the same partition you report creates "
-        "optimistic bias — prefer validation for selection, test for reporting.",
+        "optimistic bias - prefer validation for selection, test for reporting.",
         f"Target={target!r}; reference uses global threshold={global_threshold}.",
     )
     return GroupThresholdSuggestion(

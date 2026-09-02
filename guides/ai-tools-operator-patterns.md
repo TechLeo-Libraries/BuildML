@@ -1,11 +1,8 @@
 # AI tools and operator patterns
 
-> **Install (GitHub 2.x + AI):**
-> ```bash
-> pip install "git+https://github.com/TechLeo-Libraries/BuildML.git"
-> pip install "buildml[ai]"
-> ```
-> See [installation](../docs/installation.rst).
+```bash
+pip install "buildml[ai]"
+```
 
 This guide is the **operator playbook**: which tools exist, how to chain them
 safely across classical / RAG / Torch, and patterns that avoid silent leakage.

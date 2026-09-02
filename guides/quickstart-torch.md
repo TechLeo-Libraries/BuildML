@@ -1,24 +1,19 @@
 # Torch quickstart
 
-> **Install:** Install Session 2.x with `pip install buildml` (2.5.x on PyPI). Legacy 1.x remains available as `pip install "buildml==1.0.9"`, then
-> the Torch extra. See [installation](../docs/installation.rst).
-
-Optional Torch path on the same `Session` as classical ML: tabular loaders,
-built-in MLP, text/sequence loaders, fold-local CV, history, and explain.
-Install the Torch extra; core `import buildml` never requires it.
-
-**Go deeper:** [Torch deep](torch-deep.md) ·
-[Speech ASR + classify](speech-asr-finetune.md) ·
-[Pretrained backbones](pretrained-backbones.md) ·
-[Serve & deploy](serve-deploy.md) ·
-[Artifacts](artifacts-checkpoints-bundles.md).
-
 ```bash
-# After a GitHub / editable 2.x install:
 pip install "buildml[torch]"
-# alias: pip install "buildml[dl]"
-# or: pip install "buildml[torch] @ git+https://github.com/TechLeo-Libraries/BuildML.git"
 ```
+
+Same Session, different fit. `session.dl.fit` does not replace
+`session.fit`. Loaders need a split. A built-in MLP is used when you omit
+a module. Zoo weights default to `mock`. Speech ASR without
+`buildml[speech]` is a disclosed stub. Foundation-model pretrain is
+refused.
+
+[Torch deep](torch-deep.md) ·
+[Speech](speech-asr-finetune.md) ·
+[Serve](serve-deploy.md)
+
 
 Classical `Session.fit` stays the default sklearn path. Torch methods use the
 `*_torch` prefix and store results in `session.dl.train_result`.

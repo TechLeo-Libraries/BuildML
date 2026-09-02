@@ -6,10 +6,10 @@ navigation, only footnotes attached to measured findings.
 
 Each note uses a fixed scan structure:
 
-* What this means — plain language
-* Why it matters — modeling / validation consequence
-* What to check next — concrete follow-up
-* Technical note — precise estimator / scope caveat
+* What this means - plain language
+* Why it matters - modeling / validation consequence
+* What to check next - concrete follow-up
+* Technical note - precise estimator / scope caveat
 """
 
 from __future__ import annotations
@@ -113,7 +113,7 @@ _NOTE_TEMPLATES: dict[str, tuple[str, str, str, str, str]] = {
         "measurement-units-and-ranges",
         "A text-like column mixes values that look numeric with values that do not.",
         "That usually means sentinels, concatenated sources, or a numeric field "
-        "stored as text — all of which break silent casting.",
+        "stored as text - all of which break silent casting.",
         "Inspect unique non-numeric tokens, replace sentinels, and cast with an "
         "explicit rule before modeling.",
         "Detection samples text columns and flags when roughly 5–95% of values "

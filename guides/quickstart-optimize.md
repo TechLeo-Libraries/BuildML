@@ -1,18 +1,16 @@
-# Quickstart: Optimisation / decision helpers
+# Decisions / optimisation quickstart
 
-**Proof:** [cost-sensitive-collections](../proofs/cost-sensitive-collections/) · Tier B allocation in [harbor-demand-desk](../proofs/harbor-demand-desk/), [aegis-fraud-platform](../proofs/aegis-fraud-platform/), and [ledger-underwriting-studio](../proofs/ledger-underwriting-studio/).
+```bash
+pip install buildml
+```
 
-> **Install:**
-> `pip install buildml`
-> Core path: sklearn + transitive `scipy.optimize` for LP allocation.
-> Industry solvers: `pip install 'buildml[optimize-industry]'` (PuLP, OR-Tools,
-> CVXPY, XGBoost). See [installation](../docs/installation.rst).
+Thresholds, cost matrices, top-K, knapsack, LP. Threshold / cost-matrix
+paths need a prior `session.fit`. Tuning defaults to validation. Tuning
+on test is refused unless `allow_test_tuning=True`. Not a general MIP
+platform.
 
-Session decision helpers over **ML scores, costs, and constrained allocations**.
-Cost-sensitive thresholds wrap the same engine as classical `tune_threshold`
-(or XGB/calibrated when installed); multiclass cost matrices, top-K capacity,
-knapsack (native or MIP), and continuous LP budget shares persist as a
-`DecisionPlan` bundle.
+[Decisions deep](optimize-deep.md) ·
+[cost-sensitive-collections](../proofs/cost-sensitive-collections/)
 
 **Not** a general operations-research platform, arbitrary MIP suite, or digital twin.
 

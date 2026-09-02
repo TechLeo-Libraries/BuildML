@@ -1,59 +1,59 @@
 BuildML
 =======
 
-BuildML is a Python library for machine-learning workflows built around
-:class:`buildml.Session`. Classical tabular supervised learning is the core
-path; the same Session also hosts forecasting, NLP, graph/KG, RAG, Torch, and
-other optional domains. A Session holds the dataset, column roles, partition
-membership, train-fitted preprocessing plans, optional fitted artifacts, and
-operation history.
+BuildML keeps a machine-learning job in one :class:`buildml.Session`: the
+table, what each column is for, the split, the preparation that learned from
+train only, and the model. If you try to prepare or fit before a split, it
+stops you.
 
-Version ``2.5.0`` is the current stable Session 2.x line. Install with
-``pip install buildml``. Legacy 1.x remains available under a pin
-(``buildml==1.0.9``) and as ``buildml/_legacy/`` for reference; new work should
-use Session. See :doc:`stability`.
+Install with ``pip install buildml`` (Python 3.10 through 3.13). That is
+BuildML 2.5.0, the current stable Session line.
 
-Learning path
-=============
+Start here
+==========
 
-Use this sequence to move from first import to competent use of BuildML as it
-exists today. Each step links to pages that go deeper than a single toy example.
+#. **Install and check the import**: :doc:`installation`
+#. **Run a first Session**: :doc:`usage`
+#. **Learn the few ideas that matter**: :doc:`concepts`
+#. **Use the order as a decision path**: :doc:`workflow-guide`
 
-#. **Install and orient**: :doc:`installation`, :doc:`readme`
-#. **Run one honest classical loop**: :doc:`usage` (loan-style classification)
-#. **Learn the vocabulary**: :doc:`concepts`, :doc:`glossary`
-#. **Follow the decision framework**: :doc:`workflow-guide`
-#. **Work through the classical tutorial**: :doc:`quickstart-classical`,
-   then :doc:`classical-end-to-end`
-#. **Leakage-safe selection**: :doc:`leakage-cv-recipes`,
-   :doc:`classical-diagnostics-search`
-#. **Open the teaching machinery**: :doc:`eda-teaching-studio`, :doc:`usage`
-   (explain / workflow / walkthrough / dry_run / dashboard sections)
-#. **Optional extras on the same Session**: :doc:`torch-deep`,
-   :doc:`rag-deep`, :doc:`ai-operator-safety` (quickstarts remain short on-ramps)
-#. **Capability inventory and guide map**: :doc:`features`, :doc:`guide-index`
-#. **Proof suite (Tier A/B/C)**: deep end-to-end projects under
-   `proofs/` on GitHub (`python -m proofs._lib.run_all --tier all`);
-   see :doc:`features` and the Markdown guide index for domain → proof maps
-#. **1.x migration**: :doc:`legacy`
+After that, open the :doc:`guide-index` when you need a domain tutorial, or
+:doc:`features` when you need a map of what is shipped. The Markdown files
+under ``guides/`` are the source for those tutorials. Sphinx includes them
+so this site and GitHub stay on the same text.
 
-The Markdown files under ``guides/`` are the canonical source for quickstarts,
-deep guides, and the glossary. Sphinx includes them via MyST so Read the Docs
-and GitHub stay aligned.
+Legacy 1.x remains available under ``pip install "buildml==1.0.9"`` and as
+``buildml/_legacy/`` for reference. New work uses Session. See :doc:`legacy`.
 
 .. toctree::
-   :maxdepth: 2
-   :caption: Guide
+   :maxdepth: 1
+   :caption: Get started
 
    readme
    installation
    usage
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Ideas
+
    concepts
    workflow-guide
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Guides and reference
+
    guides
    features
-   legacy
    modules
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Project
+
+   stability
+   legacy
    authors
    history
    sponsor

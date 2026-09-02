@@ -1,8 +1,10 @@
 # Imitation + RL: deep guide
 
-> **Install:** core BC/bandit need no extra. Gymnasium REINFORCE + tabular
-> Q-learning/SARSA: `pip install "buildml[rl]"`.
-> Industry SB3 + imitation BC/GAIL: `pip install "buildml[rl-industry]"`.
+```bash
+pip install buildml
+# Gymnasium: pip install "buildml[rl]"
+# SB3: pip install "buildml[rl-industry]"
+```
 
 This guide covers leakage, offline metrics, bundles, capability matrix, and honesty
 boundaries for `buildml.rl` / Session IL+RL APIs. Pair with

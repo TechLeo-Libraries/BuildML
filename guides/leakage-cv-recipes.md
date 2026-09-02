@@ -1,60 +1,57 @@
-# Leakage, fold-local recipes, weights, and hard-refuse CV
+# Leakage, recipes, and honest CV
 
-> **Install:** Install Session 2.x with `pip install buildml` (2.5.x on PyPI).
-> Legacy 1.x remains available as `pip install "buildml==1.0.9"`.
-> See [installation](../docs/installation.rst).
+```bash
+pip install buildml
+```
 
-Cross-validation is honest only when **every** statistic that should be
-“training-only” is re-learned inside each fold. BuildML hard-refuses common
-poisoning patterns so a nice mean F1 does not hide a broken protocol.
+Two different leaks show up in a Session.
+
+**Partition leakage** is when validation or test rows help compute a
+median, a vocabulary, or a scale. Fit-capable Session steps refuse
+without a split and without train scope.
+
+**Fold leakage** is quieter. You call `session.impute()` on the whole
+training partition, then `cv_score`. Every fold's "held-out" rows
+already carry statistics that saw their peers. The mean F1 looks fine.
+The protocol is broken.
+
+`PreprocessRecipe` exists for the second leak. It is an *unfitted*
+description. Inside `cv_score`, `grid_search`, `randomized_search`,
+`optuna_search`, `evolutionary_search`, and `nested_cv_score`, BuildML
+refits those steps on each fold's training rows and applies the frozen
+fold plans to that fold's eval rows.
+
+If Session-global `impute` / `encode` / `scale` / `handle_outliers` /
+`select_features` (or Session-global dates, text, or reduce) already ran
+on the full train partition, CV and search refuse **even when you pass a
+recipe**. The recipe sees the already-transformed frame. It cannot
+rebuild from raw cells.
 
 Related: [concepts](../docs/concepts.rst),
-[classical end-to-end](classical-end-to-end.md),
-[diagnostics & search](classical-diagnostics-search.md),
-[glossary](glossary.md).
+[classical quickstart](quickstart-classical.md),
+[diagnostics and search](classical-diagnostics-search.md).
 
----
+## What a recipe can and cannot do
 
-## Conceptual why (in depth)
+Fold-local order, when those steps are set, is:
 
-### Partition leakage vs fold leakage
+dates → text → outliers → impute → encode → binning → scale → reduce → select
 
-- **Partition leakage:** validation/test rows influence medians, encodings, or
-  scales used by the model. BuildML blocks fit-capable Session ops without a
-  split and without train scope (`LeakageError` / `assert_can_fit`).
-- **Fold leakage:** you call `session.impute()` on the full train partition,
-  then run `cv_score`. Every fold’s “held-out” rows already carry statistics
-  computed with their peers. Scores are optimistically biased.
+Outliers inside a recipe may `detect` or `cap`. **Drop** is refused:
+dropping rows would rewrite fold membership.
 
-### Why recipes exist
+These stay Session-global and are never fold-local:
 
-`PreprocessRecipe` describes **unfitted** steps. Inside `cv_score` /
-`grid_search` / `randomized_search` / `optuna_search` /
-`evolutionary_search` / `nested_cv_score`,
-BuildML refits those steps on each fold’s training rows and applies the frozen
-fold plans to the fold’s eval rows. That is fold-local honesty.
+- `resample` (it rewrites train rows)
+- `apply_custom_transform`
+- Session `text_features` / `reduce_dimensions` / `extract_dates` /
+  `bin` unless the same work is expressed on the recipe
 
-### What can never be fold-local
+`allow_session_global_preprocess=True` is an override for a known-biased
+baseline. The score stays leakage-biased. Re-ingest (or
+`checkpoint_load` an unpoisoned frame) if you want an honest number.
 
-From `SESSION_GLOBAL_ONLY_STEPS` / library policy:
-
-- `resample` (rewrites train rows)
-- `apply_custom_transform` (registered callables stay Session-global)
-- Any Session-global plan already fitted on the full train partition before CV
-
-### Hard refuse even with a recipe
-
-If you already ran Session-global `impute` / `encode` / `scale` / … on the
-frame, CV/search **refuse by default even when you pass a `PreprocessRecipe`**.
-Recipes do not undo poisoned cells. Options:
-
-1. Re-ingest clean data and use only the recipe inside CV (preferred).
-2. Explicit override: `allow_session_global_preprocess=True` (scores remain
-   biased: use only when you understand the contamination).
-
----
-
-## Good example: fold-local CV on clean data
+## Good: recipe on clean data
 
 ```python
 import pandas as pd
@@ -85,7 +82,7 @@ session = (
     .split(test_size=0.25, stratify=True, random_state=42)
 )
 
-# Do NOT call session.impute()/encode()/scale() before CV.
+# Do not call session.impute() / encode() / scale() before this.
 recipe = PreprocessRecipe(impute="median", encode="onehot", scale="standard")
 cv = session.cv_score(
     LogisticRegression(max_iter=500),
@@ -95,28 +92,33 @@ cv = session.cv_score(
 print(cv.mean_metrics[cv.scoring_metric], "±", cv.std_metrics[cv.scoring_metric])
 ```
 
-Session **test** is never scored inside CV folds. After selection, fit once on
-full train (with Session prep or a final recipe path) and evaluate test once.
+Folds are cut from **train only**. Session test is not scored here. After
+you pick a setup, prepare and fit once on full train, then evaluate test
+once.
 
----
+`cv_strategy="auto"` reads roles and picks a splitter. Use `"group"` or
+`"stratified_group"` after a `group` role, `"time"` after a `time` role,
+`"stratified"` when class mix must hold in every fold. The wrong
+strategy recreates the leak the split was meant to stop. Group CV
+without a `group` role fails clearly.
 
-## Bad example: Session-global prep then CV (refused)
+## Bad: Session-global prep, then CV
 
 ```python
 session.impute(strategy="median")
 session.scale(method="standard")
 
-# Raises LeakageError by default: frame already poisoned for fold-local CV.
+# LeakageError: the frame is already poisoned for fold-local CV.
 try:
     session.cv_score(
         LogisticRegression(max_iter=500),
         cv=4,
         preprocess=PreprocessRecipe(impute="median", scale="standard"),
     )
-except Exception as exc:  # LeakageError
+except Exception as exc:
     print(type(exc).__name__, exc)
 
-# Explicit override: biased scores; do not treat as honest CV.
+# Override: biased scores. Do not treat this as honest CV.
 biased = session.cv_score(
     LogisticRegression(max_iter=500),
     cv=4,
@@ -126,21 +128,26 @@ biased = session.cv_score(
 print("biased override:", biased.mean_metrics)
 ```
 
----
+## Nested CV with recipe knobs
 
-## Good example: nested CV with recipe knobs
+`grid_search` reports the winner's inner score. That number is optimistic:
+you picked the luckiest configuration and then quoted its luck. Nested
+CV gives the search its own private data. Outer folds score a winner the
+inner search never saw.
+
+Only knobs in `SAFE_RECIPE_KNOBS` may be swept (`select_k`, `n_bins`,
+`min_frequency`, `iqr_multiplier`, and the rest of that set). Strategy
+enums (`impute`, `scale`, `encode`) stay on the base recipe.
 
 ```python
 from sklearn.tree import DecisionTreeClassifier
 
 from buildml.preprocess import PreprocessRecipe, SAFE_RECIPE_KNOBS
 
-print(sorted(SAFE_RECIPE_KNOBS)[:8], "...")
-
 nested = session.nested_cv_score(
     DecisionTreeClassifier(random_state=0),
     param_grid={"max_depth": [2, 4], "min_samples_leaf": [1, 5]},
-    recipe_grid={"select_k": [2, 3]},  # only SAFE_RECIPE_KNOBS
+    recipe_grid={"select_k": [2, 3]},
     preprocess=PreprocessRecipe(
         impute="median",
         encode="onehot",
@@ -154,124 +161,65 @@ nested = session.nested_cv_score(
 print(nested.mean_metrics[nested.scoring_metric])
 ```
 
-Inner search picks hyperparameters **and** safe recipe knobs; outer folds
-estimate generalization of that selection process. Do not use Session test
-inside nested loops.
+## Target encoding
 
----
-
-## Bad example: target encoding without fold locality
-
-Target (mean) encoding must never see fold-eval labels. Inside a recipe,
-`encode="target"` fits smoothed means on **fold-train labels only**:
+`encode="target"` inside a recipe fits smoothed means on **fold-train
+labels only**. Eval rows never contribute. Session-global
+`session.encode(method="target")` fits on full train: fine for a final
+model after the split, poison for a later `cv_score`.
 
 ```python
-# Good: fold-local target encoding
 cv = session.cv_score(
     LogisticRegression(max_iter=500),
     cv=4,
     preprocess=PreprocessRecipe(impute="median", encode="target", scale="standard"),
 )
-
-# Risky Session-global path: session.encode(method="target") fits on full train.
-# Fine for a final model after split; poison for subsequent cv_score without override.
 ```
 
----
+## Weights
 
-## Weight role (`ColumnRole.WEIGHT`)
-
-Assign at most one `weight` column. Weights are **not** features: they are
-excluded from the design matrix and passed as `sample_weight` when the
-estimator supports it.
+Assign at most one `weight` column. Weights are not features. They are
+left out of the design matrix and passed as `sample_weight` when the
+estimator accepts it. An estimator that cannot take weights raises
+`ValidationError` instead of silently ignoring the column. Non-positive
+or all-NaN weights also raise. A column cannot be both `weight` and
+`feature`.
 
 ```python
-import pandas as pd
-from sklearn.linear_model import LogisticRegression
-
-from buildml import Session
-
-frame = pd.DataFrame(
-    {
-        "x": [0.1, 0.4, 0.2, 0.8, 0.3, 0.7, 0.5, 0.9],
-        "w": [1.0, 1.0, 2.0, 1.0, 1.5, 1.0, 2.0, 1.0],
-        "y": [0, 1, 0, 1, 0, 1, 1, 0],
-    }
-)
-
 session = (
     Session.ingest(frame)
     .set_roles({"x": "feature", "w": "weight", "y": "target"})
     .split(test_size=0.25, stratify=True, random_state=0)
     .fit(LogisticRegression(max_iter=500), task="classification")
 )
-
-result = session.evaluate(partition="test")
-print(result.diagnostics.get("sample_weight_column"))
+print(session.evaluate(partition="test").diagnostics.get("sample_weight_column"))
 ```
-
-**Failure modes:**
-
-- Estimator without `sample_weight` → `ValidationError` (not silent ignore).
-- Non-positive / all-NaN weights → `ValidationError`.
-- Weight also marked `feature` → validation error.
-
-Weighted metrics apply where sklearn accepts `sample_weight`.
-
----
-
-## Group / time CV strategies
-
-```python
-# After group_split / time role assignment:
-cv_g = session.cv_score(
-    LogisticRegression(max_iter=500),
-    cv=3,
-    cv_strategy="group",  # or stratified_group / time / auto
-    preprocess=PreprocessRecipe(scale="standard"),
-)
-```
-
-`cv_strategy="auto"` picks a sensible default from roles; override when your
-protocol requires it. Group CV without a `group` role fails clearly.
-
----
 
 ## Outliers inside recipes
-
-Fold-local outliers support `detect` and `cap` only. **Dropping** rows would
-rewrite fold membership and is refused inside CV:
 
 ```python
 recipe = PreprocessRecipe(
     outliers="iqr",
-    outlier_action="cap",  # not "drop" inside CV
+    outlier_action="cap",
     impute="median",
     scale="standard",
 )
 ```
 
-Session-global `handle_outliers(..., action="drop")` rebuilds splits after
-dropping train rows: use carefully, then avoid honest CV on that poisoned
-frame without re-ingest.
+Session-global `handle_outliers(..., action="drop")` rebuilds splits
+after dropping train rows. Do not then claim honest CV on that frame
+without re-ingest.
 
----
+## A selection order that stays honest
 
-## Checklist: honest classical selection
-
-1. Ingest → roles → split (or group/time/inject).
-2. Run `cv_score` / search / nested **before** Session-global prep, with
+1. Ingest → roles → split (or group / time / inject).
+2. `cv_score` / search / nested **before** Session-global prep, with a
    `PreprocessRecipe`.
-3. Optionally compare models on **validation** (`compare_models(..., partition="validation")`).
-4. Fit final estimator with Session prep on full train.
-5. Tune thresholds / calibration on validation.
-6. Evaluate **test once**.
+3. `compare_models(..., partition="validation")` if you are shortlisting.
+4. Prepare and fit the final estimator on full train.
+5. Thresholds and calibration on validation.
+6. Test once.
 
----
-
-## Related
-
-- [Preprocess depth](preprocess-depth.md)
-- [Diagnostics & search](classical-diagnostics-search.md)
-- [Classical end-to-end](classical-end-to-end.md)
-- [Artifacts](artifacts-checkpoints-bundles.md)
+[Preprocess depth](preprocess-depth.md) ·
+[Diagnostics and search](classical-diagnostics-search.md) ·
+[Classical end-to-end](classical-end-to-end.md)

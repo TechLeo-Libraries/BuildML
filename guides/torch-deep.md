@@ -1,13 +1,10 @@
 # Torch deep guide
 
-> **Install (GitHub 2.x + Torch):**
-> ```bash
-> pip install "git+https://github.com/TechLeo-Libraries/BuildML.git"
-> pip install "buildml[torch]"
-> # aliases: buildml[dl], buildml[audio]
-> # ONNX checker: buildml[onnx]
-> ```
-> Install with `pip install buildml`. See [installation](../docs/installation.rst).
+```bash
+pip install "buildml[torch]"
+# aliases: buildml[dl], buildml[audio]
+# ONNX checker: buildml[onnx]
+```
 
 Optional deep learning on the **same Session** as classical ML. Classical
 `Session.fit` stays the sklearn path; Torch uses `*_torch` methods and stores

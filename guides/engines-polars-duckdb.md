@@ -1,14 +1,18 @@
 # Engines: Pandas, Polars, and DuckDB
 
-> **Install:**
-> `pip install "git+https://github.com/TechLeo-Libraries/BuildML.git"`
-> Then: `pip install "buildml[polars]"`, `"buildml[duckdb]"`, or
-> `"buildml[engines]"` for both. See [installation](../docs/installation.rst).
+```bash
+pip install buildml
+pip install "buildml[engines]"
+```
 
-Pandas is the **canonical sklearn-facing** materialization path. Polars and
-DuckDB are optional engines for ingest, filter, project, and aggregate **before**
-(or between) Session mutations. Engine choice does **not** create out-of-core
-sklearn training.
+Pandas is what sklearn sees. Polars and DuckDB are for ingest, filter,
+project, and aggregate before that materialization. Engine choice does not
+make sklearn train out of core. Lazy Polars collects at the sklearn
+boundary.
+
+`with session:` closes an owned DuckDB connection. After Session
+preprocess, native handles rebuild so later `project` /
+`prepare_design_matrix` can still use the engine where that path exists.
 
 Related: [classical end-to-end](classical-end-to-end.md),
 [workflow-guide](../docs/workflow-guide.rst), [features](../docs/features.rst).
@@ -74,7 +78,7 @@ Complex SQL remains engine-specific.
 ## Use case: Polars lazy ingest and projection
 
 ```python
-# pip install "buildml[polars]"  # after GitHub 2.x
+# pip install "buildml[polars]"
 from buildml import Session
 
 session = Session.ingest("artifacts/txns.csv", engine="polars", mode="lazy")

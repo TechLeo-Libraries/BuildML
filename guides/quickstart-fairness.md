@@ -1,22 +1,20 @@
 # Fairness (observational) quickstart
 
-> **Install:** Install Session 2.x with `pip install buildml` (2.5.x on PyPI). Legacy 1.x remains available as `pip install "buildml==1.0.9"`.
-> Fairness metrics ship in core — no optional extra.
-> See [installation](../docs/installation.rst).
+```bash
+pip install buildml
+```
 
-Holdout group-disparity reporting on a fitted binary classifier: selection
-rates, demographic parity, disparate impact, equalized odds gaps, per-group
-classical metrics, and optional stability bands.
+Holdout disparity on a fitted classifier. You name the sensitive
+column; BuildML will not infer protected class. `suggest_thresholds` and
+`suggest_reweighing` return suggestions only. They are not applied.
+Default evaluate partition is test. This is observational reporting, not
+a legal audit and not causal fairness.
 
-**Boundary:** this is **observational analysis**, not a legal audit, not causal
-fairness, and not automatic bias mitigation. Sensitive columns must be declared
-by the caller. `positive_label` is hard-validated against observed labels so
-string targets with a default `1` raise instead of silent zero rates.
+String labels need an explicit `positive_label`. Default `1` raises
+instead of inventing zero rates.
 
-**Deep guide:** [fairness-deep.md](fairness-deep.md) ·
-**Proof:** [loan-fairness-observational](../proofs/loan-fairness-observational/) ·
-[Classical quickstart](quickstart-classical.md) ·
-[stability](../docs/stability.md)
+[Fairness deep](fairness-deep.md) ·
+[loan-fairness-observational](../proofs/loan-fairness-observational/)
 
 ```python
 import numpy as np
@@ -42,7 +40,7 @@ session = (
 
 print(session.fairness.capability_matrix()["non_goals"][:2])
 
-# String labels require an explicit positive_label — default 1 would raise.
+# String labels require an explicit positive_label - default 1 would raise.
 report = session.fairness.evaluate(
     sensitive_column="group",
     partition="test",

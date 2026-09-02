@@ -1,21 +1,18 @@
 # AutoML quickstart
 
-> **Install:** Install Session 2.x with `pip install buildml` (2.5.x). Legacy 1.x remains available as `pip install "buildml==1.0.9"`. Use
-> `pip install buildml`
-> Randomized/grid/evolutionary AutoML is core sklearn: no optional extra.
-> Optuna backend: `buildml[automl]`. Industry adapters (FLAML / AutoGluon) and
-> GBDT families: `buildml[automl-industry]`.
-> See [installation](../docs/installation.rst).
+```bash
+pip install buildml
+# Optuna: pip install "buildml[automl]"
+# FLAML / AutoGluon: pip install "buildml[automl-industry]"
+```
 
-Joint model-family + fold-local preprocess-strategy search on the Session :
-beyond tuning one fixed estimator with `grid_search` / `optuna_search`.
+Family plus fold-local recipe search, not one estimator's HPO. Test never
+enters selection. Session-global prep before `run` is refused, same as
+`cv_score`. Default backend is native sklearn; `n_trials=20`. Not NAS and
+not causal discovery.
 
-**Go deeper:** [AutoML deep](automl-deep.md) ·
-
-**Proof:** [churn-automl-search](../proofs/churn-automl-search/) (+ Tier C RandomizedSearchCV twin).
-[Leakage](leakage-cv-recipes.md) ·
-[Diagnostics & search](classical-diagnostics-search.md) ·
-[Artifacts](artifacts-checkpoints-bundles.md).
+[AutoML deep](automl-deep.md) ·
+[churn-automl-search](../proofs/churn-automl-search/)
 
 ---
 

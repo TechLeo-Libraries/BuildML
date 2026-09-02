@@ -1,18 +1,16 @@
-# Quickstart: Bayesian / probabilistic ML
+# Probabilistic quickstart
 
-Session path for uncertainty quantification: fit sklearn `BayesianRidge` /
-Gaussian Process / `GaussianNB`, get predictive std or probabilities, and
-optionally calibrate **split conformal** intervals/sets on a **train-only**
-carve. Persist via `buildml.probabilistic_bundle.v1`.
+```bash
+pip install buildml
+```
 
-Honesty: **not** a PyMC / Stan / NumPyro MCMC platform and **not** Bayesian
-deep nets. Classical `Session.calibration()` remains for classical
-`fit(...)` classifiers and is complementary.
+BayesianRidge / GP / Naive Bayes, plus train-only split conformal
+(default on, 20% of train). Default estimator is BayesianRidge. Not
+PyMC / Stan / NumPyro. Classical `session.calibration()` stays on the
+classical fit path.
 
-**Go deeper:** [Probabilistic deep](probabilistic-deep.md) ·
-
-**Proof:** [prob-interval-risk](../proofs/prob-interval-risk/) (+ Tier C BayesianRidge+quantile). Cross-domain: [harbor-demand-desk](../proofs/harbor-demand-desk/).
-[Artifacts](artifacts-checkpoints-bundles.md)
+[Probabilistic deep](probabilistic-deep.md) ·
+[prob-interval-risk](../proofs/prob-interval-risk/)
 
 ```python
 import numpy as np

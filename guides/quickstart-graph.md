@@ -1,25 +1,15 @@
-# Quickstart: Graph ML
+# Graph ML quickstart
 
-Session path for **node classification** over an edge list + node feature
-table: `session.graph.set_spec` → `session.graph.fit` → `session.graph.predict` / `session.graph.evaluate` →
-`buildml.graph_bundle.v1`.
+```bash
+pip install "buildml[graph]"
+# pure-Torch GCN: pip install "buildml[torch]"
+# PyG: pip install "buildml[graph-pyg]"
+```
 
-**Conventions:** Session rows are **nodes**. Edges are a separate table whose
-endpoints match a unique `node_id` column. `Session.split` creates **node**
-partitions.
-
-**Leakage modes:**
-- `inductive` (default): fit on the train-induced subgraph; score may use
-  train↔holdout edges; holdout↔holdout dropped.
-- `transductive`: full topology with train-label-only supervision (disclosed).
-
-**Three complete paths:**
-1. Classical: NetworkX metrics + sklearn (`pip install 'buildml[graph]'`)
-2. Pure-Torch GCN: dense adjacency, no PyG (`pip install 'buildml[torch]'`)
-3. PyTorch Geometric: GCN / GraphSAGE / GAT (`pip install 'buildml[graph-pyg]'`)
-
-Honesty: not a Neo4j/KG product, not a full PyG algorithm zoo, not link-prediction
-depth in this surface.
+Node classification. Rows are nodes. Edges are a separate table keyed by
+`node_id`. `set_spec` first, then a split (node partitions), then fit.
+Exactly one target. Default method is `classical` (NetworkX + sklearn).
+Default mode is inductive. This is not Neo4j and not `session.kg`.
 
 **Go deeper:** [Graph deep](graph-deep.md) ·
 

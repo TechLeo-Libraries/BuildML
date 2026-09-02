@@ -54,7 +54,7 @@ def fairness_capability_matrix() -> dict[str, Any]:
                 "notes": (
                     "Optional post-hoc helpers under buildml.fairness.mitigation "
                     "and session.fairness.suggest_*. They return thresholds or "
-                    "sample weights only — never silent fairness washing, never "
+                    "sample weights only - never silent fairness washing, never "
                     "legal certification."
                 ),
             },
@@ -103,7 +103,7 @@ def fairness_capability_matrix() -> dict[str, Any]:
             "Stability bands disclose sampling variability of observational gaps; "
             "they are not causal uncertainty.",
             "Mitigation helpers are opt-in post-hoc tools that return weights or "
-            "thresholds — applying them does not certify fairness.",
+            "thresholds - applying them does not certify fairness.",
             "Intersectional group keys can be sparse; support and warnings are "
             "part of the report contract.",
         ],

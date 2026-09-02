@@ -1,23 +1,15 @@
 # Meta-learning quickstart
 
-> **Install:** Install Session 2.x with `pip install buildml` (2.5.x on PyPI). Legacy 1.x remains available as `pip install "buildml==1.0.9"`.
-> Meta-learning uses core sklearn façades: no optional extra.
-> See [installation](../docs/installation.rst).
-
-Practical tabular few-shot / episodic meta-learning: assign a `role="group"`
-task column (or pass `task_column=`), `session.metalearning.fit` on train tasks only,
-then `session.metalearning.adapt` / `session.metalearning.evaluate` on holdout episodes, and save a
-distinct bundle. Honesty: **not** foundation-model meta-learning or
-MAML-at-scale.
-
-**Proof:** [few-shot-domain-adapt](../proofs/few-shot-domain-adapt/) (+ Tier C NearestCentroid k-shot twin).
-
-**Go deeper:** [Meta-learning deep](meta-learning-deep.md) ·
-[Artifacts](artifacts-checkpoints-bundles.md).
-
 ```bash
 pip install buildml
 ```
+
+Episodic few-shot on a task/group column. You need at least two distinct
+train task ids. Default is tabular prototypical. Holdout is never used
+for meta-train. This is not MAML-at-scale.
+
+[Meta-learning deep](meta-learning-deep.md) ·
+[few-shot-domain-adapt](../proofs/few-shot-domain-adapt/)
 
 ```python
 import numpy as np
@@ -74,7 +66,7 @@ session.metalearning.save_bundle("artifacts/metalearning_bundle")
 | Episodic few-shot via task/group column | Foundation-model / LLM meta-learning |
 | `prototypical` nearest-centroid on tabular features | Learned ProtoNet embeddings / Torch rewrite |
 | `warm_start` pooled sklearn init + support adapt | Full MAML / Reptile second-order meta-gradients |
-| Leakage-safe train-only meta-train | Meta-training on validation/test |
+| Train-only meta-train | Meta-training on validation/test |
 | Distinct `buildml.metalearning_bundle.v1` | Session checkpoint embedding the plan |
 
 Related next: federated learning

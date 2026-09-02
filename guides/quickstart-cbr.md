@@ -1,19 +1,16 @@
-# Quickstart: Case-based reasoning (CBR)
+# Case-based reasoning quickstart
 
-Session path for **tabular case memory**: build cases from train
-(features + solution), retrieve k nearest neighbors, reuse/adapt solutions,
-explain which cases influenced the answer, and persist via
-`buildml.cbr_bundle.v1`.
+```bash
+pip install buildml
+```
 
-Honesty: **not** RAG (document retrieval for generation), **not** a vector DB
-product, **not** a full cognitive CBR research suite. Core stays light
-(numpy / pandas / sklearn exact kNN); industry backends activate when extras
-are installed.
+Train-only case memory, then kNN retrieve / reuse. Default is k=5 and
+euclidean. `backend=None` picks the industry ANN when
+`buildml[cbr-industry]` is installed, otherwise exact sklearn kNN.
+`retain` refuses validation and test rows. This is not RAG.
 
-**Proof:** [case-memory-claims](../proofs/case-memory-claims/) (+ Tier C KNeighbors twin). Cross-domain: [pulse-support-copilot](../proofs/pulse-support-copilot/).
-
-**Go deeper:** [CBR deep](cbr-deep.md) ·
-[Artifacts](artifacts-checkpoints-bundles.md)
+[CBR deep](cbr-deep.md) ·
+[case-memory-claims](../proofs/case-memory-claims/)
 
 ```python
 import numpy as np

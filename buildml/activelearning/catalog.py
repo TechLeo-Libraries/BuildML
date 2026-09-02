@@ -66,7 +66,7 @@ def activelearning_capability_matrix() -> dict[str, Any]:
                     "scoring (always). Optional scikit-activeml host path in "
                     "buildml[activelearning-industry] when imports succeed; "
                     "otherwise suggest_query attaches a disclosed native "
-                    "fallback. scikit_activeml_present is find_spec only — "
+                    "fallback. scikit_activeml_present is find_spec only - "
                     "import probes are deferred to scoring time (broken torch/"
                     "skorch stacks can hard-crash find_spec-positive hosts)."
                 ),

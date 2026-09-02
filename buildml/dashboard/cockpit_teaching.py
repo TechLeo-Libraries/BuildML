@@ -3,7 +3,7 @@
 
 Ledger groups, assumption footnotes, and register rows carry beginner→advanced
 pedagogy, evidence from *this* report, calculations when relevant, and
-copy-paste Session examples. Nothing here is persisted — teaching is pure
+copy-paste Session examples. Nothing here is persisted - teaching is pure
 payload enrichment for the live App / offline bundle.
 """
 
@@ -22,7 +22,7 @@ from buildml.dashboard.adapt import (
 LEDGER_GROUP_GLOSSARY: dict[str, dict[str, str]] = {
     "frame": {
         "means": (
-            "Shape of the analysis frame — rows analysed vs loaded, column count, "
+            "Shape of the analysis frame - rows analysed vs loaded, column count, "
             "eligible features, missing cells, engine, and sampling disclosure."
         ),
         "why_on_sheet": (
@@ -61,7 +61,7 @@ LEDGER_GROUP_GLOSSARY: dict[str, dict[str, str]] = {
         "means": "Mutual information of each eligible feature against the declared target.",
         "why_on_sheet": (
             "Ranks association strength with the label under the MI estimator used "
-            "this pass — descriptive triage, not causal proof."
+            "this pass - descriptive triage, not causal proof."
         ),
     },
     "pearson": {
@@ -100,7 +100,7 @@ LEDGER_GROUP_GLOSSARY: dict[str, dict[str, str]] = {
     "clusters": {
         "means": "Correlation clusters of features that move together.",
         "why_on_sheet": (
-            "Groups that behave as one signal — useful when deciding what to drop or combine."
+            "Groups that behave as one signal - useful when deciding what to drop or combine."
         ),
     },
     "pca": {
@@ -154,7 +154,7 @@ LEDGER_GROUP_GLOSSARY: dict[str, dict[str, str]] = {
     "skipped": {
         "means": "Analyzers that were skipped or not applicable for this frame.",
         "why_on_sheet": (
-            "Absence of a figure is not silence — skipped analyzers are listed so "
+            "Absence of a figure is not silence - skipped analyzers are listed so "
             "the next extract does not inherit a false sense of coverage."
         ),
     },
@@ -250,11 +250,11 @@ def _glossary_for(key: str) -> dict[str, str]:
 def ledger_purpose_copy() -> dict[str, str]:
     """Section 03 purpose blurb for the readiness sheet."""
     return {
-        "title": "Ledger — every computed number",
+        "title": "Ledger - every computed number",
         "purpose": (
             "The ledger is the audit trail of computed EDA numbers for this frame. "
             "Each group is a family of measured values (counts, rates, associations, "
-            "exclusions). Jump chips scroll within this sheet — they are not domain boards."
+            "exclusions). Jump chips scroll within this sheet - they are not domain boards."
         ),
         "how_to_use": (
             "Scan groups that match your risk, open a group to learn what the numbers mean, "
@@ -268,7 +268,7 @@ def assumptions_purpose_copy() -> dict[str, str]:
     return {
         "title": "What each finding assumes",
         "purpose": (
-            "Every automated finding rests on assumptions — what the number means, "
+            "Every automated finding rests on assumptions - what the number means, "
             "why it matters before modeling, and what to check next. This section "
             "collects those footnotes so the register never floats free of its caveats."
         ),
@@ -286,11 +286,11 @@ def _ledger_calc(key: str, items: list[dict[str, str]], ctx: dict[str, Any]) -> 
             label="Frame coverage",
             formula="rows analysed / rows in frame",
             inputs={
-                "rows_analysed": by_k.get("rows analysed", "—"),
-                "rows_in_frame": by_k.get("rows in frame", "—"),
-                "columns": by_k.get("columns", "—"),
+                "rows_analysed": by_k.get("rows analysed", " - "),
+                "rows_in_frame": by_k.get("rows in frame", " - "),
+                "columns": by_k.get("columns", " - "),
             },
-            result=str(by_k.get("sampling") or "—"),
+            result=str(by_k.get("sampling") or " - "),
             reading=(
                 "If sampling is not “none disclosed”, later rates describe the analysed "
                 "subset, not necessarily every loaded row."
@@ -301,7 +301,7 @@ def _ledger_calc(key: str, items: list[dict[str, str]], ctx: dict[str, Any]) -> 
         return _calc(
             label="Highest missing rate (this pass)",
             formula="missing(column) / n_rows_analysed",
-            inputs={"column": top.get("k") or "—", "rate": top.get("v") or "—"},
+            inputs={"column": top.get("k") or " - ", "rate": top.get("v") or " - "},
             result=f"{top.get('k')} → {top.get('v')}",
             reading="Treat rates near 1.0 as near-empty columns for modeling eligibility.",
         )
@@ -311,12 +311,12 @@ def _ledger_calc(key: str, items: list[dict[str, str]], ctx: dict[str, Any]) -> 
             label="Leading mutual information vs target",
             formula="MI(feature; target) under the session estimator",
             inputs={
-                "feature": top.get("k") or "—",
-                "mi": top.get("v") or "—",
+                "feature": top.get("k") or " - ",
+                "mi": top.get("v") or " - ",
                 "target": ctx.get("target_column") or "undeclared",
             },
             result=f"{top.get('k')} → {top.get('v')}",
-            reading="Higher MI means stronger dependence under this estimator — not causation.",
+            reading="Higher MI means stronger dependence under this estimator - not causation.",
         )
     if key == "quality-flags":
         by_k = {it.get("k"): it.get("v") for it in items}
@@ -340,8 +340,8 @@ def _ledger_calc(key: str, items: list[dict[str, str]], ctx: dict[str, Any]) -> 
             formula="column ∉ eligible_features because reason(column)",
             inputs={
                 "excluded_shown": str(len(items)),
-                "example_column": items[0].get("k") or "—",
-                "example_reason": items[0].get("v") or "—",
+                "example_column": items[0].get("k") or " - ",
+                "example_reason": items[0].get("v") or " - ",
             },
             result=f"{len(items)} exclusion {plural(len(items), 'row')} listed",
             reading=(
@@ -355,10 +355,10 @@ def _ledger_calc(key: str, items: list[dict[str, str]], ctx: dict[str, Any]) -> 
             label="Target contract",
             formula="target column + task type from roles / declaration",
             inputs={
-                "target_column": by_k.get("target column") or ctx.get("target_column") or "—",
-                "task": by_k.get("task") or ctx.get("task") or "—",
+                "target_column": by_k.get("target column") or ctx.get("target_column") or " - ",
+                "task": by_k.get("task") or ctx.get("task") or " - ",
             },
-            result=f"{by_k.get('target column', '—')} · {by_k.get('task', '—')}",
+            result=f"{by_k.get('target column', ' - ')} · {by_k.get('task', ' - ')}",
             reading="If target is undeclared, MI-vs-target and class-balance screens cannot close.",
         )
     return None
@@ -385,10 +385,10 @@ def _ledger_example(key: str, items: list[dict[str, str]], ctx: dict[str, Any]) 
                 f"{header}"
                 "session = Session.ingest(frame)\n"
                 f"session = session.set_roles({{\n    {role_literal},\n}})\n"
-                f'# Inspect why a column was excluded — example: "{sample}"\n'
+                f'# Inspect why a column was excluded - example: "{sample}"\n'
                 "report = session.eda(include_plots=False, show=False)\n"
                 "reasons = (report.to_dict().get('overview') or {}).get('feature_exclusion_reasons') or {}\n"
-                f'print(reasons.get("{sample}", "not listed — check roles / constants"))\n'
+                f'print(reasons.get("{sample}", "not listed - check roles / constants"))\n'
             ),
             change_these=[
                 f'Replace roles with your real columns (sample features: {_quote_list(feats)}).',
@@ -430,7 +430,7 @@ def _ledger_example(key: str, items: list[dict[str, str]], ctx: dict[str, Any]) 
                 "Stratify classification splits when class balance allows.",
                 "Use eda_app() for the interactive cockpit instead of to_html.",
             ],
-            reading="Association ledgers describe co-occurrence under this frame — not causal effect.",
+            reading="Association ledgers describe co-occurrence under this frame - not causal effect.",
         )
 
     if key == "drift":
@@ -467,8 +467,8 @@ def _ledger_example(key: str, items: list[dict[str, str]], ctx: dict[str, Any]) 
                 "# Cockpit section 08 + ledger “Skipped / not applicable analyzers”\n"
                 "print((report.get('overview') or {}).get('skipped_analyzers') or 'none recorded')\n"
             ),
-            change_these=["Declare the target/roles that unlock N/A analyzers you care about."],
-            flexible=["Some analyzers stay N/A for unsupervised frames — that is expected."],
+            change_these=["Declare the target/roles that make N/A analyzers you care about available."],
+            flexible=["Some analyzers stay N/A for unsupervised frames - that is expected."],
             reading="A skipped analyzer is an explicit coverage gap, not a green light.",
         )
 
@@ -534,7 +534,7 @@ def build_ledger_group_teaching(
 
     beginner = (
         f"“{title}” is a ledger folder: {means} Read the labels on the left and the "
-        "measured values on the right — nothing here is a model score."
+        "measured values on the right - nothing here is a model score."
     )
     intermediate = (
         f"Why this folder is on the readiness sheet: {why} Compare these numbers to the "
@@ -543,7 +543,7 @@ def build_ledger_group_teaching(
     advanced = (
         "Ledger groups are produced by shared sheet_coverage builders used by both the "
         "App cockpit and Static EDA. Empty theater is omitted: if a group is absent, its "
-        "analyzer produced no values for this frame (or was skipped — see the skipped group)."
+        "analyzer produced no values for this frame (or was skipped - see the skipped group)."
     )
 
     next_checks = [
@@ -695,7 +695,7 @@ def build_finding_teaching(row: dict[str, Any], ctx: dict[str, Any]) -> dict[str
     role_literal = ",\n    ".join(f'"{k}": "{v}"' for k, v in roles.items())
 
     beginner = (
-        f"Finding {key} ({sev}): {title}. In plain terms — {detail or 'see evidence line'}."
+        f"Finding {key} ({sev}): {title}. In plain terms - {detail or 'see evidence line'}."
     )
     intermediate = (
         f"Affected columns / evidence: {col_line}. Evidence pointer: {evidence or 'report'}."
@@ -712,7 +712,7 @@ def build_finding_teaching(row: dict[str, Any], ctx: dict[str, Any]) -> dict[str
         "severity": sev,
         "means": detail,
         "why_it_matters": (
-            f"Severity {sev} on the readiness register — resolve blockers before modeling bake-offs."
+            f"Severity {sev} on the readiness register - resolve blockers before modeling bake-offs."
         ),
         "beginner": beginner,
         "evidence": evidence or detail,

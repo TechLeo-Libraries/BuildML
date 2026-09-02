@@ -13,18 +13,18 @@ a model.
 ## Mental model
 
 1. Fit a classical classifier on Session train (`session.fit`).
-2. Declare sensitive column(s) yourself — BuildML never infers protected class.
+2. Declare sensitive column(s) yourself - BuildML never infers protected class.
 3. `session.fairness.evaluate(...)` scores a partition (default `test`):
-   - selection rate by group
-   - demographic parity difference
-   - disparate impact ratio
-   - equalized odds ΔTPR / ΔFPR
-   - per-group accuracy / precision / recall / F1 (and ROC-AUC when scores exist)
-   - optional bootstrap / stratified-subsample stability bands
+  - selection rate by group
+  - demographic parity difference
+  - disparate impact ratio
+  - equalized odds ΔTPR / ΔFPR
+  - per-group accuracy / precision / recall / F1 (and ROC-AUC when scores exist)
+  - optional bootstrap / stratified-subsample stability bands
 4. Read `FairnessReport.to_markdown()` / `to_dict()` including **warnings** and
    **scope** disclosures.
 5. Optionally explore post-hoc helpers (`suggest_thresholds`,
-   `suggest_reweighing`) — they return suggestions only.
+   `suggest_reweighing`) - they return suggestions only.
 
 Bridge from classical evaluate without shrinking that API:
 
@@ -120,7 +120,7 @@ weights = session.fairness.suggest_reweighing(
 - Prefer **validation** for threshold selection; **test** for one-shot reporting.
 - Do not retune thresholds / reweigh / re-fit against the same test rows and
   then claim an unbiased fairness number.
-- Intersectional sparsity is a statistical problem, not a UI omission — keep
+- Intersectional sparsity is a statistical problem, not a UI omission - keep
   support visible.
 
 ## Relation to other paths
@@ -129,7 +129,7 @@ weights = session.fairness.suggest_reweighing(
 | --- | --- |
 | Classical `evaluate` | Predictive metrics; attach fairness afterward |
 | `error_slices` | Segment error tables; not disparity certification |
-| Causal ML | Counterfactual / ATE under declared assumptions — different product |
+| Causal ML | Counterfactual / ATE under declared assumptions - different product |
 | Decision / optimize | Cost-sensitive thresholds; complementary, not a fairness certificate |
 | SHAP (`explain_shap`) | Attribution; not a group disparity metric |
 

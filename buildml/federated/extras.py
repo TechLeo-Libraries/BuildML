@@ -11,7 +11,7 @@ from buildml.core.errors import MissingExtraError
 def flwr_spec_present() -> bool:
     """Return whether ``flwr`` appears on the import path without importing it.
 
-    Cheap discovery only — a find_spec hit can still fail at import time.
+    Cheap discovery only - a find_spec hit can still fail at import time.
 
     Returns
     -------

@@ -1,18 +1,18 @@
-# Quickstart: Federated learning (local simulation)
+# Federated learning quickstart
 
-Local FedAvg-style simulation on Session data partitioned by a client/group
-column: `session.federated.fit` runs train-only local updates, aggregates
-`coef_` / `intercept_`, then `session.federated.evaluate` / `session.federated.predict` on
-holdout. Persist via `buildml.federated_bundle.v1`.
+```bash
+pip install buildml
+```
 
-**Backends:** `native` (core) or `flower` with `pip install 'buildml[federated-industry]'`.
-Both are honest in-process simulations: not production FL networking; **not**
-cryptographic secure aggregation.
+In-process FedAvg / FedProx on a client/group column. You need at least
+two eligible clients and one target. Default method is FedAvg with
+`sgd_classifier`. `backend=None` picks Flower when
+`buildml[federated-industry]` is installed, otherwise native. Flower is
+still a local simulation, not a network stack and not secure
+aggregation.
 
-**Proof:** [federated-hospital-sim](../proofs/federated-hospital-sim/) (+ Tier C pooled SGD twin). Cross-domain: [nexus-federated-clinical](../proofs/nexus-federated-clinical/).
-
-**Go deeper:** [Federated learning deep](federated-deep.md) ·
-[Artifacts](artifacts-checkpoints-bundles.md)
+[Federated deep](federated-deep.md) ·
+[federated-hospital-sim](../proofs/federated-hospital-sim/)
 
 ```python
 import numpy as np

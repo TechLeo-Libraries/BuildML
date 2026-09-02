@@ -137,10 +137,10 @@ class FairnessReport:
 
 def _fmt(value: Any) -> str:
     if value is None:
-        return "—"
+        return " - "
     try:
         if value != value:  # NaN
-            return "—"
+            return " - "
         return f"{float(value):.4f}"
     except (TypeError, ValueError):
         return str(value)

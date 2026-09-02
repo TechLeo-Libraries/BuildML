@@ -69,7 +69,7 @@ def score_industry_pool(
     Returns
     -------
     tuple[np.ndarray, list[str]]
-        ``(scores, disclosures)`` — one score per pool row (higher = higher
+        ``(scores, disclosures)`` - one score per pool row (higher = higher
         labeling priority) plus honesty notes for the query result.
     """
     disclosures: list[str] = []

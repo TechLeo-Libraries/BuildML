@@ -14,20 +14,20 @@ from typing import Any
 
 STATUS_MEANINGS: dict[str, str] = {
     "clear": (
-        "Settled by the frame — this report’s own numbers already answer the "
+        "Settled by the frame - this report’s own numbers already answer the "
         "question for the current extract. Re-check after the next ingest."
     ),
     "open": (
-        "Open and measurable — something countable is unresolved. The evidence "
+        "Open and measurable - something countable is unresolved. The evidence "
         "and “closes when” lines name the number or check that would settle it."
     ),
     "human": (
-        "Needs a human judgment — the dataset cannot answer this alone. A person "
+        "Needs a human judgment - the dataset cannot answer this alone. A person "
         "must decide and write the answer down outside BuildML. You may mark the "
         "gate for this browser tab only; that mark is never saved."
     ),
     "na": (
-        "Not applicable — the question does not arise for this frame (for "
+        "Not applicable - the question does not arise for this frame (for "
         "example no target, no time column, or no gappy columns). Kept visible "
         "so the next extract does not inherit silence."
     ),
@@ -165,7 +165,7 @@ def _levels(beginner: str, intermediate: str, advanced: str) -> dict[str, str]:
 _CURRICULUM: dict[str, dict[str, Any]] = {
     "00.1": {
         "beginner": "Write one plain sentence: who will act on the model’s output, and at what moment.",
-        "why": "Without a decision owner and trigger, every later metric is floating — you cannot tell if a score is good enough to act.",
+        "why": "Without a decision owner and trigger, every later metric is floating - you cannot tell if a score is good enough to act.",
         "levels": _levels(
             "Name the person/role, the action, and the moment (e.g. “loan officer reviews score before offer”).",
             "Tie the sentence to an output type (rank, probability, class) and a review cadence.",
@@ -294,12 +294,12 @@ _CURRICULUM: dict[str, dict[str, Any]] = {
         ],
     },
     "01.5": {
-        "beginner": "Columns stuck on one value waste capacity — drop, coarsen, or keep on purpose.",
+        "beginner": "Columns stuck on one value waste capacity - drop, coarsen, or keep on purpose.",
         "why": "Constants and near-constants add noise and can dominate regularized models.",
         "levels": _levels(
             "List constant and near-constant columns from quality screens.",
             "Drop pure constants; decide for near-constants with domain input.",
-            "Re-check after filtering — rarity can change.",
+            "Re-check after filtering - rarity can change.",
         ),
         "next": [
             "session.drop_columns([...]) for confirmed constants.",
@@ -411,7 +411,7 @@ _CURRICULUM: dict[str, dict[str, Any]] = {
         ],
     },
     "02.2": {
-        "beginner": "For each skewed column, decide to transform or not — and why.",
+        "beginner": "For each skewed column, decide to transform or not - and why.",
         "why": "Linear models and distance methods feel skew; trees often do not need the same transform.",
         "levels": _levels(
             "Flag |skew| > 1 as a review cue (not a law).",
@@ -463,7 +463,7 @@ _CURRICULUM: dict[str, dict[str, Any]] = {
         ],
     },
     "02.6": {
-        "beginner": "Re-check headline relationships inside subgroups — they can reverse.",
+        "beginner": "Re-check headline relationships inside subgroups - they can reverse.",
         "why": "Simpson-style pooling hides confounding and unfair slice failures.",
         "levels": _levels(
             "Pick at least one plausible stratifier.",
@@ -493,7 +493,7 @@ _CURRICULUM: dict[str, dict[str, Any]] = {
         "why": "Distance and regularized linear models need comparable scales; trees usually do not.",
         "levels": _levels(
             "Compare numeric ranges across features.",
-            "Pick standard/minmax/robust — or document “no scaler”.",
+            "Pick standard/minmax/robust - or document “no scaler”.",
             "Fit scalers in-fold after the split.",
         ),
         "next": [
@@ -528,7 +528,7 @@ _CURRICULUM: dict[str, dict[str, Any]] = {
         ],
     },
     "03.3": {
-        "beginner": "Fit imputers, encoders, and scalers after the split — never on the full frame first.",
+        "beginner": "Fit imputers, encoders, and scalers after the split - never on the full frame first.",
         "why": "Full-frame fits peek at holdout rows and inflate reported scores.",
         "levels": _levels(
             "Call mutate steps only on the Session after split.",
@@ -541,7 +541,7 @@ _CURRICULUM: dict[str, dict[str, Any]] = {
         ],
     },
     "03.4": {
-        "beginner": "Every feature must be knowable at prediction time — no post-outcome values.",
+        "beginner": "Every feature must be knowable at prediction time - no post-outcome values.",
         "why": "Leakage invents accuracy that vanishes the moment you deploy.",
         "levels": _levels(
             "Review id-like and target-derived columns.",
@@ -645,7 +645,7 @@ _CURRICULUM: dict[str, dict[str, Any]] = {
         ],
     },
     "03.12": {
-        "beginner": "Explain each outlier as error, rare truth, subgroup, or sentinel — not “delete all”.",
+        "beginner": "Explain each outlier as error, rare truth, subgroup, or sentinel - not “delete all”.",
         "why": "Blind deletion removes rare but real cases; keeping sentinels poisons fits.",
         "levels": _levels(
             "Review univariate fence rates and multivariate flags.",
@@ -698,7 +698,7 @@ _CURRICULUM: dict[str, dict[str, Any]] = {
     },
     "04.4": {
         "beginner": "Choose the cut-off from costs of false alarms vs misses, not from 0.5 by habit.",
-        "why": "Default 0.5 assumes equal costs and a balanced base rate — often false.",
+        "why": "Default 0.5 assumes equal costs and a balanced base rate - often false.",
         "levels": _levels(
             "Estimate relative costs C_FP and C_FN.",
             "Tune threshold on validation; freeze for test.",
@@ -921,7 +921,7 @@ def _calculation_for(gate_id: str, ctx: dict[str, Any], status: str) -> dict[str
             reading=(
                 "Clear cue when ratio ≥ 10 before encoding; after one-hot the ratio usually worsens."
                 if status == "clear"
-                else "Below ~10 rows/feature before encoding — reduce width before memorizing noise."
+                else "Below ~10 rows/feature before encoding - reduce width before memorizing noise."
             ),
         )
 
@@ -1035,9 +1035,9 @@ def _calculation_for(gate_id: str, ctx: dict[str, Any], status: str) -> dict[str
             inputs={"rows": rows, "eligible_features": eligible, "ratio": round(ratio, 2)},
             result=f"≈ {round(ratio)} rows / feature",
             reading=(
-                "Below ~20 often means variance dominates — draw a learning curve before big HPO."
+                "Below ~20 often means variance dominates - draw a learning curve before big HPO."
                 if ratio < 20
-                else "Wider data regime — still draw a learning curve before expensive search."
+                else "Wider data regime - still draw a learning curve before expensive search."
             ),
         )
 
@@ -1094,7 +1094,7 @@ def _worked_example_for(
         return _example(
             summary=(
                 f"Profile this extract ({_fmt_n(ctx.get('rows'))} analysis rows) and keep the "
-                "human judgment in an external note — gate marks in the App stay tab-local."
+                "human judgment in an external note - gate marks in the App stay tab-local."
             ),
             code=code,
             change_these=common_change
@@ -1142,7 +1142,7 @@ def _worked_example_for(
                 "report = session.eda(include_plots=False, show=False)\n"
                 "print(report.to_dict().get('target'))\n"
             )
-            summary = f"`{target}` is the {task} target in this session — write its construction rule down."
+            summary = f"`{target}` is the {task} target in this session - write its construction rule down."
         else:
             code = (
                 f"{header}"
@@ -1272,7 +1272,7 @@ def _worked_example_for(
             + ["Tune min_frequency to your level distribution.", "Set an unseen-level policy for production."],
             flexible=["method='onehot' only after coarsening", "method='target' only in-fold"]
             + common_flex,
-            reading="Unseen levels at predict time need an explicit bucket — plan it now.",
+            reading="Unseen levels at predict time need an explicit bucket - plan it now.",
         )
 
     if gate_id == "01.7":
@@ -1313,11 +1313,11 @@ def _worked_example_for(
         return _example(
             summary=(
                 f"Parse `{tname}` explicitly"
-                + (" (detected in this profile)." if time_col else " (no datetime typed yet — example scaffold).")
+                + (" (detected in this profile)." if time_col else " (no datetime typed yet - example scaffold).")
             ),
             code=code,
             change_these=common_change + ["Set format/timezone to your source.", f"Rename `{tname}`."],
-            flexible=common_flex + ["Forecast paths refuse random splits — use time_split patterns."],
+            flexible=common_flex + ["Forecast paths refuse random splits - use time_split patterns."],
             reading="Typed dates are necessary but not sufficient; splits must respect order.",
         )
 
@@ -1409,7 +1409,7 @@ def _worked_example_for(
         return _example(
             summary=(
                 f"This extract has {_fmt_n(ctx.get('rows'))} rows over {ctx.get('eligible')} eligible "
-                "features — compute the ratio before encoding expands width."
+                "features - compute the ratio before encoding expands width."
             ),
             code=code,
             change_these=common_change + ["Update drop_columns to your idle columns."],
@@ -1442,7 +1442,7 @@ def _worked_example_for(
         stratify = task == "classification"
         group_hint = "# session.split(..., groups='entity_id')  # when a group role exists\n"
         time_hint = (
-            f"# time column detected: {time_col} — prefer chronological split helpers\n"
+            f"# time column detected: {time_col} - prefer chronological split helpers\n"
             if time_col
             else "# No time column typed; verify row independence before trusting a random split.\n"
         )
@@ -1555,7 +1555,7 @@ def _worked_example_for(
             "# Keep causal language off unless identification assumptions are written down.\n"
         )
         return _example(
-            summary="Interpretation tools run on held-out rows from this Session — not on train memorization.",
+            summary="Interpretation tools run on held-out rows from this Session - not on train memorization.",
             code=code,
             change_these=common_change
             + ["Adjust n_repeats / partition.", "Clip effect plots to empirical percentiles."],
@@ -1563,7 +1563,7 @@ def _worked_example_for(
             reading="Importance without redundancy notes and holdout repeats is storytelling.",
         )
 
-    # Fallback — still adaptive scaffolding, never demo-dataset narrative.
+    # Fallback - still adaptive scaffolding, never demo-dataset narrative.
     code = (
         f"{header}"
         "session = Session.ingest(frame).set_roles("
@@ -1578,7 +1578,7 @@ def _worked_example_for(
         code=code,
         change_these=common_change,
         flexible=common_flex,
-        reading="Use this session’s columns and counts — do not copy demo-dataset story text.",
+        reading="Use this session’s columns and counts - do not copy demo-dataset story text.",
     )
 
 

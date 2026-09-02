@@ -144,7 +144,7 @@ def build_findings_register(report: dict[str, Any]) -> list[dict[str, Any]]:
                 "title": item.get("title") or key,
                 "detail": item.get("detail") or item.get("title") or "",
                 "evidence": _evidence_full(item),
-                "concept": concept_key or slug or "—",
+                "concept": concept_key or slug or " - ",
                 "concept_key": concept_key,
                 "affected_columns": list(item.get("affected_columns") or []),
                 "caveats": caveats[:3],
@@ -155,7 +155,7 @@ def build_findings_register(report: dict[str, Any]) -> list[dict[str, Any]]:
 
 
 def build_assumptions(report: dict[str, Any]) -> list[dict[str, Any]]:
-    """Section 02 — deep adaptive footnotes (means / matters / next / technical)."""
+    """Section 02 - deep adaptive footnotes (means / matters / next / technical)."""
     notes = unique_notes(report.get("findings") or [])
     out: list[dict[str, Any]] = []
     for note in notes:
@@ -221,12 +221,12 @@ def build_ledger(report: dict[str, Any]) -> list[dict[str, Any]]:
 
 
 def build_recommendation_rows(report: dict[str, Any]) -> list[dict[str, Any]]:
-    """Section 04 — recommended sequence table."""
+    """Section 04 - recommended sequence table."""
     rows: list[dict[str, Any]] = []
     for index, item in enumerate(report.get("recommendation_details") or [], start=1):
         action = item.get("action") or {}
         operation = action.get("operation") if isinstance(action, dict) else None
-        call = f"session.{operation}(...)" if operation else (item.get("api") or "—")
+        call = f"session.{operation}(...)" if operation else (item.get("api") or " - ")
         basis = item.get("based_on") or item.get("finding_key") or item.get("basis")
         if isinstance(basis, list):
             basis = ", ".join(str(b) for b in basis[:4])
@@ -239,7 +239,7 @@ def build_recommendation_rows(report: dict[str, Any]) -> list[dict[str, Any]]:
                 "when": str(item.get("priority") or "next").upper(),
                 "title": item.get("title") or "",
                 "call": call,
-                "basis": str(basis or "—"),
+                "basis": str(basis or " - "),
                 "rationale": item.get("rationale") or "",
                 "caveats": [str(c) for c in caveats[:3]],
             }

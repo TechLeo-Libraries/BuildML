@@ -1,11 +1,8 @@
 # Speech: ASR transcription and classify finetune-lite
 
-> **Install (GitHub 2.x + speech):**
-> ```bash
-> pip install "git+https://github.com/TechLeo-Libraries/BuildML.git"
-> pip install "buildml[speech]"   # torch + transformers
-> ```
-> Install with `pip install buildml`. See [installation](../docs/installation.rst).
+```bash
+pip install "buildml[speech]"
+```
 
 BuildML ships an **integration path** for speech: environment-aware ASR
 (default prefers **transformers** when `buildml[speech]` is installed; falls

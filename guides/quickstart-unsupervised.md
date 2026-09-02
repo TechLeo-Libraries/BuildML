@@ -1,33 +1,20 @@
 # Unsupervised quickstart
 
-> **Install:** Install Session 2.x with `pip install buildml` (2.5.x on PyPI). Legacy 1.x remains available as `pip install "buildml==1.0.9"`.
-> Clustering uses core sklearn. Optional industry depth:
-> `pip install "buildml[unsupervised]"` (HDBSCAN + UMAP) and/or
-> `pip install "buildml[torch]"` (DEC/IDEC deep clustering).
-> See [installation](../docs/installation.rst).
-
-Leakage-safe clustering on the same `Session` as classical ML: history, explain
-catalog, and a distinct unsupervised bundle. Dimensionality reduction stays on
-`Session.reduce_dimensions` (PCA); this path clusters (optionally) on those
-train-fitted components.
-
-**Go deeper:** [Unsupervised deep](unsupervised-deep.md) ·
-
-**Proof:** [cluster-customer-segments](../proofs/cluster-customer-segments/) (+ Tier C KMeans+PCA twin).
-[Artifacts](artifacts-checkpoints-bundles.md) ·
-[Preprocess depth](preprocess-depth.md) (PCA).
-
 ```bash
-# After a GitHub / editable 2.x install:
 pip install buildml
+# HDBSCAN / UMAP: pip install "buildml[unsupervised]"
+# DEC / IDEC: pip install "buildml[torch]"
 ```
 
-Classical `Session.fit` stays unchanged. Unsupervised methods are
-`session.unsupervised.fit` / `session.unsupervised.assign` / `session.unsupervised.evaluate` plus
-`session.unsupervised.save_bundle` / `session.unsupervised.load_bundle`.
+Cluster on the same Session. No target is required. Fit is train-only;
+`assign` and `evaluate` need a plan first. Default is sklearn KMeans
+(n_clusters=8). PCA stays on `session.reduce_dimensions`; you can cluster
+those train-fitted components.
 
-EDA IsolationForest / correlation-cluster screens are **not** this API: they
-remain descriptive teaching signals.
+This is not the EDA IsolationForest screen. That stays descriptive.
+
+[Unsupervised deep](unsupervised-deep.md) ·
+[cluster-customer-segments](../proofs/cluster-customer-segments/)
 
 ```python
 import numpy as np

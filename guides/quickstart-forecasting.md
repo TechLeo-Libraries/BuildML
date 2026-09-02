@@ -1,22 +1,20 @@
 # Forecasting quickstart
 
-> **Install:** Install Session 2.x with `pip install buildml` (2.5.x). Legacy 1.x remains available as `pip install "buildml==1.0.9"`. Use
-> `pip install buildml`
-> (or an editable checkout).
->
-> **Industry defaults:** `pip install "buildml[timeseries]"` for statsmodels
-> ETS/ARIMA/SARIMAX. Prophet: `buildml[timeseries-prophet]`. N-BEATS:
-> `buildml[timeseries-ml]`. Core lag/baseline fallback without extras.
+```bash
+pip install buildml
+# ETS / ARIMA: pip install "buildml[timeseries]"
+```
 
-Leakage-safe forecasting on the same `Session`: `time` role + `time_split`,
-train-only fit, horizon generate, holdout MAE/RMSE/MAPE, rolling-origin eval,
-and forecast bundle v2.
+You need a `time` role and `time_split` (or a chronological `inject_split`).
+Random, stratified, and group splits are refused. Fit is train-only.
+Default method is `auto`: ETS if statsmodels is in, otherwise `lag_ridge`.
 
-**Go deeper:** [Forecasting deep](forecasting-deep.md) ·
+This is not the analysis path. Stationarity and decompose live on
+`session.timeseries.*` and do not fit a forecaster.
 
-**Proof:** [store-sales-forecast](../proofs/store-sales-forecast/) (+ Tier C SARIMAX/seasonal_naive). Cross-domain: [harbor-demand-desk](../proofs/harbor-demand-desk/).
-[Time-series analysis](quickstart-timeseries-analysis.md) ·
-[Leakage](leakage-cv-recipes.md).
+[Forecasting deep](forecasting-deep.md) ·
+[store-sales-forecast](../proofs/store-sales-forecast/) ·
+[Time-series analysis](quickstart-timeseries-analysis.md)
 
 ---
 

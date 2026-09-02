@@ -5,7 +5,7 @@ Readiness Gates evidence) must bind language to the live report: task type,
 declared target column, real column names, sampling disclosures, and skipped
 analyzers. Nothing in this module assumes a demo/churn schema.
 
-Academy / Gates agents — extension contract
+Academy / Gates agents - extension contract
 ------------------------------------------
 Python (payload builders)::
 
@@ -61,14 +61,14 @@ def fmt_n(value: Any) -> str:
     try:
         return f"{int(value):,}"
     except (TypeError, ValueError):
-        return "—"
+        return " - "
 
 
 def fmt_pct(value: Any, digits: int = 1) -> str:
     try:
         n = float(value)
     except (TypeError, ValueError):
-        return "—"
+        return " - "
     if n <= 1.0:
         n *= 100.0
     return f"{n:.{digits}f}%"
@@ -450,7 +450,7 @@ def what_to_change(report: dict[str, Any], *, limit: int = 6) -> list[dict[str, 
         items.append(
             {
                 "change": "Re-run EDA without a row budget if tails matter",
-                "why": scope_phrase(report) + " — sampling can hide rare levels.",
+                "why": scope_phrase(report) + " - sampling can hide rare levels.",
                 "api": "session.eda(sample_rows=None)",
             }
         )

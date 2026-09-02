@@ -1,41 +1,46 @@
 Overview
 ========
 
-BuildML is a stateful Python library for tabular classification and regression.
-The public entry point is :class:`buildml.Session`.
+BuildML is a Python library for machine-learning workflows. The public
+entry point is :class:`buildml.Session`.
 
-A Session records:
+You give the Session a table. You say which columns are features, which
+one is the target, and how to split. After that, preparation and fitting
+learn from the training rows only. Validation and test get the frozen
+version. Skip the split and the call fails instead of leaking statistics
+into the holdout.
 
-* the canonical dataset and semantic column roles;
-* train, optional validation, and test membership;
-* fitted preprocessing plans and the active estimator;
-* operation parameters and state transitions.
+A Session also keeps the story of the run: roles, membership, fitted
+plans, the optional estimator, and every operation you called. That is
+why you can ask it what a step means (``session.explain``), learn the
+idea behind a word (``session.learn``), see what is blocked
+(``session.workflow``), or write a local HTML walkthrough
+(``session.walkthrough``). Those surfaces teach the contract. They do
+not inspect your data or certify that a split matches the real world.
 
-``Session.explain`` connects an operation's static catalog entry to live Session
-state, leading with a plain-language primer unless a higher reading level is
-requested. ``Session.learn`` teaches the concept, operation, or term behind the
-call and says what to read first. ``Session.workflow`` resolves prerequisites for
-every cataloged operation. ``Session.walkthrough`` combines that state with
-history and can write a local, self-contained HTML report.
+The same Session hosts optional domains when you install the extra:
+forecasting, NLP, graph and knowledge graphs, RAG, Torch, and others.
+Classical ``fit`` / ``evaluate`` stay first-class. Domain work uses
+``session.<domain>.*``.
 
-BuildML requires a split before fit-capable preprocessing and fits those plans
-on training rows only. Those checks do not establish that a random split matches
-your domain, detect target proxies, or validate externally supplied
-memberships.
+What it will not pretend
+------------------------
 
-Stability
----------
+BuildML requires a split before fit-capable preprocessing and fits those
+plans on training rows only. Those checks do not prove that a random
+split matches your domain, detect target proxies, or validate memberships
+you injected from outside.
 
-Version ``2.5.0`` is the current stable Session 2.x line on PyPI
-(https://pypi.org/project/buildml/2.5.0/) and GitHub Release ``v2.5.0``.
-See :doc:`stability` for the public-surface freeze policy. Pandas remains the
-canonical sklearn-facing materialization path. Polars and DuckDB support
-conversion and engine-aware paths; they do not make every Session operation
-lazy or out-of-core.
+Pandas is the sklearn-facing materialization path. Polars and DuckDB
+help with ingest and engine-aware prep. They do not make every Session
+operation lazy or out-of-core.
 
-Optional Torch, RAG, and AI operator paths install as extras and attach to the
-same Session. Follow the :doc:`index` learning path, the :doc:`guides`
-quickstarts, and the Markdown tutorials in ``guides/`` for runnable depth.
+Version 2.5.0 is the current stable Session 2.x line on
+`PyPI <https://pypi.org/project/buildml/2.5.0/>`_. See :doc:`stability`
+for the public-surface policy.
+
+Start with :doc:`usage`. The ideas sit in :doc:`concepts`. Tutorials
+live in :doc:`guides`.
 
 Author
 ------

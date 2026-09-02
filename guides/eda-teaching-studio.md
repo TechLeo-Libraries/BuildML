@@ -1,19 +1,18 @@
 # EDA and Teaching Studio
 
-> **Install:**
-> `pip install "git+https://github.com/TechLeo-Libraries/BuildML.git"`
-> Optional: `pip install "buildml[viz]"`, `"buildml[eda]"`,
-> `"buildml[dashboard]"` for plots / the Industry EDA App.
-> See [installation](../docs/installation.rst).
+```bash
+pip install buildml
+# plots / profiling: pip install "buildml[viz]" "buildml[eda]"
+# local app: pip install "buildml[dashboard]"
+```
 
-Explore **before** you mutate. `session.eda()` returns structured findings and
-read-only recommendations. Teaching surfaces (`explain`, `learn`, `workflow`,
-`walkthrough`, `dry_run`) expose the operation catalog and the concept notes
-behind it: they do not certify that your split or model suits the domain.
+Look before you mutate. `session.eda()` returns findings and read-only
+recommendations. It does not run them. `explain`, `learn`, `workflow`,
+`walkthrough`, and `dry_run` expose the catalog. They do not certify that
+your split or model fits the domain.
 
-If the vocabulary itself is new, start with `session.learn()`: everything below
-reads at a `beginner`, `intermediate`, or `advanced` level, and beginner assumes
-no prior machine-learning knowledge.
+If the words are new, start with `session.learn()`. The default reading
+level is `beginner`.
 
 Related: [classical end-to-end](classical-end-to-end.md),
 [usage](../docs/usage.rst), [glossary](glossary.md).
@@ -113,7 +112,7 @@ python scripts/generate_static_eda_preview.py
 ## Use case: live Industry EDA App
 
 ```python
-# pip install "buildml[dashboard]"  # after GitHub 2.x
+# pip install "buildml[dashboard]"
 handle = session.eda_app(port=8765, open_browser=True)
 # alias: session.open_eda_dashboard(port=8765)
 print(handle.url)

@@ -1,21 +1,16 @@
 # AI operator quickstart
 
-> **Install:** Install Session 2.x with `pip install buildml` (2.5.x on PyPI). Legacy 1.x remains available as `pip install "buildml==1.0.9"`, then
-> the AI extra. See [installation](../docs/installation.rst).
-
-Optional LLM-assisted workflow guidance on the same `Session` as classical ML,
-Torch, and RAG: roles, splits, history, and explain. Install the AI extra;
-core `import buildml` never requires it.
-
-**Go deeper:** [AI operator safety](ai-operator-safety.md) ·
-[AI tools & operator patterns](ai-tools-operator-patterns.md).
-
 ```bash
-# After a GitHub / editable 2.x install:
 pip install "buildml[ai]"
-# alias: pip install "buildml[llm]"
-# or: pip install "buildml[ai] @ git+https://github.com/TechLeo-Libraries/BuildML.git"
 ```
+
+Propose, then confirm, then execute. `run_autonomous` needs
+`confirm_autonomy=True`. Sample egress (`FULL_SAMPLE` / `REDACTED_SAMPLE`)
+needs `confirm=True`. Default egress is `stats_only`. API keys are never
+written into transcripts. Core `import buildml` does not need this extra.
+
+[AI operator safety](ai-operator-safety.md) ·
+[AI tools](ai-tools-operator-patterns.md)
 
 Classical `Session.fit`, Torch `*_torch`, and RAG `rag_*` stay unchanged. AI
 methods use the `ai_*` prefix and store results in `session.ai.result` /

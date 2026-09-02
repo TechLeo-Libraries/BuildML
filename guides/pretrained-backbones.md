@@ -1,12 +1,9 @@
 # Pretrained backbones
 
-> **Install:**
-> ```bash
-> pip install "git+https://github.com/TechLeo-Libraries/BuildML.git"
-> pip install "buildml[pretrained]"   # vision + speech extras
-> # or individually: buildml[vision] / buildml[speech]
-> ```
-> See [installation](../docs/installation.rst).
+```bash
+pip install "buildml[pretrained]"
+# or individually: buildml[vision] / buildml[speech]
+```
 
 `session.dl.load_backbone` exposes **curated** vision / audio / speech
 encoder hooks with `weights=none|mock|pretrained`, plus
