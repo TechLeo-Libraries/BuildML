@@ -253,7 +253,7 @@ def test_k8s_render_without_insecure_flags_by_default() -> None:
     assert "--trusted" in yaml_text
     assert "runAsNonRoot: true" in yaml_text
 
-    stub = render_serve_deployment(name="buildml-serve", emit_auth_store_document=True)
+    stub = render_serve_deployment(name="buildml-serve", emit_store_document=True)
     assert "kind: Secret" in stub
     assert "stringData" not in stub
     assert "CHANGE_ME" not in stub
@@ -295,16 +295,17 @@ def test_serve_cli_config_and_basic_auth_flags() -> None:
     assert args.api_keys == ["k1"]
 
 
-def test_port_probe_never_uses_wildcard_bind() -> None:
-    from buildml.serving.launch import _is_wildcard_host, _probe_bind_host
+def test_port_probe_binds_loopback_only() -> None:
+    import inspect
 
-    assert _is_wildcard_host("0.0.0.0")
-    assert _is_wildcard_host("::")
-    assert _probe_bind_host("0.0.0.0") == "127.0.0.1"
-    assert _probe_bind_host("*") == "127.0.0.1"
-    assert _probe_bind_host("::") == "::1"
-    assert _probe_bind_host("127.0.0.1") == "127.0.0.1"
-    assert _probe_bind_host("10.0.0.8") == "10.0.0.8"
+    from buildml.serving import launch
+
+    source = inspect.getsource(launch._ensure_port_available)
+    assert 'sock.bind(("127.0.0.1", port))' in source
+    assert "sock.bind((host" not in source
+    assert launch._is_wildcard_host("0.0.0.0")
+    assert launch._is_wildcard_host("::")
+    assert launch._probe_bind_host("0.0.0.0") == "127.0.0.1"
 
 
 def test_public_bind_accepts_basic_auth(tmp_path: Path) -> None:

@@ -29,8 +29,8 @@ page is the long form of that. Domain work uses `session.<domain>.*`
 
 After that, pick a domain from the map below. Quickstarts are short
 on-ramps. Deep guides carry use cases, failure modes, and cross-links.
-Proof projects for each domain sit at the bottom of this page and in
-the [proof suite](../proofs/README.md).
+Paste the loop from [`examples/`](../examples/). Then run one proof from
+the [evidence index](../proofs/README.md).
 
 ---
 
@@ -179,7 +179,7 @@ cross-links.
 - [Glossary](glossary.md)
 - [Features / boundaries](../docs/features.rst)
 - [Sphinx package API](../docs/package.rst)
-- Runnable mirrors (optional): [`examples/`](../examples/)
+- Paste scripts (the guide contract): [`examples/`](../examples/)
 
 ## What these pages do not cover
 
@@ -194,38 +194,45 @@ When an API is alpha, the page says so.
 
 ---
 
-## Proof suite deep-links
+## Paste, then evidence
 
-Industry-standard Tier A/B/C projects live under
-[`proofs/`](../proofs/README.md) (**63/63** Tier A, **36/36** Tier B, **58/62**
-Tier C: not smoke). Re-run: `python -m proofs._lib.run_all --tier all`.
+[`examples/`](../examples/) is the paste contract. [`proofs/`](../proofs/README.md)
+is one end-to-end run per job. Composition slugs in the harness are not
+extra products.
 
-| Domain | Proof project |
-| --- | --- |
-| Classical | [loan-approval-classical](../proofs/loan-approval-classical/), [mortgage-default-classical](../proofs/mortgage-default-classical/), [claim-severity-regression](../proofs/claim-severity-regression/), [breast-cancer-classical](../proofs/breast-cancer-classical/) (**REAL_PUBLIC_DATASET**), [diabetes-progression-regression](../proofs/diabetes-progression-regression/) (**REAL_PUBLIC_DATASET**) · Tier B [ledger-underwriting-studio](../proofs/ledger-underwriting-studio/), [cornerstone-mortgage-suite](../proofs/cornerstone-mortgage-suite/) |
-| Industry EDA | [eda-industry-adaptability](../proofs/eda-industry-adaptability/) (12 datasets; Static Offline HTML + App) |
-| Ensembles | [voting-ensemble-attrition](../proofs/voting-ensemble-attrition/), [stacking-credit-risk](../proofs/stacking-credit-risk/), [blending-payment-risk](../proofs/blending-payment-risk/) · Tier B [citadel-ensemble-desk](../proofs/citadel-ensemble-desk/), [keystone-underwrite-ml](../proofs/keystone-underwrite-ml/) |
-| Torch / DL | [torch-tabular-underwrite](../proofs/torch-tabular-underwrite/), [torch-text-intent](../proofs/torch-text-intent/) · Tier B [nova-torch-bench](../proofs/nova-torch-bench/) |
-| AutoML | [churn-automl-search](../proofs/churn-automl-search/) · Tier B [ledger-underwriting-studio](../proofs/ledger-underwriting-studio/), [orbit-multitask-hub](../proofs/orbit-multitask-hub/), [keystone-underwrite-ml](../proofs/keystone-underwrite-ml/) |
-| Anomaly | [network-intrusion-anomaly](../proofs/network-intrusion-anomaly/), [payment-rail-anomaly](../proofs/payment-rail-anomaly/), [iot-sensor-anomaly](../proofs/iot-sensor-anomaly/) · Tier B [aegis-fraud-platform](../proofs/aegis-fraud-platform/), [sentinel-iot-watch](../proofs/sentinel-iot-watch/), [rivulet-stream-risk](../proofs/rivulet-stream-risk/), [volt-sensor-fusion](../proofs/volt-sensor-fusion/) |
-| Forecast / TS | [store-sales-forecast](../proofs/store-sales-forecast/), [energy-load-forecast](../proofs/energy-load-forecast/) · Tier B [harbor-demand-desk](../proofs/harbor-demand-desk/), [ballast-energy-desk](../proofs/ballast-energy-desk/), [terrace-retail-mesh](../proofs/terrace-retail-mesh/) |
-| RAG | [support-kb-rag](../proofs/support-kb-rag/), [policy-handbook-rag](../proofs/policy-handbook-rag/) · Tier B [pulse-support-copilot](../proofs/pulse-support-copilot/), [parchment-policy-copilot](../proofs/parchment-policy-copilot/), [helix-knowledge-mesh](../proofs/helix-knowledge-mesh/), [zenith-support-os](../proofs/zenith-support-os/) |
-| Clustering | [cluster-customer-segments](../proofs/cluster-customer-segments/), [sku-embedding-clusters](../proofs/sku-embedding-clusters/), [wine-cluster-segments](../proofs/wine-cluster-segments/) (**REAL_PUBLIC_DATASET**) · Tier B [canyon-segment-studio](../proofs/canyon-segment-studio/), [forge-synth-lab](../proofs/forge-synth-lab/) |
-| Fairness | [loan-fairness-observational](../proofs/loan-fairness-observational/), [adult-fairness-observational](../proofs/adult-fairness-observational/) (**REAL_PUBLIC_DATASET**) |
-| Recommenders | [movie-recs-collaborative](../proofs/movie-recs-collaborative/), [catalog-recs-implicit](../proofs/catalog-recs-implicit/) · Tier B [meridian-recs-commerce](../proofs/meridian-recs-commerce/), [compass-catalog-recs](../proofs/compass-catalog-recs/) |
-| LTR | [search-relevance-ltr](../proofs/search-relevance-ltr/), [sponsored-ad-ltr](../proofs/sponsored-ad-ltr/) · Tier B [pulse-support-copilot](../proofs/pulse-support-copilot/), [aurora-ad-ranker](../proofs/aurora-ad-ranker/), [meridian-recs-commerce](../proofs/meridian-recs-commerce/) |
-| Knowledge graphs | [kg-biomed-linkpred](../proofs/kg-biomed-linkpred/), [logistics-kg-linkpred](../proofs/logistics-kg-linkpred/) · Tier B [helix-knowledge-mesh](../proofs/helix-knowledge-mesh/), [lattice-supply-graph](../proofs/lattice-supply-graph/) |
-| TDA | [credit-tda-shape](../proofs/credit-tda-shape/), [process-tda-shape](../proofs/process-tda-shape/) · Tier B [prism-shape-monitor](../proofs/prism-shape-monitor/), [kiln-process-tda](../proofs/kiln-process-tda/), [volt-sensor-fusion](../proofs/volt-sensor-fusion/) |
-| Semi / AL / SSL | [semi-label-efficiency](../proofs/semi-label-efficiency/), [radiology-semi-labels](../proofs/radiology-semi-labels/), [active-labeling-budget](../proofs/active-labeling-budget/), [defect-active-budget](../proofs/defect-active-budget/), [ssl-representation-probe](../proofs/ssl-representation-probe/), [tabular-ssl-probe](../proofs/tabular-ssl-probe/) · Tier B [atlas-label-studio](../proofs/atlas-label-studio/), [beacon-label-factory](../proofs/beacon-label-factory/), [zenith-support-os](../proofs/zenith-support-os/) |
-| Online / Graph / Decisions | [stream-fraud-online](../proofs/stream-fraud-online/), [clickstream-online](../proofs/clickstream-online/), [graph-fraud-rings](../proofs/graph-fraud-rings/), [peer-lending-graph](../proofs/peer-lending-graph/), [cost-sensitive-collections](../proofs/cost-sensitive-collections/), [campaign-budget-optimize](../proofs/campaign-budget-optimize/) · Tier B [aegis-fraud-platform](../proofs/aegis-fraud-platform/), [rivulet-stream-risk](../proofs/rivulet-stream-risk/), [lattice-supply-graph](../proofs/lattice-supply-graph/) |
-| Probabilistic | [prob-interval-risk](../proofs/prob-interval-risk/), [weather-prob-intervals](../proofs/weather-prob-intervals/) · Tier B [harbor-demand-desk](../proofs/harbor-demand-desk/), [ballast-energy-desk](../proofs/ballast-energy-desk/), [nexus-federated-clinical](../proofs/nexus-federated-clinical/), [relay-edge-federated](../proofs/relay-edge-federated/), [nova-torch-bench](../proofs/nova-torch-bench/) |
-| Causal | [causal-treatment-effect](../proofs/causal-treatment-effect/), [uplift-marketing-causal](../proofs/uplift-marketing-causal/) · Tier B [ledger-underwriting-studio](../proofs/ledger-underwriting-studio/), [apex-uplift-studio](../proofs/apex-uplift-studio/), [cornerstone-mortgage-suite](../proofs/cornerstone-mortgage-suite/), [keystone-underwrite-ml](../proofs/keystone-underwrite-ml/) |
-| Multi-task | [multi-target-underwriting](../proofs/multi-target-underwriting/), [sku-multitask-retail](../proofs/sku-multitask-retail/) · Tier B [orbit-multitask-hub](../proofs/orbit-multitask-hub/), [terrace-retail-mesh](../proofs/terrace-retail-mesh/) |
-| Meta-learning | [few-shot-domain-adapt](../proofs/few-shot-domain-adapt/), [coldstart-meta-adapt](../proofs/coldstart-meta-adapt/) · Tier B [quasar-meta-adapt](../proofs/quasar-meta-adapt/), [dynamo-click-lab](../proofs/dynamo-click-lab/) |
-| Federated | [federated-hospital-sim](../proofs/federated-hospital-sim/), [edge-fleet-federated](../proofs/edge-fleet-federated/) · Tier B [nexus-federated-clinical](../proofs/nexus-federated-clinical/), [relay-edge-federated](../proofs/relay-edge-federated/) |
-| Symbolic / CBR | [policy-rules-neuro-symbolic](../proofs/policy-rules-neuro-symbolic/), [compliance-neuro-symbolic](../proofs/compliance-neuro-symbolic/), [case-memory-claims](../proofs/case-memory-claims/), [warranty-cbr-memory](../proofs/warranty-cbr-memory/) · Tier B [pulse-support-copilot](../proofs/pulse-support-copilot/), [mosaic-warranty-desk](../proofs/mosaic-warranty-desk/), [scaffold-compliance-ai](../proofs/scaffold-compliance-ai/) |
-| Synthetic | [synthetic-privacy-utility](../proofs/synthetic-privacy-utility/), [tabular-synth-utility](../proofs/tabular-synth-utility/) · Tier B [forge-synth-lab](../proofs/forge-synth-lab/) |
-| Imitation + RL | [imitation-cartpole-control](../proofs/imitation-cartpole-control/), [tabular-q-frozenlake](../proofs/tabular-q-frozenlake/) · Tier B [vector-control-deck](../proofs/vector-control-deck/) |
-| NLP (text) | [ticket-routing-nlp](../proofs/ticket-routing-nlp/), [torch-text-intent](../proofs/torch-text-intent/) · Tier B [folio-claims-nlp](../proofs/folio-claims-nlp/), [zenith-support-os](../proofs/zenith-support-os/) |
+| Domain | Paste | Evidence |
+| --- | --- | --- |
+| Classical | [classical_loan_loop.py](../examples/classical_loan_loop.py) | [loan-approval-classical](../proofs/loan-approval-classical/), [breast-cancer-classical](../proofs/breast-cancer-classical/) |
+| Leakage / CV | [leakage_cv_recipe.py](../examples/leakage_cv_recipe.py) | [loan-approval-classical](../proofs/loan-approval-classical/) |
+| Unsupervised | [unsupervised_cluster_loop.py](../examples/unsupervised_cluster_loop.py) | [cluster-customer-segments](../proofs/cluster-customer-segments/), [wine-cluster-segments](../proofs/wine-cluster-segments/) |
+| Ensembles | [ensemble_vote_stack_loop.py](../examples/ensemble_vote_stack_loop.py) | [voting-ensemble-attrition](../proofs/voting-ensemble-attrition/) |
+| AutoML | [automl_search_loop.py](../examples/automl_search_loop.py) | [churn-automl-search](../proofs/churn-automl-search/) |
+| Anomaly | [anomaly_iforest_loop.py](../examples/anomaly_iforest_loop.py) | [network-intrusion-anomaly](../proofs/network-intrusion-anomaly/) |
+| Forecast | [forecast_lag_loop.py](../examples/forecast_lag_loop.py) | [store-sales-forecast](../proofs/store-sales-forecast/) |
+| Time-series analysis | [timeseries_analyze_loop.py](../examples/timeseries_analyze_loop.py) | [store-sales-forecast](../proofs/store-sales-forecast/) |
+| RAG | [rag_hashing_loop.py](../examples/rag_hashing_loop.py) | [support-kb-rag](../proofs/support-kb-rag/) |
+| Recommenders | [recommender_item_knn_loop.py](../examples/recommender_item_knn_loop.py) | [movie-recs-collaborative](../proofs/movie-recs-collaborative/) |
+| LTR | [ranking_pointwise_loop.py](../examples/ranking_pointwise_loop.py) | [search-relevance-ltr](../proofs/search-relevance-ltr/) |
+| Knowledge graphs | [kg_transe_loop.py](../examples/kg_transe_loop.py) | [kg-biomed-linkpred](../proofs/kg-biomed-linkpred/) |
+| TDA | [tda_loop.py](../examples/tda_loop.py) | [credit-tda-shape](../proofs/credit-tda-shape/) |
+| Semi-supervised | [semisupervised_label_propagation_loop.py](../examples/semisupervised_label_propagation_loop.py) | [semi-label-efficiency](../proofs/semi-label-efficiency/) |
+| Active learning | [activelearning_margin_loop.py](../examples/activelearning_margin_loop.py) | [active-labeling-budget](../proofs/active-labeling-budget/) |
+| Self-supervised | [selfsupervised_masked_tabular_loop.py](../examples/selfsupervised_masked_tabular_loop.py) | [ssl-representation-probe](../proofs/ssl-representation-probe/) |
+| Online | [online_partial_fit_loop.py](../examples/online_partial_fit_loop.py) | [stream-fraud-online](../proofs/stream-fraud-online/) |
+| Multi-task | [multitask_multioutput_loop.py](../examples/multitask_multioutput_loop.py) | [multi-target-underwriting](../proofs/multi-target-underwriting/) |
+| Meta-learning | [metalearning_prototypical_loop.py](../examples/metalearning_prototypical_loop.py) | [few-shot-domain-adapt](../proofs/few-shot-domain-adapt/) |
+| Federated | [federated_fedavg_loop.py](../examples/federated_fedavg_loop.py) | [federated-hospital-sim](../proofs/federated-hospital-sim/) |
+| Probabilistic | [probabilistic_bayesian_ridge.py](../examples/probabilistic_bayesian_ridge.py) | [prob-interval-risk](../proofs/prob-interval-risk/) |
+| Causal | [causal_aipw_ate.py](../examples/causal_aipw_ate.py) | [causal-treatment-effect](../proofs/causal-treatment-effect/) |
+| Graph | [graph_node_classification.py](../examples/graph_node_classification.py) | [graph-fraud-rings](../proofs/graph-fraud-rings/) |
+| Symbolic | [symbolic_rules_loop.py](../examples/symbolic_rules_loop.py) | [policy-rules-neuro-symbolic](../proofs/policy-rules-neuro-symbolic/) |
+| CBR | [cbr_knn_loop.py](../examples/cbr_knn_loop.py) | [case-memory-claims](../proofs/case-memory-claims/) |
+| Decisions | [decision_threshold_loop.py](../examples/decision_threshold_loop.py) | [cost-sensitive-collections](../proofs/cost-sensitive-collections/) |
+| Synthetic | [synthetic_copula_loop.py](../examples/synthetic_copula_loop.py) | [synthetic-privacy-utility](../proofs/synthetic-privacy-utility/) |
+| NLP | [nlp_text_classifier_loop.py](../examples/nlp_text_classifier_loop.py) | [ticket-routing-nlp](../proofs/ticket-routing-nlp/) |
+| Imitation + RL | [imitation_rl_loop.py](../examples/imitation_rl_loop.py) | [imitation-cartpole-control](../proofs/imitation-cartpole-control/) |
+| Fairness | [fairness_observational_loop.py](../examples/fairness_observational_loop.py) | [loan-fairness-observational](../proofs/loan-fairness-observational/), [adult-fairness-observational](../proofs/adult-fairness-observational/) |
+| Torch | [torch_tabular_mlp_loop.py](../examples/torch_tabular_mlp_loop.py) | [torch-tabular-underwrite](../proofs/torch-tabular-underwrite/) |
+| Industry EDA | | [eda-industry-adaptability](../proofs/eda-industry-adaptability/) |
 
-Full inventory and Tier C comparison status: [proofs/README.md](../proofs/README.md).
+Harness lists and composition scripts: [proofs/README.md](../proofs/README.md).

@@ -10,7 +10,8 @@ labeled holdout rows only. This is not active learning and not SSL
 pretext.
 
 [Semi-supervised deep](semisupervised-deep.md) ·
-[semi-label-efficiency](../proofs/semi-label-efficiency/)
+Paste: [`examples/semisupervised_label_propagation_loop.py`](../examples/semisupervised_label_propagation_loop.py) ·
+Evidence: [semi-label-efficiency](../proofs/semi-label-efficiency/)
 
 ```bash
 pip install buildml

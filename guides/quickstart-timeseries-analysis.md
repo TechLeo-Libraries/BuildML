@@ -10,6 +10,7 @@ forecast. Default scope is train. No forecast model is fitted here.
 That is `session.forecast`.
 
 [TS analysis deep](timeseries-analysis-deep.md) ·
+Paste: [`examples/timeseries_analyze_loop.py`](../examples/timeseries_analyze_loop.py) ·
 [Forecasting](quickstart-forecasting.md)
 
 ---

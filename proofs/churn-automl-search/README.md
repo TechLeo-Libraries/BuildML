@@ -1,36 +1,39 @@
 # churn-automl-search
 
-## Business purpose
+You have telco-style customer features and a churn label. You want a family
+and recipe search under a disclosed trial budget, then one test number after
+the winner is refit.
 
-Predict telco customer churn to prioritize retention offers. AutoML searches
-model families and preprocess recipes under a disclosed trial budget.
-
-## Data source
+## Data
 
 Synthetic telco churn (`load_telco_churn_synthetic`): license-clear stand-in
 for IBM Telco-style schemas.
 
-## Leakage controls
+## Leakage
 
-- Stratified train / validation / test before search
-- `session.automl.run(..., selection="cv")` ranks on **train folds only**
-- Session test never enters family/recipe ranking
-- `session.automl.evaluate(partition="test")` once after refit
+Stratified train / validation / test before search.
+`session.automl.run(..., selection="cv")` ranks on train folds only. Session
+test never enters family or recipe ranking.
+`session.automl.evaluate(partition="test")` runs once after refit.
 
-## BuildML API steps
+## How to run
 
-1. `ingest` → `set_roles` → stratified `split`
-2. `session.automl.run` (FLAML/AutoGluon when installed; else native + LightGBM/XGBoost families)
-3. `session.automl.evaluate` on validation then test
-4. `session.automl.save_bundle`
+```bash
+python proofs/churn-automl-search/script.py
+python proofs/churn-automl-search/baseline_industry.py
+```
 
-## Metrics
+## What you'll get
 
-Classification metrics on validation/test; search summary in JSON.
+`results/results.json` with classification metrics on validation and test,
+plus a search summary. `results/comparison.json` is sklearn
+`RandomizedSearchCV` over logistic / RF / GBM on the same stratified split.
+The Session path uses FLAML or AutoGluon when installed, else native plus
+LightGBM / XGBoost families.
 
-## Industry comparison (Tier C)
-
-Industry twin: `baseline_industry.py` runs sklearn `RandomizedSearchCV` over logistic / RF / GBM on the same stratified split (`results/comparison.json`).
 ## Limitations
 
 Finite budget; synthetic labels; not a full CRM feature store.
+
+Related: [AutoML quickstart](../../guides/quickstart-automl.md),
+[examples/automl_search_loop.py](../../examples/automl_search_loop.py).

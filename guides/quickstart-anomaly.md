@@ -12,7 +12,8 @@ refused unless `allow_test_tuning=True`. This is not clustering and not a
 streaming fraud platform.
 
 [Anomaly deep](anomaly-deep.md) ·
-[network-intrusion-anomaly](../proofs/network-intrusion-anomaly/)
+Paste: [`examples/anomaly_iforest_loop.py`](../examples/anomaly_iforest_loop.py) ·
+Evidence: [network-intrusion-anomaly](../proofs/network-intrusion-anomaly/)
 
 Classical `Session.fit` stays unchanged. Anomaly methods are
 `session.anomaly.fit` / `session.anomaly.score` / `session.anomaly.evaluate` /

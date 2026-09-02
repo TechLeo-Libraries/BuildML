@@ -1,46 +1,45 @@
-# Volt Sensor Fusion
+# volt-sensor-fusion
 
-**Tier B** cross-domain product proof: unsupervised anomaly + optional TDA +
-classical fault scoring for synthetic industrial sensors.
+This script composes `session.anomaly`, optional `session.tda`, and
+classical `session.fit` on one synthetic industrial-sensor table. It is not
+a product BuildML ships.
 
-## Product narrative
+The script runs unsupervised anomaly detection with validation-only
+threshold tuning, fits TDA persistence-image heads when `ripser`/`persim`
+are present (else skips), and trains a classical logistic fault scorer on
+the same stratified split.
 
-Volt fuses factory sensor channels to flag faults. Density shifts and shape
-changes both matter. The stack:
+## Data
 
-1. Runs unsupervised anomaly detection with **validation-only** threshold tuning
-2. Fits TDA persistence-image heads when `ripser`/`persim` are present (else skips)
-3. Trains a classical logistic fault scorer on the same stratified split
+Synthetic industrial sensors. Not a real SCADA extract.
 
-## Status
+## Leakage
 
-Run `script.py`. Outputs land under `results/` (summary and stage JSON)..
+Stratified split before anomaly / TDA / classical. Anomaly threshold tuned
+on validation only. TDA + scale fit on train only when extras present.
+Classical scorer uses `inject_split`: test after lock.
+
+## What fails if leakage is ignored
+
+Tuning anomaly thresholds on test inflates F1. Fitting TDA descriptors on
+the full fleet invents shape separability. Fitting classical scores on the
+full table invents holdout ROC.
 
 ## How to run
 
 ```bash
-python proofs\volt-sensor-fusion\script.py
+python proofs/volt-sensor-fusion/script.py
 ```
 
-## Leakage controls
+## What you'll get
 
-- Stratified split before anomaly / TDA / classical
-- Anomaly threshold tuned on validation only
-- TDA + scale fit on train only when extras present
-- Classical scorer uses `inject_split`: test after lock
+`results/` summary and per-stage JSON.
 
-## What fails if leakage is ignored
-
-- Tuning anomaly thresholds on test inflates F1
-- Fitting TDA descriptors on the full fleet invents shape separability
-- Fitting classical scores on the full table invents holdout ROC
-
-## Upstream Tier A building blocks
+## Upstream
 
 `iot-sensor-anomaly`, `network-intrusion-anomaly`, `process-tda-shape`,
-`credit-tda-shape`, `loan-approval-classical`
+`credit-tda-shape`, `loan-approval-classical`.
 
 ## Limitations
 
-Synthetic industrial sensors: not a real SCADA extract. TDA skipped without
-`ripser`/`persim`.
+Synthetic industrial sensors. TDA skipped without `ripser`/`persim`.

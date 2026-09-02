@@ -1,45 +1,43 @@
-# Sentinel IoT Watch
+# sentinel-iot-watch
 
-**Tier B** cross-domain product proof: unsupervised anomaly + online
-`partial_fit` streaming + lag forecast for factory IoT telemetry.
+This script composes `session.anomaly`, `session.online`, and
+`session.forecast` on synthetic factory telemetry plus a plant-load series.
+It is not a product BuildML ships.
 
-## Product narrative
+The script flags sensor faults with validation-only anomaly thresholds,
+streams SGD `partial_fit` from the train cursor only, and forecasts plant
+load with `time_split` plus lag Ridge.
 
-Sentinel watches a synthetic plant. Sensor faults are flagged with anomaly
-detection; an online classifier streams train-cursor updates; a separate
-plant-load series is forecast chronologically. The platform:
+## Data
 
-1. Fits unsupervised anomaly with validation-only threshold tuning
-2. Streams SGD `partial_fit` updates from the train cursor only
-3. Forecasts plant load with `time_split` + lag Ridge
+Synthetic sensors and load. Not SCADA.
 
-## Status
+## Leakage
 
-Run `script.py`. Outputs land under `results/` (summary and stage JSON)..
+Stratified sensor split before anomaly / online fit. Anomaly threshold
+tuned on validation only. Online `partial_fit` consumes the train cursor
+only. Forecast uses chronological `time_split`.
+
+## What fails if leakage is ignored
+
+Tuning anomaly thresholds on test inflates fault F1. Streaming updates that
+include test rows make online metrics meaningless. Random split on plant
+load lets the forecaster peek at future seasonality.
 
 ## How to run
 
 ```bash
-python proofs\sentinel-iot-watch\script.py
+python proofs/sentinel-iot-watch/script.py
 ```
 
-## Leakage controls
+## What you'll get
 
-- Stratified sensor split before anomaly / online fit
-- Anomaly threshold tuned on validation only
-- Online `partial_fit` consumes train cursor only
-- Forecast uses chronological `time_split`
+`results/` summary and per-stage JSON.
 
-## What fails if leakage is ignored
-
-- Tuning anomaly thresholds on test inflates fault F1
-- Streaming updates that include test rows make online metrics meaningless
-- Random split on plant load lets the forecaster peek at future seasonality
-
-## Upstream Tier A building blocks
+## Upstream
 
 `iot-sensor-anomaly`, `network-intrusion-anomaly`, `clickstream-online`,
-`stream-fraud-online`, `energy-load-forecast`, `store-sales-forecast`
+`stream-fraud-online`, `energy-load-forecast`, `store-sales-forecast`.
 
 ## Limitations
 

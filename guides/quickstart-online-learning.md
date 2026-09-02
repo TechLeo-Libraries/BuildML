@@ -10,7 +10,8 @@ Validation and test are never updated. Silent full refits are refused
 This is not a distributed streaming product.
 
 [Online deep](online-learning-deep.md) ·
-[stream-fraud-online](../proofs/stream-fraud-online/)
+Paste: [`examples/online_partial_fit_loop.py`](../examples/online_partial_fit_loop.py) ·
+Evidence: [stream-fraud-online](../proofs/stream-fraud-online/)
 
 ```bash
 pip install buildml

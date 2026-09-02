@@ -9,12 +9,9 @@ pip install buildml
 Default is native TransE. Fit is train-only. This is not Neo4j and not
 `session.graph`.
 
-[KG deep](kg-deep.md)
-
-**Proof:** [kg-biomed-linkpred](../proofs/kg-biomed-linkpred/) (+ Tier C co-occurrence PMI twin).
-
-Runnable mirror: [`examples/kg_transe_loop.py`](../examples/kg_transe_loop.py).
-Deep guide: [kg-deep.md](kg-deep.md).
+[KG deep](kg-deep.md) ·
+Paste: [`examples/kg_transe_loop.py`](../examples/kg_transe_loop.py) ·
+Evidence: [kg-biomed-linkpred](../proofs/kg-biomed-linkpred/)
 
 ---
 

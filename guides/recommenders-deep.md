@@ -162,7 +162,7 @@ them to `session.ranking.evaluate` (judgment tables) or
 does not embed `RecommenderPlan`. `trusted=True` only for a file you
 made.
 
-Runnable mirror:
+Paste:
 [`examples/recommender_item_knn_loop.py`](../examples/recommender_item_knn_loop.py).
 Benchmark: `python benchmarks/recommenders/ranking_quality.py`.
 

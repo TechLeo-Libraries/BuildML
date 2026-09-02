@@ -1,46 +1,45 @@
-# Nova Torch Bench
+# nova-torch-bench
 
-**Tier B** cross-domain product proof: torch tabular MLP + classical
-supervised baseline + probabilistic intervals / calibration.
+This script composes `session.dl`, classical `session.fit`, and
+`session.probabilistic` on one synthetic mortgage table. It is not a
+product BuildML ships.
 
-## Product narrative
+The script fits a short CPU torch MLP (skips if torch is unavailable), a
+classical logistic baseline on the same `inject_split`, and probabilistic
+intervals on a train-derived residual/rate view. Classical and
+probabilistic stages still run when torch skips.
 
-Nova benches tabular underwriting models side by side. A short torch MLP,
-a classical logistic baseline, and Bayesian-ridge intervals share an honest
-mortgage split. The platform:
+## Data
 
-1. Fits a CPU torch MLP (skips if torch unavailable)
-2. Trains a classical logistic baseline on the same inject_split
-3. Fits probabilistic intervals on a train-derived residual/rate view
+Synthetic mortgage labels.
 
-## Status
+## Leakage
 
-Run `script.py`. Outputs land under `results/` (summary and stage JSON)..
-Core classical + probabilistic stages keep the product completed when torch skips.
+Stratified split before impute/encode/loaders. Torch normalize stats from
+the train loader only. Classical baseline uses the same `inject_split`.
+Probabilistic intervals calibrated on a train-derived internal split.
+
+## What fails if leakage is ignored
+
+Torch normalize stats from the full table leak holdout scale.
+Early-stopping on test epochs cherry-picks the MLP. Interval calibration
+on outer test reports perfect coverage by construction.
 
 ## How to run
 
 ```bash
-python proofs\nova-torch-bench\script.py
+python proofs/nova-torch-bench/script.py
 ```
 
-## Leakage controls
+## What you'll get
 
-- Stratified split before impute/encode/loaders
-- Torch normalize stats from train loader only
-- Classical baseline uses the same inject_split
-- Probabilistic intervals calibrated on train-derived internal split
+`results/` summary and per-stage JSON. Torch skip is disclosed when the
+import is unhealthy.
 
-## What fails if leakage is ignored
+## Upstream
 
-- Torch normalize stats from the full table leak holdout scale
-- Early-stopping on test epochs cherry-picks the MLP
-- Interval calibration on outer test reports perfect coverage by construction
-
-## Upstream Tier A building blocks
-
-`torch-tabular-underwrite`, `mortgage-default-classical`, `loan-approval-classical`,
-`weather-prob-intervals`, `prob-interval-risk`
+`torch-tabular-underwrite`, `mortgage-default-classical`,
+`loan-approval-classical`, `weather-prob-intervals`, `prob-interval-risk`.
 
 ## Limitations
 

@@ -22,12 +22,7 @@ def main() -> None:
         .set_roles({"ts": "time", "y": "target"})
         .time_split(test_size=0.2, validation_size=0.2)
     )
-    fit = session.forecast.fit(
-        method="lag_ridge",
-        horizon=7,
-        lags=[1, 2, 3, 7],
-        alpha=1.0,
-    )
+    fit = session.forecast.fit(method="auto", horizon=7, seasonal_period=7)
     metrics = session.forecast.evaluate(
         partition="validation",
         strategy="rolling_one_step",

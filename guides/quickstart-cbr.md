@@ -11,7 +11,8 @@ exact sklearn kNN.
 `retain` refuses validation and test rows. This is not RAG.
 
 [CBR deep](cbr-deep.md) ·
-[case-memory-claims](../proofs/case-memory-claims/)
+Paste: [`examples/cbr_knn_loop.py`](../examples/cbr_knn_loop.py) ·
+Evidence: [case-memory-claims](../proofs/case-memory-claims/)
 
 ```python
 import numpy as np

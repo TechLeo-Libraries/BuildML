@@ -1,54 +1,52 @@
-﻿# Ledger Underwriting Studio
+# ledger-underwriting-studio
 
-**Tier B** cross-domain product proof: classical + AutoML + causal (declared
-assumptions) + cost-sensitive decisions + calibration for a synthetic credit book.
+This script composes classical `session.fit`, `session.automl`,
+`session.causal`, `session.decision`, and calibration on one synthetic
+credit book. It is not a product BuildML ships.
 
-## Product narrative
+The script scores applications, searches estimators under a time budget,
+estimates an outreach treatment under declared causal assumptions, then
+selects a cost-sensitive approve threshold on validation only, with
+calibration diagnostics before the holdout confirm.
 
-Ledger scores loan applications, searches estimators under a time budget,
-estimates the effect of an outreach treatment under **declared** causal
-assumptions, then selects a cost-sensitive approve threshold on validation
-only: with calibration diagnostics before the holdout confirm.
+Default `impute` / `encode` / `scale` skip `ignore` / `id` roles so
+`review_cost` / `app_id` stay usable for knapsack.
 
-1. Classical logistic scorer on stratified split
-2. AutoML search (FLAML / AutoGluon when present; else native): test never in search
-3. AIPW causal fit after `session.causal.declare_assumptions` (unconfoundedness + positivity)
-4. Threshold / knapsack policies selected on **validation only**
-   (default `impute`/`encode`/`scale` skip `ignore`/`id` roles so
-   `review_cost` / `app_id` stay usable for knapsack)
-5. Calibration report on validation, confirmed on untouched test
+## Data
 
-## Status
+Synthetic underwriting table. Not FCRA / bureau data.
 
-Run `script.py`. Outputs land under `results/` (summary and stage JSON)..
+## Leakage
+
+Stratified split before classical / AutoML / causal / decisions. Causal
+assumptions are declared before `session.causal.fit` (required API gate).
+Decision threshold is not tuned on test: validation selection, test
+confirm. AutoML selection never uses the test partition. Calibration is
+reported on validation then confirmed on test.
+
+## What fails if leakage is ignored
+
+Tuning the approve threshold on test understates expected review cost.
+Skipping causal assumption declaration hides confounding risk. Fitting
+AutoML with test in the search loop invents leaderboard wins. Reporting
+calibration only on train hides probability miscalibration.
 
 ## How to run
 
 ```bash
-python proofs\ledger-underwriting-studio\script.py
+python proofs/ledger-underwriting-studio/script.py
 ```
 
-## Leakage controls (critical)
+## What you'll get
 
-- Stratified split before classical / AutoML / causal / decisions
-- Causal assumptions declared before `session.causal.fit` (required API gate)
-- Decision threshold **not** tuned on test: validation selection, test confirm
-- AutoML selection never uses the test partition
-- Calibration reported on validation then confirmed on test
+`results/` summary and per-stage JSON.
 
-## What fails if leakage is ignored
-
-- Tuning the approve threshold on test understates expected review cost
-- Skipping causal assumption declaration hides confounding risk
-- Fitting AutoML with test in the search loop invents leaderboard wins
-- Reporting calibration only on train hides probability miscalibration
-
-## Upstream Tier A building blocks
+## Upstream
 
 `loan-approval-classical`, `churn-automl-search`, `causal-treatment-effect`,
-`cost-sensitive-collections`
+`cost-sensitive-collections`.
 
 ## Limitations
 
 Synthetic underwriting: not FCRA / bureau data. Causal ATE assumes declared
-unconfoundedness (not proven). Product proof, not a production LOS certification.
+unconfoundedness (not proven). Not a production LOS certification.

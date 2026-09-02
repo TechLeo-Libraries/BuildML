@@ -119,7 +119,7 @@ does not replace holdout classification or regression metrics.
 `tda_plan.joblib`). v1 bundles still load. Session checkpoints do not
 embed `TdaPlan`. `trusted=True` only for a file you made.
 
-Runnable mirror: [`examples/tda_loop.py`](../examples/tda_loop.py).
+Paste: [`examples/tda_loop.py`](../examples/tda_loop.py).
 Benchmark: `python benchmarks/tda/persistence_pipeline.py`.
 
 ## When it refuses

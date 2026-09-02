@@ -30,6 +30,7 @@ rebuild from raw cells.
 Related: [concepts](../docs/concepts.rst),
 [classical quickstart](quickstart-classical.md),
 [diagnostics and search](classical-diagnostics-search.md).
+Paste: [`examples/leakage_cv_recipe.py`](../examples/leakage_cv_recipe.py).
 
 ## What a recipe can and cannot do
 

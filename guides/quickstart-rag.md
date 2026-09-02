@@ -18,8 +18,8 @@ and **hybrid BM25+dense retrieval**. Without the extra, BuildML falls back to
 lexical hashing + dense-only retrieve (CI-safe, disclosed in results).
 
 **Go deeper:** [RAG deep](rag-deep.md) ·
-
-**Proof:** [support-kb-rag](../proofs/support-kb-rag/) (+ Tier C TF-IDF twin).
+Paste: [`examples/rag_hashing_loop.py`](../examples/rag_hashing_loop.py) ·
+Evidence: [support-kb-rag](../proofs/support-kb-rag/).
 [Artifacts](artifacts-checkpoints-bundles.md) ·
 [AI tools](ai-tools-operator-patterns.md) (RAG on the allowlist).
 

@@ -1,45 +1,47 @@
-﻿# Nexus Federated Clinical
+# nexus-federated-clinical
 
-**Tier B** cross-domain product proof: federated hospital simulation +
-probabilistic uncertainty + honest evaluation disclosures.
+This script composes `session.federated` and `session.probabilistic` on one
+synthetic multi-site clinical table. It is not a product BuildML ships.
 
-## Product narrative
+The script runs `group_split` by hospital, FedAvg local updates on train
+clients only, Bayesian Ridge plus conformal intervals on a risk-score
+proxy, and a pooled centralized SGD contrast for disclosure (not used to
+tune FedAvg).
 
-Nexus simulates multi-site clinical risk modeling without claiming a deployed
-FL network or PHI:
+## Data
 
-1. `group_split` by hospital, then FedAvg local updates on train clients only
-2. Bayesian Ridge (+ conformal intervals) for uncertainty on a risk-score proxy
-3. Pooled centralized SGD contrast for disclosure (not used to tune FedAvg)
-4. Explicit honesty: in-process aggregation, no secure aggregation, no PHI
+Synthetic labs with site shift only. No PHI.
 
-## Status
+## Leakage
 
-Run `script.py`. Outputs land under `results/` (summary and stage JSON)..
+`group_split` by hospital before any federated / probabilistic fit.
+Federated local updates use train-client rows only. Holdout
+hospitals/rows are reserved for `session.federated.evaluate`. The
+probabilistic model fits on train; intervals are evaluated on test after
+lock.
+
+## What fails if leakage is ignored
+
+Including test sites as FL clients invents cross-silo generalization.
+Fitting intervals on the full book hides miscalibration.
 
 ## How to run
 
 ```bash
-python proofs\nexus-federated-clinical\script.py
+python proofs/nexus-federated-clinical/script.py
 ```
 
-## Leakage controls
+## What you'll get
 
-- `group_split` by hospital before any federated / probabilistic fit
-- Federated local updates use train-client rows only
-- Holdout hospitals/rows reserved for `session.federated.evaluate`
-- Probabilistic model fit on train; intervals evaluated on test after lock
+`results/` summary and per-stage JSON, including honesty fields: in-process
+aggregation, no secure aggregation, no PHI. Local FedAvg simulation: raw
+rows stay in-process; not a deployed FL network. Aggregation is weighted
+coefficient averaging, not cryptographic secure aggregation. Probabilistic
+intervals are empirical coverage tools, not clinical guarantees.
 
-## Disclosures
+## Upstream
 
-- Local FedAvg simulation: raw rows stay in-process; not a deployed FL network
-- Aggregation is weighted coefficient averaging: not cryptographic secure aggregation
-- No PHI; synthetic labs with site shift only
-- Probabilistic intervals are empirical coverage tools, not clinical guarantees
-
-## Upstream Tier A building blocks
-
-`federated-hospital-sim`, `prob-interval-risk`
+`federated-hospital-sim`, `prob-interval-risk`.
 
 ## Limitations
 

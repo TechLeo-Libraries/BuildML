@@ -1,46 +1,47 @@
-# Zenith Support OS
+# zenith-support-os
 
-**Tier B** cross-domain product proof: RAG retrieval + NLP ticket routing +
-active-learning budget for a synthetic support operating system.
+This script composes `session.rag`, `session.nlp`, and
+`session.active_learning` on one synthetic support table. It is not a
+product BuildML ships.
 
-## Product narrative
+The script retrieves from a knowledge-base corpus (answers never indexed),
+routes free-text tickets with TF-IDF + logistic (validation for selection),
+and runs a margin-sampling active-learning loop on a train unlabeled pool
+only.
 
-Zenith helps agents answer tickets, route queues, and spend scarce labeling
-budget honestly:
+## Data
 
-1. Retrieves from a knowledge-base corpus (answers never indexed)
-2. Routes free-text tickets with TF-IDF + logistic (validation for selection)
-3. Runs a margin-sampling active-learning loop on a train unlabeled pool only
+Synthetic KB and tickets. Not a live helpdesk.
 
-## Status
+## Leakage
 
-Run `script.py`. Outputs land under `results/` (summary and stage JSON)..
+RAG corpus is KB articles only; judgments never indexed as answers. NLP
+stratified split before TF-IDF fit; validation for selection.
+Active-learning queries drawn from the train unlabeled pool only. Test
+evaluate after locks.
+
+## What fails if leakage is ignored
+
+Indexing judgment answers into RAG inflates recall@k. Fitting the text
+vectorizer on test tickets invents queue accuracy. Querying the test pool
+for labels makes active-learning curves meaningless.
 
 ## How to run
 
 ```bash
-python proofs\zenith-support-os\script.py
+python proofs/zenith-support-os/script.py
 ```
 
-## Leakage controls
+## What you'll get
 
-- RAG corpus = KB articles only; judgments never indexed as answers
-- NLP stratified split before TF-IDF fit; validation for selection
-- Active-learning queries drawn from train unlabeled pool only
-- Test evaluate after locks
+`results/` summary and per-stage JSON.
 
-## What fails if leakage is ignored
-
-- Indexing judgment answers into RAG inflates recall@k
-- Fitting the text vectorizer on test tickets invents queue accuracy
-- Querying the test pool for labels makes active-learning curves meaningless
-
-## Upstream Tier A building blocks
+## Upstream
 
 `support-kb-rag`, `policy-handbook-rag`, `ticket-routing-nlp`,
-`active-labeling-budget`, `defect-active-budget`, `atlas-label-studio`
+`active-labeling-budget`, `defect-active-budget`, `atlas-label-studio`.
 
 ## Limitations
 
-Synthetic KB + tickets: not a live helpdesk. Echo generate is offline
-scaffolding. Active learning uses a simulated oracle.
+Synthetic KB + tickets. Echo generate is offline scaffolding. Active
+learning uses a simulated oracle.

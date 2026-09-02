@@ -1,38 +1,40 @@
 # network-intrusion-anomaly
 
-## Business purpose
+You have traffic features and a rare attack class. You want unsupervised
+anomaly scores with a validation-tuned alert threshold, then one labeled
+holdout check.
 
-Flag rare network intrusion / fraud-like flows from traffic features so SOC
-analysts can investigate high-score alerts under a controlled alert rate.
+## Data
 
-## Data source
-
-Synthetic KDD-inspired flow table (`load_intrusion_anomaly_synthetic`) :
+Synthetic KDD-inspired flow table (`load_intrusion_anomaly_synthetic`):
 license-clear. Not the full KDD Cup 1999 corpus.
 
-## Leakage controls
+## Leakage
 
-- Stratified train / validation / test (rare attack class preserved)
-- Unsupervised detector fitted on **train** features only
-- `session.anomaly.tune_threshold` on **validation** labels only (`allow_test_tuning=False`)
-- Test scored and evaluated after the threshold is locked
+Stratified train / validation / test (rare attack class preserved). The
+unsupervised detector fits on train features only.
+`session.anomaly.tune_threshold` uses validation labels only
+(`allow_test_tuning=False`). Test is scored and evaluated after the
+threshold is locked.
 
-## BuildML API steps
+## How to run
 
-1. `ingest` → `set_roles` → `split` → `scale`
-2. `session.anomaly.fit` (PyOD when available, else sklearn IsolationForest)
-3. `session.anomaly.tune_threshold(partition="validation")`
-4. `session.anomaly.score` / `session.anomaly.evaluate` on test
-5. `session.anomaly.save_bundle`
+```bash
+python proofs/network-intrusion-anomaly/script.py
+python proofs/network-intrusion-anomaly/baseline_industry.py
+```
 
-## Metrics
+## What you'll get
 
-Labeled precision/recall/F1 (and related) on test; alert rate; tuned threshold
-details in `results/results.json`.
+`results/results.json` with labeled precision / recall / F1 on test, alert
+rate, and the tuned threshold. `results/comparison.json` is sklearn
+`IsolationForest` on the same `SplitPlan`, with the decision threshold tuned
+on validation F1. The Session path typically uses PyOD HBOS when installed.
+Deltas are descriptive on one synthetic draw.
 
-## Industry comparison (Tier C)
-
-Industry twin: `baseline_industry.py` runs sklearn `IsolationForest` on the **same SplitPlan**, tunes the decision threshold on validation F1, and writes `results/comparison.json`. BuildML path typically uses PyOD HBOS when installed. Deltas are descriptive on one synthetic draw (competitive qualitative bar 5-B).
 ## Limitations
 
 Synthetic attacks; labeled eval overstates production unlabeled deployment.
+
+Related: [Anomaly quickstart](../../guides/quickstart-anomaly.md),
+[examples/anomaly_iforest_loop.py](../../examples/anomaly_iforest_loop.py).

@@ -14,7 +14,8 @@ those train-fitted components.
 This is not the EDA IsolationForest screen. That stays descriptive.
 
 [Unsupervised deep](unsupervised-deep.md) ·
-[cluster-customer-segments](../proofs/cluster-customer-segments/)
+Paste: [`examples/unsupervised_cluster_loop.py`](../examples/unsupervised_cluster_loop.py) ·
+Evidence: [cluster-customer-segments](../proofs/cluster-customer-segments/)
 
 ```python
 import numpy as np

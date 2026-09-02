@@ -9,7 +9,8 @@ Validation and test are never queried. The core does not invent an
 oracle. Default strategy is margin. `label_budget` defaults to 50.
 
 [Active learning deep](active-learning-deep.md) ·
-[active-labeling-budget](../proofs/active-labeling-budget/)
+Paste: [`examples/activelearning_margin_loop.py`](../examples/activelearning_margin_loop.py) ·
+Evidence: [active-labeling-budget](../proofs/active-labeling-budget/)
 
 ```bash
 pip install buildml

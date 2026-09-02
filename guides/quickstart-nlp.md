@@ -11,7 +11,8 @@ backend is sklearn bag-of-n-grams even when extras are installed. Not
 sequence labelling, not generation, not Torch fine-tuning, and not RAG.
 
 [NLP deep](nlp-deep.md) ·
-[ticket-routing-nlp](../proofs/ticket-routing-nlp/)
+Paste: [`examples/nlp_text_classifier_loop.py`](../examples/nlp_text_classifier_loop.py) ·
+Evidence: [ticket-routing-nlp](../proofs/ticket-routing-nlp/)
 
 ```python
 import pandas as pd

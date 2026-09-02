@@ -1,46 +1,44 @@
-# Cornerstone Mortgage Suite
+# cornerstone-mortgage-suite
 
-**Tier B** cross-domain product proof: classical mortgage default scoring +
-declared-assumption causal counseling effect + cost-sensitive decisions.
+This script composes classical `session.fit`, `session.causal`, and
+`session.decision` on one synthetic mortgage book. It is not a product BuildML ships.
 
-## Product narrative
+High-LTV / high-DTI loans are riskier; counseling is offered more often to
+those same loans (confounded). The script fits a logistic default scorer,
+estimates the counseling ATE under declared unconfoundedness / positivity,
+and selects review threshold / knapsack on validation only.
 
-Cornerstone underwrites a synthetic mortgage book. High-LTV / high-DTI loans
-are riskier; counseling is offered more often to those same loans (confounded).
-The suite:
+## Data
 
-1. Fits a classical logistic default scorer on a stratified split
-2. Estimates the counseling ATE under declared unconfoundedness / positivity
-3. Selects review threshold / knapsack on validation only
+Synthetic mortgage. Not FCRA / bureau data.
 
-## Status
+## Leakage
 
-Run `script.py`. Outputs land under `results/` (summary and stage JSON)..
+Stratified split before classical / causal / decisions. Causal assumptions
+declared before `session.causal.fit`. Decision threshold + knapsack
+selected on validation only. Test evaluate after each stage locks.
+
+## What fails if leakage is ignored
+
+Tuning the review threshold on test understates expected loss. Skipping
+causal assumption declaration hides confounding risk. Fitting classical
+scores on the full book invents holdout ROC.
 
 ## How to run
 
 ```bash
-python proofs\cornerstone-mortgage-suite\script.py
+python proofs/cornerstone-mortgage-suite/script.py
 ```
 
-## Leakage controls
+## What you'll get
 
-- Stratified split before classical / causal / decisions
-- Causal assumptions declared before `session.causal.fit`
-- Decision threshold + knapsack selected on validation ONLY
-- Test evaluate after each stage locks
+`results/` summary and per-stage JSON.
 
-## What fails if leakage is ignored
-
-- Tuning the review threshold on test understates expected loss
-- Skipping causal assumption declaration hides confounding risk
-- Fitting classical scores on the full book invents holdout ROC
-
-## Upstream Tier A building blocks
+## Upstream
 
 `mortgage-default-classical`, `loan-approval-classical`,
 `causal-treatment-effect`, `uplift-marketing-causal`,
-`cost-sensitive-collections`
+`cost-sensitive-collections`.
 
 ## Limitations
 

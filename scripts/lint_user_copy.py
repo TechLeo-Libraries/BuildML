@@ -104,6 +104,8 @@ def iter_targets() -> Iterable[Path]:
     docs = [ROOT / "README.md"]
     docs.extend((ROOT / "guides").rglob("*.md"))
     docs.extend((ROOT / "docs").rglob("*.rst"))
+    docs.append(ROOT / "examples" / "README.md")
+    docs.extend((ROOT / "proofs").rglob("README.md"))
     python = (ROOT / "buildml").rglob("*.py")
 
     paths: list[Path] = []

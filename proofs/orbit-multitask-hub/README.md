@@ -1,44 +1,42 @@
-# Orbit Multitask Hub
+# orbit-multitask-hub
 
-**Tier B** cross-domain product proof: multi-output multitask learning +
-AutoML/classical search + validation-tuned decision thresholds.
+This script composes `session.multitask`, `session.automl` (or classical
+logistic fallback), and `session.decision` on one synthetic SKU table. It
+is not a product BuildML ships.
 
-## Product narrative
+Each SKU has joint buy / high-margin targets. A primary buy scorer feeds
+promo allocation. AutoML trial budget is small for smoke latency.
 
-Orbit is a retail SKU outcome hub. Each SKU has joint buy / high-margin
-targets; a primary buy scorer feeds promo allocation. The platform:
+## Data
 
-1. Fits multi-output multitask models on a shared feature set
-2. Runs native AutoML (or classical logistic fallback) on the buy target
-3. Selects cost-sensitive thresholds / knapsack on validation only
+Synthetic SKU outcomes.
 
-## Status
+## Leakage
 
-Run `script.py`. Outputs land under `results/` (summary and stage JSON)..
+Split before multitask / AutoML / decision fit. AutoML CV uses train folds
+only. Decision policies selected on validation only. Test evaluated after
+each stage locks.
+
+## What fails if leakage is ignored
+
+Multitask heads trained on test labels overstate joint skill. An AutoML
+winner picked with test scores is not a fair search. Promo thresholds
+tuned on test understate campaign cost.
 
 ## How to run
 
 ```bash
-python proofs\orbit-multitask-hub\script.py
+python proofs/orbit-multitask-hub/script.py
 ```
 
-## Leakage controls
+## What you'll get
 
-- Split before multitask / AutoML / decision fit
-- AutoML CV uses train folds only
-- Decision policies selected on validation only
-- Test evaluated after each stage locks
+`results/` summary and per-stage JSON.
 
-## What fails if leakage is ignored
-
-- Multitask heads trained on test labels overstate joint skill
-- AutoML winner picked with test scores is not a fair search
-- Promo thresholds tuned on test understate campaign cost
-
-## Upstream Tier A building blocks
+## Upstream
 
 `sku-multitask-retail`, `multi-target-underwriting`, `churn-automl-search`,
-`campaign-budget-optimize`, `loan-approval-classical`
+`campaign-budget-optimize`, `loan-approval-classical`.
 
 ## Limitations
 

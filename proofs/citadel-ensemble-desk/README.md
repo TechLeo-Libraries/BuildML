@@ -1,45 +1,44 @@
-# Citadel Ensemble Desk
+# citadel-ensemble-desk
 
-**Tier B** cross-domain product proof: voting/stacking ensembles + unsupervised
-anomaly + decision thresholds for attrition review.
+This script composes `session.ensemble`, `session.anomaly`, and
+`session.decision` on one synthetic attrition table. It is not a product BuildML ships.
 
-## Product narrative
+The script fits soft voting and stacking ensembles on a stratified split,
+runs unsupervised anomaly with validation-only threshold tuning, and
+selects review threshold / knapsack policies on validation. Two-base
+ensembles keep smoke latency down.
 
-Citadel is an HR risk review desk. Soft voting and stacking ensembles score
-attrition; anomaly detection flags unusual employee profiles; cost-sensitive
-policies allocate review capacity. The platform:
+## Data
 
-1. Fits soft voting and stacking ensembles on a stratified split
-2. Runs unsupervised anomaly with validation-only threshold tuning
-3. Selects review threshold / knapsack policies on validation
+Synthetic attrition table.
 
-## Status
+## Leakage
 
-Run `script.py`. Outputs land under `results/` (summary and stage JSON)..
+Stratified split before encode/scale/ensemble fit. Stacking OOF meta
+features from train CV folds only. Anomaly threshold + decisions tuned on
+validation only. Test evaluate after each stage locks.
+
+## What fails if leakage is ignored
+
+Picking the voting/stacking winner with test scores is not a fair ensemble.
+Anomaly thresholds on test inflate review F1. Review knapsack tuned on
+test understates HR cost.
 
 ## How to run
 
 ```bash
-python proofs\citadel-ensemble-desk\script.py
+python proofs/citadel-ensemble-desk/script.py
 ```
 
-## Leakage controls
+## What you'll get
 
-- Stratified split before encode/scale/ensemble fit
-- Stacking OOF meta features from train CV folds only
-- Anomaly threshold + decisions tuned on validation only
-- Test evaluate after each stage locks
+`results/` summary and per-stage JSON.
 
-## What fails if leakage is ignored
+## Upstream
 
-- Picking the voting/stacking winner with test scores is not a fair ensemble
-- Anomaly thresholds on test inflate review F1
-- Review knapsack tuned on test understates HR cost
-
-## Upstream Tier A building blocks
-
-`voting-ensemble-attrition`, `stacking-credit-risk`, `blending-payment-risk`,
-`network-intrusion-anomaly`, `cost-sensitive-collections`
+`voting-ensemble-attrition`, `stacking-credit-risk`,
+`blending-payment-risk`, `network-intrusion-anomaly`,
+`cost-sensitive-collections`.
 
 ## Limitations
 

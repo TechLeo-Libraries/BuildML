@@ -1,45 +1,44 @@
-# Quasar Meta Adapt
+# quasar-meta-adapt
 
-**Tier B** cross-domain product proof: metalearning few-shot adaptation +
-SSL pretext/probe + classical supervised baseline for cold-start categories.
+This script composes `session.metalearning`, `session.ssl`, and classical
+`session.fit` on one synthetic catalog-category table. It is not a product BuildML ships.
 
-## Product narrative
+Categories are held out via group split. The script fits prototypical (or
+warm-start) metalearning on train categories, a masked-tabular SSL pretext
+plus optional probe head, and a classical logistic baseline on the same
+split.
 
-Quasar adapts repurchase models to new catalog categories. Categories are
-held out via group split; SSL representations and a classical logistic
-baseline provide complementary views. The platform:
+## Data
 
-1. Fits prototypical (or warm-start) metalearning on train categories
-2. Runs masked-tabular SSL pretext + optional probe head
-3. Trains a classical logistic baseline on the same honest split
+Synthetic categories.
 
-## Status
+## Leakage
 
-Run `script.py`. Outputs land under `results/` (summary and stage JSON)..
+`group_split` by `category_id` before meta / SSL / classical fit. Episodic
+metalearning eval on held-out categories. SSL pretext + probe fit on train
+only. Test used after each stage locks.
+
+## What fails if leakage is ignored
+
+Episodes that include test categories in the support set fake cold-start
+skill. SSL pretext on the full table leaks holdout geometry into
+embeddings. A classical baseline trained with test rows is not a fair
+comparator.
 
 ## How to run
 
 ```bash
-python proofs\quasar-meta-adapt\script.py
+python proofs/quasar-meta-adapt/script.py
 ```
 
-## Leakage controls
+## What you'll get
 
-- `group_split` by `category_id` before meta / SSL / classical fit
-- Episodic metalearning eval on held-out categories
-- SSL pretext + probe fit on train only
-- Test used after each stage locks
+`results/` summary and per-stage JSON.
 
-## What fails if leakage is ignored
-
-- Episodes that include test categories in the support set fake cold-start skill
-- SSL pretext on the full table leaks holdout geometry into embeddings
-- Classical baseline trained with test rows is not a fair comparator
-
-## Upstream Tier A building blocks
+## Upstream
 
 `coldstart-meta-adapt`, `few-shot-domain-adapt`, `tabular-ssl-probe`,
-`ssl-representation-probe`, `loan-approval-classical`
+`ssl-representation-probe`, `loan-approval-classical`.
 
 ## Limitations
 

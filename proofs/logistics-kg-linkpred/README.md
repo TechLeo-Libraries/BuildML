@@ -1,39 +1,17 @@
 # logistics-kg-linkpred
 
-## Business purpose
+You have warehouse-route-hub-carrier triples. You want missing-link
+prediction with TransE for network completion, on a disjoint triple split.
 
-Predict missing logistics links (warehouse → route → hub / carrier) with TransE embeddings for network completion and routing discovery.
+## Data
 
-## Data source
+Inline synthetic logistics triples (warehouse-route-hub-carrier motifs). Not
+a real TMS extract.
 
-Inline synthetic logistics triples (warehouse–route–hub–carrier motifs). **Not** a real TMS extract.
+## Leakage
 
-## Leakage controls
-
-- Triple split before fit
-- Train-only TransE
-- Test link metrics after lock
-- Industry PMI twin uses the same triple split
-
-## BuildML API steps
-
-1. `Session.ingest` → `set_roles` → `split`
-2. `session.kg.fit(method="transe")`
-3. `session.kg.predict_links` → `session.kg.evaluate(test)`
-4. `session.kg.save_bundle` → `session.kg.load_bundle` → re-evaluate
-
-## Metrics
-
-Primary holdout: hits@k, mean rank, MRR (see `results/results.json`).
-
-## Industry comparison (Tier C)
-
-Industry twin: train co-occurrence PMI filtered-ranking twin via `baseline_industry.py` → `results/comparison.json`.
-
-## Limitations
-
-- Synthetic logistics motifs; not a licensed TMS / network extract
-- Single seed
+Triple split before fit. Train-only TransE. Test link metrics after lock.
+The PMI twin uses the same triple split.
 
 ## How to run
 
@@ -41,3 +19,17 @@ Industry twin: train co-occurrence PMI filtered-ranking twin via `baseline_indus
 python proofs/logistics-kg-linkpred/script.py
 python proofs/logistics-kg-linkpred/baseline_industry.py
 ```
+
+## What you'll get
+
+`results/results.json` with hits@k, mean rank, and MRR.
+`results/comparison.json` is a train co-occurrence PMI filtered-ranking twin
+on the same split. Bundle save/load re-evaluates the holdout.
+
+## Limitations
+
+Synthetic logistics motifs; not a licensed TMS / network extract; single
+seed.
+
+Related: [Knowledge-graph quickstart](../../guides/quickstart-kg.md),
+[examples/kg_transe_loop.py](../../examples/kg_transe_loop.py).

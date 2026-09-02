@@ -9,7 +9,8 @@ a decision tree. `fit_neuro` is the sklearn hybrid overlay. Not Prolog,
 not a Z3 product. `verify_constraints=True` is a lite check only.
 
 [Symbolic deep](symbolic-deep.md) ·
-[policy-rules-neuro-symbolic](../proofs/policy-rules-neuro-symbolic/)
+Paste: [`examples/symbolic_rules_loop.py`](../examples/symbolic_rules_loop.py) ·
+Evidence: [policy-rules-neuro-symbolic](../proofs/policy-rules-neuro-symbolic/)
 
 ```python
 import numpy as np

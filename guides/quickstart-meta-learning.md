@@ -9,7 +9,8 @@ train task ids. Default is tabular prototypical. Holdout is never used
 for meta-train. This is not MAML-at-scale.
 
 [Meta-learning deep](meta-learning-deep.md) ·
-[few-shot-domain-adapt](../proofs/few-shot-domain-adapt/)
+Paste: [`examples/metalearning_prototypical_loop.py`](../examples/metalearning_prototypical_loop.py) ·
+Evidence: [few-shot-domain-adapt](../proofs/few-shot-domain-adapt/)
 
 ```python
 import numpy as np

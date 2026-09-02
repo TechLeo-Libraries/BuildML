@@ -9,7 +9,8 @@ regression is refused on sklearn/industry. Classical `session.fit` stays
 single-target. Default is sklearn `multi_output`.
 
 [Multi-task deep](multi-task-deep.md) ·
-[multi-target-underwriting](../proofs/multi-target-underwriting/)
+Paste: [`examples/multitask_multioutput_loop.py`](../examples/multitask_multioutput_loop.py) ·
+Evidence: [multi-target-underwriting](../proofs/multi-target-underwriting/)
 
 ```bash
 pip install buildml

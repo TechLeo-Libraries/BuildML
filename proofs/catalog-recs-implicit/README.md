@@ -1,39 +1,18 @@
 # catalog-recs-implicit
 
-## Business purpose
+You have user-item catalog interactions. You want SKU recommendations from
+ALS (when `implicit` is installed) or item-kNN collaborative filtering, with
+holdout hit-rate / nDCG.
 
-Recommend catalog SKUs from user–item interactions using ALS (when `implicit` is installed) or item-kNN collaborative filtering.
+## Data
 
-## Data source
+In-repo synthetic catalog interactions (`load_catalog_interactions_synthetic`):
+license-clear, deterministic. Not a real retail extract.
 
-In-repo synthetic catalog interactions (`load_catalog_interactions_synthetic`): license-clear, deterministic. **Not** a real retail extract.
+## Leakage
 
-## Leakage controls
-
-- Split before recommender fit
-- Train-only recommender fit
-- Test metrics after lock
-- Industry item-cosine twin uses the same SplitPlan
-
-## BuildML API steps
-
-1. `Session.ingest` → `set_roles` → `split`
-2. `session.recommender.fit(method="als"|"item_knn")`
-3. `session.recommender.recommend(test)` → `session.recommender.evaluate(test, k=5)`
-4. `session.recommender.save_bundle`
-
-## Metrics
-
-Primary holdout: hit-rate@k / nDCG@k (see `results/results.json`).
-
-## Industry comparison (Tier C)
-
-Industry twin: item-cosine + popularity cold-start twin via `baseline_industry.py` → `results/comparison.json`.
-
-## Limitations
-
-- Synthetic interactions
-- ALS requires the `implicit` extra; otherwise item_knn fallback
+Split before recommender fit. Train-only recommender fit. Test metrics after
+lock. The item-cosine twin uses the same `SplitPlan`.
 
 ## How to run
 
@@ -41,3 +20,16 @@ Industry twin: item-cosine + popularity cold-start twin via `baseline_industry.p
 python proofs/catalog-recs-implicit/script.py
 python proofs/catalog-recs-implicit/baseline_industry.py
 ```
+
+## What you'll get
+
+`results/results.json` with hit-rate@k / nDCG@k on test.
+`results/comparison.json` is item-cosine plus a popularity cold-start twin.
+
+## Limitations
+
+Synthetic interactions. ALS requires the `implicit` extra; otherwise
+item_knn fallback.
+
+Related: [Recommenders quickstart](../../guides/quickstart-recommenders.md),
+[examples/recommender_item_knn_loop.py](../../examples/recommender_item_knn_loop.py).

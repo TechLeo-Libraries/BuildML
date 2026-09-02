@@ -10,7 +10,8 @@ PyMC / Stan / NumPyro. Classical `session.calibration()` stays on the
 classical fit path.
 
 [Probabilistic deep](probabilistic-deep.md) ·
-[prob-interval-risk](../proofs/prob-interval-risk/)
+Paste: [`examples/probabilistic_bayesian_ridge.py`](../examples/probabilistic_bayesian_ridge.py) ·
+Evidence: [prob-interval-risk](../proofs/prob-interval-risk/)
 
 ```python
 import numpy as np

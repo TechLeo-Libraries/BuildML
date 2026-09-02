@@ -1,36 +1,38 @@
 # support-kb-rag
 
-## Business purpose
+You have a product support knowledge base and query-to-doc judgments. You
+want grounded retrieval for agent assist, with offline retrieval metrics,
+without indexing the labeled answers.
 
-Retrieve grounded answers from a product support knowledge base for agent
-assist / self-serve help, with offline retrieval metrics and faithfulness
-scaffolding.
+## Data
 
-## Data source
-
-In-repo synthetic support articles + query→doc judgments
+In-repo synthetic support articles plus query->doc judgments
 (`load_support_kb_corpus`): license-clear.
 
-## Leakage controls
+## Leakage
 
-- Corpus indexes articles only: **never** labeled answer strings
-- Judgments used only in `session.rag.evaluate`
-- Embed/index built before evaluation; no test-time index mutation
+The corpus indexes articles only: never labeled answer strings. Judgments
+are used only in `session.rag.evaluate`. Embed/index is built before
+evaluation; there is no test-time index mutation.
 
-## BuildML API steps
+## How to run
 
-1. `session.rag.ingest_corpus` → `session.rag.chunk`
-2. `session.rag.embed_and_index` (sentence-transformers when available; else hashing)
-3. `session.rag.retrieve` / `session.rag.generate` (EchoGroundedProvider offline)
-4. `session.rag.evaluate` → optional `session.rag.save_bundle`
+```bash
+python proofs/support-kb-rag/script.py
+python proofs/support-kb-rag/baseline_industry.py
+```
 
-## Metrics
+## What you'll get
 
-recall@k, MRR, nDCG@k on held-out judgments.
+`results/results.json` with recall@k, MRR, and nDCG@k on held-out judgments.
+`results/comparison.json` is sklearn TF-IDF + cosine retrieval on the same
+corpus and judgments. Judgments are never indexed. Embeddings use
+sentence-transformers when available, else hashing. Generate uses
+EchoGroundedProvider offline.
 
-## Industry comparison (Tier C)
-
-Industry twin: `baseline_industry.py` runs sklearn TF-IDF + cosine retrieval on the same corpus/judgments (`results/comparison.json`). Judgments are never indexed.
 ## Limitations
 
 Tiny corpus; echo generate is not a production LLM.
+
+Related: [RAG quickstart](../../guides/quickstart-rag.md),
+[examples/rag_hashing_loop.py](../../examples/rag_hashing_loop.py).

@@ -1,38 +1,39 @@
 # store-sales-forecast
 
-## Business purpose
+You have a daily store sales series with trend, weekly seasonality, and promo
+spikes. You want a chronological holdout forecast after train-only seasonal
+diagnostics.
 
-Forecast daily store sales for replenishment and promo planning, with
-train-only seasonal diagnostics before locking a forecast method.
-
-## Data source
+## Data
 
 Synthetic daily sales (`load_store_sales_synthetic`) with trend, weekly
 seasonality, and promo spikes: license-clear.
 
-## Leakage controls
+## Leakage
 
-- `time_split` (chronological; latest rows = test)
-- `session.timeseries.analyze(scope="train")`: no peek at future
-- Model fit on train; rolling metrics on validation for disclosure
-- Test `session.forecast.evaluate` only after the model is locked
+`time_split` is chronological; latest rows are test.
+`session.timeseries.analyze(scope="train")` does not peek at the future.
+The forecast fits on train. Rolling metrics on validation are for disclosure.
+Test `session.forecast.evaluate` runs only after the model is locked.
 
-## BuildML API steps
+## How to run
 
-1. `ingest` → roles (`time`, `feature`, `target`) → `time_split`
-2. `session.timeseries.analyze` (STL / diagnostics when `statsmodels` available)
-3. `session.forecast.fit(method="lag_ridge", …)`
-4. `session.forecast.evaluate` on validation then test
-5. `session.forecast.generate` + `session.forecast.save_bundle`
+```bash
+python proofs/store-sales-forecast/script.py
+python proofs/store-sales-forecast/baseline_industry.py
+```
 
-## Metrics
+## What you'll get
 
-Rolling one-step forecast errors on validation/test (MAE/RMSE/MAPE-style :
-see JSON).
+`results/results.json` with rolling one-step forecast errors on validation
+and test (MAE / RMSE / MAPE-style). `results/comparison.json` is statsmodels
+SARIMAX (fallback: seasonal naive) with rolling one-step evaluation on the
+same `time_split`. The Session path fits `session.forecast.fit(method="lag_ridge")`.
+Analysis needs `statsmodels` when you want STL / diagnostics.
 
-## Industry comparison (Tier C)
-
-Industry twin: `baseline_industry.py` fits statsmodels SARIMAX (fallback: seasonal naive) with rolling one-step evaluation on the same `time_split`, writing `results/comparison.json`.
 ## Limitations
 
 Single synthetic series; not hierarchical multi-store M5.
+
+Related: [Forecasting quickstart](../../guides/quickstart-forecasting.md),
+[examples/forecast_lag_loop.py](../../examples/forecast_lag_loop.py).

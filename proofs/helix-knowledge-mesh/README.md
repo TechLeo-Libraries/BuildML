@@ -1,44 +1,44 @@
-# Helix Knowledge Mesh
+# helix-knowledge-mesh
 
-**Tier B** cross-domain product proof: knowledge-graph link prediction + RAG
-retrieval/generate + symbolic answer guardrails.
+This script composes `session.kg`, `session.rag`, and `session.symbolic` on
+one synthetic systems/teams/policies table plus a handbook corpus. It is
+not a product BuildML ships.
 
-## Product narrative
+The script fits TransE link prediction on a disjoint triple split, indexes
+a policy handbook for hybrid RAG retrieve plus echo-grounded generate, and
+induces decision-tree guardrails for block/allow on answer risk features.
 
-Helix is an enterprise knowledge mesh: systems, teams, and policies form a KG;
-a handbook corpus grounds answers; symbolic rules block high-risk / ungrounded
-responses. The platform:
+## Data
 
-1. Fits TransE link prediction on a disjoint triple split
-2. Indexes a policy handbook for hybrid RAG retrieve + echo-grounded generate
-3. Induces decision-tree guardrails for block/allow on answer risk features
+Synthetic mesh and handbook.
 
-## Status
+## Leakage
 
-Run `script.py`. Outputs land under `results/` (summary and stage JSON)..
+KG triple split before TransE fit. RAG corpus contains policy articles
+only: judgments never indexed. Symbolic guardrails fit on train; test after
+lock.
+
+## What fails if leakage is ignored
+
+Training TransE on all triples makes link metrics meaningless. Indexing
+labeled answers into the corpus turns RAG eval into a lookup. Inducing
+guardrail rules on the full table overstates compliance.
 
 ## How to run
 
 ```bash
-python proofs\helix-knowledge-mesh\script.py
+python proofs/helix-knowledge-mesh/script.py
 ```
 
-## Leakage controls
+## What you'll get
 
-- KG triple split before TransE fit
-- RAG corpus contains policy articles only: judgments never indexed
-- Symbolic guardrails fit on train; test after lock
+`results/` summary and per-stage JSON.
 
-## What fails if leakage is ignored
-
-- Training TransE on all triples makes link metrics meaningless
-- Indexing labeled answers into the corpus turns RAG eval into a lookup
-- Inducing guardrail rules on the full table overstates compliance
-
-## Upstream Tier A building blocks
+## Upstream
 
 `logistics-kg-linkpred`, `kg-biomed-linkpred`, `policy-handbook-rag`,
-`support-kb-rag`, `compliance-neuro-symbolic`, `policy-rules-neuro-symbolic`
+`support-kb-rag`, `compliance-neuro-symbolic`,
+`policy-rules-neuro-symbolic`.
 
 ## Limitations
 

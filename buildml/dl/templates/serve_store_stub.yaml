@@ -1,0 +1,12 @@
+# Empty store document: populate out of band, never commit key values.
+#   kubectl create secret generic __STORE_NAME__ --namespace __NAMESPACE__ --from-literal=__STORE_FIELD__="$BUILDML_API_KEY"
+apiVersion: v1
+kind: Secret
+metadata:
+  name: __STORE_NAME__
+  namespace: __NAMESPACE__
+  labels:
+    app.kubernetes.io/name: buildml-serve
+    app.kubernetes.io/part-of: buildml
+type: Opaque
+---

@@ -1,41 +1,20 @@
 # wine-cluster-segments
 
-## Business purpose
+You have wine chemical profiles and want clusters you can check against known
+cultivars. This is the unsupervised Session path on a public table, with
+cultivar held out of fit.
 
-Cluster wine chemical profiles and validate against known cultivars with
-external ARI / NMI. Exercises unsupervised Session APIs on a **real public
-dataset**.
+## Data
 
-## Data source
-
-**REAL_PUBLIC_DATASET** — `sklearn.datasets.load_wine` (UCI Wine recognition,
+**REAL_PUBLIC_DATASET** -- `sklearn.datasets.load_wine` (UCI Wine recognition,
 redistributed with sklearn). Offline; no network. Cultivar is used only as an
 external validation label (`role=ignore`).
 
-## Leakage controls
+## Leakage
 
-- Random train / validation / test before scale / PCA / cluster fit
-- Scale + PCA + `unsupervised.fit` on train only
-- Cultivar never used as a fit target
-- Test evaluation after the model is locked
-
-## BuildML API steps
-
-1. `ingest` → roles → `split` → `scale` → `reduce_dimensions(pca)`
-2. `session.unsupervised.fit(method="kmeans", n_clusters=3)`
-3. `session.unsupervised.evaluate` on validation/test with external cultivar
-4. `session.unsupervised.save_bundle`
-
-## Metrics
-
-Internal cluster quality + external ARI / NMI. Refuses ARI/NMI ≥ 1.0 and
-ARI ≥ 0.98 (anti near-perfect theater).
-
-## Industry comparison (Tier C)
-
-Industry twin: sklearn `StandardScaler` + `PCA` + `KMeans` on the same
-`SplitPlan` via `baseline_industry.py` → `results/comparison.json`.
-Cultivar labels stay evaluation-only.
+Random train / validation / test before scale, PCA, or cluster fit. Scale,
+PCA, and `session.unsupervised.fit` run on train only. Cultivar is never a
+fit target. Test evaluation runs after the model is locked.
 
 ## How to run
 
@@ -44,6 +23,15 @@ python proofs/wine-cluster-segments/script.py
 python proofs/wine-cluster-segments/baseline_industry.py
 ```
 
+## What you'll get
+
+`results/results.json` with internal cluster quality plus external ARI / NMI.
+The script refuses ARI/NMI >= 1.0 and ARI >= 0.98. `results/comparison.json`
+is sklearn `StandardScaler` + `PCA` + `KMeans` on the same `SplitPlan`.
+Cultivar labels stay evaluation-only.
+
 ## Limitations
 
 Small n; cultivar labels exist for research validation only.
+
+Related: [Unsupervised quickstart](../../guides/quickstart-unsupervised.md).

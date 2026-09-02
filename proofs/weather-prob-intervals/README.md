@@ -1,40 +1,20 @@
 # weather-prob-intervals
 
-## Business purpose
+You have hour, humidity, pressure, and wind, and you want temperature with
+calibrated uncertainty bands (Bayesian Ridge plus conformal / quantile-style
+intervals).
 
-Predict temperature with Bayesian Ridge plus conformal / quantile-style intervals so operations can plan with calibrated uncertainty bands.
+## Data
 
-## Data source
+In-script synthetic weather regression (hour, humidity, pressure, wind ->
+temp). Not a real METAR extract.
 
-In-script synthetic weather regression (hour, humidity, pressure, wind → temp). **Not** a real METAR extract.
+## Leakage
 
-## Leakage controls
-
-- Random train / validation / test before scale / fit
-- Probabilistic model fit on train
-- Interval calibration uses non-test partitions when required by the API
-- Test evaluate after lock
-- Industry twin uses the same SplitPlan
-
-## BuildML API steps
-
-1. `Session.ingest` → `set_roles` → `split` → `scale`
-2. `session.probabilistic.fit(estimator="bayesian_ridge", conformal=True)`
-3. `session.probabilistic.predict_interval(test)` → `session.probabilistic.evaluate(test)`
-4. `session.probabilistic.save_bundle`
-
-## Metrics
-
-Primary holdout: regression metrics plus interval coverage / width (see `results/results.json`).
-
-## Industry comparison (Tier C)
-
-Industry twin: sklearn `BayesianRidge` + validation residual quantile twin via `baseline_industry.py` → `results/comparison.json`.
-
-## Limitations
-
-- Synthetic weather; empirical coverage ≠ guaranteed under distribution shift
-- Single seed
+Random train / validation / test before scale or fit. The probabilistic
+model fits on train. Interval calibration uses non-test partitions when the
+API requires it. Test evaluate runs after lock. The twin uses the same
+`SplitPlan`.
 
 ## How to run
 
@@ -42,3 +22,18 @@ Industry twin: sklearn `BayesianRidge` + validation residual quantile twin via `
 python proofs/weather-prob-intervals/script.py
 python proofs/weather-prob-intervals/baseline_industry.py
 ```
+
+## What you'll get
+
+`results/results.json` with regression metrics plus interval coverage /
+width. `results/comparison.json` is sklearn `BayesianRidge` plus a
+validation residual quantile twin. The Session path is
+`session.probabilistic.fit(estimator="bayesian_ridge", conformal=True)`.
+
+## Limitations
+
+Synthetic weather; empirical coverage is not a guarantee under distribution
+shift; single seed.
+
+Related: [Probabilistic quickstart](../../guides/quickstart-probabilistic.md),
+[examples/probabilistic_bayesian_ridge.py](../../examples/probabilistic_bayesian_ridge.py).

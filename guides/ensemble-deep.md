@@ -120,4 +120,4 @@ Session checkpoints do not embed fitted ensemble weights.
 - Fold-local recipes inside stacking CV follow the same Session-global
   refuse as classical CV. See [leakage](leakage-cv-recipes.md).
 
-Runnable mirror: [`examples/ensemble_vote_stack_loop.py`](../examples/ensemble_vote_stack_loop.py).
+Paste: [`examples/ensemble_vote_stack_loop.py`](../examples/ensemble_vote_stack_loop.py).

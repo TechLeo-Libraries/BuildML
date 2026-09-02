@@ -10,12 +10,10 @@ on test is refused unless `allow_test_tuning=True`. Not a general MIP
 platform.
 
 [Decisions deep](optimize-deep.md) ·
-[cost-sensitive-collections](../proofs/cost-sensitive-collections/)
+Paste: [`examples/decision_threshold_loop.py`](../examples/decision_threshold_loop.py) ·
+Evidence: [cost-sensitive-collections](../proofs/cost-sensitive-collections/)
 
 **Not** a general operations-research platform, arbitrary MIP suite, or digital twin.
-
-Runnable mirror: [`examples/decision_threshold_loop.py`](../examples/decision_threshold_loop.py).
-Deep guide: [optimize-deep.md](optimize-deep.md).
 
 ---
 

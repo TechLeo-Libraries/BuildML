@@ -13,7 +13,8 @@ otherwise sklearn NMF. This is not RAG, not LTR, and not an EDA
 recommendation finding.
 
 [Recommenders deep](recommenders-deep.md) ·
-[movie-recs-collaborative](../proofs/movie-recs-collaborative/)
+Paste: [`examples/recommender_item_knn_loop.py`](../examples/recommender_item_knn_loop.py) ·
+Evidence: [movie-recs-collaborative](../proofs/movie-recs-collaborative/)
 
 ---
 
@@ -55,7 +56,8 @@ session = (
 )
 
 fit = session.recommender.fit(
-    method="item_knn",
+    method=None,
+    feedback="explicit",
     user_column="user_id",
     item_column="item_id",
     n_neighbors=20,

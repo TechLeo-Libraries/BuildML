@@ -13,7 +13,8 @@ This is not the analysis path. Stationarity and decompose live on
 `session.timeseries.*` and do not fit a forecaster.
 
 [Forecasting deep](forecasting-deep.md) ·
-[store-sales-forecast](../proofs/store-sales-forecast/) ·
+Paste: [`examples/forecast_lag_loop.py`](../examples/forecast_lag_loop.py) ·
+Evidence: [store-sales-forecast](../proofs/store-sales-forecast/) ·
 [Time-series analysis](quickstart-timeseries-analysis.md)
 
 ---

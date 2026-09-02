@@ -9,7 +9,8 @@ Pretext on train ignores labels. `evaluate` needs `fit_pretext` and
 This is not BERT-from-scratch and not `session.nlp`.
 
 [Self-supervised deep](selfsupervised-deep.md) ·
-[ssl-representation-probe](../proofs/ssl-representation-probe/)
+Paste: [`examples/selfsupervised_masked_tabular_loop.py`](../examples/selfsupervised_masked_tabular_loop.py) ·
+Evidence: [ssl-representation-probe](../proofs/ssl-representation-probe/)
 
 ```bash
 pip install "buildml[torch]"

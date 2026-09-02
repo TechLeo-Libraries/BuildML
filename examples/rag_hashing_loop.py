@@ -1,4 +1,4 @@
-"""Mirror of guides/rag-deep.md — hashing embed retrieve + eval + echo generate."""
+"""Mirror of guides/quickstart-rag.md — retrieve, echo generate, evaluate."""
 
 from __future__ import annotations
 

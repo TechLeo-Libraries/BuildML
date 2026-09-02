@@ -18,7 +18,8 @@ Validation is for thresholds, features, and families. Test is for the
 frozen policy, once. BuildML cannot stop you from peeking at test in your
 own notebook. It can refuse a poisoned CV.
 
-[Classical end-to-end](classical-end-to-end.md)
+[Classical end-to-end](classical-end-to-end.md) ·
+Paste: [`examples/evolutionary_search_loop.py`](../examples/evolutionary_search_loop.py)
 
 ---
 

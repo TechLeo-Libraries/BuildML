@@ -10,8 +10,12 @@ from train only, and the model. If you try to prepare or fit before a
 split, it stops you.
 
 A longer walk with dirtier data is
-[classical end-to-end](classical-end-to-end.md). The proof for this path
-is [loan-approval-classical](../proofs/loan-approval-classical/).
+[classical end-to-end](classical-end-to-end.md). Paste the 12-row loop from
+[`examples/classical_loan_loop.py`](../examples/classical_loan_loop.py).
+The proof on a fuller synthetic credit table is
+[loan-approval-classical](../proofs/loan-approval-classical/). Wisconsin
+breast cancer is
+[breast-cancer-classical](../proofs/breast-cancer-classical/).
 
 ## A first loop
 
@@ -253,4 +257,4 @@ you mutate state. The teaching studio is
 - [Leakage and recipes](leakage-cv-recipes.md) for fold-local honesty
 - [Preprocess depth](preprocess-depth.md) for encode, dates, text, custom transforms
 - [Artifacts](artifacts-checkpoints-bundles.md) for checkpoint vs pipeline
-- [loan-approval-classical](../proofs/loan-approval-classical/) to see the same spine on a fuller synthetic credit table
+- [loan-approval-classical](../proofs/loan-approval-classical/) for the same spine on a fuller synthetic credit table

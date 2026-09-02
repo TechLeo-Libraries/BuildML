@@ -1,38 +1,18 @@
 # diabetes-progression-regression
 
-## Business purpose
+You have baseline clinical covariates and a quantitative diabetes progression
+target. You want leakage-safe classical regression on a public table, with
+metrics in the target's units.
 
-Predict quantitative diabetes disease progression from baseline clinical
-covariates. Exercises leakage-safe classical regression on a **real public
-dataset**.
+## Data
 
-## Data source
-
-**REAL_PUBLIC_DATASET** — `sklearn.datasets.load_diabetes` (Efron et al. LARS
+**REAL_PUBLIC_DATASET** -- `sklearn.datasets.load_diabetes` (Efron et al. LARS
 diabetes study sample redistributed with sklearn). Offline; no network.
 
-## Leakage controls
+## Leakage
 
-- Random train / validation / test before fitting
-- Scaler fit on train only
-- Validation for model choice; test once
-
-## BuildML API steps
-
-1. `ingest` → roles → `split`
-2. `scale` → `fit(HistGradientBoostingRegressor)` (Ridge fallback)
-3. `evaluate(validation)` → `evaluate(test)`
-4. `save_pipeline`
-
-## Metrics
-
-Holdout R², RMSE, MAE. Refuses R² ≥ 1.0 and non-positive R².
-
-## Industry comparison (Tier C)
-
-Industry twin: sklearn `Pipeline` (`StandardScaler` +
-`HistGradientBoostingRegressor`, Ridge fallback) on the same `SplitPlan`
-via `baseline_industry.py` → `results/comparison.json`.
+Random train / validation / test before fitting. The scaler learns from train
+only. Validation is for model choice; test once.
 
 ## How to run
 
@@ -41,6 +21,15 @@ python proofs/diabetes-progression-regression/script.py
 python proofs/diabetes-progression-regression/baseline_industry.py
 ```
 
+## What you'll get
+
+`results/results.json` with holdout R^2, RMSE, and MAE. The script refuses
+R^2 >= 1.0 and non-positive R^2. `results/comparison.json` is a sklearn
+`Pipeline` (`StandardScaler` + `HistGradientBoostingRegressor`, Ridge
+fallback) twin on the same `SplitPlan`.
+
 ## Limitations
 
-Small research sample; single seed; not clinical certification.
+Small sample; single seed; not clinical certification.
+
+Related: [Classical quickstart](../../guides/quickstart-classical.md).

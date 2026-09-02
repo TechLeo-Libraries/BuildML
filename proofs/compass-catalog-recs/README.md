@@ -1,46 +1,48 @@
-# Compass Catalog Recs
+# compass-catalog-recs
 
-**Tier B** cross-domain product proof: collaborative recommenders + item
-co-purchase graph features + classical repurchase scoring.
+This script composes `session.recommender`, `session.graph`, and classical
+`session.fit` on one synthetic catalog interaction table. It is not a
+product BuildML ships.
 
-## Product narrative
+The script fits ALS / item-kNN recommenders on a train/validation/test
+interaction split, builds an item co-purchase graph with classical
+inductive features, and trains a logistic repurchase scorer on the same
+node split.
 
-Compass personalizes a synthetic catalog, mines co-purchase structure, and
-scores item repurchase propensity:
+## Data
 
-1. Fits ALS / item-kNN recommenders on a train/validation/test interaction split
-2. Builds an item co-purchase graph and fits classical inductive graph features
-3. Trains a classical logistic repurchase scorer on the same node split
+Synthetic catalog interactions. Not a real retail extract. The co-purchase
+graph is derived from the same interactions table.
 
-## Status
+## Leakage
 
-Run `script.py`. Outputs land under `results/` (summary and stage JSON)..
+Recommender split before fit; train-only ALS / item_knn. Graph node split
+before classical graph features. Classical repurchase scorer uses the same
+node `inject_split`. Test recommend / `session.graph.evaluate` / evaluate
+after locks.
+
+## What fails if leakage is ignored
+
+Fitting recommenders on test interactions invents recall@k. Graph features
+conditioned on test labels overstate ring repurchase. Fitting classical
+scores on the full catalog invents holdout ROC.
 
 ## How to run
 
 ```bash
-python proofs\compass-catalog-recs\script.py
+python proofs/compass-catalog-recs/script.py
 ```
 
-## Leakage controls
+## What you'll get
 
-- Recommender split before fit; train-only ALS / item_knn
-- Graph node split before classical graph features
-- Classical repurchase scorer uses the same node `inject_split`
-- Test recommend / `session.graph.evaluate` / evaluate after locks
+`results/` summary and per-stage JSON.
 
-## What fails if leakage is ignored
-
-- Fitting recommenders on test interactions invents recall@k
-- Graph features conditioned on test labels overstate ring repurchase
-- Fitting classical scores on the full catalog invents holdout ROC
-
-## Upstream Tier A building blocks
+## Upstream
 
 `catalog-recs-implicit`, `movie-recs-collaborative`, `graph-fraud-rings`,
-`peer-lending-graph`, `loan-approval-classical`
+`peer-lending-graph`, `loan-approval-classical`.
 
 ## Limitations
 
-Synthetic catalog interactions: not a real retail extract. Co-purchase graph
-is derived from the same interactions table.
+Synthetic catalog interactions. Co-purchase graph is derived from the same
+table.

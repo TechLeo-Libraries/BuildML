@@ -1,44 +1,45 @@
-# Relay Edge Federated
+# relay-edge-federated
 
-**Tier B** cross-domain product proof: multi-site FedAvg + probabilistic
-intervals + centralized classical baseline for synthetic edge device risk.
+This script composes `session.federated`, `session.probabilistic`, and
+classical `session.fit` on one synthetic edge-device table. It is not a
+product BuildML ships.
 
-## Product narrative
+Site shifts make the problem non-IID. The script runs FedAvg with
+`group_split` by site (held-out sites never train), Bayesian-ridge plus
+conformal intervals on a continuous risk proxy, and discloses a pooled
+classical logistic baseline on the same split.
 
-Relay aggregates fault signals across edge sites without shipping raw rows.
-Site shifts make the problem non-IID. The platform:
+## Data
 
-1. Runs FedAvg with `group_split` by site (held-out sites never train)
-2. Fits Bayesian-ridge + conformal intervals on a continuous risk proxy
-3. Discloses a pooled classical logistic baseline on the same split
+Synthetic edge sensors.
 
-## Status
+## Leakage
 
-Run `script.py`. Outputs land under `results/` (summary and stage JSON)..
+`group_split` by site so held-out edges never train FedAvg clients.
+Probabilistic fit uses the same `inject_split` indices. Classical pooled
+baseline is a disclosure contrast on the same split. Test evaluate after
+locks.
+
+## What fails if leakage is ignored
+
+Including test sites as FL clients invents cross-silo generalization.
+Fitting probabilistic intervals on the full fleet hides miscalibration.
+Pooling then splitting after feature stats overstates classical ROC.
 
 ## How to run
 
 ```bash
-python proofs\relay-edge-federated\script.py
+python proofs/relay-edge-federated/script.py
 ```
 
-## Leakage controls
+## What you'll get
 
-- `group_split` by site so held-out edges never train FedAvg clients
-- Probabilistic fit uses the same `inject_split` indices
-- Classical pooled baseline is a disclosure contrast on the same split
-- Test evaluate after locks
+`results/` summary and per-stage JSON.
 
-## What fails if leakage is ignored
-
-- Including test sites as FL clients invents cross-silo generalization
-- Fitting probabilistic intervals on the full fleet hides miscalibration
-- Pooling then splitting after feature stats overstates classical ROC
-
-## Upstream Tier A building blocks
+## Upstream
 
 `edge-fleet-federated`, `federated-hospital-sim`, `prob-interval-risk`,
-`weather-prob-intervals`, `loan-approval-classical`
+`weather-prob-intervals`, `loan-approval-classical`.
 
 ## Limitations
 

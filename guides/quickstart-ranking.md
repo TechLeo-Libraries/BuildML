@@ -13,10 +13,8 @@ installed, `method=None` picks LightGBM LambdaRank (then XGB, then
 CatBoost). This is not RAG and not `session.recommender`.
 
 [LTR deep](ranking-deep.md) ·
-[search-relevance-ltr](../proofs/search-relevance-ltr/)
-
-Runnable mirror: [`examples/ranking_pointwise_loop.py`](../examples/ranking_pointwise_loop.py).
-Deep guide: [ranking-deep.md](ranking-deep.md).
+Paste: [`examples/ranking_pointwise_loop.py`](../examples/ranking_pointwise_loop.py) ·
+Evidence: [search-relevance-ltr](../proofs/search-relevance-ltr/)
 
 ---
 

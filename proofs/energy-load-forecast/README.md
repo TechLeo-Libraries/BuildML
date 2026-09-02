@@ -1,41 +1,19 @@
 # energy-load-forecast
 
-## Business purpose
+You have hourly grid load with temperature and lag features. You want an
+honest chronological split for operations planning, then one test forecast.
 
-Forecast hourly grid load using temperature and lag features with an honest chronological split for operations planning.
+## Data
 
-## Data source
+In-repo synthetic hourly energy load (`load_energy_load_synthetic`):
+license-clear, deterministic. Not a real ISO / utility extract.
 
-In-repo synthetic hourly energy load (`load_energy_load_synthetic`): license-clear, deterministic. **Not** a real ISO / utility extract.
+## Leakage
 
-## Leakage controls
-
-- `time_split`: chronological train → validation → test
-- `session.timeseries.analyze` scoped to train only
-- Forecast fit on train; selection metrics on validation
-- Test `session.forecast.evaluate` after model lock
-- Industry twin uses the same time_split
-
-## BuildML API steps
-
-1. `Session.ingest` → `set_roles` → `time_split`
-2. Optional `session.timeseries.analyze(scope="train")`
-3. `session.forecast.fit(method="lag_ridge", horizon=24)`
-4. `session.forecast.evaluate(validation)` → `session.forecast.evaluate(test)`
-5. `session.forecast.generate` → `session.forecast.save_bundle`
-
-## Metrics
-
-Primary holdout: MAE, RMSE, MAPE (rolling one-step) on test.
-
-## Industry comparison (Tier C)
-
-Industry twin: seasonal naive (period=24) or Ridge lag twin selected on validation via `baseline_industry.py` → `results/comparison.json`.
-
-## Limitations
-
-- Synthetic load; no multi-zone hierarchy
-- lag_ridge is a classical baseline, not energy SOTA
+`time_split`: chronological train -> validation -> test.
+`session.timeseries.analyze` is scoped to train only. The forecast fits on
+train; selection metrics read validation. Test `session.forecast.evaluate`
+runs after the model is locked. The twin uses the same `time_split`.
 
 ## How to run
 
@@ -43,3 +21,18 @@ Industry twin: seasonal naive (period=24) or Ridge lag twin selected on validati
 python proofs/energy-load-forecast/script.py
 python proofs/energy-load-forecast/baseline_industry.py
 ```
+
+## What you'll get
+
+`results/results.json` with MAE, RMSE, and MAPE (rolling one-step) on test.
+`results/comparison.json` is seasonal naive (period=24) or a Ridge lag twin
+selected on validation. The Session path fits
+`session.forecast.fit(method="lag_ridge", horizon=24)`.
+
+## Limitations
+
+Synthetic load; no multi-zone hierarchy. lag_ridge is a classical baseline,
+not energy SOTA.
+
+Related: [Forecasting quickstart](../../guides/quickstart-forecasting.md),
+[examples/forecast_lag_loop.py](../../examples/forecast_lag_loop.py).

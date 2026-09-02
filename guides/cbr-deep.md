@@ -177,7 +177,7 @@ frozen transforms. A Session checkpoint does not embed `CbrPlan`. Reload
 the table, then `session.cbr.load_bundle(..., trusted=True)` for a file
 you made.
 
-Runnable mirror: [`examples/cbr_knn_loop.py`](../examples/cbr_knn_loop.py).
+Paste: [`examples/cbr_knn_loop.py`](../examples/cbr_knn_loop.py).
 Benchmark: `python benchmarks/cbr/retrieval_accuracy.py`.
 
 ## When it refuses

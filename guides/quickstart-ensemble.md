@@ -9,7 +9,9 @@ named estimators. Stacking CV and blend holdouts stay inside train. The
 winner is written to `fit_result`, so classical `evaluate` still works.
 This is not `session.fit(RandomForest(...))` and not AutoML.
 
-[Ensemble deep](ensemble-deep.md)
+[Ensemble deep](ensemble-deep.md) ·
+Paste: [`examples/ensemble_vote_stack_loop.py`](../examples/ensemble_vote_stack_loop.py) ·
+Evidence: [voting-ensemble-attrition](../proofs/voting-ensemble-attrition/)
 
 ---
 
@@ -112,5 +114,4 @@ estimator. Session checkpoints do **not** embed the ensemble.
 | `session.ensemble.evaluate` supervised metrics | Unsupervised cluster validity |
 | Ensemble bundle | Session checkpoint |
 
-Teaching: `session.explain("fit_stacking")`. Runnable mirror:
-[`examples/ensemble_vote_stack_loop.py`](../examples/ensemble_vote_stack_loop.py).
+Teaching: `session.explain("fit_stacking")`.

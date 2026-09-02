@@ -1,46 +1,43 @@
-# Ballast Energy Desk
+# ballast-energy-desk
 
-**Tier B** cross-domain product proof: chronological energy forecast +
-probabilistic intervals + optimize allocation for demand-response capacity.
+This script composes `session.forecast`, `session.probabilistic`, and
+`session.decision` on one synthetic hourly load series. It is not a product BuildML ships.
 
-## Product narrative
-
-Ballast is an energy trading / ops desk for a synthetic hourly load series.
 Lag forecasts set the horizon; conformal intervals quantify residual risk;
-knapsack allocation picks generation / DR blocks. The platform:
+knapsack allocation picks generation / DR blocks on validation.
 
-1. Fits lag Ridge forecast under chronological `time_split`
-2. Fits Bayesian-ridge + conformal intervals on train residual proxies
-3. Allocates future blocks with validation-selected knapsack policy
+## Data
 
-## Status
+Single synthetic load series. Not an ISO extract.
 
-Run `script.py`. Outputs land under `results/` (summary and stage JSON)..
+## Leakage
+
+`time_split` chronological train -> validation -> test. Forecast fit on
+train; selection metrics on validation. Probabilistic residual model uses
+train-only history. Allocation policy selected on the validation half of
+future blocks.
+
+## What fails if leakage is ignored
+
+Random split on hours lets the model peek at future seasonality.
+Calibrating intervals on test residuals reports perfect coverage. Choosing
+allocation with realized future demand is not a desk decision.
 
 ## How to run
 
 ```bash
-python proofs\ballast-energy-desk\script.py
+python proofs/ballast-energy-desk/script.py
 ```
 
-## Leakage controls
+## What you'll get
 
-- `time_split` chronological train → validation → test
-- Forecast fit on train; selection metrics on validation
-- Probabilistic residual model uses train-only history
-- Allocation policy selected on validation half of future blocks
+`results/` summary and per-stage JSON.
 
-## What fails if leakage is ignored
-
-- Random split on hours lets the model peek at future seasonality
-- Calibrating intervals on test residuals reports perfect coverage
-- Choosing allocation with realized future demand is not a desk decision
-
-## Upstream Tier A building blocks
+## Upstream
 
 `energy-load-forecast`, `store-sales-forecast`, `weather-prob-intervals`,
-`prob-interval-risk`, `campaign-budget-optimize`, `harbor-demand-desk`
+`prob-interval-risk`, `campaign-budget-optimize`, `harbor-demand-desk`.
 
 ## Limitations
 
-Single synthetic load series. Knapsack ≠ full unit-commitment MIP.
+Single synthetic load series. Knapsack is not a full unit-commitment MIP.

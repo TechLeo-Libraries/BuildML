@@ -177,7 +177,7 @@ frozen plan. A mismatch raises.
 standardization). A Session checkpoint does not embed `RankerPlan`.
 `trusted=True` only for a file you made.
 
-Runnable mirror:
+Paste:
 [`examples/ranking_pointwise_loop.py`](../examples/ranking_pointwise_loop.py).
 Benchmark: `python benchmarks/ranking/ndcg_lift.py`.
 

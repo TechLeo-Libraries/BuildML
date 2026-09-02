@@ -1,45 +1,45 @@
-# Aurora Ad Ranker
+# aurora-ad-ranker
 
-**Tier B** cross-domain product proof: learning-to-rank + classical CTR proxy +
-validation-tuned impression allocation for synthetic sponsored ads.
+This script composes `session.ranking`, classical `session.fit`, and
+`session.decision` on one synthetic sponsored-ad table. It is not a product BuildML ships.
 
-## Product narrative
+The script fits LambdaRank / pointwise LTR with `group_split` by
+`query_id`, trains a logistic CTR scorer on query x ad judgment pairs, and
+selects threshold / knapsack impression capacity on validation only.
 
-Aurora ranks ads per query, scores a CTR proxy, and allocates scarce impressions:
+## Data
 
-1. Fits LambdaRank / pointwise LTR with `group_split` by `query_id`
-2. Trains a classical logistic CTR scorer on query×ad judgment pairs
-3. Selects threshold / knapsack capacity on validation only
+Synthetic graded ad judgments. Not a real auction log. CTR proxy is derived
+from query x ad judgment pairs.
 
-## Status
+## Leakage
 
-Run `script.py`. Outputs land under `results/` (summary and stage JSON)..
+LTR `group_split` by `query_id` before ranker fit. Classical CTR split is
+stratified and disjoint from test. Impression capacity / knapsack tuned on
+validation only. Test nDCG and decision eval after each stage locks.
+
+## What fails if leakage is ignored
+
+Fitting the ranker on test queries overstates NDCG. Allocating impressions
+on test invents CTR lift. Tuning serve thresholds on test understates
+opportunity cost.
 
 ## How to run
 
 ```bash
-python proofs\aurora-ad-ranker\script.py
+python proofs/aurora-ad-ranker/script.py
 ```
 
-## Leakage controls
+## What you'll get
 
-- LTR `group_split` by `query_id` before ranker fit
-- Classical CTR split is stratified and disjoint from test
-- Impression capacity / knapsack tuned on validation only
-- Test nDCG and decision eval after each stage locks
+`results/` summary and per-stage JSON.
 
-## What fails if leakage is ignored
-
-- Fitting the ranker on test queries overstates NDCG
-- Allocating impressions on test invents CTR lift
-- Tuning serve thresholds on test understates opportunity cost
-
-## Upstream Tier A building blocks
+## Upstream
 
 `sponsored-ad-ltr`, `search-relevance-ltr`, `loan-approval-classical`,
-`campaign-budget-optimize`, `cost-sensitive-collections`
+`campaign-budget-optimize`, `cost-sensitive-collections`.
 
 ## Limitations
 
-Synthetic graded ad judgments: not a real auction log. CTR proxy is derived
-from query×ad judgment pairs.
+Synthetic graded ad judgments. CTR proxy is derived from the same
+judgments.

@@ -1,39 +1,19 @@
 # torch-tabular-underwrite
 
-## Business purpose
+You have mortgage tabular features and a default label. You want a short
+Torch MLP on an honest split, with a skip when Torch is unavailable.
 
-Train a small Torch MLP on mortgage tabular features for default risk underwriting, with an honest skip when Torch is unavailable.
+## Data
 
-## Data source
+In-repo synthetic mortgage table (`load_mortgage_default_synthetic`):
+license-clear, deterministic. Not a real servicing extract.
 
-In-repo synthetic mortgage table (`load_mortgage_default_synthetic`): license-clear, deterministic. **Not** a real servicing extract.
+## Leakage
 
-## Leakage controls
-
-- Stratified train / validation / test before impute / encode / loaders
-- Torch normalize statistics from train loader only
-- Test `session.dl.evaluate` after lock
-- Industry MLPClassifier twin uses the same SplitPlan
-
-## BuildML API steps
-
-1. Probe `TORCH_STATUS`; if `skip_torch_paths` → `skipped_missing_extra`
-2. `Session.ingest` → `set_roles` → `split` → `impute` → `encode`
-3. `session.dl.make_loaders` → `session.dl.fit(epochs=3)` → `session.dl.evaluate`
-4. `session.dl.save_bundle` when available
-
-## Metrics
-
-Primary holdout: accuracy / F1 / ROC-AUC (or Torch report metrics) on test.
-
-## Industry comparison (Tier C)
-
-Industry twin: sklearn `MLPClassifier` twin via `baseline_industry.py` → `results/comparison.json`.
-
-## Limitations
-
-- 3-epoch CPU MLP smoke; not a production underwriting network
-- Honest skip when Torch is missing or unhealthy
+Stratified train / validation / test before impute, encode, or loaders.
+Torch normalize statistics come from the train loader only. Test
+`session.dl.evaluate` after lock. The sklearn `MLPClassifier` twin uses the
+same `SplitPlan`.
 
 ## How to run
 
@@ -41,3 +21,17 @@ Industry twin: sklearn `MLPClassifier` twin via `baseline_industry.py` → `resu
 python proofs/torch-tabular-underwrite/script.py
 python proofs/torch-tabular-underwrite/baseline_industry.py
 ```
+
+## What you'll get
+
+`results/results.json` with holdout accuracy / F1 / ROC-AUC (or Torch report
+metrics) on test. If `TORCH_STATUS` says `skip_torch_paths`, the script
+writes `skipped_missing_extra`. `results/comparison.json` is a sklearn
+`MLPClassifier` twin on the same split.
+
+## Limitations
+
+3-epoch CPU MLP smoke; not an underwriting network you would ship. Honest
+skip when Torch is missing or unhealthy.
+
+Related: [Torch quickstart](../../guides/quickstart-torch.md).

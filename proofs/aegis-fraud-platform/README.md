@@ -1,52 +1,51 @@
-﻿# Aegis Fraud Platform
+# aegis-fraud-platform
 
-**Tier B** cross-domain product proof: graph rings + anomaly + supervised scoring
-+ online stream updates + validation-tuned decision thresholds + optional
-symbolic guardrails.
+This script composes `session.graph`, `session.anomaly`, classical
+`session.fit`, `session.online`, `session.decision`, and optional
+`session.symbolic` on one synthetic payments table. It is not a product BuildML ships.
 
-## Product narrative
+Accounts form community graphs; rare fraud is denser in one community. The
+script scores rings, flags anomalies, updates an online classifier from a
+train cursor, and selects a review threshold on validation.
 
-Aegis is a fraud review desk for a synthetic payments portfolio. Accounts form
-community graphs; rare fraud is denser in one community. The platform:
+## Data
 
-1. Fits classical graph node features on a stratified node split
-2. Runs unsupervised anomaly detection with **validation-only** threshold tuning
-3. Trains a supervised logistic scorer for calibrated review scores
-4. Streams train-cursor `partial_fit` updates (test never enters the stream)
-5. Selects cost-sensitive threshold / knapsack on validation
-   (default `scale` skips `ignore`/`id` so `review_cost` stays non-negative)
-6. Optionally induces symbolic decision-tree guardrails for explainable denies
+Synthetic payments portfolio. Not a real card network.
 
-## Status
+## Leakage
 
-Run `script.py`. Outputs land under `results/` (summary and stage JSON)..
+Stratified node split before any graph, anomaly, or supervised fit. Anomaly
+threshold and decision policies tuned on validation only. Online
+`partial_fit` consumes the train cursor only. Test is evaluated once per
+stage after that stage locks.
+
+Default `scale` skips `ignore`/`id` so `review_cost` stays non-negative.
+
+## What fails if leakage is ignored
+
+Tuning thresholds on test inflates F1 and understates review cost. Graph
+features conditioned on test labels overstate ring detection. Streaming
+updates that include test rows make online metrics meaningless. Symbolic
+rules induced on the full table look more "compliant" than they would in
+production.
 
 ## How to run
 
 ```bash
-python proofs\aegis-fraud-platform\script.py
+python proofs/aegis-fraud-platform/script.py
 ```
 
-## Leakage controls
+## What you'll get
 
-- Stratified node split before any graph / anomaly / supervised fit
-- Anomaly threshold + decision policies tuned on validation only
-- Online `partial_fit` consumes train cursor only
-- Test evaluated once per stage after that stage locks
+`results/` summary and per-stage JSON.
 
-## What fails if leakage is ignored
-
-- Tuning thresholds on test inflates F1 and understates review cost
-- Graph features conditioned on test labels overstate ring detection
-- Streaming updates that include test rows make online metrics meaningless
-- Symbolic rules induced on the full table look more “compliant” than production
-
-## Upstream Tier A building blocks
+## Upstream
 
 `graph-fraud-rings`, `network-intrusion-anomaly`, `loan-approval-classical`,
-`stream-fraud-online`, `cost-sensitive-collections`, `policy-rules-neuro-symbolic`
+`stream-fraud-online`, `cost-sensitive-collections`,
+`policy-rules-neuro-symbolic`.
 
 ## Limitations
 
-Synthetic portfolio: not a real card network. Classical graph path is primary.
-Missing extras are skipped with JSON disclosures (`MissingExtraError`).
+Synthetic portfolio. Classical graph path is primary. Missing extras are
+skipped with JSON disclosures (`MissingExtraError`).

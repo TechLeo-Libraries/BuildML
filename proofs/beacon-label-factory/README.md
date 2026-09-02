@@ -1,46 +1,45 @@
-# Beacon Label Factory
+# beacon-label-factory
 
-**Tier B** cross-domain product proof: SSL pretext + semi-supervised
-propagation + active-learning budget loop for scarce inspection labels.
+This script composes `session.ssl`, `session.semisupervised`, and
+`session.active_learning` on one synthetic inspection-feature table. It is
+not a product BuildML ships.
 
-## Product narrative
+Most train labels are masked; holdouts keep full labels for evaluation. The
+script fits masked-tabular SSL pretext, runs label propagation, and queries
+a train-only margin-sampling loop with a simulated oracle.
 
-Beacon is a labeling factory for manufacturing inspection features. Most train
-labels are masked; holdouts keep full labels for evaluation. The platform:
+## Data
 
-1. Fits masked-tabular SSL pretext (+ optional probe head) on train features
-2. Runs label propagation on the scarce labeled pool
-3. Runs a margin-sampling active-learning budget loop querying **train** only
-4. Uses a simulated oracle (ground-truth for queried train indices)
+Tabular inspection proxies. Not a plant annotation UI.
 
-## Status
+## Leakage
 
-Run `script.py`. Outputs land under `results/` (summary and stage JSON)..
+Stratified split before masking / pretext / AL. Label masking applied to
+train indices only. Holdouts retain full labels solely for evaluation. AL
+queries drawn from the train unlabeled pool only.
+
+## What fails if leakage is ignored
+
+Masking validation/test then recovering labels via the graph overstates SSL
+gains. Allowing AL to query the test pool turns the budget curve into a
+cheat sheet. Fitting SSL pretext on the full table leaks holdout geometry
+into embeddings.
 
 ## How to run
 
 ```bash
-python proofs\beacon-label-factory\script.py
+python proofs/beacon-label-factory/script.py
 ```
 
-## Leakage controls
+## What you'll get
 
-- Stratified split before masking / pretext / AL
-- Label masking applied to train indices only
-- Holdouts retain full labels solely for evaluation
-- AL queries drawn from the train unlabeled pool only
+`results/` summary and per-stage JSON.
 
-## What fails if leakage is ignored
-
-- Masking validation/test then recovering labels via the graph overstates SSL gains
-- Allowing AL to query the test pool turns the budget curve into a cheat sheet
-- Fitting SSL pretext on the full table leaks holdout geometry into embeddings
-
-## Upstream Tier A building blocks
+## Upstream
 
 `radiology-semi-labels`, `semi-label-efficiency`, `active-labeling-budget`,
 `defect-active-budget`, `tabular-ssl-probe`, `ssl-representation-probe`,
-`atlas-label-studio`
+`atlas-label-studio`.
 
 ## Limitations
 

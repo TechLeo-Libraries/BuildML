@@ -13,7 +13,8 @@ fills this in. Instruments are refused: IV and front-door are not
 implemented. Default method is native AIPW.
 
 [Causal deep](causal-deep.md) ·
-[causal-treatment-effect](../proofs/causal-treatment-effect/)
+Paste: [`examples/causal_aipw_ate.py`](../examples/causal_aipw_ate.py) ·
+Evidence: [causal-treatment-effect](../proofs/causal-treatment-effect/)
 
 ```python
 import numpy as np

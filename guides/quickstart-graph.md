@@ -13,7 +13,8 @@ Default mode is inductive. This is not Neo4j and not `session.kg`.
 
 **Go deeper:** [Graph deep](graph-deep.md) ·
 
-**Proof:** [graph-fraud-rings](../proofs/graph-fraud-rings/) (+ Tier C networkx+LR). Cross-domain: [aegis-fraud-platform](../proofs/aegis-fraud-platform/).
+Paste: [`examples/graph_node_classification.py`](../examples/graph_node_classification.py) ·
+Evidence: [graph-fraud-rings](../proofs/graph-fraud-rings/).
 [Artifacts](artifacts-checkpoints-bundles.md)
 
 ```python

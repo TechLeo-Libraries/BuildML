@@ -11,10 +11,8 @@ Train-fitted generators. Default is native Gaussian copula. This is not
 clears a classical `FitResult`.
 
 [Synthetic deep](synthetic-deep.md) ·
-[synthetic-privacy-utility](../proofs/synthetic-privacy-utility/)
-
-Runnable mirror: [`examples/synthetic_copula_loop.py`](../examples/synthetic_copula_loop.py).
-Deep guide: [synthetic-deep.md](synthetic-deep.md).
+Paste: [`examples/synthetic_copula_loop.py`](../examples/synthetic_copula_loop.py) ·
+Evidence: [synthetic-privacy-utility](../proofs/synthetic-privacy-utility/)
 
 ---
 

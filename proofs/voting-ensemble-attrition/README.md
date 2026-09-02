@@ -1,41 +1,20 @@
 # voting-ensemble-attrition
 
-## Business purpose
+You have employee features and an attrition label. You want a soft-voting
+ensemble (logistic + random forest) whose holdout number did not leak into
+model selection.
 
-Predict employee attrition with a soft-voting ensemble (logistic + random forest) so HR can prioritize retention outreach without leaking holdout labels into model selection.
+## Data
 
-## Data source
+In-repo synthetic attrition table (`load_attrition_tabular_synthetic`):
+license-clear, deterministic. Not a real employee extract.
 
-In-repo synthetic attrition table (`load_attrition_tabular_synthetic`): license-clear, deterministic. **Not** a real employee extract.
+## Leakage
 
-## Leakage controls
-
-- Stratified train / validation / test before encode / scale / ensemble fit
-- One-hot encode and scale fit on train only
-- Voting bases fit on train only
-- Test `session.ensemble.evaluate` after lock
-- Industry VotingClassifier twin uses the same SplitPlan
-
-## BuildML API steps
-
-1. `Session.ingest` → `set_roles` → `split` (stratified)
-2. `encode` → `scale`
-3. `session.ensemble.fit_voting(LR+RF, voting="soft")`
-4. `session.ensemble.evaluate(validation)` → `session.ensemble.evaluate(test)`
-5. `session.ensemble.save_bundle`
-
-## Metrics
-
-Primary holdout: accuracy, F1, ROC-AUC on test (see `results/results.json`).
-
-## Industry comparison (Tier C)
-
-Industry twin: sklearn `VotingClassifier(soft)` twin via `baseline_industry.py` → `results/comparison.json`.
-
-## Limitations
-
-- Synthetic HR labels; two-base vote only
-- Single seed; no nested outer CV
+Stratified train / validation / test before encode, scale, or ensemble fit.
+One-hot encode and scale learn from train only. Voting bases fit on train
+only. Test `session.ensemble.evaluate` runs after lock. The sklearn
+`VotingClassifier` twin uses the same `SplitPlan`.
 
 ## How to run
 
@@ -43,3 +22,16 @@ Industry twin: sklearn `VotingClassifier(soft)` twin via `baseline_industry.py` 
 python proofs/voting-ensemble-attrition/script.py
 python proofs/voting-ensemble-attrition/baseline_industry.py
 ```
+
+## What you'll get
+
+`results/results.json` with holdout accuracy, F1, and ROC-AUC on test.
+`results/comparison.json` is a sklearn `VotingClassifier(soft)` twin on the
+same split.
+
+## Limitations
+
+Synthetic HR labels; two-base vote only; single seed; no nested outer CV.
+
+Related: [Ensemble quickstart](../../guides/quickstart-ensemble.md),
+[examples/ensemble_vote_stack_loop.py](../../examples/ensemble_vote_stack_loop.py).

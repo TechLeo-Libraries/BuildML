@@ -1,26 +1,41 @@
-# Time-series analysis domain floor
+# timeseries-analysis-floor
 
-This proof documents the **analysis-only** floor for `buildml.timeseries`
-(decompose, diagnostics, changepoints). It is intentionally thin: the domain
-does not ship a fitted-plan checkpoint bundle: forecasting persistence lives
-under `buildml.forecasting`.
+`session.timeseries` is analysis only: decompose, diagnostics, changepoints.
+There is no fitted bundle. Analysis does not persist a plan you can reload
+and score. Forecasting persistence lives on `session.forecast`.
 
-## Floor checklist
+## Data
 
-| Artifact | Status |
-| --- | --- |
-| `catalog.py` + `session.timeseries.capability_matrix` | required |
-| Session mixin matrix | required |
-| `explain_hooks.py` | required |
-| Guide (`guides/quickstart-timeseries-analysis.md`) | required |
-| Unit / teaching tests | required |
-| `checkpoint.py` | **not required** (`analysis_only`) |
+This directory is a floor note, not a fitted proof on a table. The user path
+is the [time-series analysis quickstart](../../guides/quickstart-timeseries-analysis.md).
+The forecast proof that follows analysis is
+[store-sales-forecast](../store-sales-forecast/).
 
-## Smoke
+## Leakage
+
+Analysis must be scoped to train (`session.timeseries.analyze(scope="train")`).
+Running STL or changepoints on the full series lets the test regime into
+discovery.
+
+## How to run
+
+There is no `script.py` here that fits a bundle. For analysis then forecast:
 
 ```bash
-python benchmarks/timeseries/analysis_smoke.py
-pytest tests/unit/test_timeseries_r3_depth.py -q
+python proofs/store-sales-forecast/script.py
+python examples/timeseries_analyze_loop.py
 ```
 
-See also `proofs/store-sales-forecast/` for the forecasting product surface.
+## What you'll get
+
+Nothing under this slug. Analysis output, when you run it, is diagnostics
+from `session.timeseries.analyze`, not a pipeline bundle. That is why there
+is no checkpoint: the domain does not ship a fitted plan.
+
+## Limitations
+
+Analysis-only has no bundle by design. Use `session.forecast` when you need
+something you can save and score.
+
+Related: [Time-series analysis quickstart](../../guides/quickstart-timeseries-analysis.md),
+[store-sales-forecast](../store-sales-forecast/).

@@ -12,7 +12,8 @@ Two surfaces on `session.rl`: `fit_imitation` (behavioral cloning) and
 tabular partitions. Not robotics, not batch offline RL.
 
 [Imitation + RL deep](imitation-rl-deep.md) ·
-[imitation-cartpole-control](../proofs/imitation-cartpole-control/)
+Paste: [`examples/imitation_rl_loop.py`](../examples/imitation_rl_loop.py) ·
+Evidence: [imitation-cartpole-control](../proofs/imitation-cartpole-control/)
 
 ---
 

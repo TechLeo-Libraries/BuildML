@@ -8,6 +8,13 @@ with pre-release tags for alpha (`aN`) builds.
 
 ## [Unreleased]
 
+### Changed
+
+- **Proofs and examples are a user contract.** Paste scripts live in
+  `examples/` and match the guides. Proofs are evidence for one job, not
+  a 63/63 scoreboard or a catalog of shipped products. Composition slugs
+  say they are not products BuildML ships.
+
 ### Added
 
 - **REAL_PUBLIC_DATASET Tier C twins.** Same-split sklearn industry

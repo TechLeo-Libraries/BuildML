@@ -10,7 +10,8 @@ vectorization is a persistence image. Needs `buildml[tda]`. If
 that default image. Not a Mapper suite.
 
 [TDA deep](tda-deep.md) ·
-[credit-tda-shape](../proofs/credit-tda-shape/)
+Paste: [`examples/tda_loop.py`](../examples/tda_loop.py) ·
+Evidence: [credit-tda-shape](../proofs/credit-tda-shape/)
 
 ---
 

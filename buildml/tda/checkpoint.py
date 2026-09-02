@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import re
 from pathlib import Path
 from typing import Any
 
@@ -14,132 +13,116 @@ from buildml._version import __version__
 from buildml.core.errors import ValidationError
 from buildml.core.serialization import joblib_load_trusted
 from buildml.tda.results import TdaEvalResult, TdaFitResult, TdaPlan
-from buildml.tda.types import TdaConfig
-
-_CREDENTIAL_KEY_RE = re.compile(
-    r"(secret|password|passwd|pwd|token|api[_-]?key|credential|private[_-]?key)",
-    re.IGNORECASE,
-)
-_TDA_CONFIG_META_KEYS = frozenset(TdaConfig.__dataclass_fields__)
-_TDA_MAPPER_META_KEYS = frozenset(
-    {
-        "n_train_mapper_points",
-        "n_mapper_nodes",
-        "n_mapper_edges",
-        "filter",
-        "clusterer",
-        "has_labels",
-    }
-)
 
 BUNDLE_FORMAT = "buildml.tda_bundle.v2"
 BUNDLE_FORMAT_V1 = "buildml.tda_bundle.v1"
 SUPPORTED_BUNDLE_FORMATS = (BUNDLE_FORMAT, BUNDLE_FORMAT_V1)
 
 
-def _public_mapping(
-    payload: dict[str, Any] | None,
-    allowed: frozenset[str],
-) -> dict[str, Any]:
-    """Copy allowlisted keys, dropping anything that looks like a credential."""
-    if not payload:
-        return {}
-    public: dict[str, Any] = {}
-    for key, value in payload.items():
-        name = str(key)
-        if name not in allowed or _CREDENTIAL_KEY_RE.search(name):
-            continue
-        if isinstance(value, dict):
-            continue
-        public[name] = value
-    return public
+def _mapper_public(summary: dict[str, Any] | None) -> dict[str, Any] | None:
+    """Persist mapper counts only; never copy an open mapping."""
+    if not isinstance(summary, dict):
+        return None
+    out: dict[str, Any] = {}
+    points = summary.get("n_train_mapper_points")
+    if isinstance(points, int):
+        out["n_train_mapper_points"] = points
+    nodes = summary.get("n_mapper_nodes")
+    if isinstance(nodes, int):
+        out["n_mapper_nodes"] = nodes
+    edges = summary.get("n_mapper_edges")
+    if isinstance(edges, int):
+        out["n_mapper_edges"] = edges
+    filt = summary.get("filter")
+    if isinstance(filt, str):
+        out["filter"] = filt
+    clusterer = summary.get("clusterer")
+    if isinstance(clusterer, str):
+        out["clusterer"] = clusterer
+    if summary.get("has_labels") is True:
+        out["has_labels"] = True
+    return out or None
 
 
 def _public_plan_meta(plan: TdaPlan) -> dict[str, Any]:
-    """JSON sidecar for a TDA plan: primitives and allowlisted summaries only."""
-    raw = plan.to_dict()
-    config = raw.get("config")
-    mapper = raw.get("mapper_summary")
+    """JSON sidecar for a TDA plan: primitives taken from typed attributes."""
     return {
-        "backend": raw.get("backend"),
-        "vectorization": raw.get("vectorization"),
-        "columns": list(raw.get("columns") or []),
-        "homology_dims": list(raw.get("homology_dims") or []),
-        "knn": raw.get("knn"),
-        "maxdim": raw.get("maxdim"),
-        "thresh": raw.get("thresh"),
-        "n_bins": raw.get("n_bins"),
-        "n_layers": raw.get("n_layers"),
-        "n_train_rows": raw.get("n_train_rows"),
-        "feature_dim": raw.get("feature_dim"),
-        "feature_names": list(raw.get("feature_names") or []),
-        "task": raw.get("task"),
-        "head": raw.get("head"),
-        "used_reduce_components": raw.get("used_reduce_components"),
-        "standardize": raw.get("standardize"),
-        "has_head": raw.get("has_head"),
-        "classes": [str(item) for item in (raw.get("classes") or [])],
-        "disclosures": list(raw.get("disclosures") or []),
-        "warnings": list(raw.get("warnings") or []),
-        "config": _public_mapping(
-            config if isinstance(config, dict) else None,
-            _TDA_CONFIG_META_KEYS,
-        ),
-        "mapper_summary": _public_mapping(
-            mapper if isinstance(mapper, dict) else None,
-            _TDA_MAPPER_META_KEYS,
-        )
-        or None,
+        "backend": str(plan.backend),
+        "vectorization": str(plan.vectorization),
+        "columns": [str(c) for c in plan.columns],
+        "homology_dims": [int(x) for x in plan.homology_dims],
+        "knn": int(plan.knn),
+        "maxdim": int(plan.maxdim),
+        "thresh": None if plan.thresh is None else float(plan.thresh),
+        "n_bins": int(plan.n_bins),
+        "n_layers": int(plan.n_layers),
+        "n_train_rows": int(plan.n_train_rows),
+        "feature_dim": int(plan.feature_dim),
+        "feature_names": [str(n) for n in plan.feature_names],
+        "task": plan.task,
+        "head": str(plan.head),
+        "used_reduce_components": bool(plan.used_reduce_components),
+        "standardize": bool(plan.standardize),
+        "has_head": plan.head_estimator_ is not None,
+        "classes": [str(item) for item in plan.classes_],
+        "disclosures": list(plan.disclosures),
+        "warnings": list(plan.warnings),
+        "config": {
+            "backend": str(plan.backend),
+            "vectorization": str(plan.vectorization),
+            "homology_dims": [int(x) for x in plan.homology_dims],
+            "knn": int(plan.knn),
+            "maxdim": int(plan.maxdim),
+            "thresh": None if plan.thresh is None else float(plan.thresh),
+            "n_bins": int(plan.n_bins),
+            "n_layers": int(plan.n_layers),
+            "standardize": bool(plan.standardize),
+            "head": str(plan.head),
+            "task": plan.task,
+        },
+        "mapper_summary": _mapper_public(plan.mapper_summary_),
     }
 
 
 def _public_fit_meta(fit_result: TdaFitResult) -> dict[str, Any]:
-    raw = fit_result.to_dict()
     return {
-        "backend": raw.get("backend"),
-        "vectorization": raw.get("vectorization"),
-        "n_train_rows": raw.get("n_train_rows"),
-        "feature_dim": raw.get("feature_dim"),
-        "homology_dims": list(raw.get("homology_dims") or []),
-        "knn": raw.get("knn"),
-        "columns": list(raw.get("columns") or []),
-        "task": raw.get("task"),
-        "head": raw.get("head"),
-        "train_score": raw.get("train_score"),
-        "used_reduce_components": raw.get("used_reduce_components"),
-        "disclosures": list(raw.get("disclosures") or []),
-        "warnings": list(raw.get("warnings") or []),
+        "backend": str(fit_result.backend),
+        "vectorization": str(fit_result.vectorization),
+        "n_train_rows": int(fit_result.n_train_rows),
+        "feature_dim": int(fit_result.feature_dim),
+        "homology_dims": [int(x) for x in fit_result.homology_dims],
+        "knn": int(fit_result.knn),
+        "columns": [str(c) for c in fit_result.columns],
+        "task": fit_result.task,
+        "head": str(fit_result.head),
+        "train_score": fit_result.train_score,
+        "used_reduce_components": bool(fit_result.used_reduce_components),
+        "disclosures": list(fit_result.disclosures),
+        "warnings": list(fit_result.warnings),
     }
 
 
 def _public_eval_meta(eval_result: TdaEvalResult) -> dict[str, Any]:
-    raw = eval_result.to_dict()
-    metrics = raw.get("metrics")
-    distances = raw.get("diagram_distances")
+    metrics = {
+        str(name): float(value)
+        for name, value in eval_result.metrics.items()
+        if isinstance(value, (int, float))
+    }
+    distances = {
+        str(name): float(value)
+        for name, value in eval_result.diagram_distances.items()
+        if isinstance(value, (int, float))
+    }
     return {
-        "partition": raw.get("partition"),
-        "task": raw.get("task"),
-        "n_rows": raw.get("n_rows"),
-        "metrics": {
-            str(key): float(value)
-            for key, value in (metrics or {}).items()
-            if not _CREDENTIAL_KEY_RE.search(str(key))
-            and isinstance(value, (int, float))
-        }
-        if isinstance(metrics, dict)
-        else {},
-        "diagram_distances": {
-            str(key): float(value)
-            for key, value in (distances or {}).items()
-            if not _CREDENTIAL_KEY_RE.search(str(key))
-            and isinstance(value, (int, float))
-        }
-        if isinstance(distances, dict)
-        else {},
-        "vectorization": raw.get("vectorization"),
-        "backend": raw.get("backend"),
-        "disclosures": list(raw.get("disclosures") or []),
-        "warnings": list(raw.get("warnings") or []),
+        "partition": str(eval_result.partition),
+        "task": str(eval_result.task),
+        "n_rows": int(eval_result.n_rows),
+        "metrics": metrics,
+        "diagram_distances": distances,
+        "vectorization": str(eval_result.vectorization),
+        "backend": str(eval_result.backend),
+        "disclosures": list(eval_result.disclosures),
+        "warnings": list(eval_result.warnings),
     }
 
 

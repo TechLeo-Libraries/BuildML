@@ -1,45 +1,42 @@
-# Lattice Supply Graph
+# lattice-supply-graph
 
-**Tier B** cross-domain product proof: classical graph node features +
-knowledge-graph link prediction + classical supervised late-risk scoring.
+This script composes `session.graph`, `session.kg`, and classical
+`session.fit` on one synthetic supplier network. It is not a product BuildML ships.
 
-## Product narrative
+The script fits classical inductive graph features on a stratified node
+split, TransE link prediction on warehouse-route-hub triples, and a
+logistic late-delivery risk scorer on the same node split.
 
-Lattice models a synthetic supplier network. Community graphs feed classical
-node features; a logistics KG predicts missing links; a logistic model scores
-late-delivery risk. The platform:
+## Data
 
-1. Fits classical inductive graph features on a stratified node split
-2. Fits TransE link prediction on warehouse–route–hub triples
-3. Trains classical late-risk scoring on the same node split
+Synthetic supplier communities. Not a TMS extract.
 
-## Status
+## Leakage
 
-Run `script.py`. Outputs land under `results/` (summary and stage JSON)..
+Stratified node split before graph / supervised fit. Classical graph
+features from the train graph view. KG triple split before TransE. Test
+evaluate after each stage locks.
+
+## What fails if leakage is ignored
+
+Graph features conditioned on test labels overstate community risk.
+Training TransE on all triples makes link metrics meaningless. Supervised
+late-risk trained with test rows overstates TMS readiness.
 
 ## How to run
 
 ```bash
-python proofs\lattice-supply-graph\script.py
+python proofs/lattice-supply-graph/script.py
 ```
 
-## Leakage controls
+## What you'll get
 
-- Stratified node split before graph / supervised fit
-- Classical graph features from train graph view
-- KG triple split before TransE
-- Test evaluate after each stage locks
+`results/` summary and per-stage JSON.
 
-## What fails if leakage is ignored
-
-- Graph features conditioned on test labels overstate community risk
-- Training TransE on all triples makes link metrics meaningless
-- Supervised late-risk trained with test rows overstates TMS readiness
-
-## Upstream Tier A building blocks
+## Upstream
 
 `peer-lending-graph`, `graph-fraud-rings`, `logistics-kg-linkpred`,
-`kg-biomed-linkpred`, `loan-approval-classical`
+`kg-biomed-linkpred`, `loan-approval-classical`.
 
 ## Limitations
 

@@ -1,9 +1,4 @@
-"""Federated example: fit_federated → evaluate → predict → bundle.
-
-Honesty: local FedAvg-style simulation on a client/group column — not a
-distributed FL platform (Flower/OpenFL) and not cryptographic secure
-aggregation.
-"""
+"""Mirror of guides/quickstart-federated.md — local FedAvg, not a network stack."""
 
 from __future__ import annotations
 
@@ -16,13 +11,13 @@ from buildml import Session
 
 
 def main() -> None:
-    rng = np.random.default_rng(11)
+    rng = np.random.default_rng(0)
     rows: list[dict[str, object]] = []
     for client in range(8):
-        shift = rng.normal(0, 0.9, size=2)
-        for i in range(45):
+        shift = rng.normal(0, 0.8, size=2)
+        for i in range(40):
             label = i % 2
-            center = shift + (1.2 if label else -1.2)
+            center = shift + (1.1 if label else -1.1)
             x = rng.normal(center, 0.35, size=2)
             rows.append(
                 {
@@ -52,9 +47,8 @@ def main() -> None:
         backend="native",
         method="fedavg",
         estimator="sgd_classifier",
-        n_rounds=6,
+        n_rounds=5,
         local_epochs=2,
-        client_fraction=1.0,
     )
     print(
         f"backend={fit.backend} method={fit.method} estimator={fit.estimator_name} "

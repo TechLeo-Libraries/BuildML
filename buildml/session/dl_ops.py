@@ -2400,9 +2400,9 @@ def emit_k8s_serve_deployment(
     service_account: str | None = None,
     bundle_path: str = "/models/bundle",
     kind: str = "pipeline",
-    auth_store_name: str = "buildml-serve-secrets",
-    auth_store_field: str = "api-key",
-    emit_auth_store_document: bool = False,
+    store_name: str | None = None,
+    store_field: str | None = None,
+    emit_store_document: bool = False,
     trusted: bool = True,
 ) -> Any:
     """Emit a Kubernetes Deployment+Service YAML for managed serve (template only).
@@ -2441,12 +2441,13 @@ def emit_k8s_serve_deployment(
         In-container bundle path.
     kind:
         ``pipeline`` or ``torchscript``.
-    auth_store_name:
+    store_name:
         Kubernetes object name for ``BUILDML_API_KEY`` (name only, never a value).
-    auth_store_field:
-        Field name inside that object.
-    emit_auth_store_document:
-        Emit an empty Opaque Secret stub (no values) when True.
+        ``None`` uses the packaged template default.
+    store_field:
+        Field name inside that object. ``None`` uses the packaged template default.
+    emit_store_document:
+        Emit an empty Opaque store stub (no values) when True.
     trusted:
         Pass ``--trusted`` in the rendered command when True.
 
@@ -2470,9 +2471,9 @@ def emit_k8s_serve_deployment(
         service_account=service_account,
         bundle_path=bundle_path,
         kind=kind,
-        auth_store_name=auth_store_name,
-        auth_store_field=auth_store_field,
-        emit_auth_store_document=emit_auth_store_document,
+        store_name=store_name,
+        store_field=store_field,
+        emit_store_document=emit_store_document,
         trusted=trusted,
     )
     session._dl_k8s_result = result
@@ -2491,8 +2492,8 @@ def emit_k8s_serve_deployment(
             "service_account": service_account,
             "bundle_path": bundle_path,
             "kind": kind,
-            "auth_store_name": auth_store_name,
-            "emit_auth_store_document": emit_auth_store_document,
+            "store_name": store_name,
+            "emit_store_document": emit_store_document,
             "trusted": trusted,
         },
         result_summary=result.to_dict(),

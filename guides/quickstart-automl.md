@@ -12,7 +12,8 @@ enters selection. Session-global prep before `run` is refused, same as
 not causal discovery.
 
 [AutoML deep](automl-deep.md) ·
-[churn-automl-search](../proofs/churn-automl-search/)
+Paste: [`examples/automl_search_loop.py`](../examples/automl_search_loop.py) ·
+Evidence: [churn-automl-search](../proofs/churn-automl-search/)
 
 ---
 

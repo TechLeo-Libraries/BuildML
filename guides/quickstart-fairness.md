@@ -14,7 +14,8 @@ String labels need an explicit `positive_label`. Default `1` raises
 instead of inventing zero rates.
 
 [Fairness deep](fairness-deep.md) ·
-[loan-fairness-observational](../proofs/loan-fairness-observational/)
+Paste: [`examples/fairness_observational_loop.py`](../examples/fairness_observational_loop.py) ·
+Evidence: [loan-fairness-observational](../proofs/loan-fairness-observational/)
 
 ```python
 import numpy as np

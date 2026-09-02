@@ -171,13 +171,6 @@ def _probe_bind_host(host: str) -> str:
     return host
 
 
-def _socket_family(host: str) -> int:
-    cleaned = str(host).strip().lower().strip("[]")
-    if ":" in cleaned:
-        return socket.AF_INET6
-    return socket.AF_INET
-
-
 def _has_api_keys(api_keys: str | list[str] | tuple[str, ...] | None) -> bool:
     if api_keys is None:
         return False
@@ -247,14 +240,17 @@ def _ensure_bind_security(
 
 
 def _ensure_port_available(host: str, port: int) -> None:
-    probe_host = _probe_bind_host(host)
-    family = _socket_family(probe_host)
-    sock = socket.socket(family, socket.SOCK_STREAM)
+    """Pre-flight: is this TCP port free on loopback?
+
+    Always probes ``127.0.0.1``. The caller-supplied host is never used as
+    the bind address here, so a request to serve on ``0.0.0.0`` cannot open
+    a wildcard listener during the check. Uvicorn performs the real bind
+    after auth and TLS checks have already run.
+    """
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
-        if family == socket.AF_INET6:
-            sock.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 1)
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        sock.bind((probe_host.strip("[]"), port))
+        sock.bind(("127.0.0.1", port))
     except OSError as exc:
         raise ServingLaunchError(
             f"Cannot bind managed serving to {host}:{port}: {exc}"

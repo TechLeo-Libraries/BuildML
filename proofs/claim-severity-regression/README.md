@@ -1,40 +1,19 @@
 # claim-severity-regression
 
-## Business purpose
+You have vehicle age, driver age, prior claims, an urban flag, and deductible.
+You want a holdout severity (loss amount) in the target's units for reserving
+and pricing, not a classification accuracy.
 
-Estimate insurance claim severity (loss amount) from vehicle age, driver age, prior claims, urban flag, and deductible for reserving and pricing workflows.
+## Data
 
-## Data source
+In-repo synthetic severity table (`load_claim_severity_synthetic`):
+license-clear, deterministic. Not a real P&C claims extract.
 
-In-repo synthetic severity table (`load_claim_severity_synthetic`): license-clear, deterministic. **Not** a real P&C claims extract.
+## Leakage
 
-## Leakage controls
-
-- Random train / validation / test before any fitting
-- Scaler fit on train only
-- Model choice reads validation only
-- Test evaluated once after selection
-- Industry Ridge twin uses the same SplitPlan indices
-
-## BuildML API steps
-
-1. `Session.ingest` → `set_roles` → `split`
-2. `scale` → `fit(HistGradientBoostingRegressor)` (Ridge fallback)
-3. `evaluate(validation)` → `evaluate(test)`
-4. `save_pipeline`
-
-## Metrics
-
-Primary holdout: R², RMSE, MAE on test (see `results/results.json`).
-
-## Industry comparison (Tier C)
-
-Industry twin: sklearn `StandardScaler` + `Ridge` twin via `baseline_industry.py` → `results/comparison.json`.
-
-## Limitations
-
-- Synthetic severity; no Tweedie / GLM severity stack
-- Single seed; not actuarial certification
+Random train / validation / test before any fitting. The scaler learns from
+train only. Model choice reads validation only. Test is evaluated once after
+selection. The Ridge twin uses the same `SplitPlan` indices.
 
 ## How to run
 
@@ -42,3 +21,17 @@ Industry twin: sklearn `StandardScaler` + `Ridge` twin via `baseline_industry.py
 python proofs/claim-severity-regression/script.py
 python proofs/claim-severity-regression/baseline_industry.py
 ```
+
+## What you'll get
+
+`results/results.json` with holdout R^2, RMSE, and MAE on test.
+`results/comparison.json` is a sklearn `StandardScaler` + `Ridge` twin on the
+same split. The Session path fits `HistGradientBoostingRegressor` (Ridge
+fallback).
+
+## Limitations
+
+Synthetic severity; no Tweedie / GLM severity stack; single seed; not
+actuarial certification.
+
+Related: [Classical quickstart](../../guides/quickstart-classical.md).

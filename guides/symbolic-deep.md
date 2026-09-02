@@ -159,7 +159,7 @@ causal.
 `neuro_symbolic`. Session checkpoints do not embed either plan. Load
 with `trusted=True` only for a file you made.
 
-Runnable mirror: [`examples/symbolic_rules_loop.py`](../examples/symbolic_rules_loop.py).
+Paste: [`examples/symbolic_rules_loop.py`](../examples/symbolic_rules_loop.py).
 Benchmark: `python benchmarks/symbolic/rule_fidelity.py`.
 
 ## When it refuses

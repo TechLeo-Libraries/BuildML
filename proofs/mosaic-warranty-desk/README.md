@@ -1,45 +1,45 @@
-# Mosaic Warranty Desk
+# mosaic-warranty-desk
 
-**Tier B** cross-domain product proof: CBR case memory + symbolic guardrails +
-classical scoring for synthetic warranty claim decisions.
+This script composes `session.cbr`, `session.symbolic`, and classical
+`session.fit` on one synthetic warranty table. It is not a product BuildML
+ships.
 
-## Product narrative
+The script builds CBR case memory from train claims only, induces symbolic
+decision-tree guardrails on the same split, and fits a classical logistic
+scorer for calibrated approve scores.
 
-Mosaic adjudicates warranty claims by retrieving similar past cases, inducing
-explainable deny rules, and scoring with a classical logistic baseline:
+## Data
 
-1. Builds CBR case memory from train claims only
-2. Induces symbolic decision-tree guardrails on the same split
-3. Fits a classical supervised scorer for calibrated approve scores
+Synthetic warranty claims. Not a real OEM extract.
 
-## Status
+## Leakage
 
-Run `script.py`. Outputs land under `results/` (summary and stage JSON)..
+Stratified split before CBR / symbolic / classical. CBR case memory built
+from train cases only. Symbolic rules induced on the same train split;
+test after lock. Classical scorer uses `inject_split`: never refits on
+test.
+
+## What fails if leakage is ignored
+
+Putting test claims into CBR memory makes accuracy meaningless. Inducing
+guardrail rules on the full book looks more "fair" than they would in
+production. Fitting classical scores on the full table invents holdout ROC.
 
 ## How to run
 
 ```bash
-python proofs\mosaic-warranty-desk\script.py
+python proofs/mosaic-warranty-desk/script.py
 ```
 
-## Leakage controls
+## What you'll get
 
-- Stratified split before CBR / symbolic / classical
-- CBR case memory built from train cases only
-- Symbolic rules induced on the same train split; test after lock
-- Classical scorer uses `inject_split`: never refits on test
+`results/` summary and per-stage JSON.
 
-## What fails if leakage is ignored
-
-- Putting test claims into CBR memory makes accuracy meaningless
-- Inducing guardrail rules on the full book looks more “fair” than production
-- Fitting classical scores on the full table invents holdout ROC
-
-## Upstream Tier A building blocks
+## Upstream
 
 `warranty-cbr-memory`, `case-memory-claims`, `policy-rules-neuro-symbolic`,
-`compliance-neuro-symbolic`, `loan-approval-classical`
+`compliance-neuro-symbolic`, `loan-approval-classical`.
 
 ## Limitations
 
-Synthetic warranty claims: not a real OEM extract. CBR ≠ RAG.
+Synthetic warranty claims. CBR is not RAG.

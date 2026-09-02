@@ -1,44 +1,44 @@
-# Canyon Segment Studio
+# canyon-segment-studio
 
-**Tier B** cross-domain product proof: unsupervised clustering + classical
-segment propensity + decision thresholds for CRM targeting.
+This script composes `session.unsupervised`, classical `session.fit`, and
+`session.decision` on one synthetic CRM table. It is not a product BuildML
+ships.
 
-## Product narrative
+The script fits k-means on train-scaled PCA features (external labels
+eval-only), trains a logistic respond-propensity scorer on the same split,
+and selects threshold / knapsack outreach policies on validation only.
 
-Canyon segments a synthetic CRM portfolio, scores outreach propensity, and
-allocates a contact budget. The platform:
+## Data
 
-1. Fits k-means on train-scaled PCA features (external labels eval-only)
-2. Trains classical logistic respond propensity on the same split
-3. Selects threshold / knapsack outreach policies on validation only
+Synthetic CRM features. External labels exist only for evaluation.
 
-## Status
+## Leakage
 
-Run `script.py`. Outputs land under `results/` (summary and stage JSON)..
+Scale + PCA + clusters fit on train only. External segment labels used only
+for cluster evaluation. Propensity + decision policies selected on
+validation only. Test after each stage locks.
+
+## What fails if leakage is ignored
+
+Clustering with test-conditioned PCA overstates segment purity. Using
+external labels as features collapses unsupervised into supervised.
+Outreach thresholds tuned on test understate CRM cost.
 
 ## How to run
 
 ```bash
-python proofs\canyon-segment-studio\script.py
+python proofs/canyon-segment-studio/script.py
 ```
 
-## Leakage controls
+## What you'll get
 
-- Scale + PCA + clusters fit on train only
-- External segment labels used only for cluster evaluation
-- Propensity + decision policies selected on validation only
-- Test after each stage locks
+`results/` summary and per-stage JSON.
 
-## What fails if leakage is ignored
+## Upstream
 
-- Clustering with test-conditioned PCA overstates segment purity
-- Using external labels as features collapses unsupervised into supervised
-- Outreach thresholds tuned on test understate CRM cost
-
-## Upstream Tier A building blocks
-
-`sku-embedding-clusters`, `cluster-customer-segments`, `loan-approval-classical`,
-`campaign-budget-optimize`, `cost-sensitive-collections`
+`sku-embedding-clusters`, `cluster-customer-segments`,
+`loan-approval-classical`, `campaign-budget-optimize`,
+`cost-sensitive-collections`.
 
 ## Limitations
 

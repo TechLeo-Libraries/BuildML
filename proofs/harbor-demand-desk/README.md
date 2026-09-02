@@ -1,46 +1,46 @@
-﻿# Harbor Demand Desk
+# harbor-demand-desk
 
-**Tier B** cross-domain product proof: train-scoped TS analysis + lag forecast
-+ probabilistic residual intervals + knapsack allocation over forecast SKUs
-candidates.
+This script composes `session.timeseries`, `session.forecast`,
+`session.probabilistic`, and `session.decision` on one synthetic store
+series. It is not a product BuildML ships.
 
-## Product narrative
+The script runs train-scoped TS analysis, a lag forecast, residual
+intervals, and knapsack allocation over SKU-like candidates derived from
+the frozen forecast.
 
-Harbor is a demand / promo desk for a single synthetic store series. Planners
-need honest chronological evaluation, residual uncertainty, and a budgeted
-allocation of promo/inventory spend across a short horizon of SKU-like
-candidates derived from the frozen forecast.
+## Data
 
-## Status
+Single synthetic store series. Not a retail extract.
 
-Run `script.py`. Outputs land under `results/` (summary and stage JSON). plus
-`timeseries_analysis.json`, `forecast.json`, `probabilistic.json`,
-`allocation.json`.
+## Leakage
+
+`time_split` chronological train -> validation -> test.
+`session.timeseries.analyze(scope="train")` only. Forecast fit on train;
+selection metrics on validation. The probabilistic residual model uses its
+own internal split. Allocation policy is selected on a disjoint validation
+slice of future candidates.
+
+## What fails if leakage is ignored
+
+Shuffled date splits peek at future seasonality. STL/diagnostics on the
+full series contaminate discovery with the test regime. Calibrating
+intervals on test residuals reports perfect coverage by construction.
+Choosing allocation with realized future demand is not a planning decision.
 
 ## How to run
 
 ```bash
-python proofs\harbor-demand-desk\script.py
+python proofs/harbor-demand-desk/script.py
 ```
 
-## Leakage controls
+## What you'll get
 
-- `time_split` chronological train → validation → test
-- `session.timeseries.analyze(scope="train")` only
-- Forecast fit on train; selection metrics on validation
-- Probabilistic residual model uses its own internal split
-- Allocation policy selected on a disjoint validation slice of future candidates
+`results/` summary plus `timeseries_analysis.json`, `forecast.json`,
+`probabilistic.json`, and `allocation.json`.
 
-## What fails if leakage is ignored
+## Upstream
 
-- Shuffled date splits peek at future seasonality
-- STL/diagnostics on the full series contaminate discovery with the test regime
-- Calibrating intervals on test residuals reports perfect coverage by construction
-- Choosing allocation with realized future demand is not a desk decision
-
-## Upstream Tier A building blocks
-
-`store-sales-forecast`, `prob-interval-risk`, `cost-sensitive-collections`
+`store-sales-forecast`, `prob-interval-risk`, `cost-sensitive-collections`.
 
 ## Limitations
 
