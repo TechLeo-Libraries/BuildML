@@ -8,6 +8,11 @@ on:
   # or when validating CI wiring without an empty commit.
   workflow_dispatch:
 
+# Least-privilege GITHUB_TOKEN for every job. Jobs that only checkout and
+# test do not need write access to contents, issues, or pull requests.
+permissions:
+  contents: read
+
 jobs:
   test:
     runs-on: ubuntu-latest

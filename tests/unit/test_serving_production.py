@@ -241,8 +241,9 @@ def test_k8s_render_without_insecure_flags_by_default() -> None:
     yaml_text = render_serve_deployment(name="buildml-serve")
     assert "kind: Deployment" in yaml_text
     assert "kind: Service" in yaml_text
-    assert "kind: Secret" in yaml_text
     assert "secretKeyRef" in yaml_text
+    assert "stringData" not in yaml_text
+    assert "CHANGE_ME" not in yaml_text
     assert "readinessProbe" in yaml_text
     assert "livenessProbe" in yaml_text
     assert "buildml-serve:local" in yaml_text
@@ -252,11 +253,19 @@ def test_k8s_render_without_insecure_flags_by_default() -> None:
     assert "--trusted" in yaml_text
     assert "runAsNonRoot: true" in yaml_text
 
+    stub = render_serve_deployment(name="buildml-serve", emit_auth_store_document=True)
+    assert "kind: Secret" in stub
+    assert "stringData" not in stub
+    assert "CHANGE_ME" not in stub
+    assert "secretKeyRef" in stub
+
     example = _REPO_ROOT / "deploy" / "k8s" / "serve-deployment.example.yaml"
     assert example.is_file()
     example_text = example.read_text(encoding="utf-8")
     assert "--allow-insecure-public-bind" not in example_text
     assert "secretKeyRef" in example_text
+    assert "stringData" not in example_text
+    assert "CHANGE_ME" not in example_text
     assert "readinessProbe" in example_text
     assert "buildml-serve:local" in example_text
 
@@ -286,6 +295,18 @@ def test_serve_cli_config_and_basic_auth_flags() -> None:
     assert args.api_keys == ["k1"]
 
 
+def test_port_probe_never_uses_wildcard_bind() -> None:
+    from buildml.serving.launch import _is_wildcard_host, _probe_bind_host
+
+    assert _is_wildcard_host("0.0.0.0")
+    assert _is_wildcard_host("::")
+    assert _probe_bind_host("0.0.0.0") == "127.0.0.1"
+    assert _probe_bind_host("*") == "127.0.0.1"
+    assert _probe_bind_host("::") == "::1"
+    assert _probe_bind_host("127.0.0.1") == "127.0.0.1"
+    assert _probe_bind_host("10.0.0.8") == "10.0.0.8"
+
+
 def test_public_bind_accepts_basic_auth(tmp_path: Path) -> None:
     from buildml.serving.launch import _ensure_bind_security
 
@@ -302,6 +323,29 @@ def test_public_bind_accepts_basic_auth(tmp_path: Path) -> None:
             basic_auth=None,
             allow_insecure_public_bind=False,
         )
+
+
+@pytest.mark.skipif(not _FASTAPI_SPEC, reason="fastapi not installed")
+def test_metadata_does_not_leak_model_card_parse_errors(tmp_path: Path) -> None:
+    from starlette.testclient import TestClient
+
+    from buildml.serving.app import clear_serving_state, create_serving_app, get_serving_state
+
+    bundle = _tiny_bundle(tmp_path)
+    try:
+        app = create_serving_app(bundle, kind="pipeline", trusted=True)
+        state = get_serving_state()
+        if state.pipeline_bundle is not None:
+            state.pipeline_bundle.model_card = None
+        (bundle / "model_card.json").write_text("{not-json", encoding="utf-8")
+        body = TestClient(app).get("/metadata").json()
+        assert body["ok"] is True
+        warning = body.get("model_card_warning", "")
+        assert warning == "model_card.json exists but could not be parsed"
+        assert "Expecting" not in warning
+        assert "line 1" not in warning
+    finally:
+        clear_serving_state()
 
 
 def test_dl_capability_matrix_serving_notes() -> None:

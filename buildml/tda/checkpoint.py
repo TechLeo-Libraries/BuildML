@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 from typing import Any
 
@@ -13,10 +14,135 @@ from buildml._version import __version__
 from buildml.core.errors import ValidationError
 from buildml.core.serialization import joblib_load_trusted
 from buildml.tda.results import TdaEvalResult, TdaFitResult, TdaPlan
+from buildml.tda.types import TdaConfig
+
+_CREDENTIAL_KEY_RE = re.compile(
+    r"(secret|password|passwd|pwd|token|api[_-]?key|credential|private[_-]?key)",
+    re.IGNORECASE,
+)
+_TDA_CONFIG_META_KEYS = frozenset(TdaConfig.__dataclass_fields__)
+_TDA_MAPPER_META_KEYS = frozenset(
+    {
+        "n_train_mapper_points",
+        "n_mapper_nodes",
+        "n_mapper_edges",
+        "filter",
+        "clusterer",
+        "has_labels",
+    }
+)
 
 BUNDLE_FORMAT = "buildml.tda_bundle.v2"
 BUNDLE_FORMAT_V1 = "buildml.tda_bundle.v1"
 SUPPORTED_BUNDLE_FORMATS = (BUNDLE_FORMAT, BUNDLE_FORMAT_V1)
+
+
+def _public_mapping(
+    payload: dict[str, Any] | None,
+    allowed: frozenset[str],
+) -> dict[str, Any]:
+    """Copy allowlisted keys, dropping anything that looks like a credential."""
+    if not payload:
+        return {}
+    public: dict[str, Any] = {}
+    for key, value in payload.items():
+        name = str(key)
+        if name not in allowed or _CREDENTIAL_KEY_RE.search(name):
+            continue
+        if isinstance(value, dict):
+            continue
+        public[name] = value
+    return public
+
+
+def _public_plan_meta(plan: TdaPlan) -> dict[str, Any]:
+    """JSON sidecar for a TDA plan: primitives and allowlisted summaries only."""
+    raw = plan.to_dict()
+    config = raw.get("config")
+    mapper = raw.get("mapper_summary")
+    return {
+        "backend": raw.get("backend"),
+        "vectorization": raw.get("vectorization"),
+        "columns": list(raw.get("columns") or []),
+        "homology_dims": list(raw.get("homology_dims") or []),
+        "knn": raw.get("knn"),
+        "maxdim": raw.get("maxdim"),
+        "thresh": raw.get("thresh"),
+        "n_bins": raw.get("n_bins"),
+        "n_layers": raw.get("n_layers"),
+        "n_train_rows": raw.get("n_train_rows"),
+        "feature_dim": raw.get("feature_dim"),
+        "feature_names": list(raw.get("feature_names") or []),
+        "task": raw.get("task"),
+        "head": raw.get("head"),
+        "used_reduce_components": raw.get("used_reduce_components"),
+        "standardize": raw.get("standardize"),
+        "has_head": raw.get("has_head"),
+        "classes": [str(item) for item in (raw.get("classes") or [])],
+        "disclosures": list(raw.get("disclosures") or []),
+        "warnings": list(raw.get("warnings") or []),
+        "config": _public_mapping(
+            config if isinstance(config, dict) else None,
+            _TDA_CONFIG_META_KEYS,
+        ),
+        "mapper_summary": _public_mapping(
+            mapper if isinstance(mapper, dict) else None,
+            _TDA_MAPPER_META_KEYS,
+        )
+        or None,
+    }
+
+
+def _public_fit_meta(fit_result: TdaFitResult) -> dict[str, Any]:
+    raw = fit_result.to_dict()
+    return {
+        "backend": raw.get("backend"),
+        "vectorization": raw.get("vectorization"),
+        "n_train_rows": raw.get("n_train_rows"),
+        "feature_dim": raw.get("feature_dim"),
+        "homology_dims": list(raw.get("homology_dims") or []),
+        "knn": raw.get("knn"),
+        "columns": list(raw.get("columns") or []),
+        "task": raw.get("task"),
+        "head": raw.get("head"),
+        "train_score": raw.get("train_score"),
+        "used_reduce_components": raw.get("used_reduce_components"),
+        "disclosures": list(raw.get("disclosures") or []),
+        "warnings": list(raw.get("warnings") or []),
+    }
+
+
+def _public_eval_meta(eval_result: TdaEvalResult) -> dict[str, Any]:
+    raw = eval_result.to_dict()
+    metrics = raw.get("metrics")
+    distances = raw.get("diagram_distances")
+    return {
+        "partition": raw.get("partition"),
+        "task": raw.get("task"),
+        "n_rows": raw.get("n_rows"),
+        "metrics": {
+            str(key): float(value)
+            for key, value in (metrics or {}).items()
+            if not _CREDENTIAL_KEY_RE.search(str(key))
+            and isinstance(value, (int, float))
+        }
+        if isinstance(metrics, dict)
+        else {},
+        "diagram_distances": {
+            str(key): float(value)
+            for key, value in (distances or {}).items()
+            if not _CREDENTIAL_KEY_RE.search(str(key))
+            and isinstance(value, (int, float))
+        }
+        if isinstance(distances, dict)
+        else {},
+        "vectorization": raw.get("vectorization"),
+        "backend": raw.get("backend"),
+        "disclosures": list(raw.get("disclosures") or []),
+        "warnings": list(raw.get("warnings") or []),
+    }
+
+
 CHECKPOINT_BOUNDARY = (
     "TDA bundles, classical pipeline bundles, Torch trainer bundles, RAG "
     "bundles, and Session checkpoints are complementary, not interchangeable. "
@@ -84,9 +210,9 @@ def save_tda_bundle(
         "format": BUNDLE_FORMAT,
         "buildml_version": __version__,
         "compatibility": CHECKPOINT_BOUNDARY,
-        "plan": plan.to_dict(),
-        "fit": None if fit_result is None else fit_result.to_dict(),
-        "eval": None if eval_result is None else eval_result.to_dict(),
+        "plan": _public_plan_meta(plan),
+        "fit": None if fit_result is None else _public_fit_meta(fit_result),
+        "eval": None if eval_result is None else _public_eval_meta(eval_result),
     }
     (destination / "meta.json").write_text(json.dumps(meta, indent=2), encoding="utf-8")
     return destination

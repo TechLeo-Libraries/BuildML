@@ -490,7 +490,11 @@ export function openCockpitDrawer(teaching, opts = {}) {
   if (!drawer || !teaching) return;
   // Close sibling drawers so only one learning panel is open.
   opts.onCloseSiblings?.();
-  drawer.innerHTML = renderCockpitDrawerBody(teaching);
+  // Teaching strings are escaped by renderCockpitDrawerBody / learn_ui.
+  // Assign via <template> so user text is never written with innerHTML on the live drawer.
+  const template = document.createElement("template");
+  template.innerHTML = renderCockpitDrawerBody(teaching);
+  drawer.replaceChildren(template.content);
   drawer.classList.add("open");
   drawer.setAttribute("aria-hidden", "false");
   if (backdrop) backdrop.hidden = false;
@@ -523,16 +527,21 @@ function resolveTeaching(sheet, kind, dataset) {
     const key = dataset.ledgerGroup;
     const group = (sheet.ledger || []).find((g) => g.key === key);
     if (!group?.teaching) return null;
+    const wanted = String(dataset.ledgerK ?? "");
+    const item = flattenLedgerItems(group).find((it) => it.k === wanted);
+    if (!item) return null;
+    const metricKey = item.k;
+    const metricValue = item.v;
     const teaching = {
       ...group.teaching,
       kind: "ledger_metric",
-      metric_key: dataset.ledgerK,
-      metric_value: dataset.ledgerV,
-      title: `${dataset.ledgerK} = ${dataset.ledgerV}`,
-      beginner: `Metric “${dataset.ledgerK}” = ${dataset.ledgerV} inside “${group.title}”. ${
+      metric_key: metricKey,
+      metric_value: metricValue,
+      title: `${metricKey} = ${metricValue}`,
+      beginner: `Metric “${metricKey}” = ${metricValue} inside “${group.title}”. ${
         group.teaching.means || ""
       }`,
-      evidence: `From this report’s “${group.title}” group: ${dataset.ledgerK} → ${dataset.ledgerV}.`,
+      evidence: `From this report’s “${group.title}” group: ${metricKey} → ${metricValue}.`,
     };
     return teaching;
   }

@@ -132,6 +132,11 @@ def test_cockpit_view_uses_learn_ui_and_drawer() -> None:
     assert "calcBlock(" in view
     assert "whatToChange(" in view
     assert "/api/domains" not in view or "never" in view.lower()
+    # Drawer HTML is built from sheet data after escapeHtml, never from live DOM text.
+    assert "flattenLedgerItems(group).find" in view
+    assert "drawer.innerHTML" not in view
+    learn_ui = (_DASHBOARD / "static" / "js" / "learn_ui.js").read_text(encoding="utf-8")
+    assert 'replaceAll("\'", "&#39;")' in learn_ui or "&#39;" in learn_ui
 
     index = (_DASHBOARD / "templates" / "index.html").read_text(encoding="utf-8")
     assert "cockpit_view.js" in index

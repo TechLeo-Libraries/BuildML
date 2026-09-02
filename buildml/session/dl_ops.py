@@ -2400,18 +2400,18 @@ def emit_k8s_serve_deployment(
     service_account: str | None = None,
     bundle_path: str = "/models/bundle",
     kind: str = "pipeline",
-    api_key_secret_name: str = "buildml-serve-secrets",
-    api_key_secret_key: str = "api-key",
-    include_secret: bool = True,
+    auth_store_name: str = "buildml-serve-secrets",
+    auth_store_field: str = "api-key",
+    emit_auth_store_document: bool = False,
     trusted: bool = True,
 ) -> Any:
     """Emit a Kubernetes Deployment+Service YAML for managed serve (template only).
 
     Delegates to :func:`buildml.dl.k8s.write_serve_deployment`. Default image
-    ``buildml-serve:local`` matches ``deploy/serve/Dockerfile``. Manifest uses
-    a Secret for the API key and does not emit
-    ``--allow-insecure-public-bind``. Template only: not a managed cluster
-    orchestrator.
+    ``buildml-serve:local`` matches ``deploy/serve/Dockerfile``. Manifest
+    references an operator-created API-key store via ``secretKeyRef`` and
+    never writes key values or ``--allow-insecure-public-bind``. Template
+    only: not a managed cluster orchestrator.
 
     Parameters
     ----------
@@ -2441,12 +2441,12 @@ def emit_k8s_serve_deployment(
         In-container bundle path.
     kind:
         ``pipeline`` or ``torchscript``.
-    api_key_secret_name:
-        Secret name for ``BUILDML_API_KEY``.
-    api_key_secret_key:
-        Key inside the Secret.
-    include_secret:
-        Emit a placeholder Secret document when True.
+    auth_store_name:
+        Kubernetes object name for ``BUILDML_API_KEY`` (name only, never a value).
+    auth_store_field:
+        Field name inside that object.
+    emit_auth_store_document:
+        Emit an empty Opaque Secret stub (no values) when True.
     trusted:
         Pass ``--trusted`` in the rendered command when True.
 
@@ -2470,9 +2470,9 @@ def emit_k8s_serve_deployment(
         service_account=service_account,
         bundle_path=bundle_path,
         kind=kind,
-        api_key_secret_name=api_key_secret_name,
-        api_key_secret_key=api_key_secret_key,
-        include_secret=include_secret,
+        auth_store_name=auth_store_name,
+        auth_store_field=auth_store_field,
+        emit_auth_store_document=emit_auth_store_document,
         trusted=trusted,
     )
     session._dl_k8s_result = result
@@ -2491,8 +2491,8 @@ def emit_k8s_serve_deployment(
             "service_account": service_account,
             "bundle_path": bundle_path,
             "kind": kind,
-            "api_key_secret_name": api_key_secret_name,
-            "include_secret": include_secret,
+            "auth_store_name": auth_store_name,
+            "emit_auth_store_document": emit_auth_store_document,
             "trusted": trusted,
         },
         result_summary=result.to_dict(),

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from unittest import mock
 
@@ -127,3 +128,38 @@ def test_head_none_blocks_evaluate() -> None:
         session.evaluate_tda()
     tr = session.transform_tda(partition="test")
     assert tr.feature_dim > 0
+
+
+def test_tda_bundle_meta_omits_credential_shaped_keys(tmp_path: Path) -> None:
+    from buildml.tda.checkpoint import save_tda_bundle
+    from buildml.tda.results import TdaPlan
+
+    plan = TdaPlan(
+        vectorization="persistence_image",
+        columns=("a",),
+        homology_dims=(0, 1),
+        knn=8,
+        maxdim=1,
+        thresh=None,
+        n_bins=10,
+        n_layers=3,
+        n_train_rows=4,
+        feature_dim=2,
+        feature_names=("f0", "f1"),
+        task="classification",
+        head="none",
+        used_reduce_components=False,
+        standardize=True,
+        train_x_=np.zeros((4, 2)),
+        config={"backend": "native", "api_key": "should-not-persist", "knn": 8},
+        mapper_summary_={"n_mapper_nodes": 3, "password": "nope"},
+    )
+    dest = save_tda_bundle(tmp_path / "tda", plan)
+    meta = json.loads((dest / "meta.json").read_text(encoding="utf-8"))
+    blob = json.dumps(meta)
+    assert "should-not-persist" not in blob
+    assert "nope" not in blob
+    assert "api_key" not in blob
+    assert "password" not in blob
+    assert meta["plan"]["config"]["knn"] == 8
+    assert meta["plan"]["mapper_summary"]["n_mapper_nodes"] == 3

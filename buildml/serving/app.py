@@ -359,7 +359,8 @@ def create_serving_app(
 
     **Prediction errors become 400 or 500 by intent.** A
     :class:`~buildml.core.errors.ValidationError` means the request was wrong
-    and returns 400; anything else returns 500.
+    and returns 400 with that message. Unexpected failures return 500 with a
+    generic detail string so stack traces never reach the client.
 
     **The bundle loads once per process.** Running several uvicorn workers loads
     it once per worker.
@@ -550,8 +551,10 @@ def create_serving_app(
 
                 try:
                     body["model_card"] = json.loads(card_json.read_text(encoding="utf-8"))
-                except Exception as exc:  # noqa: BLE001
-                    body["model_card_warning"] = str(exc)
+                except (OSError, ValueError, TypeError, UnicodeError):
+                    body["model_card_warning"] = (
+                        "model_card.json exists but could not be parsed"
+                    )
             contract = getattr(st.pipeline_bundle, "contract", None)
             if contract is not None and hasattr(contract, "to_dict"):
                 body["schema_contract"] = contract.to_dict()
@@ -564,7 +567,10 @@ def create_serving_app(
         except ValidationError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
         except Exception as exc:  # noqa: BLE001
-            raise HTTPException(status_code=500, detail=str(exc)) from exc
+            raise HTTPException(
+                status_code=500,
+                detail="Prediction failed due to an internal serving error",
+            ) from exc
 
     @app.post("/predict/batch")
     def predict_batch(payload: dict[str, Any]) -> Any:
@@ -575,7 +581,10 @@ def create_serving_app(
         except ValidationError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
         except Exception as exc:  # noqa: BLE001
-            raise HTTPException(status_code=500, detail=str(exc)) from exc
+            raise HTTPException(
+                status_code=500,
+                detail="Prediction failed due to an internal serving error",
+            ) from exc
 
     return app
 

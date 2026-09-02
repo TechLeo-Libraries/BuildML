@@ -962,9 +962,9 @@ class DlSessionMixin:
         service_account: str | None = None,
         bundle_path: str = "/models/bundle",
         kind: str = "pipeline",
-        api_key_secret_name: str = "buildml-serve-secrets",
-        api_key_secret_key: str = "api-key",
-        include_secret: bool = True,
+        auth_store_name: str = "buildml-serve-secrets",
+        auth_store_field: str = "api-key",
+        emit_auth_store_document: bool = False,
         trusted: bool = True,
     ) -> Any:
         """Emit a Kubernetes Deployment+Service YAML for managed serve (template only).
@@ -995,9 +995,9 @@ class DlSessionMixin:
             service_account=service_account,
             bundle_path=bundle_path,
             kind=kind,
-            api_key_secret_name=api_key_secret_name,
-            api_key_secret_key=api_key_secret_key,
-            include_secret=include_secret,
+            auth_store_name=auth_store_name,
+            auth_store_field=auth_store_field,
+            emit_auth_store_document=emit_auth_store_document,
             trusted=trusted,
         )
 

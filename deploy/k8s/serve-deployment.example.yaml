@@ -1,4 +1,4 @@
-# Example Kubernetes Deployment + Service + Secret for BuildML managed serve.
+# Example Kubernetes Deployment + Service for BuildML managed serve.
 # Prefer Session.emit_k8s_serve_deployment / buildml.dl.k8s.write_serve_deployment
 # to render parameterized copies.
 #
@@ -6,24 +6,15 @@
 #   docker build -f deploy/serve/Dockerfile -t buildml-serve:local .
 #   # then retag/push to your registry and set image: below
 #
+# Create the API-key store out of band (never write key values into this file):
+#   kubectl create secret generic buildml-serve-secrets \
+#     --from-literal=api-key="$BUILDML_API_KEY"
+#
 # Honesty:
 # - Template only — not live multi-cluster orchestration
 # - Not a Helm chart / control-plane product
 # - Not managed cloud IAM; wire TLS/Ingress, volumes, and RBAC yourself
-# - Does NOT enable insecure public bind override (API key from Secret is required)
-apiVersion: v1
-kind: Secret
-metadata:
-  name: buildml-serve-secrets
-  namespace: default
-  labels:
-    app.kubernetes.io/name: buildml-serve
-    app.kubernetes.io/part-of: buildml
-type: Opaque
-stringData:
-  # Replace before apply. Prefer `kubectl create secret generic ...` in real clusters.
-  api-key: "CHANGE_ME"
----
+# - Does NOT enable insecure public bind override (API key from a cluster store is required)
 apiVersion: apps/v1
 kind: Deployment
 metadata:

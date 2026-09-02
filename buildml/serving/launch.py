@@ -152,6 +152,32 @@ def _is_loopback_host(host: str) -> bool:
     return normalized in {"127.0.0.1", "localhost", "::1"}
 
 
+def _is_wildcard_host(host: str) -> bool:
+    return str(host).strip().lower() in {"0.0.0.0", "::", "[::]", "*"}
+
+
+def _probe_bind_host(host: str) -> str:
+    """Address used only for the pre-flight port check.
+
+    A probe socket must never bind to a wildcard (``0.0.0.0`` / ``::``).
+    That would briefly listen on every interface. Uvicorn performs the
+    real bind after auth and TLS checks have already run.
+    """
+    normalized = str(host).strip().lower()
+    if normalized in {"0.0.0.0", "*"}:
+        return "127.0.0.1"
+    if normalized in {"::", "[::]"}:
+        return "::1"
+    return host
+
+
+def _socket_family(host: str) -> int:
+    cleaned = str(host).strip().lower().strip("[]")
+    if ":" in cleaned:
+        return socket.AF_INET6
+    return socket.AF_INET
+
+
 def _has_api_keys(api_keys: str | list[str] | tuple[str, ...] | None) -> bool:
     if api_keys is None:
         return False
@@ -221,10 +247,14 @@ def _ensure_bind_security(
 
 
 def _ensure_port_available(host: str, port: int) -> None:
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    probe_host = _probe_bind_host(host)
+    family = _socket_family(probe_host)
+    sock = socket.socket(family, socket.SOCK_STREAM)
     try:
+        if family == socket.AF_INET6:
+            sock.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 1)
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        sock.bind((host, port))
+        sock.bind((probe_host.strip("[]"), port))
     except OSError as exc:
         raise ServingLaunchError(
             f"Cannot bind managed serving to {host}:{port}: {exc}"
