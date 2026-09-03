@@ -67,6 +67,8 @@ def test_proof_index_run_commands_point_at_real_files() -> None:
             missing.append(f"proofs/{slug}/{name}")
     assert not missing, f"proofs/README.md runs missing files: {missing}"
     assert "loan-approval-classical/baseline_industry.py" not in text
+    assert "checkout-only" in text
+    assert "examples/breast_cancer_classical_loop.py" in text
 
 
 def test_every_example_script_is_listed_in_examples_readme() -> None:
@@ -168,6 +170,29 @@ def test_torch_example_skips_without_the_extra() -> None:
 def test_cbr_example_forces_sklearn_backend() -> None:
     text = (EXAMPLES / "cbr_knn_loop.py").read_text(encoding="utf-8")
     assert 'backend="sklearn"' in text
+
+
+def test_breast_cancer_example_is_pasteable() -> None:
+    text = (EXAMPLES / "breast_cancer_classical_loop.py").read_text(encoding="utf-8")
+    tree = ast.parse(text)
+    imported: set[str] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            imported.update(alias.name for alias in node.names)
+        elif isinstance(node, ast.ImportFrom) and node.module:
+            imported.add(node.module)
+    assert not any(name == "proofs" or name.startswith("proofs.") for name in imported)
+    assert "load_breast_cancer" in text
+    assert "session.calibration()" in text
+    assert "session.tune_threshold" in text
+
+
+def test_fairness_example_shows_group_split() -> None:
+    text = (EXAMPLES / "fairness_observational_loop.py").read_text(encoding="utf-8")
+    assert "group_split" in text
+    assert '"household": "group"' in text
+    guide = (GUIDES / "quickstart-fairness.md").read_text(encoding="utf-8")
+    assert "group_split" in guide
 
 
 def test_example_bundles_stay_beside_the_script() -> None:

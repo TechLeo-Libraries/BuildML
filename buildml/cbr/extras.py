@@ -25,11 +25,51 @@ buildml.core.errors.MissingExtraError : The error, with its install hint.
 from __future__ import annotations
 
 import importlib.util
+import os
 import sys
 from typing import Any
 
 from buildml.core.errors import MissingExtraError
 from buildml.dl.extras import _subprocess_import_ok, torch_available, torch_spec_available
+
+WINDOWS_INDUSTRY_ANN_ENV = "BUILDML_ALLOW_CBR_INDUSTRY_WINDOWS"
+WINDOWS_CBR_TORCH_ENV = "BUILDML_ALLOW_CBR_TORCH_WINDOWS"
+
+
+def windows_industry_ann_opt_in() -> bool:
+    """Return whether the caller accepted in-process ANN on Windows.
+
+    hnswlib and faiss wheels can hard-crash the interpreter on Windows
+    (access violation) even when a subprocess import probe succeeds.
+    ``backend=None`` therefore stays on exact sklearn kNN unless this
+    returns True.
+    """
+    return os.environ.get(WINDOWS_INDUSTRY_ANN_ENV, "").strip() == "1"
+
+
+def windows_industry_ann_refused() -> bool:
+    """Return whether in-process industry ANN must not be entered.
+
+    True on Windows unless ``BUILDML_ALLOW_CBR_INDUSTRY_WINDOWS=1``.
+    Other platforms always return False.
+    """
+    return sys.platform == "win32" and not windows_industry_ann_opt_in()
+
+
+def windows_cbr_torch_opt_in() -> bool:
+    """Return whether the caller accepted in-process Torch on Windows."""
+    return os.environ.get(WINDOWS_CBR_TORCH_ENV, "").strip() == "1"
+
+
+def windows_cbr_torch_refused() -> bool:
+    """Return whether in-process CBR Torch must not be entered.
+
+    True on Windows unless ``BUILDML_ALLOW_CBR_TORCH_WINDOWS=1``.
+    Other platforms always return False. Same class of failure as
+    industry ANN: a subprocess probe can succeed while an in-process
+    import access-violates.
+    """
+    return sys.platform == "win32" and not windows_cbr_torch_opt_in()
 
 
 def hnswlib_spec_present() -> bool:
@@ -325,6 +365,8 @@ def require_torch_cbr(*, feature: str = "CBR learned-metric encoder"):
 
 
 __all__ = [
+    "WINDOWS_CBR_TORCH_ENV",
+    "WINDOWS_INDUSTRY_ANN_ENV",
     "ann_library_available",
     "cbr_industry_available",
     "faiss_available",
@@ -338,4 +380,8 @@ __all__ = [
     "text_embedding_available",
     "torch_available",
     "torch_spec_available",
+    "windows_cbr_torch_opt_in",
+    "windows_cbr_torch_refused",
+    "windows_industry_ann_opt_in",
+    "windows_industry_ann_refused",
 ]

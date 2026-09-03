@@ -5,13 +5,16 @@ can run a loop without copying out of Markdown. They are not proofs: no
 JSON harness, no industry twin. Behavioral guarantees live in `tests/`.
 End-to-end evidence lives in [`proofs/`](../proofs/README.md).
 
-Start here for the classical loop. The guide snippet is a 12-row table
-you can read; the file draws 120 rows so the printed metrics are not
-three-row noise. Use
+Start here for the classical loop. The guide snippet is a short table
+you can read. The file draws 120 rows, calibrates, and tunes a
+threshold on validation so the printed metrics are not three-row noise.
+Use
 [loan-approval-classical](../proofs/loan-approval-classical/) when you
-want the same spine on a fuller synthetic credit table, and
-[breast-cancer-classical](../proofs/breast-cancer-classical/) when you
-want a public dataset.
+want the same spine on a fuller synthetic credit table. For a public
+table you can paste without the proof harness, use
+[`breast_cancer_classical_loop.py`](breast_cancer_classical_loop.py).
+The matching proof is
+[breast-cancer-classical](../proofs/breast-cancer-classical/).
 
 **Install:**
 
@@ -23,6 +26,7 @@ pip install buildml
 
 ```bash
 python examples/classical_loan_loop.py
+python examples/breast_cancer_classical_loop.py
 python examples/leakage_cv_recipe.py
 python examples/forecast_lag_loop.py
 ```
@@ -38,6 +42,7 @@ and confirmation gates. Use [quickstart-ai](../guides/quickstart-ai.md).
 | Script | Guide | Evidence |
 | --- | --- | --- |
 | `classical_loan_loop.py` | [classical-end-to-end](../guides/classical-end-to-end.md), [classical quickstart](../guides/quickstart-classical.md) | [loan-approval-classical](../proofs/loan-approval-classical/) |
+| `breast_cancer_classical_loop.py` | [classical quickstart](../guides/quickstart-classical.md) | [breast-cancer-classical](../proofs/breast-cancer-classical/) |
 | `leakage_cv_recipe.py` | [leakage-cv-recipes](../guides/leakage-cv-recipes.md) | [loan-approval-classical](../proofs/loan-approval-classical/) |
 | `evolutionary_search_loop.py` | [classical-diagnostics-search](../guides/classical-diagnostics-search.md) | [loan-approval-classical](../proofs/loan-approval-classical/) |
 | `unsupervised_cluster_loop.py` | [quickstart-unsupervised](../guides/quickstart-unsupervised.md) | [cluster-customer-segments](../proofs/cluster-customer-segments/) |

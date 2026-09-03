@@ -240,7 +240,7 @@ def calibration_report(
     split_plan: SplitPlan | None,
     fit_result: FitResult,
     *,
-    partition: Literal["train", "validation", "test"] = "test",
+    partition: Literal["train", "validation", "test"] = "validation",
     n_bins: int = 10,
     export_figures: str | Path | None = None,
     export_html: str | Path | None = None,
@@ -270,7 +270,7 @@ def calibration_report(
     fit_result:
         A fitted classifier that provides probabilities.
     partition:
-        Which partition to assess. Defaults to test.
+        Which partition to assess. Defaults to validation.
     n_bins:
         Confidence buckets. More bins resolve the curve finely and put fewer
         rows in each, making every point noisier.
@@ -443,7 +443,7 @@ def threshold_report(
     split_plan: SplitPlan | None,
     fit_result: FitResult,
     *,
-    partition: Literal["train", "validation", "test"] = "test",
+    partition: Literal["train", "validation", "test"] = "validation",
     fp_cost: float | None = None,
     fn_cost: float | None = None,
     tp_benefit: float = 0.0,

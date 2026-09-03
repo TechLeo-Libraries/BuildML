@@ -1,8 +1,9 @@
 """Mirror of guides/classical-end-to-end.md — loan approval loop.
 
-The guide snippet uses a 12-row table you can read. This file draws 120
-rows so the printed metrics are not three-row noise. It is still a toy,
-not a credit model.
+The guide snippet uses a short table you can read. This file draws 120
+rows, then calibrates and tunes a threshold on validation, so the
+printed metrics are not three-row noise. It is still a toy, not a
+credit model.
 """
 
 from __future__ import annotations

@@ -155,8 +155,8 @@ print(
 session.encode(method="onehot").scale(method="standard")
 session.fit(LogisticRegression(max_iter=500), task="classification")
 
-session.calibration(partition="validation")
-session.tune_threshold(partition="validation", fp_cost=1.0, fn_cost=5.0)
+session.calibration()  # default partition is validation
+session.tune_threshold(fp_cost=1.0, fn_cost=5.0)
 # Persist the same operating point as a DecisionPlan (see guides/quickstart-optimize.md):
 # session.decision.fit(method="threshold", partition="validation", fp_cost=1.0, fn_cost=5.0)
 session.feature_importance(partition="validation", n_repeats=8)

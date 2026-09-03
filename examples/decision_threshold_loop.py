@@ -46,7 +46,15 @@ def main() -> None:
         fp_cost=1.0,
         fn_cost=4.0,
     )
-    print("threshold fit:", thr.to_dict())
+    print(
+        "threshold fit:",
+        {
+            "method": thr.method,
+            "threshold": thr.threshold,
+            "partition": thr.partition,
+            "basis": thr.recommendation_basis,
+        },
+    )
 
     # Classical diagnostic still works (same engine; does not replace the plan)
     diagnostic = session.tune_threshold(
@@ -58,7 +66,7 @@ def main() -> None:
     )
 
     eval_thr = session.decision.evaluate(partition="test")
-    print("threshold eval:", eval_thr.to_dict())
+    print("threshold eval:", eval_thr.metrics, "cost", eval_thr.realized_cost)
 
     # 2) Budget-constrained selection using model scores + row costs
     knap = session.decision.fit(
@@ -68,9 +76,17 @@ def main() -> None:
         cost_column="cost",
         id_column="id",
         score_source="model_proba",
+        backend="native",
         knapsack_solver="dp",
     )
-    print("knapsack fit:", knap.to_dict())
+    print(
+        "knapsack fit:",
+        {
+            "method": knap.method,
+            "budget": knap.budget,
+            "n_selected": knap.n_selected,
+        },
+    )
     applied = session.decision.apply(partition="test")
     print(
         f"selected={applied.n_selected} value={applied.selected_value} "

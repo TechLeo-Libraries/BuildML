@@ -32,7 +32,11 @@ from typing import Any
 
 import numpy as np
 
-from buildml.cbr.extras import require_ann_library
+from buildml.cbr.extras import (
+    WINDOWS_INDUSTRY_ANN_ENV,
+    require_ann_library,
+    windows_industry_ann_refused,
+)
 from buildml.core.errors import ValidationError
 
 
@@ -132,6 +136,13 @@ def build_ann_index(
     query_ann_index : Searching what this builds.
     add_vectors_to_ann_index : Extending it during retention.
     """
+    if windows_industry_ann_refused():
+        raise ValidationError(
+            "Industry ANN is refused on Windows because hnswlib and faiss can "
+            "hard-crash the process. Set "
+            f"{WINDOWS_INDUSTRY_ANN_ENV}=1 if you accept that risk, or use "
+            "backend='sklearn'."
+        )
     data = _as_float32(vectors)
     dim = int(data.shape[1])
     if dim == 0:

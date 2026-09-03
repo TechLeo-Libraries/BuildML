@@ -10,12 +10,15 @@ from train only, and the model. If you try to prepare or fit before a
 split, it stops you.
 
 A longer walk with dirtier data is
-[classical end-to-end](classical-end-to-end.md). Paste the 12-row loop from
-[`examples/classical_loan_loop.py`](../examples/classical_loan_loop.py).
-The proof on a fuller synthetic credit table is
+[classical end-to-end](classical-end-to-end.md). Paste
+[`examples/classical_loan_loop.py`](../examples/classical_loan_loop.py)
+(120 rows, calibration and threshold on validation). The snippet below
+is a short table so you can read every cell. The proof on a fuller
+synthetic credit table is
 [loan-approval-classical](../proofs/loan-approval-classical/). Wisconsin
 breast cancer is
-[breast-cancer-classical](../proofs/breast-cancer-classical/).
+[breast-cancer-classical](../proofs/breast-cancer-classical/) or
+[`examples/breast_cancer_classical_loop.py`](../examples/breast_cancer_classical_loop.py).
 
 ## A first loop
 
@@ -73,6 +76,9 @@ What the Session actually did:
   integer label would look like a quantity.
 - `evaluate` defaults to `test`. Use validation while you are still
   choosing. Every extra look at test spends a little of its independence.
+  `calibration` and `tune_threshold` default to validation. A split
+  without a validation partition raises; pass `partition="test"` only to
+  measure a frozen model.
 
 If you need to fill a categorical gap, impute with
 `strategy="most_frequent"` (or a constant) on those columns, then

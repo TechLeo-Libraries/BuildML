@@ -54,6 +54,28 @@ print(report.classical_metrics_by_group["A"]["f1"])
 print(report.to_markdown().splitlines()[0])
 ```
 
+When several rows share a household, site, or other entity, split by
+that entity. Do not use the sensitive column as the group key: that
+would put every member of one group on one side of the split.
+
+```python
+household = np.repeat(np.arange(n // 8), 8)[:n]
+frame["household"] = household
+grouped = (
+    Session.ingest(frame)
+    .set_roles(
+        {
+            "x": "feature",
+            "group": "ignore",
+            "household": "group",
+            "decision": "target",
+        }
+    )
+    .group_split(test_size=0.25, validation_size=0.2, random_state=0)
+    .fit(LogisticRegression(max_iter=500), task="classification")
+)
+```
+
 Bridge after classical evaluate:
 
 ```python

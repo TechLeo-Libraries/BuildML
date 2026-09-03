@@ -23,12 +23,16 @@ from __future__ import annotations
 from typing import Any, Literal
 
 from buildml.cbr.extras import (
+    WINDOWS_CBR_TORCH_ENV,
+    WINDOWS_INDUSTRY_ANN_ENV,
     cbr_industry_available,
     faiss_available,
     faiss_spec_present,
     hnswlib_available,
     hnswlib_spec_present,
     text_embedding_available,
+    windows_cbr_torch_refused,
+    windows_industry_ann_refused,
 )
 from buildml.dl.extras import torch_available, torch_spec_available
 
@@ -115,7 +119,10 @@ def cbr_capability_matrix() -> dict[str, Any]:
                 "notes": (
                     "Fast approximate retrieval on standardized numeric features "
                     "using hnswlib (buildml[cbr-industry]) or faiss-cpu "
-                    "(buildml[cbr-faiss]) when installed."
+                    "(buildml[cbr-faiss]) when installed. On Windows, "
+                    "backend=None stays sklearn and backend='industry' raises "
+                    f"unless {WINDOWS_INDUSTRY_ANN_ENV}=1, because in-process "
+                    "ANN wheels can crash the interpreter."
                 ),
             },
             "embedding": {
@@ -146,7 +153,10 @@ def cbr_capability_matrix() -> dict[str, Any]:
                 ),
                 "notes": (
                     "Lite supervised metric encoder (MLP) on train cases; retrieve "
-                    "neighbors in embedding space (buildml[torch])."
+                    "neighbors in embedding space (buildml[torch]). On Windows, "
+                    "backend='torch' raises unless "
+                    f"{WINDOWS_CBR_TORCH_ENV}=1, because in-process Torch "
+                    "wheels can crash the interpreter."
                 ),
             },
         },
@@ -228,6 +238,8 @@ def cbr_capability_matrix() -> dict[str, Any]:
 
 
 def _default_backend_when_installed() -> str:
+    if windows_industry_ann_refused():
+        return "sklearn"
     if cbr_industry_available():
         return "industry"
     return "sklearn"
@@ -394,6 +406,13 @@ def resolve_backend_metric(
     if resolved_backend == "industry":
         from buildml.cbr.extras import cbr_industry_available
 
+        if windows_industry_ann_refused():
+            raise ValidationError(
+                "backend='industry' is refused on Windows because hnswlib and "
+                "faiss can hard-crash the process even when a subprocess probe "
+                f"succeeds. Set {WINDOWS_INDUSTRY_ANN_ENV}=1 if you accept that "
+                "risk, or use backend='sklearn'."
+            )
         if metric_key not in INDUSTRY_METRICS:
             raise ValidationError(
                 f"metric='{metric}' is not valid for backend='industry'. "
@@ -418,6 +437,13 @@ def resolve_backend_metric(
         if not text_embedding_available():
             raise MissingExtraError("rag or ssl", "backend='embedding'")
         return resolved_backend, metric_key
+    if resolved_backend == "torch" and windows_cbr_torch_refused():
+        raise ValidationError(
+            "backend='torch' is refused on Windows because Torch can "
+            "hard-crash the process even when a subprocess probe succeeds. "
+            f"Set {WINDOWS_CBR_TORCH_ENV}=1 if you accept that risk, or use "
+            "backend='sklearn'."
+        )
 
     matrix = cbr_capability_matrix()["backends"]
     entry = matrix.get(resolved_backend)

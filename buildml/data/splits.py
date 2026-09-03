@@ -729,7 +729,11 @@ def frame_for_partition(
     """
     indices = plan.indices_for(partition)
     if not indices and partition == "validation":
-        raise ValidationError("No validation partition exists on this split plan")
+        raise ValidationError(
+            "No validation partition exists on this split plan. "
+            "Call split(..., validation_size=...) or pass partition='test' "
+            "explicitly if you only have train and test."
+        )
     return dataset._ensure_pandas().iloc[list(indices)].copy()
 
 

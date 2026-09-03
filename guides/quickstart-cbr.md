@@ -7,7 +7,9 @@ pip install buildml
 Train-only case memory, then kNN retrieve / reuse. Default is k=5 and
 euclidean. `backend=None` picks the industry ANN when hnswlib or faiss
 imports (`buildml[cbr-industry]` or `buildml[cbr-faiss]`), otherwise
-exact sklearn kNN.
+exact sklearn kNN. On Windows the default stays sklearn: in-process ANN
+wheels can crash the interpreter. `backend="industry"` there raises
+unless `BUILDML_ALLOW_CBR_INDUSTRY_WINDOWS=1`.
 `retain` refuses validation and test rows. This is not RAG.
 
 [CBR deep](cbr-deep.md) ·
@@ -32,6 +34,7 @@ session = (
 )
 
 # backend=None → industry ANN when hnswlib or faiss imports, else sklearn
+# (Windows stays sklearn unless BUILDML_ALLOW_CBR_INDUSTRY_WINDOWS=1)
 print(session.cbr.capability_matrix()["default_backend_when_installed"])
 
 fit = session.cbr.fit(
@@ -65,7 +68,9 @@ session.cbr.save_bundle("artifacts/cbr_bundle")
 
 Optional extras: `buildml[cbr-industry]` (hnswlib ANN),
 `buildml[cbr-faiss]` (faiss-cpu peer), `buildml[rag|ssl]`
-(text embeddings), `buildml[torch]` (learned metric encoder). Included in
+(text embeddings), `buildml[torch]` (learned metric encoder). On
+Windows, `backend="torch"` also raises unless
+`BUILDML_ALLOW_CBR_TORCH_WINDOWS=1`. Included in
 `buildml[production]`.
 
 Related next: learning to rank (LTR).

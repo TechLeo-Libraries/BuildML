@@ -48,6 +48,29 @@ def test_calibration_threshold_importance_learning_curve() -> None:
     assert "final_gap" in lc.payload
 
 
+def test_calibration_refuses_missing_validation() -> None:
+    frame = pd.DataFrame(
+        {
+            "x1": list(range(40)),
+            "x2": [i * 0.5 for i in range(40)],
+            "y": [0] * 20 + [1] * 20,
+        }
+    )
+    session = (
+        Session.ingest(frame)
+        .set_roles({"x1": "feature", "x2": "feature", "y": "target"})
+        .split(test_size=0.25, stratify=True, random_state=0)
+        .scale(method="standard")
+        .fit(LogisticRegression(max_iter=500), task="classification")
+    )
+    with pytest.raises(ValidationError, match="validation"):
+        session.calibration()
+    with pytest.raises(ValidationError, match="validation"):
+        session.tune_threshold()
+    explicit = session.calibration(partition="test")
+    assert explicit.kind == "calibration"
+
+
 def test_resample_train_only_or_missing_extra() -> None:
     frame = pd.DataFrame(
         {

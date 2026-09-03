@@ -10,6 +10,16 @@ from buildml.core.errors import ValidationError
 from buildml.optimize.extras import require_pulp
 
 
+def _pulp_selected(pulp: Any, variable: Any) -> bool:
+    """Return whether a binary PuLP variable is selected after solve.
+
+    ``LpVariable.value`` is a method on current PuLP. ``pulp.value`` is the
+    portable reader.
+    """
+    raw = pulp.value(variable)
+    return raw is not None and float(raw) > 0.5
+
+
 def select_knapsack_pulp(
     values: np.ndarray,
     costs: np.ndarray,
@@ -101,7 +111,7 @@ def select_knapsack_pulp(
     chosen = [
         int(i)
         for i in eligible.tolist()
-        if x_vars[int(i)].value is not None and float(x_vars[int(i)].value) > 0.5
+        if _pulp_selected(pulp, x_vars[int(i)])
     ]
     sel = np.asarray(chosen, dtype=int)
     fracs = [1.0] * len(chosen)

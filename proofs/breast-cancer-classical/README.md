@@ -36,3 +36,5 @@ on the same `SplitPlan`.
 Small n; single seed; not clinical certification.
 
 Related: [Classical quickstart](../../guides/quickstart-classical.md).
+Paste without the harness:
+[`examples/breast_cancer_classical_loop.py`](../../examples/breast_cancer_classical_loop.py).

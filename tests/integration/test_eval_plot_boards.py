@@ -163,7 +163,7 @@ def test_calibration_html_export_has_findings(tmp_path: Path) -> None:
     session = (
         Session.ingest(frame)
         .set_roles({"x1": "feature", "x2": "feature", "y": "target"})
-        .split(test_size=0.25, stratify=True, random_state=0)
+        .split(test_size=0.25, validation_size=0.2, stratify=True, random_state=0)
         .scale()
         .fit(LogisticRegression(max_iter=500), task="classification")
     )

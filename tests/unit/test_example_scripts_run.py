@@ -14,13 +14,18 @@ EXAMPLES = ROOT / "examples"
 # Fast core loops. Extra-gated scripts (torch, tda, graph) skip themselves.
 CORE_SMOKE: tuple[str, ...] = (
     "classical_loan_loop.py",
+    "breast_cancer_classical_loop.py",
     "leakage_cv_recipe.py",
     "cbr_knn_loop.py",
     "fairness_observational_loop.py",
     "forecast_lag_loop.py",
+    "timeseries_analyze_loop.py",
     "anomaly_iforest_loop.py",
     "symbolic_rules_loop.py",
     "unsupervised_cluster_loop.py",
+    "recommender_item_knn_loop.py",
+    "decision_threshold_loop.py",
+    "synthetic_copula_loop.py",
 )
 
 

@@ -159,6 +159,8 @@ def test_domain_quickstart_contracts_match_resolvers() -> None:
     import inspect
 
     from buildml.cbr.catalog import cbr_industry_available, resolve_backend_metric
+    from buildml.cbr.extras import windows_industry_ann_refused
+    from buildml.session.mixins.classical import ClassicalSessionMixin
     from buildml.federated.catalog import flwr_runtime_available
     from buildml.federated.catalog import resolve_backend as resolve_federated_backend
     from buildml.ranking.catalog import ranking_capability_matrix, resolve_backend_method
@@ -200,7 +202,15 @@ def test_domain_quickstart_contracts_match_resolvers() -> None:
     assert cbr.parameters["k"].default == 5
     assert cbr.parameters["metric"].default == "euclidean"
     resolved_cbr, _ = resolve_backend_metric(backend=None, metric="euclidean")
-    assert resolved_cbr == ("industry" if cbr_industry_available() else "sklearn")
+    if windows_industry_ann_refused():
+        assert resolved_cbr == "sklearn"
+    else:
+        assert resolved_cbr == ("industry" if cbr_industry_available() else "sklearn")
+
+    classical = inspect.signature(ClassicalSessionMixin.calibration)
+    assert classical.parameters["partition"].default == "validation"
+    tune = inspect.signature(ClassicalSessionMixin.tune_threshold)
+    assert tune.parameters["partition"].default == "validation"
 
     rl = inspect.signature(RlSessionMixin.fit_rl)
     assert rl.parameters["algorithm"].default == "linucb"

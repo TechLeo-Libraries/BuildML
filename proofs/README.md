@@ -8,6 +8,11 @@ products.
 Paste the loop first. That is [`examples/`](../examples/). Then run one
 proof for the job you actually have.
 
+They are checkout-only. Scripts import `proofs._lib` and expect the repo
+root on `sys.path`. A zip of one folder will not run. For a public table
+you can paste without the harness, use
+[`examples/breast_cancer_classical_loop.py`](../examples/breast_cancer_classical_loop.py).
+
 They are not smoke tests. They are not a claim that every industry wheel
 installs on your machine.
 
@@ -61,7 +66,7 @@ scripts sit in the harness; they are not extra products.
 | Job | Paste | Evidence |
 | --- | --- | --- |
 | A table, a target, a trusted holdout | [`examples/classical_loan_loop.py`](../examples/classical_loan_loop.py) | [loan-approval-classical](loan-approval-classical/) |
-| Same spine on a public table | | [breast-cancer-classical](breast-cancer-classical/) (sklearn Wisconsin breast cancer) |
+| Same spine on a public table | [`examples/breast_cancer_classical_loop.py`](../examples/breast_cancer_classical_loop.py) | [breast-cancer-classical](breast-cancer-classical/) (sklearn Wisconsin breast cancer) |
 | Fold-local CV that refuses poisoned prep | [`examples/leakage_cv_recipe.py`](../examples/leakage_cv_recipe.py) | [loan-approval-classical](loan-approval-classical/) (`cv_score` + recipe) |
 | Clusters | [`examples/unsupervised_cluster_loop.py`](../examples/unsupervised_cluster_loop.py) | [cluster-customer-segments](cluster-customer-segments/) |
 | Public clusters + external labels | | [wine-cluster-segments](wine-cluster-segments/) |

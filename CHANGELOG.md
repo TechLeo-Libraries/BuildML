@@ -11,14 +11,26 @@ with pre-release tags for alpha (`aN`) builds.
 ### Changed
 
 - **Proofs and examples are a user contract.** Paste scripts live in
-  `examples/` and match the guides. Proofs are evidence for one job, not
-  a 63/63 scoreboard or a catalog of shipped products. Composition slugs
-  say they are not products BuildML ships. Core examples run in CI;
-  bundles land in `examples/.artifacts/`; the classical file uses 120
-  rows so printed metrics are not three-row noise.
+  `examples/` and match the guides. Proofs are checkout-only evidence
+  for one job (`proofs._lib` plus repo root), not a 63/63 scoreboard or
+  a catalog of shipped products. Composition slugs say they are not
+  products BuildML ships. Core examples run in CI; bundles land in
+  `examples/.artifacts/`; the classical file uses 120 rows so printed
+  metrics are not three-row noise.
+- **`session.calibration` and `session.tune_threshold` default to
+  validation.** Test is for a frozen policy. A split without validation
+  raises instead of silently scoring test.
+- **CBR `backend=None` stays sklearn on Windows.** In-process hnswlib
+  and faiss can hard-crash the interpreter even when a subprocess probe
+  succeeds. Explicit `backend="industry"` raises unless
+  `BUILDML_ALLOW_CBR_INDUSTRY_WINDOWS=1`. Explicit `backend="torch"`
+  raises unless `BUILDML_ALLOW_CBR_TORCH_WINDOWS=1`.
 
 ### Added
 
+- **`examples/breast_cancer_classical_loop.py`.** Wisconsin breast
+  cancer from sklearn, no `proofs._lib`, so a public table can be pasted
+  without a checkout harness.
 - **REAL_PUBLIC_DATASET Tier C twins.** Same-split sklearn industry
   comparisons for `breast-cancer-classical`, `diabetes-progression-regression`,
   `wine-cluster-segments`, and `adult-fairness-observational`
@@ -35,6 +47,10 @@ with pre-release tags for alpha (`aN`) builds.
 
 ### Fixed
 
+- **PuLP knapsack selection.** Read solved binaries with ``pulp.value``
+  instead of treating ``LpVariable.value`` as a number. Current PuLP
+  exposes ``value`` as a method, which crashed ``backend='pulp'``
+  knapsack on Windows after solve.
 - **Sphinx API inventory.** Enum members and schema fields in
   `buildml.core.types` are documented once (member/field docstrings), so the
   package reference no longer emits duplicate-object warnings.

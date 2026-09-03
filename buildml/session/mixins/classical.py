@@ -679,7 +679,7 @@ class ClassicalSessionMixin:
     def calibration(
         self,
         *,
-        partition: Literal["train", "validation", "test"] = "test",
+        partition: Literal["train", "validation", "test"] = "validation",
         export_figures: str | Path | None = None,
         export_html: str | Path | None = None,
     ) -> DiagnosticReport:
@@ -704,7 +704,7 @@ class ClassicalSessionMixin:
     def tune_threshold(
         self,
         *,
-        partition: Literal["train", "validation", "test"] = "test",
+        partition: Literal["train", "validation", "test"] = "validation",
         fp_cost: float | None = None,
         fn_cost: float | None = None,
         tp_benefit: float = 0.0,

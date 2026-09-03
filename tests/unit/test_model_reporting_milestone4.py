@@ -21,7 +21,7 @@ def _fitted_session() -> Session:
             )
         )
         .set_roles({"x": "feature", "z": "feature", "y": "target"})
-        .split(test_size=0.25, stratify=True, random_state=0)
+        .split(test_size=0.25, validation_size=0.2, stratify=True, random_state=0)
         .scale()
         .fit(LogisticRegression(max_iter=500), task="classification")
     )

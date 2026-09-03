@@ -45,6 +45,31 @@ def main() -> None:
     )
     print("attached dp", attached.demographic_parity_difference)
 
+    # Same rows, split by household so no household lands in two partitions.
+    household = np.repeat(np.arange(n // 8), 8)[:n]
+    grouped_frame = frame.copy()
+    grouped_frame["household"] = household
+    grouped = (
+        Session.ingest(grouped_frame)
+        .set_roles(
+            {
+                "x": "feature",
+                "group": "ignore",
+                "household": "group",
+                "decision": "target",
+            }
+        )
+        .group_split(test_size=0.25, validation_size=0.2, random_state=0)
+        .fit(LogisticRegression(max_iter=500), task="classification")
+    )
+    grouped_report = grouped.fairness.evaluate(
+        sensitive_column="group",
+        partition="test",
+        positive_label="approved",
+        bootstrap_samples=50,
+    )
+    print("group_split dp", grouped_report.demographic_parity_difference)
+
 
 if __name__ == "__main__":
     main()

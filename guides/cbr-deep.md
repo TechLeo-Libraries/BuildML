@@ -15,10 +15,14 @@ usual sense.
 
 `session.cbr.fit()` with `backend=None` picks the **industry ANN**
 (hnswlib if `buildml[cbr-industry]` imported, else faiss if
-`buildml[cbr-faiss]` imported), otherwise exact sklearn kNN. Default metric is `euclidean`, default `k` is 5,
+`buildml[cbr-faiss]` imported), otherwise exact sklearn kNN. On Windows
+the default stays sklearn and `backend="industry"` raises unless
+`BUILDML_ALLOW_CBR_INDUSTRY_WINDOWS=1`. Default metric is `euclidean`, default `k` is 5,
 default reuse is `distance_weighted`, default adapt is `none`, and
 `standardize=True` fits mean/scale on train only. Torch is never probed
-while inferring a backend: you have to ask for `backend="torch"`.
+while inferring a backend: you have to ask for `backend="torch"`. On
+Windows that explicit ask also raises unless
+`BUILDML_ALLOW_CBR_TORCH_WINDOWS=1`.
 
 `session.cbr.retain` will not take validation or test rows. It also
 requires a non-empty `source_disclosure`. This is not RAG: CBR reuses a
@@ -88,7 +92,9 @@ is usually its own nearest neighbor.
 | `torch` | `torch` | Supervised metric MLP on train, then kNN in that space | `euclidean`, `cosine` |
 
 `backend=None` with no text columns and a metric the ANN can compute
-selects industry when it imported, else sklearn. `manhattan` and `mixed`
+selects industry when it imported, else sklearn. Windows is the
+exception: default stays sklearn so an ANN wheel cannot crash the
+process. `manhattan` and `mixed`
 force sklearn: approximate indexes do not implement them, and silently
 swapping the metric would change what "similar" means. Text columns
 force `embedding`. Naming an unavailable backend raises

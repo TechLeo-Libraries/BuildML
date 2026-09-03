@@ -2285,7 +2285,7 @@ def prepare_design_matrix(
 def calibration(
     session,
     *,
-    partition: Literal['train', 'validation', 'test'] = "test",
+    partition: Literal['train', 'validation', 'test'] = "validation",
     export_figures: str | Path | None = None,
     export_html: str | Path | None = None,
 ) -> DiagnosticReport:
@@ -2314,9 +2314,11 @@ def calibration(
     session:
         Active Session instance this operation mutates or reads.
     partition:
-        Which rows to assess. Calibration must be measured on data the
-        model did not learn from: on training rows almost any model looks
-        well calibrated.
+        Which rows to assess. Defaults to ``'validation'``. Calibration
+        must be measured on data the model did not learn from: on
+        training rows almost any model looks well calibrated. Pass
+        ``partition='test'`` only when you are measuring a frozen model,
+        not while choosing one.
     export_figures:
         Directory to write the reliability diagram into. Requires
         ``pip install 'buildml[viz]'``.
@@ -2380,7 +2382,7 @@ def calibration(
 def tune_threshold(
     session,
     *,
-    partition: Literal['train', 'validation', 'test'] = "test",
+    partition: Literal['train', 'validation', 'test'] = "validation",
     fp_cost: float | None = None,
     fn_cost: float | None = None,
     tp_benefit: float = 0.0,
@@ -2412,10 +2414,10 @@ def tune_threshold(
     session:
         Active Session instance this operation mutates or reads.
     partition:
-        Which rows to sweep over. Use ``'validation'`` while choosing;
-        selecting a threshold on ``'test'`` and then reporting that
-        partition's score means the score was tuned on the data it claims
-        to be independent of.
+        Which rows to sweep over. Defaults to ``'validation'``. Selecting
+        a threshold on ``'test'`` and then reporting that partition's
+        score means the score was tuned on the data it claims to be
+        independent of.
     fp_cost:
         What one false positive costs: flagging something that was fine.
         Any consistent unit works; only the ratio to ``fn_cost`` affects

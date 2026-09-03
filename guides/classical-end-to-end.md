@@ -8,7 +8,9 @@ This is the long classical path: a dirty table, roles, a split, train-only
 preparation, a model, validation choices, one test number, and a pipeline
 bundle. The short version is [quickstart-classical](quickstart-classical.md).
 Fold-local CV is [leakage and recipes](leakage-cv-recipes.md).
-Paste: [`examples/classical_loan_loop.py`](../examples/classical_loan_loop.py).
+Paste: [`examples/classical_loan_loop.py`](../examples/classical_loan_loop.py)
+(120 rows, calibration and threshold on validation). The snippet below
+is a short table so you can read every cell.
 
 `session.fit` and `session.evaluate` stay first-class. `session.classical.*`
 is the same work under a namespace, not a second API.
