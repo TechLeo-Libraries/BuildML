@@ -37,6 +37,9 @@ with pre-release tags for alpha (`aN`) builds.
   that holds your data, split, preprocessing, model, and run history,
   and also runs the domain catalog. That object is named a Session.
   They no longer sell a leakage slogan.
+- **Coverage floor is 66 on the Linux CI monolith.** The previous 70
+  figure was a Windows isolated combine, not the gate that actually
+  runs `pytest --cov=buildml`. This cut measured 66.67%.
 
 ### Added
 

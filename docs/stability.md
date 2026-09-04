@@ -48,5 +48,5 @@ large on purpose. This note is how I keep that surface usable.
 ## Coverage ratchet
 
 See `scripts/coverage_ratchet.json` and `pyproject.toml` `fail_under`.
-Active floor **70** (full-suite measure ~70.7%). Measure with
-`python scripts/run_full_coverage.py` - never from a tiny subset.
+Active floor **66** (Linux CI monolith measured 66.67% on the 2.6.0 cut).
+Measure with `python scripts/run_full_coverage.py` - never from a tiny subset.

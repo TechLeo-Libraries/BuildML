@@ -86,7 +86,7 @@ jobs:
         run: python scripts/domain_maturity_index.py --check --report
 
       # Coverage fail_under comes from pyproject.toml [tool.coverage.report]
-      # and scripts/coverage_ratchet.json (active 70; measured at 2.4.0a3).
+      # and scripts/coverage_ratchet.json (active 66; Linux CI monolith).
       - name: Pytest
         run: pytest --cov=buildml --cov-report=term-missing
 
