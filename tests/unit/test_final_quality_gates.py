@@ -187,7 +187,7 @@ def test_eda_html_contract_is_cockpit_accessible_escaped_and_offline(
         "--color-bg: #f2f2f3",
         "blueprint",
         "Findings register",
-        "Ledger — every computed number",
+        "Ledger - every computed number",
         "Recommended sequence",
         "What each finding assumes",
         "What this means",

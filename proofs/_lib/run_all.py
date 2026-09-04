@@ -199,8 +199,10 @@ def _run(script: Path, timeout: int = 600) -> tuple[str, float, str]:
                 elapsed,
                 (proc.stdout or "").strip().splitlines()[-1:][0] if proc.stdout else "",
             )
-        err = (proc.stderr or proc.stdout or "").strip()
-        return "error", elapsed, err[-500:]
+        stderr = (proc.stderr or "").strip()
+        stdout = (proc.stdout or "").strip()
+        combined = "\n".join(part for part in (stderr, stdout) if part)
+        return "error", elapsed, combined[-1200:]
     except subprocess.TimeoutExpired:
         return "timeout", time.perf_counter() - t0, f">{timeout}s"
     except Exception as exc:  # noqa: BLE001

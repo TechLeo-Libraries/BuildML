@@ -769,7 +769,7 @@ async function renderCockpit() {
     })}
     ${sectionScaffold({
       n: "03",
-      title: (sheet.ledger_purpose && sheet.ledger_purpose.title) || "Ledger — every computed number",
+      title: (sheet.ledger_purpose && sheet.ledger_purpose.title) || "Ledger - every computed number",
       meta: meta.ledger,
       bodyHtml: ledgerBody,
       id: "cockpit-section-ledger",

@@ -38,7 +38,7 @@ ARTIFACTS.mkdir(parents=True, exist_ok=True)
 # Markers that must appear in research HTML / must not appear anywhere.
 _STATIC_REQUIRED = (
     "Findings register",
-    "Ledger — every computed number",
+    "Ledger - every computed number",
     "Recommended sequence",
     "What each finding assumes",
     "bml-table--fit",
@@ -449,6 +449,13 @@ def _run_case(
     *,
     artifacts_dir: Path,
 ) -> CaseResult:
+    import warnings
+
+    # Starlette 1.x emits this on TestClient import; it is not a gauntlet failure.
+    warnings.filterwarnings(
+        "ignore",
+        message=".*Using httpx with starlette.testclient.*",
+    )
     from fastapi.testclient import TestClient
 
     from buildml.dashboard.app import create_app

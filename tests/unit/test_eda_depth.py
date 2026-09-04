@@ -63,7 +63,7 @@ def test_eda_research_grade_report_and_html(tmp_path: Path) -> None:
     assert "What to check next" in html
     assert "Findings register" in html
     assert "What each finding assumes" in html
-    assert "Ledger — every computed number" in html
+    assert "Ledger - every computed number" in html
     assert "Recommended sequence" in html
     assert "<table" in html
     assert "Filter rows" in html

@@ -881,7 +881,7 @@
       "parameters": [
         {
           "annotation": "Literal['train', 'validation', 'test']",
-          "default": "'test'",
+          "default": "'validation'",
           "kind": "KEYWORD_ONLY",
           "name": "partition",
           "required": false
@@ -1707,7 +1707,7 @@
         },
         {
           "annotation": "str",
-          "default": "'python:3.12-slim'",
+          "default": "'buildml-serve:local'",
           "kind": "KEYWORD_ONLY",
           "name": "image",
           "required": false
@@ -1752,6 +1752,41 @@
           "default": "None",
           "kind": "KEYWORD_ONLY",
           "name": "service_account",
+          "required": false
+        },
+        {
+          "annotation": "str",
+          "default": "'/models/bundle'",
+          "kind": "KEYWORD_ONLY",
+          "name": "bundle_path",
+          "required": false
+        },
+        {
+          "annotation": "str",
+          "default": "'pipeline'",
+          "kind": "KEYWORD_ONLY",
+          "name": "kind",
+          "required": false
+        },
+        {
+          "annotation": "str | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "store_name",
+          "required": false
+        },
+        {
+          "annotation": "str | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "store_field",
+          "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "False",
+          "kind": "KEYWORD_ONLY",
+          "name": "emit_store_document",
           "required": false
         }
       ],
@@ -12263,6 +12298,20 @@
           "required": false
         },
         {
+          "annotation": "str | tuple[str, str] | list[tuple[str, str]] | dict[str, str] | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "basic_auth",
+          "required": false
+        },
+        {
+          "annotation": "bool | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "docs_enabled",
+          "required": false
+        },
+        {
           "annotation": "bool",
           "default": "False",
           "kind": "KEYWORD_ONLY",
@@ -12288,6 +12337,13 @@
           "default": "False",
           "kind": "KEYWORD_ONLY",
           "name": "trusted",
+          "required": false
+        },
+        {
+          "annotation": "Any | None",
+          "default": "None",
+          "kind": "KEYWORD_ONLY",
+          "name": "config",
           "required": false
         }
       ],
@@ -12744,8 +12800,8 @@
           "required": true
         },
         {
-          "annotation": "Literal['stub', 'transformers']",
-          "default": "'stub'",
+          "annotation": "Literal['stub', 'transformers', 'auto'] | None",
+          "default": "None",
           "kind": "KEYWORD_ONLY",
           "name": "backend",
           "required": false
@@ -12988,7 +13044,7 @@
       "parameters": [
         {
           "annotation": "Literal['train', 'validation', 'test']",
-          "default": "'test'",
+          "default": "'validation'",
           "kind": "KEYWORD_ONLY",
           "name": "partition",
           "required": false
