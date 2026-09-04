@@ -1,16 +1,16 @@
 # BuildML 2.x surface stability policy
 
 BuildML **2.6.0** continues the stable Session 2.x line (first stable was
-**2.4.0**). This repo is **2.6.0**. `pip install buildml` still resolves
-**2.5.0** on PyPI until this release is uploaded
-([project page](https://pypi.org/project/buildml/2.5.0/); publish notes in
+**2.4.0**). This repo is **2.6.0**. `pip install buildml` resolves
+**2.6.0** on PyPI
+([project page](https://pypi.org/project/buildml/2.6.0/); publish notes in
 [`pypi-2x-publish.md`](pypi-2x-publish.md)). The Session surface is
 large on purpose. This note is how I keep that surface usable.
 
 ## What “stable” means here
 
 - **`pip install buildml`** installs the latest non-pre-release Session 2.x on
-  PyPI (target **2.6.x** after upload; not legacy 1.0.9).
+  PyPI (**2.6.x**; not legacy 1.0.9).
 - Public Session / facade APIs in 2.6.x follow SemVer: breaking removals wait
   for a major bump (see facades → 3.0 below).
 - Optional industry extras remain **best-effort** across platforms; capability

@@ -14,8 +14,7 @@ pip install -e ".[dev]"
 Python 3.10–3.13. Optional extras (`torch`, `rag`, `ai`, `serve`, …) match
 `README.md` / `docs/installation.rst`.
 
-**Install:** `pip install buildml` (Session 2.6.x once on PyPI; until the
-`2.6.0` upload, the index still serves `2.5.0`). Prefer an editable checkout
+**Install:** `pip install buildml` (Session **2.6.0**). Prefer an editable checkout
 for development.
 
 ## Session architecture

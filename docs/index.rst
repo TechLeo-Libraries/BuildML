@@ -10,8 +10,7 @@ Torch, and the other domains in this repo. If you try to prepare or fit
 before a split, it stops you.
 
 Install with ``pip install buildml`` (Python 3.10 through 3.13). This repo
-is BuildML 2.6.0, the current stable Session line. Until the ``2.6.0``
-upload is verified, PyPI still serves 2.5.0.
+is BuildML 2.6.0, the current stable Session line. PyPI serves 2.6.0.
 
 Start here
 ==========

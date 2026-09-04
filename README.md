@@ -15,8 +15,8 @@ pip install buildml
 ```
 
 Python 3.10 through 3.13. This repo is BuildML **2.6.0**, the current
-stable Session line. `pip install buildml` still resolves **2.5.0** on
-PyPI until this release is uploaded. The public entry point is `buildml.Session`.
+stable Session line. `pip install buildml` installs **2.6.0** from PyPI.
+The public entry point is `buildml.Session`.
 
 ```python
 import pandas as pd
