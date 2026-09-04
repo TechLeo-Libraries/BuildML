@@ -20,6 +20,12 @@ with pre-release tags for alpha (`aN`) builds.
 - **`session.calibration` and `session.tune_threshold` default to
   validation.** Test is for a frozen policy. A split without validation
   raises instead of silently scoring test.
+- **Classical / AutoML proofs prefer public tables.**
+  `loan-approval-classical` and `mortgage-default-classical` load OpenML
+  German Credit (`credit-g`) and fall back to the in-repo credit draw
+  with `loader_selected` recorded. `churn-automl-search` uses sklearn
+  Wisconsin breast cancer. Slugs stay; READMEs say what the table
+  actually is. Paste examples remain short toys.
 - **CBR `backend=None` stays sklearn on Windows.** In-process hnswlib
   and faiss can hard-crash the interpreter even when a subprocess probe
   succeeds. Explicit `backend="industry"` raises unless

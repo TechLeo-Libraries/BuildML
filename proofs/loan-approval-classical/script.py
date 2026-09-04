@@ -1,4 +1,4 @@
-"""Tier A proof: classical credit/loan approval with industry sklearn twin."""
+"""Tier A proof: classical credit approval on public German Credit when cached."""
 
 from __future__ import annotations
 
@@ -13,16 +13,7 @@ from proofs._lib.bootstrap import ensure_repo_on_path
 
 ensure_repo_on_path()
 
-from sklearn.compose import ColumnTransformer
-from sklearn.impute import SimpleImputer
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import (
-    accuracy_score,
-    f1_score,
-    roc_auc_score,
-)
-from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
 from buildml import Session
 from buildml.core.errors import MissingExtraError
@@ -30,16 +21,14 @@ from buildml.preprocess import PreprocessRecipe
 from proofs._lib import (
     assert_disjoint_partitions,
     assert_no_test_in_selection,
-    load_credit_approval_synthetic,
+    load_classical_credit_table,
     metrics_round,
     new_proof_context,
+    refuse_perfect_scores,
+    sklearn_logreg_twin,
+    supervised_roles,
     write_results,
 )
-
-
-FEATURE_NUM = ["age", "income", "debt_ratio", "employment_years"]
-FEATURE_CAT = ["region", "product"]
-TARGET = "approved"
 
 
 def _membership_labels(plan) -> list[str]:
@@ -54,81 +43,15 @@ def _membership_labels(plan) -> list[str]:
     return labels
 
 
-def _sklearn_twin(frame, plan) -> dict:
-    """Same split indices; sklearn ColumnTransformer pipeline (Tier C)."""
-    train_idx = list(plan.train_indices)
-    test_idx = list(plan.test_indices)
-    x_train = frame.loc[train_idx, FEATURE_NUM + FEATURE_CAT]
-    y_train = frame.loc[train_idx, TARGET]
-    x_test = frame.loc[test_idx, FEATURE_NUM + FEATURE_CAT]
-    y_test = frame.loc[test_idx, TARGET]
-
-    pre = ColumnTransformer(
-        [
-            (
-                "num",
-                Pipeline(
-                    [
-                        ("imputer", SimpleImputer(strategy="median")),
-                        ("scaler", StandardScaler()),
-                    ]
-                ),
-                FEATURE_NUM,
-            ),
-            (
-                "cat",
-                Pipeline(
-                    [
-                        ("imputer", SimpleImputer(strategy="most_frequent")),
-                        (
-                            "onehot",
-                            OneHotEncoder(handle_unknown="ignore", sparse_output=False),
-                        ),
-                    ]
-                ),
-                FEATURE_CAT,
-            ),
-        ]
-    )
-    pipe = Pipeline(
-        [
-            ("pre", pre),
-            ("clf", LogisticRegression(max_iter=1000, random_state=42)),
-        ]
-    )
-    pipe.fit(x_train, y_train)
-    proba = pipe.predict_proba(x_test)[:, 1]
-    pred = (proba >= 0.5).astype(int)
-    return {
-        "backend": "sklearn.Pipeline",
-        "estimator": "LogisticRegression",
-        "test_metrics": metrics_round(
-            {
-                "accuracy": float(accuracy_score(y_test, pred)),
-                "f1": float(f1_score(y_test, pred)),
-                "roc_auc": float(roc_auc_score(y_test, proba)),
-            }
-        ),
-        "leakage_controls": [
-            "Fitted ColumnTransformer + estimator on train indices only",
-            "Test indices used once for final metrics",
-            "Same SplitPlan indices as BuildML Session",
-        ],
-    }
-
-
 def main() -> None:
     ctx = new_proof_context("loan-approval-classical", seed=42)
-    frame, data_meta = load_credit_approval_synthetic(n=1200, seed=ctx.seed)
+    frame, data_meta = load_classical_credit_table(seed=ctx.seed)
+    roles = supervised_roles(data_meta)
+    target = str(data_meta["target"])
+    features = list(data_meta["feature_columns"])
 
-    # Unpoisoned Session for fold-local CV (no Session-global preprocess yet).
     session_cv = Session.ingest(frame.copy())
-    session_cv.set_roles(
-        {
-            **{c: "feature" for c in FEATURE_NUM + FEATURE_CAT},
-            TARGET: "target",
-        }
-    )
+    session_cv.set_roles(roles)
     session_cv.split(
         test_size=0.2,
         validation_size=0.2,
@@ -151,14 +74,8 @@ def main() -> None:
         preprocess=recipe,
     )
 
-    # Production-style Session-global prep → fit → val tune → test once.
     session = Session.ingest(frame.copy())
-    session.set_roles(
-        {
-            **{c: "feature" for c in FEATURE_NUM + FEATURE_CAT},
-            TARGET: "target",
-        }
-    )
+    session.set_roles(roles)
     session.inject_split(
         train_indices=list(plan.train_indices),
         validation_indices=list(plan.validation_indices),
@@ -174,7 +91,6 @@ def main() -> None:
     )
 
     val = session.evaluate(partition="validation")
-    # Threshold policy selected on validation only (not test).
     try:
         thr = session.tune_threshold(partition="validation")
         threshold_info = {
@@ -193,8 +109,22 @@ def main() -> None:
         title="Loan approval classical proof",
     )
 
-    industry = _sklearn_twin(frame, plan)
+    industry = sklearn_logreg_twin(
+        frame,
+        plan,
+        feature_columns=features,
+        target=target,
+        seed=ctx.seed,
+    )
     bml_test = metrics_round(dict(test.metrics))
+    if data_meta.get("real_public_dataset"):
+        refuse_perfect_scores(
+            bml_test,
+            keys=("accuracy", "f1", "f1_weighted", "f1_macro", "roc_auc"),
+            ceiling=1.0,
+            proof_slug="loan-approval-classical",
+            context="credit-g / public credit holdout",
+        )
     comparison = {
         "same_split": True,
         "split_counts": counts,
@@ -206,9 +136,10 @@ def main() -> None:
         "industry": industry,
         "deltas": {},
         "disclosure": (
-            "Deltas are descriptive on one synthetic draw; not a claim of "
+            "Deltas are descriptive on one draw; not a claim of "
             "universal superiority. Workflow parity matters more than tiny metric gaps."
         ),
+        "loader_selected": data_meta.get("loader_selected"),
     }
     for key in ("accuracy", "f1", "roc_auc"):
         if key in bml_test and key in industry["test_metrics"]:
@@ -217,10 +148,15 @@ def main() -> None:
                 6,
             )
 
+    public = bool(data_meta.get("real_public_dataset"))
     write_results(
         ctx,
         {
             "status": "completed",
+            "evidence_tier": data_meta.get(
+                "evidence_tier",
+                "REAL_PUBLIC_DATASET" if public else "SYNTHETIC_FALLBACK",
+            ),
             "data": data_meta,
             "split": {
                 "kind": plan.kind,
@@ -244,14 +180,21 @@ def main() -> None:
             "bundle_path": str(bundle),
             "industry_comparison": comparison,
             "limitations": [
-                "Synthetic labels — not a regulated credit bureau dataset",
+                (
+                    "OpenML German Credit (credit-g) when cached; otherwise the "
+                    "in-repo credit draw. Not a regulated credit bureau extract."
+                ),
                 "Single seed; no nested outer CV reported as primary claim",
                 "No fairness / disparate-impact audit in this proof",
             ],
         },
     )
     write_results(ctx, comparison, filename="comparison.json")
-    print("loan-approval-classical OK", bml_test)
+    print(
+        "loan-approval-classical OK",
+        data_meta.get("loader_selected"),
+        bml_test,
+    )
 
 
 if __name__ == "__main__":

@@ -6,11 +6,12 @@ import json
 from pathlib import Path
 from typing import Any, Mapping, Sequence
 
+from proofs._lib.datasets import infer_feature_kinds
 from proofs._lib.harness import ProofContext, metrics_round, write_results
 
 
 DISCLOSURE = (
-    "Deltas are descriptive on one synthetic draw; not a claim of universal "
+    "Deltas are descriptive on one draw; not a claim of universal "
     "superiority. Workflow parity and leakage discipline matter more than tiny "
     "metric gaps. Success bar is competitive qualitative parity (5-B)."
 )
@@ -73,6 +74,92 @@ def compute_deltas(
             except (TypeError, ValueError):
                 continue
     return deltas
+
+
+def sklearn_logreg_twin(
+    frame,
+    plan,
+    *,
+    feature_columns: Sequence[str],
+    target: str,
+    seed: int = 42,
+) -> dict[str, Any]:
+    """Same-split sklearn ColumnTransformer + LogisticRegression twin."""
+    from sklearn.compose import ColumnTransformer
+    from sklearn.impute import SimpleImputer
+    from sklearn.linear_model import LogisticRegression
+    from sklearn.metrics import accuracy_score, f1_score, roc_auc_score
+    from sklearn.pipeline import Pipeline
+    from sklearn.preprocessing import OneHotEncoder, StandardScaler
+
+    import pandas as pd
+
+    numeric, categorical = infer_feature_kinds(pd.DataFrame(frame), list(feature_columns))
+    train_idx = list(plan.train_indices)
+    test_idx = list(plan.test_indices)
+    cols = list(feature_columns)
+    x_train = frame.loc[train_idx, cols]
+    y_train = frame.loc[train_idx, target]
+    x_test = frame.loc[test_idx, cols]
+    y_test = frame.loc[test_idx, target]
+
+    transformers: list[tuple[str, Any, list[str]]] = []
+    if numeric:
+        transformers.append(
+            (
+                "num",
+                Pipeline(
+                    [
+                        ("imputer", SimpleImputer(strategy="median")),
+                        ("scaler", StandardScaler()),
+                    ]
+                ),
+                numeric,
+            )
+        )
+    if categorical:
+        transformers.append(
+            (
+                "cat",
+                Pipeline(
+                    [
+                        ("imputer", SimpleImputer(strategy="most_frequent")),
+                        (
+                            "onehot",
+                            OneHotEncoder(handle_unknown="ignore", sparse_output=False),
+                        ),
+                    ]
+                ),
+                categorical,
+            )
+        )
+    pipe = Pipeline(
+        [
+            ("pre", ColumnTransformer(transformers)),
+            ("clf", LogisticRegression(max_iter=1000, random_state=seed)),
+        ]
+    )
+    pipe.fit(x_train, y_train)
+    proba = pipe.predict_proba(x_test)[:, 1]
+    pred = (proba >= 0.5).astype(int)
+    return {
+        "backend": "sklearn.Pipeline",
+        "estimator": "LogisticRegression",
+        "numeric_columns": numeric,
+        "categorical_columns": categorical,
+        "test_metrics": metrics_round(
+            {
+                "accuracy": float(accuracy_score(y_test, pred)),
+                "f1": float(f1_score(y_test, pred)),
+                "roc_auc": float(roc_auc_score(y_test, proba)),
+            }
+        ),
+        "leakage_controls": [
+            "Fitted ColumnTransformer + estimator on train indices only",
+            "Test indices used once for final metrics",
+            "Same SplitPlan indices as BuildML Session",
+        ],
+    }
 
 
 def write_comparison(

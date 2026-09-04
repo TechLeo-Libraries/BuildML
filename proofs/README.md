@@ -65,13 +65,13 @@ scripts sit in the harness; they are not extra products.
 
 | Job | Paste | Evidence |
 | --- | --- | --- |
-| A table, a target, a trusted holdout | [`examples/classical_loan_loop.py`](../examples/classical_loan_loop.py) | [loan-approval-classical](loan-approval-classical/) |
+| A table, a target, a trusted holdout | [`examples/classical_loan_loop.py`](../examples/classical_loan_loop.py) | [loan-approval-classical](loan-approval-classical/) (OpenML `credit-g` when cached) |
 | Same spine on a public table | [`examples/breast_cancer_classical_loop.py`](../examples/breast_cancer_classical_loop.py) | [breast-cancer-classical](breast-cancer-classical/) (sklearn Wisconsin breast cancer) |
 | Fold-local CV that refuses poisoned prep | [`examples/leakage_cv_recipe.py`](../examples/leakage_cv_recipe.py) | [loan-approval-classical](loan-approval-classical/) (`cv_score` + recipe) |
 | Clusters | [`examples/unsupervised_cluster_loop.py`](../examples/unsupervised_cluster_loop.py) | [cluster-customer-segments](cluster-customer-segments/) |
 | Public clusters + external labels | | [wine-cluster-segments](wine-cluster-segments/) |
 | Voting / stacking / blending | [`examples/ensemble_vote_stack_loop.py`](../examples/ensemble_vote_stack_loop.py) | [voting-ensemble-attrition](voting-ensemble-attrition/) |
-| Family + recipe search | [`examples/automl_search_loop.py`](../examples/automl_search_loop.py) | [churn-automl-search](churn-automl-search/) |
+| Family + recipe search | [`examples/automl_search_loop.py`](../examples/automl_search_loop.py) | [churn-automl-search](churn-automl-search/) (sklearn breast cancer) |
 | Isolation Forest / anomaly | [`examples/anomaly_iforest_loop.py`](../examples/anomaly_iforest_loop.py) | [network-intrusion-anomaly](network-intrusion-anomaly/) |
 | Chronological forecast | [`examples/forecast_lag_loop.py`](../examples/forecast_lag_loop.py) | [store-sales-forecast](store-sales-forecast/) |
 | Time-series analysis (no forecast fit) | [`examples/timeseries_analyze_loop.py`](../examples/timeseries_analyze_loop.py) | [store-sales-forecast](store-sales-forecast/) (analysis then forecast) |

@@ -69,6 +69,8 @@ def test_proof_index_run_commands_point_at_real_files() -> None:
     assert "loan-approval-classical/baseline_industry.py" not in text
     assert "checkout-only" in text
     assert "examples/breast_cancer_classical_loop.py" in text
+    assert "credit-g" in text
+    assert "sklearn breast cancer" in text
 
 
 def test_every_example_script_is_listed_in_examples_readme() -> None:

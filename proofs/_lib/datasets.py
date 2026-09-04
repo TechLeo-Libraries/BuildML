@@ -82,12 +82,26 @@ def load_credit_approval_synthetic(
     miss_income = rng.random(n) < 0.05
     frame.loc[miss_age, "age"] = np.nan
     frame.loc[miss_income, "income"] = np.nan
+    feature_columns = [
+        "age",
+        "income",
+        "debt_ratio",
+        "employment_years",
+        "region",
+        "product",
+    ]
     meta = {
         "name": "credit_approval_synthetic",
         "license": "synthetic/public-domain (generated in-repo)",
         "n_rows": int(n),
+        "n_features": int(len(feature_columns)),
+        "task": "binary_classification",
         "target": "approved",
+        "feature_columns": feature_columns,
+        "ignore_columns": [],
         "positive_rate": float(approved.mean()),
+        "evidence_tier": "SYNTHETIC_FALLBACK",
+        "real_public_dataset": False,
         "notes": "Synthetic credit underwriting labels; not a real FCRA dataset.",
     }
     return frame, meta
@@ -1212,6 +1226,67 @@ def load_openml_credit_g() -> tuple[pd.DataFrame, dict[str, Any]]:
             "(male*/female*); observational fairness only."
         ),
     )
+    return frame, meta
+
+
+def infer_feature_kinds(
+    frame: pd.DataFrame,
+    feature_columns: list[str],
+) -> tuple[list[str], list[str]]:
+    """Split feature names into numeric vs categorical for sklearn twins."""
+    numeric: list[str] = []
+    categorical: list[str] = []
+    for name in feature_columns:
+        series = frame[name]
+        if pd.api.types.is_numeric_dtype(series) and not pd.api.types.is_bool_dtype(
+            series
+        ):
+            numeric.append(name)
+        else:
+            categorical.append(name)
+    return numeric, categorical
+
+
+def supervised_roles(meta: dict[str, Any]) -> dict[str, str]:
+    """Build Session roles from a table envelope."""
+    target = str(meta["target"])
+    roles = {str(col): "feature" for col in meta["feature_columns"]}
+    roles[target] = "target"
+    for col in meta.get("ignore_columns") or ():
+        name = str(col)
+        if name and name != target:
+            roles[name] = "ignore"
+    return roles
+
+
+def load_classical_credit_table(
+    *,
+    seed: int = 42,
+) -> tuple[pd.DataFrame, dict[str, Any]]:
+    """Prefer OpenML German Credit; fall back to the in-repo credit draw.
+
+    Offline CI and machines without an OpenML cache still run. Results JSON
+    records ``loader_selected`` so a synthetic fallback is never silent.
+    """
+    errors: list[str] = []
+    try:
+        frame, meta = load_openml_credit_g()
+        meta = dict(meta)
+        ignore = []
+        sensitive = meta.get("sensitive_column")
+        if sensitive:
+            ignore.append(str(sensitive))
+        meta["ignore_columns"] = ignore
+        meta["loader_selected"] = "openml_credit_g"
+        meta["loader_errors"] = errors
+        return frame, meta
+    except Exception as exc:  # noqa: BLE001
+        errors.append(f"openml_credit_g: {type(exc).__name__}: {exc}")
+    frame, meta = load_credit_approval_synthetic(n=1200, seed=seed)
+    meta = dict(meta)
+    meta["loader_selected"] = "credit_approval_synthetic"
+    meta["loader_errors"] = errors
+    meta["fallback_reason"] = errors[-1] if errors else "openml_credit_g_unavailable"
     return frame, meta
 
 

@@ -10,8 +10,8 @@ you can read. The file draws 120 rows, calibrates, and tunes a
 threshold on validation so the printed metrics are not three-row noise.
 Use
 [loan-approval-classical](../proofs/loan-approval-classical/) when you
-want the same spine on a fuller synthetic credit table. For a public
-table you can paste without the proof harness, use
+want the same spine on German Credit (`credit-g` when cached). For an
+offline public table you can paste without the proof harness, use
 [`breast_cancer_classical_loop.py`](breast_cancer_classical_loop.py).
 The matching proof is
 [breast-cancer-classical](../proofs/breast-cancer-classical/).
@@ -47,7 +47,7 @@ and confirmation gates. Use [quickstart-ai](../guides/quickstart-ai.md).
 | `evolutionary_search_loop.py` | [classical-diagnostics-search](../guides/classical-diagnostics-search.md) | [loan-approval-classical](../proofs/loan-approval-classical/) |
 | `unsupervised_cluster_loop.py` | [quickstart-unsupervised](../guides/quickstart-unsupervised.md) | [cluster-customer-segments](../proofs/cluster-customer-segments/) |
 | `ensemble_vote_stack_loop.py` | [quickstart-ensemble](../guides/quickstart-ensemble.md) | [voting-ensemble-attrition](../proofs/voting-ensemble-attrition/) |
-| `automl_search_loop.py` | [quickstart-automl](../guides/quickstart-automl.md) | [churn-automl-search](../proofs/churn-automl-search/) |
+| `automl_search_loop.py` | [quickstart-automl](../guides/quickstart-automl.md) | [churn-automl-search](../proofs/churn-automl-search/) (sklearn breast cancer) |
 | `forecast_lag_loop.py` | [quickstart-forecasting](../guides/quickstart-forecasting.md) | [store-sales-forecast](../proofs/store-sales-forecast/) |
 | `timeseries_analyze_loop.py` | [quickstart-timeseries-analysis](../guides/quickstart-timeseries-analysis.md) | [store-sales-forecast](../proofs/store-sales-forecast/) |
 | `anomaly_iforest_loop.py` | [quickstart-anomaly](../guides/quickstart-anomaly.md) | [network-intrusion-anomaly](../proofs/network-intrusion-anomaly/) |

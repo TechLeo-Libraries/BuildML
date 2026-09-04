@@ -1,13 +1,14 @@
 # mortgage-default-classical
 
-You have LTV, DTI, credit score, note rate, term, and property type. You want
-a holdout default score before you harden an underwriting policy.
+You want a shorter classical holdout on a public credit-risk table, then a
+separate sklearn twin file. The slug is historical; the table is not a
+mortgage servicing extract.
 
 ## Data
 
-In-repo synthetic mortgage table (`load_mortgage_default_synthetic`):
-license-clear, deterministic, with MCAR-style missingness on credit score.
-Not a real servicing / HMDA extract.
+Same loader as [loan-approval-classical](../loan-approval-classical/):
+OpenML German Credit (`credit-g`) when cached, otherwise the in-repo
+credit draw. `data.loader_selected` says which one ran.
 
 ## Leakage
 
@@ -31,7 +32,7 @@ python proofs/mortgage-default-classical/baseline_industry.py
 
 ## Limitations
 
-Synthetic labels; no fairness / disparate-impact audit; single seed; not a
-deployment certification.
+Same public credit table as loan-approval-classical, different Session
+spine (no fold-local CV recipe). No fairness audit; single seed; not HMDA.
 
 Related: [Classical quickstart](../../guides/quickstart-classical.md).

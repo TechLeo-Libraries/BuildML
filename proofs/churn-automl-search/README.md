@@ -1,13 +1,18 @@
 # churn-automl-search
 
-You have telco-style customer features and a churn label. You want a family
-and recipe search under a disclosed trial budget, then one test number after
-the winner is refit.
+You want a family and recipe search under a disclosed trial budget, then
+one test number after the winner is refit. The slug is historical; the
+table is not a telco CRM extract.
 
 ## Data
 
-Synthetic telco churn (`load_telco_churn_synthetic`): license-clear stand-in
-for IBM Telco-style schemas.
+**REAL_PUBLIC_DATASET** -- `sklearn.datasets.load_breast_cancer` (UCI Breast
+Cancer Wisconsin Diagnostic, redistributed with sklearn). Offline; no
+network. Same public table as
+[breast-cancer-classical](../breast-cancer-classical/), different Session
+surface (`session.automl`).
+
+Provenance fields are written under `results/results.json` -> `data`.
 
 ## Leakage
 
@@ -33,7 +38,8 @@ LightGBM / XGBoost families.
 
 ## Limitations
 
-Finite budget; synthetic labels; not a full CRM feature store.
+Finite budget; not a CRM feature store. The script refuses a perfect
+holdout score (`>= 1.0`).
 
 Related: [AutoML quickstart](../../guides/quickstart-automl.md),
 [examples/automl_search_loop.py](../../examples/automl_search_loop.py).

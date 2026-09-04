@@ -1,4 +1,4 @@
-"""Tier A proof: classical mortgage default classification."""
+"""Tier A proof: classical credit-risk holdout on public German Credit when cached."""
 
 from __future__ import annotations
 
@@ -20,15 +20,13 @@ from buildml.core.errors import MissingExtraError
 from proofs._lib import (
     assert_disjoint_partitions,
     assert_no_test_in_selection,
-    load_mortgage_default_synthetic,
+    load_classical_credit_table,
     metrics_round,
     new_proof_context,
+    refuse_perfect_scores,
+    supervised_roles,
     write_results,
 )
-
-FEATURE_NUM = ["ltv", "dti", "credit_score", "note_rate", "term_years"]
-FEATURE_CAT = ["property_type"]
-TARGET = "defaulted"
 
 
 def _labels(plan) -> list[str]:
@@ -45,11 +43,12 @@ def _labels(plan) -> list[str]:
 
 def main() -> None:
     ctx = new_proof_context("mortgage-default-classical", seed=101)
-    frame, data_meta = load_mortgage_default_synthetic(n=1400, seed=ctx.seed)
+    frame, data_meta = load_classical_credit_table(seed=ctx.seed)
+    roles = supervised_roles(data_meta)
 
     session = (
         Session.ingest(frame)
-        .set_roles({**{c: "feature" for c in FEATURE_NUM + FEATURE_CAT}, TARGET: "target"})
+        .set_roles(roles)
         .split(test_size=0.2, validation_size=0.2, stratify=True, random_state=ctx.seed)
     )
     plan = session.split_plan
@@ -87,10 +86,23 @@ def main() -> None:
         title="Mortgage default classical proof",
     )
     bml_test = metrics_round(dict(test.metrics))
+    if data_meta.get("real_public_dataset"):
+        refuse_perfect_scores(
+            bml_test,
+            keys=("accuracy", "f1", "f1_weighted", "f1_macro", "roc_auc"),
+            ceiling=1.0,
+            proof_slug="mortgage-default-classical",
+            context="credit-g / public credit holdout",
+        )
+    public = bool(data_meta.get("real_public_dataset"))
     write_results(
         ctx,
         {
             "status": "completed",
+            "evidence_tier": data_meta.get(
+                "evidence_tier",
+                "REAL_PUBLIC_DATASET" if public else "SYNTHETIC_FALLBACK",
+            ),
             "data": data_meta,
             "split": {"kind": plan.kind, "counts": counts, "stratify": True},
             "leakage_controls": [
@@ -111,12 +123,20 @@ def main() -> None:
                 ),
             },
             "limitations": [
-                "Synthetic mortgage labels — not a real servicing / HMDA extract",
+                (
+                    "Same public German Credit table as loan-approval-classical "
+                    "(credit-g when cached). Slug kept; this proof is the shorter "
+                    "holdout plus a separate industry twin file. Not HMDA / servicing."
+                ),
                 "Single seed; no fairness audit",
             ],
         },
     )
-    print("mortgage-default-classical OK", bml_test)
+    print(
+        "mortgage-default-classical OK",
+        data_meta.get("loader_selected"),
+        bml_test,
+    )
 
 
 if __name__ == "__main__":

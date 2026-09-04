@@ -1,4 +1,4 @@
-"""Tier A proof: telco-style churn AutoML search with holdout evaluation."""
+"""Tier A proof: family + recipe AutoML on sklearn Wisconsin breast cancer."""
 
 from __future__ import annotations
 
@@ -19,26 +19,19 @@ from buildml.core.errors import MissingExtraError
 from proofs._lib import (
     assert_no_test_in_selection,
     extra_available,
-    load_telco_churn_synthetic,
+    load_sklearn_breast_cancer,
     metrics_round,
     new_proof_context,
+    refuse_perfect_scores,
+    supervised_roles,
     write_results,
 )
 
 
-FEATURES = [
-    "tenure_months",
-    "monthly_charges",
-    "contract",
-    "internet_service",
-    "support_tickets",
-]
-TARGET = "churn"
-
-
 def main() -> None:
     ctx = new_proof_context("churn-automl-search", seed=7)
-    frame, data_meta = load_telco_churn_synthetic(n=1600, seed=ctx.seed)
+    frame, data_meta = load_sklearn_breast_cancer()
+    roles = supervised_roles(data_meta)
     caps = {
         "lightgbm": extra_available("lightgbm"),
         "xgboost": extra_available("xgboost"),
@@ -49,7 +42,7 @@ def main() -> None:
 
     session = (
         Session.ingest(frame)
-        .set_roles({**{c: "feature" for c in FEATURES}, TARGET: "target"})
+        .set_roles(roles)
         .split(
             test_size=0.2,
             validation_size=0.2,
@@ -65,7 +58,6 @@ def main() -> None:
         "test": len(plan.test_indices),
     }
 
-    # Prefer industry backend when FLAML/AutoGluon present; else native + GBDT families.
     backend = "native"
     if caps["flaml"]:
         backend = "flaml"
@@ -98,7 +90,6 @@ def main() -> None:
             random_state=ctx.seed,
         )
     except (MissingExtraError, ValueError, TypeError) as exc:
-        # Fallback: core families only.
         result = session.automl.run(
             backend="native",
             method="randomized",
@@ -117,6 +108,14 @@ def main() -> None:
     val = session.automl.evaluate(partition="validation")
     test = session.automl.evaluate(partition="test")
     bundle = session.automl.save_bundle(ctx.artifacts_dir / "automl_bundle")
+    test_metrics = metrics_round(dict(test.metrics))
+    refuse_perfect_scores(
+        test_metrics,
+        keys=("accuracy", "f1", "f1_weighted", "f1_macro", "roc_auc"),
+        ceiling=1.0,
+        proof_slug="churn-automl-search",
+        context="sklearn breast_cancer holdout after automl",
+    )
 
     best = {}
     if hasattr(result, "to_dict"):
@@ -135,6 +134,7 @@ def main() -> None:
         ctx,
         {
             "status": "completed",
+            "evidence_tier": "REAL_PUBLIC_DATASET",
             "data": data_meta,
             "split": {"kind": plan.kind, "counts": counts, "stratify": True},
             "capabilities": caps,
@@ -148,7 +148,7 @@ def main() -> None:
             "leaderboard": leaderboard_rows,
             "outer_score_mean": getattr(result, "outer_score_mean", None),
             "validation_metrics": metrics_round(dict(val.metrics)),
-            "test_metrics": metrics_round(dict(test.metrics)),
+            "test_metrics": test_metrics,
             "bundle_path": str(bundle),
             "leakage_controls": [
                 "Stratified split before search",
@@ -160,17 +160,20 @@ def main() -> None:
                 "status": "filled",
                 "note": (
                     "Tier C baseline_industry.py: sklearn RandomizedSearchCV twin on the same "
-                    "split; optional FLAML/AutoGluon when installed — run script then "
+                    "split; optional FLAML/AutoGluon when installed. Run script then "
                     "baseline_industry.py for results/comparison.json."
                 ),
             },
             "limitations": [
-                "Synthetic telco churn; finite trial budget (not unbounded HPO)",
+                (
+                    "Slug kept; the table is sklearn Wisconsin breast cancer, "
+                    "not a telco CRM extract. Finite trial budget."
+                ),
                 "Industry backends used when installed; otherwise native catalog",
             ],
         },
     )
-    print("churn-automl-search OK", dict(test.metrics))
+    print("churn-automl-search OK", data_meta.get("name"), dict(test.metrics))
 
 
 if __name__ == "__main__":

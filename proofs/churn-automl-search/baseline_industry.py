@@ -24,56 +24,52 @@ from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from buildml import Session
 from proofs._lib import (
     extract_buildml_test_metrics,
+    infer_feature_kinds,
     load_buildml_results,
-    load_telco_churn_synthetic,
+    load_sklearn_breast_cancer,
     metrics_round,
     new_proof_context,
+    supervised_roles,
     write_comparison,
 )
-
-FEATURES_NUM = ["tenure_months", "monthly_charges", "support_tickets"]
-FEATURES_CAT = ["contract", "internet_service"]
-TARGET = "churn"
 
 
 def main() -> None:
     ctx = new_proof_context("churn-automl-search", seed=7)
-    frame, _ = load_telco_churn_synthetic(n=1600, seed=ctx.seed)
+    frame, data_meta = load_sklearn_breast_cancer()
+    features = list(data_meta["feature_columns"])
+    target = str(data_meta["target"])
+    numeric, categorical = infer_feature_kinds(frame, features)
     session = (
         Session.ingest(frame.copy())
-        .set_roles(
-            {
-                **{c: "feature" for c in FEATURES_NUM + FEATURES_CAT},
-                TARGET: "target",
-            }
-        )
+        .set_roles(supervised_roles(data_meta))
         .split(test_size=0.2, validation_size=0.2, stratify=True, random_state=ctx.seed)
     )
     plan = session.split_plan
     assert plan is not None
     train_idx = list(plan.train_indices)
     test_idx = list(plan.test_indices)
-    # Validation reserved (not used in sklearn CV search ranking of test).
     val_idx = list(plan.validation_indices)
 
-    x_train = frame.loc[train_idx, FEATURES_NUM + FEATURES_CAT]
-    y_train = frame.loc[train_idx, TARGET]
-    x_test = frame.loc[test_idx, FEATURES_NUM + FEATURES_CAT]
-    y_test = frame.loc[test_idx, TARGET]
+    x_train = frame.loc[train_idx, features]
+    y_train = frame.loc[train_idx, target]
+    x_test = frame.loc[test_idx, features]
+    y_test = frame.loc[test_idx, target]
 
-    pre = ColumnTransformer(
-        [
-            ("num", StandardScaler(), FEATURES_NUM),
+    transformers = []
+    if numeric:
+        transformers.append(("num", StandardScaler(), numeric))
+    if categorical:
+        transformers.append(
             (
                 "cat",
                 OneHotEncoder(handle_unknown="ignore", sparse_output=False),
-                FEATURES_CAT,
-            ),
-        ]
-    )
+                categorical,
+            )
+        )
     pipe = Pipeline(
         [
-            ("pre", pre),
+            ("pre", ColumnTransformer(transformers)),
             ("clf", LogisticRegression(max_iter=1000, random_state=ctx.seed)),
         ]
     )
@@ -93,9 +89,7 @@ def main() -> None:
                 "clf__max_depth": [3, 6, None],
             },
             {
-                "clf": [
-                    GradientBoostingClassifier(random_state=ctx.seed)
-                ],
+                "clf": [GradientBoostingClassifier(random_state=ctx.seed)],
                 "clf__learning_rate": [0.05, 0.1],
                 "clf__n_estimators": [80, 120],
             },
@@ -124,7 +118,6 @@ def main() -> None:
         prefer=("test_metrics",),
         keys=("accuracy", "f1", "roc_auc", "f1_weighted", "average_precision"),
     )
-    # Align f1 key if only f1_weighted present.
     if "f1" not in bml_metrics and "f1_weighted" in bml_metrics:
         bml_metrics["f1"] = bml_metrics["f1_weighted"]
 
@@ -153,8 +146,9 @@ def main() -> None:
             "test": len(test_idx),
         },
         delta_keys=("accuracy", "f1", "roc_auc"),
+        extra={"loader_selected": data_meta.get("name")},
     )
-    print("churn-automl-search Tier C OK", industry_metrics)
+    print("churn-automl-search Tier C OK", data_meta.get("name"), industry_metrics)
 
 
 if __name__ == "__main__":

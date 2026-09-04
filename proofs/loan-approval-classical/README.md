@@ -1,13 +1,16 @@
 # loan-approval-classical
 
-You have applicant age, income, debt ratio, employment tenure, region, and
-product type. You want a holdout approve/decline number that did not help fit
-the scaler, the encoder, or the threshold.
+You have a credit table and an approve / decline label. You want a holdout
+number that did not help fit the scaler, the encoder, or the threshold.
 
 ## Data
 
-In-repo synthetic credit table (`load_credit_approval_synthetic`): license-clear,
-deterministic, with MCAR-style missingness. Not a real FCRA / bureau extract.
+Prefers OpenML German Credit (`credit-g`) via
+`load_classical_credit_table`. If OpenML is unavailable, the in-repo
+credit draw is used and `data.loader_selected` records the fallback.
+`sex_standin` is ignored (not a predictor). Not a regulated bureau extract.
+
+Provenance is written under `results/results.json` -> `data`.
 
 ## Leakage
 
@@ -32,8 +35,8 @@ twin on the same split.
 
 ## Limitations
 
-Synthetic labels; no fairness audit; single seed; not a deployment
-certification.
+OpenML cache or network on first fetch; otherwise a disclosed synthetic
+fallback. No fairness audit; single seed; not a deployment certification.
 
 Related: [Classical quickstart](../../guides/quickstart-classical.md),
 [examples/classical_loan_loop.py](../../examples/classical_loan_loop.py).

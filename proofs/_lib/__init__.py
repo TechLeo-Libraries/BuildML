@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 from proofs._lib.datasets import (
+    infer_feature_kinds,
     load_ad_ltr_judgments_synthetic,
     load_attrition_tabular_synthetic,
     load_breast_cancer_fairness_proxy,
     load_catalog_interactions_synthetic,
+    load_classical_credit_table,
     load_claim_severity_synthetic,
     load_credit_approval_synthetic,
     load_customer_segments_synthetic,
@@ -26,6 +28,7 @@ from proofs._lib.datasets import (
     load_support_kb_corpus,
     load_support_tickets_synthetic,
     load_telco_churn_synthetic,
+    supervised_roles,
 )
 from proofs._lib.env import (
     TORCH_STATUS,
@@ -37,6 +40,7 @@ from proofs._lib.compare import (
     compute_deltas,
     extract_buildml_test_metrics,
     load_buildml_results,
+    sklearn_logreg_twin,
     write_comparison,
 )
 from proofs._lib.harness import (
@@ -62,12 +66,14 @@ __all__ = [
     "compute_deltas",
     "extra_available",
     "extract_buildml_test_metrics",
+    "infer_feature_kinds",
     "json_safe",
     "load_buildml_results",
     "load_ad_ltr_judgments_synthetic",
     "load_attrition_tabular_synthetic",
     "load_breast_cancer_fairness_proxy",
     "load_catalog_interactions_synthetic",
+    "load_classical_credit_table",
     "load_claim_severity_synthetic",
     "load_credit_approval_synthetic",
     "load_customer_segments_synthetic",
@@ -93,7 +99,9 @@ __all__ = [
     "probe_torch",
     "refuse_perfect_scores",
     "set_global_seed",
+    "sklearn_logreg_twin",
     "skip_reason",
+    "supervised_roles",
     "write_comparison",
     "write_results",
 ]

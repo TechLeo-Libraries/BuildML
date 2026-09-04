@@ -160,7 +160,7 @@ extra products.
 | Leakage / CV | [leakage_cv_recipe.py](../examples/leakage_cv_recipe.py) | [loan-approval-classical](../proofs/loan-approval-classical/) |
 | Unsupervised | [unsupervised_cluster_loop.py](../examples/unsupervised_cluster_loop.py) | [cluster-customer-segments](../proofs/cluster-customer-segments/), [wine-cluster-segments](../proofs/wine-cluster-segments/) |
 | Ensembles | [ensemble_vote_stack_loop.py](../examples/ensemble_vote_stack_loop.py) | [voting-ensemble-attrition](../proofs/voting-ensemble-attrition/) |
-| AutoML | [automl_search_loop.py](../examples/automl_search_loop.py) | [churn-automl-search](../proofs/churn-automl-search/) |
+| AutoML | [automl_search_loop.py](../examples/automl_search_loop.py) | [churn-automl-search](../proofs/churn-automl-search/) (sklearn breast cancer) |
 | Anomaly | [anomaly_iforest_loop.py](../examples/anomaly_iforest_loop.py) | [network-intrusion-anomaly](../proofs/network-intrusion-anomaly/) |
 | Forecast | [forecast_lag_loop.py](../examples/forecast_lag_loop.py) | [store-sales-forecast](../proofs/store-sales-forecast/) |
 | Time-series analysis | [timeseries_analyze_loop.py](../examples/timeseries_analyze_loop.py) | [store-sales-forecast](../proofs/store-sales-forecast/) |

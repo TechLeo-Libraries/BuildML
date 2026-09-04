@@ -13,8 +13,7 @@ A longer walk with dirtier data is
 [classical end-to-end](classical-end-to-end.md). Paste
 [`examples/classical_loan_loop.py`](../examples/classical_loan_loop.py)
 (120 rows, calibration and threshold on validation). The snippet below
-is a short table so you can read every cell. The proof on a fuller
-synthetic credit table is
+is a short table so you can read every cell. The proof on German Credit (OpenML `credit-g` when cached) is
 [loan-approval-classical](../proofs/loan-approval-classical/). Wisconsin
 breast cancer is
 [breast-cancer-classical](../proofs/breast-cancer-classical/) or
@@ -263,4 +262,4 @@ you mutate state. The teaching studio is
 - [Leakage and recipes](leakage-cv-recipes.md) for fold-local honesty
 - [Preprocess depth](preprocess-depth.md) for encode, dates, text, custom transforms
 - [Artifacts](artifacts-checkpoints-bundles.md) for checkpoint vs pipeline
-- [loan-approval-classical](../proofs/loan-approval-classical/) for the same spine on a fuller synthetic credit table
+- [loan-approval-classical](../proofs/loan-approval-classical/) for the same spine on German Credit (`credit-g` when cached)
