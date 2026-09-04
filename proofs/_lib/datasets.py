@@ -7,10 +7,53 @@ Real loaders wrap sklearn built-ins (offline) and optional OpenML fetches
 
 from __future__ import annotations
 
+import socket
+import threading
 from typing import Any
 
 import numpy as np
 import pandas as pd
+
+# OpenML first-fetch can hang past the proofs-smoke 600s kill. Bound it so
+# load_classical_credit_table can fall back to the in-repo credit draw.
+_OPENML_FETCH_TIMEOUT_SEC = 45.0
+
+
+def _fetch_openml_bounded(**kwargs: Any) -> Any:
+    """Call ``sklearn.datasets.fetch_openml`` with a hard wall-clock bound.
+
+    A hung download in a daemon thread does not keep the proof process alive
+    after fallback. ``socket.setdefaulttimeout`` covers urllib stalls that
+    never raise.
+    """
+    from sklearn.datasets import fetch_openml
+
+    box: dict[str, Any] = {}
+
+    def _run() -> None:
+        previous = socket.getdefaulttimeout()
+        socket.setdefaulttimeout(min(30.0, _OPENML_FETCH_TIMEOUT_SEC))
+        try:
+            box["bunch"] = fetch_openml(**kwargs)
+        except Exception as exc:  # noqa: BLE001
+            box["error"] = exc
+        finally:
+            socket.setdefaulttimeout(previous)
+
+    worker = threading.Thread(target=_run, name="buildml-openml-fetch", daemon=True)
+    worker.start()
+    worker.join(timeout=_OPENML_FETCH_TIMEOUT_SEC)
+    if worker.is_alive():
+        raise RuntimeError(
+            f"OpenML fetch timed out after {_OPENML_FETCH_TIMEOUT_SEC:.0f}s "
+            f"(kwargs={sorted(kwargs)})"
+        )
+    if "error" in box:
+        raise box["error"]
+    if "bunch" not in box:
+        raise RuntimeError("OpenML fetch returned no dataset")
+    return box["bunch"]
+
 
 
 def _real_meta(
@@ -1109,11 +1152,7 @@ def load_openml_adult(
         When OpenML/sklearn cannot load the dataset (offline, no cache, etc.).
     """
     try:
-        from sklearn.datasets import fetch_openml
-    except Exception as exc:  # noqa: BLE001
-        raise RuntimeError(f"sklearn.fetch_openml unavailable: {exc}") from exc
-    try:
-        bunch = fetch_openml(
+        bunch = _fetch_openml_bounded(
             data_id=data_id,
             as_frame=as_frame,
             parser="auto",
@@ -1172,11 +1211,12 @@ def load_openml_adult(
 def load_openml_credit_g() -> tuple[pd.DataFrame, dict[str, Any]]:
     """German Credit (credit-g) via OpenML; sensitive stand-in from personal_status."""
     try:
-        from sklearn.datasets import fetch_openml
-    except Exception as exc:  # noqa: BLE001
-        raise RuntimeError(f"sklearn.fetch_openml unavailable: {exc}") from exc
-    try:
-        bunch = fetch_openml(name="credit-g", version=1, as_frame=True, parser="auto")
+        bunch = _fetch_openml_bounded(
+            name="credit-g",
+            version=1,
+            as_frame=True,
+            parser="auto",
+        )
     except Exception as exc:  # noqa: BLE001
         raise RuntimeError(
             "OpenML credit-g unavailable "

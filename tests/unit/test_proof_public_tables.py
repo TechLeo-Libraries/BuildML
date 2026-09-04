@@ -62,6 +62,23 @@ def test_credit_fallback_is_disclosed(monkeypatch) -> None:
     assert len(frame) == 1200
 
 
+def test_openml_fetch_timeout_falls_back_to_synthetic(monkeypatch) -> None:
+    ds = _datasets()
+    monkeypatch.setattr(ds, "_OPENML_FETCH_TIMEOUT_SEC", 0.2)
+
+    def _hang(**_kwargs: object) -> object:
+        import time
+
+        time.sleep(3)
+        raise AssertionError("fetch_openml should have been abandoned")
+
+    monkeypatch.setattr("sklearn.datasets.fetch_openml", _hang)
+    frame, meta = ds.load_classical_credit_table(seed=2)
+    assert meta["loader_selected"] == "credit_approval_synthetic"
+    assert "timed out" in str(meta.get("fallback_reason") or "").lower()
+    assert len(frame) == 1200
+
+
 def test_infer_feature_kinds_splits_mixed_credit_draw() -> None:
     ds = _datasets()
     frame, meta = ds.load_credit_approval_synthetic(n=40, seed=0)
