@@ -114,7 +114,7 @@ def test_nested_cv_optuna_rejects_mixed_spaces() -> None:
         .set_roles({"x1": "feature", "x2": "feature", "y": "target"})
         .split(test_size=0.25, stratify=True, random_state=2)
     )
-    with pytest.raises(ValidationError, match="either Optuna spaces"):
+    with pytest.raises(ValidationError, match="either Optuna/evolutionary spaces"):
         session.nested_cv_score(
             DecisionTreeClassifier(random_state=0),
             param_grid={"max_depth": [2, 3]},

@@ -166,7 +166,7 @@ def test_bundle_rejects_wrong_format(tmp_path) -> None:
     (root / "meta.json").write_text('{"format": "buildml.pipeline_bundle.v2"}', encoding="utf-8")
     (root / "trainer.pt").write_bytes(b"nope")
     with pytest.raises(ValidationError, match="Unsupported trainer bundle format"):
-        load_torch_bundle(root, nn.Linear(2, 2, trusted=True))
+        load_torch_bundle(root, nn.Linear(2, 2), trusted=True)
 
 
 @pytest.mark.skipif(not _TORCH_SPEC, reason="torch not installed")
