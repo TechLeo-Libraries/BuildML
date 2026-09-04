@@ -8,6 +8,8 @@ with pre-release tags for alpha (`aN`) builds.
 
 ## [Unreleased]
 
+## [2.6.0] - 2026-09-04
+
 ### Changed
 
 - **Proofs and examples are a user contract.** Paste scripts live in
@@ -31,6 +33,10 @@ with pre-release tags for alpha (`aN`) builds.
   succeeds. Explicit `backend="industry"` raises unless
   `BUILDML_ALLOW_CBR_INDUSTRY_WINDOWS=1`. Explicit `backend="torch"`
   raises unless `BUILDML_ALLOW_CBR_TORCH_WINDOWS=1`.
+- **Package summary.** PyPI and the README opener describe one object
+  that holds your data, split, preprocessing, model, and run history,
+  and also runs the domain catalog. That object is named a Session.
+  They no longer sell a leakage slogan.
 
 ### Added
 

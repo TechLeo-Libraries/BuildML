@@ -1,9 +1,13 @@
 # PyPI 2.x publish notes
 
 **Package:** `buildml`  
-**Repo version / GitHub Release:** [`2.5.0`](https://github.com/TechLeo-Libraries/BuildML/releases/tag/v2.5.0) (Apache-2.0)  
-**PyPI latest stable:** [`2.5.0`](https://pypi.org/project/buildml/2.5.0/) (uploaded; confirm via [`https://pypi.org/pypi/buildml/json`](https://pypi.org/pypi/buildml/json))  
-**Prior stable on index:** `2.4.0` · **Prior pre-release:** `2.4.0a3`  
+**Repo version:** `2.6.0` (Apache-2.0). GitHub Release / tag `v2.6.0` after
+remote CI is green on this cut.  
+**PyPI latest stable:** [`2.5.0`](https://pypi.org/project/buildml/2.5.0/)
+until the `2.6.0` upload is verified
+([`https://pypi.org/pypi/buildml/json`](https://pypi.org/pypi/buildml/json)).
+Flip this line to `2.6.0` after that check.  
+**Prior stable on index:** `2.5.0` · **Prior pre-release:** `2.4.0a3`  
 **Legacy line:** `1.0.9` (MIT; pin only)
 
 ## Install for users
@@ -36,14 +40,14 @@ shipped.
    - Owner: `TechLeo-Libraries`
    - Repository: `BuildML`
    - Workflow name: `release.yml`
-   - Environment name: *(leave blank — workflow does not use a GitHub Environment)*
+   - Environment name: *(leave blank: workflow does not use a GitHub Environment)*
 2. Tag and/or dispatch:
 
 ```bash
-git tag -a v2.5.0 -m "BuildML 2.5.0"
-git push origin v2.5.0
+git tag -a v2.6.0 -m "BuildML 2.6.0"
+git push origin v2.6.0
 # or:
-gh workflow run release.yml --ref v2.5.0 -f dry_run=false
+gh workflow run release.yml --ref v2.6.0 -f dry_run=false
 ```
 
 `release.yml` also runs on `release: published` so `gh release create` works.
@@ -52,10 +56,10 @@ gh workflow run release.yml --ref v2.5.0 -f dry_run=false
 
 ```bash
 gh secret set PYPI_API_TOKEN  # paste pypi-... token (scope: upload to buildml)
-gh workflow run release.yml --ref v2.5.0 -f dry_run=false
+gh workflow run release.yml --ref v2.6.0 -f dry_run=false
 ```
 
-**C — Local build + twine** (how `2.4.0` and `2.5.0` landed when OIDC was not configured):
+**C - Local build + twine** (how `2.4.0` and `2.5.0` landed when OIDC was not configured):
 
 ```bash
 python -m build
@@ -65,6 +69,9 @@ python -m twine upload dist/buildml-<version>*
 
 4. Verify: `pip index versions buildml` shows the new version as latest, and
    `https://pypi.org/pypi/buildml/<version>/` returns 200.
+5. Flip install honesty in this file, `docs/stability.md`, `docs/installation.rst`,
+   `README.md`, and `docs/index.rst` so they no longer say PyPI still serves
+   the previous version.
 
 ### Known failure mode
 

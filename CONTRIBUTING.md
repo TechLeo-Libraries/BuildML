@@ -14,13 +14,14 @@ pip install -e ".[dev]"
 Python 3.10–3.13. Optional extras (`torch`, `rag`, `ai`, `serve`, …) match
 `README.md` / `docs/installation.rst`.
 
-**Install:** `pip install buildml` (Session 2.5.x). Prefer an editable checkout
+**Install:** `pip install buildml` (Session 2.6.x once on PyPI; until the
+`2.6.0` upload, the index still serves `2.5.0`). Prefer an editable checkout
 for development.
 
 ## Session architecture
 
 `buildml.Session` is the public entry point. **Facades are the supported public
-API for domains** in 2.5.x (`session.fairness.evaluate`, `session.anomaly.fit`,
+API for domains** in 2.6.x (`session.fairness.evaluate`, `session.anomaly.fit`,
 …). Flat domain actions remain supported-but-deprecated
 (`DeprecationWarning`) until BuildML 3.0; classical core flat methods stay dual
 without warnings. See `docs/session-facade-migration.md`.
@@ -116,7 +117,7 @@ python scripts/probe_industry_extras.py --artifact industry-probe.json
 
 Coverage `fail_under` lives in `pyproject.toml` (`[tool.coverage.report]`) and
 `scripts/coverage_ratchet.json`. It is a one-way ratchet (**70** active since
-`2.4.0a3`, still current for `2.5.0`; prior 60 superseded): raise only from a
+`2.4.0a3`, still current for `2.6.0`; prior 60 superseded): raise only from a
 full-suite measure (`python scripts/run_full_coverage.py --update-ratchet` or
 CI `pytest tests --cov=buildml`); do not lower it to silence a regression.
 `requirements.txt` / `requirements-dev.txt` are convenience mirrors of

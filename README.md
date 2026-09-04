@@ -1,20 +1,22 @@
 # BuildML
 
-BuildML keeps a machine-learning job in one Session: the table, what each
-column is for, the train / validation / test split, the preparation that
-learned from train only, and the model. If you try to prepare or fit before
+BuildML is a Python machine-learning library. One object holds your
+data, the train / validation / test split, preprocessing, the model, and
+the history of what you ran. That object is called a Session. The core
+path is classification and regression. The same object also runs
+forecasting, AutoML, fairness, recommenders, RAG, graphs, NLP, Torch,
+and the other domains in this repo. If you try to prepare or fit before
 a split, it stops you.
 
-If you already use pandas and scikit-learn, this is the workflow around
-them. You are not looking for another estimator zoo. You are looking for a
-place that remembers what you did and will not quietly leak the holdout.
+You still choose the model. This is not another estimator zoo.
 
 ```bash
 pip install buildml
 ```
 
-Python 3.10 through 3.13. That install is BuildML **2.5.0**, the current
-stable Session line. The public entry point is `buildml.Session`.
+Python 3.10 through 3.13. This repo is BuildML **2.6.0**, the current
+stable Session line. `pip install buildml` still resolves **2.5.0** on
+PyPI until this release is uploaded. The public entry point is `buildml.Session`.
 
 ```python
 import pandas as pd

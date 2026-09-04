@@ -2,8 +2,8 @@ BuildML 2.x changelog
 ---------------------
 
 Active release notes for BuildML 2.x live in the repository root
-``CHANGELOG.md``. The current line is ``2.5.0`` (Industry EDA surfaces and
-adaptability proof on the stable ``2.4.0`` Session line).
+``CHANGELOG.md``. The current line is ``2.6.0`` (validation defaults, Windows
+CBR safety, and public-table proofs on the stable ``2.5.0`` Session line).
 
 BuildML 1.x archived changelog
 ------------------------------

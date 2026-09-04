@@ -1,7 +1,8 @@
 # BuildML 2.x surface stability policy
 
-BuildML **2.5.0** continues the stable Session 2.x line (first stable was
-**2.4.0**). `pip install buildml` resolves **2.5.0** on PyPI
+BuildML **2.6.0** continues the stable Session 2.x line (first stable was
+**2.4.0**). This repo is **2.6.0**. `pip install buildml` still resolves
+**2.5.0** on PyPI until this release is uploaded
 ([project page](https://pypi.org/project/buildml/2.5.0/); publish notes in
 [`pypi-2x-publish.md`](pypi-2x-publish.md)). The Session surface is
 large on purpose. This note is how I keep that surface usable.
@@ -9,8 +10,8 @@ large on purpose. This note is how I keep that surface usable.
 ## What “stable” means here
 
 - **`pip install buildml`** installs the latest non-pre-release Session 2.x on
-  PyPI (target **2.5.x**; not legacy 1.0.9).
-- Public Session / facade APIs in 2.5.x follow SemVer: breaking removals wait
+  PyPI (target **2.6.x** after upload; not legacy 1.0.9).
+- Public Session / facade APIs in 2.6.x follow SemVer: breaking removals wait
   for a major bump (see facades → 3.0 below).
 - Optional industry extras remain **best-effort** across platforms; capability
   matrices + runtime probes are the honesty layer. For subprocess use-case
@@ -32,7 +33,7 @@ large on purpose. This note is how I keep that surface usable.
    withdrawn.
 5. **Supported freeze set.** Classical ingest / roles / split / preprocess /
    fit / evaluate / CV / search, checkpoint / pipeline bundles, domain facades,
-   and `*_capability_matrix` names are supported in 2.5.x.
+   and `*_capability_matrix` names are supported in 2.6.x.
 6. **Proofs and CI smoke** (`python -m proofs._lib.run_all --smoke`) must stay
    green on the freeze set. Smoke fails on unexpected `skipped_missing_extra` /
    `partial` result statuses (use `--allow-skip` only for local investigation).
@@ -48,4 +49,4 @@ large on purpose. This note is how I keep that surface usable.
 
 See `scripts/coverage_ratchet.json` and `pyproject.toml` `fail_under`.
 Active floor **70** (full-suite measure ~70.7%). Measure with
-`python scripts/run_full_coverage.py` — never from a tiny subset.
+`python scripts/run_full_coverage.py` - never from a tiny subset.

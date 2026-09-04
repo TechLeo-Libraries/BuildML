@@ -1,13 +1,17 @@
 BuildML
 =======
 
-BuildML keeps a machine-learning job in one :class:`buildml.Session`: the
-table, what each column is for, the split, the preparation that learned from
-train only, and the model. If you try to prepare or fit before a split, it
-stops you.
+BuildML is a Python machine-learning library. One object holds your
+data, the train / validation / test split, preprocessing, the model, and
+the history of what you ran. That object is :class:`buildml.Session`.
+The core path is classification and regression. The same object also
+runs forecasting, AutoML, fairness, recommenders, RAG, graphs, NLP,
+Torch, and the other domains in this repo. If you try to prepare or fit
+before a split, it stops you.
 
-Install with ``pip install buildml`` (Python 3.10 through 3.13). That is
-BuildML 2.5.0, the current stable Session line.
+Install with ``pip install buildml`` (Python 3.10 through 3.13). This repo
+is BuildML 2.6.0, the current stable Session line. Until the ``2.6.0``
+upload is verified, PyPI still serves 2.5.0.
 
 Start here
 ==========

@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "buildml"
-version = "2.5.0"
-description = "A Python Session for ML workflows that will not leak training into the holdout."
+version = "2.6.0"
+description = "Python machine-learning library where one object holds your data, split, preprocessing, model, and run history, and that same object also runs forecasting, AutoML, fairness, recommenders, RAG, graphs, NLP, Torch, and more."
 readme = "README.md"
 license = { text = "Apache-2.0" }
 authors = [
@@ -13,10 +13,11 @@ authors = [
 ]
 keywords = [
   "machine learning",
-  "data science",
-  "data preprocessing",
-  "supervised learning",
-  "ML toolkit",
+  "automl",
+  "forecasting",
+  "fairness",
+  "recommenders",
+  "rag",
 ]
 classifiers = [
   "Development Status :: 5 - Production/Stable",
@@ -298,7 +299,7 @@ omit = [
 ]
 
 [tool.coverage.report]
-# Active floor 70 (measured at 2.4.0a3; still current for 2.5.0). Full-suite
+# Active floor 70 (measured at 2.4.0a3; still current for 2.6.0). Full-suite
 # measure ~70.7% (see coverage_ratchet.json); Linux CI monolith is the gate.
 fail_under = 70
 precision = 1

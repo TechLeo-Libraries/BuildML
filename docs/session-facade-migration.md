@@ -25,6 +25,7 @@ dual and first-class **without** warnings.
 | **`2.4.0`** | Namespaced facades for all domains; flat domain actions warn; docs / guides / examples / proofs teach facades first |
 | `2.4.0` (stable intent) | Facades remain preferred; flat aliases still present |
 | **`2.5.0`** | Same facade policy continues on the stable Session line |
+| **`2.6.0`** | Same facade policy; calibration / threshold defaults move to validation |
 | **`3.0`** | Flat domain aliases eligible for removal (classical core policy re-evaluated then) |
 
 ## Product rules for 2.4+
@@ -36,7 +37,7 @@ dual and first-class **without** warnings.
    `session.explore.*` (EDA), `session.audit.*` (workflow / teaching).
 2. **Domain industry methods warn on flat actions.**  
    Prefer `session.<domain>.*`. Result / plan properties do not warn.
-3. **No functionality removed in `2.4.x` / `2.5.x`.** Deprecation means warnings
+3. **No functionality removed in `2.4.x` / `2.5.x` / `2.6.x`.** Deprecation means warnings
    + docs preference only.
 4. **Name collisions avoided.**  
    - EDA facade attr is `session.explore` (flat method remains `session.eda`)  
@@ -132,7 +133,7 @@ The migrator rewrites:
 
 ## Deprecation window after 2.4.x
 
-Facades are the supported domain API for 2.4.x / 2.5.x. Flat domain aliases stay
+Facades are the supported domain API for 2.4.x / 2.5.x / 2.6.x. Flat domain aliases stay
 supported-but-deprecated until **3.0**; that removal is out of the 2.x scope.
 
 PyPI 2.x publish readiness is separate: see

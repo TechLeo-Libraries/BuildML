@@ -174,7 +174,7 @@ texinfo_documents = [
         "BuildML Documentation",
         author,
         "buildml",
-        "A Session for ML workflows that will not leak training into the holdout.",
+        "Python machine-learning library where one object holds your data, split, preprocessing, model, and run history, and that same object also runs forecasting, AutoML, fairness, recommenders, RAG, graphs, NLP, and Torch.",
         "Miscellaneous",
     ),
 ]

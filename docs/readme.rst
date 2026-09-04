@@ -1,14 +1,14 @@
 Overview
 ========
 
-BuildML is a Python library for machine-learning workflows. The public
-entry point is :class:`buildml.Session`.
+BuildML is a Python machine-learning library. One object holds your
+data, the train / validation / test split, preprocessing, the model, and
+the history of what you ran. That object is :class:`buildml.Session`.
 
-You give the Session a table. You say which columns are features, which
-one is the target, and how to split. After that, preparation and fitting
-learn from the training rows only. Validation and test get the frozen
-version. Skip the split and the call fails instead of leaking statistics
-into the holdout.
+You say which columns are features, which one is the target, and how to
+split. After that, preparation and fitting learn from the training rows
+only. Validation and test get the frozen version. Skip the split and the
+call fails instead of leaking statistics into the holdout.
 
 A Session also keeps the story of the run: roles, membership, fitted
 plans, the optional estimator, and every operation you called. That is
@@ -35,9 +35,10 @@ Pandas is the sklearn-facing materialization path. Polars and DuckDB
 help with ingest and engine-aware prep. They do not make every Session
 operation lazy or out-of-core.
 
-Version 2.5.0 is the current stable Session 2.x line on
-`PyPI <https://pypi.org/project/buildml/2.5.0/>`_. See :doc:`stability`
-for the public-surface policy.
+Version 2.6.0 is the current Session 2.x line in this repo. PyPI still
+serves `2.5.0 <https://pypi.org/project/buildml/2.5.0/>`_ until the
+``2.6.0`` upload is verified. See :doc:`stability` and
+:doc:`pypi-2x-publish` for the public-surface policy.
 
 Start with :doc:`usage`. The ideas sit in :doc:`concepts`. Tutorials
 live in :doc:`guides`.
