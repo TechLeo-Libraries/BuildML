@@ -242,7 +242,12 @@ ValidationError
     else:
         resolved_backend = backend
 
-    allowed = list_semisupervised_methods(backend=resolved_backend)
+    allowed = list(
+        semisupervised_capability_matrix()["backends"]
+        .get(resolved_backend, {})
+        .get("methods")
+        or []
+    )
     if method not in allowed:
         raise ValidationError(
             f"method='{method}' is not valid for backend='{resolved_backend}'. "

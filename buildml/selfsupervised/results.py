@@ -10,7 +10,7 @@ from typing import Any
 class SelfSupervisedPlan:
     """Train-fitted self-supervised pretext plan (encoder + feature contract).
 
-    Persist via ``buildml.selfsupervised_bundle.v1``. Distinct from Session
+    Persist via ``buildml.ssl_bundle.v2``. Distinct from Session
     checkpoints, Torch trainer bundles, semi-supervised plans, and zoo
     pretrained backbones (vision/audio/speech transfer hooks).
     """

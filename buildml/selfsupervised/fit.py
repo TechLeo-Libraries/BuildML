@@ -310,7 +310,7 @@ def _fit_legacy_masked_tabular(
         warnings=tuple(warnings_list),
         used_reduce_components=used_reduce,
         config=config.to_dict(),
-        bundle_format="buildml.selfsupervised_bundle.v1",
+        bundle_format="buildml.ssl_bundle.v2",
     )
     result = SelfSupervisedFitResult(
         method=method,

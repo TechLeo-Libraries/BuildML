@@ -1981,7 +1981,7 @@ def _dispatch_tool(
         path = call.arguments.get("path")
         if not path:
             raise ValidationError("load_nlp_bundle requires a path argument.")
-        session.load_nlp_bundle(path)
+        session.load_nlp_bundle(path, trusted=bool(call.arguments.get("trusted", False)))
         state_changes.append(f"Loaded NLP bundle from: {path}")
         return {"loaded": True}, tuple(state_changes)
 

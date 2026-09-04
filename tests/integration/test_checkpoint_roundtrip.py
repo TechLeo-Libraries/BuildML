@@ -1,3 +1,5 @@
+import hashlib
+import json
 from pathlib import Path
 
 import pandas as pd
@@ -5,6 +7,21 @@ import pytest
 
 from buildml import Session
 from buildml.core.errors import ValidationError
+
+
+def _rewrite_frame_hash(root: Path) -> None:
+    """Update MANIFEST hashes after an intentional on-disk frame edit.
+
+    Integrity runs before schema/row checks. Tests that mutate parquet to
+    exercise those later checks must refresh the recorded digest first.
+    """
+    data = root / "data" / "frame.parquet"
+    digest = hashlib.sha256(data.read_bytes()).hexdigest()
+    manifest_path = root / "MANIFEST.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    hashes = manifest.setdefault("hashes", {})
+    hashes["data/frame.parquet"] = digest
+    manifest_path.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
 
 
 def test_checkpoint_save_load_restores_roles_and_splits(tmp_path: Path) -> None:
@@ -50,6 +67,7 @@ def test_removed_column_blocks_reattach(tmp_path: Path) -> None:
     # Simulate external edit that drops a column that existed at checkpoint time.
     broken = pd.read_parquet(path / "data" / "frame.parquet").drop(columns=["a"])
     broken.to_parquet(path / "data" / "frame.parquet", index=False)
+    _rewrite_frame_hash(path)
 
     with pytest.raises(ValidationError, match="required column"):
         Session.checkpoint_load(path, trusted=True)
@@ -67,6 +85,7 @@ def test_row_change_invalidates_splits(tmp_path: Path) -> None:
     altered = pd.read_parquet(path / "data" / "frame.parquet")
     altered = pd.concat([altered, pd.DataFrame({"a": [99], "y": [1]})], ignore_index=True)
     altered.to_parquet(path / "data" / "frame.parquet", index=False)
+    _rewrite_frame_hash(path)
 
     restored = Session.checkpoint_load(path, trusted=True)
     assert restored.reattach_result is not None

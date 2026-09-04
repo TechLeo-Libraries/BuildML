@@ -4466,6 +4466,13 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
                 "type": "object",
                 "properties": {
                     "path": {"type": "string", "description": "Bundle directory."},
+                    "trusted": {
+                        "type": "boolean",
+                        "description": (
+                            "Required True to deserialize pickle/joblib NLP plans "
+                            "from this path."
+                        ),
+                    },
                 },
                 "required": ["path"],
             },

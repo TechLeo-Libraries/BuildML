@@ -79,13 +79,14 @@ def evaluate_federated(
         raise ValidationError("No FederatedPlan. Call fit_federated first.")
 
     if backend is not None:
-        resolved = resolve_backend(backend, method=plan.method)
         plan_backend = str(getattr(plan, "backend", "native") or "native")
-        if resolved != plan_backend:
+        requested = str(backend).lower().replace("-", "_")
+        if requested != plan_backend:
             raise ValidationError(
                 f"backend={backend!r} does not match FederatedPlan.backend="
                 f"{plan_backend!r}. Refit or omit backend= on evaluate."
             )
+        resolve_backend(backend, method=plan.method)
 
     if partition == "all":
         frame = dataset._ensure_pandas()

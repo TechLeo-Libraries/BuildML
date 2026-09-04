@@ -263,7 +263,9 @@ def resolve_backend_method(
     else:
         resolved_backend = backend
 
-    allowed = list_metalearning_methods(backend=resolved_backend)
+    allowed = list(
+        metalearning_capability_matrix()["backends"].get(resolved_backend, {}).get("methods") or []
+    )
     if method_key not in allowed:
         raise ValidationError(
             f"method='{method_key}' is not valid for backend='{resolved_backend}'. "

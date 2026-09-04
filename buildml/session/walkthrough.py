@@ -306,7 +306,9 @@ def build_walkthrough(
         ),
         timeseries_status=_status(
             "timeseries",
-            _session_attr_active(session, "_timeseries_report", "timeseries_report"),
+            _session_attr_active(
+                session, "_ts_analysis_result", "_timeseries_report", "timeseries_report"
+            ),
             timeseries_status_for_walkthrough,
         ),
         anomaly_status=_status(
@@ -366,7 +368,12 @@ def build_walkthrough(
         ),
         symbolic_status=_status(
             "symbolic",
-            _session_attr_active(session, "_symbolic_plan", "symbolic_plan"),
+            _session_attr_active(
+                session,
+                "_symbolic_plan",
+                "symbolic_plan",
+                "_neuro_symbolic_plan",
+            ),
             symbolic_status_for_walkthrough,
         ),
         cbr_status=_status(
@@ -416,7 +423,9 @@ def build_walkthrough(
         ),
         synthetic_status=_status(
             "synthetic",
-            _session_attr_active(session, "_synthetic_plan"),
+            _session_attr_active(
+                session, "_synthesizer_plan", "_synthetic_plan", "synthesizer_plan"
+            ),
             synthetic_status_for_walkthrough,
         ),
         fairness_status=_status(

@@ -21,6 +21,14 @@ IndustryRankerMethod = Literal["lambdarank_lgbm", "rank_ndcg_xgb", "yetirank_cat
 TorchRankerMethod = Literal["listwise_lite"]
 RankerMethodName = SklearnRankerMethod | IndustryRankerMethod | TorchRankerMethod
 
+_SKLEARN_METHODS: tuple[str, ...] = ("pointwise", "pairwise")
+_INDUSTRY_METHODS: tuple[str, ...] = (
+    "lambdarank_lgbm",
+    "rank_ndcg_xgb",
+    "yetirank_catboost",
+)
+_TORCH_METHODS: tuple[str, ...] = ("listwise_lite",)
+
 # Legacy / shorthand names accepted at resolve time (proofs, explain layers).
 METHOD_ALIASES: dict[str, str] = {
     "lambdarank": "lambdarank_lgbm",
@@ -292,7 +300,12 @@ def resolve_backend_method(
     else:
         resolved_backend = backend
 
-    allowed = list_ranking_methods(backend=resolved_backend)
+    catalog = {
+        "sklearn": _SKLEARN_METHODS,
+        "industry": _INDUSTRY_METHODS,
+        "torch": _TORCH_METHODS,
+    }
+    allowed = list(catalog.get(resolved_backend) or [])
     if method not in allowed:
         raise ValidationError(
             f"method='{method}' is not valid for backend='{resolved_backend}'. "

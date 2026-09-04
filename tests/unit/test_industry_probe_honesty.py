@@ -79,7 +79,7 @@ def test_kg_industry_false_when_pykeen_import_fails(
 
     monkeypatch.setattr(kg_extras, "pykeen_spec_present", lambda: True)
     monkeypatch.setattr(kg_catalog, "pykeen_spec_present", lambda: True)
-    monkeypatch.setattr(kg_catalog, "pykeen_available", lambda: True)
+    monkeypatch.setattr(kg_extras, "pykeen_available", lambda: True)
     monkeypatch.setattr(kg_catalog, "pykeen_runtime_available", lambda: False)
     monkeypatch.setattr(kg_catalog, "kg_industry_available", lambda: False)
     monkeypatch.setattr("buildml.dl.extras.torch_available", lambda: True)

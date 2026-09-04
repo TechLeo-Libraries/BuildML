@@ -161,7 +161,7 @@ def test_every_nlp_tool_reaches_a_session_method(tmp_path: Path) -> None:
         ("extract_entities", {"partition": "test", "max_documents": 3}),
         ("summarize_text", {"partition": "test", "max_documents": 3}),
         ("save_nlp_bundle", {"path": str(tmp_path / "tool_bundle")}),
-        ("load_nlp_bundle", {"path": str(tmp_path / "tool_bundle")}),
+        ("load_nlp_bundle", {"path": str(tmp_path / "tool_bundle"), "trusted": True}),
     )
     for name, arguments in calls:
         proposal = propose_tool_execution(name, arguments, registry)
