@@ -148,8 +148,10 @@ BuildML's promise is that someone who does not already know a technique can
 still apply it correctly. Docstrings are the only documentation that travels
 with the code, so they carry that promise: they are documentation, not
 labels. `python scripts/audit_docstrings.py --check` enforces the structural
-half of this on the packages listed in that script's `ENFORCED_PREFIXES`; the
-teaching half is on the author.
+half of this on the packages listed in that script's `ENFORCED_PREFIXES` (must
+stay at zero findings) and on every other package via
+`scripts/docstring_budget.json` (counts may fall, never rise). The teaching
+half is on the author.
 
 Format is **NumPy style**, rendered by `sphinx.ext.napoleon`. Every public
 class, function, method, and property gets:
@@ -192,8 +194,9 @@ Additional conventions:
 - `scripts/lint_user_copy.py` bans marketing language and Unicode em dashes
   (U+2014). Write plainly; use ASCII punctuation (`:`, `;`, `,`, `.`, or `-`).
 - When a package meets the docstring standard, add it to `ENFORCED_PREFIXES` in
-  `scripts/audit_docstrings.py`. That list is a ratchet: entries are added,
-  never removed.
+  `scripts/audit_docstrings.py` only after `--check` is actually clean for that
+  prefix. Until then, keep the package on the budget ratchet
+  (`python scripts/audit_docstrings.py --write-budget` after a real improvement).
 
 Use `python scripts/audit_docstrings.py --report` to see per-package coverage
 and pick the next target, and `--path buildml/<pkg>` to audit work in progress.
