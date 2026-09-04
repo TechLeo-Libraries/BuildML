@@ -160,7 +160,6 @@ def test_domain_quickstart_contracts_match_resolvers() -> None:
 
     from buildml.cbr.catalog import cbr_industry_available, resolve_backend_metric
     from buildml.cbr.extras import windows_industry_ann_refused
-    from buildml.session.mixins.classical import ClassicalSessionMixin
     from buildml.federated.catalog import flwr_runtime_available
     from buildml.federated.catalog import resolve_backend as resolve_federated_backend
     from buildml.ranking.catalog import ranking_capability_matrix, resolve_backend_method
@@ -168,6 +167,7 @@ def test_domain_quickstart_contracts_match_resolvers() -> None:
     from buildml.recommenders.catalog import default_method_for_feedback
     from buildml.recommenders.extras import implicit_available
     from buildml.session.mixins.cbr import CbrSessionMixin
+    from buildml.session.mixins.classical import ClassicalSessionMixin
     from buildml.session.mixins.decision import DecisionSessionMixin
     from buildml.session.mixins.federated import FederatedSessionMixin
     from buildml.session.mixins.kg import KgSessionMixin

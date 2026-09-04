@@ -10,6 +10,7 @@ import pytest
 
 from buildml import Session
 from buildml.checkpoint import bundle as bundle_mod
+from buildml.core.serialization import sha256_file
 from buildml.core.types import EngineName
 from buildml.ingest.detect import available_engines
 
@@ -97,6 +98,12 @@ def test_legacy_single_sidecar_still_loads(tmp_path: Path) -> None:
         "limits": "legacy",
     }
     meta_path.write_text(json.dumps(meta, indent=2), encoding="utf-8")
+    manifest_path = ckpt / "MANIFEST.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    hashes = dict(manifest.get("hashes") or {})
+    hashes["meta.json"] = sha256_file(meta_path)
+    manifest["hashes"] = hashes
+    manifest_path.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
     session.dataset.close_native()
 
     restored = Session.checkpoint_load(ckpt, trusted=True)

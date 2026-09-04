@@ -16,7 +16,6 @@ from buildml.cbr.catalog import (
     resolve_backend_metric,
 )
 from buildml.cbr.extras import (
-    WINDOWS_CBR_TORCH_ENV,
     WINDOWS_INDUSTRY_ANN_ENV,
     cbr_industry_available,
     hnswlib_available,
