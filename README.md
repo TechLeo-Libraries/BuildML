@@ -14,8 +14,9 @@ You still choose the model. This is not another estimator zoo.
 pip install buildml
 ```
 
-Python 3.10 through 3.13. This repo is BuildML **2.6.0**, the current
-stable Session line. `pip install buildml` installs **2.6.0** from PyPI.
+Python 3.10 through 3.13. This repo is BuildML **2.6.1**, the current
+stable Session line. `pip install buildml` installs **2.6.1** from PyPI.
+Wheels `2.4.0`–`2.6.0` cannot `import buildml`; upgrade if you hit that.
 The public entry point is `buildml.Session`.
 
 ```python

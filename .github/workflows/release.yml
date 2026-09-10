@@ -42,6 +42,16 @@ jobs:
       - name: Build sdist and wheel
         run: python -m build
 
+      - name: Dist ships import-critical data
+        run: python scripts/check_wheel_contents.py dist
+
+      - name: Clean-install wheel import smoke
+        run: |
+          python -m venv "${{ runner.temp }}/buildml-wheel-probe"
+          "${{ runner.temp }}/buildml-wheel-probe/bin/pip" install --upgrade pip
+          "${{ runner.temp }}/buildml-wheel-probe/bin/pip" install dist/buildml-*.whl
+          "${{ runner.temp }}/buildml-wheel-probe/bin/python" -c "import buildml; from buildml import Session; print(buildml.__version__)"
+
       - name: Twine check
         run: twine check dist/*
 

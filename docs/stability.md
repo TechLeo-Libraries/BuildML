@@ -1,11 +1,12 @@
 # BuildML 2.x surface stability policy
 
-BuildML **2.6.0** continues the stable Session 2.x line (first stable was
-**2.4.0**). This repo is **2.6.0**. `pip install buildml` resolves
-**2.6.0** on PyPI
-([project page](https://pypi.org/project/buildml/2.6.0/); publish notes in
-[`pypi-2x-publish.md`](pypi-2x-publish.md)). The Session surface is
-large on purpose. This note is how I keep that surface usable.
+BuildML **2.6.1** continues the stable Session 2.x line (first stable was
+**2.4.0**). This repo is **2.6.1**. `pip install buildml` resolves
+**2.6.1** on PyPI
+([project page](https://pypi.org/project/buildml/2.6.1/); publish notes in
+[`pypi-2x-publish.md`](pypi-2x-publish.md)). Wheels **2.4.0–2.6.0** omit
+`operation_index.json` and cannot import; install **2.6.1**. The Session
+surface is large on purpose. This note is how I keep that surface usable.
 
 ## What “stable” means here
 

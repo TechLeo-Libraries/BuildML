@@ -1,11 +1,14 @@
 # PyPI 2.x publish notes
 
 **Package:** `buildml`  
-**Repo version:** `2.6.0` (Apache-2.0). GitHub Release / tag `v2.6.0`.  
-**PyPI latest stable:** [`2.6.0`](https://pypi.org/project/buildml/2.6.0/)
+**Repo version:** `2.6.1` (Apache-2.0). GitHub Release / tag `v2.6.1`.  
+**PyPI latest stable:** [`2.6.1`](https://pypi.org/project/buildml/2.6.1/)
 ([`https://pypi.org/pypi/buildml/json`](https://pypi.org/pypi/buildml/json)).  
-**Prior stable on index:** `2.5.0` · **Prior pre-release:** `2.4.0a3`  
+**Prior stable on index:** `2.6.0` · **Prior pre-release:** `2.4.0a3`  
 **Legacy line:** `1.0.9` (MIT; pin only)
+
+`2.4.0`–`2.6.0` wheels omit `operation_index.json` and cannot
+`import buildml`. Do not install those; use `2.6.1` or a source checkout.
 
 ## Install for users
 
@@ -29,7 +32,9 @@ shipped.
 
 1. Bump `buildml/_version.py` + `pyproject.toml`
 2. Update CHANGELOG + install pins if needed
-3. Publish (pick one path):
+3. `python -m build && python scripts/check_wheel_contents.py dist`
+   (must include `buildml/explain/generated/operation_index.json`)
+4. Publish (pick one path):
 
 **A — GitHub Actions Trusted Publishing (preferred)**
 
@@ -41,10 +46,10 @@ shipped.
 2. Tag and/or dispatch:
 
 ```bash
-git tag -a v2.6.0 -m "BuildML 2.6.0"
-git push origin v2.6.0
+git tag -a v2.6.1 -m "BuildML 2.6.1"
+git push origin v2.6.1
 # or:
-gh workflow run release.yml --ref v2.6.0 -f dry_run=false
+gh workflow run release.yml --ref v2.6.1 -f dry_run=false
 ```
 
 `release.yml` also runs on `release: published` so `gh release create` works.
@@ -53,20 +58,22 @@ gh workflow run release.yml --ref v2.6.0 -f dry_run=false
 
 ```bash
 gh secret set PYPI_API_TOKEN  # paste pypi-... token (scope: upload to buildml)
-gh workflow run release.yml --ref v2.6.0 -f dry_run=false
+gh workflow run release.yml --ref v2.6.1 -f dry_run=false
 ```
 
 **C - Local build + twine** (how `2.4.0`, `2.5.0`, and `2.6.0` landed when OIDC was not configured):
 
 ```bash
 python -m build
+python scripts/check_wheel_contents.py dist
 python -m twine check dist/*
 python -m twine upload dist/buildml-<version>*
 ```
 
-4. Verify: `pip index versions buildml` shows the new version as latest, and
-   `https://pypi.org/pypi/buildml/<version>/` returns 200.
-5. Flip install honesty in this file, `docs/stability.md`, `docs/installation.rst`,
+5. Verify: `pip index versions buildml` shows the new version as latest, and
+   `https://pypi.org/pypi/buildml/<version>/` returns 200. Confirm a
+   clean venv can `import buildml` from the uploaded wheel.
+6. Flip install honesty in this file, `docs/stability.md`, `docs/installation.rst`,
    `README.md`, and `docs/index.rst` so they no longer say PyPI still serves
    the previous version.
 
@@ -76,4 +83,5 @@ Tag-push / workflow publish fails with Trusted Publishing
 `invalid-publisher` when PyPI has no matching publisher claims for
 `TechLeo-Libraries/BuildML` + `release.yml`. Fix with path A or B/C above.
 `2.4.0`, `2.5.0`, and `2.6.0` were uploaded via local twine when the OIDC job did not
-have a matching publisher.
+have a matching publisher. Those three wheels omitted
+`operation_index.json`; `2.6.1` is the packaging fix.

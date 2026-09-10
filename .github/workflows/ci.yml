@@ -106,6 +106,17 @@ jobs:
       - name: Build wheel
         run: python -m build
 
+      - name: Wheel ships import-critical data
+        run: python scripts/check_wheel_contents.py dist
+
+      - name: Clean-install wheel import smoke
+        if: matrix.python-version == '3.12'
+        run: |
+          python -m venv "${{ runner.temp }}/buildml-wheel-probe"
+          "${{ runner.temp }}/buildml-wheel-probe/bin/pip" install --upgrade pip
+          "${{ runner.temp }}/buildml-wheel-probe/bin/pip" install dist/buildml-*.whl
+          "${{ runner.temp }}/buildml-wheel-probe/bin/python" -c "import buildml; from buildml import Session; print(buildml.__version__)"
+
   # Classical-only Windows gate. Core + dev install (no Torch / industry extras).
   # Torch, PyG, and several industry wheels stay Linux-only in CI — see the
   # torch/rag/benchmarks jobs and README install honesty. Industry probe is

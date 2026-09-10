@@ -3,8 +3,10 @@
 Teaching prose lives in :mod:`buildml.explain.overlays` (human-authored, split
 by domain). The machine-readable Session signature index lives in
 ``buildml/explain/generated/operation_index.json`` and is refreshed by
-``python scripts/sync_teaching_surface.py --write``. CI fails when Session,
-catalog overlays, the index, or AI tool bindings diverge.
+``python scripts/sync_teaching_surface.py --write``. That JSON is loaded
+at catalog import, so the wheel must ship it
+(``[tool.setuptools.package-data]`` / ``MANIFEST.in``). CI fails when
+Session, catalog overlays, the index, or AI tool bindings diverge.
 
 Missing overlay parameter rows are auto-filled from the generated Session
 signature index so hand lists cannot silently omit public knobs (richer

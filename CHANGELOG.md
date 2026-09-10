@@ -8,6 +8,18 @@ with pre-release tags for alpha (`aN`) builds.
 
 ## [Unreleased]
 
+## [2.6.1] - 2026-09-10
+
+### Fixed
+
+- **PyPI wheels can import BuildML again.** `2.4.0`–`2.6.0` omitted
+  `buildml/explain/generated/operation_index.json` from the wheel.
+  `import buildml` loads the Session catalog at import time, so a clean
+  `pip install buildml` raised `FileNotFoundError`. The index is now
+  declared in `[tool.setuptools.package-data]` and `MANIFEST.in`. CI
+  inspects `dist/` and clean-installs the wheel before a release can
+  ship. Install `buildml>=2.6.1` (source checkouts were never broken).
+
 ## [2.6.0] - 2026-09-04
 
 ### Changed

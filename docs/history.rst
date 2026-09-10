@@ -2,8 +2,8 @@ BuildML 2.x changelog
 ---------------------
 
 Active release notes for BuildML 2.x live in the repository root
-``CHANGELOG.md``. The current line is ``2.6.0`` (validation defaults, Windows
-CBR safety, public-table proofs, and ``pip install buildml`` resolving 2.6.0).
+``CHANGELOG.md``. The current line is ``2.6.1`` (wheel ships
+``operation_index.json`` so a clean PyPI install can import BuildML).
 
 BuildML 1.x archived changelog
 ------------------------------

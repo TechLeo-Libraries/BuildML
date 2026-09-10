@@ -14,7 +14,7 @@ def test_import_exposes_session_and_version() -> None:
     from buildml._version import __version__ as package_version
 
     assert buildml.__version__ == package_version
-    assert buildml.__version__ == "2.6.0"
+    assert buildml.__version__ == "2.6.1"
     assert buildml.Session is Session
 
 

@@ -6,8 +6,10 @@ BuildML supports Python 3.10 through 3.13.
 .. important::
 
    **Default install:** ``pip install buildml`` installs Session **2.6.x**
-   (Apache-2.0). The index currently serves ``2.6.0``. From this checkout
-   the package version is ``2.6.0``. You are done when this works::
+   (Apache-2.0). The index currently serves ``2.6.1``. From this checkout
+   the package version is ``2.6.1``. Wheels ``2.4.0``–``2.6.0`` omit
+   ``operation_index.json`` and cannot ``import buildml``; install
+   ``buildml>=2.6.1``. You are done when this works::
 
       python -c "from buildml import Session; print(Session)"
 

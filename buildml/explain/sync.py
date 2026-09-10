@@ -11,12 +11,21 @@ import inspect
 import json
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
+from importlib.resources import files
 from pathlib import Path
 from typing import Any
 
 INDEX_SCHEMA_VERSION = 1
 GENERATED_DIR = Path(__file__).resolve().parent / "generated"
 OPERATION_INDEX_PATH = GENERATED_DIR / "operation_index.json"
+MISSING_OPERATION_INDEX_MESSAGE = (
+    "BuildML cannot load buildml/explain/generated/operation_index.json. "
+    "A clean PyPI install must ship this file in the wheel "
+    "(see [tool.setuptools.package-data] and MANIFEST.in). "
+    "Wheels 2.4.0–2.6.0 omitted it, so import buildml failed. "
+    "Install buildml>=2.6.1, or from a source checkout run: "
+    "python scripts/sync_teaching_surface.py --write"
+)
 
 # AI tools are an intentional allowlist, not a full Session mirror.
 # Every tool must still resolve to a real Session method / catalog op.
@@ -548,6 +557,10 @@ def load_operation_index(path: Path | None = None) -> dict[str, Any]:
     Session: documentation tooling, for instance, which can then describe the
     API without paying for the import.
 
+    The default location is the packaged resource
+    ``buildml.explain.generated/operation_index.json``, so a wheel install
+    resolves the same way as a source checkout.
+
     Parameters
     ----------
     path:
@@ -562,7 +575,9 @@ def load_operation_index(path: Path | None = None) -> dict[str, Any]:
     Raises
     ------
     FileNotFoundError
-        If the file is absent.
+        If the file is absent. The default-path message names the packaging
+        contract so a missing wheel member is not mistaken for a source-tree
+        sync miss.
     json.JSONDecodeError
         If it is not valid JSON.
 
@@ -577,8 +592,20 @@ def load_operation_index(path: Path | None = None) -> dict[str, Any]:
     """
     from typing import cast
 
-    source = path or OPERATION_INDEX_PATH
-    return cast(dict[str, Any], json.loads(source.read_text(encoding="utf-8")))
+    try:
+        if path is not None:
+            text = path.read_text(encoding="utf-8")
+        else:
+            resource = files("buildml.explain.generated").joinpath("operation_index.json")
+            text = resource.read_text(encoding="utf-8")
+    except (FileNotFoundError, ModuleNotFoundError, OSError) as exc:
+        if path is None and OPERATION_INDEX_PATH.is_file():
+            text = OPERATION_INDEX_PATH.read_text(encoding="utf-8")
+        elif path is None:
+            raise FileNotFoundError(MISSING_OPERATION_INDEX_MESSAGE) from exc
+        else:
+            raise
+    return cast(dict[str, Any], json.loads(text))
 
 
 def _catalog_names(catalog: Mapping[str, Any] | None = None) -> set[str]:

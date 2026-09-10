@@ -1,0 +1,9 @@
+# Non-Python files required at import / runtime. setuptools package-data
+# ships them in the wheel; this list keeps the sdist honest as well.
+include buildml/py.typed
+recursive-include buildml/explain/generated *.json
+recursive-include buildml/dashboard/static *
+recursive-include buildml/dashboard/templates *
+recursive-include buildml/dl/templates *
+global-exclude *.py[cod]
+global-exclude __pycache__
