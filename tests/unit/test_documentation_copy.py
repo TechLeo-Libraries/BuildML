@@ -62,6 +62,8 @@ def test_readme_states_session_entry_and_legacy_boundary() -> None:
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
     assert "The public entry point is `buildml.Session`" in readme
     assert "pip install buildml" in readme
+    assert "unified, stateful ML lifecycle" in readme
+    assert "fold-local preprocessing" in readme
     assert "BuildML 1.x legacy boundary" in readme
     assert "There is no compatibility shim" in readme
 
@@ -72,6 +74,7 @@ def test_sphinx_current_path_uses_session() -> None:
         (ROOT / "docs" / page).read_text(encoding="utf-8") for page in current_pages
     )
     assert "buildml.Session" in text
+    assert "unified, stateful ML lifecycle" in text
     assert "buildml.automate" not in text
 
 
@@ -81,6 +84,8 @@ def test_copy_lint_rejects_approved_banned_filler_and_stale_apis() -> None:
         "Actionable recommendations",
         "This is research-grade output",
         "Unlock seamless workflows",
+        "the world's first library",
+        "the only machine-learning library",
     )
     for text in banned:
         assert any(pattern.search(text) for _, pattern in COPY_RULES), text

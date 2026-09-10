@@ -9,6 +9,10 @@ runs forecasting, AutoML, fairness, recommenders, RAG, graphs, NLP,
 Torch, and the other domains in this repo. If you try to prepare or fit
 before a split, it stops you.
 
+A Session is a unified, stateful ML lifecycle. Enforced leakage
+safeguards, fold-local preprocessing, contextual teaching, workflow
+guidance, checkpointing, and auditable export live on that same object.
+
 Install with ``pip install buildml`` (Python 3.10 through 3.13). This repo
 is BuildML 2.6.1, the current stable Session line. PyPI serves 2.6.1.
 

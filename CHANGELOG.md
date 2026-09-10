@@ -8,6 +8,19 @@ with pre-release tags for alpha (`aN`) builds.
 
 ## [Unreleased]
 
+### Changed
+
+- External docs state the Session as a unified, stateful ML lifecycle
+  (leakage safeguards, fold-local preprocessing, teaching, workflow
+  guidance, checkpointing, auditable export) without first-or-only
+  library claims.
+
+### Fixed
+
+- `release.yml` publishes with the `PYPI_API_TOKEN` secret and
+  `skip-existing`, so a tag push stays green when Trusted Publishing is
+  unset or local twine already uploaded the same files.
+
 ## [2.6.1] - 2026-09-10
 
 ### Fixed

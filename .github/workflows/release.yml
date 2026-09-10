@@ -83,8 +83,14 @@ jobs:
           name: python-package-distributions
           path: dist/
 
-      # OIDC Trusted Publishing. If this fails with invalid-publisher, configure
-      # the PyPI publisher (see docs/pypi-2x-publish.md) or upload via twine /
-      # set secret PYPI_API_TOKEN and temporarily pass password: ${{ secrets.PYPI_API_TOKEN }}.
+      # API token (repo secret PYPI_API_TOKEN) is the working path until a
+      # PyPI Trusted Publisher is registered for this workflow. skip-existing
+      # keeps a tag-push green when the same files were already uploaded with
+      # local twine. Attestations stay off because they require OIDC.
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          user: __token__
+          password: ${{ secrets.PYPI_API_TOKEN }}
+          skip-existing: true
+          attestations: false

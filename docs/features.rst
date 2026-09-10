@@ -4,6 +4,9 @@ Current capabilities
 BuildML 2.6.1 centers on :class:`buildml.Session`. Classical tabular work
 is the core path. Optional domains attach to the same Session, the same
 history, and the same explain catalog.
+A Session is a unified, stateful ML lifecycle. Enforced leakage
+safeguards, fold-local preprocessing, contextual teaching, workflow
+guidance, checkpointing, and auditable export live on that same object.
 
 This page is a map of what is shipped. Each domain has a one-line job,
 the extra (if any), the main calls, and a hard line around what it is

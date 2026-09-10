@@ -54,7 +54,11 @@ gh workflow run release.yml --ref v2.6.1 -f dry_run=false
 
 `release.yml` also runs on `release: published` so `gh release create` works.
 
-**B — API token fallback**
+**B — API token fallback** (what `release.yml` uses today)
+
+Set the repo secret `PYPI_API_TOKEN` (a PyPI token scoped to `buildml`).
+The workflow reads it on tag push. `skip-existing: true` so a second
+upload of the same files does not fail the job.
 
 ```bash
 gh secret set PYPI_API_TOKEN  # paste pypi-... token (scope: upload to buildml)
@@ -79,9 +83,11 @@ python -m twine upload dist/buildml-<version>*
 
 ### Known failure mode
 
-Tag-push / workflow publish fails with Trusted Publishing
-`invalid-publisher` when PyPI has no matching publisher claims for
-`TechLeo-Libraries/BuildML` + `release.yml`. Fix with path A or B/C above.
+Tag-push used to fail with Trusted Publishing `invalid-publisher` when
+PyPI had no matching publisher claims for `TechLeo-Libraries/BuildML` +
+`release.yml`. That red check does **not** mean PyPI is missing the
+release if path B or C already uploaded it. `release.yml` now uses
+`PYPI_API_TOKEN` (path B) with `skip-existing`.
 `2.4.0`, `2.5.0`, and `2.6.0` were uploaded via local twine when the OIDC job did not
 have a matching publisher. Those three wheels omitted
 `operation_index.json`; `2.6.1` is the packaging fix.

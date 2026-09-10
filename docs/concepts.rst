@@ -8,6 +8,10 @@ those ideas. The short in-library notes live in
 when you are already in a Session. Use this page when you want the
 judgment written out.
 
+A Session is a unified, stateful ML lifecycle. Enforced leakage
+safeguards, fold-local preprocessing, contextual teaching, workflow
+guidance, checkpointing, and auditable export live on that same object.
+
 Roles
 -----
 

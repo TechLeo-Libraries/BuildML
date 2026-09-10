@@ -4,6 +4,9 @@ Overview
 BuildML is a Python machine-learning library. One object holds your
 data, the train / validation / test split, preprocessing, the model, and
 the history of what you ran. That object is :class:`buildml.Session`.
+A Session is a unified, stateful ML lifecycle. Enforced leakage
+safeguards, fold-local preprocessing, contextual teaching, workflow
+guidance, checkpointing, and auditable export live on that same object.
 
 You say which columns are features, which one is the target, and how to
 split. After that, preparation and fitting learn from the training rows

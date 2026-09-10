@@ -10,6 +10,10 @@ a split, it stops you.
 
 You still choose the model. This is not another estimator zoo.
 
+A Session is a unified, stateful ML lifecycle. Enforced leakage
+safeguards, fold-local preprocessing, contextual teaching, workflow
+guidance, checkpointing, and auditable export live on that same object.
+
 ```bash
 pip install buildml
 ```

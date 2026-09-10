@@ -50,6 +50,16 @@ COPY_RULES: tuple[tuple[str, re.Pattern[str]], ...] = (
             re.IGNORECASE,
         ),
     ),
+    (
+        "first-or-only-library-claim",
+        re.compile(
+            r"(?:world'?s\s+first|first[- ]of[- ]its[- ]kind|"
+            r"the\s+only\s+(?:python\s+)?(?:machine[- ]learning\s+|ml\s+)?"
+            r"(?:library|toolkit|framework)|"
+            r"only\s+such\s+(?:library|toolkit|framework))",
+            re.IGNORECASE,
+        ),
+    ),
 )
 
 STALE_API = re.compile(
