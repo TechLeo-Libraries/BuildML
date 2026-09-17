@@ -80,7 +80,7 @@ PROBES: dict[str, tuple[str, ...]] = {
 KNOWN_FRAGILE: dict[str, str] = {
     "lightfm": "marker: python_version < '3.13' and sys_platform != 'win32'",
     "giotto_tda": "marker: python_version < '3.13'",
-    "learn2learn": "marker: python_version < '3.13'",
+    "learn2learn": "marker: python_version < '3.12'",
     "skope_rules": "marker: python_version < '3.13'",
     "neuralforecast": "marker: python_version < '3.13'",
     "faiss": "marker: python_version < '3.13' and sys_platform != 'win32'",

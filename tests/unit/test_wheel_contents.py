@@ -62,12 +62,15 @@ def test_forbidden_members_detects_bytecode() -> None:
 
 
 def test_sdist_accepts_version_prefixed_members() -> None:
+    from buildml._version import __version__
+
+    prefix = f"buildml-{__version__}"
     names = {
-        "buildml-2.6.1/buildml/__init__.py",
-        "buildml-2.6.1/buildml/_version.py",
-        "buildml-2.6.1/buildml/py.typed",
-        "buildml-2.6.1/buildml/explain/generated/__init__.py",
-        "buildml-2.6.1/buildml/explain/generated/operation_index.json",
+        f"{prefix}/buildml/__init__.py",
+        f"{prefix}/buildml/_version.py",
+        f"{prefix}/buildml/py.typed",
+        f"{prefix}/buildml/explain/generated/__init__.py",
+        f"{prefix}/buildml/explain/generated/operation_index.json",
     }
     assert missing_required_members(names, sdist=True) == []
 

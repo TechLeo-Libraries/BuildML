@@ -72,8 +72,9 @@ def metalearning_capability_matrix() -> dict[str, Any]:
                 "notes": (
                     "First-order tabular MAML/Reptile when buildml[torch] imports "
                     "cleanly. Uses learn2learn when installed "
-                    "(buildml[metalearning-industry]); otherwise an honest native "
-                    "first-order SGD meta-loop. Not second-order MAML-at-scale."
+                    "(buildml[metalearning-industry], python_version < '3.12'); "
+                    "otherwise an honest native first-order SGD meta-loop. Not "
+                    "second-order MAML-at-scale."
                 ),
                 **platform_skip_entry("learn2learn", extra="metalearning-industry"),
             },

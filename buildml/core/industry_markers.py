@@ -15,6 +15,10 @@ def _py_lt_313() -> bool:
     return sys.version_info < (3, 13)
 
 
+def _py_lt_312() -> bool:
+    return sys.version_info < (3, 12)
+
+
 def _not_windows() -> bool:
     return sys.platform != "win32"
 
@@ -34,8 +38,8 @@ _MARKER_SPECS: dict[str, tuple[bool, str]] = {
         "python_version < '3.13'",
     ),
     "learn2learn": (
-        _py_lt_313(),
-        "python_version < '3.13'",
+        _py_lt_312(),
+        "python_version < '3.12'",
     ),
     "skope_rules": (
         _py_lt_313(),

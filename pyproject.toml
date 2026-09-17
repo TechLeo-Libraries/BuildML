@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "buildml"
-version = "2.6.1"
+version = "2.6.2"
 description = "Python machine-learning library where one object holds your data, split, preprocessing, model, and run history, and that same object also runs forecasting, AutoML, fairness, recommenders, RAG, graphs, NLP, Torch, and more."
 readme = "README.md"
 license = { text = "Apache-2.0" }
@@ -107,9 +107,10 @@ ranking-industry = [
   "xgboost>=2.0",
   "catboost>=1.2",
 ]
-# learn2learn pulls qpth/numpy pins that break on Py3.13; native FO MAML remains.
+# learn2learn Cython fails on Win 3.12 (longintrepr.h) and qpth/numpy pins
+# break on Py3.13; native first-order MAML remains.
 metalearning-industry = [
-  "learn2learn>=0.2; python_version < '3.13'",
+  "learn2learn>=0.2; python_version < '3.12'",
 ]
 multitask-industry = [
   "lightgbm>=4.0",

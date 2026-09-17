@@ -214,28 +214,65 @@ def vectorize_giotto_diagrams(
     return out[:target]
 
 
+def _birth_death_pairs(diagram: Any, dim_index: int) -> np.ndarray:
+    """Return an ``(n, 2)`` birth-death array for one homology slot."""
+    if dim_index < 0 or dim_index >= len(diagram):
+        return np.zeros((0, 2), dtype=float)
+    dgm = np.asarray(diagram[dim_index], dtype=float)
+    if dgm.size == 0:
+        return np.zeros((0, 2), dtype=float)
+    if dgm.ndim == 1:
+        if dgm.shape[0] < 2:
+            return np.zeros((0, 2), dtype=float)
+        dgm = dgm.reshape(1, -1)
+    if dgm.ndim != 2 or dgm.shape[1] < 2:
+        return np.zeros((0, 2), dtype=float)
+    return np.asarray(dgm[:, :2], dtype=float)
+
+
 def _diagrams_to_giotto_batch(
     train_diagrams: Sequence[Sequence[np.ndarray]],
     dims: Sequence[int],
 ) -> np.ndarray:
-    """Stack diagrams into giotto format (n_samples, n_points, 3)."""
-    rows: list[np.ndarray] = []
+    """Stack diagrams into giotto format ``(n_samples, n_points, 3)``.
+
+    giotto-tda requires every sample to carry the same number of
+    birth-death triples **in each homology dimension**. Pad short
+    dimensions with trivial bars (``birth == death``) so H0/H1 counts
+    line up across the batch. Zero-persistence points are ignored by
+    giotto vectorizers.
+    """
+    dim_ids = [int(d) for d in dims]
+    if not train_diagrams:
+        return np.zeros((0, 1, 3), dtype=float)
+
+    per_sample: list[dict[int, np.ndarray]] = []
+    max_per_dim: dict[int, int] = {d: 0 for d in dim_ids}
     for sample in train_diagrams:
-        chunks: list[np.ndarray] = []
-        for d in dims:
-            if d < len(sample):
-                dgm = np.asarray(sample[d], dtype=float)
-                if dgm.size:
-                    extra = np.full((dgm.shape[0], 1), float(d), dtype=float)
-                    chunks.append(np.hstack([dgm, extra]))
-        if chunks:
-            rows.append(np.vstack(chunks))
-        else:
-            rows.append(np.zeros((1, 3), dtype=float))
-    max_pts = max(r.shape[0] for r in rows)
-    padded = np.zeros((len(rows), max_pts, 3), dtype=float)
-    for i, row in enumerate(rows):
-        padded[i, : row.shape[0], :] = row
+        by_dim: dict[int, np.ndarray] = {}
+        for d in dim_ids:
+            pairs = _birth_death_pairs(sample, d)
+            by_dim[d] = pairs
+            max_per_dim[d] = max(max_per_dim[d], int(pairs.shape[0]))
+        per_sample.append(by_dim)
+
+    n_pts = int(sum(max_per_dim[d] for d in dim_ids))
+    if n_pts == 0:
+        return np.zeros((len(per_sample), 1, 3), dtype=float)
+
+    padded = np.zeros((len(per_sample), n_pts, 3), dtype=float)
+    for i, by_dim in enumerate(per_sample):
+        offset = 0
+        for d in dim_ids:
+            pairs = by_dim[d]
+            n = int(pairs.shape[0])
+            target = max_per_dim[d]
+            if n:
+                padded[i, offset : offset + n, 0] = pairs[:, 0]
+                padded[i, offset : offset + n, 1] = pairs[:, 1]
+            if target:
+                padded[i, offset : offset + target, 2] = float(d)
+            offset += target
     return padded
 
 

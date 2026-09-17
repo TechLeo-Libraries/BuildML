@@ -18,9 +18,9 @@ guidance, checkpointing, and auditable export live on that same object.
 pip install buildml
 ```
 
-Python 3.10 through 3.13. This repo is BuildML **2.6.1**, the current
-stable Session line. `pip install buildml` installs **2.6.1** from PyPI.
-Wheels `2.4.0`–`2.6.0` cannot `import buildml`; upgrade if you hit that.
+Python 3.10 through 3.13. This repo is BuildML **2.6.2**, the current
+stable Session line. `pip install buildml` installs **2.6.2** from PyPI.
+Wheels `2.4.0a3`–`2.6.0` cannot `import buildml`; use `>=2.6.1`.
 The public entry point is `buildml.Session`.
 
 ```python

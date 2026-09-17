@@ -1,14 +1,15 @@
 # PyPI 2.x publish notes
 
 **Package:** `buildml`  
-**Repo version:** `2.6.1` (Apache-2.0). GitHub Release / tag `v2.6.1`.  
-**PyPI latest stable:** [`2.6.1`](https://pypi.org/project/buildml/2.6.1/)
+**Repo version:** `2.6.2` (Apache-2.0). GitHub Release / tag `v2.6.2`.  
+**PyPI latest stable:** [`2.6.2`](https://pypi.org/project/buildml/2.6.2/)
 ([`https://pypi.org/pypi/buildml/json`](https://pypi.org/pypi/buildml/json)).  
-**Prior stable on index:** `2.6.0` · **Prior pre-release:** `2.4.0a3`  
-**Legacy line:** `1.0.9` (MIT; pin only)
+**Prior importable stable:** `2.6.1`  
+**Yank on PyPI (cannot import):** `2.4.0a3`, `2.4.0`, `2.5.0`, `2.6.0`  
+**Legacy line:** `1.0.9` (MIT; pin only; do not yank)
 
-`2.4.0`–`2.6.0` wheels omit `operation_index.json` and cannot
-`import buildml`. Do not install those; use `2.6.1` or a source checkout.
+Those `2.4.0a3`–`2.6.0` wheels omit `operation_index.json` and cannot
+`import buildml`. Use `2.6.2` (or pin `2.6.1`) or a source checkout.
 
 ## Install for users
 
@@ -46,10 +47,10 @@ shipped.
 2. Tag and/or dispatch:
 
 ```bash
-git tag -a v2.6.1 -m "BuildML 2.6.1"
-git push origin v2.6.1
+git tag -a v2.6.2 -m "BuildML 2.6.2"
+git push origin v2.6.2
 # or:
-gh workflow run release.yml --ref v2.6.1 -f dry_run=false
+gh workflow run release.yml --ref v2.6.2 -f dry_run=false
 ```
 
 `release.yml` also runs on `release: published` so `gh release create` works.
@@ -62,10 +63,10 @@ upload of the same files does not fail the job.
 
 ```bash
 gh secret set PYPI_API_TOKEN  # paste pypi-... token (scope: upload to buildml)
-gh workflow run release.yml --ref v2.6.1 -f dry_run=false
+gh workflow run release.yml --ref v2.6.2 -f dry_run=false
 ```
 
-**C - Local build + twine** (how `2.4.0`, `2.5.0`, and `2.6.0` landed when OIDC was not configured):
+**C - Local build + twine** (how `2.4.0`, `2.5.0`, `2.6.0`, `2.6.1`, and `2.6.2` land when OIDC is not configured):
 
 ```bash
 python -m build
@@ -89,5 +90,6 @@ PyPI had no matching publisher claims for `TechLeo-Libraries/BuildML` +
 release if path B or C already uploaded it. `release.yml` now uses
 `PYPI_API_TOKEN` (path B) with `skip-existing`.
 `2.4.0`, `2.5.0`, and `2.6.0` were uploaded via local twine when the OIDC job did not
-have a matching publisher. Those three wheels omitted
-`operation_index.json`; `2.6.1` is the packaging fix.
+have a matching publisher. Those three wheels (plus `2.4.0a3`) omitted
+`operation_index.json` and must be yanked; `2.6.1` is the packaging fix and
+`2.6.2` is the extras/API-drift follow-up.

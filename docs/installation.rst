@@ -6,9 +6,9 @@ BuildML supports Python 3.10 through 3.13.
 .. important::
 
    **Default install:** ``pip install buildml`` installs Session **2.6.x**
-   (Apache-2.0). The index currently serves ``2.6.1``. From this checkout
-   the package version is ``2.6.1``. Wheels ``2.4.0``–``2.6.0`` omit
-   ``operation_index.json`` and cannot ``import buildml``; install
+   (Apache-2.0). The index currently serves ``2.6.2``. From this checkout
+   the package version is ``2.6.2``. Wheels ``2.4.0a3``–``2.6.0``
+   omit ``operation_index.json`` and cannot ``import buildml``; install
    ``buildml>=2.6.1``. You are done when this works::
 
       python -c "from buildml import Session; print(Session)"
@@ -106,12 +106,15 @@ nested industry wheel installs on every platform.
 
 On **Python 3.13**, especially Windows, some nested pins are skipped
 with environment markers when upstream wheels are missing or broken
-(LightFM, learn2learn / qpth, giotto-tda, neuralforecast, skope-rules,
-and similar). Core sklearn paths still install. Check the domain
+(LightFM, giotto-tda, neuralforecast, skope-rules, and similar).
+``learn2learn`` is skipped on **Python 3.12+** (Windows Cython
+``longintrepr.h``; qpth/numpy pins on 3.13). Native first-order MAML
+remains. Core sklearn paths still install. Check the domain
 capability matrix (``session.automl.capability_matrix()``, and the same
 pattern on other facades).
 
-Prefer **Python 3.11 or 3.12** for Torch and heavy industry extras.
+Prefer **Python 3.11** for the full industry extra set; 3.12 still
+covers Torch and most extras except ``learn2learn``.
 Always use a project virtual environment. The staged-install guide is
 ``guides/safe-install-and-runtime.md``.
 

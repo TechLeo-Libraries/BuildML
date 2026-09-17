@@ -311,3 +311,15 @@ def test_activelearning_industry_extra_is_skactiveml_spec_not_always_true(
     assert matrix["backends"]["industry"]["available"] is True
     assert matrix["industry_extra_present"] is False
     assert matrix["scikit_activeml_present"] is False
+
+
+def test_learn2learn_marker_is_python_lt_312() -> None:
+    from pathlib import Path
+
+    from buildml.core.industry_markers import marker_reason
+
+    pyproject = (Path(__file__).resolve().parents[2] / "pyproject.toml").read_text(
+        encoding="utf-8"
+    )
+    assert "learn2learn>=0.2; python_version < '3.12'" in pyproject
+    assert marker_reason("learn2learn") == "python_version < '3.12'"

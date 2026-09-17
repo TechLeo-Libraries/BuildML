@@ -4,6 +4,7 @@
 pip install buildml
 # tabular ProtoNet encoder: pip install "buildml[torch]"
 # learn2learn MAML / Reptile: pip install "buildml[metalearning-industry,torch]"
+# learn2learn is marker-gated to Python < 3.12; 3.12+ uses native first-order MAML.
 ```
 
 Few-shot on a task or group column. Each task id is a small dataset.

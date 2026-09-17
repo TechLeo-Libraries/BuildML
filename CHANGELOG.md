@@ -8,6 +8,8 @@ with pre-release tags for alpha (`aN`) builds.
 
 ## [Unreleased]
 
+## [2.6.2] - 2026-09-17
+
 ### Changed
 
 - External docs state the Session as a unified, stateful ML lifecycle
@@ -18,6 +20,14 @@ with pre-release tags for alpha (`aN`) builds.
   chunk, evaluate, save, or load require ``buildml[rag]``. That extra
   is only for sentence-transformer embeddings and rerank. Hashing,
   BM25, and the NumPy index run on core.
+- ``buildml[metalearning-industry]`` installs ``learn2learn`` only when
+  ``python_version < '3.12'``. Windows 3.12 fails the Cython build
+  (``longintrepr.h``); 3.13 still hits qpth/numpy pins. Native
+  first-order MAML/Reptile stays on the industry path.
+- Dead 2.x wheels ``2.4.0a3``, ``2.4.0``, ``2.5.0``, and ``2.6.0`` omit
+  ``operation_index.json`` and cannot import. Yank them on PyPI so
+  unpinned ``pip install buildml[production]`` cannot backtrack onto a
+  dead wheel. ``2.6.1`` and the 1.x line stay on the index.
 
 ### Added
 
@@ -49,6 +59,9 @@ with pre-release tags for alpha (`aN`) builds.
 - AutoGluon 1.6 removed ``TabularPredictor.get_model_best()``. The
   AutoML adapter now reads ``model_best`` (with method and leaderboard
   fallbacks) so ``session.automl.run(backend='autogluon')`` completes.
+- giotto-tda persistence batches pad **per homology dimension** with
+  trivial birth=death bars. A global zero-pad made H0/H1 counts disagree
+  across samples and raised ``ValueError`` in giotto vectorizers.
 
 ## [2.6.1] - 2026-09-10
 
