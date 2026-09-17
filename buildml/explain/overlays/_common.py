@@ -75,9 +75,9 @@ RAG_INDEX = Prerequisite(
 )
 RAG = Prerequisite(
     "rag-extra",
-    "The optional RAG dependencies are installed for retrieval methods.",
+    "Sentence-transformer embeddings and rerank are optional. Hashing, BM25, and the NumPy index run on core.",
     status=PrerequisiteStatus.OPTIONAL,
-    check_hint="Install buildml[rag] before RAG Session methods.",
+    check_hint="Install buildml[rag] only for sentence-transformer embeddings and rerank.",
 )
 VIZ = Prerequisite(
     "viz-extra",

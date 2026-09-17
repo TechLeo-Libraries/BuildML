@@ -503,10 +503,10 @@ _PROBES: tuple[PrerequisiteProbe, ...] = (
     ),
     PrerequisiteProbe(
         key="rag-extra",
-        plain="Retrieval support is an optional install that has to be present.",
-        label="RAG dependencies",
+        plain="Semantic embeddings and rerank are an optional install; hashing and BM25 retrieval do not need it.",
+        label="optional RAG dependencies",
         module="sentence_transformers",
-        remedy="Install buildml[rag] before RAG Session methods.",
+        remedy="Install buildml[rag] for sentence-transformer embeddings and rerank.",
     ),
     PrerequisiteProbe(
         key="nlp-extra",

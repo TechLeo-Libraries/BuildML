@@ -48,7 +48,7 @@ class RagSessionMixin:
         encoding: str = "utf-8",
         role: Literal["index", "eval_only"] = "index",
     ) -> Session:
-        """Load a text corpus for the RAG path (requires ``buildml[rag]``).
+        """Load a text corpus for the RAG path (core; ``buildml[rag]`` is only for semantic embeddings).
 
         Session facade over :func:`buildml.session.rag_ops.rag_ingest_corpus`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
@@ -104,7 +104,7 @@ class RagSessionMixin:
         chunk_strategy: str | None = None,
         device: str | None = None,
     ) -> Session:
-        """Embed chunks and build the default NumPy cosine index (requires ``buildml[rag]``).
+        """Embed chunks and build the default NumPy cosine index (core hashing unless ``buildml[rag]`` is installed).
 
         Session facade over :func:`buildml.session.rag_ops.rag_embed_and_index`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 
@@ -348,7 +348,7 @@ class RagSessionMixin:
         return cast("Path", rag_ops.save_rag_bundle(self, path=path))
 
     def load_rag_bundle(self, path: str | Path) -> Session:
-        """Load a RAG bundle into this Session (requires ``buildml[rag]``).
+        """Load a RAG bundle into this Session (core for hashing indexes).
 
         Session facade over :func:`buildml.session.rag_ops.load_rag_bundle`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
 

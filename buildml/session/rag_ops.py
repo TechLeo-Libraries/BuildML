@@ -23,7 +23,7 @@ def rag_ingest_corpus(
     encoding: str = "utf-8",
     role: Literal['index', 'eval_only'] = "index",
 ) -> "Session":
-    """Load a text corpus for the RAG path (requires ``buildml[rag]``).
+    """Load a text corpus for the RAG path (core; ``buildml[rag]`` is only for semantic embeddings).
 
     Provide a file/directory ``source``, an in-memory document sequence, or
     ``text_column`` to bridge the current Session frame. Never silently
@@ -104,7 +104,7 @@ def rag_chunk(
     """Chunk the active RAG corpus (fixed or recursive strategy).
 
     ``strategy="recursive"`` splits on paragraph/line/sentence boundaries before
-    applying size/overlap (LangChain/LlamaIndex parity). Requires ``buildml[rag]``.
+    applying size/overlap (LangChain/LlamaIndex parity). Core; no extra.
     Delegates to :func:`buildml.rag.chunk.chunk_documents`.
 
     Parameters
@@ -155,7 +155,7 @@ def rag_embed_and_index(
     chunk_strategy: str | None = None,
     device: str | None = None,
 ) -> "Session":
-    """Embed chunks and build the default NumPy cosine index (requires ``buildml[rag]``).
+    """Embed chunks and build the default NumPy cosine index (core hashing unless ``buildml[rag]`` is installed).
 
     Refuses corpora that contain ``eval_only`` documents (:class:`LeakageError`).
     Default embedder is ``auto``: sentence-transformers when ``buildml[rag]`` is
@@ -450,7 +450,7 @@ def rag_evaluate(
     """Score retrieval with gold qrels (recall@k, MRR, nDCG@k, hit-rate@k).
 
     ``relevance_mode="document"`` (default) scores parent ``doc_id`` hits;
-    ``"chunk"`` scores ``chunk_id`` labels. Requires ``buildml[rag]``.
+    ``"chunk"`` scores ``chunk_id`` labels. Core; no extra.
     Delegates to :func:`buildml.rag.evaluate.evaluate_retrieval`.
 
     Parameters
@@ -654,7 +654,7 @@ def save_rag_bundle(session, path: str | Path) -> Path:
 
 
 def load_rag_bundle(session, path: str | Path) -> "Session":
-    """Load a RAG bundle into this Session (requires ``buildml[rag]``).
+    """Load a RAG bundle into this Session (core for hashing indexes).
 
     Delegates to :func:`buildml.rag.checkpoint.load_rag_bundle` and restores
     index, chunk, and index-result state on the Session. RAG bundles use JSONL

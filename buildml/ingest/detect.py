@@ -200,9 +200,10 @@ def detect_path_format(path: Path) -> str:
     Returns
     -------
     str
-        ``'csv'``, ``'tsv'``, ``'parquet'``, ``'arrow'``, or ``'unknown'``.
-        Several extensions map to one format: ``.pq`` is parquet, and
-        ``.feather``, ``.arrow``, and ``.ipc`` are all arrow.
+        ``'csv'``, ``'tsv'``, ``'parquet'``, ``'arrow'``, ``'excel'``,
+        or ``'unknown'``. Several extensions map to one format: ``.pq`` is
+        parquet, ``.xlsx`` / ``.xlsm`` are excel, and ``.feather``,
+        ``.arrow``, and ``.ipc`` are all arrow.
 
     Notes
     -----
@@ -231,6 +232,8 @@ def detect_path_format(path: Path) -> str:
         ".feather": "arrow",
         ".arrow": "arrow",
         ".ipc": "arrow",
+        ".xlsx": "excel",
+        ".xlsm": "excel",
     }
     return mapping.get(suffix, "unknown")
 

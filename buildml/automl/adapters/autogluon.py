@@ -23,6 +23,30 @@ from buildml.model.supervised import (
 )
 
 
+def _best_model_name(predictor: Any) -> str:
+    """Return AutoGluon's selected model across TabularPredictor 1.x APIs.
+
+    AutoGluon 1.6 removed ``TabularPredictor.get_model_best()`` in favour of
+    the ``model_best`` property. Older 1.x still exposes the method. Fall back
+    to the leaderboard's first row when neither is present.
+    """
+    name = getattr(predictor, "model_best", None)
+    if callable(name):
+        name = name()
+    if name:
+        return str(name)
+    get_best = getattr(predictor, "get_model_best", None)
+    if callable(get_best):
+        return str(get_best())
+    leaderboard = getattr(predictor, "leaderboard", None)
+    if callable(leaderboard):
+        table = leaderboard(silent=True)
+        if table is not None and len(table):
+            col = "model" if "model" in table.columns else table.columns[0]
+            return str(table.iloc[0][col])
+    return "unknown"
+
+
 def run_autogluon_adapter(
     dataset: Dataset,
     split_plan: SplitPlan,
@@ -124,7 +148,7 @@ def run_autogluon_adapter(
     leaderboard = predictor.leaderboard(silent=True)
     trials = _leaderboard_trials(leaderboard, metric=metric, higher_is_better=higher_is_better)
 
-    best_model_name = str(predictor.get_model_best())
+    best_model_name = _best_model_name(predictor)
     train_eval = predictor.evaluate(train_frame, silent=True)
     best_score = float(train_eval.get(ag_metric, float("nan")))
 

@@ -51,7 +51,7 @@ def main() -> None:
 
     out = Path(__file__).resolve().parent / ".artifacts" / "multitask_multioutput_bundle"
     session.multitask.save_bundle(out)
-    print(f"saved bundle → {out}")
+    print(f"saved bundle -> {out}")
 
 
 if __name__ == "__main__":

@@ -204,3 +204,32 @@ def load_arrow(path: Path) -> pd.DataFrame:
         return pd.read_feather(path)
     except Exception as exc:  # noqa: BLE001
         raise IngestError(f"Failed to load Arrow/Feather from '{path}': {exc}") from exc
+
+
+def load_excel(path: Path, *, nrows: int | None = None) -> pd.DataFrame:
+    """Read ``.xlsx`` / ``.xlsm`` via pandas and openpyxl.
+
+    Parameters
+    ----------
+    path:
+        Workbook path. Only Office Open XML workbooks are supported.
+    nrows:
+        Stop after this many rows when pandas forwards the cap.
+
+    Raises
+    ------
+    MissingExtraError
+        When ``buildml[excel]`` (openpyxl) is not installed.
+    IngestError
+        On any read failure after the extra is present.
+    """
+    from buildml.core.errors import MissingExtraError
+
+    try:
+        import openpyxl  # noqa: F401
+    except ImportError as exc:
+        raise MissingExtraError("excel", "Excel workbook ingest") from exc
+    try:
+        return pd.read_excel(path, nrows=nrows, engine="openpyxl")
+    except Exception as exc:  # noqa: BLE001
+        raise IngestError(f"Failed to load Excel from '{path}': {exc}") from exc

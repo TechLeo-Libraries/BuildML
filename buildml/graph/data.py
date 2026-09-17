@@ -398,7 +398,7 @@ def filter_edges_for_mode(
     keep = train_mask[src] | train_mask[dst]
     disclosures.append(
         "Inductive score: using edges with at least one train endpoint "
-        "(train↔holdout allowed; holdout↔holdout dropped)."
+        "(train<->holdout allowed; holdout<->holdout dropped)."
     )
     return src[keep], dst[keep], disclosures
 

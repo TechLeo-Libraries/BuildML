@@ -58,7 +58,7 @@ def main() -> None:
 
     out = Path(__file__).resolve().parent / ".artifacts" / "online_partial_fit_bundle"
     session.online.save_bundle(out)
-    print(f"saved bundle → {out}")
+    print(f"saved bundle -> {out}")
 
 
 if __name__ == "__main__":

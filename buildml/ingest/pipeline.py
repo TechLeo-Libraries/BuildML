@@ -65,7 +65,8 @@ def ingest(
     Parameters
     ----------
     source:
-        A DataFrame, or a path to CSV, TSV, Parquet, or Arrow.
+        A DataFrame, or a path to CSV, TSV, Parquet, Arrow, or Excel
+        (``.xlsx`` / ``.xlsm``, requires ``buildml[excel]``).
     mode:
         Force ``'memory'`` or ``'lazy'`` instead of the recommendation.
         ``'memory'`` also overrides the large-file refusal, which is how you say
@@ -243,6 +244,15 @@ def ingest(
                 chosen_engine = EngineName.DUCKDB
 
         use_native = chosen_engine in {EngineName.POLARS, EngineName.DUCKDB}
+        if format_name == "excel":
+            if chosen_engine in {EngineName.POLARS, EngineName.DUCKDB}:
+                raise IngestError(
+                    "Excel ingest uses pandas and openpyxl "
+                    "(pip install 'buildml[excel]'). "
+                    "Do not pass engine='polars' or engine='duckdb' for workbooks."
+                )
+            use_native = False
+            chosen_engine = EngineName.PANDAS
         if use_native:
             if chosen_engine == EngineName.POLARS and EngineName.POLARS not in installed:
                 raise MissingExtraError("polars", "Polars engine ingest")
@@ -464,9 +474,11 @@ def _load_path(path: Path, *, format_name: str, nrows: int | None) -> pd.DataFra
         return loaders.load_parquet(path)
     if format_name == "arrow":
         return loaders.load_arrow(path)
+    if format_name == "excel":
+        return loaders.load_excel(path, nrows=nrows)
     raise IngestError(
         f"Unsupported or unknown file format for '{path}'. "
-        "Supported: csv, tsv, parquet, arrow/feather."
+        "Supported: csv, tsv, parquet, arrow/feather, xlsx/xlsm."
     )
 
 

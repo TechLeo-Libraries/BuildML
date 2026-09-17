@@ -50,7 +50,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         alternatives=("Build a CorpusHandle via buildml.rag.corpus and stay outside Session.",),
         rationale=("Use when retrieval needs a document corpus rather than a supervised design matrix.",),
         assumptions=("UTF-8 (or declared encoding) text is readable; role labels are honest.",),
-        failures=("Missing path matches, decode errors, empty text column, or missing RAG extra.",),
+        failures=("Missing path matches, decode errors, or empty text column.",),
         leakage=(
             "Labeling eval answers as index documents contaminates later retrieval metrics.",
             "Silently indexing every Session column would mix identifiers and labels into the corpus.",
@@ -87,7 +87,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         alternatives=("Pass chunk_size/chunk_overlap directly to session.rag.embed_and_index.",),
         rationale=("Stable chunk ids support audit, bundle reload, and later upsert work.",),
         assumptions=("Chunk size exceeds overlap; document text is already decoded.",),
-        failures=("No corpus, invalid size/overlap, or missing RAG extra.",),
+        failures=("No corpus, or invalid size/overlap.",),
         leakage=("Chunking eval_only text that later enters the index contaminates retrieval eval.",),
         anti_patterns=("Changing chunk size between index build and evaluation without rebuilding.",),
         state_changes=("Stores chunk snapshot for the next index build.",),
@@ -118,7 +118,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         alternatives=("Use classical Session.fit for tabular estimators; use session.dl.fit for nn.Module training.",),
         rationale=("Choose RAG indexing when the task is retrieve-then-read rather than supervised fit.",),
         assumptions=("Index-role documents only; embedder dim matches later query encoding.",),
-        failures=("eval_only contamination, empty corpus, embedder errors, or missing RAG extra.",),
+        failures=("eval_only contamination, empty corpus, embedder errors, or missing RAG extra when embedder is semantic.",),
         leakage=(
             "Indexing labeled eval answers invalidates recall@k / MRR generalization claims.",
         ),
@@ -252,7 +252,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         ),
         rationale=("Use when you need quantitative retrieval ranking quality.",),
         assumptions=("Qrels ids match the claimed relevance_mode (doc_id vs chunk_id).",),
-        failures=("No index, empty qrels, or missing RAG extra.",),
+        failures=("No index, or empty qrels.",),
         leakage=("Evaluating against answers that were indexed contaminates the metric.",),
         anti_patterns=(
             "Calling recall@k 'accuracy'.",
@@ -356,7 +356,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         ),
         rationale=("Keep the vector index separate so resume and teaching stay explicit.",),
         assumptions=("Loading environments trust the artifact and supply a compatible embedder.",),
-        failures=("No RAG index, unwritable path, or missing RAG extra.",),
+        failures=("No RAG index, or unwritable path.",),
         leakage=("Bundles can embed sensitive corpus text; access controls still apply.",),
         anti_patterns=(
             "Expecting Session checkpoint_load to restore the vector index.",

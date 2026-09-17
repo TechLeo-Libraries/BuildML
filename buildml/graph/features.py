@@ -58,7 +58,7 @@ def compute_graph_metrics(
     if mode == "inductive":
         disclosures.append(
             "Inductive classical path: metrics computed on the provided "
-            "edge set (train-induced at fit; train↔holdout at score)."
+            "edge set (train-induced at fit; train<->holdout at score)."
         )
     else:
         disclosures.append(

@@ -226,7 +226,7 @@ production = [
   "buildml[rl-industry]",
 ]
 viz = ["matplotlib>=3.7", "seaborn>=0.13"]
-reports = ["sweetviz>=2.3", "ydata-profiling>=4.6"]
+reports = ["sweetviz>=2.3", "ydata-profiling>=4.6", "setuptools>=69,<82"]
 eda = ["buildml[viz,reports]"]
 serve = [
   "fastapi>=0.110",

@@ -32,13 +32,24 @@ from buildml.core.errors import MissingExtraError
 
 _SUBPROCESS_IMPORT_CACHE: dict[str, bool] = {}
 
+# First import of these modules JIT-compiles or loads large graphs. A 12s
+# child-process cap then reports "unavailable" on a working extra (UMAP on
+# Windows is the known case). Torch stays on the short default: a hang there
+# is usually a broken DLL, not a slow compile.
+_SLOW_IMPORT_TIMEOUTS: dict[str, float] = {
+    "umap": 90.0,
+    "hdbscan": 45.0,
+    "sentence_transformers": 90.0,
+    "numba": 90.0,
+}
+
 
 def clear_subprocess_import_cache() -> None:
     """Clear cached subprocess import probes (tests / rare reinstalls)."""
     _SUBPROCESS_IMPORT_CACHE.clear()
 
 
-def _subprocess_import_ok(module: str, *, timeout: float = 12.0) -> bool:
+def _subprocess_import_ok(module: str, *, timeout: float | None = None) -> bool:
     """Import ``module`` in a child process so a hard crash cannot kill us.
 
     Used on Windows where broken Torch DLL loads can raise a fatal access
@@ -48,14 +59,17 @@ def _subprocess_import_ok(module: str, *, timeout: float = 12.0) -> bool:
     cached = _SUBPROCESS_IMPORT_CACHE.get(module)
     if cached is not None:
         return cached
+    limit = _SLOW_IMPORT_TIMEOUTS.get(module, 12.0) if timeout is None else timeout
     try:
         completed = subprocess.run(
             [sys.executable, "-c", f"import {module}"],
             check=False,
             capture_output=True,
-            timeout=timeout,
+            timeout=limit,
         )
         ok = completed.returncode == 0
+    except subprocess.TimeoutExpired:
+        ok = False
     except (OSError, subprocess.SubprocessError):
         ok = False
     _SUBPROCESS_IMPORT_CACHE[module] = ok

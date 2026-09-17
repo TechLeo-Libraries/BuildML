@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import inspect
 from typing import Any
 
 import numpy as np
@@ -15,6 +16,7 @@ from buildml.kg.features import (
     build_triples,
     build_vocabularies,
     encode_triples,
+    partition_frame,
     resolve_triple_columns,
     train_partition_frame,
     triple_set,
@@ -28,6 +30,86 @@ _PYKEEN_MODEL_MAP = {
     "rotate": "RotatE",
     "complex": "ComplEx",
 }
+
+
+def _triples_factory(
+    triples_factory_cls: Any,
+    *,
+    mapped_triples: Any,
+    entity_index: dict[Any, int],
+    relation_index: dict[Any, int],
+    n_entities: int,
+    n_relations: int,
+) -> Any:
+    """Build a PyKEEN ``TriplesFactory`` across 1.10 and 1.11 constructors.
+
+    PyKEEN 1.11 made ``entity_to_id`` and ``relation_to_id`` required. Older
+    constructors accepted only mapped triples plus counts.
+    """
+    kwargs: dict[str, Any] = {
+        "mapped_triples": mapped_triples,
+        "num_entities": n_entities,
+        "num_relations": n_relations,
+    }
+    params = inspect.signature(triples_factory_cls.__init__).parameters
+    if "entity_to_id" in params:
+        kwargs["entity_to_id"] = {str(key): int(val) for key, val in entity_index.items()}
+        kwargs["relation_to_id"] = {
+            str(key): int(val) for key, val in relation_index.items()
+        }
+    return triples_factory_cls(**kwargs)
+
+
+def _holdout_triples_factory(
+    triples_factory_cls: Any,
+    *,
+    dataset: Dataset,
+    split_plan: SplitPlan,
+    head_column: str,
+    relation_column: str,
+    tail_column: str,
+    entity_index: dict[Any, int],
+    relation_index: dict[Any, int],
+    n_entities: int,
+    n_relations: int,
+    torch_module: Any,
+) -> tuple[Any | None, str | None, int]:
+    """Encode validation then test triples against the train vocabulary."""
+    for partition in ("validation", "test"):
+        try:
+            frame = partition_frame(dataset, split_plan, partition)
+        except ValidationError:
+            continue
+        triples = build_triples(
+            frame,
+            head_column=head_column,
+            relation_column=relation_column,
+            tail_column=tail_column,
+        )
+        try:
+            heads_h, rels_h, tails_h = encode_triples(
+                triples,
+                head_column=head_column,
+                relation_column=relation_column,
+                tail_column=tail_column,
+                entity_index=entity_index,
+                relation_index=relation_index,
+            )
+        except ValidationError:
+            continue
+        if len(heads_h) < 1:
+            continue
+        mapped = np.stack([heads_h, rels_h, tails_h], axis=1).astype(np.int64)
+        factory = _triples_factory(
+            triples_factory_cls,
+            mapped_triples=torch_module.as_tensor(mapped, dtype=torch_module.long),
+            entity_index=entity_index,
+            relation_index=relation_index,
+            n_entities=n_entities,
+            n_relations=n_relations,
+        )
+        return factory, partition, int(len(heads_h))
+    return None, None, 0
 
 _COMPLEX_METHODS = frozenset({"rotate", "complex"})
 
@@ -193,16 +275,47 @@ def fit_pykeen(
     known = triple_set(heads_i, rels_i, tails_i)
 
     mapped = np.stack([heads_i, rels_i, tails_i], axis=1).astype(np.int64)
-    factory = TriplesFactory(
+    factory = _triples_factory(
+        TriplesFactory,
         mapped_triples=torch.as_tensor(mapped, dtype=torch.long),
-        num_entities=len(entity_ids),
-        num_relations=len(relation_ids),
+        entity_index=entity_index,
+        relation_index=relation_index,
+        n_entities=len(entity_ids),
+        n_relations=len(relation_ids),
     )
 
     model_name = _PYKEEN_MODEL_MAP[method_key]
     seed = 0 if random_state is None else int(random_state)
+    testing_factory, testing_part, n_testing = _holdout_triples_factory(
+        TriplesFactory,
+        dataset=dataset,
+        split_plan=split_plan,
+        head_column=head_col,
+        relation_column=rel_col,
+        tail_column=tail_col,
+        entity_index=entity_index,
+        relation_index=relation_index,
+        n_entities=len(entity_ids),
+        n_relations=len(relation_ids),
+        torch_module=torch,
+    )
+    reused_train_as_testing = testing_factory is None
+    if reused_train_as_testing:
+        testing_factory = factory
+        disclosures.append(
+            "PyKEEN 1.11 pipeline requires a testing triples factory. No "
+            "in-vocabulary holdout triples were available, so the train "
+            "factory was passed for that slot only. BuildML evaluate_kg "
+            "still scores Session holdout partitions separately."
+        )
+    else:
+        disclosures.append(
+            f"PyKEEN pipeline testing factory uses Session {testing_part} "
+            f"({n_testing} in-vocabulary triples). Embeddings still fit on train only."
+        )
     result = pipeline(
         training=factory,
+        testing=testing_factory,
         model=model_name,
         model_kwargs={"embedding_dim": int(embedding_dim)},
         training_kwargs={
@@ -212,6 +325,7 @@ def fit_pykeen(
         optimizer_kwargs={"lr": float(learning_rate)},
         random_seed=seed,
         device="cpu",
+        use_testing_data=not reused_train_as_testing,
     )
     model = result.model
     ent_emb, rel_emb, embedding_kind = _extract_embeddings(model, method_key)

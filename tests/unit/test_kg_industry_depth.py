@@ -185,3 +185,37 @@ def test_complex_scoring_prefers_aligned_triple() -> None:
         score_complex(np.array([0]), np.array([0]), np.array([1]), ent, rel)[0]
     )
     assert s_true > s_false
+
+
+def test_triples_factory_supplies_id_maps_for_pykeen_1_11() -> None:
+    from buildml.kg.adapters.pykeen import _triples_factory
+
+    captured: dict = {}
+
+    class _Factory:
+        def __init__(
+            self,
+            mapped_triples,
+            entity_to_id,
+            relation_to_id,
+            num_entities=None,
+            num_relations=None,
+        ):
+            captured["entity_to_id"] = entity_to_id
+            captured["relation_to_id"] = relation_to_id
+            captured["n_entities"] = num_entities
+            captured["n_relations"] = num_relations
+            captured["mapped"] = mapped_triples
+
+    _triples_factory(
+        _Factory,
+        mapped_triples=[[0, 0, 1]],
+        entity_index={"a": 0, "b": 1},
+        relation_index={"r": 0},
+        n_entities=2,
+        n_relations=1,
+    )
+    assert captured["entity_to_id"] == {"a": 0, "b": 1}
+    assert captured["relation_to_id"] == {"r": 0}
+    assert captured["n_entities"] == 2
+    assert captured["n_relations"] == 1

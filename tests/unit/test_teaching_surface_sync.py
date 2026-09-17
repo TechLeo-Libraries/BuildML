@@ -59,6 +59,25 @@ def test_required_ai_tools_cover_phase_c_session_methods() -> None:
     assert set(PHASE_C_OPS) <= REQUIRED_AI_TOOL_SESSION_METHODS
 
 
+def test_rag_core_docs_do_not_require_the_rag_extra() -> None:
+    from buildml.explain.overlays._common import RAG
+    from buildml.session import rag_ops
+
+    banned = "requires ``buildml[rag]``"
+    for name in (
+        "rag_ingest_corpus",
+        "rag_chunk",
+        "rag_embed_and_index",
+        "rag_evaluate",
+        "load_rag_bundle",
+    ):
+        doc = getattr(rag_ops, name).__doc__ or ""
+        assert banned not in doc, name
+    assert "before RAG Session methods" not in (RAG.check_hint or "")
+    failures = " ".join(OPERATION_CATALOG["rag_ingest_corpus"].failure_modes).lower()
+    assert "missing rag extra" not in failures
+
+
 def test_write_operation_index_is_deterministic(tmp_path: Path) -> None:
     path = tmp_path / "operation_index.json"
     write_operation_index(path)

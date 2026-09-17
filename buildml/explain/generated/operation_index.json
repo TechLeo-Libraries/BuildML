@@ -8284,7 +8284,7 @@
       "qualname": "ProbabilisticSessionMixin.load_probabilistic_bundle"
     },
     "load_rag_bundle": {
-      "doc_summary": "Load a RAG bundle into this Session (requires ``buildml[rag]``).",
+      "doc_summary": "Load a RAG bundle into this Session (core for hashing indexes).",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "load_rag_bundle",
@@ -10442,7 +10442,7 @@
       "qualname": "RagSessionMixin.rag_delete"
     },
     "rag_embed_and_index": {
-      "doc_summary": "Embed chunks and build the default NumPy cosine index (requires ``buildml[rag]``).",
+      "doc_summary": "Embed chunks and build the default NumPy cosine index (core hashing unless ``buildml[rag]`` is installed).",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "rag_embed_and_index",
@@ -10609,7 +10609,7 @@
       "qualname": "RagSessionMixin.rag_generate"
     },
     "rag_ingest_corpus": {
-      "doc_summary": "Load a text corpus for the RAG path (requires ``buildml[rag]``).",
+      "doc_summary": "Load a text corpus for the RAG path (core; ``buildml[rag]`` is only for semantic embeddings).",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "rag_ingest_corpus",

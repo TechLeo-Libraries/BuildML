@@ -16,6 +16,7 @@ from buildml.automl.extras import (
     gradient_boosting_extras_available,
     optuna_available,
 )
+from buildml.automl.adapters.autogluon import _best_model_name
 from buildml.automl.search import export_comparison_metrics
 from buildml.automl.types import AutoMLBudget
 from buildml.core.errors import MissingExtraError, ValidationError
@@ -146,6 +147,32 @@ def test_flaml_backend_train_only() -> None:
     assert any("flaml" in d.lower() for d in result.disclosures)
     test = session.evaluate_automl(partition="test")
     assert test.n_rows > 0
+
+
+def test_best_model_name_prefers_model_best_property() -> None:
+    class _Predictor:
+        model_best = "WeightedEnsemble_L2"
+
+        def get_model_best(self) -> str:
+            raise AssertionError("1.6 public API removed get_model_best")
+
+    assert _best_model_name(_Predictor()) == "WeightedEnsemble_L2"
+
+
+def test_best_model_name_falls_back_to_get_model_best() -> None:
+    class _Predictor:
+        def get_model_best(self) -> str:
+            return "LightGBM"
+
+    assert _best_model_name(_Predictor()) == "LightGBM"
+
+
+def test_best_model_name_falls_back_to_leaderboard() -> None:
+    class _Predictor:
+        def leaderboard(self, silent: bool = True) -> pd.DataFrame:
+            return pd.DataFrame({"model": ["CatBoost", "LightGBM"]})
+
+    assert _best_model_name(_Predictor()) == "CatBoost"
 
 
 @pytest.mark.skipif(not autogluon_available(), reason="buildml[automl-industry] AutoGluon missing")

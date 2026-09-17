@@ -9,6 +9,12 @@ from __future__ import annotations
 import pytest
 
 
+def test_umap_subprocess_probe_uses_slow_timeout() -> None:
+    from buildml.dl.extras import _SLOW_IMPORT_TIMEOUTS
+
+    assert _SLOW_IMPORT_TIMEOUTS["umap"] >= 60.0
+
+
 @pytest.fixture(autouse=True)
 def _clear_import_cache() -> None:
     from buildml.dl.extras import clear_subprocess_import_cache

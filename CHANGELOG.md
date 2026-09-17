@@ -14,12 +14,41 @@ with pre-release tags for alpha (`aN`) builds.
   (leakage safeguards, fold-local preprocessing, teaching, workflow
   guidance, checkpointing, auditable export) without first-or-only
   library claims.
+- RAG Session docs and teaching overlays no longer say core ingest,
+  chunk, evaluate, save, or load require ``buildml[rag]``. That extra
+  is only for sentence-transformer embeddings and rerank. Hashing,
+  BM25, and the NumPy index run on core.
+
+### Added
+
+- ``Session.ingest`` reads ``.xlsx`` / ``.xlsm`` when ``buildml[excel]``
+  (openpyxl) is installed. Workbooks stay on the pandas path; Polars and
+  DuckDB engines are refused with an explicit error.
 
 ### Fixed
 
 - `release.yml` publishes with the `PYPI_API_TOKEN` secret and
   `skip-existing`, so a tag push stays green when Trusted Publishing is
   unset or local twine already uploaded the same files.
+- `examples/multitask_multioutput_loop.py` and
+  `examples/online_partial_fit_loop.py` print ASCII ``->`` instead of
+  ``→``, so a Windows cp1252 console no longer raises
+  ``UnicodeEncodeError`` after a successful run.
+- UMAP availability no longer uses the 12s Torch-oriented subprocess
+  timeout. First Windows import of ``umap`` / numba can exceed that and
+  made ``buildml[unsupervised]`` report missing while the package
+  imported in-process.
+- Graph fit disclosures use ASCII ``<->`` so Windows cp1252 consoles can
+  print ``fit.to_dict()``.
+- PyKEEN 1.11 ``TriplesFactory`` requires ``entity_to_id`` /
+  ``relation_to_id``. The KG industry adapter now supplies those maps so
+  ``session.kg.fit(backend='pykeen')`` runs against current PyKEEN.
+- ``buildml[reports]`` pins ``setuptools>=69,<82`` because
+  ``ydata_profiling`` still imports ``pkg_resources``, which setuptools
+  82+ no longer provides.
+- AutoGluon 1.6 removed ``TabularPredictor.get_model_best()``. The
+  AutoML adapter now reads ``model_best`` (with method and leaderboard
+  fallbacks) so ``session.automl.run(backend='autogluon')`` completes.
 
 ## [2.6.1] - 2026-09-10
 
