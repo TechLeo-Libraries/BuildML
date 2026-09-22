@@ -57,7 +57,7 @@ def fit_standardize(x_train: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
     substitute divisor leaves it there rather than producing ``inf`` or ``NaN``
     that would propagate through every subsequent batch.
 
-    ``nanmean`` and ``nanstd`` are used so a stray ``NaN`` does not poison the
+    ``nanmean`` and ``nanstd`` are used so a stray ``NaN`` does not invalidate the
     statistics: though :func:`frame_to_numeric_matrix` rejects ``NaN`` upstream
     anyway.
 

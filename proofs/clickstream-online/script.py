@@ -93,7 +93,7 @@ def main() -> None:
     acc = float(test_metrics.get("accuracy", float("nan")))
     if acc == acc and acc >= 0.99:
         raise SystemExit(
-            "clickstream-online refused perfect-score theater: "
+            "clickstream-online refused scores at or above the configured ceiling: "
             f"test accuracy={acc:.4f} >= 0.99 on overlapping noisy stream."
         )
     bundle = session.online.save_bundle(ctx.artifacts_dir / "online_bundle")
@@ -121,7 +121,7 @@ def main() -> None:
                 "Validation/test never enter online updates",
             ],
             "honesty": [
-                "Refuses test accuracy >= 0.99 (anti perfect-score theater).",
+                "Refuses test accuracy >= 0.99 (score-ceiling check).",
             ],
             "limitations": ["Batch chunks, not Kafka/Flink"],
         },

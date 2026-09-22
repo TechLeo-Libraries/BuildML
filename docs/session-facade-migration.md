@@ -61,7 +61,7 @@ Discovery payloads (`list_capabilities`, `describe_method`, `list_facades`) expo
 | --- | --- | --- |
 | `core` | Primary product path; dual flat+facade, no flat warnings | data, preprocess, classical, explore, audit |
 | `domain` | Specialized Session surface; prefer facade | fairness, anomaly, rag, forecast, … |
-| `experimental` | More likely to move before stable 2.x | ai, rl, tda, metalearning |
+| `experimental` | Evolving domains; review release notes for backend, behavior, and dependency changes | ai, rl, tda, metalearning |
 
 ## Discovery APIs
 
@@ -136,8 +136,8 @@ The migrator rewrites:
 Facades are the supported domain API for 2.4.x / 2.5.x / 2.6.x. Flat domain aliases stay
 supported-but-deprecated until **3.0**; that removal is out of the 2.x scope.
 
-PyPI 2.x publish readiness is separate: see
-[`docs/pypi-2x-publish.md`](pypi-2x-publish.md).
+Maintainers preparing a release can use the separate
+[release maintenance guide](pypi-2x-publish.md).
 
 ## Maintainer checklist (before tagging a 2.x build)
 

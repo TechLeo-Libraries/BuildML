@@ -70,7 +70,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             "Graph ML session.graph.set_spec/session.graph.fit for node classification; "
             "RAG for document retrieve; recommenders for user–item CF.",
         ),
-        rationale=("Ship leakage-safe Session KG embeddings + symbolic query.",),
+        rationale=("Fit graph embeddings on training triples and query graph relationships.",),
         assumptions=("≥2 train entities; ≥1 relation; triples present.",),
         failures=("No split; missing triple columns; single-entity graph.",),
         leakage=(

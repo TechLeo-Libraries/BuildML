@@ -195,8 +195,8 @@ SEMISUPERVISED_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         example=(
             "session.semisupervised.save_bundle('artifacts/semisup')",
-            "job = Session.ingest(new_frame).semisupervised.load_bundle('artifacts/semisup')",
-            "labels = job.semisupervised.predict()",
+            "job = Session.ingest(new_frame).semisupervised.load_bundle('artifacts/semisup', trusted=True)",
+            "labels = job.semisupervised.predict(partition='all')",
         ),
         check=(
             "Does your reload path apply the same preprocessing the plan was fitted under?",

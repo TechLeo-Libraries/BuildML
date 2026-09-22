@@ -865,7 +865,7 @@ def _build_rag_dl_tools() -> tuple[ToolSpec, ...]:
             name="load_pretrained_backbone",
             description=(
                 "Load a curated vision/audio/speech pretrained backbone hook "
-                "(weights=none|mock|pretrained). mock is CI-safe. Not a full zoo product. "
+                "(weights=none|mock|pretrained). mock is CI-safe. Only the documented architectures are supported. "
                 "Requires buildml[torch] (+ vision/speech extras for some modalities)."
             ),
             parameters={
@@ -1830,7 +1830,7 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
             description=(
                 "Genetic-algorithm hyperparameter search on train-fold CV only. "
                 "In-tree NumPy GA (population, selection, crossover/mutation, elitism) "
-                ": not random search renamed, not NAS, not a swarm zoo. Same leakage "
+                ": not random search renamed, not NAS, not a general swarm-optimization framework. Same leakage "
                 "refusal as grid_search for Session-global preprocess."
             ),
             parameters={
@@ -1895,7 +1895,7 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
             description=(
                 "Search model families and fold-local preprocess strategies on train "
                 "(beyond single-estimator HPO). Not NAS and not causal. Session test "
-                "never enters selection. Prefer unpoisoned data (no Session-global prep)."
+                "never enters selection. Use data without Session-global fitted preprocessing."
             ),
             parameters={
                 "type": "object",

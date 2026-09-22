@@ -91,7 +91,7 @@ def recommender_capability_matrix() -> dict[str, Any]:
         "non_goals": [
             "Netflix-scale feature store / multi-stage cascade",
             "Streaming online recsys product",
-            "Full surprise/recommenders library zoo",
+            "Algorithms from surprise or other recommendation libraries beyond the documented backends",
             "RAG document retrieve/generate",
         ],
         "industry_extra_present": (

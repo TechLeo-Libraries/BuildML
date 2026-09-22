@@ -49,7 +49,7 @@ class SemisupervisedSessionMixin:
     ) -> SemiSupervisedFitResult:
         """Fit a semi-supervised classifier on labeled and unlabeled train rows.
 
-        Session facade over :func:`buildml.session.semisupervised_ops.fit_semisupervised_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.semisupervised_ops.fit_semisupervised_op`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------
@@ -97,7 +97,7 @@ class SemisupervisedSessionMixin:
     ) -> SemiSupervisedPredictResult:
         """Predict with the train-fitted semi-supervised plan without refitting.
 
-        Session facade over :func:`buildml.session.semisupervised_ops.predict_semisupervised_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.semisupervised_ops.predict_semisupervised_op`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------
@@ -124,7 +124,7 @@ class SemisupervisedSessionMixin:
     ) -> SemiSupervisedEvalResult:
         """Evaluate the semi-supervised plan on labeled rows of a holdout partition.
 
-        Session facade over :func:`buildml.session.semisupervised_ops.evaluate_semisupervised_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.semisupervised_ops.evaluate_semisupervised_op`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------
@@ -181,7 +181,7 @@ class SemisupervisedSessionMixin:
     def save_semisupervised_bundle(self, path: str | Path) -> Path:
         """Persist the semi-supervised plan as ``buildml.semisupervised_bundle.v1``.
 
-        Session facade over :func:`buildml.session.semisupervised_ops.save_semisupervised_bundle_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.semisupervised_ops.save_semisupervised_bundle_op`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------
@@ -198,7 +198,7 @@ class SemisupervisedSessionMixin:
     def load_semisupervised_bundle(self, path: str | Path, *, trusted: bool = False) -> Session:
         """Load a semi-supervised bundle into this Session.
 
-        Session facade over :func:`buildml.session.semisupervised_ops.load_semisupervised_bundle_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.semisupervised_ops.load_semisupervised_bundle_op`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------

@@ -1,27 +1,14 @@
 """Case-based reasoning (tabular case memory → retrieve → reuse/adapt).
 
-Phase coverage (internal tracker: depth-first; do not spray stubs)
-------------------------------------------------------------------
-Phase 1 (**complete**): unsupervised → ensembles → AutoML → forecasting → anomaly.
-
-Phase 2:
-  1–10. Semi-supervised → … → symbolic / neuro-symbolic: prior items.
-  **This module:** Case-based reasoning (Session retrieval/memory path).
-  Next: Imitation learning + Reinforcement learning (coherent delivery or
-  RL with IL as mode: both to full bar), then TDA, then app systems.
-
-Explicit non-goals (no product surfaces): RAG-as-CBR (document retrieval for
-generation), vector DB products, full cognitive CBR research suites, Prolog/Z3,
-fuzzy products, imitation+RL (next), TDA, app systems.
-
-Honesty (this package):
+Behavior and limitations:
   - Tabular case base from Session **train** rows (features + solution/label).
   - Retrieve k nearest / most similar cases (euclidean / manhattan / cosine /
     mixed Gower-style); reuse via majority / distance-weighted vote or
     local mean / local Ridge; optional lite adapt + retain hooks.
   - Explanation traces disclose which cases influenced each answer.
   - **Not** RAG. Sharing "nearest neighbors" does not make CBR a RAG submodule.
-  - Core stays light: numpy/pandas/sklearn distances only.
+  - Core retrieval uses numpy/pandas/sklearn; optional adapters support
+    approximate nearest-neighbor indexes and text embeddings.
 
 Lazy imports: core never grows heavy IR / vector-DB stacks.
 """

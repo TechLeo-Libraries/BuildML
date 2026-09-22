@@ -146,8 +146,10 @@ word overlap is genuinely not enough.
 
 ## Normalization vs vocabulary
 
-Normalization is stateless string rewriting. It cannot leak, so the
-plan applies it to holdout freely. Default steps:
+Normalization applies fixed string transformations without fitting corpus
+statistics. The same fixed plan can be applied to holdout rows; choosing
+that plan based on test performance can still leak evaluation information.
+Default steps:
 `strip_html`, `strip_urls`, `strip_emails`, `lowercase`,
 `collapse_whitespace`. Override when you need to:
 

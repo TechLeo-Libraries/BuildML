@@ -41,8 +41,8 @@ python -m proofs._lib.run_all --tier all
 `partial` as failure unless you also pass `--allow-skip`. Process exit 0
 alone is not enough under `--smoke`. Read `proofs/<slug>/results/*.json`
 and look for `"status": "completed"` on a run you actually did. The
-README tables here are an index of scripts, not a scoreboard of your
-machine.
+README tables list available scripts; the JSON records results from
+your environment.
 
 Shared helpers live in [`_lib/`](_lib/) (seed, results writer, leakage
 asserts, synthetic loaders, extra probes, Tier C `write_comparison`,
@@ -56,7 +56,7 @@ pip install -e ".[tda,rl,rag,torch,dashboard]"
 ```
 
 `find_spec` alone is not enough. Runtime import probes and
-`scripts/probe_industry_extras.py` are the honesty path.
+`scripts/probe_industry_extras.py` report availability on your machine.
 
 ## Start with these
 
@@ -67,7 +67,7 @@ scripts sit in the harness; they are not extra products.
 | --- | --- | --- |
 | A table, a target, a trusted holdout | [`examples/classical_loan_loop.py`](../examples/classical_loan_loop.py) | [loan-approval-classical](loan-approval-classical/) (OpenML `credit-g` when cached) |
 | Same spine on a public table | [`examples/breast_cancer_classical_loop.py`](../examples/breast_cancer_classical_loop.py) | [breast-cancer-classical](breast-cancer-classical/) (sklearn Wisconsin breast cancer) |
-| Fold-local CV that refuses poisoned prep | [`examples/leakage_cv_recipe.py`](../examples/leakage_cv_recipe.py) | [loan-approval-classical](loan-approval-classical/) (`cv_score` + recipe) |
+| Fold-local CV that refuses Session-global fitted preprocessing | [`examples/leakage_cv_recipe.py`](../examples/leakage_cv_recipe.py) | [loan-approval-classical](loan-approval-classical/) (`cv_score` + recipe) |
 | Clusters | [`examples/unsupervised_cluster_loop.py`](../examples/unsupervised_cluster_loop.py) | [cluster-customer-segments](cluster-customer-segments/) |
 | Public clusters + external labels | | [wine-cluster-segments](wine-cluster-segments/) |
 | Voting / stacking / blending | [`examples/ensemble_vote_stack_loop.py`](../examples/ensemble_vote_stack_loop.py) | [voting-ensemble-attrition](voting-ensemble-attrition/) |

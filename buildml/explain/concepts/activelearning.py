@@ -66,7 +66,7 @@ ACTIVELEARNING_NOTES: dict[str, ConceptNote] = {
                 "Oracle O: X → Y exists outside the library; AL core only exposes q and accepts O(q)."
             ),
             why_it_matters=(
-                "Product honesty: annotation cost is real.",
+                "Include annotation time and cost when comparing query strategies.",
                 "Tests may simulate an oracle; docs must disclose that simulation.",
             ),
             how_buildml_uses=(

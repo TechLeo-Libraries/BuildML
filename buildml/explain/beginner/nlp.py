@@ -296,7 +296,7 @@ NLP_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         example=(
             "base = session.nlp.analyze_sentiment(backend='lexicon')",
-            "print(base.matched_term_rate, base.label_counts)",
+            "print(base.matched_term_rate, (base.positive_rate, base.negative_rate, base.neutral_rate))",
             "session.nlp.fit_classifier(text_column='review')",
             "tuned = session.nlp.analyze_sentiment(backend='supervised')",
         ),
@@ -351,7 +351,7 @@ NLP_BEGINNER: dict[str, BeginnerLayer] = _index(
             "    gazetteers={'PRODUCT': ['widget-9', 'widget-12']},",
             ")",
             "print(found.label_counts)",
-            "print(found.spans[0].source, found.spans[0].start, found.spans[0].end)",
+            "print(found.document_entities[:1])   # each document holds typed entity spans",
         ),
         check=(
             "For each entity type you need: is there a pattern covering it?",
@@ -365,12 +365,12 @@ NLP_BEGINNER: dict[str, BeginnerLayer] = _index(
         "nlp-extractive-summarization",
         plain=(
             "Extractive summarization picks the most representative sentences out of a document and hands "
-            "them back unchanged, in their original order. It never writes anything, which means it can "
-            "never state something the document does not say."
+            "them back unchanged, in their original order. Selection can still omit qualifications or "
+            "remove context, so check the summary against the source."
         ),
         analogy=(
-            "Highlighting three sentences in an article versus writing your own précis. The highlighter "
-            "cannot misquote."
+            "Highlighting three sentences in an article versus writing your own prÃ©cis. The highlighter "
+            "copies the words but may leave out context that changes their meaning."
         ),
         steps=(
             "Split the document into sentences, carefully: 'Dr. Smith' is not two sentences.",
@@ -394,7 +394,7 @@ NLP_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
             (
                 "This is text generation.",
-                "Nothing is generated. Every word in the output appears verbatim in the input, which is the whole safety argument for the approach.",
+                "The output selects existing sentences. This reduces invented wording but does not guarantee factual accuracy or preserve every qualification.",
             ),
         ),
         example=(
@@ -491,7 +491,7 @@ NLP_BEGINNER: dict[str, BeginnerLayer] = _index(
         myths=(
             (
                 "A random split protects against this.",
-                "A random split guarantees that duplicate documents land on both sides roughly in proportion. It is the cause, not the cure.",
+                "A random split can place duplicates on both sides, allowing leakage. Group duplicate or near-duplicate documents before splitting.",
             ),
             (
                 "A very low out-of-vocabulary rate is good news.",
@@ -501,7 +501,7 @@ NLP_BEGINNER: dict[str, BeginnerLayer] = _index(
         example=(
             "session.split(test_size=0.2, random_state=0)",
             "profile = session.nlp.profile_corpus(near_duplicate_threshold=0.9)",
-            "print(profile.exact_overlap, profile.near_duplicate_pairs, profile.holdout_oov_rate)",
+            "print(profile.train_holdout_exact_overlap, profile.train_holdout_near_duplicate, profile.holdout_oov_token_rate)",
         ),
         check=(
             "How many holdout documents appear verbatim in training?",
@@ -551,7 +551,7 @@ NLP_BEGINNER: dict[str, BeginnerLayer] = _index(
         example=(
             "session.nlp.fit_classifier(text_column='ticket')   # classify documents",
             "session.rag.ingest_corpus(documents)                # grounded answers",
-            "session.text_features(column='notes')               # tabular expansion",
+            "session.text_features(columns=['notes'])               # tabular expansion",
         ),
         check=(
             "Is your question about a labelled row, or about finding a document?",
@@ -600,8 +600,8 @@ NLP_BEGINNER: dict[str, BeginnerLayer] = _index(
         example=(
             "session.nlp.fit_classifier(text_column='review')",
             "session.nlp.save_bundle('artifacts/review-clf')",
-            "svc = Session.ingest(incoming).nlp.load_bundle('artifacts/review-clf')",
-            "svc.nlp.evaluate(partition='test')",
+            "svc = Session.ingest(incoming).nlp.load_bundle('artifacts/review-clf', trusted=True)",
+            "svc.nlp.predict(partition='all')",
         ),
         check=(
             "Does the loading Session use the same text column name?",

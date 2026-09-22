@@ -1,17 +1,14 @@
 """Find the problems that break models before any modelling starts.
 
-Not statistics: defects. A constant column, a duplicated row, an identifier
-that will be treated as a feature, a numeric field stored as text with a few
-``"N/A"`` values in it. None of these are interesting distributions; all of them
-change what happens downstream, and most are invisible in a ``describe()``.
+The screens flag missing values, constant columns, duplicate rows, identifier-like
+fields, and mixed representations. These may indicate data problems or legitimate
+properties of the data; interpretation requires knowledge of how it was collected.
 
 The checks are deliberately blunt and cheap. Each is a heuristic with a
 threshold, and the thresholds are conventions rather than discoveries: 95% for
 quasi-constant, 98% distinct for identifier-like, 5% to 95% numeric-looking for
-mixed types. They will occasionally flag something legitimate. That is the right
-error to make here: a false positive costs a glance, a missed identifier column
-costs a model that scores perfectly in testing and fails completely in
-production.
+mixed types. These checks can flag legitimate fields and miss real problems. Review them
+against the data roles and collection process before changing the dataset.
 
 See Also
 --------
@@ -32,7 +29,7 @@ _PHONE = re.compile(r"^\+?[\d\-\s\(\)]{7,}$")
 
 
 def analyze_quality(full: pd.DataFrame, sample: pd.DataFrame) -> dict[str, Any]:
-    """Scan for the structural defects that make a column useless or dangerous.
+    """Screen for missingness and structural properties that deserve review.
 
     Six families of problem, each with a rule of thumb behind it.
 
@@ -41,26 +38,26 @@ def analyze_quality(full: pd.DataFrame, sample: pd.DataFrame) -> dict[str, Any]:
     gaps are in different places, or 5% if they coincide. Which one it is
     determines whether dropping incomplete rows is viable.
 
-    *Constant and quasi-constant columns.* A column with one value carries no
-    information. One where 95% of rows share a value carries almost none, and
-    will be split on by a tree anyway.
+    *Constant and quasi-constant columns.* A constant column cannot distinguish
+    the observed rows by value. A column dominated by one value may still
+    contain rare but important predictive or operational signals.
 
-    *Duplicate rows.* Usually a join gone wrong. They inflate the apparent
-    sample size and, if they land on both sides of a split, leak between train
-    and test.
+    *Duplicate rows.* These can result from joins or repeated legitimate events.
+    They can overstate independent sample size and cause leakage if copies of
+    the same observation appear in both train and test.
 
-    *High-cardinality and identifier-like columns.* A column with a distinct
-    value for nearly every row is a key, not a feature. Left in, it lets a model
-    memorise the training set: the classic cause of perfect validation scores
-    and useless predictions.
+    *High-cardinality and identifier-like columns.* Near-unique values can indicate
+    keys, but also valid continuous measurements or high-cardinality features.
+    The heuristic considers data type and identifier-like names; review roles
+    and leakage risks rather than treating uniqueness as proof.
 
     *Mixed types.* A text column where between 5% and 95% of values look numeric
-    is one where something has gone wrong: a numeric field with ``"N/A"``
-    sentinels, or two sources concatenated.
+    may indicate inconsistent representations, such as ``"N/A"``
+    sentinels or concatenated sources; intentional mixed values are also possible.
 
     *String patterns.* The share of values that look like emails, URLs, or phone
-    numbers, which usually means personally identifying data that should not be
-    a feature at all.
+    numbers, which can indicate identifying data or structured text. Review privacy
+    requirements, feature meaning, and availability at prediction time.
 
     Parameters
     ----------
@@ -81,7 +78,9 @@ def analyze_quality(full: pd.DataFrame, sample: pd.DataFrame) -> dict[str, Any]:
         ``id_like_columns``, ``mixed_type_suspect_columns``),
         ``string_pattern_hints``, ``sample_used_for_associations``, and
         ``completeness_score``: the share of cells that are present, where 1.0
-        is a frame with no gaps.
+        is a frame with no gaps. ``nonfinite_cell_count`` and
+        ``nonfinite_by_column`` separately count positive/negative infinity;
+        infinite values are not included in the missing-value count.
 
     Notes
     -----
@@ -90,8 +89,9 @@ def analyze_quality(full: pd.DataFrame, sample: pd.DataFrame) -> dict[str, Any]:
     identifier-like check. Look at what was flagged and decide; do not drop
     columns on the strength of a threshold.
 
-    **An identifier-like column is the flag to take most seriously.** It is the
-    most common cause of a model that looks excellent and does nothing.
+    **Review identifier-like columns in context.** Check whether they identify
+    entities that recur across partitions or encode information unavailable
+    at prediction time.
 
     **Pattern detection samples.** At most 40 text columns, at most 5,000 values
     each. A rare email address in column 41 will not be found.
@@ -104,6 +104,10 @@ def analyze_quality(full: pd.DataFrame, sample: pd.DataFrame) -> dict[str, Any]:
     buildml.eda.findings.build_findings : What acts on these flags.
     """
     missing_by_column = {str(k): int(v) for k, v in full.isna().sum().items()}
+    nonfinite_by_column = {
+        str(c): int(full[c].isin([float("inf"), float("-inf")]).sum())
+        for c in full.select_dtypes(include="number").columns
+    }
     n = len(full) or 1
     missing_rate = {c: missing_by_column[c] / n for c in missing_by_column}
 
@@ -125,7 +129,11 @@ def analyze_quality(full: pd.DataFrame, sample: pd.DataFrame) -> dict[str, Any]:
     id_like = []
     for col in full.columns:
         nunq = full[col].nunique(dropna=True)
-        if nunq >= 0.98 * full[col].notna().sum() and nunq > 20:
+        # Continuous measurements are normally unique; uniqueness alone is not
+        # evidence that a numeric column is an identifier.
+        numeric = pd.api.types.is_numeric_dtype(full[col])
+        identifier_name = bool(re.search(r"(^id$|(^|_)(id|uuid|key)$|record_number$)", str(col), re.I))
+        if (not numeric or identifier_name) and nunq >= 0.98 * full[col].notna().sum() and nunq > 20:
             id_like.append(str(col))
 
     mixed_type_suspects = []
@@ -152,6 +160,8 @@ def analyze_quality(full: pd.DataFrame, sample: pd.DataFrame) -> dict[str, Any]:
     row_missingness = full.isna().sum(axis=1)
     return {
         "missing_cell_count": int(full.isna().sum().sum()),
+        "nonfinite_cell_count": sum(nonfinite_by_column.values()),
+        "nonfinite_by_column": nonfinite_by_column,
         "missing_by_column": missing_by_column,
         "missing_rate_by_column": missing_rate,
         "rows_with_any_missing": int((row_missingness > 0).sum()),

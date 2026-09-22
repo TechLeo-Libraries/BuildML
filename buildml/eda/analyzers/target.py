@@ -1,18 +1,17 @@
 """Look at the thing you are predicting, and at what seems to predict it.
 
-Everything else in an EDA pass treats columns evenly. This one does not: the
-target is what the model has to reproduce, and its shape determines which
-algorithms are appropriate, which metrics mean anything, and whether the problem
-is tractable at all.
+This analyzer focuses on the target: the outcome the model aims to predict.
+Its type and distribution help inform algorithm and metric choices, alongside
+the modelling objective, sampling design, and domain constraints.
 
 The analysis branches on task, because the questions differ. For a regression
 target: how skewed, what spread, which features correlate. For a classification
 target: how many classes, how imbalanced, which features separate them.
 
-The tests used are non-parametric throughout: Kruskal-Wallis rather than ANOVA,
-Mann-Whitney rather than a t-test. Real feature distributions are rarely normal,
-and a test that assumes normality on data that is not gives confident and wrong
-p-values.
+Group comparisons use the rank-based Kruskal-Wallis and Mann-Whitney tests;
+numeric regression associations use Pearson correlation. Rank tests do not
+require normally distributed observations, but still have assumptions about
+sampling and dependence. Their interpretation depends on those assumptions.
 
 See Also
 --------
@@ -26,9 +25,36 @@ from typing import Any
 
 import pandas as pd
 from scipy import stats
+from sklearn.utils.multiclass import type_of_target
 
 from buildml.core.types import ColumnRole
 from buildml.data.dataset import Dataset
+
+
+def is_regression_target(y: pd.Series) -> bool:
+    """Infer a screening task from observed labels, without an estimator.
+
+    Fractional numeric targets are continuous even in small samples. Integer
+    targets with more than 15 levels retain the EDA regression heuristic;
+    domain intent or an explicitly selected model can differ.
+
+    Parameters
+    ----------
+    y:
+        Target values; missing and infinite labels are excluded from task inference.
+
+    Returns
+    -------
+    bool
+        Whether the observed labels meet the regression screening heuristic.
+    """
+    observed = y.dropna()
+    if observed.empty or not pd.api.types.is_numeric_dtype(observed):
+        return False
+    observed = observed.replace([float("inf"), float("-inf")], float("nan")).dropna()
+    if observed.empty:
+        return False
+    return type_of_target(observed) == "continuous" or observed.nunique() > 15
 
 
 def analyze_target(
@@ -39,24 +65,23 @@ def analyze_target(
 ) -> dict[str, Any]:
     """Profile the target and rank the features that appear to move with it.
 
-    Detects the task the same way the modelling code does: numeric with more
-    than 15 distinct values is regression, anything else is classification: so
-    the EDA and the model agree about what kind of problem this is. A target
-    with 12 integer levels is treated as classification, which is usually right
-    and occasionally not; check the returned ``summary.type`` if the problem is
-    borderline.
+    Infers a screening task from observed labels: fractional numeric values or
+    more than 15 distinct numeric values suggest regression. This heuristic
+    may differ from a task explicitly chosen for modelling. A target
+    with 12 integer levels is treated as classification; check the returned
+    ``summary.type`` against the domain meaning of those levels.
 
     For a regression target: mean, standard deviation, and skew, plus Pearson
     correlations for numeric features and Kruskal-Wallis tests for categorical
-    ones. Skew is the number to look at first, since a heavily skewed target is
-    the most common reason a regression model underperforms and a log transform
-    fixes it.
+    ones. Skew can motivate checking the residuals and loss function. A target
+    transformation may help some models, but changes the prediction scale and
+    must be assessed using validation data and the intended evaluation metric.
 
     For a classification target: class counts, rates, and the imbalance ratio
     between the most and least common class, plus Mann-Whitney tests for
-    numeric features when the target is binary. The imbalance ratio decides
-    whether accuracy is a usable metric: at 99 to 1, predicting the majority
-    class always scores 99%.
+    numeric features when the target is binary. Compare accuracy with the class
+    balance and the costs of each error: at 99 to 1, predicting the majority
+    class scores 99% on a dataset with that balance.
 
     Parameters
     ----------
@@ -118,7 +143,7 @@ def analyze_target(
         if column in frame.columns and column != target
     }
 
-    if pd.api.types.is_numeric_dtype(y) and y.nunique(dropna=True) > 15:
+    if is_regression_target(y):
         associations = []
         for col in frame.select_dtypes(include="number").columns.astype(str):
             if col not in features:
@@ -163,8 +188,9 @@ def analyze_target(
             "non_missing_target_rows": int(y.notna().sum()),
         }
 
-    counts = y.astype(str).value_counts(dropna=False)
-    rates = {str(k): float(v / len(y)) for k, v in counts.items()} if len(y) else {}
+    observed = y.dropna()
+    counts = observed.astype(str).value_counts()
+    rates = {str(k): float(v / len(observed)) for k, v in counts.items()} if len(observed) else {}
     imbalance_ratio = (
         max(rates.values()) / max(min(rates.values()), 1e-12) if rates else None
     )
@@ -196,6 +222,8 @@ def analyze_target(
             "class_rates": rates,
             "n_classes": int(y.nunique(dropna=True)),
             "imbalance_ratio": imbalance_ratio,
+            "missing_target_rows": int(y.isna().sum()),
+            "class_rate_denominator": int(len(observed)),
         },
         "numeric_separation_tests": separation[:20],
         "n_rows": int(len(frame)),

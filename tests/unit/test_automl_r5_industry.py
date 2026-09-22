@@ -9,6 +9,7 @@ import pandas as pd
 import pytest
 
 from buildml import Session
+from buildml.automl.adapters.autogluon import _best_model_name
 from buildml.automl.catalog import automl_capability_matrix, backend_available, list_automl_methods
 from buildml.automl.extras import (
     autogluon_available,
@@ -16,7 +17,6 @@ from buildml.automl.extras import (
     gradient_boosting_extras_available,
     optuna_available,
 )
-from buildml.automl.adapters.autogluon import _best_model_name
 from buildml.automl.search import export_comparison_metrics
 from buildml.automl.types import AutoMLBudget
 from buildml.core.errors import MissingExtraError, ValidationError

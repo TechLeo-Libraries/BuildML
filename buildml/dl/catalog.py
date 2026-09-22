@@ -119,7 +119,7 @@ def dl_capability_matrix() -> dict[str, Any]:
         },
         "non_goals": [
             "Foundation-model pretraining from scratch (refuse_foundation_model_pretrain)",
-            "Full Hugging Face hub mirror / arbitrary checkpoint zoo",
+            "A full Hugging Face hub mirror or arbitrary pretrained checkpoints",
             "Managed cloud IAM / multi-cluster MLOps control plane "
             "(first-party serve Dockerfile + K8s templates are operator-owned recipes)",
             "Automatic mixed-precision product defaults",

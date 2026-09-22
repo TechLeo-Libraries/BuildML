@@ -76,7 +76,7 @@ FORECASTING_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         steps=(
             "Choose lags that match the rhythm of your data: 1 for yesterday, 7 for the same weekday, 12 or 365 for yearly cycles.",
-            "Optionally add rolling summaries: a 7-day mean, a 28-day maximum: always computed strictly backwards.",
+            "For rolling summaries, construct strictly backward-looking features separately; forecast.fit does not accept rolling_windows.",
             "BuildML builds the supervised table where each row's features are past values and its target is the current one.",
             "Rows at the very start have no history and are dropped; note how many.",
             "Fit any ordinary regression model on that table.",
@@ -102,9 +102,9 @@ FORECASTING_BEGINNER: dict[str, BeginnerLayer] = _index(
         example=(
             "session.forecast.fit(",
             "    method='lag_ridge', lags=[1, 2, 7, 14, 28],",
-            "    rolling_windows=[7, 28],",
+            "    horizon=14,",
             ")",
-            "print(session.forecast.plan.n_dropped_warmup_rows)",
+            "print(session.forecast.plan.n_train_rows - session.forecast.plan.n_fit_rows)",
         ),
         check=(
             "Do your lag choices match a real cycle in the data: weekly, monthly, yearly?",
@@ -153,7 +153,7 @@ FORECASTING_BEGINNER: dict[str, BeginnerLayer] = _index(
         example=(
             "session.time_split(test_size=0.2)",
             "session.forecast.fit(method='ets', seasonal_period=7)",
-            "session.forecast.evaluate(partition='validation', protocol='rolling_one_step')",
+            "session.forecast.evaluate(partition='validation', strategy='rolling_one_step')",
         ),
         check=(
             "Is your train window long enough for the seasonal period you chose?",
@@ -253,7 +253,7 @@ FORECASTING_BEGINNER: dict[str, BeginnerLayer] = _index(
         example=(
             "result = session.forecast.generate(horizon=14)",
             "print(result.predictions)          # 14 values",
-            "print(result.protocol)             # 'recursive multi-step'",
+            "print(result.disclosures)             # 'recursive multi-step'",
         ),
         check=(
             "What is your accuracy at step 1 versus step H?",
@@ -301,9 +301,9 @@ FORECASTING_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "rolling = session.forecast.evaluate(partition='test', protocol='rolling_one_step')",
-            "origin = session.forecast.evaluate(partition='test', protocol='origin', horizon=14)",
-            "print(rolling.mae, origin.mae)   # expect origin to be worse",
+            "rolling = session.forecast.evaluate(partition='test', strategy='rolling_one_step')",
+            "origin = session.forecast.evaluate(partition='test', strategy='origin')",
+            "print(rolling.metrics['mae'], origin.metrics['mae'])   # expect origin to be worse",
         ),
         check=(
             "In production, will your model see actuals between predictions?",
@@ -351,7 +351,7 @@ FORECASTING_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         example=(
             "report = session.forecast.evaluate(partition='test')",
-            "print(report.mae, report.rmse, report.mape)",
+            "print(report.metrics)",
             "print(report.disclosures)   # includes MAPE instability notes",
         ),
         check=(
@@ -400,7 +400,7 @@ FORECASTING_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         example=(
             "session.forecast.save_bundle('artifacts/demand-forecast')",
-            "job = Session.ingest(latest_history).forecast.load_bundle('artifacts/demand-forecast')",
+            "job = Session.ingest(latest_history).forecast.load_bundle('artifacts/demand-forecast', trusted=True)",
             "job.forecast.generate(horizon=14)",
         ),
         check=(

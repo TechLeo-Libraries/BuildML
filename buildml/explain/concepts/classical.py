@@ -635,7 +635,7 @@ CLASSICAL_NOTES: dict[str, ConceptNote] = {
             interpretation_rules=(
                 "Always report population=train, fold count, strategy, and mean±std for the primary metric.",
                 "If Session-global impute/scale already ran, CV/search refuse unless "
-                "allow_session_global_preprocess=True; a fold-local recipe does not unpoison the frame.",
+                "allow_session_global_preprocess=True; a fold-local recipe does not undo globally fitted transformations.",
                 "After hyperparameter search, prefer nested_cv_score outer mean±std over inner search means.",
                 "Confirm the selected recipe once on validation or test after search.",
                 "Large fold std relative to mean→std gaps means ranks are unstable.",
@@ -1437,7 +1437,7 @@ CLASSICAL_NOTES: dict[str, ConceptNote] = {
             ),
             why_it_matters=(
                 "Informs optional transforms or robust statistics:not mandatory model families.",
-                "Prevents p-value theater from dictating pipelines.",
+                "Prevents overinterpreted p-values from dictating pipelines.",
                 "Helps interpret mean/std summaries that assume symmetric noise.",
             ),
             how_buildml_uses=(
@@ -1604,7 +1604,7 @@ CLASSICAL_NOTES: dict[str, ConceptNote] = {
             ),
             why_it_matters=(
                 "High-cardinality categoricals often need a compact supervised encoding.",
-                "Without OOF discipline, models memorize label noise and validation metrics lie.",
+                "Without OOF discipline, models memorize label noise and validation metrics become misleading.",
                 "Nested CV is still required when the encoding itself is tuned during model selection.",
             ),
             how_buildml_uses=(
@@ -1779,7 +1779,7 @@ CLASSICAL_NOTES: dict[str, ConceptNote] = {
             how_buildml_uses=(
                 "Session.text_features(...) fits count/TF-IDF/hashing vectorizers on train only.",
                 "PreprocessRecipe(text=...) refits the same vectorizer families on each CV "
-                "fold-train for selection-time honesty.",
+                "fold-train for independent model selection.",
                 "Plans serialize into pipeline/checkpoint payloads for score-time replay.",
                 "Missing text is treated as empty strings before vectorization.",
             ),

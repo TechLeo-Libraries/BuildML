@@ -186,8 +186,8 @@ class EDAReport:
 
         Notes
         -----
-        **``warnings`` is not printed.** Check it separately: a report built
-        from a 1% sample looks exactly like one built from everything.
+        Scope, sampling, and other analysis warnings are printed before the
+        findings so their limitations remain visible in notebook output.
 
         See Also
         --------
@@ -199,6 +199,8 @@ class EDAReport:
             f"sample={o.get('analysis_rows')} · "
             f"completeness={self.quality.get('completeness_score')}"
         )
+        for warning in self.warnings:
+            print(f"Disclosure: {warning}")
         print("--- Narrative ---")
         for line in self.narrative[:max_items]:
             print(f"* {line}")

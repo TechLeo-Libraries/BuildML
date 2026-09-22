@@ -1,17 +1,6 @@
 """Topological Data Analysis (Session-shaped persistent homology path).
 
-Phase coverage (internal tracker: depth-first; do not spray stubs)
-------------------------------------------------------------------
-Phase 1 (**complete**): unsupervised → ensembles → AutoML → forecasting → anomaly.
-
-Phase 2 (**complete** through this module / TDA).
-
-Phase 3: Application systems (depth-first):
-  Recommendation systems → search/LTR → knowledge graphs →
-  optimisation/decision helpers → synthetic-data systems.
-  Remaining deepenings: NLP/CV if still partial.
-
-Honesty (this package):
+Behavior and limitations:
   - **native** backend: local Vietoris–Rips persistence (ripser) on kNN train
     neighborhoods; train-fitted vectorization (persim PI or in-tree landscapes /
     silhouettes) → fixed-length features.
@@ -28,7 +17,7 @@ Dependency policy: core stays numpy/pandas/sklearn.
     Betti curves, gtda vectorizers, optional Mapper summary).
   - ``import buildml`` never requires ripser/persim/giotto-tda.
 
-Lazy imports: keep the core import graph light.
+Optional dependencies are imported only when their backends are used.
 """
 
 from __future__ import annotations

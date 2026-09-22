@@ -102,7 +102,7 @@ def federated_capability_matrix() -> dict[str, Any]:
             "Cryptographic secure aggregation (not implemented on any backend)",
             "Differential privacy guarantees from simulation alone",
             "Ray / gRPC production Flower deployment from Session.fit_federated",
-            "Non-linear tree/neural FedAvg zoo without coef_/intercept_ path",
+            "Tree or neural FedAvg models without the supported coef_/intercept_ interface",
             "OpenFL / TensorFlow Federated replacement claims",
         ],
         "industry_extra_present": flwr_spec_present(),

@@ -35,7 +35,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             "Require SplitPlan.",
             "Resolve state feature columns (exclude action column).",
             "Fit classifier or regressor on train demonstrations only.",
-            "Disclose BC honesty boundary (not inverse RL / robotics).",
+            "Disclose behavior-cloning limitations (not inverse RL / robotics).",
         ),
         parameters=(
             _p("task", "classification | regression | None", "Inferred from action dtype when omitted."),
@@ -59,7 +59,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         prerequisites=(DATASET, ROLES, SPLIT),
         ordering=("After split / preprocess; before predict/evaluate imitation.",),
         alternatives=("Classical fit() when the target is a standard label, not an action.",),
-        rationale=("Ship leakage-safe BC for Session demo tables.",),
+        rationale=("Fit behavior cloning on training demonstrations.",),
         assumptions=("Non-null features/actions on train.",),
         failures=("No split; null features; estimator/task mismatch.",),
         leakage=("Train-only policy fit; holdout never enters at fit.",),
@@ -202,7 +202,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             "tabular_q: require buildml[rl]; discretize states and run TD control "
             "(Q-learning / SARSA / Expected SARSA / Double Q-learning).",
             "gym_sb3: require buildml[rl-industry]; train SB3 PPO/DQN/A2C.",
-            "Disclose offline vs env-loop honesty boundaries.",
+            "Disclose offline evaluation and environment-loop limitations.",
         ),
         parameters=(
             _p(
@@ -251,7 +251,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         prerequisites=(DATASET, ROLES, SPLIT),
         ordering=("After split for bandits; env modes may host policy without tabular fit.",),
         alternatives=("session.rl.fit_imitation for demonstration cloning without rewards.",),
-        rationale=("Ship practical Session bandits + optional small-env RL.",),
+        rationale=("Fit contextual bandits or train policies in supported small environments.",),
         assumptions=("Discrete arms + numeric rewards for bandits; gymnasium for env modes.",),
         failures=("Missing reward_column; MissingExtraError without buildml[rl].",),
         leakage=("Bandit updates train-only; holdout never updates the policy.",),

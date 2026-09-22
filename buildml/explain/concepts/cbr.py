@@ -28,7 +28,7 @@ CBR_NOTES: dict[str, ConceptNote] = {
                 "neighbors N_k(q) ⊂ M under distance d."
             ),
             why_it_matters=(
-                "Train-only memory preserves holdout honesty.",
+                "Train-only memory preserves holdout independence.",
                 "Traces show which cases influenced each prediction.",
             ),
             how_buildml_uses=(

@@ -47,7 +47,7 @@ class OnlineSessionMixin:
     ) -> OnlineFitResult:
         """Warm-start an incremental estimator on the first train chunk.
 
-        Session facade over :func:`buildml.session.online_ops.fit_online_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.online_ops.fit_online_op`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------
@@ -92,7 +92,7 @@ class OnlineSessionMixin:
     ) -> OnlineUpdateResult:
         """Apply one incremental partial_fit update on the next train chunk or frame.
 
-        Session facade over :func:`buildml.session.online_ops.partial_fit_online_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.online_ops.partial_fit_online_op`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------
@@ -119,7 +119,7 @@ class OnlineSessionMixin:
     ) -> OnlineEvalResult:
         """Evaluate the online learner on a holdout partition without updating it.
 
-        Session facade over :func:`buildml.session.online_ops.evaluate_online_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.online_ops.evaluate_online_op`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------
@@ -142,7 +142,7 @@ class OnlineSessionMixin:
     ) -> OnlinePredictResult:
         """Predict with the incremental online estimator without updating it.
 
-        Session facade over :func:`buildml.session.online_ops.predict_online_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.online_ops.predict_online_op`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------
@@ -219,7 +219,7 @@ class OnlineSessionMixin:
     def save_online_bundle(self, path: str | Path) -> Path:
         """Persist the active online plan as ``buildml.online_bundle.v1``.
 
-        Session facade over :func:`buildml.session.online_ops.save_online_bundle_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.online_ops.save_online_bundle_op`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------
@@ -236,7 +236,7 @@ class OnlineSessionMixin:
     def load_online_bundle(self, path: str | Path, *, trusted: bool = False) -> Session:
         """Load an online-learning bundle into this Session.
 
-        Session facade over :func:`buildml.session.online_ops.load_online_bundle_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.online_ops.load_online_bundle_op`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------

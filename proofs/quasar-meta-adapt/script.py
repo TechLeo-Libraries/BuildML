@@ -217,7 +217,7 @@ def main() -> None:
             "Test used after each stage locks",
         ],
         "what_fails_if_leakage_ignored": [
-            "Episodes that include test categories in the support set fake cold-start skill",
+            "Episodes that include test categories in the support set overstate cold-start performance",
             "SSL pretext on the full table leaks holdout geometry into embeddings",
             "Classical baseline trained with test rows is not a fair comparator",
         ],

@@ -156,7 +156,7 @@ def evaluate_probabilistic_op(
     partition: PartitionOrAll = "validation",
     alpha: float | None = None,
 ) -> Any:
-    """Evaluate the probabilistic plan on a holdout partition.
+    """Evaluate the probabilistic plan on the selected population.
 
     Delegates to :func:`buildml.probabilistic.evaluate.evaluate_probabilistic`
     for calibration and interval coverage metrics. Falls back to ``test`` when
@@ -167,9 +167,11 @@ def evaluate_probabilistic_op(
     session:
         Active Session with a ProbabilisticPlan from :func:`fit_probabilistic_op`.
     partition:
-        Holdout partition (default ``validation``).
+        ``train``, ``validation`` (default), ``test``, or ``all``. Training-inclusive
+        scores are diagnostic; independently verify holdout provenance.
     alpha:
-        Significance level override for interval metrics.
+        Miscoverage rate for interval metrics. Native conformal and modern MAPIE require
+        the fitted alpha; unsupported overrides raise ``ValidationError``.
 
     Returns
     -------
@@ -286,7 +288,8 @@ def predict_interval_op(
     partition:
         Split partition to score (default ``test``).
     alpha:
-        Significance level override for interval width.
+        Miscoverage rate for interval width. Native conformal and modern MAPIE
+        require their calibrated alpha; posterior-std intervals can vary alpha.
     method:
         Interval method override (conformal, native, etc.).
 

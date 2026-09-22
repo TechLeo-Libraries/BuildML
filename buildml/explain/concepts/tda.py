@@ -31,7 +31,7 @@ TDA_NOTES: dict[str, ConceptNote] = {
                 "diagrams Dgm_i = {(b,d)}."
             ),
             why_it_matters=(
-                "Train-only NN index + diagrams preserve holdout honesty.",
+                "Train-only NN index + diagrams preserve holdout independence.",
                 "Gives geometry-aware features beyond linear summaries.",
             ),
             how_buildml_uses=(

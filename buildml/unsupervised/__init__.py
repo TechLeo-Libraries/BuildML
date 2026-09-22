@@ -1,6 +1,6 @@
 """Unsupervised learning domain (clustering + train-fit / holdout-assign path).
 
-Industry-depth coverage (Phase R2):
+Supported backends:
   - Clustering: k-means, agglomerative, DBSCAN, GMM+BIC, HDBSCAN, spectral,
     OPTICS, mean-shift, DEC/IDEC (Torch).
   - Reduction: PCA (core), UMAP/t-SNE (viz + cluster pipeline input).

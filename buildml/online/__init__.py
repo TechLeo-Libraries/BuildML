@@ -1,32 +1,11 @@
 """Online / continual learning domain (sklearn ``partial_fit`` + industry backends).
 
-Phase coverage (internal tracker: depth-first; do not spray stubs)
-------------------------------------------------------------------
-Phase 1 (**complete**): unsupervised → ensembles → AutoML → forecasting → anomaly.
-
-Phase 2:
-  1. Semi-supervised learning: done (``buildml.semisupervised``).
-  2. Self-supervised learning hooks: done (``buildml.selfsupervised``).
-  3. Active learning: done (``buildml.activelearning``).
-  4. Online / continual (partial_fit + River + torch continual): **this module**.
-  5. Multi-task learning: done (``buildml.multitask``).
-  6. Meta-learning: done (``buildml.metalearning``).
-  7. Federated learning: done (``buildml.federated``).
-  8. Bayesian / probabilistic: done (``buildml.probabilistic``); next = Causal.
-  Later: graph, evolutionary,
-  symbolic, CBR, IL+RL, TDA, recommenders / LTR / KG / optimisation / synthetic /
-  NLP-CV deepenings. Speech: ASR keep/improve; TTS out.
-
-Explicit non-goals (no product surfaces): neuromorphic/SNN, swarm zoo,
-digital twins, AV stack, multi-agent world sims, TTS, robotics/control product,
-full COCO detection/segmentation suite.
-
-Honesty (this package):
+Behavior and limitations:
   - Batch/stream-chunk ``partial_fit`` updates on Session train data (or
     role-aligned user frames): NOT a distributed streaming platform and NOT a
     full lifelong-learning research suite.
   - Validation/test are never used for updates.
-  - Silent full refits pretending to be online are refused; optional
+  - Full refits during an incremental update are refused by default; optional
     ``allow_refit_fallback`` is always disclosed.
   - Classifiers require a ``classes`` vocabulary on first fit (explicit or
     discovered from the full train target column: labels only).

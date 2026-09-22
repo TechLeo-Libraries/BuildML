@@ -51,7 +51,7 @@ ANOMALY_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         example=(
             "session.split(test_size=0.2, random_state=0)",
-            "session.scale(strategy='standard')",
+            "session.scale(method='standard')",
             "session.anomaly.fit(method='isolation_forest', random_state=0)",
             "scores = session.anomaly.score(partition='test')",
         ),
@@ -101,7 +101,9 @@ ANOMALY_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         example=(
             "scores = session.anomaly.score(partition='validation')",
-            "report = session.anomaly.evaluate(partition='validation', alert_rate=0.02)",
+            "import numpy as np",
+            "threshold = float(np.quantile(scores.scores, 0.98))   # validation operating point",
+            "report = session.anomaly.evaluate(partition='validation', override_threshold=threshold)",
             "print(report.threshold, report.alert_rate, report.n_flagged)",
         ),
         check=(
@@ -152,7 +154,7 @@ ANOMALY_BEGINNER: dict[str, BeginnerLayer] = _index(
         example=(
             "session.anomaly.fit(",
             "    method='one_class_svm', mode='novelty',",
-            "    normal_only_filter='verified_clean == True',",
+            "    normal_label_column='verified_clean', normal_label_value=True,",
             ")",
             "print(session.anomaly.plan.disclosures)   # records the normal-only subset",
         ),
@@ -202,9 +204,9 @@ ANOMALY_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         example=(
             "report = session.anomaly.evaluate(",
-            "    partition='test', label_column='is_fraud', alert_rate=0.01,",
+            "    partition='test', label_column='is_fraud', k=10,",
             ")",
-            "print(report.pr_auc, report.precision_at_k, report.recall_at_k)",
+            "print(report.labeled_metrics)",
         ),
         check=(
             "How many labelled positives are in your evaluation partition?",
@@ -302,8 +304,8 @@ ANOMALY_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         example=(
             "session.anomaly.save_bundle('artifacts/fraud-detector')",
-            "job = Session.ingest(today_frame).anomaly.load_bundle('artifacts/fraud-detector')",
-            "flags = job.anomaly.score()",
+            "job = Session.ingest(today_frame).anomaly.load_bundle('artifacts/fraud-detector', trusted=True)",
+            "flags = job.anomaly.score(partition='all')",
         ),
         check=(
             "Where is your operating threshold recorded?",
@@ -490,7 +492,7 @@ ANOMALY_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         steps=(
             "Scale features and confirm buildml[torch] is available.",
-            "session.anomaly.fit(backend='torch', method='autoencoder', epochs=...) on train.",
+            "session.anomaly.fit(backend='torch', method='autoencoder', ae_epochs=...) on train.",
             "Score holdout rows; read reconstruction-error and alert_rate disclosures.",
             "Compare against isolation_forest on validation before claiming uplift.",
         ),
@@ -507,7 +509,7 @@ ANOMALY_BEGINNER: dict[str, BeginnerLayer] = _index(
             ("Higher epochs always help.", "Under- or over-training shifts reconstruction calibration."),
         ),
         example=(
-            "session.anomaly.fit(backend='torch', method='autoencoder', epochs=40, random_state=0)",
+            "session.anomaly.fit(backend='torch', method='autoencoder', ae_epochs=40, random_state=0)",
             "session.anomaly.score(partition='validation')",
         ),
         check=(

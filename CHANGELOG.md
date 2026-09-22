@@ -24,10 +24,9 @@ with pre-release tags for alpha (`aN`) builds.
   ``python_version < '3.12'``. Windows 3.12 fails the Cython build
   (``longintrepr.h``); 3.13 still hits qpth/numpy pins. Native
   first-order MAML/Reptile stays on the industry path.
-- Dead 2.x wheels ``2.4.0a3``, ``2.4.0``, ``2.5.0``, and ``2.6.0`` omit
-  ``operation_index.json`` and cannot import. Yank them on PyPI so
-  unpinned ``pip install buildml[production]`` cannot backtrack onto a
-  dead wheel. ``2.6.1`` and the 1.x line stay on the index.
+- Releases ``2.4.0a3``, ``2.4.0``, ``2.5.0``, and ``2.6.0`` were yanked
+  from PyPI because their wheels omit ``operation_index.json`` and fail
+  to import. Install ``2.6.1`` or later. The legacy 1.x line remains available.
 
 ### Added
 
@@ -81,9 +80,9 @@ with pre-release tags for alpha (`aN`) builds.
 
 - **Proofs and examples are a user contract.** Paste scripts live in
   `examples/` and match the guides. Proofs are checkout-only evidence
-  for one job (`proofs._lib` plus repo root), not a 63/63 scoreboard or
-  a catalog of shipped products. Composition slugs say they are not
-  products BuildML ships. Core examples run in CI; bundles land in
+  for one job (`proofs._lib` plus repo root). Composition examples combine
+  library capabilities; they are not separately shipped applications.
+  Core examples run in CI; bundles land in
   `examples/.artifacts/`; the classical file uses 120 rows so printed
   metrics are not three-row noise.
 - **`session.calibration` and `session.tune_threshold` default to
@@ -94,7 +93,7 @@ with pre-release tags for alpha (`aN`) builds.
   German Credit (`credit-g`) and fall back to the in-repo credit draw
   with `loader_selected` recorded. `churn-automl-search` uses sklearn
   Wisconsin breast cancer. Slugs stay; READMEs say what the table
-  actually is. Paste examples remain short toys.
+  actually is. The shorter examples use small demonstration datasets.
 - **CBR `backend=None` stays sklearn on Windows.** In-process hnswlib
   and faiss can hard-crash the interpreter even when a subprocess probe
   succeeds. Explicit `backend="industry"` raises unless
@@ -257,7 +256,7 @@ historical pins.
   measure ~70.71% (`scripts/coverage_ratchet.json`).
 - **CI mypy widened.** Scoped typing expands beyond session/core/explain to
   packages verified clean with `--follow-imports=silent` (fairness, serving,
-  pipeline, and other clean domains — see `.github/workflows/ci.yml`).
+  pipeline, and other clean domains; see `.github/workflows/ci.yml`).
 - **Industry capability honesty.** KG / federated / RL / AutoML / anomaly /
   probabilistic industry `available` flags prefer runtime import probes;
   find_spec-only signals disclosed separately.
@@ -638,7 +637,7 @@ historical pins.
   `evaluate_retrieval` explains why document mode deduplicates and chunk mode does
   not, and `load_rag_bundle` documents that a bundle saved with a custom callable
   embedder reloads with hashing substituted: queries and stored vectors then
-  occupy unrelated spaces, and retrieval returns confident nonsense.
+  occupy unrelated spaces, and retrieval returns semantically unrelated results.
   `rag_status` reports the absences as plainly as the presences, including that a
   Session checkpoint does not carry the vector index.
 - **`buildml.cbr` rewritten to the standard and locked at zero findings.** All 19
@@ -773,8 +772,8 @@ historical pins.
     splitter; `buildml/nlp/lexicons.py` ships stopwords for seven languages, a
     sentiment lexicon with negators and intensifiers, Unicode script ranges,
     conservative English suffix-stem rules, and the entity patterns. Because
-    normalization learns nothing it cannot leak, so the plan replays it on
-    holdout freely: while vocabulary, document frequencies, IDF, topic
+    normalization learns no corpus statistics, the fixed plan replays on
+    holdout without fitting to those rows: while vocabulary, document frequencies, IDF, topic
     components, and heads are all frozen at fit on train rows only.
   - **`buildml.nlp_bundle.v1`** (`save_nlp_bundle` / `load_nlp_bundle`) carries the
     normalization plan with the fitted representation and head, plus an optional
@@ -981,7 +980,7 @@ GitHub prerelease / honesty banner only.
   faithfulness hooks. Install honesty (GitHub 2.x vs PyPI 1.x) unchanged.
 - **Torch multimodal / RAG depth:** Deepens real library paths for Torch multimodal
   (gated fusion + frozen ``multimodal_preprocess`` restore), speech
-  (``evaluate_asr`` WER/CER, ``SpeechContract`` round-trip), pretrained zoo
+  (``evaluate_asr`` WER/CER, ``SpeechContract`` round-trip), pretrained backbones
   (ResNet34/50, ViT-B/32, HuBERT, Whisper-base encoder; ``attach_backbone_head`` /
   ``list_pretrained_backbones``), local serve (``/metadata``, ``/predict/batch``,
   optional local HTTPS), K8s emitters (ConfigMap + GPU requests, serve
@@ -1011,10 +1010,10 @@ GitHub prerelease / honesty banner only.
 
 ### Clarified
 
-- **Honesty limits = product scope, not stubs.** Docs “not a full zoo / not
-  managed cloud IAM / not live multi-cluster / not FM-from-scratch / not hosted
-  vector DB” statements describe intentional product boundaries around shipped
-  library paths: not unfinished placeholder APIs.
+- **Supported deployment scope clarified.** The library supplies selected
+  pretrained-backbone integrations and local serving helpers. Managed cloud
+  identity, live multi-cluster orchestration, foundation-model pretraining,
+  and hosted vector databases require external systems.
 
 ### Fixed
 
@@ -1335,7 +1334,7 @@ known limits are listed in this section. Classical alpha remains documented at
 ### Known limits (DL alpha)
 
 - CPU merge gate; no GPU CI on every PR. Tabular numeric features first.
-- No built-in model zoo; caller supplies `nn.Module`.
+- No built-in model collection; caller supplies `nn.Module`.
 - Materialized Pandas/NumPy tensors; no Polars/DuckDB zero-copy into loaders.
 - Classical preprocess is not auto-applied before loaders.
 - No fold-local Torch CV, DDP, mixed precision, or ONNX/TorchScript product path.

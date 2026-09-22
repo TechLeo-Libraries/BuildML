@@ -2001,7 +2001,7 @@ def load_pretrained_backbone(
     modality:
         Backbone modality (``vision``, ``audio``, or ``speech``).
     architecture:
-        Optional architecture identifier within the curated zoo.
+        Optional architecture identifier among the supported backbones.
     weights:
         Weight source (``none``, ``mock``, or ``pretrained``).
     freeze:
@@ -2009,7 +2009,7 @@ def load_pretrained_backbone(
     seed:
         Seed for mock-weight initialization.
     model_id:
-        Optional Hugging Face or zoo model identifier.
+        Optional Hugging Face or supported backbone model identifier.
 
     Returns
     -------

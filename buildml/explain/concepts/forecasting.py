@@ -159,7 +159,7 @@ FORECASTING_NOTES: dict[str, ConceptNote] = {
             ),
             why_it_matters=(
                 "Silent exog assumptions create undeployable generate paths.",
-                "Univariate honesty avoids fake multivariate claims.",
+                "This path fits a univariate target; it does not jointly model multiple target series.",
             ),
             how_buildml_uses=(
                 "exog_columns empty ⇒ univariate disclosures on the plan.",

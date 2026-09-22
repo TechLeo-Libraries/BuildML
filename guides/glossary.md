@@ -215,7 +215,7 @@ training rows. Supported fold-local steps include dates, text features, outliers
 binning, scale, PCA (`reduce`), and feature selection. Resample and registered custom transforms
 remain Session-global only. If Session fit-capable plans were already fitted on the full train
 partition, CV/search refuse even when a fold-local recipe is passed: recipes run on the
-already-transformed frame and do not rebuild from raw rows. Re-ingest unpoisoned data, or set
+already-transformed frame and do not rebuild from raw rows. Re-ingest data before fitted preprocessing, or set
 `allow_session_global_preprocess=True` as an explicit override (scores remain leakage-biased).
 
 **Dataset project / aggregate**  
@@ -353,9 +353,9 @@ retrieval for generation (that is RAG).
 **Text normalization plan**  
 The deterministic, stateless part of a text pipeline: the normalization steps,
 tokenizer settings, stopword list, and stemming or lemmatization choice: stored
-on an `NlpTextPlan`. Because it learns nothing from the corpus it cannot leak, so
-it replays freely on holdout rows. The vocabulary, document frequencies, and IDF
-weights beside it are train-only.
+on an `NlpTextPlan`. A fixed plan learns no corpus statistics and can be replayed
+on holdout rows. Choose its settings without using test performance. The
+vocabulary, document frequencies, and IDF weights beside it are train-only.
 
 **Token attribution (NLP)**  
 `session.nlp.interpret` output: per token, the model's coefficient, the

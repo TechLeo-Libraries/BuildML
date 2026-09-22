@@ -209,12 +209,20 @@ def load_arrow(path: Path) -> pd.DataFrame:
 def load_excel(path: Path, *, nrows: int | None = None) -> pd.DataFrame:
     """Read ``.xlsx`` / ``.xlsm`` via pandas and openpyxl.
 
+    Loads the first worksheet into memory, using its first row as column
+    names. Other worksheets, formatting, and workbook macros are not imported.
+
     Parameters
     ----------
     path:
         Workbook path. Only Office Open XML workbooks are supported.
     nrows:
-        Stop after this many rows when pandas forwards the cap.
+        Maximum number of data rows to read, or ``None`` for all rows.
+
+    Returns
+    -------
+    pandas.DataFrame
+        The first worksheet's values, with column types inferred by pandas.
 
     Raises
     ------

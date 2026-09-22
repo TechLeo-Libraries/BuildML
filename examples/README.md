@@ -1,13 +1,12 @@
 # BuildML examples
 
-These scripts are the paste contract. They match the guide snippets so you
-can run a loop without copying out of Markdown. They are not proofs: no
-JSON harness, no industry twin. Behavioral guarantees live in `tests/`.
+These runnable scripts demonstrate the guide workflows without requiring you
+to copy code from Markdown. Automated behavior checks live in `tests/`.
 End-to-end evidence lives in [`proofs/`](../proofs/README.md).
 
 Start here for the classical loop. The guide snippet is a short table
 you can read. The file draws 120 rows, calibrates, and tunes a
-threshold on validation so the printed metrics are not three-row noise.
+threshold on validation to demonstrate the evaluation workflow.
 Use
 [loan-approval-classical](../proofs/loan-approval-classical/) when you
 want the same spine on German Credit (`credit-g` when cached). For an

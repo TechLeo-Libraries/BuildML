@@ -2,7 +2,7 @@
 
 CrossEntropyLoss expects targets in ``{0, …, K-1}``. Callers often pass
 sparse integer ids (e.g. ``{10, 20, 30}``). Using ``n_classes = len(unique)``
-while leaving raw ids in the tensors is a silent correctness footgun.
+while leaving raw ids in the tensors is a label-mapping mismatch.
 
 This mirrors classical BuildML / sklearn ``LabelEncoder`` behavior: fit the
 mapping on train labels only, store original ids in ``class_labels`` (index

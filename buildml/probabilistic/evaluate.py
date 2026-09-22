@@ -24,7 +24,7 @@ from buildml.probabilistic.features import (
     matrix_from_frame,
     norm_ppf,
 )
-from buildml.probabilistic.predict import predict_interval
+from buildml.probabilistic.predict import _validate_interval_alpha, predict_interval
 from buildml.probabilistic.results import ProbabilisticEvalResult, ProbabilisticPlan
 
 PartitionOrAll = PartitionName | Literal["all"]
@@ -38,7 +38,7 @@ def evaluate_probabilistic(
     partition: PartitionOrAll = "validation",
     alpha: float | None = None,
 ) -> ProbabilisticEvalResult:
-    """Score a holdout partition with point and uncertainty metrics.
+    """Score a selected population with point and uncertainty metrics.
 
     Computes proper scoring rules (NLL, Brier, CRPS when available) plus
     interval coverage and width on validation or test without refitting.
@@ -46,15 +46,17 @@ def evaluate_probabilistic(
     Parameters
     ----------
     dataset:
-        Session dataset with labeled holdout rows.
+        Session dataset containing the labeled rows to score.
     plan:
         Train-fitted :class:`~buildml.probabilistic.results.ProbabilisticPlan`.
     split_plan:
         Split plan defining the evaluation partition.
     partition:
-        ``validation``, ``test``, or ``all``.
+        ``train``, ``validation``, ``test``, or ``all``. Training-inclusive
+        populations are diagnostic evaluations, not holdout evidence.
     alpha:
         Miscoverage rate override for interval metrics; defaults to plan alpha.
+        Native conformal and modern MAPIE require their calibrated alpha.
 
     Returns
     -------
@@ -73,12 +75,15 @@ def evaluate_probabilistic(
     method. Classification metrics include accuracy/F1, log-loss (NLL), and
     Brier (binary), plus prediction-set coverage when conformal was enabled.
 
-    Holdout rows are never used for fitting or conformal calibration.
+    This operation does not refit or recalibrate. A current partition name
+    does not prove independence from the fitted model's original data, notably
+    after loading a bundle or changing the dataset or split.
     """
     if plan is None:
         raise ValidationError("No ProbabilisticPlan. Call fit_probabilistic first.")
 
     resolved_alpha = float(plan.alpha if alpha is None else alpha)
+    _validate_interval_alpha(plan, resolved_alpha, plan.interval_method)
     if partition == "all":
         frame = dataset._ensure_pandas()
         part_name = "all"
@@ -99,14 +104,21 @@ def evaluate_probabilistic(
         )
 
     disclosures = [
-        "Probabilistic evaluation scores a holdout partition; rows were never "
-        "used for fit or conformal calibration.",
+        f"Evaluation population: {part_name} rows from the currently attached dataset.",
+        "Evaluation does not refit or recalibrate. Current partition names do not "
+        "establish independence from the model's original fitting/calibration data; "
+        "verify that provenance, especially after loading a bundle or replacing data/splits.",
         f"backend={plan.backend}, estimator={plan.estimator_name}, alpha={resolved_alpha}, "
         f"interval_method={plan.interval_method}.",
         "Classical Session.calibration() is unchanged and still targets "
         "classical fit(...) classifiers; this path reports NLL/Brier directly.",
     ]
     warnings: list[str] = []
+    if part_name in {"all", "train"}:
+        warnings.append(
+            f"partition='{part_name}' can include fitting/calibration rows. "
+            "Treat these metrics as diagnostic, not as independent holdout evidence."
+        )
     metrics: dict[str, float] = {}
     n_rows = int(len(frame))
     coverage: float | None = None
@@ -194,6 +206,8 @@ def evaluate_probabilistic(
                 partition=partition if partition != "all" else "all",
                 alpha=resolved_alpha,
             )
+            warnings.extend(interval.warnings)
+            disclosures.extend(interval.disclosures)
             if interval.lower is not None and interval.upper is not None:
                 lo = np.asarray(interval.lower, dtype=float)
                 hi = np.asarray(interval.upper, dtype=float)
@@ -264,6 +278,8 @@ def evaluate_probabilistic(
                     partition=partition if partition != "all" else "all",
                     alpha=resolved_alpha,
                 )
+                warnings.extend(interval.warnings)
+                disclosures.extend(interval.disclosures)
                 if interval.prediction_sets is not None:
                     sets = interval.prediction_sets
                     if len(sets) != n_rows:

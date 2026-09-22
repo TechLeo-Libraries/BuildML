@@ -22,7 +22,7 @@ PALETTE: dict[str, Any] = _PALETTE_LIGHT
 
 # Full EDA figure spine for the Command Cockpit readiness sheet. Order follows
 # analyzer families (quality → univariate → relationships → multivariate →
-# target/drift → outliers). Empty-theater charts are filtered per report by
+# target/drift → outliers). Charts without data are filtered per report by
 # :func:`charts_for_cockpit_report`.
 _COCKPIT_CHART_CANDIDATES: list[str] = [
     "severity_map",
@@ -130,7 +130,7 @@ def charts_for_domain(domain_key: str) -> list[str]:
 def chart_has_report_data(chart_id: str, report: dict[str, Any]) -> bool:
     """Return whether *chart_id* would render a non-empty figure for *report*.
 
-    Used to omit empty-theater placeholders from the readiness sheet while still
+    Used to omit placeholders without analysis data from the readiness sheet while still
     keeping the full candidate list for boards that want explicit empty states.
     """
     overview = report.get("overview") or {}
@@ -180,7 +180,7 @@ def chart_has_report_data(chart_id: str, report: dict[str, Any]) -> bool:
 
 
 def charts_for_cockpit_report(report: dict[str, Any]) -> list[str]:
-    """Cockpit figure ids that have real data for this session (no empty theater)."""
+    """Cockpit figure ids that have real data for this session (only analyses with available data)."""
     return [
         chart_id
         for chart_id in _COCKPIT_CHART_CANDIDATES

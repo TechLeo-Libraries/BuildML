@@ -59,7 +59,7 @@ session = (
     .split(test_size=0.25, stratify=True, random_state=0)
 )
 
-report = session.eda(include_plots=False)
+report = session.eda(partition="train", include_plots=False)
 for finding in report.findings[:10]:
     print(finding.severity, finding.title)
 for rec in getattr(report, "recommendations", [])[:5] or []:
@@ -67,6 +67,10 @@ for rec in getattr(report, "recommendations", [])[:5] or []:
 ```
 
 Recommendations name Session operations. They do not execute them.
+Use training rows for exploratory decisions about features or models. The
+separate drift section still compares full train and test distributions;
+the report discloses both scopes. The default ``partition="all"`` includes
+held-out rows when a split exists.
 
 ---
 

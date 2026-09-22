@@ -75,7 +75,7 @@ def main() -> None:
         value = external.get(key)
         if isinstance(value, (int, float)) and float(value) >= 0.98:
             raise SystemExit(
-                "cluster-customer-segments refused perfect-score theater: "
+                "cluster-customer-segments refused scores at or above the configured ceiling: "
                 f"{key}={float(value):.4f} >= 0.98 on overlapping RFM segments."
             )
     bundle = session.unsupervised.save_bundle(ctx.artifacts_dir / "unsupervised_bundle")

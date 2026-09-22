@@ -229,7 +229,7 @@ class FeatureContract:
     A ``state_dict`` is a bag of tensors. It does not record which columns fed
     it, in what order, what the class labels were, or how the features were
     scaled: and every one of those is needed to use the module correctly. Get
-    the column order wrong and inference produces confident nonsense rather than
+    the column order wrong and inference produces incorrect predictions rather than
     an error.
 
     Attributes

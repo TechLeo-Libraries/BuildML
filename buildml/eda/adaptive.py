@@ -161,11 +161,14 @@ def build_adaptive_plan(
             }
         )
 
-    if target is not None:
+    if target is not None and target in frame.columns:
+        from buildml.eda.analyzers.target import is_regression_target
+
+        regression_target = is_regression_target(frame[target])
         plan.append(
             {
-                "kind": "target_balance",
-                "title": f"Target balance · {target}",
+                "kind": "numeric_distribution" if regression_target else "target_balance",
+                "title": f"Target distribution · {target}" if regression_target else f"Target balance · {target}",
                 "column": target,
                 "priority": 92,
             }

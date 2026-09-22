@@ -30,7 +30,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             "Require SplitPlan.",
             "Resolve backend/method via session.ranking.capability_matrix defaults.",
             "Resolve query_column / item_column / relevance / features.",
-            "Disclose query-group split honesty (prefer group_split).",
+            "Disclose query-group separation (prefer group_split).",
             "Standardize features on train; fit selected ranker.",
         ),
         parameters=(
@@ -100,7 +100,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             "Classical supervised fit on engineered features; "
             "recommenders for user–item CF; RAG for document retrieve.",
         ),
-        rationale=("Ship leakage-safe Session LTR with real ranking metrics.",),
+        rationale=("Fit a ranker and compare held-out ranking metrics by query group.",),
         assumptions=(
             "≥2 train queries; numeric features; graded/binary relevance present.",
         ),

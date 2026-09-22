@@ -57,7 +57,7 @@ def build_ledger_groups(
 ) -> list[dict[str, Any]]:
     """Every meaningful computed number, grouped for the Industry ledger.
 
-    Empty theater is omitted: a group appears only when its source section
+    Unavailable analyses are omitted: a group appears only when its source section
     produced values. Items are ``(label, display)`` tuples.
     """
     overview = report.get("overview") or {}
@@ -847,7 +847,7 @@ def build_methods_catalog(report: Mapping[str, Any]) -> list[dict[str, str]]:
 
 
 def build_degraded_rows(report: Mapping[str, Any]) -> list[dict[str, str]]:
-    """Analyses that were skipped, unavailable, or empty - no empty-theater claims."""
+    """Analyses that were skipped, unavailable, or empty - with their availability status."""
     rows: list[dict[str, str]] = [
         {"analysis": "report warning", "reason": str(warning)}
         for warning in report.get("warnings") or []

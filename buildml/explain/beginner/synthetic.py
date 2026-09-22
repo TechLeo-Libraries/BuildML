@@ -194,7 +194,7 @@ SYNTHETIC_BEGINNER: dict[str, BeginnerLayer] = _index(
             "session.synthetic.sample(",
             "    n=200, merge_mode='extend_train', provenance_column='_synthetic',",
             ")",
-            "session.fit()  # refit on the extended training set",
+            "session.fit(LogisticRegression(max_iter=1000))  # refit on the extended training set",
         ),
         check=(
             "What fraction of your training rows are now synthetic?",
@@ -291,7 +291,7 @@ SYNTHETIC_BEGINNER: dict[str, BeginnerLayer] = _index(
         example=(
             "session.synthetic.fit(method='gaussian_copula')",
             "session.synthetic.save_bundle('artifacts/customer-gen')",
-            "other = Session().synthetic.load_bundle('artifacts/customer-gen')",
+            "other = Session().synthetic.load_bundle('artifacts/customer-gen', trusted=True)",
             "other.synthetic.sample(n=1000)",
         ),
         check=(

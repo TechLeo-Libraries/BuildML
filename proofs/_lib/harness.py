@@ -169,7 +169,7 @@ def refuse_perfect_scores(
     proof_slug: str,
     context: str = "holdout",
 ) -> None:
-    """Refuse perfect-score theater when a reported metric reaches ``ceiling``.
+    """Refuse scores at or above the configured ceiling when a reported metric reaches ``ceiling``.
 
     Real public datasets and intentionally noisy synthetics must not ship
     trivially perfect primary metrics. ``ceiling`` defaults to 1.0 (strict);
@@ -179,7 +179,7 @@ def refuse_perfect_scores(
         value = metrics.get(key)
         if isinstance(value, (int, float)) and float(value) >= float(ceiling):
             raise SystemExit(
-                f"{proof_slug} refused perfect-score theater: "
+                f"{proof_slug} refused scores at or above the configured ceiling: "
                 f"{key}={float(value):.6f} >= {float(ceiling)} on {context}."
             )
 

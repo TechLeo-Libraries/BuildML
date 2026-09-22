@@ -86,6 +86,13 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         "Broad exploratory diagnostic.",
         ("Run adaptive analyzers.", "Generate narrative and recommendations.", "Optionally render/export figures."),
         parameters=(
+            _p(
+                "partition",
+                "all | train | validation | test",
+                "Rows to profile: all uses the whole dataset; train, validation, and test require a split. "
+                "Use train when findings guide model choices. Drift still compares the full train and test partitions.",
+                "all",
+            ),
             _p("sample_rows", "int | None", "Analysis sample cap."),
             _p("max_columns", "int", "Detailed-analysis column cap.", 100),
             _p("max_plots", "int", "Maximum planned figures.", 36),

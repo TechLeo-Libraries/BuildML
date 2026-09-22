@@ -709,7 +709,7 @@ def cv_score(
     -----
     **Leakage:** If Session impute/encode/scale/text/reduce already ran, CV
     refuses unless ``allow_session_global_preprocess=True``. Prefer
-    re-ingesting unpoisoned data, then fold-local recipes (including
+    re-ingesting data before fitted preprocessing, then fold-local recipes (including
     ``text`` and ``reduce``) for selection claims that include
     preprocessing. Custom transforms and resample stay Session-global.
 
@@ -2119,7 +2119,7 @@ def predict_from_pipeline(
         Replay the bundle's preprocessing before predicting. Leave on
         unless your incoming rows are already fully transformed: turning
         it off on raw data feeds the model inputs it cannot interpret and
-        produces confident nonsense rather than an error.
+        produces incorrect predictions rather than an error.
     trusted:
         Must be ``True`` to deserialize the bundle's pickle/joblib payloads.
         Pass only for artifacts you created or fully trust.

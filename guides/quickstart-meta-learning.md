@@ -65,7 +65,7 @@ session.metalearning.save_bundle("artifacts/metalearning_bundle")
 | In scope | Out of scope |
 | --- | --- |
 | Episodic few-shot via task/group column | Foundation-model / LLM meta-learning |
-| `prototypical` nearest-centroid on tabular features | Learned ProtoNet embeddings / Torch rewrite |
+| `prototypical` nearest-centroid on tabular features; optional `prototypical_torch` encoder | Image-based few-shot benchmark pipelines |
 | `warm_start` pooled sklearn init + support adapt | Full MAML / Reptile second-order meta-gradients |
 | Train-only meta-train | Meta-training on validation/test |
 | Distinct `buildml.metalearning_bundle.v1` | Session checkpoint embedding the plan |

@@ -1,27 +1,6 @@
 """Federated learning domain (local FedAvg-style Session simulation).
 
-Phase coverage (internal tracker: depth-first; do not spray stubs)
-------------------------------------------------------------------
-Phase 1 (**complete**): unsupervised → ensembles → AutoML → forecasting → anomaly.
-
-Phase 2:
-  1. Semi-supervised learning: done (``buildml.semisupervised``).
-  2. Self-supervised learning hooks: done (``buildml.selfsupervised``).
-  3. Active learning: done (``buildml.activelearning``).
-  4. Online / continual (partial_fit): done (``buildml.online``).
-  5. Multi-task learning: done (``buildml.multitask``).
-  6. Meta-learning: done (``buildml.metalearning``).
-  7. Federated learning: **this module**.
-  8. Bayesian / probabilistic: done (``buildml.probabilistic``); next = Causal.
-  Later: graph, evolutionary,
-  symbolic, CBR, IL+RL, TDA, recommenders / LTR / KG / optimisation / synthetic /
-  NLP-CV deepenings. Speech: ASR keep/improve; TTS out.
-
-Explicit non-goals (no product surfaces): neuromorphic/SNN, swarm zoo,
-digital twins, AV stack, multi-agent world sims, TTS, robotics/control product,
-full COCO detection/segmentation suite.
-
-Honesty (this package):
+Behavior and limitations:
   - Local FedAvg-style (and FedProx) orchestration on Session data partitioned
     by a client/group column: **not** a production FL network stack unless you
     deploy one separately.

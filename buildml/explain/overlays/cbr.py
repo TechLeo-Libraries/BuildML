@@ -101,7 +101,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         ordering=("After split / preprocess; before retrieve/predict/evaluate.",),
         alternatives=("Classical fit() for parametric models; RAG for documents.",),
         rationale=(
-            "Ship leakage-safe tabular CBR with explanation traces: not RAG.",
+            "Retrieve similar tabular cases with explanation traces.",
         ),
         assumptions=("Numeric features available after encode/scale when needed.",),
         failures=("No split; null features/targets; invalid reuse for task.",),

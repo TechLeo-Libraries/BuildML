@@ -127,7 +127,7 @@ only for a file you made.
 | Missing extra | Named GBDT or torch method without the extra |
 | Null features | Impute (and usually scale) first |
 
-This is not causal multi-task, federated MTL, or a multi-label
-binary-relevance zoo.
+This interface does not provide causal multi-task learning, federated MTL,
+or a general multi-label binary-relevance framework.
 
 [Multi-task quickstart](quickstart-multi-task.md)

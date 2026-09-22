@@ -68,17 +68,20 @@ def test_legacy_masked_tabular_deprecation() -> None:
     assert any(issubclass(w.category, DeprecationWarning) for w in caught)
 
 
-def test_ssl_bundle_v2_roundtrip(tmp_path: Path) -> None:
+@pytest.mark.parametrize("method", ["simclr_tabular", "byol_tabular", "vicreg_tabular", "mae_tabular", "vae_tabular"])
+def test_ssl_bundle_v2_roundtrip(tmp_path: Path, method: str) -> None:
     session = (
         Session.ingest(_frame())
         .set_roles({"a": "feature", "b": "feature", "c": "feature", "y": "target"})
         .split(test_size=0.25, stratify=True, random_state=0)
         .scale(method="standard")
     )
-    session.fit_ssl_pretext(method="simclr_tabular", latent_dim=5, epochs=6, batch_size=16)
+    session.fit_ssl_pretext(method=method, latent_dim=5, epochs=2, batch_size=16)
     session.finetune_ssl_head()
     ev = session.evaluate_ssl(partition="test")
     out = session.save_ssl_bundle(tmp_path / "ssl_v2")
+    # Save must preserve the live encoder and fitted supervised head.
+    assert session.evaluate_ssl(partition="test").metrics == ev.metrics
     meta = (out / "meta.json").read_text(encoding="utf-8")
     assert "buildml.ssl_bundle.v2" in meta
     restored = (
@@ -90,6 +93,27 @@ def test_ssl_bundle_v2_roundtrip(tmp_path: Path) -> None:
     restored.load_ssl_bundle(out, trusted=True)
     again = restored.evaluate_ssl(partition="test")
     assert again.metrics["accuracy"] == pytest.approx(ev.metrics["accuracy"])
+    from buildml.core.errors import ValidationError
+    from buildml.selfsupervised.checkpoint import load_ssl_bundle
+
+    (out / "encoder_torch.pt").unlink()
+    with pytest.raises(ValidationError, match="encoder state is missing"):
+        load_ssl_bundle(out, trusted=True)
+
+
+def test_reusing_bundle_directory_does_not_restore_stale_torch_state(tmp_path: Path) -> None:
+    from dataclasses import replace
+
+    from buildml.selfsupervised.checkpoint import load_ssl_bundle, save_ssl_bundle
+
+    session = Session.ingest(_frame()).set_roles({"y": "target"}).split(test_size=.25)
+    session.fit_ssl_pretext(method="simclr_tabular", latent_dim=3, epochs=1)
+    destination = session.save_ssl_bundle(tmp_path / "reused")
+    torch_plan, _ = load_ssl_bundle(destination, trusted=True)
+    legacy = replace(torch_plan, method="masked_tabular", encoder_={"legacy_marker": True})
+    save_ssl_bundle(destination, legacy)
+    restored, _ = load_ssl_bundle(destination, trusted=True)
+    assert restored.encoder_ == {"legacy_marker": True}
 
 
 def test_ssl_method_catalog() -> None:

@@ -119,7 +119,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         ordering=("After session.graph.set_spec and split.",),
         alternatives=("session.graph.load_bundle.",),
         rationale=(
-            "Ship classical, pure-Torch, and PyG node-classification paths "
+            "Compare classical, pure-Torch, and PyG node-classification paths "
             "with explicit leakage modes.",
         ),
         assumptions=("Binary/multiclass node labels; numeric features for GNN paths.",),
@@ -131,7 +131,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             "Inductive fit using holdout–holdout edges: filtered out.",
         ),
         anti_patterns=(
-            "Treating this as a full PyG algorithm zoo or Neo4j product.",
+            "Assuming arbitrary PyG algorithms or Neo4j database operations are supported.",
             "Ignoring mode disclosures when comparing to papers.",
         ),
         state_changes=("Stores session.graph.plan and fit result; clears predict/eval.",),

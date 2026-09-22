@@ -221,7 +221,7 @@ dict[str, Any]
             "torch": "pip install 'buildml[torch]'  # DEC/IDEC",
         },
         "non_goals": [
-            "Full deep clustering research zoo",
+            "Deep clustering algorithms beyond the documented methods",
             "GPU-scale embedding clustering products",
         ],
     }

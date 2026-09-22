@@ -194,8 +194,8 @@ CBR_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         example=(
             "session.cbr.save_bundle('artifacts/claims-cases')",
-            "svc = Session.ingest(incoming).cbr.load_bundle('artifacts/claims-cases')",
-            "svc.cbr.predict(return_traces=True)",
+            "svc = Session.ingest(incoming).cbr.load_bundle('artifacts/claims-cases', trusted=True)",
+            "svc.cbr.predict(partition='all', return_traces=True)",
         ),
         check=(
             "Has your case memory grown through retain since the bundle was saved?",

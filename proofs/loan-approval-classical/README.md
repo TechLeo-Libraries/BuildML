@@ -15,7 +15,7 @@ Provenance is written under `results/results.json` -> `data`.
 ## Leakage
 
 Stratified train / validation / test before any fitting. `cv_score` with a
-`PreprocessRecipe` runs on train folds only, on an unpoisoned Session.
+`PreprocessRecipe` runs on train folds only, on a Session without global fitted preprocessing.
 Session-global impute, encode, scale, and outlier fences learn from train.
 The decision threshold is tuned on validation only. Test is evaluated once
 after selection. The sklearn twin uses the same `SplitPlan` indices.

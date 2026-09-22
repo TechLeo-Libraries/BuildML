@@ -237,6 +237,9 @@ def test_domain_quickstart_contracts_match_resolvers() -> None:
     )
     if ranking_industry_available():
         assert resolved_rank_method != "pointwise" or resolved_rank_backend != "sklearn"
+    elif ranking_capability_matrix()["backends"]["torch"]["available"]:
+        assert resolved_rank_backend == "torch"
+        assert resolved_rank_method == "listwise_lite"
     else:
         assert resolved_rank_backend == "sklearn"
         assert resolved_rank_method == "pointwise"

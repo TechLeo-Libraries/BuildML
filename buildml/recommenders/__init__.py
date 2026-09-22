@@ -1,30 +1,21 @@
 """Recommendation systems (Session-shaped collaborative filtering path).
 
-Phase coverage (internal tracker: depth-first; do not spray stubs)
-------------------------------------------------------------------
-Phase 1 (**complete**): unsupervised → ensembles → AutoML → forecasting → anomaly …
-Phase 2 (**complete** through TDA).
-
-Phase 3: Application systems:
-  **Recommendation systems (this module)**: PASS (industry depth R5.3).
-  Search / LTR: **PASS**. Knowledge graphs: **PASS**.
-  Optimisation / decision helpers: **PASS** (``buildml.optimize``).
-  Synthetic-data systems: **PASS** (``buildml.synthetic``).
-
-Honesty (this package):
+Behavior and limitations:
   - User/item/interaction tables with explicit ``user_column`` / ``item_column``.
   - Train-only fit; known-item protocol on holdout; cold-start disclosed.
   - Core: item/user kNN CF, TruncatedSVD / NMF, content-based (numpy/sklearn).
-  - Industry (``buildml[recommenders-industry]``): implicit ALS/BPR (default for
-    implicit feedback), LightFM hybrid with optional side features.
+  - Optional ``buildml[recommenders-industry]``: implicit ALS/BPR; ALS is
+    selected for implicit feedback when that backend is available.
+  - Optional ``buildml[recommenders-lightfm]``: LightFM with side features.
   - Ranking metrics: Precision@K, Recall@K, nDCG@K, MAP@K.
   - **Not** a Netflix-scale recsys platform, **not** RAG retrieve/generate,
     **not** diagnostic EDA ``Recommendation`` Finding objects.
 
 Dependency policy: core stays numpy/pandas/sklearn. Industry backends are
-optional via ``recommenders-industry`` extra (implicit, LightFM).
+optional: ``recommenders-industry`` installs implicit;
+``recommenders-lightfm`` installs LightFM separately.
 
-Lazy imports: keep the core import graph light.
+Optional dependencies are imported only when their backends are used.
 """
 
 from __future__ import annotations

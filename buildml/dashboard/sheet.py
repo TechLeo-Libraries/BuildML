@@ -282,7 +282,10 @@ def build_kpi_strip(report: dict[str, Any]) -> dict[str, Any]:
         "readiness": readiness,
         "readiness_note": readiness_note,
         "scope": f"{_fmt_n(analysis_rows)} / {_fmt_n(n_rows)}",
-        "scope_note": f"rows analysed · {_fmt_n(n_cols)} columns{target_note}",
+        "scope_note": (
+            f"{(report.get('overview') or {}).get('analysis_partition', 'all')} rows analysed · "
+            f"{_fmt_n(n_cols)} columns{target_note}"
+        ),
         "completeness": _fmt_pct(adapt.get("completeness")),
         "completeness_note": f"{_fmt_n(missing_cells)} missing cells",
         "runtime": str(engine),

@@ -17,6 +17,7 @@ from buildml.session._imports import (
 def eda(
     session,
     *,
+    partition: Literal["all", "train", "validation", "test"] = "all",
     include_plots: bool = False,
     show: bool = False,
     sample_rows: int | None = None,
@@ -48,6 +49,11 @@ def eda(
     ----------
     session:
         Active Session instance this operation mutates or reads.
+    partition:
+        Rows to explore. The default ``'all'`` preserves whole-dataset profiling.
+        Use ``'train'`` after splitting when findings will guide model choices.
+        Named partitions require a split. The report discloses the selected
+        scope and whether holdout rows were included.
     include_plots:
         Generate charts alongside the statistics. The plots are chosen to
         suit each column's type and distribution rather than drawn
@@ -94,9 +100,11 @@ def eda(
     **Leakage:** Exploration is how analysts leak without noticing. Every
     pattern you find by looking at the whole dataset: including the test
     rows: informs decisions you then make about the model, so the test set
-    stops being independent. Split first, and explore the training rows.
-    The drift comparison is the exception: it exists precisely to compare
-    partitions and reports only aggregate differences.
+    stops being independent. Split first, and call
+    ``session.eda(partition='train')`` when choosing model preparation.
+    Whole-dataset profiling remains the default for compatibility; a split
+    alone does not restrict exploration to training rows. A whole-dataset
+    drift comparison reports aggregate differences between partitions.
 
     **Scale:** Correlation and mutual-information analysis grows quickly
     with column count. Use ``sample_rows`` and ``max_columns`` on wide or
@@ -104,7 +112,7 @@ def eda(
 
     Examples
     --------
-    >>> report = session.eda(export_html="reports/eda.html")  # doctest: +SKIP
+    >>> report = session.eda(partition="train", export_html="reports/eda.html")  # doctest: +SKIP
     >>> report.recommendations[:2]  # doctest: +SKIP
 
     See Also
@@ -116,6 +124,7 @@ def eda(
     report = explore_dataset(
         session.dataset,
         split_plan=session._split_plan,
+        partition=partition,
         sample_rows=sample_rows,
         max_columns=max_columns,
         max_plots=max_plots,
@@ -146,6 +155,7 @@ def eda(
     session._record(
         "eda",
         {
+            "partition": partition,
             "include_plots": include_plots,
             "show": show,
             "sample_rows": sample_rows,
@@ -194,7 +204,8 @@ def eda_app(
     and clicking is faster than re-running an analysis with different
     arguments.
 
-    Nothing leaves your machine: the server binds to localhost by default.
+    The server binds to localhost by default. Binding to another interface
+    makes the report reachable there.
     Requires ``pip install 'buildml[dashboard]'``.
 
     Parameters
@@ -204,7 +215,9 @@ def eda_app(
     report:
         An existing :class:`~buildml.eda.report.EDAReport` to display.
         ``None`` reuses :attr:`last_eda` if present, and otherwise runs a
-        fresh analysis first.
+        fresh analysis first. To restrict feature exploration to training
+        rows, pass ``report=session.eda(partition='train')``. Train/test drift
+        still compares both partitions and is disclosed separately.
     host:
         Address to bind to. The default keeps the app on this machine;
         change it only if you intend the app to be reachable from

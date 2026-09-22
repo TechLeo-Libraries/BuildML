@@ -64,9 +64,9 @@ session.graph.save_bundle("artifacts/graph_bundle")
 | In scope | Out of scope |
 | --- | --- |
 | Node classification | Neo4j / knowledge-graph product |
-| Classical NetworkX + sklearn | Full PyG paper zoo beyond GCN/SAGE/GAT |
+| Classical NetworkX + sklearn | PyG architectures beyond GCN/SAGE/GAT |
 | Pure-Torch GCN + PyG GCN/SAGE/GAT | Link prediction product depth |
-| Inductive / transductive modes | Graph-level classify zoo |
+| Inductive / transductive modes | Graph-level classification |
 | Distinct `buildml.graph_bundle.v1` | Silent full-graph train as "inductive" |
 
 Related next: evolutionary algorithms (search/HPO backend).

@@ -9,7 +9,7 @@ pip install "buildml[pretrained]"
 encoder hooks with `weights=none|mock|pretrained`, plus
 `session.dl.attach_head` for a linear classify/probe head. Discover the
 shipped list with `list_pretrained_backbones()`. This is not a full
-Hugging Face / TorchVision zoo. Default `weights="mock"` keeps CI graphs
+Hugging Face / TorchVision model catalog. Default `weights="mock"` keeps CI graphs
 deterministic. `pretrained` downloads when you opt in. Multimodal fusion
 and speech finetune-lite are separate paths.
 
@@ -116,7 +116,7 @@ architecture names and weight modes before confirming execution.
 ## Failure modes / limits
 
 - Missing `vision` / `speech` / `pretrained` extra → `MissingExtraError`.
-- Unknown architecture → validation error (not silent fallback to a random zoo model).
+- Unknown architecture → validation error (no fallback to another architecture).
 - `pretrained` without network/cache → upstream download errors.
 - `session.dl.attach_head` without a prior `session.dl.load_backbone` → validation error.
 - Not a substitute for `session.dl.make_image_loaders` contracts.

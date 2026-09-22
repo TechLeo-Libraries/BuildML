@@ -86,7 +86,7 @@ def graph_capability_matrix() -> dict[str, Any]:
         "non_goals": [
             "Neo4j / graph-database product",
             "Knowledge-graph link prediction (see buildml.kg)",
-            "Graph-level classification zoo",
+            "Graph-level classification",
             "Full PyG research algorithm catalog beyond GCN/SAGE/GAT",
             "Link prediction product depth on this surface",
         ],

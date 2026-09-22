@@ -9,7 +9,11 @@ import numpy as np
 from buildml.core.errors import ValidationError
 from buildml.data.dataset import Dataset
 from buildml.data.splits import PartitionName, SplitPlan, frame_for_partition
-from buildml.probabilistic.adapters.mapie import mapie_predict_interval, mapie_predict_sets
+from buildml.probabilistic.adapters.mapie import (
+    mapie_predict_interval,
+    mapie_predict_sets,
+    validate_mapie_alpha,
+)
 from buildml.probabilistic.adapters.ngboost import ngboost_predict_std
 from buildml.probabilistic.conformal import (
     classification_prediction_sets,
@@ -27,6 +31,25 @@ from buildml.probabilistic.results import (
 )
 
 PartitionOrAll = PartitionName | Literal["all"]
+
+
+def _validate_interval_alpha(plan: ProbabilisticPlan, alpha: float, method: str) -> None:
+    """Validate requested coverage before producing or scoring interval output."""
+    if not 0.0 < alpha < 1.0:
+        raise ValidationError(f"alpha must be in (0, 1); got {alpha}.")
+    if plan.backend == "mapie":
+        validate_mapie_alpha(plan.estimator_, alpha)
+    uses_stored_cutoff = (
+        plan.backend != "mapie"
+        and plan.conformal_quantile_ is not None
+        and (plan.task == "classification" or method in {"split_conformal", "both"})
+    )
+    if uses_stored_cutoff and alpha != plan.alpha:
+        raise ValidationError(
+            f"Requested alpha={alpha} differs from calibrated alpha={plan.alpha}. "
+            "The stored conformal cutoff cannot be reused at a different alpha; "
+            "refit/calibrate at the requested alpha or use the calibrated value."
+        )
 
 
 def predict_probabilistic(
@@ -163,7 +186,7 @@ def predict_interval(
     """Build predictive intervals or classification prediction sets.
 
     Dispatches to posterior std, split conformal, MAPIE, or combined methods
-    recorded on the plan without using holdout rows for calibration.
+    recorded on the plan without fitting or recalibrating.
 
     Parameters
     ----------
@@ -176,7 +199,9 @@ def predict_interval(
     partition:
         ``train``, ``validation``, ``test``, or ``all``.
     alpha:
-        Miscoverage rate override; defaults to plan alpha.
+        Miscoverage rate override; defaults to plan alpha. Native conformal
+        intervals/sets and modern MAPIE retain fitted calibration and reject a
+        different alpha. Posterior-standard-deviation intervals can change alpha.
     method:
         Interval method override; defaults to plan ``interval_method``.
 
@@ -207,10 +232,8 @@ def predict_interval(
         raise ValidationError("No ProbabilisticPlan. Call fit_probabilistic first.")
 
     resolved_alpha = float(plan.alpha if alpha is None else alpha)
-    if not 0.0 < resolved_alpha < 1.0:
-        raise ValidationError(f"alpha must be in (0, 1); got {resolved_alpha}.")
-
     resolved_method = str(method or plan.interval_method)
+    _validate_interval_alpha(plan, resolved_alpha, resolved_method)
     frame, part_name = _resolve_frame(dataset, split_plan, partition)
     missing = [c for c in plan.columns if c not in frame.columns]
     if missing:
@@ -219,8 +242,9 @@ def predict_interval(
     x = matrix_from_frame(frame, list(plan.columns))
     disclosures = [
         f"predict_interval method={resolved_method}, alpha={resolved_alpha}.",
-        "Intervals/sets do not use holdout rows for calibration "
-        "(conformal quantile was fit on a train carve, if enabled).",
+        "This call does not fit or recalibrate. Stored conformal calibration "
+        "was performed when the model was fitted; verify that prediction/evaluation "
+        "data are independent of the original fitting and calibration data.",
     ]
     warnings: list[str] = []
 
@@ -352,11 +376,6 @@ def _regression_intervals(
             used = "posterior_std"
         else:
             lo, hi = regression_intervals(np.asarray(point), plan.conformal_quantile_)
-            if abs(alpha - plan.alpha) > 1e-12:
-                warnings.append(
-                    f"Requested alpha={alpha} differs from plan.alpha={plan.alpha}; "
-                    "using the stored conformal quantile (re-fit to change alpha)."
-                )
             lower = tuple(float(v) for v in lo)
             upper = tuple(float(v) for v in hi)
             disclosures.append(
@@ -431,11 +450,6 @@ def _classification_sets(
         warnings.append(
             f"Classification intervals use split_conformal sets; "
             f"requested method={method!r} treated as split_conformal."
-        )
-    if abs(alpha - plan.alpha) > 1e-12:
-        warnings.append(
-            f"Requested alpha={alpha} differs from plan.alpha={plan.alpha}; "
-            "using the stored conformal quantile (re-fit to change alpha)."
         )
 
     proba = np.asarray(plan.estimator_.predict_proba(x), dtype=float)

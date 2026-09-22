@@ -101,7 +101,7 @@ def main() -> None:
         value = external.get(key)
         if isinstance(value, (int, float)) and float(value) >= 0.97:
             raise SystemExit(
-                "sku-embedding-clusters refused perfect-score theater: "
+                "sku-embedding-clusters refused scores at or above the configured ceiling: "
                 f"{key}={float(value):.4f} >= 0.97 on overlapping SKU families."
             )
     bundle = session.unsupervised.save_bundle(ctx.artifacts_dir / "unsupervised_bundle")

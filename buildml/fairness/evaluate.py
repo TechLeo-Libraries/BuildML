@@ -41,7 +41,7 @@ def validate_positive_label(
 ) -> None:
     """Require ``positive_label`` to appear in truth and/or predictions.
 
-    Hard-fails the soft-zero footgun where string labels (``\"Yes\"``/``\"No\"``)
+    Rejects the label mismatch where string labels (``\"Yes\"``/``\"No\"``)
     are compared against the default integer ``1``, producing empty matches and
     zero/NaN gaps without warning.
 

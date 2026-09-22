@@ -8,7 +8,8 @@ forecasting, AutoML, fairness, recommenders, RAG, graphs, NLP, Torch,
 and the other domains in this repo. If you try to prepare or fit before
 a split, it stops you.
 
-You still choose the model. This is not another estimator zoo.
+You choose the estimator. BuildML coordinates its data preparation,
+training, evaluation, and saved artifacts through the Session.
 
 A Session is a unified, stateful ML lifecycle. Enforced leakage
 safeguards, fold-local preprocessing, contextual teaching, workflow
@@ -63,24 +64,33 @@ Docs: [buildml.readthedocs.io](https://buildml.readthedocs.io/)
 
 ## What the Session protects
 
-sklearn will fit on whatever frame you hand it. BuildML will not.
-Fit-capable preparation and `fit` learn from train. Validation and test
+Fit-capable preparation and `fit` learn from training rows. Validation and test
 receive the frozen plans. Cross-validation and search draw folds from the
-training partition only. The test holdout is not used for ranking.
+training partition only. Search does not use the test holdout to rank candidates.
+
+For cross-validation, start a separate Session with unprocessed data. This
+example uses a larger bundled dataset so each fold has enough examples:
 
 ```python
 from sklearn.tree import DecisionTreeClassifier
+from sklearn.datasets import load_breast_cancer
 from buildml.preprocess import PreprocessRecipe
 
-cv = session.cv_score(
+cv_frame = load_breast_cancer(as_frame=True).frame
+cv_session = Session.ingest(cv_frame)
+cv_session.set_roles({**{c: "feature" for c in cv_frame if c != "target"}, "target": "target"})
+cv_session.split(test_size=0.2, stratify=True, random_state=42)
+recipe = PreprocessRecipe(impute="median", scale="standard")
+cv = cv_session.cv_score(
     LogisticRegression(max_iter=500),
     cv=5,
-    preprocess=PreprocessRecipe(impute="median", scale="standard"),
+    preprocess=recipe,
 )
-search = session.grid_search(
+search = cv_session.grid_search(
     DecisionTreeClassifier(random_state=0),
     param_grid={"max_depth": [2, 4, 6], "min_samples_leaf": [1, 5]},
     cv=5,
+    preprocess=recipe,
 )
 ```
 
@@ -113,21 +123,23 @@ data or certify that a choice fits the domain.
 | Run a few real loops (imbalance, groups, time) | [First Session](https://buildml.readthedocs.io/en/latest/usage.html) |
 | Understand roles, leakage, and partitions | [Concepts](https://buildml.readthedocs.io/en/latest/concepts.html) |
 | Follow the order as a decision path | [Workflow guide](https://buildml.readthedocs.io/en/latest/workflow-guide.html) |
-| Work a full classical tutorial | [Classical quickstart](guides/quickstart-classical.md) |
-| See every domain guide | [Guides](guides/README.md) |
-| Confirm a domain actually runs | [Proof suite](proofs/README.md) |
+| Work a full classical tutorial | [Classical quickstart](https://github.com/TechLeo-Libraries/BuildML/blob/main/guides/quickstart-classical.md) |
+| See every domain guide | [Guides](https://github.com/TechLeo-Libraries/BuildML/blob/main/guides/README.md) |
+| Confirm a domain actually runs | [Proof suite](https://github.com/TechLeo-Libraries/BuildML/blob/main/proofs/README.md) |
 
 Classical `session.fit` / `session.evaluate` stay first-class. Domain
 work uses namespaced facades (`session.anomaly.*`, `session.forecast.*`,
 …). Flat domain aliases still run and warn until BuildML 3.0. The
-stability note is in [`docs/stability.md`](docs/stability.md).
+stability note is in [`docs/stability.md`](https://github.com/TechLeo-Libraries/BuildML/blob/main/docs/stability.md).
 
 ---
 
 ## Optional extras
 
 `pip install buildml` stays light: numpy, pandas, pyarrow, scikit-learn.
-Plotting, Torch, RAG, the local EDA app, and industry backends are extras.
+Plotting, Torch, the local EDA app, and industry backends are extras.
+Core RAG supports hashing embeddings, BM25, and a NumPy index; install
+`buildml[rag]` for sentence-transformer embeddings and reranking.
 Install what the job needs. The
 [installation guide](https://buildml.readthedocs.io/en/latest/installation.html)
 lists them by job.
@@ -153,7 +165,7 @@ estimator. They do not embed each other.
 
 ```python
 session.checkpoint_save("artifacts/checkpoint")
-restored = Session.checkpoint_load("artifacts/checkpoint")
+restored = Session.checkpoint_load("artifacts/checkpoint", trusted=True)
 
 session.save_pipeline("artifacts/pipeline", evaluate_partition="test")
 ```
@@ -167,15 +179,15 @@ attacker-controlled file safe. Prefer JSON sidecars, parquet, or
 The AI operator (`buildml[ai]`) is propose, then confirm, then execute,
 with a closed tool list. Pattern checks on prompts are a best-effort layer,
 not a proof against injection. Details live in
-[artifacts](guides/artifacts-checkpoints-bundles.md) and
-[AI operator safety](guides/ai-operator-safety.md).
+[artifacts](https://github.com/TechLeo-Libraries/BuildML/blob/main/guides/artifacts-checkpoints-bundles.md) and
+[AI operator safety](https://github.com/TechLeo-Libraries/BuildML/blob/main/guides/ai-operator-safety.md).
 
 ---
 
 ## Proof suite
 
-[`proofs/`](proofs/README.md) is end-to-end evidence that Session domains
-run with honest splits and holdout metrics. It is not a smoke folder.
+[`proofs/`](https://github.com/TechLeo-Libraries/BuildML/blob/main/proofs/README.md) is end-to-end evidence that Session domains
+run with explicit splits and holdout metrics.
 
 From a source checkout, after the extras that project needs:
 
@@ -184,9 +196,10 @@ python -m proofs._lib.run_all --tier all
 python proofs/loan-approval-classical/script.py
 ```
 
-Each major domain has a deep project. Named products compose more than one
-Session surface. Where a twin exists, it writes `comparison.json` on the
-same split.
+Domain examples demonstrate individual workflows. Composition examples combine
+several Session domains. Where a comparison implementation exists, it writes
+`comparison.json` on the same split. These are runnable examples, not hosted
+applications supplied by BuildML.
 
 ---
 

@@ -106,7 +106,7 @@ def main() -> None:
     write_results(ctx, stages["multitask"], filename="multitask.json")
 
     # --- Stage 2: AutoML / classical on primary buy target ---
-    # AutoML refuses Session-global scale (CV leakage). Keep unpoisoned; classical
+    # AutoML refuses Session-global scale (CV leakage). Keep the input before fitted preprocessing; classical
     # fallback may scale on its own session.
     auto_session = (
         Session.ingest(frame.copy())

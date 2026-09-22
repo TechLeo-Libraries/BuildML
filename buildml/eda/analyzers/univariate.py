@@ -5,9 +5,10 @@ target. It answers the questions you would ask about a single variable: where
 is it centred, how spread out, how skewed, how many zeros, how many distinct
 values.
 
-That is deliberately modest, and it catches most data problems. A column that is
-99% zeros, a "price" with negatives, a categorical with ten thousand levels: all
-visible here, all fatal downstream, none of them requiring a model to find.
+This can reveal potential data issues without fitting a model: a column that is
+99% zeros, a price field with negatives, or a categorical with ten thousand
+levels. Whether those values are valid or need treatment depends on the domain
+and the downstream estimator.
 
 See Also
 --------

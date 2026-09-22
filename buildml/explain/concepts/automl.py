@@ -53,7 +53,7 @@ AUTOML_NOTES: dict[str, ConceptNote] = {
                 "Running Session-global impute/scale then AutoML without the allow flag.",
             ),
             worked_example_pattern=(
-                "split (unpoisoned) → session.automl.run(method='randomized', selection='cv') "
+                "split (before fitting transforms) → session.automl.run(method='randomized', selection='cv') "
                 "→ session.automl.evaluate(partition='test').",
             ),
             related_concepts=(
@@ -112,7 +112,7 @@ AUTOML_NOTES: dict[str, ConceptNote] = {
         ),
         _note(
             key="automl-selection-honesty",
-            title="AutoML selection modes and held-out honesty",
+            title="AutoML selection modes and held-out evaluation",
             summary="cv / nested / validation rank candidates without touching Session test; confirm on test after freezing.",
             definition=(
                 "selection='cv' ranks by train-fold CV; 'nested' adds an outer train "
@@ -206,7 +206,7 @@ AUTOML_NOTES: dict[str, ConceptNote] = {
             ),
             intuition=(
                 "Native AutoML is a leakage-safe recipe × family search you control. "
-                "Industry adapters trade that control for broader model zoos under a time budget."
+                "Industry adapters trade that control for a broader selection of models under a time budget."
             ),
             formal_idea=(
                 "Train-only fit: D_train → backend.search → θ*; Session test ∉ selection."

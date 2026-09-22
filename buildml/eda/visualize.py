@@ -378,7 +378,7 @@ def _plot_target_balance(
     column: str,
     title: str | None,
 ) -> Any:
-    counts = frame[column].astype(str).value_counts()
+    counts = frame[column].dropna().astype(str).value_counts()
     fig, ax = plt.subplots(figsize=(7, 4))
     sns.barplot(
         x=counts.index,
@@ -403,7 +403,9 @@ def _plot_target_vs_numeric(
     title: str | None,
 ) -> Any:
     fig, ax = plt.subplots(figsize=(8, 4))
-    if frame[target].nunique(dropna=True) <= 12:
+    from buildml.eda.analyzers.target import is_regression_target
+
+    if not is_regression_target(frame[target]):
         sns.violinplot(
             data=frame,
             x=target,
@@ -429,10 +431,18 @@ def _plot_target_vs_categorical(
     title: str | None,
 ) -> Any:
     fig, ax = plt.subplots(figsize=(9, 4))
-    ct = pd.crosstab(frame[feature].astype(str), frame[target].astype(str), normalize="index")
-    ct.head(15).plot(kind="bar", stacked=True, ax=ax, colormap="viridis")
+    from buildml.eda.analyzers.target import is_regression_target
+
+    observed = frame.dropna(subset=[target])
+    if is_regression_target(observed[target]):
+        categories = observed[feature].value_counts().head(15).index
+        sns.boxplot(data=observed.loc[observed[feature].isin(categories)], x=feature, y=target, ax=ax)
+        ax.set_ylabel(target)
+    else:
+        ct = pd.crosstab(observed[feature].astype(str), observed[target].astype(str), normalize="index")
+        ct.head(15).plot(kind="bar", stacked=True, ax=ax, colormap="viridis")
+        ax.set_ylabel("Rate")
     ax.set_title(title or f"{target} composition by {feature}")
-    ax.set_ylabel("Rate")
     fig.tight_layout()
     return fig
 

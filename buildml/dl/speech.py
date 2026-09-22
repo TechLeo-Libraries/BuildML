@@ -1,4 +1,4 @@
-"""Transcribe speech and classify audio, without pretending to train Whisper.
+"""Transcribe speech and train audio classifiers with explicit backend selection.
 
 Two things live here, and they answer different questions.
 
@@ -6,7 +6,7 @@ Two things live here, and they answer different questions.
 a Whisper-class Hugging Face pipeline: because a model that can transcribe
 general speech was trained on hundreds of thousands of hours of audio, and
 nothing you do in a Session will reproduce that. A deterministic stub backend
-exists so tests can exercise the plumbing offline; its output is nonsense and is
+exists so tests can exercise the plumbing offline; its output is synthetic test text and is
 labelled as such.
 
 **Classification** trains a small encoder on your labelled audio to predict a

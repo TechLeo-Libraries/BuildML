@@ -141,7 +141,7 @@ SYNTHETIC_NOTES: dict[str, ConceptNote] = {
             ),
             definition=(
                 "Provenance column (default _synthetic) marks generated rows; "
-                "role=ignore prevents silent feature poisoning. Holdouts stay intact."
+                "role=ignore prevents synthetic flags from becoming predictive features. Holdouts stay intact."
             ),
             intuition=(
                 "If synthetics land in the table without a flag, later fits "

@@ -3,11 +3,10 @@
 BuildML **2.6.2** continues the stable Session 2.x line (first stable was
 **2.4.0**). This repo is **2.6.2**. `pip install buildml` resolves
 **2.6.2** on PyPI
-([project page](https://pypi.org/project/buildml/2.6.2/); publish notes in
-[`pypi-2x-publish.md`](pypi-2x-publish.md)). Wheels
+([project page](https://pypi.org/project/buildml/2.6.2/)). Wheels
 **2.4.0a3–2.6.0** omit `operation_index.json` and cannot import; install
-**2.6.2** (or pin **2.6.1**). The Session surface is large on purpose.
-This note is how I keep that surface usable.
+**2.6.2** (or pin **2.6.1**). This policy describes supported APIs,
+deprecation rules, and dependency availability.
 
 ## What “stable” means here
 
@@ -16,7 +15,7 @@ This note is how I keep that surface usable.
 - Public Session / facade APIs in 2.6.x follow SemVer: breaking removals wait
   for a major bump (see facades → 3.0 below).
 - Optional industry extras remain **best-effort** across platforms; capability
-  matrices + runtime probes are the honesty layer. For subprocess use-case
+  matrices and runtime probes report backend availability. For subprocess use-case
   checks (`ok` / `crash`), see `guides/safe-install-and-runtime.md` and
   `scripts/verify_runtime_stability.py`.
 - Local serve is a single-deploy path, not a multi-tenant SaaS product.
@@ -30,7 +29,7 @@ This note is how I keep that surface usable.
 3. **Bundle schemas are versioned** (`buildml.<domain>_bundle.v1`, …). Bump the
    version string when the on-disk layout changes. Loaders must refuse unknown
    versions with a clear error.
-4. **Capability matrices are the honesty layer.** Prefer reporting
+4. **Capability matrices report backend availability.** Prefer reporting
    `available: false` over deleting a public method when an optional backend is
    withdrawn.
 5. **Supported freeze set.** Classical ingest / roles / split / preprocess /

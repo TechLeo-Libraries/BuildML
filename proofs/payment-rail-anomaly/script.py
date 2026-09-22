@@ -108,7 +108,7 @@ def main() -> None:
         value = labeled.get(key)
         if isinstance(value, (int, float)) and float(value) >= 0.99:
             raise SystemExit(
-                "payment-rail-anomaly refused perfect-score theater: "
+                "payment-rail-anomaly refused scores at or above the configured ceiling: "
                 f"{key}={float(value):.4f} >= 0.99 on overlapping noisy rails."
             )
     write_results(

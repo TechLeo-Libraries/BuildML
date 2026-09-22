@@ -1,4 +1,4 @@
-"""Talk to a language model, or convincingly pretend to.
+"""Call a language-model provider or use scripted responses for offline tests.
 
 :class:`ProviderProtocol` is the whole interface: one ``chat`` method taking
 messages and tool declarations and returning a :class:`ProviderResponse`.
@@ -460,7 +460,7 @@ class MockProvider:
         agent's behaviour becomes a function of the script, so a test failure
         means the agent changed rather than the model did.
 
-        Token counts are constant placeholders and mean nothing.
+        Token counts are fixed test values, not measured provider usage.
         """
         self.calls.append({
             "messages": [m.to_dict() for m in messages],

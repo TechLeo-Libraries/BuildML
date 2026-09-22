@@ -59,7 +59,7 @@ class RecommenderSessionMixin:
     ) -> RecommenderFitResult:
         """Fit a recommender on Session train interactions only.
 
-        Session facade over :func:`buildml.session.recommender_ops.fit_recommender_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.recommender_ops.fit_recommender_op`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------
@@ -100,7 +100,7 @@ class RecommenderSessionMixin:
     ) -> RecommendResult:
         """Top-K recommendations for partition users or an explicit user id list.
 
-        Session facade over :func:`buildml.session.recommender_ops.recommend_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.recommender_ops.recommend_op`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------
@@ -128,7 +128,7 @@ class RecommenderSessionMixin:
     ) -> RecommenderEvalResult:
         """Evaluate ranking metrics on a holdout partition (frozen train plan).
 
-        Session facade over :func:`buildml.session.recommender_ops.evaluate_recommender_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.recommender_ops.evaluate_recommender_op`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------
@@ -183,7 +183,7 @@ class RecommenderSessionMixin:
     def save_recommender_bundle(self, path: str | Path) -> Path:
         """Persist the active RecommenderPlan as ``buildml.recommender_bundle.v1``.
 
-        Session facade over :func:`buildml.session.recommender_ops.save_recommender_bundle_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.recommender_ops.save_recommender_bundle_op`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------
@@ -200,7 +200,7 @@ class RecommenderSessionMixin:
     def load_recommender_bundle(self, path: str | Path, *, trusted: bool = False) -> Session:
         """Load a recommender bundle into this Session.
 
-        Session facade over :func:`buildml.session.recommender_ops.load_recommender_bundle_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.recommender_ops.load_recommender_bundle_op`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------

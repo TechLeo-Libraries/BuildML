@@ -153,7 +153,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         ordering=("After session.ssl.fit_pretext.",),
         alternatives=(
             "session.ssl.transform(attach=True) then Session.fit / session.semisupervised.fit on embeddings.",
-            "session.dl.attach_head for vision/audio/speech zoo transfer.",
+            "session.dl.attach_head for vision/audio/speech backbone transfer.",
         ),
         rationale=("Use to transfer tabular SSL representations into a supervised predictor.",),
         assumptions=("At least two labeled train rows spanning ≥2 classes.",),

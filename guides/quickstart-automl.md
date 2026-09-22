@@ -20,7 +20,7 @@ Evidence: [churn-automl-search](../proofs/churn-automl-search/)
 
 ## First loop: randomized family + recipe search
 
-Prefer an **unpoisoned** frame (roles + split, no Session-global impute/scale
+Prefer a frame **without Session-global fitted preprocessing** (roles + split, no Session-global impute/scale
 before search). AutoML uses fold-local `PreprocessRecipe` strategies.
 
 ```python
@@ -164,8 +164,8 @@ Distinct from Session checkpoints and classical pipelines. See
 | Finite catalog of sklearn families + recipe strategies | Neural architecture search (NAS) |
 | Fold-local leakage-safe selection | Causal discovery |
 | Trial-budgeted search with disclosures | Fully automated AI scientist |
-| Optional voting of top families | Unbounded Autosklearn zoo |
+| Optional voting of top families | Unrestricted search across all auto-sklearn models |
 
 Session-global preprocess before AutoML is **refused** by default (same
-contract as `cv_score` / `grid_search`). Re-ingest unpoisoned data or set
+contract as `cv_score` / `grid_search`). Re-ingest data before fitted preprocessing or set
 `allow_session_global_preprocess=True` explicitly (scores remain leakage-biased).

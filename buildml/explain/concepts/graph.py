@@ -160,7 +160,7 @@ GRAPH_NOTES: dict[str, ConceptNote] = {
                 "session.graph.fit(method='pyg', pyg_model='graphsage', mode='inductive').",
             ),
             interpretation_rules=(
-                "Read pyg_model and method=pyg in disclosures; not full PyG zoo.",
+                "Read pyg_model and method=pyg in disclosures; only the listed PyG architectures are supported.",
             ),
             assumptions=("Numeric node features; graph-pyg extra installed.",),
             failure_modes=("Missing graph-pyg; broken torch wheel.",),
@@ -198,7 +198,7 @@ GRAPH_NOTES: dict[str, ConceptNote] = {
             ),
             how_buildml_uses=("session.graph.fit(method='gcn', epochs=..., hidden_dim=...).",),
             interpretation_rules=(
-                "Read train_loss_last and train_accuracy; not a research zoo.",
+                "Read train_loss_last and train_accuracy, then evaluate generalization on held-out graph data.",
             ),
             assumptions=("Numeric tabular node features present; torch installed.",),
             failure_modes=("Missing torch; zero feature columns; huge graphs.",),

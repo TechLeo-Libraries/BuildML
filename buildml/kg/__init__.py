@@ -1,15 +1,6 @@
 """Knowledge graphs (Session-shaped triples → embeddings + symbolic query).
 
-Phase coverage (internal tracker: depth-first; do not spray stubs)
-------------------------------------------------------------------
-Phase 1–2 complete. Phase 3: Application systems:
-  Recommendation systems (**PASS**).
-  Search / LTR (**PASS**).
-  **Knowledge graphs (this module)**: **PASS** (industry depth R5.6).
-  Optimisation / decision helpers (**PASS**: see ``buildml.optimize``).
-  Synthetic-data systems (**PASS**: see ``buildml.synthetic``).
-
-Honesty (this package):
+Behavior and limitations:
   - Session rows are (head, relation, tail) triples.
   - Train-only materialization; never trains on holdout triples.
   - Backends: ``native`` (pure-numpy TransE/DistMult) and ``pykeen``
@@ -22,11 +13,11 @@ Honesty (this package):
     **not** a graph-database product, **not** RAG retrieve/generate.
 
 Dependency policy: core stays numpy/pandas/sklearn. Native TransE/DistMult
-are justified in core (small dense embeddings + SGD; Session-scale graphs).
-Optional ``buildml[kg-industry]`` adds PyKEEN industry models behind
+use small dense embeddings and SGD within the Session.
+Optional ``buildml[kg-industry]`` adds PyKEEN models behind
 ``backend='pykeen'``.
 
-Lazy imports: keep the core import graph light.
+Optional dependencies are imported only when their backends are used.
 """
 
 from __future__ import annotations

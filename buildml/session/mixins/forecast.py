@@ -42,7 +42,7 @@ class ForecastSessionMixin:
     ) -> ForecastFitResult:
         """Fit a classical forecaster on the train partition only.
 
-        Session facade over :func:`buildml.session.forecast_ops.fit_forecast`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.forecast_ops.fit_forecast`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------
@@ -86,7 +86,7 @@ class ForecastSessionMixin:
     ) -> ForecastGenerateResult:
         """Generate an H-step forecast from the train-fitted ForecastPlan.
 
-        Session facade over :func:`buildml.session.forecast_ops.generate_forecast_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.forecast_ops.generate_forecast_op`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------
@@ -110,7 +110,7 @@ class ForecastSessionMixin:
     ) -> ForecastEvalResult:
         """Evaluate the train-fitted ForecastPlan on a holdout partition.
 
-        Session facade over :func:`buildml.session.forecast_ops.evaluate_forecast_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.forecast_ops.evaluate_forecast_op`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------
@@ -175,7 +175,7 @@ class ForecastSessionMixin:
     def save_forecast_bundle(self, path: str | Path) -> Path:
         """Persist the active ForecastPlan as ``buildml.forecast_bundle.v2``.
 
-        Session facade over :func:`buildml.session.forecast_ops.save_forecast_bundle_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.forecast_ops.save_forecast_bundle_op`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------
@@ -192,7 +192,7 @@ class ForecastSessionMixin:
     def load_forecast_bundle(self, path: str | Path, *, trusted: bool = False) -> Session:
         """Load a forecast bundle into this Session.
 
-        Session facade over :func:`buildml.session.forecast_ops.load_forecast_bundle_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.forecast_ops.load_forecast_bundle_op`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------

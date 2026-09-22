@@ -122,12 +122,12 @@ it with `verify_runtime_stability.py` or the matching alpha smoke / proof.
 
 | Status | Meaning | What to do |
 | --- | --- | --- |
-| `ok` | Use case completed in an isolated subprocess | Safe to use in this environment |
+| `ok` | Use case completed in an isolated subprocess | Probe passed; validate your actual workload |
 | `skip` | Extra not installed | Install only if you need that surface |
 | `fail` | Python exception (often catchable) | Fix the dependency or avoid that API |
 | `crash` | Native hard-kill / access violation | Treat that surface as unsupported here |
 
-## What CI already guarantees
+## What CI checks
 
 - **Windows CI:** classical-only (`pip install -e ".[dev]"`), not full Torch/industry.
 - **Linux CI:** Torch / RAG / industry jobs and the coverage ratchet.

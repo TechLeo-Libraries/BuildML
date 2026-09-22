@@ -45,7 +45,7 @@ DL_BEGINNER: dict[str, BeginnerLayer] = _index(
         example=(
             "session.split(test_size=0.2, validation_size=0.2, random_state=0)",
             "session.dl.make_loaders(batch_size=64, shuffle_train=True)",
-            "session.dl.fit(epochs=20, monitor_partition='validation')",
+            "session.dl.fit(epochs=20, early_stopping_monitor='val_loss')",
             "session.dl.evaluate(partition='test')",
         ),
         check=(
@@ -95,7 +95,7 @@ DL_BEGINNER: dict[str, BeginnerLayer] = _index(
         example=(
             "session.dl.fit(",
             "    epochs=100, early_stopping_patience=5,",
-            "    monitor_partition='validation', monitor_metric='loss',",
+            "    early_stopping_monitor='val_loss',",
             ")",
             "session.dl.evaluate(partition='test')",
         ),
@@ -144,9 +144,9 @@ DL_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.dl.fit(epochs=50, monitor_partition='validation')",
+            "session.dl.fit(epochs=50, early_stopping_monitor='val_loss')",
             "curve = session.dl.training_curve()",
-            "print(curve.epochs[-1], curve.train_loss[-1], curve.monitor_loss[-1])",
+            "print(curve.epochs[-1], curve.train_loss[-1], curve.val_loss[-1])",
         ),
         check=(
             "Is the gap between your two lines growing, shrinking, or stable?",

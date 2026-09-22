@@ -214,6 +214,6 @@ def ssl_capability_matrix() -> dict[str, Any]:
         },
         "non_goals": [
             "Foundation-model pretraining from scratch at web scale",
-            "Full MoCo/DINO research zoo",
+            "MoCo/DINO training methods beyond the documented backends",
         ],
     }

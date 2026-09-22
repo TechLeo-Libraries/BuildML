@@ -12,11 +12,11 @@ written into transcripts. Core `import buildml` does not need this extra.
 [AI operator safety](ai-operator-safety.md) ·
 [AI tools](ai-tools-operator-patterns.md)
 
-Classical `Session.fit`, Torch `*_torch`, and RAG `rag_*` stay unchanged. AI
-methods use the `ai_*` prefix and store results in `session.ai.result` /
+Classical `session.fit`, `session.dl.*`, and `session.rag.*` remain available.
+AI methods use `session.ai.*` and store results in `session.ai.result` /
 `session.ai.transcript`.
 
-This alpha defaults to **advisor → plan → confirmed execute**. Optional
+The operator defaults to **advisor → plan → confirmed execute**. Optional
 `session.ai.run_autonomous` is explicit operator automation under hard caps (allowlist,
 max steps, blocked sample egress, transcript audit): not unconstrained agency.
 

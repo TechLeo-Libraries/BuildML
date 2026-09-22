@@ -98,7 +98,7 @@ PROBABILISTIC_NOTES: dict[str, ConceptNote] = {
             failure_modes=("Strong nonlinearity; heteroscedasticity extremes.",),
             anti_patterns=("Calling BayesianRidge a full hierarchical Bayes model.",),
             worked_example_pattern=(
-                "session.probabilistic.fit('bayesian_ridge', alpha=0.1, conformal=True).",
+                "session.probabilistic.fit(estimator='bayesian_ridge', alpha=0.1, conformal=True).",
             ),
             related_concepts=(
                 "probabilistic-uncertainty",
@@ -133,7 +133,7 @@ PROBABILISTIC_NOTES: dict[str, ConceptNote] = {
             failure_modes=("Large n; poorly scaled features; overclaiming deep GPs.",),
             anti_patterns=("Using GPs as a silent default on huge tables.",),
             worked_example_pattern=(
-                "session.probabilistic.fit('gaussian_process_regressor', conformal=True).",
+                "session.probabilistic.fit(estimator='gaussian_process_regressor', conformal=True).",
             ),
             related_concepts=(
                 "probabilistic-uncertainty",

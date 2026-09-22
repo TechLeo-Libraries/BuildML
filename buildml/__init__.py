@@ -2,10 +2,10 @@
 BuildML 2.x
 ===========
 
-A flexible, depth-first toolkit for building machine-learning workflows.
+Manage machine-learning data, training, evaluation, and saved artifacts.
 
-Phase-1 public surface is the :class:`~buildml.session.Session` API. Legacy 1.x
-modules are parked under ``buildml._legacy`` and are not part of the supported
+The public entry point is the :class:`~buildml.session.Session` API. Legacy 1.x
+modules are retained under ``buildml._legacy`` and are not part of the supported
 import graph.
 """
 

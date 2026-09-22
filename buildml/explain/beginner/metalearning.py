@@ -46,7 +46,7 @@ METALEARNING_BEGINNER: dict[str, BeginnerLayer] = _index(
             "session.set_roles({'store_id': 'group', 'converted': 'target'})",
             "session.metalearning.fit(method='prototypical', k_shot=5, n_episodes=50)",
             "report = session.metalearning.evaluate(partition='validation')",
-            "print(report.novel_task_ids, report.mean_accuracy)",
+            "print(report.novel_task_ids, report.metrics)",
         ),
         check=(
             "How many distinct tasks are in your training partition? Fewer than a handful and there is nothing to generalize over.",
@@ -95,7 +95,7 @@ METALEARNING_BEGINNER: dict[str, BeginnerLayer] = _index(
         example=(
             "session.metalearning.fit(method='prototypical', k_shot=3, n_episodes=30)",
             "adapted = session.metalearning.adapt(task_id='store_42')",
-            "print(adapted.support_size, adapted.classes)",
+            "print(adapted.n_support, adapted.classes_)",
         ),
         check=(
             "Are your features on comparable scales?",
@@ -296,8 +296,8 @@ METALEARNING_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         example=(
             "session.metalearning.save_bundle('artifacts/store-fewshot')",
-            "svc = Session.ingest(new_store_rows).metalearning.load_bundle('artifacts/store-fewshot')",
-            "svc.metalearning.adapt(task_id='store_new')",
+            "svc = Session.ingest(new_store_rows).metalearning.load_bundle('artifacts/store-fewshot', trusted=True)",
+            "svc.metalearning.adapt(task_id='store_new', support_frame=new_store_rows)",
         ),
         check=(
             "Do the new rows carry the same feature and task columns the bundle expects?",

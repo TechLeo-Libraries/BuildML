@@ -1,15 +1,6 @@
 """Optimisation / decision helpers (Session-shaped policies over ML scores).
 
-Phase coverage (internal tracker: depth-first; do not spray stubs)
-------------------------------------------------------------------
-Phase 1–2 complete. Phase 3: Application systems:
-  Recommendation systems (**PASS**).
-  Search / LTR (**PASS**).
-  Knowledge graphs (**PASS**).
-  Optimisation / decision helpers (**PASS**: this module; R6.9 industry depth).
-  Synthetic-data systems (**PASS**).
-
-Honesty (this package):
+Behavior and limitations:
   - Decision helpers for ML scores, costs, and constrained allocations.
   - **Not** a general operations-research platform, MIP suite, or digital twin.
   - Native fallback: threshold_report, numpy knapsack DP/greedy, scipy linprog.
@@ -17,7 +8,7 @@ Honesty (this package):
     MIP, CVXPY convex LP, XGB cost-sensitive thresholds, sklearn calibration.
   - Never tunes on Session test without ``allow_test_tuning=True`` + disclosure.
 
-Lazy imports: keep the core import graph light.
+Optional dependencies are imported only when their backends are used.
 """
 
 from __future__ import annotations

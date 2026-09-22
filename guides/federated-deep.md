@@ -132,8 +132,7 @@ Estimators must expose `coef_` / `intercept_`:
 - Classification: `sgd_classifier`, `logistic_regression`
 - Regression: `sgd_regressor`, `ridge`, `linear_regression`
 
-No tree FedAvg, no neural FedAvg zoo, no FedOpt / SCAFFOLD on this
-surface.
+This interface does not support tree or neural FedAvg, FedOpt, or SCAFFOLD.
 
 Class vocabulary for classifiers is discovered from the full **train**
 target column (labels only) and stored on the plan.

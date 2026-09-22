@@ -69,7 +69,7 @@ AUTOML_BEGINNER: dict[str, BeginnerLayer] = _index(
             "And baking a fresh cake each round rather than reusing yesterday's batter."
         ),
         steps=(
-            "Start from unpoisoned data: no Session-wide impute, encode, or scale already applied.",
+            "Start from data without globally fitted transforms: no Session-wide impute, encode, or scale already applied.",
             "Define which preprocessing strategies are candidates.",
             "For each fold, AutoML fits the recipe on that fold's training rows only.",
             "The candidate's score reflects the model *and* its preparation together.",
@@ -99,10 +99,10 @@ AUTOML_BEGINNER: dict[str, BeginnerLayer] = _index(
             "    encode=['onehot', 'target'],",
             "    scale=['standard', None],",
             ")",
-            "session.automl.run(recipe=recipe, selection='cv', cv=5, random_state=0)",
+            "session.automl.run(preprocess=recipe, selection='cv', cv=5, random_state=0)",
         ),
         check=(
-            "Is your data unpoisoned: no Session-global transforms applied before the search?",
+            "Have you kept the input data unchanged: no Session-global transforms applied before the search?",
             "How many recipe combinations does your budget actually allow?",
         ),
         tools=("run_automl", "evaluate_automl", "impute", "encode", "scale"),
@@ -147,7 +147,7 @@ AUTOML_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.automl.run(selection='nested', inner_cv=3, outer_cv=5, random_state=0)",
+            "session.automl.run(selection='nested', cv=3, outer_cv=5, random_state=0)",
             "print(session.automl.plan.selection_disclosures)",
             "session.automl.evaluate(partition='test')   # once, after freezing",
         ),
@@ -196,7 +196,10 @@ AUTOML_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         example=(
             "session.automl.save_bundle('artifacts/automl')",
-            "restored = Session.ingest(frame).automl.load_bundle('artifacts/automl')",
+            "frame = session.to_pandas()   # preserve the original indexed rows for evaluation/resumption",
+            "restored = Session.ingest(frame).automl.load_bundle('artifacts/automl', trusted=True)",
+            "restored.set_roles(session.dataset.roles)",
+            "restored.inject_split(train_indices=session.split_plan.train_indices, test_indices=session.split_plan.test_indices, validation_indices=session.split_plan.validation_indices)",
             "restored.automl.evaluate(partition='test')",
         ),
         check=(

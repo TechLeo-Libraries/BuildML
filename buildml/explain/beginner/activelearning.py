@@ -45,9 +45,9 @@ ACTIVELEARNING_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         example=(
             "session.split(test_size=0.2, random_state=0)",
-            "session.active_learning.fit(estimator=LogisticRegression(max_iter=1000))",
-            "indices = session.active_learning.suggest_query(n=20, strategy='margin')",
-            "session.active_learning.label_rows({int(i): labels[i] for i in indices})",
+            "session.active_learning.fit(base_estimator='logistic_regression')",
+            "indices = session.active_learning.suggest_query(batch_size=20, strategy='margin').indices",
+            "session.active_learning.label_rows(indices=indices, labels=[labels[i] for i in indices])",
         ),
         check=(
             "How many unlabelled rows are in your training partition?",
@@ -94,11 +94,11 @@ ACTIVELEARNING_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "indices = session.active_learning.suggest_query(n=25, strategy='least_confidence')",
-            "batch = session.head(indices=indices)      # export for annotation",
+            "indices = session.active_learning.suggest_query(batch_size=25, strategy='least_confidence').indices",
+            "batch = session.to_pandas().loc[list(indices)]      # export for annotation",
             "# ... humans label the batch ...",
-            "session.active_learning.label_rows(reviewed_labels)",
-            "session.active_learning.fit(estimator=LogisticRegression(max_iter=1000))",
+            "session.active_learning.label_rows(indices=indices, labels=[reviewed_labels[i] for i in indices])",
+            "session.active_learning.fit(base_estimator='logistic_regression')",
         ),
         check=(
             "Who is doing the labelling, and are the queried rows within their expertise?",
@@ -146,9 +146,9 @@ ACTIVELEARNING_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.active_learning.suggest_query(n=20, strategy='margin')          # closest top-two",
-            "session.active_learning.suggest_query(n=20, strategy='entropy')         # many classes",
-            "session.active_learning.suggest_query(n=20, strategy='coreset')         # coverage",
+            "session.active_learning.suggest_query(batch_size=20, strategy='margin')          # closest top-two",
+            "session.active_learning.suggest_query(batch_size=20, strategy='entropy')         # many classes",
+            "session.active_learning.suggest_query(batch_size=20, strategy='committee')       # disagreement",
             "session.active_learning.evaluate(partition='validation')",
         ),
         check=(
@@ -197,8 +197,11 @@ ACTIVELEARNING_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         example=(
             "session.active_learning.save_bundle('artifacts/al-round-3')",
-            "resumed = Session.ingest(frame).active_learning.load_bundle('artifacts/al-round-3')",
-            "resumed.active_learning.suggest_query(n=20, strategy='margin')   # continues the sequence",
+            "frame = session.to_pandas()   # preserve the original indexed rows for evaluation/resumption",
+            "resumed = Session.ingest(frame).active_learning.load_bundle('artifacts/al-round-3', trusted=True)",
+            "resumed.set_roles(session.dataset.roles)",
+            "resumed.inject_split(train_indices=session.split_plan.train_indices, test_indices=session.split_plan.test_indices, validation_indices=session.split_plan.validation_indices)",
+            "resumed.active_learning.suggest_query(batch_size=20, strategy='margin')   # continues the sequence",
         ),
         check=(
             "Does your saved bundle know which rows have already been labelled?",

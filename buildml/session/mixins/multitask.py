@@ -40,7 +40,7 @@ class MultitaskSessionMixin:
     ) -> MultiTaskFitResult:
         """Fit a multi-target estimator on the train partition only.
 
-        Session facade over :func:`buildml.session.multitask_ops.fit_multitask_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.multitask_ops.fit_multitask_op`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------
@@ -79,7 +79,7 @@ class MultitaskSessionMixin:
     ) -> MultiTaskPredictResult:
         """Predict all targets with the frozen multi-task plan without refitting.
 
-        Session facade over :func:`buildml.session.multitask_ops.predict_multitask_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.multitask_ops.predict_multitask_op`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------
@@ -105,7 +105,7 @@ class MultitaskSessionMixin:
     ) -> MultiTaskEvalResult:
         """Evaluate the multi-task plan on a holdout partition without refitting.
 
-        Session facade over :func:`buildml.session.multitask_ops.evaluate_multitask_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.multitask_ops.evaluate_multitask_op`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------
@@ -168,7 +168,7 @@ class MultitaskSessionMixin:
     def save_multitask_bundle(self, path: str | Path) -> Path:
         """Persist the active multi-task plan as ``buildml.multitask_bundle.v1``.
 
-        Session facade over :func:`buildml.session.multitask_ops.save_multitask_bundle_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.multitask_ops.save_multitask_bundle_op`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------
@@ -185,7 +185,7 @@ class MultitaskSessionMixin:
     def load_multitask_bundle(self, path: str | Path, *, trusted: bool = False) -> Session:
         """Load a multi-task bundle into this Session.
 
-        Session facade over :func:`buildml.session.multitask_ops.load_multitask_bundle_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.multitask_ops.load_multitask_bundle_op`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------

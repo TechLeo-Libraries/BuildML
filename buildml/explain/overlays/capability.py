@@ -195,7 +195,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             "imitation-behavioral-cloning",
         ),
         extra_mechanism=(
-            "Publish non_goals (batch offline RL, MuJoCo/robotics) explicitly.",
+            "The non_goals field lists unsupported tasks, including batch offline RL and MuJoCo/robotics.",
         ),
     ),
     _matrix(

@@ -241,7 +241,7 @@ preprocess plans. It does not restore a fitted model. Use
 other. Loaders that deserialize pickle default to ``trusted=False``;
 pass ``trusted=True`` only for files you made or fully trust.
 
-Cross-validation should use a ``PreprocessRecipe`` on unpoisoned data.
+Cross-validation should use a ``PreprocessRecipe`` on data without Session-global fitted preprocessing.
 Session-global prep then CV is refused by default. See
 :doc:`leakage-cv-recipes`.
 

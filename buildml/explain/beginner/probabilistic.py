@@ -21,7 +21,7 @@ PROBABILISTIC_BEGINNER: dict[str, BeginnerLayer] = _index(
             "Choose a model that can express uncertainty: Bayesian ridge, a Gaussian process, or a naive Bayes classifier.",
             "Fit it on training rows as usual.",
             "Predict: you get a central value plus a standard deviation, or a full probability per class.",
-            "Optionally add conformal intervals for a coverage guarantee that does not depend on the model being right about its own uncertainty.",
+            "Optionally add conformal intervals for marginal coverage under exchangeability between calibration and future rows.",
             "Report the interval alongside the point estimate everywhere it will be used.",
         ),
         use=(
@@ -39,14 +39,14 @@ PROBABILISTIC_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
             (
                 "Uncertainty estimates require Bayesian statistics.",
-                "Conformal prediction gives you calibrated intervals from any model, with a coverage guarantee and no distributional assumptions.",
+                "Conformal methods can calibrate many models without a parametric error distribution, but their marginal coverage guarantees require assumptions such as exchangeability.",
             ),
         ),
         example=(
-            "session.probabilistic.fit(method='bayesian_ridge')",
+            "session.probabilistic.fit(estimator='bayesian_ridge')",
             "pred = session.probabilistic.predict(partition='test')",
-            "print(pred.mean[:5], pred.std[:5])",
-            "intervals = session.probabilistic.predict_interval(coverage=0.9)",
+            "print(pred.predictions[:5], pred.std[:5])",
+            "intervals = session.probabilistic.predict_interval(alpha=0.1)",
         ),
         check=(
             "What decision changes if the interval is wide rather than narrow?",
@@ -89,14 +89,14 @@ PROBABILISTIC_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
             (
                 "The intervals are guaranteed to be correct.",
-                "They are correct under the model's Gaussian linear assumptions. Conformal prediction is what gives you a guarantee that survives those assumptions being wrong.",
+                "Posterior intervals depend on the model assumptions. Conformal calibration can provide marginal coverage under exchangeability, but does not guarantee coverage for each row or under distribution shift.",
             ),
         ),
         example=(
-            "session.scale(strategy='standard')",
-            "session.probabilistic.fit(method='bayesian_ridge')",
+            "session.scale(method='standard')",
+            "session.probabilistic.fit(estimator='bayesian_ridge')",
             "pred = session.probabilistic.predict(partition='validation')",
-            "print(pred.mean[:5], pred.std[:5])",
+            "print(pred.predictions[:5], pred.std[:5])",
         ),
         check=(
             "Are your residuals roughly constant in spread across the prediction range?",
@@ -143,10 +143,10 @@ PROBABILISTIC_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.scale(strategy='standard')",
-            "session.probabilistic.fit(method='gaussian_process', random_state=0)",
+            "session.scale(method='standard')",
+            "session.probabilistic.fit(estimator='gaussian_process_regressor', random_state=0)",
             "pred = session.probabilistic.predict(partition='validation')",
-            "print(pred.mean[:5], pred.std[:5])   # std grows away from training data",
+            "print(pred.predictions[:5], pred.std[:5])   # std grows away from training data",
         ),
         check=(
             "How many training rows do you have, and can you afford the cubic cost?",
@@ -159,15 +159,16 @@ PROBABILISTIC_BEGINNER: dict[str, BeginnerLayer] = _index(
     _layer(
         "probabilistic-split-conformal",
         plain=(
-            "Conformal prediction turns any model into one with honest intervals. You set aside a slice of "
-            "training rows, measure how wrong the model is on them, and use that error distribution to size "
-            "your intervals. If you ask for 90% coverage, you get about 90%: regardless of whether the "
-            "underlying model's own uncertainty estimates were any good."
+            "Split conformal prediction calibrates intervals using errors on a held-out slice of training "
+            "rows. When calibration and future rows can be treated as interchangeable (exchangeability), "
+            "an error cutoff adjusted for calibration sample size provides coverage across future cases "
+            "overall (marginal coverage). This is not a guarantee for each row or subgroup, and it may "
+            "fail when the deployment population changes."
         ),
         analogy=(
-            "Your commute app learns from your actual past delays rather than from a theory of traffic. "
-            "'Leave 25 minutes early and you will be on time 90% of the time' is a promise based on "
-            "observed misses, not on assumptions."
+            "A commute app uses past delays to suggest a time allowance. That allowance is useful only "
+            "if future journeys resemble the calibration journeys; a new road closure can invalidate it. "
+            "It describes performance across journeys, not certainty about tomorrow's trip."
         ),
         steps=(
             "Carve a calibration slice out of the training rows: never from validation or test.",
@@ -177,29 +178,29 @@ PROBABILISTIC_BEGINNER: dict[str, BeginnerLayer] = _index(
             "The interval is the prediction plus and minus that quantile; for classification, it is the set of classes whose scores clear the corresponding cut-off.",
         ),
         use=(
-            "When you need a coverage guarantee you can state to a stakeholder.",
+            "When you can justify exchangeability and need a marginal coverage target with its assumptions stated.",
             "On top of any model, including gradient boosting and neural networks that have no native uncertainty.",
         ),
         avoid=(
-            "Do not use it when the calibration slice would be tiny; you cannot estimate a 95th percentile from 40 residuals.",
+            "With a tiny calibration slice, quantiles are coarse and uncertain; 40 residuals permit a 95th-percentile estimate but provide limited tail information.",
             "Do not use it when the deployment distribution differs from calibration: the guarantee assumes exchangeability and quietly breaks under drift.",
         ),
         myths=(
             (
                 "Conformal intervals are tight.",
-                "They are honest. Basic split conformal gives every row the same width, so it can be very wide for easy rows. Tightness needs adaptive variants.",
+                "Coverage does not imply tightness. Basic absolute-residual split conformal gives every row the same width, so it can be wide for easy rows. Adaptive variants require additional modeling choices.",
             ),
             (
                 "The guarantee holds per row.",
-                "It holds on average across rows. Any individual interval may miss; the promise is about the long-run rate.",
+                "The guarantee is marginal under exchangeability. Individual rows and subgroups can have lower coverage, and finite evaluation samples need not match the requested rate.",
             ),
         ),
         example=(
             "session.probabilistic.fit(",
-            "    method='bayesian_ridge', conformal='split', calibration_size=0.2,",
+            "    estimator='bayesian_ridge', conformal=True, conformal_calibration_fraction=0.2,",
             ")",
-            "intervals = session.probabilistic.predict_interval(coverage=0.9, partition='test')",
-            "print(intervals.lower[:5], intervals.upper[:5], intervals.empirical_coverage)",
+            "intervals = session.probabilistic.predict_interval(alpha=0.1, partition='test')",
+            "print(intervals.lower[:5], intervals.upper[:5])",
         ),
         check=(
             "How many rows are in your calibration slice?",
@@ -247,8 +248,8 @@ PROBABILISTIC_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         example=(
             "session.probabilistic.save_bundle('artifacts/demand-uncertainty')",
-            "job = Session.ingest(new_frame).probabilistic.load_bundle('artifacts/demand-uncertainty')",
-            "job.probabilistic.predict_interval(coverage=0.9)",
+            "job = Session.ingest(new_frame).probabilistic.load_bundle('artifacts/demand-uncertainty', trusted=True)",
+            "job.probabilistic.predict_interval(alpha=0.1, partition='all')",
         ),
         check=(
             "Does your bundle include the conformal calibration state?",
@@ -297,9 +298,9 @@ PROBABILISTIC_BEGINNER: dict[str, BeginnerLayer] = _index(
         example=(
             "# pip install \"buildml[probabilistic-industry]\"",
             "session.probabilistic.fit(",
-            "    method='bayesian_ridge', conformal='cv_plus', cv=5,",
+            "    backend='mapie', estimator='cv_plus',",
             ")",
-            "print(session.probabilistic.predict_interval(coverage=0.9).empirical_coverage)",
+            "print(session.probabilistic.evaluate(partition='test').metrics)",
         ),
         check=(
             "How many model fits will your chosen conformal variant require?",
@@ -347,9 +348,9 @@ PROBABILISTIC_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         example=(
             "# pip install \"buildml[probabilistic-industry]\"",
-            "session.probabilistic.fit(method='ngboost', distribution='normal', random_state=0)",
+            "session.probabilistic.fit(backend='ngboost', estimator='ngboost_regressor', random_state=0)",
             "pred = session.probabilistic.predict(partition='validation')",
-            "print(pred.mean[:5], pred.std[:5])   # std varies per row",
+            "print(pred.predictions[:5], pred.std[:5])   # std varies per row",
         ),
         check=(
             "Does the predicted spread actually vary meaningfully across rows?",

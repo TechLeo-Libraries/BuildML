@@ -11,7 +11,7 @@ everyone else. `impute`, `encode`, and `scale` with `columns=None` touch
 `time`, `weight`, and `ignore` stay as they are unless you name them.
 
 If you need those same steps inside CV, do not call them here first. Use a
-`PreprocessRecipe` on unpoisoned data
+`PreprocessRecipe` on data without Session-global fitted preprocessing
 ([leakage and recipes](leakage-cv-recipes.md)). Session-global prep, then
 CV, is refused. `resample` and `apply_custom_transform` are never
 fold-local. Resample plans are lineage-only at score time: they do not

@@ -32,7 +32,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             "Optional train subsample when above max_points_guard.",
             "Fit NN index on train; compute local VR diagrams per train row.",
             "Fit vectorizer ranges from train diagrams; optionally fit sklearn head.",
-            "Disclose PH honesty boundary (not full Mapper suite).",
+            "Disclose persistent-homology limitations (not full Mapper suite).",
         ),
         parameters=(
             _p("backend", "native | giotto", "PH/vectorization backend.", "native"),
@@ -84,7 +84,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         prerequisites=(DATASET, ROLES, SPLIT),
         ordering=("After split / preprocess; before transform/evaluate TDA.",),
         alternatives=("Classical fit() on raw features; unsupervised clustering.",),
-        rationale=("Ship leakage-safe PH features for Session tabular workflows.",),
+        rationale=("Fit persistent-homology features on training rows for tabular workflows.",),
         assumptions=("≥2 numeric features; buildml[tda] installed.",),
         failures=("No split; MissingExtraError; knn<2; oversized train.",),
         leakage=("Train-only NN/vectorizer/head; holdout never enters at fit.",),

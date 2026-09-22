@@ -47,7 +47,7 @@ class DecisionSessionMixin:
     ) -> DecisionFitResult:
         """Fit a decision policy on train or validation without refitting the model.
 
-        Session facade over :func:`buildml.session.decision_ops.fit_decision_policy_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.decision_ops.fit_decision_policy_op`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------
@@ -92,7 +92,7 @@ class DecisionSessionMixin:
     ) -> ApplyDecisionsResult:
         """Apply the frozen DecisionPlan to a partition or candidate frame.
 
-        Session facade over :func:`buildml.session.decision_ops.apply_decisions_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.decision_ops.apply_decisions_op`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------
@@ -115,7 +115,7 @@ class DecisionSessionMixin:
     ) -> DecisionEvalResult:
         """Evaluate the frozen DecisionPlan on a holdout partition.
 
-        Session facade over :func:`buildml.session.decision_ops.evaluate_decisions_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.decision_ops.evaluate_decisions_op`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------
@@ -168,7 +168,7 @@ class DecisionSessionMixin:
     def save_decision_bundle(self, path: str | Path) -> Path:
         """Persist the active DecisionPlan as ``buildml.decision_bundle.v1``.
 
-        Session facade over :func:`buildml.session.decision_ops.save_decision_bundle_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.decision_ops.save_decision_bundle_op`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------
@@ -185,7 +185,7 @@ class DecisionSessionMixin:
     def load_decision_bundle(self, path: str | Path, *, trusted: bool = False) -> Session:
         """Load a decision bundle into this Session.
 
-        Session facade over :func:`buildml.session.decision_ops.load_decision_bundle_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.decision_ops.load_decision_bundle_op`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------
@@ -203,7 +203,7 @@ class DecisionSessionMixin:
     def decision_capability_matrix() -> dict[str, Any]:
         """Return the decision/optimization capability matrix for this install.
 
-        Session facade over :func:`buildml.session.decision_ops.decision_capability_matrix_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.decision_ops.decision_capability_matrix_op`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------
@@ -221,7 +221,7 @@ class DecisionSessionMixin:
     def optimize_capability_matrix() -> dict[str, Any]:
         """Return the decision/optimization capability matrix for this install.
 
-        Session facade over :func:`buildml.session.decision_ops.decision_capability_matrix_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.decision_ops.decision_capability_matrix_op`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------

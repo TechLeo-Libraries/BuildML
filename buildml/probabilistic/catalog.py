@@ -121,7 +121,7 @@ def probabilistic_capability_matrix() -> dict[str, Any]:
         "non_goals": [
             "PyMC / Stan / NumPyro MCMC platform",
             "Bayesian deep nets",
-            "Full MAPIE algorithm zoo beyond split/CV+/jackknife+",
+            "MAPIE methods beyond split/CV+/jackknife+",
         ],
         "industry_extra_present": mapie_spec_present() or ngboost_spec_present(),
         "industry_runtime_present": probabilistic_industry_available(),

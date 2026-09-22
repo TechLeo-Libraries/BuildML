@@ -99,7 +99,7 @@ def main() -> None:
     acc = float(test_metrics.get("accuracy", float("nan")))
     if acc == acc and acc >= 0.99:
         raise SystemExit(
-            "stream-fraud-online refused perfect-score theater: "
+            "stream-fraud-online refused scores at or above the configured ceiling: "
             f"test accuracy={acc:.4f} >= 0.99 on overlapping noisy stream. "
             "Generator must keep irreducible error."
         )
@@ -128,7 +128,7 @@ def main() -> None:
                 "Validation/test never enter online updates",
             ],
             "honesty": [
-                "Refuses test accuracy >= 0.99 (anti perfect-score theater).",
+                "Refuses test accuracy >= 0.99 (score-ceiling check).",
                 "Classes overlap; ~8% label flips keep irreducible error.",
             ],
             "industry_comparison": {

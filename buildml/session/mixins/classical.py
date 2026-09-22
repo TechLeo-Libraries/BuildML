@@ -30,12 +30,13 @@ class ClassicalSessionMixin:
     ) -> Session:
         """Train a model on the training rows.
 
-        Session facade over :func:`buildml.session.classical_ops.fit`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.classical_ops.fit`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------
         Session
             ``self``, so the fit chains into :meth:`evaluate`. The fitted model
+            and its metadata are on :attr:`fit_result`.
 
         See Also
         --------
@@ -61,12 +62,14 @@ class ClassicalSessionMixin:
     ) -> pd.Series | pd.DataFrame:
         """Run the fitted model over one partition and return its predictions.
 
-        Session facade over :func:`buildml.session.classical_ops.predict`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.classical_ops.predict`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------
         pandas.Series or pandas.DataFrame
             A Series of predicted labels or values, indexed to match the
+            partition's rows. With ``return_proba=True`` on a classifier, a
+            DataFrame with one column per class instead.
 
         See Also
         --------
@@ -85,12 +88,15 @@ class ClassicalSessionMixin:
     ) -> EvaluateResult:
         """Measure the fitted model, and explain what the measurement means.
 
-        Session facade over :func:`buildml.session.classical_ops.evaluate`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.classical_ops.evaluate`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------
         ~buildml.model.supervised.EvaluateResult
             The evaluation card: ``metrics``, ``diagnostics`` (confusion
+            matrix, residual summaries, plot paths), the ``n_rows`` scored, and
+            ``recommendations``. Call its ``show()`` method for a readable
+            digest instead of reading the dictionaries by hand.
 
         See Also
         --------
@@ -119,12 +125,14 @@ class ClassicalSessionMixin:
     ) -> PlotBoardReport:
         """Draw the standard diagnostic charts for a fitted model, in one call.
 
-        Session facade over :func:`buildml.session.classical_ops.eval_plots`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.classical_ops.eval_plots`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------
         ~buildml.model.plot_boards.PlotBoardReport
             The board: paths to any figures written, which panels were
+            ``skipped`` and why, and an ``interpretation`` explaining what each
+            panel shows. Also stored on :attr:`last_plot_board`.
 
         See Also
         --------
@@ -162,12 +170,13 @@ class ClassicalSessionMixin:
     ) -> ModelComparison:
         """Try several models on the same data and rank what you get.
 
-        Session facade over :func:`buildml.session.classical_ops.compare_models`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.classical_ops.compare_models`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------
         ~buildml.model.compare.ModelComparison
             The ranked comparison, holding each model's metrics, the ordering,
+            and the metric used to produce it.
 
         See Also
         --------
@@ -198,12 +207,14 @@ class ClassicalSessionMixin:
     ) -> CVScoreResult:
         """Score a model across several rotating holdouts, not just one.
 
-        Session facade over :func:`buildml.session.classical_ops.cv_score`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.classical_ops.cv_score`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------
         ~buildml.model.selection.CVScoreResult
             Per-fold scores with their mean and standard deviation, plus an
+            ``interpretation``, the ``limitations`` of the estimate, and
+            ``recommendations``. Also stored on :attr:`last_cv`.
 
         See Also
         --------
@@ -254,12 +265,15 @@ class ClassicalSessionMixin:
     ) -> NestedCVResult:
         """Estimate how well your *tuning procedure* generalises, not just one model.
 
-        Session facade over :func:`buildml.session.classical_ops.nested_cv_score`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.classical_ops.nested_cv_score`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------
         ~buildml.model.selection.NestedCVResult
             ``mean_metrics`` and ``std_metrics`` hold the honest estimate and
+            its fold-to-fold spread. ``outer_folds`` records each fold's chosen
+            ``best_params`` and ``best_recipe_knobs``, which is where you look
+            to judge whether tuning is stable or thrashing.
 
         See Also
         --------
@@ -311,12 +325,16 @@ class ClassicalSessionMixin:
     ) -> SearchResult:
         """Try every combination of the settings you list, and keep the best.
 
-        Session facade over :func:`buildml.session.classical_ops.grid_search`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.classical_ops.grid_search`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------
         ~buildml.model.selection.SearchResult
             The ranked search: every trial with its score, the
+            ``best_params``, ``best_score`` and ``best_std``, the winner's full
+            ``best_cv`` breakdown, and the ``refit_result`` when refitting was
+            requested. ``to_frame()`` renders the trials as a DataFrame. Also
+            stored on :attr:`last_search`.
 
         See Also
         --------
@@ -359,12 +377,14 @@ class ClassicalSessionMixin:
     ) -> SearchResult:
         """Sample settings at random, which usually beats an exhaustive grid.
 
-        Session facade over :func:`buildml.session.classical_ops.randomized_search`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.classical_ops.randomized_search`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------
         ~buildml.model.selection.SearchResult
             The ranked trials, ``best_params``, ``best_score``, the winner's
+            ``best_cv`` breakdown, and the refit model when requested. Also
+            stored on :attr:`last_search`.
 
         See Also
         --------
@@ -409,12 +429,14 @@ class ClassicalSessionMixin:
     ) -> SearchResult:
         """Search adaptively, letting each trial learn from the ones before it.
 
-        Session facade over :func:`buildml.session.classical_ops.optuna_search`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.classical_ops.optuna_search`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------
         ~buildml.model.selection.SearchResult
             The ranked trials, ``best_params``, ``best_score``, the winner's
+            ``best_cv`` breakdown, and the underlying Optuna ``study`` for
+            further analysis. Also stored on :attr:`last_search`.
 
         See Also
         --------
@@ -465,12 +487,14 @@ class ClassicalSessionMixin:
     ) -> SearchResult:
         """Evolve a population of configurations across generations.
 
-        Session facade over :func:`buildml.session.classical_ops.evolutionary_search`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.classical_ops.evolutionary_search`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------
         ~buildml.model.selection.SearchResult
             Every evaluated configuration with its score, the ``best_params``,
+            ``best_score``, and the winner's ``best_cv`` breakdown. Also stored
+            on :attr:`last_search`.
 
         See Also
         --------
@@ -530,7 +554,7 @@ class ClassicalSessionMixin:
     def save_model(self, path: str | Path) -> Path:
         """Save the fitted estimator and the feature contract it expects.
 
-        Session facade over :func:`buildml.session.classical_ops.save_model`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.classical_ops.save_model`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------
@@ -547,7 +571,7 @@ class ClassicalSessionMixin:
     def load_model(self, path: str | Path, *, trusted: bool = False) -> Session:
         """Load an estimator bundle written by :meth:`save_model`.
 
-        Session facade over :func:`buildml.session.classical_ops.load_model`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.classical_ops.load_model`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------
@@ -570,7 +594,7 @@ class ClassicalSessionMixin:
     ) -> Path:
         """Save everything needed to score new data: model, prep, and card.
 
-        Session facade over :func:`buildml.session.classical_ops.save_pipeline`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.classical_ops.save_pipeline`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------
@@ -589,7 +613,7 @@ class ClassicalSessionMixin:
     def load_pipeline(self, path: str | Path, *, trusted: bool = False) -> Session:
         """Restore a saved model together with its preprocessing.
 
-        Session facade over :func:`buildml.session.classical_ops.load_pipeline`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.classical_ops.load_pipeline`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------
@@ -615,12 +639,14 @@ class ClassicalSessionMixin:
     ) -> PipelinePredictResult:
         """Score new rows through a saved bundle, in one call.
 
-        Session facade over :func:`buildml.session.classical_ops.predict_from_pipeline`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.classical_ops.predict_from_pipeline`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------
         ~buildml.pipeline.score.PipelinePredictResult
             The predictions plus the context needed to trust them: which
+            preprocessing steps ran, how many rows were scored, and any
+            warnings about the incoming data.
 
         See Also
         --------
@@ -647,12 +673,13 @@ class ClassicalSessionMixin:
     ) -> MaterializePrepResult:
         """Narrow the data in the engine before pulling it into memory.
 
-        Session facade over :func:`buildml.session.classical_ops.prepare_design_matrix`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.classical_ops.prepare_design_matrix`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------
         ~buildml.data.engines.prep.MaterializePrepResult
             The prepared matrix together with disclosures recording which
+            columns were projected and whether rows were sampled.
 
         See Also
         --------
@@ -685,12 +712,14 @@ class ClassicalSessionMixin:
     ) -> DiagnosticReport:
         """Check whether predicted probabilities mean what they claim.
 
-        Session facade over :func:`buildml.session.classical_ops.calibration`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.classical_ops.calibration`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------
         ~buildml.model.diagnostics.DiagnosticReport
             The calibration findings: Brier score, expected calibration error,
+            reliability curve points, and an interpretation of what the shape
+            implies.
 
         See Also
         --------
@@ -714,12 +743,14 @@ class ClassicalSessionMixin:
     ) -> DiagnosticReport:
         """Choose the cut-off that turns a probability into a decision.
 
-        Session facade over :func:`buildml.session.classical_ops.tune_threshold`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.classical_ops.tune_threshold`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------
         ~buildml.model.diagnostics.DiagnosticReport
             The sweep: metrics at every candidate threshold, the recommended
+            cut-off, and: when costs were supplied: the expected cost curve
+            and its minimum.
 
         See Also
         --------
@@ -748,12 +779,13 @@ class ClassicalSessionMixin:
     ) -> DiagnosticReport:
         """Find out whether more data would help, before you go and get it.
 
-        Session facade over :func:`buildml.session.classical_ops.learning_curve`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.classical_ops.learning_curve`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------
         ~buildml.model.diagnostics.DiagnosticReport
             The curve points at each training size, the train and validation
+            scores at each, and an interpretation of what the shape implies.
 
         See Also
         --------
@@ -802,12 +834,14 @@ class ClassicalSessionMixin:
     ) -> DiagnosticReport:
         """Measure which features the model genuinely depends on.
 
-        Session facade over :func:`buildml.session.classical_ops.feature_importance`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.classical_ops.feature_importance`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------
         ~buildml.model.diagnostics.DiagnosticReport
             Per-feature importance with the spread across repeats, ranked, plus
+            an interpretation. The spread matters: a feature whose importance
+            varies wildly between repeats has not been shown to matter.
 
         See Also
         --------
@@ -833,12 +867,14 @@ class ClassicalSessionMixin:
     ) -> DiagnosticReport:
         """Break performance down by subgroup, to find where the model fails.
 
-        Session facade over :func:`buildml.session.classical_ops.error_slices`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.classical_ops.error_slices`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------
         ~buildml.model.diagnostics.DiagnosticReport
             Per-segment metrics and sizes, the segments that fell below
+            ``min_segment_n`` under ``small_segments``, and an interpretation
+            highlighting the largest gaps.
 
         See Also
         --------

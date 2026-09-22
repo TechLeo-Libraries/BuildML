@@ -96,7 +96,7 @@ TDA_BEGINNER: dict[str, BeginnerLayer] = _index(
         example=(
             "session.tda.fit(vectorization='landscape', n_bins=20, n_layers=3)",
             "features = session.tda.transform(partition='train')",
-            "print(features.shape)",
+            "print(features.features.shape)",
         ),
         check=(
             "How many topological features did you create, and how many rows do you have?",
@@ -193,8 +193,8 @@ TDA_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         example=(
             "session.tda.save_bundle('artifacts/shape-model')",
-            "service = Session.ingest(new_rows).tda.load_bundle('artifacts/shape-model')",
-            "service.tda.predict()",
+            "service = Session.ingest(new_rows).tda.load_bundle('artifacts/shape-model', trusted=True)",
+            "service.tda.predict(partition='all')",
         ),
         check=(
             "Does your saved bundle include a head, or features only?",
@@ -241,8 +241,8 @@ TDA_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "pip install \"buildml[tda]\"           # native: ripser + persim",
-            "pip install \"buildml[tda-industry]\"  # adds giotto-tda",
+            "# pip install \"buildml[tda]\"           # native: ripser + persim",
+            "# pip install \"buildml[tda-industry]\"  # adds giotto-tda",
             "session.tda.capability_matrix()",
         ),
         check=(

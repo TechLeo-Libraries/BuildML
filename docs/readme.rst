@@ -21,13 +21,14 @@ idea behind a word (``session.learn``), see what is blocked
 (``session.walkthrough``). Those surfaces teach the contract. They do
 not inspect your data or certify that a split matches the real world.
 
-The same Session hosts optional domains when you install the extra:
-forecasting, NLP, graph and knowledge graphs, RAG, Torch, and others.
+The same Session hosts forecasting, NLP, graph and knowledge graphs, RAG,
+Torch, and other domains. Some paths work with the core installation;
+others require extras. See :doc:`installation` for each backend's requirements.
 Classical ``fit`` / ``evaluate`` stay first-class. Domain work uses
 ``session.<domain>.*``.
 
-What it will not pretend
-------------------------
+Scope and limitations
+---------------------
 
 BuildML requires a split before fit-capable preprocessing and fits those
 plans on training rows only. Those checks do not prove that a random
@@ -40,7 +41,7 @@ operation lazy or out-of-core.
 
 Version 2.6.2 is the current Session 2.x line. PyPI serves
 `2.6.2 <https://pypi.org/project/buildml/2.6.2/>`_. See :doc:`stability` and
-:doc:`pypi-2x-publish` for the public-surface policy.
+:doc:`session-facade-migration` for the public API policy.
 
 Start with :doc:`usage`. The ideas sit in :doc:`concepts`. Tutorials
 live in :doc:`guides`.

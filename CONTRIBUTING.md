@@ -205,15 +205,17 @@ and pick the next target, and `--path buildml/<pkg>` to audit work in progress.
 
 1. Bump `pyproject.toml` + `buildml/_version.py` together.
 2. Move `[Unreleased]` notes into a dated CHANGELOG section.
-3. Keep install honesty accurate after each publish (PyPI version vs docs).
+3. Keep documented installation versions consistent with the verified PyPI release.
 4. Ensure remote CI is green (`test`, `windows-classical`, `engines`, `optuna`,
    `torch`, `rag`, `ai`, `extras`, `benchmarks`).
-5. Publish to PyPI only when credentials are available and intentional; flip
-   docs that claimed a gap once the upload is verified.
+5. Publish to PyPI only when credentials are available and intentional; update
+   installation documentation after verifying the upload.
 6. Refresh Read the Docs after the tag / docs change.
 
 ## Pull requests
 
 - Prefer focused branches off updated `main`.
 - Do not force-push `main`.
-- Keep user-facing copy honest about alpha boundaries (no false PyPI / product claims).
+- Describe supported behavior, dependency requirements, and known limitations accurately.
+- Write public documentation for library users. Keep implementation instructions,
+  release actions, and work plans in clearly labeled contributor material.

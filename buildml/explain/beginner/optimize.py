@@ -200,8 +200,8 @@ OPTIMIZE_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         example=(
             "session.decision.save_bundle('artifacts/collections-policy')",
-            "app = Session.ingest(scores_frame).decision.load_bundle('artifacts/collections-policy')",
-            "app.decision.apply()",
+            "app = Session.ingest(scores_frame).decision.load_bundle('artifacts/collections-policy', trusted=True)",
+            "app.decision.apply(partition='all')",
         ),
         check=(
             "Who owns the cost numbers in your policy, and when were they last reviewed?",

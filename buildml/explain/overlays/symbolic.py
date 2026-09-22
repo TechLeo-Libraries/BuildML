@@ -96,7 +96,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         ordering=("After split / preprocess; before session.symbolic.evaluate.",),
         alternatives=("session.symbolic.fit_neuro for sklearn + rule hybrid.",),
         rationale=(
-            "Ship readable tabular rules with traces: not Prolog/Z3/AGI.",
+            "Fit readable tabular rules and inspect their decision traces.",
         ),
         assumptions=("Numeric features available after encode/scale when inducing.",),
         failures=("Empty declared rules; missing columns; too-small train.",),

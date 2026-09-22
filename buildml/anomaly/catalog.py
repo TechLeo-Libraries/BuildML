@@ -102,7 +102,7 @@ dict[str, Any]
             "Graph fraud / entity networks",
             "Online streaming anomaly product",
             "Causal fraud attribution",
-            "Full PyOD algorithm zoo beyond catalog methods",
+            "PyOD algorithms beyond the catalog methods",
         ],
         "torch_spec_present": torch_spec_available(),
         "torch_import_honesty": (

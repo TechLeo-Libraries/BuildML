@@ -109,5 +109,6 @@ onto the dataset so tabular models can consume text; NLP keeps its representatio
 inside the NLP plan. `buildml.rag` ingests and retrieves documents to ground
 generated answers. `session.dl.make_text_loaders` / `session.dl.fit` fine-tune
 neural sequence models on token ids. `buildml.ai` calls an external LLM provider
-under an operator policy: NLP never touches the network. Sharing a text column
-does not merge these surfaces.
+under an operator policy. NLP inference runs locally, but optional dense
+backends may download pretrained weights. Sharing a text column does not
+merge these workflows.

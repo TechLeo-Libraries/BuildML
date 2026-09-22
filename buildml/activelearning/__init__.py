@@ -1,6 +1,6 @@
 """Active learning domain (human-in-the-loop train-pool querying).
 
-Industry depth (R6.2):
+Supported backends:
   - Core sklearn: uncertainty + bagging committee query strategies.
   - Industry (``buildml[activelearning-industry]``): scikit-activeml CoreSet / QBC.
   - Torch (``buildml[torch]``): BALD / MC-dropout tabular query strategies.

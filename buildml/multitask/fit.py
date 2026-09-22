@@ -225,7 +225,7 @@ def fit_multitask(
                 "shared_trunk_multihead; other backends require same-type targets."
             ),
             "Not a deep multi-head MTL research platform or multi-label binary "
-            "relevance zoo.",
+            "relevance framework.",
             f"n_tasks={len(target_cols)}, backend={resolved_backend}, "
             f"method={method_key}, task={resolved_task}, n_train_rows={len(train)}.",
         ]

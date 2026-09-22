@@ -1,8 +1,7 @@
 name: Release
 
 # Manual / tag / GitHub-Release publish workflow. Does not auto-publish on every push.
-# Prefer Trusted Publishing (OIDC). Optional repo secret PYPI_API_TOKEN is a
-# fallback when PyPI trusted-publisher claims are not configured yet.
+# Trusted Publishing uses the protected pypi-release environment.
 
 on:
   workflow_dispatch:
@@ -24,73 +23,72 @@ permissions:
   contents: read
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
+  full-ci:
+    uses: ./.github/workflows/ci.yml
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
+  acceptance:
+    uses: ./.github/workflows/release-acceptance.yml
 
-      - name: Install build tooling
-        run: |
-          python -m pip install --upgrade pip
-          pip install build twine
-
-      - name: Build sdist and wheel
-        run: python -m build
-
-      - name: Dist ships import-critical data
-        run: python scripts/check_wheel_contents.py dist
-
-      - name: Clean-install wheel import smoke
-        run: |
-          python -m venv "${{ runner.temp }}/buildml-wheel-probe"
-          "${{ runner.temp }}/buildml-wheel-probe/bin/pip" install --upgrade pip
-          "${{ runner.temp }}/buildml-wheel-probe/bin/pip" install dist/buildml-*.whl
-          "${{ runner.temp }}/buildml-wheel-probe/bin/python" -c "import buildml; from buildml import Session; print(buildml.__version__)"
-
-      - name: Twine check
-        run: twine check dist/*
-
-      - name: Upload dist artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: python-package-distributions
-          path: dist/
-
-  # Trusted publishing via OIDC (id-token). Do not set `environment:` here
-  # unless a matching GitHub Environment exists under Settings → Environments;
-  # an undefined name fails schema/IDE validation ("Value 'pypi' is not valid").
-  # PyPI trusted publisher must match: owner TechLeo-Libraries, repo BuildML,
-  # workflow filename release.yml, environment (blank).
-  publish:
-    needs: build
+  preflight:
+    needs: [full-ci, acceptance]
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-acceptance-candidate
+          path: candidate/
+      - name: Verify candidate identity
+        env:
+          CANDIDATE_SHA: ${{ github.sha }}
+        run: python scripts/check_release_gate.py --candidate candidate --commit "$CANDIDATE_SHA"
+      - name: Check existing environment protections before requesting approval
+        if: github.event_name != 'workflow_dispatch' || inputs.dry_run == false
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python scripts/check_release_gate.py --environment
+
+  publish:
+    needs: [full-ci, acceptance, preflight]
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi-release
+      url: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+    permissions:
+      contents: read
+      actions: read
       id-token: write
-    if: >
+    if: >-
       github.event_name == 'push' ||
       github.event_name == 'release' ||
       (github.event_name == 'workflow_dispatch' && inputs.dry_run == false)
     steps:
-      - name: Download dist artifacts
-        uses: actions/download-artifact@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
-          name: python-package-distributions
-          path: dist/
-
-      # API token (repo secret PYPI_API_TOKEN) is the working path until a
-      # PyPI Trusted Publisher is registered for this workflow. skip-existing
-      # keeps a tag-push green when the same files were already uploaded with
-      # local twine. Attestations stay off because they require OIDC.
-      - name: Publish to PyPI
+          python-version: "3.12"
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-acceptance-candidate
+          path: candidate/
+      - name: Recheck protections and exact approved candidate
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CANDIDATE_SHA: ${{ github.sha }}
+          RELEASE_REF: ${{ github.ref }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          test "${RELEASE_REF#refs/tags/}" != "$RELEASE_REF"
+          python scripts/check_release_gate.py --environment --candidate candidate --commit "$CANDIDATE_SHA" --tag "$RELEASE_TAG"
+          mkdir dist
+          cp candidate/*.whl candidate/*.tar.gz dist/
+      - name: Publish approved artifacts to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          user: __token__
-          password: ${{ secrets.PYPI_API_TOKEN }}
-          skip-existing: true
-          attestations: false
+          attestations: true

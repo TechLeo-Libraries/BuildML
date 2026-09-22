@@ -111,7 +111,7 @@ def fit_ssl_pretext(
     backbone:
         Vision backbone architecture for ``vision_ssl``.
     weight_mode:
-        Pretrained weight mode (``mock`` or zoo checkpoint name).
+        Pretrained weight mode (``mock`` or supported backbone checkpoint name).
     hf_model_name:
         HuggingFace sentence-transformer model for ``hf_text_ssl``.
     device:

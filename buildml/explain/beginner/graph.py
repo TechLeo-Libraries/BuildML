@@ -299,9 +299,9 @@ GRAPH_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         example=(
             "session.graph.save_bundle('artifacts/fraud-graph')",
-            "job = Session.ingest(nodes_frame).graph.load_bundle('artifacts/fraud-graph')",
+            "job = Session.ingest(nodes_frame).graph.load_bundle('artifacts/fraud-graph', trusted=True)",
             "job.graph.set_spec(edges=todays_edges, node_id_col='account_id')",
-            "job.graph.predict()",
+            "job.graph.predict(partition='all')",
         ),
         check=(
             "Was your plan fitted inductively or transductively, and does today's graph match that assumption?",

@@ -450,7 +450,7 @@ class IndexResult:
     Every field here constrains what queries against this index will do.
     ``embedder_id`` and ``dim`` in particular must match at query time :
     embeddings from different models are arithmetically comparable and
-    semantically unrelated, so a mismatch returns confident nonsense rather
+    semantically unrelated, so a mismatch returns semantically invalid results rather
     than an error.
 
     Attributes

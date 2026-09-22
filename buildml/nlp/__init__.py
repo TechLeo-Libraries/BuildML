@@ -1,24 +1,12 @@
 """Natural-language processing (document-level text modelling and analysis).
 
-Phase coverage (internal tracker - depth-first; do not spray stubs)
-------------------------------------------------------------------
-Phase 1 (**complete**): unsupervised -> ensembles -> AutoML -> forecasting -> anomaly.
-
-Phase 2:
-  1-10. Semi-supervised -> ... -> symbolic / neuro-symbolic - prior items.
-  11-14. Case-based reasoning -> imitation + RL -> TDA -> app systems.
-  **This module:** NLP deepening (Session text path brought to the full bar:
-  classify, interpret, topics, keyphrases, sentiment, entities, extractive
-  summaries, language ID, corpus profiling, bundles).
-  Next: CV deepening if still partial. Speech: ASR keep/improve; TTS out.
-
-Explicit non-goals (no product surfaces): abstractive / generative summarization
+Unsupported tasks: abstractive / generative summarization
 and text generation, machine translation, multi-label and span-level (sequence
 labelling) supervision, transformer fine-tuning (the Torch text path owns that),
 document retrieval for generation (``buildml.rag`` owns that), coreference
 resolution, full dependency-parse products.
 
-Honesty (this package):
+Behavior and limitations:
   - One text column on the Session dataset is the unit of work; documents are
     rows, and every vocabulary-bearing fit is train-only.
   - Single-label document classification over train-fitted bag-of-n-grams

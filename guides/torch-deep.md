@@ -15,7 +15,7 @@ Torch results live on `session.dl.train_result` and friends.
 Loaders need a split. Train-only normalize and vocab come from the
 train partition. Omit `module` and you get a built-in MLP
 (`hidden=(64, 32)`, `dropout=0.1`). Device default is `"auto"`.
-Epochs default to 5. Zoo backbones default to `weights="mock"`
+Epochs default to 5. Backbones default to `weights="mock"`
 (random init for plumbing). Speech ASR without `buildml[speech]` is
 a disclosed stub: fingerprints, not transcripts. Foundation-model
 pretrain is refused (`session.dl.refuse_speech_pretrain`).

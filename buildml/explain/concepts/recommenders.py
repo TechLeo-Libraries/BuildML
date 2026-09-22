@@ -30,7 +30,7 @@ RECOMMENDER_NOTES: dict[str, ConceptNote] = {
                 "SVD/NMF: R ≈ UVᵀ."
             ),
             why_it_matters=(
-                "Train-only matrix preserves holdout honesty.",
+                "Train-only matrix preserves holdout independence.",
                 "Ranking metrics need a clear candidate catalog.",
             ),
             how_buildml_uses=(
@@ -199,13 +199,13 @@ RECOMMENDER_NOTES: dict[str, ConceptNote] = {
                 "Known-item protocol applies to all backends.",
             ),
             assumptions=(
-                "recommenders-industry extra for implicit/LightFM paths.",
+                "Use recommenders-industry for implicit; LightFM needs the separate recommenders-lightfm extra on a supported platform.",
             ),
             failure_modes=(
                 "MissingExtraError when industry backend requested without install.",
             ),
             anti_patterns=(
-                "Reimplementing ALS from scratch in BuildML core.",
+                "Using explicit-rating metrics to judge an implicit-feedback ranking model.",
                 "Using implicit backend with explicit-only rating semantics.",
             ),
             worked_example_pattern=(

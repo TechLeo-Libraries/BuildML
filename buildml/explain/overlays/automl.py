@@ -27,7 +27,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         "Go beyond single-estimator HPO with a finite disclosed AutoML catalog.",
         "AutoML family + recipe search.",
         (
-            "Refuse when Session-global preprocess poisoned the frame (same as classical CV).",
+            "Refuse when Session-global preprocessing was fitted before cross-validation (same as classical CV).",
             "Sample or enumerate model families × recipe strategies × modest params.",
             "Rank on train CV, nested outer folds, or Session validation: never test.",
             "Optionally score voting ensembles of diverse top families.",
@@ -79,7 +79,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             _p("random_state", "int | None", "Sampling seed.", 0),
             _p("budget", "AutoMLBudget | None", "Hard caps on trials/families/recipes."),
         ),
-        inputs=("Split Session with features + target (prefer unpoisoned frame).",),
+        inputs=("Split Session with features + target (prefer frame without globally fitted transforms).",),
         outputs=("AutoMLResult; AutoMLPlan + FitResult stored on the Session.",),
         prerequisites=(DATASET, SPLIT),
         ordering=(
@@ -103,7 +103,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         ),
         leakage=(
             "Session test must not enter selection scoring.",
-            "Session-global impute/encode/scale before AutoML poisons fold honesty: refused by default.",
+            "Session-global impute/encode/scale before AutoML can leak information across folds: refused by default.",
         ),
         anti_patterns=(
             "Calling AutoML a fully automated AI scientist.",

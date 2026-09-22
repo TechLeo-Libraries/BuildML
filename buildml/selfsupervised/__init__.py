@@ -1,6 +1,6 @@
 """Self-supervised learning hooks (Torch industry defaults + legacy sklearn fallback).
 
-Phase R1 (refinement): Torch tabular contrastive (SimCLR/BYOL/VICReg), generative
+Supported methods: Torch tabular contrastive (SimCLR/BYOL/VICReg), generative
 (MAE/VAE), HF text SSL, vision SSL with Session API + bundle v2.
 
 Dependency policy: industry Torch/HF backends when ``buildml[torch]`` /

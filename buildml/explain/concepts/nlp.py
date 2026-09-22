@@ -391,7 +391,7 @@ NLP_NOTES: dict[str, ConceptNote] = {
         _note(
             key="nlp-rule-vs-statistical-ner",
             title="Rule entities favour precision; statistical NER favours recall",
-            summary="Regex patterns and gazetteers find exactly what you described and nothing else; a trained model generalizes but hallucinates spans.",
+            summary="Rules find configured text patterns; trained NER can recognize varied contexts but may misclassify spans.",
             definition=(
                 "Entity extraction locates typed spans in text. BuildML's rule "
                 "backend applies precision-first regular expressions (dates, "
@@ -472,7 +472,7 @@ NLP_NOTES: dict[str, ConceptNote] = {
                 "document length."
             ),
             why_it_matters=(
-                "Nothing is invented, so an extractive summary cannot state a fact the document does not contain.",
+                "Selected sentences come from the document, but omissions and lost context can still mislead; verify the summary against its source.",
                 "Lead-k is a genuinely strong baseline for news-like text; shipping it makes the comparison available instead of assumed.",
                 "Without reference summaries no ROUGE score is meaningful, so none is reported.",
             ),

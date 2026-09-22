@@ -785,7 +785,7 @@ def load_payment_rail_anomaly_synthetic(
         }
     )
     frame = pd.concat([normal, attack], ignore_index=True)
-    # Label noise: flipped authorizations so perfect F1/AP/ROC is not theater.
+    # Label noise: flipped authorizations to avoid unrealistically separable classes.
     flip_n = max(1, int(0.04 * len(frame)))
     flip_idx = rng.choice(len(frame), size=flip_n, replace=False)
     frame.loc[flip_idx, "is_attack"] = 1 - frame.loc[flip_idx, "is_attack"].to_numpy()

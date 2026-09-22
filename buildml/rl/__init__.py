@@ -1,15 +1,6 @@
 """Imitation learning + reinforcement learning (Session-shaped, honest scope).
 
-Phase coverage (internal tracker: depth-first; do not spray stubs)
-------------------------------------------------------------------
-Phase 1 (**complete**): unsupervised → ensembles → AutoML → forecasting → anomaly.
-
-Phase 2:
-  … through IL+RL: **this module (PASS)**.
-  Next: Topological Data Analysis (TDA) → then application systems
-  (recommenders first).
-
-Honesty (this package):
+Behavior and limitations:
   - Behavioral cloning from demonstration tables (state → action) on **train only**.
   - Contextual bandits from logged (context, action, reward) tables on **train only**;
     holdout metrics are **offline** (DM / IPS) and disclosed as such.
@@ -20,7 +11,7 @@ Honesty (this package):
   - Core stays numpy/pandas/sklearn: ``gymnasium`` is optional and never required
     for ``import buildml`` or BC / bandit paths.
 
-Lazy imports: keep the core import graph light.
+Optional dependencies are imported only when their backends are used.
 """
 
 from __future__ import annotations

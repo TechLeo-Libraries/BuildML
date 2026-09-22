@@ -166,7 +166,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         alternatives=(
             "Session.calibration for classical fit(...) reliability curves.",
         ),
-        rationale=("Use to quantify calibration and interval honesty on holdout.",),
+        rationale=("Use to quantify calibration and interval coverage on holdout.",),
         assumptions=("Feature/target columns match the plan contract.",),
         failures=("No plan; empty partition; missing columns.",),
         leakage=(

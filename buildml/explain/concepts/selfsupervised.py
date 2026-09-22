@@ -70,7 +70,7 @@ SELFSUPERVISED_NOTES: dict[str, ConceptNote] = {
                 "representation z = h_θ(x)."
             ),
             why_it_matters=(
-                "Ships a real, tested pretext without pretending to be a contrastive FM zoo.",
+                "Learns tabular representations by reconstructing masked training features.",
             ),
             how_buildml_uses=(
                 "method='masked_tabular' on session.ssl.fit_pretext (core sklearn path).",
@@ -81,7 +81,7 @@ SELFSUPERVISED_NOTES: dict[str, ConceptNote] = {
             assumptions=("Enough train rows for a small MLP; mask_ratio ∈ (0,1).",),
             failure_modes=("Mask ratio 0 or 1; colliding representation column names.",),
             anti_patterns=(
-                "Shipping stub catalogs of many pretext tasks without a working path.",
+                "Choosing a pretext task without checking whether its representations improve held-out performance.",
             ),
             worked_example_pattern=("session.ssl.fit_pretext(mask_ratio=0.2, latent_dim=8).",),
             related_concepts=("ssl-pretext-then-head", "ssl-vs-backbone-transfer"),
@@ -92,7 +92,7 @@ SELFSUPERVISED_NOTES: dict[str, ConceptNote] = {
             summary="Tabular masked pretext is core Session SSL; vision/audio/speech freeze/finetune stays on session.dl.load_backbone / session.dl.attach_head.",
             definition=(
                 "BuildML separates tabular self-supervised hooks from optional Torch "
-                "pretrained backbone transfer. The zoo path loads published weights "
+                "pretrained backbone transfer. The backbone path loads published weights "
                 "(or mock/none) and attaches a head; it is not tabular masked AE training."
             ),
             intuition=(
@@ -115,10 +115,10 @@ SELFSUPERVISED_NOTES: dict[str, ConceptNote] = {
             assumptions=("Torch/speech extras installed for backbone paths.",),
             failure_modes=("Calling backbone transfer 'tabular SSL' without disclosure.",),
             anti_patterns=(
-                "Reimplementing the zoo inside buildml.selfsupervised as duplicate stubs.",
+                "Using a tabular masked-reconstruction encoder for images or audio without a suitable representation.",
             ),
             worked_example_pattern=(
-                "Tables → session.ssl.fit_pretext; images → session.dl.load_backbone('resnet18').",
+                "Tables → session.ssl.fit_pretext; images → session.dl.load_backbone('vision', architecture='resnet18', weights='pretrained').",
             ),
             related_concepts=("ssl-pretext-then-head", "ssl-masked-tabular"),
         ),

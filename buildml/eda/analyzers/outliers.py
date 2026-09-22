@@ -3,16 +3,15 @@
 "Outlier" is not a property of a data point. It is a statement about a
 distribution, and whether a given point is an error, a rare event, or the whole
 reason the project exists depends entirely on context. A transaction ten times
-the median is an outlier in a spending model and the entire target in a fraud
-model.
+the median may be a valid large purchase, a recording error, or an event worth
+investigating for fraud.
 
-So this reports and does not act. Three methods, because each sees something the
-others miss. The IQR rule is distribution-free and robust: it uses quartiles, so
-extreme values cannot drag the boundaries out to include themselves. Z-scores
-assume roughly normal data and are pulled around by the very points they are
-meant to find, which is why they are reported alongside rather than alone.
-Isolation Forest looks at rows rather than values, and catches the combination
-that is strange while every individual field is ordinary: a 19-year-old with 30
+So this reports and does not act. Three methods provide complementary screens. The IQR rule uses quartiles and is resistant to isolated extremes, though
+contamination can still shift its boundaries. Z-scores can be computed for
+non-normal data, but normal-tail interpretations require additional assumptions. Extreme values can
+also influence the mean and standard deviation used by z-scores.
+Isolation Forest looks across numeric features and can flag unusual
+combinations, but does not encode domain consistency rules such as a 19-year-old with 30
 years of driving experience.
 
 See Also
@@ -38,17 +37,18 @@ def analyze_outliers(
 
     Per column, two counts. The IQR rule flags values more than 1.5 interquartile
     ranges beyond the quartiles: the same rule that draws the whiskers on a box
-    plot, and robust because quartiles are not moved by extreme values.
+    plot. Quartiles resist isolated extremes but can shift when enough values
+    change or when the sample is small.
     Z-scores flag values more than three standard deviations from the mean,
     which is less robust for exactly the opposite reason: a single extreme value
     inflates the standard deviation and can hide itself.
 
-    Across columns, Isolation Forest scores whole rows. It finds combinations
-    that are individually plausible and jointly strange, which no per-column
-    method can see.
+    Across columns, Isolation Forest scores whole rows. It can detect
+    multivariate patterns that per-column screens miss, without guaranteeing
+    detection of every implausible combination.
 
-    Restricting to feature columns matters here. An identifier is uniformly
-    distributed and will produce nonsense bounds; a target's extremes are often
+    Restricting to feature columns matters here. Numeric distances between identifier values may not
+    have a meaningful interpretation; a target's extremes may be
     the cases you most want to predict, not errors to remove.
 
     Parameters
@@ -74,10 +74,10 @@ def analyze_outliers(
     upper tail as a matter of arithmetic, not because anything is amiss. Read
     the flags together with the skew from the univariate analysis.
 
-    **Compare the two per-column counts.** When the IQR count is much larger
-    than the z-score count, the distribution is skewed. When the z-score count
-    is larger, there are extremes so severe they have inflated the standard
-    deviation, and both numbers understate the problem.
+    **Compare the two per-column counts.** The rules use different
+    centers, scales, and thresholds, so their counts can disagree for several
+    reasons. Inspect the histogram, missingness, tail shape, and domain context;
+    counts alone do not identify skewness or explain the source of extremes.
 
     **Isolation Forest needs complete rows.** Any row with a missing value in
     any screened column is excluded, so a frame with scattered gaps can leave

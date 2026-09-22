@@ -356,7 +356,8 @@ def mapie_predict_interval(
     task:
         Must be ``regression`` for interval output.
     alpha:
-        Miscoverage rate passed to MAPIE predict calls.
+        Miscoverage rate. Modern MAPIE requires the fitted wrapper's alpha;
+        legacy MAPIE receives this value at prediction time.
 
     Returns
     -------
@@ -407,7 +408,8 @@ def mapie_predict_sets(
     x:
         Feature matrix for scoring.
     alpha:
-        Miscoverage rate for set construction.
+        Miscoverage rate. Modern MAPIE requires the fitted wrapper's alpha;
+        legacy MAPIE receives this value at prediction time.
     task:
         ``classification`` (default).
 
@@ -496,7 +498,50 @@ def mapie_supports_predict_proba(wrapper: Any) -> bool:
 
 
 def _as_wrapper(wrapper: Any, *, task: str, alpha: float) -> MapieWrapper:
+    validate_mapie_alpha(wrapper, alpha)
     if isinstance(wrapper, MapieWrapper):
         return wrapper
     api = "modern" if hasattr(wrapper, "predict_interval") or hasattr(wrapper, "predict_set") else "legacy"
     return MapieWrapper(task=task, method="split", alpha=alpha, estimator=wrapper, api=api)
+
+
+def validate_mapie_alpha(wrapper: Any, alpha: float) -> None:
+    """Reject coverage changes unsupported by a fitted modern MAPIE model.
+
+    Modern MAPIE stores confidence at fit time. Validate the recorded alpha
+    before prediction or evaluation so returned metadata cannot relabel bounds.
+    Legacy APIs accept alpha at prediction time and can recompute their output.
+
+    Parameters
+    ----------
+    wrapper:
+        Fitted MapieWrapper, or a legacy MAPIE object. Raw modern objects lack
+        BuildML's recorded calibration alpha and must be refitted via BuildML.
+    alpha:
+        Requested miscoverage in (0, 1).
+
+    Returns
+    -------
+    None
+        Returns when the requested alpha is supported.
+
+    Raises
+    ------
+    ValidationError
+        If alpha is invalid, differs from modern fitted alpha, or that alpha
+        cannot be established from a BuildML wrapper.
+    """
+    if not 0.0 < alpha < 1.0:
+        raise ValidationError(f"alpha must be in (0, 1); got {alpha}.")
+    if isinstance(wrapper, MapieWrapper):
+        if wrapper.api == "modern" and alpha != wrapper.alpha:
+            raise ValidationError(
+                f"Requested alpha={alpha} differs from calibrated alpha={wrapper.alpha}. "
+                "Modern MAPIE fixes confidence at fit time; refit/calibrate at the "
+                "requested alpha or use the calibrated value."
+            )
+    elif hasattr(wrapper, "predict_interval") or hasattr(wrapper, "predict_set"):
+        raise ValidationError(
+            "Raw modern MAPIE objects do not record a verified BuildML calibration "
+            "alpha. Refit through BuildML before requesting intervals or sets."
+        )

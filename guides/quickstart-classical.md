@@ -203,7 +203,7 @@ Cross-validation and search draw folds from **train only**. If you
 already ran Session-global `impute` / `encode` / `scale` on the whole
 training partition, `cv_score` and `grid_search` refuse. A
 `PreprocessRecipe` cannot undo that: it sees the already-transformed
-frame. Re-ingest (or load an unpoisoned checkpoint), then put the recipe
+frame. Re-ingest (or load a checkpoint saved before fitted preprocessing), then put the recipe
 inside the CV call.
 
 ```python

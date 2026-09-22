@@ -2,7 +2,8 @@ BuildML 2.x changelog
 ---------------------
 
 Active release notes for BuildML 2.x live in the repository root
-``CHANGELOG.md``. The current line is ``2.6.2`` (wheel ships
+`CHANGELOG.md <https://github.com/TechLeo-Libraries/BuildML/blob/main/CHANGELOG.md>`_.
+The current line is ``2.6.2`` (wheel ships
 ``operation_index.json`` so a clean PyPI install can import BuildML).
 
 BuildML 1.x archived changelog

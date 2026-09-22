@@ -65,7 +65,7 @@ except LeakageError as exc:
 ```
 
 Prefer ingest → roles → split → `session.automl.run(include_recipe_search=True)`
-on unpoisoned data. `allow_session_global_preprocess=True` is a known-biased
+on data without Session-global fitted preprocessing. `allow_session_global_preprocess=True` is a known-biased
 override.
 
 Fold-local recipe strategies refit on fold-train during CV ranking. The

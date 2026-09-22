@@ -45,7 +45,7 @@ AI_BEGINNER: dict[str, BeginnerLayer] = _index(
         example=(
             "session.ai.configure(",
             "    provider='openai', model='gpt-4o-mini',",
-            "    egress='schema_only',   # names and dtypes, no cell values",
+            "    egress_level='schema_only',   # names and dtypes, no cell values",
             ")",
             "print(session.ai.status())",
         ),
@@ -97,7 +97,7 @@ AI_BEGINNER: dict[str, BeginnerLayer] = _index(
             "session.ai.configure(provider='openai', model='gpt-4o-mini')",
             "result = session.ai.run_autonomous(",
             "    'evaluate the current model on validation',",
-            "    confirm=True,   # propose, then wait for approval",
+            "    confirm_autonomy=True,   # propose, then wait for approval",
             ")",
         ),
         check=(
@@ -150,7 +150,7 @@ AI_BEGINNER: dict[str, BeginnerLayer] = _index(
             "# untrusted values are wrapped before reaching the model",
             "session.ai.run_autonomous(",
             "    'summarize the quality findings',",
-            "    confirm=True,",
+            "    confirm_autonomy=True,",
             ")",
             "# review the proposal before approving, especially with user-generated text",
         ),

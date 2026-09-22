@@ -84,7 +84,7 @@ TIMESERIES_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.timeseries.diagnostics(scope='train', include_diagnostics=True)",
+            "session.timeseries.diagnostics(scope='train')",
             "session.forecast.fit(method='lag_ridge', lags=[1, 7, 14])",
         ),
         check=(

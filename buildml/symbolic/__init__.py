@@ -1,21 +1,6 @@
 """Symbolic + neuro-symbolic tabular ML (rules + sklearn hybrid).
 
-Phase coverage (internal tracker: depth-first; do not spray stubs)
-------------------------------------------------------------------
-Phase 1 (**complete**): unsupervised → ensembles → AutoML → forecasting → anomaly.
-
-Phase 2:
-  1–9. Semi-supervised → … → causal / graph / evolutionary HPO: prior items.
-  **This module (complete):** Symbolic AI + Neuro-symbolic AI.
-  Next delivered: Case-based reasoning (`buildml.cbr`), then imitation+RL,
-  then TDA, then app systems.
-
-Explicit non-goals (no product surfaces): full expert-system products, fuzzy
-logic as a standalone product, Prolog/Z3 required in core, AGI symbolic
-reasoners, neuromorphic/SNN, swarm zoo, digital twins, AV stack, multi-agent
-world sims, TTS, robotics/control product.
-
-Honesty (this package):
+Behavior and limitations:
   - Explicit if-then rule knowledge bases over tabular columns.
   - Induction: sklearn DecisionTree / decision-list (core) plus optional
     skope-rules / imodels rule export via ``buildml[symbolic-industry]``.

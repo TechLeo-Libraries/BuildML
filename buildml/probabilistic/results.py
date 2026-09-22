@@ -127,7 +127,7 @@ class ProbabilisticFitResult:
 
 @dataclass(slots=True)
 class ProbabilisticEvalResult:
-    """Holdout evaluation with proper scoring + interval coverage."""
+    """Selected-population evaluation with scoring and interval coverage."""
 
     partition: str
     estimator_name: str
@@ -141,10 +141,10 @@ class ProbabilisticEvalResult:
     warnings: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
-        """Summarise holdout evaluation metrics and interval coverage.
+        """Summarise population metrics, interval coverage and provenance limits.
 
         Produced by :func:`buildml.probabilistic.evaluate.evaluate_probabilistic`
-        after scoring a validation or test partition without refitting.
+        after scoring the requested population without refitting.
 
         Returns
         -------

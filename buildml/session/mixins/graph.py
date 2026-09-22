@@ -32,7 +32,7 @@ class GraphSessionMixin:
     ) -> GraphSpec:
         """Attach an edge list to the Session with dataset rows as nodes.
 
-        Session facade over :func:`buildml.session.graph_ops.set_graph_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.graph_ops.set_graph_op`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------
@@ -74,7 +74,7 @@ class GraphSessionMixin:
     ) -> GraphFitResult:
         """Fit graph node classification on Session train nodes.
 
-        Session facade over :func:`buildml.session.graph_ops.fit_graph_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.graph_ops.fit_graph_op`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------
@@ -112,7 +112,7 @@ class GraphSessionMixin:
     ) -> GraphPredictResult:
         """Predict node labels with the fitted GraphPlan on a partition.
 
-        Session facade over :func:`buildml.session.graph_ops.predict_graph_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.graph_ops.predict_graph_op`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------
@@ -133,7 +133,7 @@ class GraphSessionMixin:
     ) -> GraphEvalResult:
         """Evaluate node classification on a holdout graph partition.
 
-        Session facade over :func:`buildml.session.graph_ops.evaluate_graph_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.graph_ops.evaluate_graph_op`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------
@@ -200,7 +200,7 @@ class GraphSessionMixin:
     def save_graph_bundle(self, path: str | Path) -> Path:
         """Persist the active GraphPlan as ``buildml.graph_bundle.v1``.
 
-        Session facade over :func:`buildml.session.graph_ops.save_graph_bundle_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.graph_ops.save_graph_bundle_op`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------
@@ -217,7 +217,7 @@ class GraphSessionMixin:
     def load_graph_bundle(self, path: str | Path, *, trusted: bool = False) -> Session:
         """Load a graph bundle into this Session.
 
-        Session facade over :func:`buildml.session.graph_ops.load_graph_bundle_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.graph_ops.load_graph_bundle_op`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------

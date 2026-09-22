@@ -45,7 +45,7 @@ ONLINE_BEGINNER: dict[str, BeginnerLayer] = _index(
         example=(
             "session.online.fit(estimator=SGDClassifier(loss='log_loss'), chunk_size=1000)",
             "for chunk in later_chunks:",
-            "    session.online.partial_fit(chunk)",
+            "    session.online.partial_fit(frame=chunk)",
             "session.online.evaluate(partition='validation')",
         ),
         check=(
@@ -145,7 +145,7 @@ ONLINE_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.online.partial_fit(chunk, disclose_drift=True)",
+            "session.online.partial_fit(frame=chunk)",
             "for note in session.online.plan.update_history[-1].drift_notes:",
             "    print(note)",
         ),
@@ -190,7 +190,7 @@ ONLINE_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         example=(
             "session.online.fit(backend='industry', estimator='river_logistic', chunk_size=500)",
-            "session.online.partial_fit(next_chunk)",
+            "session.online.partial_fit(frame=next_chunk)",
             "session.online.evaluate(partition='validation')",
         ),
         check=(
@@ -234,7 +234,7 @@ ONLINE_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         example=(
             "session.online.fit(backend='torch', estimator='replay_mlp', chunk_size=256)",
-            "session.online.partial_fit(chunk)",
+            "session.online.partial_fit(frame=chunk)",
         ),
         check=(
             "Is your task classification?",
@@ -282,9 +282,9 @@ ONLINE_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         example=(
             "session.online.save_bundle('artifacts/online-model')",
-            "job = Session.ingest(new_chunk).online.load_bundle('artifacts/online-model')",
+            "job = Session.ingest(new_chunk).online.load_bundle('artifacts/online-model', trusted=True)",
             "print(job.online_plan.cursor, len(job.online_plan.update_history))",
-            "job.online.partial_fit(new_chunk)",
+            "job.online.partial_fit(frame=new_chunk)",
         ),
         check=(
             "Where does your cursor point, and where does your stream currently stand?",

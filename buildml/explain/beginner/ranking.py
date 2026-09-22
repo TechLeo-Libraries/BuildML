@@ -97,7 +97,7 @@ RANKING_BEGINNER: dict[str, BeginnerLayer] = _index(
         example=(
             "session.ranking.fit(",
             "    method='pointwise', query_column='query_id',",
-            "    relevance_column='relevance', estimator='hist_gbdt',",
+            "    relevance_column='relevance', pointwise_estimator='hgb',",
             ")",
             "session.ranking.evaluate(partition='validation', k=10)",
         ),
@@ -251,8 +251,8 @@ RANKING_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         example=(
             "report = session.ranking.evaluate(partition='test', k=10)",
-            "print(report.ndcg_at_k, report.map_at_k, report.mrr_at_k)",
-            "print(report.n_queries)",
+            "print(report.metrics)",
+            "print(report.n_queries_scored)",
         ),
         check=(
             "How many held-out queries produced your averages?",
@@ -300,8 +300,8 @@ RANKING_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         example=(
             "session.ranking.save_bundle('artifacts/search-ranker')",
-            "serving = Session.ingest(candidate_frame).ranking.load_bundle('artifacts/search-ranker')",
-            "serving.rank(query_ids=['q_17'])",
+            "serving = Session.ingest(candidate_frame).ranking.load_bundle('artifacts/search-ranker', trusted=True)",
+            "serving.ranking.rank(query_ids=['q_17'], partition='all')",
         ),
         check=(
             "Does your serving path compute features identically to training?",

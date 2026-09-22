@@ -1,21 +1,6 @@
 """Graph ML domain (node classification: classical + pure-Torch GCN + PyG).
 
-Phase coverage (internal tracker: depth-first; do not spray stubs)
-------------------------------------------------------------------
-Phase 1 (**complete**): unsupervised → ensembles → AutoML → forecasting → anomaly.
-
-Phase 2:
-  1–9. Semi-supervised → … → Causal ML: done.
-  10. Graph ML / GNNs: **this module** (PASS vs Phase-1 bar).
-  Next: **Evolutionary algorithms** (as search/HPO backend: not swarm zoo).
-  Later deepenings: NLP/CV if still partial. Speech: ASR keep/improve; TTS out.
-
-Explicit non-goals (no product surfaces): neuromorphic/SNN, swarm zoo,
-digital twins, AV stack, multi-agent world sims, TTS, robotics/control product,
-full COCO detection/segmentation suite. Knowledge-graph *learning* is a
-**separate** Session path (``buildml.kg``): still not a Neo4j product.
-
-Honesty (this package):
+Behavior and limitations:
   - Session rows = nodes; edge list attached via ``set_graph``; splits are
     **node** partitions.
   - Three complete paths:
@@ -26,7 +11,7 @@ Honesty (this package):
     train↔holdout edges; holdout↔holdout dropped. ``transductive`` uses full
     topology with train-label-only supervision (disclosed).
   - Not KG triples/link-prediction (see ``buildml.kg``), not graph-level
-    classify zoo, not Neo4j.
+    classification or a graph database.
 
 Dependency policy: core stays numpy/pandas/pyarrow/sklearn.
   - ``buildml[graph]`` → NetworkX (classical path).

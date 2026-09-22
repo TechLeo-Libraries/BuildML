@@ -360,7 +360,7 @@ _CURRICULUM: dict[str, dict[str, Any]] = {
     },
     "01.10": {
         "beginner": "Test contradictions between columns (end before start, parts not summing to total).",
-        "why": "Cross-field errors survive univariate screens and poison relationships.",
+        "why": "Cross-field errors can escape univariate screens and distort measured relationships.",
         "levels": _levels(
             "List known logical constraints from the domain.",
             "Run assertions on every extract.",
@@ -646,7 +646,7 @@ _CURRICULUM: dict[str, dict[str, Any]] = {
     },
     "03.12": {
         "beginner": "Explain each outlier as error, rare truth, subgroup, or sentinel - not “delete all”.",
-        "why": "Blind deletion removes rare but real cases; keeping sentinels poisons fits.",
+        "why": "Deleting without review can remove rare but valid cases; treating sentinels as measurements can distort fits.",
         "levels": _levels(
             "Review univariate fence rates and multivariate flags.",
             "Classify flags with domain rules.",

@@ -13,13 +13,13 @@ its classification head removed, ready for :func:`attach_backbone_head`.
 
 Three weight modes, and picking the right one matters. ``pretrained`` downloads
 the real published weights and is what you want for actual work. ``mock``
-constructs the architecture with random weights, which is fast, offline, and
-useless for accuracy: it exists so tests can exercise the plumbing without
-pulling gigabytes. ``none`` is the same thing without even the random
-initialisation pass.
+constructs the architecture and applies deterministic random weights for
+offline integration tests; these are not pretrained representations. ``none``
+keeps the architecture's ordinary random initialization without loading
+pretrained weights or applying the mock initialization.
 
-This is an integration layer over torchvision and transformers, not a model zoo
-of its own. It curates a handful of architectures that work well; it does not
+This is an integration layer over torchvision and transformers, not a separate
+model library. It supports selected architectures; it does not
 mirror the full Hugging Face hub, and it does not train foundation models from
 scratch.
 
@@ -267,7 +267,7 @@ def freeze_module(module: Any, *, freeze: bool = True) -> Any:
 
 
 def _apply_mock_weights(module: Any, *, seed: int = 0) -> None:
-    torch = require_torch(feature="pretrained zoo mock weights")
+    torch = require_torch(feature="pretrained backbone mock weights")
     generator = torch.Generator()
     generator.manual_seed(int(seed))
     with torch.no_grad():
@@ -420,7 +420,7 @@ def attach_backbone_head(
         ),
         limitations=(
             "Caller still owns DataLoaders / TrainConfig / fit_torch wiring.",
-            "Not a full zoo product or auto-training platform.",
+            "Only documented architectures are supported; training requires a separate call.",
         ),
         warnings=(),
     )
@@ -541,7 +541,7 @@ def load_vision_backbone(
             "fc/head replaced with Identity for feature extraction.",
         ),
         limitations=(
-            "Not a full pretrained zoo product: curated ResNet/ViT hooks only.",
+            "Supported vision backbones are limited to the documented ResNet/ViT architectures.",
             "pretrained mode may download large weights; prefer mock/none in CI.",
         ),
         warnings=tuple(warnings),
@@ -655,7 +655,7 @@ def load_audio_backbone(
             f"model_id={resolved_id}",
         ),
         limitations=(
-            "Integration hook: not a full audio FM zoo or pretraining stack.",
+            "Audio backbone integration only; foundation-model pretraining is not supported.",
             "pretrained mode may download large weights; prefer mock/none in CI.",
         ),
         warnings=tuple(warnings),

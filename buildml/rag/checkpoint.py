@@ -224,7 +224,7 @@ def load_rag_bundle(path: str | Path) -> RagIndex:
     **A bundle saved with a custom callable embedder loads with hashing
     substituted.** Stored vectors came from your function; queries would be
     embedded by a different one, and the two spaces are unrelated, so retrieval
-    returns confident nonsense. Rebuild the index with the callable re-supplied.
+    returns semantically invalid retrieval results. Rebuild the index with the callable re-supplied.
 
     **Sentence-transformer bundles need the model available.** First load may
     download it, and needs ``buildml[rag]`` installed.

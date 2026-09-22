@@ -55,8 +55,8 @@ CAUSAL_BEGINNER: dict[str, BeginnerLayer] = _index(
             "    treatment='received_discount',",
             "    outcome='renewed',",
             "    confounders=['tenure_months', 'plan_tier', 'prior_usage'],",
-            "    estimand='ate',",
-            "    unconfoundedness_ack=True, positivity_ack=True,",
+            "    estimand='ATE',",
+            "    acknowledge_unconfoundedness=True, acknowledge_positivity=True,",
             ")",
         ),
         check=(
@@ -106,7 +106,7 @@ CAUSAL_BEGINNER: dict[str, BeginnerLayer] = _index(
         example=(
             "session.causal.fit(method='aipw', random_state=0)",
             "estimate = session.causal.estimate()",
-            "print(estimate.ate, estimate.confidence_interval)",
+            "print(estimate.ate, (estimate.ate_ci_low, estimate.ate_ci_high))",
             "print(estimate.disclosures)",
         ),
         check=(
@@ -157,7 +157,7 @@ CAUSAL_BEGINNER: dict[str, BeginnerLayer] = _index(
         example=(
             "session.causal.fit(method='t_learner', random_state=0)",
             "estimate = session.causal.estimate()",
-            "print(estimate.ate, estimate.per_arm_n)",
+            "print(estimate.ate, (estimate.n_treated, estimate.n_control))",
         ),
         check=(
             "How many rows are in your smaller treatment arm?",
@@ -204,9 +204,9 @@ CAUSAL_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.causal.fit(method='ipw', propensity_clip=(0.01, 0.99), random_state=0)",
+            "session.causal.fit(method='ipw', clip_propensity=(0.01, 0.99), random_state=0)",
             "estimate = session.causal.estimate()",
-            "print(estimate.ate, estimate.effective_sample_size)",
+            "print(estimate.ate, estimate.disclosures)",
         ),
         check=(
             "What is the distribution of your propensity scores: is anything below 0.05 or above 0.95?",
@@ -255,8 +255,8 @@ CAUSAL_BEGINNER: dict[str, BeginnerLayer] = _index(
         example=(
             "session.causal.fit(method='aipw', random_state=0)",
             "estimate = session.causal.estimate()",
-            "refutation = session.causal.refute(method='placebo_treatment')",
-            "print(estimate.ate, refutation.passed)",
+            "refutation = session.causal.refute(kind='placebo_treatment')",
+            "print(estimate.ate, refutation.ate_shift)",
         ),
         check=(
             "Which of your two nuisance models do you actually believe, and why?",
@@ -354,7 +354,7 @@ CAUSAL_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         example=(
             "session.causal.save_bundle('artifacts/discount-effect')",
-            "review = Session.ingest(frame).causal.load_bundle('artifacts/discount-effect')",
+            "review = Session.ingest(frame).causal.load_bundle('artifacts/discount-effect', trusted=True)",
             "print(review.causal_plan.assumptions)",
         ),
         check=(
@@ -403,9 +403,9 @@ CAUSAL_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         example=(
             "# pip install \"buildml[causal-industry]\"",
-            "session.causal.fit(backend='dowhy', method='backdoor.propensity_score_matching')",
-            "print(session.causal.refute(method='random_common_cause'))",
-            "print(session.causal.refute(method='placebo_treatment'))",
+            "session.causal.fit(backend='dowhy', method='backdoor_propensity_score')",
+            "print(session.causal.refute(kind='random_common_cause'))",
+            "print(session.causal.refute(kind='placebo_treatment'))",
         ),
         check=(
             "Did identification succeed, and under which adjustment set?",
@@ -455,7 +455,7 @@ CAUSAL_BEGINNER: dict[str, BeginnerLayer] = _index(
             "# pip install \"buildml[causal-industry]\"",
             "session.causal.fit(backend='econml', method='causal_forest', random_state=0)",
             "estimate = session.causal.estimate()",
-            "print(estimate.ate, estimate.cate_summary)",
+            "print(estimate.ate, estimate.disclosures)",
         ),
         check=(
             "How many rows sit in your smallest interesting subgroup?",

@@ -1,17 +1,5 @@
 """Native ensemble learning (voting / stacking / holdout blending).
 
-Phase coverage (internal tracker: depth-first; do not spray stubs)
-------------------------------------------------------------------
-Phase 1 (**complete**):
-  1. Unsupervised learning: clustering Session path (done; see
-     ``buildml.unsupervised``).
-  2. Ensemble learning: native stacking/voting/blending. **This module.**
-  3. AutoML: pipeline/model search beyond HPO (done; see ``buildml.automl``).
-  4. Time-series forecasting: done (see ``buildml.forecasting``).
-  5. Anomaly / fraud detection: done (see ``buildml.anomaly``).
-
-Later phases and explicit non-goals: see ``buildml.unsupervised`` module doc.
-
 Dependency policy: core stays numpy/pandas/pyarrow/sklearn. Ensembles use
 core sklearn Voting*/Stacking* plus an honest holdout-blend estimator :
 no optional extra required for ``import buildml``.

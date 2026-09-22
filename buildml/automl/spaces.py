@@ -1,7 +1,7 @@
 """Default model-family and preprocess-recipe catalogs for AutoML.
 
 These catalogs are deliberately finite and disclosed: not neural architecture
-search, not an unbounded Autosklearn zoo, and not causal discovery.
+search, not unrestricted auto-sklearn model search, and not causal discovery.
 """
 
 from __future__ import annotations

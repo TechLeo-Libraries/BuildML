@@ -33,16 +33,14 @@ TEACHING_NOTES: dict[str, ConceptNote] = {
                 "vocabulary supplied."
             ),
             formal_idea=(
-                "LearningLevel is a total order (beginner < intermediate < advanced) "
-                "and renderers select content by level rank. Operation primers are "
-                "derived from the catalog rather than authored, so the beginner tier "
-                "cannot drift from the parameters, prerequisites, and concepts that "
-                "are already maintained."
+                "Levels increase in depth: beginner, intermediate, advanced. "
+                "Operation primers introduce the parameters, prerequisites, and "
+                "related concepts; advanced notes add assumptions and failure modes."
             ),
             why_it_matters=(
                 "An explanation that assumes the vocabulary it is explaining is not an explanation.",
-                "Derived primers guarantee coverage: no operation can ship without a plain-language layer.",
-                "Difficulty tags and prerequisite links turn 187 notes into a reading order instead of an index.",
+                "Operation primers help you understand the inputs before running an unfamiliar operation.",
+                "Difficulty tags and prerequisite links help you choose a reading order.",
             ),
             how_buildml_uses=(
                 "Session.explain(..., level=...) and Session.learn(..., level=...) select the tier.",
@@ -55,16 +53,16 @@ TEACHING_NOTES: dict[str, ConceptNote] = {
                 "A note's prerequisite_concepts are what to read first, not what to install.",
             ),
             assumptions=(
-                "Every concept note has an authored beginner layer; the merge fails loudly otherwise.",
-                "Operation primers are derived, so overlay prose stays the single source of truth.",
+                "Examples assume that their input data and any named estimators are available.",
+                "An explanation describes the API; it does not validate your dataset or modeling assumptions.",
             ),
             failure_modes=(
                 "Requesting an unknown level string raises rather than silently defaulting.",
-                "A beginner layer whose concept key no longer exists fails at import.",
+                "Reading only a short summary can miss assumptions needed for interpretation.",
             ),
             anti_patterns=(
-                "Writing a separate beginner document that will drift from the technical note.",
-                "Treating 'advanced' as the real explanation and 'beginner' as marketing.",
+                "Running an example without checking its data roles and prerequisite operations.",
+                "Skipping assumptions because an operation has a simple interface.",
             ),
             worked_example_pattern=(
                 "session.explain('split') -> read .beginner; session.learn('data-splitting').",

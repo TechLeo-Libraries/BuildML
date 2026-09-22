@@ -63,6 +63,15 @@ print(ev.metrics)
 session.probabilistic.save_bundle("artifacts/probabilistic_bundle")
 ```
 
+Coverage statements require exchangeable calibration and future scores and
+learning confined to the fitting subset. A train-only carve does not establish
+these assumptions: prior Session preprocessing may already have learned from
+the calibration rows, and label-stratified classification calibration needs
+its own justification. Validate that design before relying on nominal coverage.
+The native cutoff rejects nonfinite scores and calibration samples too small
+to support a finite interval at the requested alpha; add calibration rows or
+choose a supported alpha.
+
 On native and NGBoost, conformal carves a calibration subset from
 **train only** (stratified for classification). MAPIE owns conformal
 calibration internally: split carve, CV+, or jackknife+. Holdout is
@@ -72,6 +81,16 @@ for scoring intervals, not for fitting the quantile.
 default to test. `predict` defaults to `return_std=True` and
 `return_proba=True`. Do not retune `alpha` or the conformal fraction
 against a locked test set unless you declared that protocol.
+
+Native conformal plans store one calibrated cutoff, and modern MAPIE fixes
+confidence at fit time. Prediction and evaluation reject a different `alpha`
+for these plans; refit/calibrate for the new value. Gaussian
+posterior-standard-deviation intervals can be recomputed at a new alpha.
+Evaluation retains interval warnings and reports the selected population.
+`partition="train"` and `partition="all"` are diagnostic scores that can
+include fitted/calibration rows. A current test/validation label alone does
+not establish independence after loading a bundle or changing data/splits;
+check the evaluation data against the original model provenance.
 
 ## Backends
 

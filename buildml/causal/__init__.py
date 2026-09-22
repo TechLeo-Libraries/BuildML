@@ -1,22 +1,6 @@
 """Causal ML domain (assumption-declared backdoor ATE).
 
-Phase coverage (internal tracker: depth-first; do not spray stubs)
-------------------------------------------------------------------
-Phase 1 (**complete**): unsupervised → ensembles → AutoML → forecasting → anomaly.
-
-Phase 2:
-  1–8. Semi-supervised → … → Bayesian / probabilistic: done.
-  9. Causal ML: **this module** (PASS vs Phase-1 bar).
-  10. Graph ML / GNNs: see ``buildml.graph``.
-  Next: **Evolutionary algorithms** (search/HPO backend: not swarm zoo).
-  Later: symbolic, CBR, IL+RL, TDA, recommenders / LTR / KG / optimisation /
-  synthetic / NLP-CV deepenings. Speech: ASR keep/improve; TTS out.
-
-Explicit non-goals (no product surfaces): neuromorphic/SNN, swarm zoo,
-digital twins, AV stack, multi-agent world sims, TTS, robotics/control product,
-full COCO detection/segmentation suite.
-
-Honesty (this package):
+Behavior and limitations:
   - Requires an explicit ``CausalAssumptions`` object (treatment, outcome,
     confounders, estimand=ATE, backdoor identification, and acknowledgements
     of unconfoundedness + positivity). Estimation **refuses** without it.

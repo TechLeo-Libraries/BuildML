@@ -39,7 +39,7 @@ class FederatedSessionMixin:
     ) -> FederatedFitResult:
         """Simulate federated averaging on this Session train clients.
 
-        Session facade over :func:`buildml.session.federated_ops.fit_federated_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.federated_ops.fit_federated_op`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------
@@ -77,7 +77,7 @@ class FederatedSessionMixin:
     ) -> FederatedEvalResult:
         """Evaluate the global federated model on a holdout partition.
 
-        Session facade over :func:`buildml.session.federated_ops.evaluate_federated_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.federated_ops.evaluate_federated_op`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------
@@ -104,7 +104,7 @@ class FederatedSessionMixin:
     ) -> FederatedPredictResult:
         """Predict with the global federated model without local updates.
 
-        Session facade over :func:`buildml.session.federated_ops.predict_federated_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.federated_ops.predict_federated_op`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------
@@ -171,7 +171,7 @@ class FederatedSessionMixin:
     def save_federated_bundle(self, path: str | Path) -> Path:
         """Persist the active federated plan as ``buildml.federated_bundle.v1``.
 
-        Session facade over :func:`buildml.session.federated_ops.save_federated_bundle_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.federated_ops.save_federated_bundle_op`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------
@@ -193,7 +193,7 @@ class FederatedSessionMixin:
     ) -> Path:
         """Export federated round metrics to JSON for audit and teaching overlays.
 
-        Session facade over :func:`buildml.session.federated_ops.export_round_history_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.federated_ops.export_round_history_op`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------
@@ -214,7 +214,7 @@ class FederatedSessionMixin:
     def load_federated_bundle(self, path: str | Path, *, trusted: bool = False) -> Session:
         """Load a federated-learning bundle into this Session.
 
-        Session facade over :func:`buildml.session.federated_ops.load_federated_bundle_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.federated_ops.load_federated_bundle_op`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------

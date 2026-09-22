@@ -105,7 +105,7 @@ DL_NOTES: dict[str, ConceptNote] = {
         _note(
             key="training-curves",
             title="Training curves",
-            summary="Epoch loss/metric trajectories need device, monitor partition, and honesty limits beside the plot.",
+            summary="Epoch loss/metric trajectories need device, monitor partition, and limitations beside the plot.",
             definition=(
                 "A training curve is the time series of train (and optional validation) losses or "
                 "metrics across epochs, optionally with learning-rate steps from a scheduler."

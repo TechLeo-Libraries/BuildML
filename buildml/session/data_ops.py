@@ -1424,7 +1424,7 @@ def sync_native(session) -> "Session":
     )
     return cast("Session", session)
 def metadata(session) -> dict[str, Any]:
-    """Take a serialisable snapshot of everything the session knows.
+    """Collect the session's dataset metadata and operation history.
 
     Returns the session's state as plain dictionaries and lists: no
     BuildML objects: so it can be written to JSON, logged, compared
@@ -1441,7 +1441,8 @@ def metadata(session) -> dict[str, Any]:
         Whether a dataset is attached, the ingest report, the split plan,
         the full operation history, the checkpoint reattach outcome, and
         the dataset's own metadata (schema, roles, row count, engine).
-        Contains no row data, so it is safe to log.
+        Review source paths, column names, and recorded history values for
+        sensitive information before logging or sharing this metadata.
 
     Notes
     -----

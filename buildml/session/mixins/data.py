@@ -22,7 +22,7 @@ class DataSessionMixin:
     def close_native(self) -> None:
         """Close the DuckDB connection this session owns, if it has one.
 
-        Session facade over :func:`buildml.session.data_ops.close_native`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.data_ops.close_native`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         See Also
         --------
@@ -44,12 +44,15 @@ class DataSessionMixin:
     ) -> Session:
         """Create a session by loading a table, and inspect it while loading.
 
-        Session facade over :func:`buildml.session.data_ops.ingest_session`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.data_ops.ingest_session`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------
         Session
             A new session. It carries a dataset unless ``dry_run=True`` (or a
+            large-source refusal under dry run), and always carries
+            :attr:`ingest_report`. Read that report's ``warnings`` before
+            continuing; it is where scale and engine advice appears.
 
         See Also
         --------
@@ -96,7 +99,7 @@ class DataSessionMixin:
     def set_roles(self, mapping: dict[str, str | ColumnRole]) -> Session:
         """Declare what each column means, so later steps can act on it.
 
-        Session facade over :func:`buildml.session.data_ops.set_roles`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.data_ops.set_roles`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------
@@ -120,7 +123,7 @@ class DataSessionMixin:
     ) -> Session:
         """Randomly hold back rows so you can measure honest performance.
 
-        Session facade over :func:`buildml.session.data_ops.split`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.data_ops.split`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------
@@ -149,7 +152,7 @@ class DataSessionMixin:
     ) -> Session:
         """Adopt a split that was decided outside BuildML.
 
-        Session facade over :func:`buildml.session.data_ops.inject_split`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.data_ops.inject_split`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------
@@ -178,7 +181,7 @@ class DataSessionMixin:
     ) -> Session:
         """Split by entity, so no customer appears on both sides.
 
-        Session facade over :func:`buildml.session.data_ops.group_split`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.data_ops.group_split`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------
@@ -207,7 +210,7 @@ class DataSessionMixin:
     ) -> Session:
         """Train on the past and test on the future, as deployment will.
 
-        Session facade over :func:`buildml.session.data_ops.time_split`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.data_ops.time_split`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------
@@ -229,12 +232,14 @@ class DataSessionMixin:
     ) -> pd.DataFrame:
         """Pull out the rows belonging to one partition, as a DataFrame.
 
-        Session facade over :func:`buildml.session.data_ops.partition`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.data_ops.partition`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------
         pandas.DataFrame
             A copy of those rows with all current columns, reflecting every
+            transform applied so far. Because it is a copy, editing it does not
+            change the session's data.
 
         See Also
         --------
@@ -246,7 +251,7 @@ class DataSessionMixin:
     def assert_can_fit(self, partition: PartitionName = "train") -> Session:
         """Refuse to continue unless fitting is confined to the train rows.
 
-        Session facade over :func:`buildml.session.data_ops.assert_can_fit`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.data_ops.assert_can_fit`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------
@@ -263,12 +268,13 @@ class DataSessionMixin:
     def to_engine(self, engine: EngineName | str | None = None) -> Any:
         """Hand back the data as the chosen engine's own object.
 
-        Session facade over :func:`buildml.session.data_ops.to_engine`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.data_ops.to_engine`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------
         object
             A ``pandas.DataFrame``, ``polars.DataFrame``, or DuckDB relation,
+            depending on the engine.
 
         See Also
         --------
@@ -287,7 +293,7 @@ class DataSessionMixin:
     ) -> Path:
         """Save the whole session so you can stop and pick up where you left off.
 
-        Session facade over :func:`buildml.session.data_ops.checkpoint_save`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.data_ops.checkpoint_save`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------
@@ -311,7 +317,7 @@ class DataSessionMixin:
     def checkpoint_load(cls, path: str | Path, *, data_only: bool = False, trusted: bool = False) -> Session:
         """Restore a saved session and check the data still matches.
 
-        Session facade over :func:`buildml.session.data_ops.checkpoint_load_session`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.data_ops.checkpoint_load_session`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------
@@ -330,7 +336,7 @@ class DataSessionMixin:
     ) -> Session:
         """Replace this session's state from a checkpoint, in place.
 
-        Session facade over :func:`buildml.session.data_ops.reattach`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.data_ops.reattach`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------
@@ -349,7 +355,7 @@ class DataSessionMixin:
     def to_pandas(self) -> pd.DataFrame:
         """Take the data out as a plain Pandas DataFrame.
 
-        Session facade over :func:`buildml.session.data_ops.to_pandas`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.data_ops.to_pandas`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------
@@ -366,7 +372,7 @@ class DataSessionMixin:
     def to_parquet(self, path: str | Path) -> Path:
         """Write the current data to a Parquet file.
 
-        Session facade over :func:`buildml.session.data_ops.to_parquet`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.data_ops.to_parquet`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------
@@ -383,7 +389,7 @@ class DataSessionMixin:
     def head(self, n: int = 5) -> pd.DataFrame:
         """Look at the first few rows.
 
-        Session facade over :func:`buildml.session.data_ops.head`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.data_ops.head`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------
@@ -400,7 +406,7 @@ class DataSessionMixin:
     def with_mode(self, mode: DataMode | str) -> Session:
         """Set whether data is held in memory or kept lazy.
 
-        Session facade over :func:`buildml.session.data_ops.with_mode`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.data_ops.with_mode`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------
@@ -417,7 +423,7 @@ class DataSessionMixin:
     def with_engine(self, engine: EngineName | str) -> Session:
         """Switch the compute engine backing the data.
 
-        Session facade over :func:`buildml.session.data_ops.with_engine`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.data_ops.with_engine`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------
@@ -434,7 +440,7 @@ class DataSessionMixin:
     def sync_native(self) -> Session:
         """Rebuild the engine's table from the current Pandas frame.
 
-        Session facade over :func:`buildml.session.data_ops.sync_native`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.data_ops.sync_native`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------
@@ -449,14 +455,18 @@ class DataSessionMixin:
         return cast("Session", data_ops.sync_native(self))
 
     def metadata(self) -> dict[str, Any]:
-        """Take a serialisable snapshot of everything the session knows.
+        """Collect the session's dataset metadata and operation history.
 
-        Session facade over :func:`buildml.session.data_ops.metadata`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.data_ops.metadata`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------
         dict
             Whether a dataset is attached, the ingest report, the split plan,
+            the full operation history, the checkpoint reattach outcome, and
+            the dataset's own metadata (schema, roles, row count, engine).
+            Review source paths, column names, and recorded history values for
+            sensitive information before logging or sharing this metadata.
 
         See Also
         --------

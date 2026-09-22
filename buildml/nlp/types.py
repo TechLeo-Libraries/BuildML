@@ -60,9 +60,9 @@ DEFAULT_NORMALIZE_STEPS: tuple[NormalizeStep, ...] = (
 class TextNormalizeConfig:
     """Deterministic, stateless text-normalization knobs.
 
-    Normalization never learns anything from the corpus, so applying it before a
-    split cannot leak. Vocabulary-bearing steps (stopwords, vectorizer fitting)
-    live in :class:`NlpVectorizeConfig` and are train-only.
+    A fixed normalization plan learns no corpus statistics. Select its settings
+    without using test performance. Corpus-fitted vocabulary and vectorizer
+    statistics live in :class:`NlpVectorizeConfig` and are train-only.
     """
 
     steps: tuple[NormalizeStep, ...] = DEFAULT_NORMALIZE_STEPS

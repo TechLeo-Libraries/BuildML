@@ -6,7 +6,7 @@ pip install "buildml[torch]"
 
 Same Session, different fit. `session.dl.fit` does not replace
 `session.fit`. Loaders need a split. A built-in MLP is used when you omit
-a module. Zoo weights default to `mock`. Speech ASR without
+a module. Backbone weights default to `mock`. Speech ASR without
 `buildml[speech]` is a disclosed stub. Foundation-model pretrain is
 refused.
 
@@ -199,7 +199,7 @@ asr = speech.dl.transcribe(audio_column="audio", backend="stub")
 speech.dl.domain_adapt_speech(epochs=5, device="cpu", audio_column="audio")
 # speech.dl.refuse_speech_pretrain()  # honest refuse for FM-from-scratch asks
 
-# Pretrained backbone hooks (mock weights = CI-safe; not a full zoo product)
+# Pretrained backbone hooks (mock weights = CI-safe; only the documented architectures are supported)
 # pip install "buildml[pretrained]"  # vision+speech extras
 # from buildml.dl.zoo import list_pretrained_backbones
 # print(list_pretrained_backbones())  # resnet34/50, vit_b_32, hubert_base, whisper_base_encoder, ...

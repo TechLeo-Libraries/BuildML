@@ -1,15 +1,15 @@
 """Check whether train and test actually came from the same distribution.
 
-The premise behind every holdout evaluation is that the test partition looks
-like the training partition, drawn from the same process. When that fails, the
-test score stops estimating future performance and starts measuring something
-else entirely.
+A holdout score describes performance on its evaluation population. Differences
+between training and test distributions can affect how well that score transfers
+to deployment. A deliberately shifted or temporal holdout may be exactly the
+evaluation needed for the intended use.
 
 It fails more often than people expect. A time-based split where behaviour
 changed mid-period. A random split that happened, by chance, to put most of a
 rare category on one side. A concatenation of two data sources where the second
-was collected differently. Each produces a test score that is wrong in a
-direction you cannot predict.
+was collected differently. Each can change the interpretation of a score; whether the holdout remains
+relevant depends on the deployment population and evaluation objective.
 
 This is the one analyzer that reads the split, and it is worth running before
 you trust any evaluation number.
@@ -42,16 +42,16 @@ def analyze_drift(
 
     Two tests, one per kind of column. Numeric columns get a two-sample
     Kolmogorov-Smirnov test, which compares the whole shape of the distribution
-    rather than just the mean: a column with the same average and twice the
-    variance is caught. Categorical columns get Jensen-Shannon divergence
+    rather than just the mean; it can detect differences in spread as well
+    as location, subject to sample size and the configured thresholds. Categorical columns get Jensen-Shannon divergence
     between the category frequencies, a bounded symmetric measure where 0 means
     identical and 1 means no overlap.
 
     The numeric flag requires both statistical significance (p below 0.01) and
     practical size (KS statistic above 0.1), and requiring both is the point.
     With 100,000 rows, a p-value alone flags differences far too small to
-    matter; with 200 rows, a large difference may not reach significance. Either
-    criterion alone produces a report nobody can act on.
+    matter; with 200 rows, a large difference may not reach significance. The two criteria
+    form a screening convention rather than a guarantee of operational impact.
 
     Parameters
     ----------
@@ -63,8 +63,9 @@ def analyze_drift(
     feature_columns:
         Which columns to check. Defaults to everything present in both
         partitions. Restrict this to the role-valid features, or you will get
-        drift reports on identifier columns, which always drift and never
-        matter.
+        drift reports on identifiers whose distribution may mainly reflect
+        indexing or collection practices. Such changes may still be relevant
+        to data provenance even when the identifiers are excluded from modeling.
 
     Returns
     -------
@@ -72,7 +73,7 @@ def analyze_drift(
         ``available`` is ``False`` with a ``reason`` when there is no split.
         Otherwise: ``numeric_drift`` and ``categorical_drift``: up to 40 each,
         sorted worst first. ``flagged_columns`` and ``flagged_count``: those
-        that crossed both thresholds. ``train_rows``, ``test_rows``,
+        meeting the numeric KS/p-value criteria or categorical JS threshold. ``train_rows``, ``test_rows``,
         ``feature_columns_analyzed`` for provenance. ``settings``: the tests
         and thresholds in words, so a report is readable without this docstring.
         ``summary``: a sentence.
@@ -115,10 +116,12 @@ def analyze_drift(
     train = train[selected]
     test = test[selected]
     numeric_drift = []
+    skipped_columns: dict[str, str] = {}
     for col in train.select_dtypes(include="number").columns.astype(str):
-        a = train[col].dropna()
-        b = test[col].dropna()
+        a = train[col].replace([np.inf, -np.inf], np.nan).dropna()
+        b = test[col].replace([np.inf, -np.inf], np.nan).dropna()
         if len(a) < 5 or len(b) < 5:
+            skipped_columns[col] = "Fewer than five finite observations in train or test"
             continue
         stat, p = ks_2samp(a, b)
         mean_shift = (
@@ -135,16 +138,21 @@ def analyze_drift(
                 "flag": bool(p < 0.01 and abs(stat) > 0.1),
                 "train_n": int(len(a)),
                 "test_n": int(len(b)),
+                "train_nonfinite": int(train[col].isin([np.inf, -np.inf]).sum()),
+                "test_nonfinite": int(test[col].isin([np.inf, -np.inf]).sum()),
             }
         )
     numeric_drift.sort(key=lambda item: item["ks_stat"], reverse=True)
 
     categorical_drift = []
-    for col in train.select_dtypes(exclude="number").columns.astype(str)[:30]:
+    categorical_columns = list(train.select_dtypes(exclude="number").columns.astype(str))
+    skipped_columns.update({col: "Categorical analysis cap of 30 columns" for col in categorical_columns[30:]})
+    for col in categorical_columns[:30]:
         a = train[col].astype(str).value_counts(normalize=True)
         b = test[col].astype(str).value_counts(normalize=True)
         keys = sorted(set(a.index) | set(b.index))
         if not keys:
+            skipped_columns[col] = "No category observations"
             continue
         pa = np.array([a.get(k, 0.0) for k in keys], dtype=float)
         pb = np.array([b.get(k, 0.0) for k in keys], dtype=float)
@@ -169,6 +177,15 @@ def analyze_drift(
     categorical_drift.sort(key=lambda item: item["js_divergence"], reverse=True)
 
     flags = [r for r in numeric_drift if r["flag"]] + [r for r in categorical_drift if r["flag"]]
+    if not numeric_drift and not categorical_drift:
+        return {
+            "available": False,
+            "reason": "No eligible columns with sufficient observations for drift analysis",
+            "feature_columns_analyzed": [],
+            "skipped_columns": skipped_columns,
+            "train_rows": int(len(train)),
+            "test_rows": int(len(test)),
+        }
     return {
         "available": True,
         "numeric_drift": numeric_drift[:40],
@@ -177,7 +194,8 @@ def analyze_drift(
         "flagged_count": len(flags),
         "train_rows": int(len(train)),
         "test_rows": int(len(test)),
-        "feature_columns_analyzed": selected,
+        "feature_columns_analyzed": [row["column"] for row in numeric_drift + categorical_drift],
+        "skipped_columns": skipped_columns,
         "settings": {
             "numeric_test": "two-sample Kolmogorov-Smirnov",
             "numeric_flag": "pvalue < 0.01 and KS statistic > 0.1",

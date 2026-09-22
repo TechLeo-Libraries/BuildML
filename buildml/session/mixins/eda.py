@@ -20,6 +20,7 @@ class EdaSessionMixin:
     def eda(
         self,
         *,
+        partition: Literal["all", "train", "validation", "test"] = "all",
         include_plots: bool = False,
         show: bool = False,
         sample_rows: int | None = None,
@@ -31,12 +32,14 @@ class EdaSessionMixin:
     ) -> EDAReport:
         """Understand the data before you model it.
 
-        Session facade over :func:`buildml.session.eda_ops.eda`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.eda_ops.eda`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------
         ~buildml.eda.report.EDAReport
             The findings, their interpretation, the recommendations drawn from
+            them, and paths to anything exported. Also stored on
+            :attr:`last_eda`.
 
         See Also
         --------
@@ -45,6 +48,7 @@ class EdaSessionMixin:
         """
         return cast("EDAReport", eda_ops.eda(
             self,
+            partition=partition,
             include_plots=include_plots,
             show=show,
             sample_rows=sample_rows,
@@ -69,12 +73,14 @@ class EdaSessionMixin:
     ) -> EDAAppHandle:
         """Explore the data interactively in a browser instead of on paper.
 
-        Session facade over :func:`buildml.session.eda_ops.eda_app`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.eda_ops.eda_app`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------
         ~buildml.dashboard.launch.EDAAppHandle
             A handle exposing ``url``, ``is_running``, and ``stop()``. Call
+            ``stop()`` when finished: a non-blocking server keeps running
+            until you do.
 
         See Also
         --------
@@ -107,7 +113,7 @@ class EdaSessionMixin:
     ) -> EDAAppHandle:
         """Open the interactive EDA studio: an alias for :meth:`eda_app`.
 
-        Session facade over :func:`buildml.session.eda_ops.open_eda_dashboard`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.eda_ops.open_eda_dashboard`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------

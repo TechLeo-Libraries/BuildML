@@ -1,4 +1,4 @@
-"""Cross-validation and hyperparameter search that do not quietly lie to you.
+"""Cross-validation and hyperparameter search with explicit preprocessing scope.
 
 A single train/test split gives one number, and that number moves: sometimes a
 lot: depending on which rows happened to land where. Cross-validation replaces
@@ -175,7 +175,9 @@ class CVScoreResult:
         ``'classification'`` or ``'regression'``.
     scoring_metric:
         The headline metric. Defaults to F1-weighted for classification and R²
-        for regression.
+        for regression. Classification supports ``accuracy``, ``balanced_accuracy``,
+        ``f1_weighted``, and ``f1_macro``; regression supports ``mae``, ``mse``,
+        ``rmse``, and ``r2``. Other names raise ``ValidationError``.
     cv_strategy:
         Which folding scheme ran: k-fold, stratified, group, stratified-group,
         or time. Worth checking: an inappropriate strategy silently inflates
@@ -868,13 +870,13 @@ def _refuse_session_global_cv_leakage(
         recipe_note = (
             " A fold-local PreprocessRecipe was provided, but Session data is already "
             "transformed with train-global statistics: the recipe cannot rebuild from "
-            "raw/unpoisoned rows. Re-ingest or checkpoint_load an unpoisoned frame, then "
+            "raw rows before preprocessing. Re-ingest or checkpoint_load a frame before preprocessing, then "
             "use fold-local recipes without Session-global impute/encode/scale/select/…"
             " first."
         )
     else:
         recipe_note = (
-            " Pass preprocess=PreprocessRecipe(...) on unpoisoned data for fold-local "
+            " Pass preprocess=PreprocessRecipe(...) on data before preprocessing for fold-local "
             "refits, or set allow_session_global_preprocess=True to override explicitly "
             "(scores remain leakage-biased)."
         )
@@ -1019,7 +1021,7 @@ def cv_score(
         dataset, split_plan, "train"
     )
     resolved_task = _infer_task(y_train, task, estimator)
-    metric = scoring_metric or ("r2" if resolved_task == "regression" else "f1_weighted")
+    metric = _resolve_cv_metric(scoring_metric, resolved_task)
 
     held_out: list[str] = ["test"]
     if split_plan.validation_indices:
@@ -2128,7 +2130,9 @@ def nested_cv_score(
     cv_strategy:
         Folding scheme, shared by both loops.
     scoring_metric:
-        Reported by the outer loop and ranked by the inner.
+        Reported by the outer loop and ranked by the inner. Supports
+        ``accuracy``, ``balanced_accuracy``, ``f1_weighted``, and ``f1_macro``
+        for classification; ``mae``, ``mse``, ``rmse``, and ``r2`` for regression.
     groups:
         Explicit group labels, aligned to the train partition.
     preprocess:
@@ -2274,7 +2278,7 @@ def nested_cv_score(
         dataset, split_plan, "train"
     )
     resolved_task = _infer_task(y_train, task, estimator)
-    metric = scoring_metric or ("r2" if resolved_task == "regression" else "f1_weighted")
+    metric = _resolve_cv_metric(scoring_metric, resolved_task)
     weight_col = weight_column(dataset)
 
     held_out: list[str] = ["test"]
@@ -2554,9 +2558,9 @@ def nested_cv_score(
     ]
     if session_global_override:
         recommendations.append(
-            "allow_session_global_preprocess=True was set; Session-global preprocess "
-            "poisoned folds. Re-ingest unpoisoned data before fold-local "
-            "PreprocessRecipe CV next time."
+            "allow_session_global_preprocess=True was set; Session-global preprocessing "
+            "affected fold evaluation. Re-ingest the data without fitted preprocessing, "
+            "then use fold-local PreprocessRecipe CV."
         )
     elif preprocess is not None and not preprocess.is_empty():
         recommendations.append(
@@ -2821,7 +2825,7 @@ def _finalize_search_result(
     if session_global_override:
         recommendations.append(
             "allow_session_global_preprocess=True was set; Session preprocess was "
-            "train-global. Re-ingest unpoisoned data, then use fold-local "
+            "train-global. Re-ingest data before preprocessing, then use fold-local "
             "PreprocessRecipe without Session.impute/scale before search."
         )
     if best.std_score > abs(best.mean_score) * 0.15 and abs(best.mean_score) > 1e-9:
@@ -3333,6 +3337,21 @@ def _resolve_splitter(
     raise ValidationError(f"Unknown cv_strategy '{cv_strategy}'")
 
 
+def _resolve_cv_metric(metric: str | None, task: str) -> str:
+    supported = (
+        {"mae", "mse", "rmse", "r2"}
+        if task == "regression"
+        else {"accuracy", "balanced_accuracy", "f1_weighted", "f1_macro"}
+    )
+    selected = metric or ("r2" if task == "regression" else "f1_weighted")
+    if selected not in supported:
+        raise ValidationError(
+            f"Unsupported CV scoring_metric {selected!r} for {task}. "
+            f"Choose from: {', '.join(sorted(supported))}."
+        )
+    return selected
+
+
 def _score_predictions(
     task: Literal["classification", "regression"],
     y_true: pd.Series,
@@ -3395,14 +3414,14 @@ def _cv_limitations(
         tips.append(
             "Session-global target encoding uses out-of-fold values on train, but still "
             "freezes full-train category maps before CV; prefer fold-local "
-            "PreprocessRecipe(encode='target') on unpoisoned data when selection itself "
+            "PreprocessRecipe(encode='target') on data before preprocessing when selection itself "
             "uses CV."
         )
         if preprocess is not None and not preprocess.is_empty():
             tips.append(
                 "A fold-local PreprocessRecipe was also provided, but Session data was "
                 "already transformed with train-global statistics: the recipe does not "
-                "rebuild from raw/unpoisoned rows."
+                "rebuild from raw rows before preprocessing."
             )
     if preprocess is not None and not preprocess.is_empty() and not session_preprocess_applied:
         tips.append(
@@ -3499,7 +3518,7 @@ def _cv_recommendations(
     if session_preprocess_applied:
         tips.append(
             "This run used allow_session_global_preprocess=True. For honest selection, "
-            "re-ingest or reattach unpoisoned data, pass preprocess=PreprocessRecipe(...), "
+            "re-ingest or reattach data before preprocessing, pass preprocess=PreprocessRecipe(...), "
             "and avoid Session-global impute/encode/scale/select/outliers/text/reduce "
             "before CV."
         )

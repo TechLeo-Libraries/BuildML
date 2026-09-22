@@ -43,7 +43,7 @@ SELFSUPERVISED_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.ssl.fit_pretext(method='masked_tabular', mask_rate=0.3, epochs=50)",
+            "session.ssl.fit_pretext(method='masked_tabular', mask_ratio=0.3, epochs=50)",
             "session.ssl.finetune_head(estimator=LogisticRegression(max_iter=1000))",
             "session.ssl.evaluate(partition='validation')",
         ),
@@ -93,8 +93,8 @@ SELFSUPERVISED_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         example=(
             "session.ssl.fit_pretext(",
-            "    method='masked_tabular', mask_rate=0.25,",
-            "    embedding_dim=32, epochs=50, random_state=0,",
+            "    method='masked_tabular', mask_ratio=0.25,",
+            "    latent_dim=32, epochs=50, random_state=0,",
             ")",
             "session.ssl.transform()   # embedding columns join the frame",
         ),
@@ -146,8 +146,8 @@ SELFSUPERVISED_BEGINNER: dict[str, BeginnerLayer] = _index(
             "# tabular:",
             "session.ssl.fit_pretext(method='masked_tabular', epochs=50)",
             "# images / audio / speech:",
-            "session.dl.load_backbone(name='resnet18', freeze=True)",
-            "session.dl.attach_head(num_classes=5)",
+            "session.dl.load_backbone('vision', architecture='resnet18', weights='pretrained', freeze=True)",
+            "session.dl.attach_head(n_classes=5)",
         ),
         check=(
             "Is there a pretrained model whose training domain resembles your data?",
@@ -195,8 +195,8 @@ SELFSUPERVISED_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         example=(
             "session.ssl.save_bundle('artifacts/tab-encoder')",
-            "job = Session.ingest(new_frame).ssl.load_bundle('artifacts/tab-encoder')",
-            "job.ssl.transform()   # embeddings for previously unseen rows",
+            "job = Session.ingest(new_frame).ssl.load_bundle('artifacts/tab-encoder', trusted=True)",
+            "job.ssl.transform(partition='all')   # embeddings for previously unseen rows",
         ),
         check=(
             "Does your bundle include the head, or only the encoder?",

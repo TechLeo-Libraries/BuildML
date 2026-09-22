@@ -1,16 +1,6 @@
 """Anomaly / fraud detection domain (train-fit / holdout-score Session path).
 
-Phase coverage (internal tracker: depth-first; do not spray stubs)
-------------------------------------------------------------------
-Phase 1 (**complete** with this package):
-  1. Unsupervised learning: done (see ``buildml.unsupervised``).
-  2. Ensemble learning: done (see ``buildml.ensemble``).
-  3. AutoML: done (see ``buildml.automl``).
-  4. Time-series forecasting: done (see ``buildml.forecasting``).
-  5. Anomaly / fraud detection: dedicated path beyond EDA IsolationForest.
-     **This module.**
-
-Industry depth (R5.2):
+Supported backends:
   - Core sklearn: IsolationForest, LOF, One-Class SVM.
   - PyOD (``buildml[anomaly-industry]``): HBOS, COPOD, ECOD, DeepSVDD.
   - Torch autoencoder reconstruction error (``buildml[torch]``).

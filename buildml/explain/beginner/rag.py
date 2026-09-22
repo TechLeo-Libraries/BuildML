@@ -45,7 +45,7 @@ RAG_BEGINNER: dict[str, BeginnerLayer] = _index(
         example=(
             "session.rag.ingest_corpus('docs/')          # real corpus only",
             "session.rag.embed_and_index()",
-            "report = session.rag.evaluate(questions=eval_questions, gold=gold_passages, k=5)",
+            "report = session.rag.evaluate(qrels=eval_qrels, k=5)",
             "print(report.recall_at_k, report.mrr)",
         ),
         check=(
@@ -94,8 +94,8 @@ RAG_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         example=(
             "session.rag.ingest_corpus('docs/')",
-            "session.rag.chunk(chunk_size=512, chunk_overlap=64)",
-            "session.rag.embed_and_index(model_name='all-MiniLM-L6-v2')",
+            "session.rag.chunk(size=512, overlap=64)",
+            "session.rag.embed_and_index(embedder='sentence-transformers/all-MiniLM-L6-v2')",
             "hits = session.rag.retrieve('how do refunds work?', k=5)",
         ),
         check=(
@@ -143,7 +143,7 @@ RAG_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "report = session.rag.evaluate(questions=qs, gold=gold, k=5)",
+            "report = session.rag.evaluate(qrels=qrels, k=5)",
             "print(report.recall_at_k, report.mrr, report.ndcg_at_k)",
             "# low recall -> fix chunking or embeddings, not the prompt",
         ),

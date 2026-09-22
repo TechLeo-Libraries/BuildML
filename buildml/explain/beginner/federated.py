@@ -47,7 +47,7 @@ FEDERATED_BEGINNER: dict[str, BeginnerLayer] = _index(
             "session.set_roles({'hospital_id': 'group', 'readmitted': 'target'})",
             "session.federated.fit(method='fedavg', n_rounds=5, random_state=0)",
             "report = session.federated.evaluate(partition='validation')",
-            "print(report.global_metrics, report.per_client_metrics)",
+            "print(report.metrics, report.per_client_metrics)",
         ),
         check=(
             "How many clients do you have, and do any of them have very few rows?",
@@ -242,8 +242,8 @@ FEDERATED_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         example=(
             "session.federated.save_bundle('artifacts/consortium-model')",
-            "svc = Session.ingest(new_rows).federated.load_bundle('artifacts/consortium-model')",
-            "svc.federated.predict()",
+            "svc = Session.ingest(new_rows).federated.load_bundle('artifacts/consortium-model', trusted=True)",
+            "svc.federated.predict(partition='all')",
         ),
         check=(
             "Does the serving data carry the same feature and client columns?",

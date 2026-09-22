@@ -50,7 +50,7 @@ These stay Session-global and are never fold-local:
 
 `allow_session_global_preprocess=True` is an override for a known-biased
 baseline. The score stays leakage-biased. Re-ingest (or
-`checkpoint_load` an unpoisoned frame) if you want an honest number.
+`checkpoint_load` a frame saved before fitted preprocessing) before fold-local evaluation.
 
 ## Good: recipe on clean data
 
@@ -109,7 +109,7 @@ without a `group` role fails clearly.
 session.impute(strategy="median")
 session.scale(method="standard")
 
-# LeakageError: the frame is already poisoned for fold-local CV.
+# LeakageError: Session-global fitted preprocessing has already transformed this frame.
 try:
     session.cv_score(
         LogisticRegression(max_iter=500),
@@ -167,7 +167,7 @@ print(nested.mean_metrics[nested.scoring_metric])
 `encode="target"` inside a recipe fits smoothed means on **fold-train
 labels only**. Eval rows never contribute. Session-global
 `session.encode(method="target")` fits on full train: fine for a final
-model after the split, poison for a later `cv_score`.
+model after the split, but can bias a later `cv_score`.
 
 ```python
 cv = session.cv_score(

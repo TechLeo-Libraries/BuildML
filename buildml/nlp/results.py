@@ -1115,9 +1115,9 @@ class NlpSummaryResult:
     """Shortened documents, built from sentences the originals already contained.
 
     These summaries are extractive: sentences are scored and the best ones
-    kept. Nothing is rewritten and no sentence is invented, which means the
-    summary cannot say anything the document did not: a real guarantee, and
-    the reason generative summarisation is out of scope here.
+    kept. No new sentences are generated. Excerpts can still omit context or
+    qualifications, and source statements may themselves be inaccurate;
+    review the summary before relying on it.
 
     The cost is that the result reads like excerpts rather than prose, and a
     document whose meaning is spread across many sentences summarises badly.

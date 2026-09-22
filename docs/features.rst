@@ -260,15 +260,15 @@ Optional stacks (same Session)
 
 **Pretrained backbones** (``buildml[vision]`` / ``[speech]`` / ``[pretrained]``)
    Curated ResNet / ViT / audio / speech hooks with
-   ``weights=none|mock|pretrained``. Not a full Hugging Face / TorchVision
-   zoo product.
+   ``weights=none|mock|pretrained``. Only the documented architectures
+   and weight sources are supported.
 
 **Serve** (``buildml[serve]``)
    Local FastAPI for classical pipeline bundles and TorchScript
    (``/health``, ``/metadata``, ``/predict``, ``/predict/batch``).
    Localhost bind by default. Not managed cloud IAM.
 
-**RAG** (``buildml[rag]``)
+**RAG** (core; ``buildml[rag]`` for semantic embeddings and reranking)
    Corpus ingest, retrieve, grounded generate with citations, evaluate,
    bundle. Hashing embeddings are the default; semantic embedders are
    optional. Not a hosted vector-DB product.
@@ -287,9 +287,9 @@ run without an explicit estimand. There is no out-of-core sklearn
 training mode. Checkpoints do not contain fitted models, and model
 bundles do not contain the Session dataset or split history.
 
-The honesty lines next to each domain ("not a full zoo", "not managed
-cloud IAM", "not FM-from-scratch") are product-scope boundaries around
-shipped paths. They are not stubs for missing APIs.
+Each domain lists its supported operations and limitations. Managed cloud
+identity, foundation-model pretraining, and hosted vector databases require
+external systems.
 
 Proof suite
 -----------

@@ -288,8 +288,9 @@ def normalize_document(text: Any, plan: TextNormalizePlan) -> str:
 
     Notes
     -----
-    **This step is stateless and learns nothing**, so unlike almost everything
-    else in the text path it cannot leak and is safe to run before splitting.
+    **This step learns no corpus statistics.** A fixed plan can be applied
+    before or after splitting. Select its settings without using test
+    performance; normalization does not remove pre-existing target leakage.
 
     **Order matters and is fixed by the plan's step order.** Stripping
     punctuation before stripping URLs, for instance, would leave the fragments

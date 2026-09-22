@@ -60,6 +60,18 @@ def test_cv_score_requires_split() -> None:
         session.cv_score(LogisticRegression(max_iter=200), cv=3)
 
 
+@pytest.mark.parametrize("operation", ["cv_score", "nested_cv_score"])
+def test_cv_rejects_unavailable_metric_before_fitting(operation: str) -> None:
+    session = Session.ingest(_cls_frame()).set_roles(
+        {"x1": "feature", "x2": "feature", "y": "target"}
+    ).split(test_size=0.2, stratify=True, random_state=0)
+    with pytest.raises(ValidationError, match="Unsupported CV scoring_metric.*roc_auc"):
+        getattr(session, operation)(
+            LogisticRegression(max_iter=200), scoring_metric="roc_auc",
+            **({"param_grid": {"C": [1.0]}} if operation == "nested_cv_score" else {}),
+        )
+
+
 def test_fold_local_preprocess_records_recipe() -> None:
     frame = _cls_frame(70)
     frame.loc[::7, "x1"] = np.nan

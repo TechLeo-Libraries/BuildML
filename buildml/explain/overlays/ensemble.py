@@ -104,7 +104,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         failures=("cv < 2, missing split, incompatible final_estimator.",),
         leakage=(
             "Using Session test rows to build stacking meta features is leakage.",
-            "Session-global preprocess before CV can still poison fold honesty: see leakage guides.",
+            "Session-global preprocessing before CV can leak information across folds: see leakage guides.",
         ),
         anti_patterns=(
             "Scoring meta features on the evaluation partition during fit.",

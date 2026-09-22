@@ -1,21 +1,12 @@
 """Synthetic-data systems (Session-shaped train-fitted tabular generators).
 
-Phase coverage (internal tracker: depth-first; do not spray stubs)
-------------------------------------------------------------------
-Phase 1–2 complete. Phase 3: Application systems:
-  Recommendation systems (**PASS**).
-  Search / LTR (**PASS**).
-  Knowledge graphs (**PASS**).
-  Optimisation / decision helpers (**PASS**).
-  **Synthetic-data systems (this module)**: **PASS** (Phase-1 bar + R6.10 industry).
-
-Industry depth (R6.10):
+Supported backends:
   - Native fallback: bootstrap / Gaussian copula / SMOTE wrap.
   - SDV CTGAN/TVAE/CopulaGAN (``buildml[synthetic-industry]``).
   - SDMetrics quality reports when extra installed; built-in KS/TV/corr always.
   - ``validate_synthetic`` built-in checks + optional GE lite when installed.
 
-Honesty (this package):
+Behavior and limitations:
   - Train-fitted generators only (never fit on validation/test).
   - Distinct from ``Session.resample`` (class-balance preprocess lineage).
   - ``evaluate_synthetic`` offers fidelity metrics or TSTR utility: disclosed.
@@ -23,7 +14,7 @@ Honesty (this package):
   - **Not** a differential-privacy product.
   - Core stays light; SDV stack is optional ``buildml[synthetic-industry]``.
 
-Lazy imports: keep the core import graph light.
+Optional dependencies are imported only when their backends are used.
 """
 
 from __future__ import annotations

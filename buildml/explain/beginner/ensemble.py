@@ -153,7 +153,7 @@ ENSEMBLE_BEGINNER: dict[str, BeginnerLayer] = _index(
             "session.ensemble.fit_blending(",
             "    estimators={'logreg': LogisticRegression(max_iter=1000),",
             "                'gbdt': HistGradientBoostingClassifier(random_state=0)},",
-            "    holdout_size=0.25, random_state=0,",
+            "    holdout_fraction=0.25, random_state=0,",
             ")",
             "session.ensemble.evaluate(partition='validation')",
         ),
@@ -203,7 +203,10 @@ ENSEMBLE_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         example=(
             "session.ensemble.save_bundle('artifacts/ensemble')",
-            "restored = Session.ingest(frame).ensemble.load_bundle('artifacts/ensemble')",
+            "frame = session.to_pandas()   # preserve the original indexed rows for evaluation/resumption",
+            "restored = Session.ingest(frame).ensemble.load_bundle('artifacts/ensemble', trusted=True)",
+            "restored.set_roles(session.dataset.roles)",
+            "restored.inject_split(train_indices=session.split_plan.train_indices, test_indices=session.split_plan.test_indices, validation_indices=session.split_plan.validation_indices)",
             "restored.ensemble.evaluate(partition='test')",
         ),
         check=(

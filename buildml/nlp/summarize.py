@@ -1,9 +1,9 @@
 """Shorten documents by choosing their most important sentences.
 
 Sentences are **selected**, never written. A summary here is a subset of the
-original document, which carries a guarantee worth having: it cannot state
-anything the document did not, because every word came from the document. No
-hallucination is possible when nothing is generated.
+original document; no new sentences are generated. Selected excerpts can still
+omit qualifications or context, and the source itself may be inaccurate.
+Review summaries for meaning and factual accuracy before relying on them.
 
 Generating prose needs a language model, and that lives in :mod:`buildml.ai`
 where the provider, the cost, and the prompt are all disclosed. It is

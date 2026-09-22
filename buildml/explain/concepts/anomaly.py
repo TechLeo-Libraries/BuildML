@@ -122,7 +122,7 @@ ANOMALY_NOTES: dict[str, ConceptNote] = {
             formal_idea=(
                 "Unsupervised: f ← fit(X_train). Novelty: f ← fit(X_train[y=normal]). "
                 "Both freeze f for holdout scoring. Novelty is semi-supervised in the "
-                "label-for-normal sense: not Phase-2 representation learning."
+                "label-for-normal sense; representation learning is a separate task."
             ),
             why_it_matters=(
                 "Using novelty without a honest normal-only subset leaks anomalies into the fit.",
@@ -175,7 +175,7 @@ ANOMALY_NOTES: dict[str, ConceptNote] = {
             ),
             why_it_matters=(
                 "Fraud-like tasks are almost always imbalanced.",
-                "Supervised mode reuses classical binary patterns but must keep the same honesty.",
+                "Supervised mode reuses classical binary patterns but must use the same held-out evaluation boundaries.",
             ),
             how_buildml_uses=(
                 "session.anomaly.evaluate fills labeled_metrics when a label/target is available.",
@@ -233,7 +233,7 @@ ANOMALY_NOTES: dict[str, ConceptNote] = {
                 "handle_outliers remains a preprocess fence path.",
             ),
             interpretation_rules=(
-                "Use EDA for teaching/exploration; use session.anomaly.fit for Session product claims.",
+                "Use EDA to screen and explore unusual rows; use session.anomaly.fit to fit a detector and evaluate held-out scores.",
                 "Cite bundle format when shipping a detector artifact.",
             ),
             assumptions=(
@@ -405,7 +405,7 @@ ANOMALY_NOTES: dict[str, ConceptNote] = {
             intuition="If the model cannot reconstruct a row well, that row did not look like training normals.",
             formal_idea="score(x) = ||x − decode(encode(x))||² with train-only encoder fit.",
             why_it_matters=("Nonlinear alternative to distance-based sklearn/PyOD paths.",),
-            how_buildml_uses=("session.anomaly.fit(backend='torch', method='autoencoder', epochs=...).",),
+            how_buildml_uses=("session.anomaly.fit(backend='torch', method='autoencoder', ae_epochs=...).",),
             interpretation_rules=("Read torch_present and epochs/disclosures in AnomalyPlan.",),
             assumptions=("Scaled numeric features; torch installed.",),
             failure_modes=("Under-trained AE; tiny train sets.",),

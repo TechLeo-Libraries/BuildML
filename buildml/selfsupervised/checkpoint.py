@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
@@ -22,9 +23,13 @@ from buildml.selfsupervised.results import (
 BUNDLE_FORMAT_V1 = "buildml.selfsupervised_bundle.v1"
 BUNDLE_FORMAT_V2 = "buildml.ssl_bundle.v2"
 BUNDLE_FORMAT = BUNDLE_FORMAT_V2
+_STATE_RESTORED_METHODS = {
+    "simclr_tabular", "byol_tabular", "vicreg_tabular", "mae_tabular",
+    "vae_tabular", "vision_ssl",
+}
 CHECKPOINT_BOUNDARY = (
     "Self-supervised bundles, semi-supervised bundles, Torch trainer bundles, "
-    "pretrained zoo backbones, classical pipeline bundles, RAG bundles, and "
+    "pretrained backbones, classical pipeline bundles, RAG bundles, and "
     "Session checkpoints are complementary, not interchangeable. "
     f"A self-supervised bundle ({BUNDLE_FORMAT_V2}) stores a train-fitted "
     "SelfSupervisedPlan (Torch or legacy sklearn encoder + feature contract) "
@@ -76,12 +81,20 @@ def save_ssl_bundle(
     destination = Path(path)
     destination.mkdir(parents=True, exist_ok=True)
     bundle_format = getattr(plan, "bundle_format", BUNDLE_FORMAT_V2)
-    payload = {"plan": plan, "head_plan": head_plan}
+    saved_state = _maybe_save_torch_state(destination, plan)
+    # Local Torch module classes cannot be pickled. Their architecture and
+    # weights are reconstructed from the separate state file during load.
+    # Copy the dataclass so saving never clears the live Session's encoder.
+    serialized_plan = (
+        replace(plan, encoder_=None)
+        if saved_state and plan.method in _STATE_RESTORED_METHODS else plan
+    )
+    payload = {"plan": serialized_plan, "head_plan": head_plan}
     joblib.dump(payload, destination / "ssl_plan.joblib")
-    _maybe_save_torch_state(destination, plan)
     meta: dict[str, Any] = {
         "format": bundle_format,
         "buildml_version": __version__,
+        "torch_state_saved": saved_state,
         "compatibility": CHECKPOINT_BOUNDARY,
         "plan": plan.to_dict(),
         "fit": None if fit_result is None else fit_result.to_dict(),
@@ -148,25 +161,30 @@ def load_ssl_bundle(path: str | Path, *, trusted: bool = False) -> tuple[SelfSup
         raise ValidationError("Loaded plan object is not a SelfSupervisedPlan")
     if head is not None and not isinstance(head, SSLHeadPlan):
         raise ValidationError("Loaded head_plan object is not an SSLHeadPlan")
-    _maybe_restore_torch_state(root, plan, trusted=trusted)
+    # Older bundles lack this flag and retain their original restore behavior.
+    # New non-Torch saves must not restore stale sidecars from a reused folder.
+    if meta.get("torch_state_saved", True):
+        _maybe_restore_torch_state(root, plan, trusted=trusted)
+    if plan.encoder_ is None:
+        raise ValidationError("Incomplete self-supervised bundle: encoder state is missing.")
     if fmt == BUNDLE_FORMAT_V1:
         plan.bundle_format = BUNDLE_FORMAT_V1  # type: ignore[attr-defined]
     return plan, head
 
 
-def _maybe_save_torch_state(destination: Path, plan: SelfSupervisedPlan) -> None:
+def _maybe_save_torch_state(destination: Path, plan: SelfSupervisedPlan) -> bool:
     encoder = plan.encoder_
     if hasattr(encoder, "state_dict") and callable(encoder.state_dict):
         try:
             state = encoder.state_dict()
         except ValidationError:
-            return
+            return False
         torch_path = destination / "encoder_torch.json"
         # Torch tensors saved separately
         from buildml.dl.extras import torch_available
 
         if not torch_available():
-            return
+            return False
         import torch
 
         payload_path = destination / "encoder_torch.pt"
@@ -175,6 +193,8 @@ def _maybe_save_torch_state(destination: Path, plan: SelfSupervisedPlan) -> None
             json.dumps({"path": "encoder_torch.pt", "method": plan.method}, indent=2),
             encoding="utf-8",
         )
+        return True
+    return False
 
 
 def _maybe_restore_torch_state(

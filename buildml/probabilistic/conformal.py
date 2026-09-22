@@ -36,17 +36,24 @@ def conformal_quantile(scores: np.ndarray, alpha: float) -> float:
     Raises
     ------
     ValidationError
-        When ``scores`` is empty or ``alpha`` is outside ``(0, 1)``.
+        When scores are empty or nonfinite, alpha is outside ``(0, 1)``, or
+        the calibration sample cannot support a finite cutoff at that level.
     """
     arr = np.asarray(scores, dtype=float).ravel()
     n = int(arr.size)
     if n < 1:
         raise ValidationError("Conformal calibration requires at least one score.")
+    if not np.isfinite(arr).all():
+        raise ValidationError("Conformal calibration scores must all be finite.")
     if not 0.0 < float(alpha) < 1.0:
         raise ValidationError(f"alpha must be in (0, 1); got {alpha}.")
     level = 1.0 - float(alpha)
     k = int(np.ceil((n + 1) * level))
-    k = min(max(k, 1), n)
+    if k > n:
+        raise ValidationError(
+            f"With {n} calibration scores, alpha={alpha} requires an unbounded "
+            f"conformal cutoff. Use more calibration rows or alpha >= {1 / (n + 1):.8g}."
+        )
     ordered = np.sort(arr)
     return float(ordered[k - 1])
 

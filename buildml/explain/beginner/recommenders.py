@@ -44,7 +44,7 @@ RECOMMENDER_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         example=(
             "session.recommender.fit(",
-            "    method='matrix_factorization', user_column='user_id',",
+            "    method='svd', user_column='user_id',",
             "    item_column='product_id', rating_column='rating', n_factors=32,",
             ")",
             "top = session.recommender.recommend(user_ids=['u_1042'], k=10)",
@@ -146,8 +146,8 @@ RECOMMENDER_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         example=(
             "report = session.recommender.evaluate(partition='test', k=10)",
-            "print(report.precision_at_k, report.recall_at_k, report.ndcg_at_k)",
-            "print(report.n_warm_users, report.n_cold_users)",
+            "print(report.metrics)",
+            "print(report.n_users_scored, report.n_cold_start_users)",
         ),
         check=(
             "Does your K match what the interface actually displays?",
@@ -195,7 +195,7 @@ RECOMMENDER_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         example=(
             "report = session.recommender.evaluate(partition='test', k=10)",
-            "print(report.n_cold_users, report.n_cold_items)",
+            "print(report.n_cold_start_users, report.warnings)",
             "print(report.disclosures)   # candidate set is the train catalogue",
         ),
         check=(
@@ -296,8 +296,8 @@ RECOMMENDER_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         example=(
             "session.recommender.save_bundle('artifacts/product-recs')",
-            "serving = Session.ingest(users_frame).recommender.load_bundle('artifacts/product-recs')",
-            "serving.recommend(user_ids=batch_ids, k=10)",
+            "serving = Session.ingest(users_frame).recommender.load_bundle('artifacts/product-recs', trusted=True)",
+            "serving.recommender.recommend(user_ids=batch_ids, k=10)",
         ),
         check=(
             "How old is the catalogue inside your deployed bundle?",

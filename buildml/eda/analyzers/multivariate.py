@@ -1,18 +1,17 @@
 """Find the redundancy that only shows up when you look at columns together.
 
-Pairwise correlation misses a whole class of problem. Three columns can each be
-weakly correlated with the others and still be perfectly redundant: if
-``total = subtotal + tax``, no single pair looks alarming, and the three
-together are linearly dependent. Coefficients in a linear model on such data are
-arbitrary, unstable, and uninterpretable.
+Pairwise correlations alone need not describe dependencies among several
+columns, such as ``total = subtotal + tax``. Without
+additional constraints, exact collinearity makes individual linear coefficients
+non-identifiable; near-collinearity can increase their uncertainty.
 
 Three views of that redundancy. Correlation clusters group columns that are
-transitively linked above a threshold, which is the quick answer to "which of
-these are measuring the same thing". VIF quantifies how well each column is
+transitively linked above a threshold, which identifies groups to inspect for
+shared linear structure. VIF quantifies how well each column is
 predicted by *all* the others, catching the multi-column case that pairs miss.
-PCA describes how much genuinely independent variation exists: if five
-components explain 99% of twenty columns, there are effectively five things
-being measured.
+PCA describes variance along orthogonal linear directions. Five components
+explaining 99% of standardized variance suggest a compact linear approximation,
+not five independent physical causes or guaranteed predictive sufficiency.
 
 See Also
 --------
@@ -42,18 +41,17 @@ def analyze_multivariate(
 
     *Correlation clusters* are built by union-find over pairs correlated above
     0.7 in absolute value, so the grouping is transitive: A with B and B with C
-    puts all three together even when A and C are not directly correlated. Each
-    cluster is a set of columns measuring roughly one thing, and usually a
-    candidate for keeping one.
+    puts all three together even when A and C are not directly correlated. A cluster
+    does not establish common meaning, equivalence, or redundancy for prediction.
 
     *VIF*: variance inflation factor: regresses each column on all the others
     and reports ``1 / (1 - R²)``. Above 5 is worth a look, above 10 is severe.
     This is the measure that catches the ``total = subtotal + tax`` case, where
     no pair is alarming.
 
-    *PCA* on standardised columns says how many independent directions there
-    really are. When the first three components explain 95% of twenty columns,
-    the data is three-dimensional wearing a twenty-column costume.
+    *PCA* on standardized columns reports variance captured by orthogonal
+    linear components. Three components explaining 95% retain that share of
+    sample variance; the remaining variance may still matter for prediction.
 
     Parameters
     ----------
@@ -79,16 +77,17 @@ def analyze_multivariate(
 
     Notes
     -----
-    **Rows with any missing value are dropped, and this can be brutal.**
+    **VIF and PCA use rows with no missing numeric values.**
     Complete-case analysis on twenty columns each 5% missing can leave a third
     of the rows. Compare ``complete_case_rows`` against the frame length before
-    reading anything else here; a large gap means these results describe an
-    unrepresentative subset.
+    interpreting results. A large gap reduces sample size and may introduce
+    selection bias, depending on the missingness process; it does not itself
+    prove that retained rows are unrepresentative.
 
-    **Collinearity hurts interpretation more than prediction.** A random forest
-    barely notices; a linear model's coefficients become meaningless. If you are
-    reading coefficients, this section matters. If you are only predicting, it
-    matters much less.
+    **Collinearity can affect coefficients and feature attribution.** Linear
+    coefficients may become unstable, while regularization can stabilize
+    predictions. Tree models may distribute importance across correlated
+    features. Check held-out performance and interpretation stability separately.
 
     **Only the first 20 numeric columns get a VIF**, and it needs at least five
     more rows than columns.

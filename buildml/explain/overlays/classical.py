@@ -900,12 +900,12 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
                 "preprocess",
                 "PreprocessRecipe | None",
                 "Fold-local dates/impute/encode/binning/scale/select/outliers recipe "
-                "on unpoisoned data.",
+                "on data without globally fitted transforms.",
             ),
             _p(
                 "allow_session_global_preprocess",
                 "bool",
-                "Explicit opt-in when Session-global preprocess already poisoned the frame. "
+                "Explicit opt-in when preprocessing was already fitted across cross-validation folds. "
                 "Default False refuses even if preprocess= is set.",
                 False,
             ),
@@ -923,9 +923,9 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         failures=("No split, invalid strategy roles, too few groups, or estimator/preprocess errors.",),
         leakage=(
             "Session-global impute/encode/scale/select/outliers/binning/dates/text/reduce "
-            "before CV poison folds; refused even when a fold-local PreprocessRecipe is "
+            "before CV can leak information across folds; refused even when a fold-local PreprocessRecipe is "
             "passed (recipes do not rebuild from raw rows). Opt in only via "
-            "allow_session_global_preprocess=True, or re-ingest unpoisoned data first.",
+            "allow_session_global_preprocess=True, or re-ingest data without globally fitted transforms first.",
             "Never include Session test indices in CV folds.",
             "Fold-local target encoding fits means on fold-train labels only.",
         ),
@@ -1010,7 +1010,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             _p(
                 "allow_session_global_preprocess",
                 "bool",
-                "Explicit opt-in when Session-global preprocess already poisoned the frame.",
+                "Explicit opt-in when preprocessing was already fitted across cross-validation folds.",
                 False,
             ),
         ),
@@ -1091,11 +1091,11 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             _p("cv_strategy", "str", "Fold builder when cv is an integer.", "auto"),
             _p("ranking_metric", "str | None", "Metric used to rank trials."),
             _p("groups", "Series | None", "Optional group labels aligned to train."),
-            _p("preprocess", "PreprocessRecipe | None", "Fold-local preprocess recipe on unpoisoned data."),
+            _p("preprocess", "PreprocessRecipe | None", "Fold-local preprocess recipe on data without globally fitted transforms."),
             _p(
                 "allow_session_global_preprocess",
                 "bool",
-                "Explicit opt-in when Session-global preprocess already poisoned the frame.",
+                "Explicit opt-in when preprocessing was already fitted across cross-validation folds.",
                 False,
             ),
             _p("refit", "bool", "Refit best params on full train and set fit_result.", True),
@@ -1121,7 +1121,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
         ),
         anti_patterns=("Expanding the grid after seeing test scores.",),
         state_changes=("Stores last_search; when refit=True, replaces active fit_result with the winner.",),
-        result_reading=("Compare best mean±std to the next trial and read limitations about preprocess honesty.",),
+        result_reading=("Compare best mean±std to the next trial and read limitations about preprocessing boundaries.",),
         next_steps=("Evaluate the refit winner once on validation or test; persist via save_pipeline.",),
         concepts=("cross-validation", "model-selection", "leakage-boundary", "overfitting"),
     ),
@@ -1155,11 +1155,11 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             _p("cv_strategy", "str", "Fold builder when cv is an integer.", "auto"),
             _p("ranking_metric", "str | None", "Metric used to rank trials."),
             _p("groups", "Series | None", "Optional group labels aligned to train."),
-            _p("preprocess", "PreprocessRecipe | None", "Fold-local preprocess recipe on unpoisoned data."),
+            _p("preprocess", "PreprocessRecipe | None", "Fold-local preprocess recipe on data without globally fitted transforms."),
             _p(
                 "allow_session_global_preprocess",
                 "bool",
-                "Explicit opt-in when Session-global preprocess already poisoned the frame.",
+                "Explicit opt-in when preprocessing was already fitted across cross-validation folds.",
                 False,
             ),
             _p("refit", "bool", "Refit best params on full train and set fit_result.", True),
@@ -1216,11 +1216,11 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             _p("cv_strategy", "str", "Fold builder when cv is an integer.", "auto"),
             _p("ranking_metric", "str | None", "Metric used to rank trials."),
             _p("groups", "Series | None", "Optional group labels aligned to train."),
-            _p("preprocess", "PreprocessRecipe | None", "Fold-local preprocess recipe on unpoisoned data."),
+            _p("preprocess", "PreprocessRecipe | None", "Fold-local preprocess recipe on data without globally fitted transforms."),
             _p(
                 "allow_session_global_preprocess",
                 "bool",
-                "Explicit opt-in when Session-global preprocess already poisoned the frame.",
+                "Explicit opt-in when preprocessing was already fitted across cross-validation folds.",
                 False,
             ),
             _p("refit", "bool", "Refit best params on full train and set fit_result.", True),
@@ -1295,11 +1295,11 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             _p("cv_strategy", "str", "Fold builder when cv is an integer.", "auto"),
             _p("ranking_metric", "str | None", "Metric used to rank trials."),
             _p("groups", "Series | None", "Optional group labels aligned to train."),
-            _p("preprocess", "PreprocessRecipe | None", "Fold-local preprocess recipe on unpoisoned data."),
+            _p("preprocess", "PreprocessRecipe | None", "Fold-local preprocess recipe on data without globally fitted transforms."),
             _p(
                 "allow_session_global_preprocess",
                 "bool",
-                "Explicit opt-in when Session-global preprocess already poisoned the frame.",
+                "Explicit opt-in when preprocessing was already fitted across cross-validation folds.",
                 False,
             ),
             _p("refit", "bool", "Refit best params on full train and set fit_result.", True),

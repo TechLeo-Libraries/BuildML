@@ -1,29 +1,6 @@
 """Bayesian / probabilistic ML domain (sklearn uncertainty + split conformal).
 
-Phase coverage (internal tracker: depth-first; do not spray stubs)
-------------------------------------------------------------------
-Phase 1 (**complete**): unsupervised → ensembles → AutoML → forecasting → anomaly.
-
-Phase 2:
-  1. Semi-supervised learning: done (``buildml.semisupervised``).
-  2. Self-supervised learning hooks: done (``buildml.selfsupervised``).
-  3. Active learning: done (``buildml.activelearning``).
-  4. Online / continual (partial_fit): done (``buildml.online``).
-  5. Multi-task learning: done (``buildml.multitask``).
-  6. Meta-learning: done (``buildml.metalearning``).
-  7. Federated learning: done (``buildml.federated``).
-  8. Bayesian / probabilistic: **this module** (R5.7 industry depth).
-  9. Causal ML: see ``buildml.causal`` (assumption-declared path).
-  Later: graph, evolutionary (classical HPO), symbolic (see ``buildml.symbolic``),
-  CBR, IL+RL, TDA, recommenders / LTR / KG / optimisation / synthetic /
-  NLP-CV deepenings.
-  Speech: ASR keep/improve; TTS out.
-
-Explicit non-goals (no product surfaces): neuromorphic/SNN, swarm zoo,
-digital twins, AV stack, multi-agent world sims, TTS, robotics/control product,
-full COCO detection/segmentation suite.
-
-Honesty (this package):
+Behavior and limitations:
   - **native** backend: sklearn ``BayesianRidge`` / ``GaussianProcessRegressor`` /
     ``GaussianProcessClassifier`` / ``GaussianNB`` with predictive std /
     proba and optional **in-tree split conformal** intervals/sets.

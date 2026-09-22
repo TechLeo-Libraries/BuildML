@@ -51,7 +51,7 @@ class EnsembleSessionMixin:
     ) -> EnsembleFitResult:
         """Fit a voting ensemble on the train partition only.
 
-        Session facade over :func:`buildml.session.ensemble_ops.fit_voting`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.ensemble_ops.fit_voting`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------
@@ -79,7 +79,7 @@ class EnsembleSessionMixin:
     ) -> EnsembleFitResult:
         """Fit a stacking ensemble on the train partition only.
 
-        Session facade over :func:`buildml.session.ensemble_ops.fit_stacking`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.ensemble_ops.fit_stacking`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------
@@ -115,7 +115,7 @@ class EnsembleSessionMixin:
     ) -> EnsembleFitResult:
         """Fit a holdout-blend ensemble on the train partition only.
 
-        Session facade over :func:`buildml.session.ensemble_ops.fit_blending`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.ensemble_ops.fit_blending`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------
@@ -146,7 +146,7 @@ class EnsembleSessionMixin:
     ) -> EvaluateResult:
         """Evaluate the last native ensemble with classical supervised metrics.
 
-        Session facade over :func:`buildml.session.ensemble_ops.evaluate_ensemble`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.ensemble_ops.evaluate_ensemble`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------
@@ -191,7 +191,7 @@ class EnsembleSessionMixin:
     def save_ensemble_bundle(self, path: str | Path) -> Path:
         """Persist the active EnsemblePlan as ``buildml.ensemble_bundle.v1``.
 
-        Session facade over :func:`buildml.session.ensemble_ops.save_ensemble_bundle_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.ensemble_ops.save_ensemble_bundle_op`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------
@@ -208,7 +208,7 @@ class EnsembleSessionMixin:
     def load_ensemble_bundle(self, path: str | Path, *, trusted: bool = False) -> Session:
         """Load an ensemble bundle into this Session.
 
-        Session facade over :func:`buildml.session.ensemble_ops.load_ensemble_bundle_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.ensemble_ops.load_ensemble_bundle_op`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------

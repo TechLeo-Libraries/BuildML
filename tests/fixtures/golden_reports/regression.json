@@ -9,19 +9,15 @@
   "quality_flags": {
     "constant_columns": [],
     "high_cardinality_columns": [],
-    "id_like_columns": [
-      "target",
-      "x",
-      "x2"
-    ],
+    "id_like_columns": [],
     "mixed_type_suspect_columns": []
   },
   "recommendations": [
     {
       "based_on": [
-        "quality.identifiers"
+        "relationships.vif"
       ],
-      "key": "next.exclude_ids"
+      "key": "next.collinearity"
     }
   ],
   "section_ids": [

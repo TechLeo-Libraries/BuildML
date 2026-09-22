@@ -20,8 +20,8 @@ only. Test used after each stage locks.
 
 ## What fails if leakage is ignored
 
-Episodes that include test categories in the support set fake cold-start
-skill. SSL pretext on the full table leaks holdout geometry into
+Episodes that include test categories in the support set overstate cold-start
+performance. SSL pretext on the full table leaks holdout geometry into
 embeddings. A classical baseline trained with test rows is not a fair
 comparator.
 

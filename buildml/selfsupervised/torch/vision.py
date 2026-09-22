@@ -33,7 +33,7 @@ class VisionSSLEncoder:
     ) -> None:
         """Configure a vision SSL encoder with pretrained backbone and projector.
 
-        Wires zoo backbone loading, SimCLR-style projector finetune, and image
+        Combines backbone loading, SimCLR-style projector finetune, and image
         decode settings for Session vision-column pretext.
 
         Parameters
@@ -41,7 +41,7 @@ class VisionSSLEncoder:
         architecture:
             Torchvision backbone name (for example ``resnet18``).
         weight_mode:
-            Pretrained weight mode forwarded to the model zoo loader.
+            Pretrained weight mode forwarded to the backbone loader.
         latent_dim:
             Exported feature width after global pooling (set during fit).
         projector_dim:
@@ -227,7 +227,7 @@ class VisionSSLEncoder:
     def from_state_dict(cls, payload: dict[str, Any]) -> VisionSSLEncoder:
         """Restore a fitted vision SSL encoder from a bundle Torch payload.
 
-        Rebuilds the zoo backbone and projector, loads saved weights, and
+        Rebuilds the backbone and projector, loads saved weights, and
         restores latent / image metadata so :meth:`transform` works without
         refitting.
 

@@ -19,7 +19,7 @@ class MaskedTabularEncoder(BaseEstimator, TransformerMixin):
     latent-layer activations (not the reconstruction).
 
     Honesty: this is a compact tabular pretext hook: not BERT-from-scratch,
-    not contrastive SimCLR/MoCo product surface, and not a Torch FM zoo.
+    not contrastive SimCLR/MoCo product surface, and not a general Torch foundation-model interface.
     """
 
     def __init__(

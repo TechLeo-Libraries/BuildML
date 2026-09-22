@@ -740,7 +740,7 @@ def _additions() -> list[LessonSpec]:
                 "Cross-field assertions are domain rules. Encode them as checks before fit; "
                 "failures are data bugs or rare-but-real edge cases - decide which.",
             ),
-            why=("Inconsistent rows poison both training and metrics."),
+            why=("Inconsistent rows can distort both training and metrics."),
             formula=None,
             calculation=lambda ctx: (
                 f"With {fmt_n(ctx.get('colCount'))} columns, list rule candidates involving "

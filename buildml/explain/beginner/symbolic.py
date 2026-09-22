@@ -47,7 +47,7 @@ SYMBOLIC_BEGINNER: dict[str, BeginnerLayer] = _index(
             "    {'if': \"age > 65 and claims_last_year > 3\", 'then': 'review'},",
             "    {'if': \"amount > 10000\", 'then': 'review'},",
             "]",
-            "session.symbolic.fit(rules=rules, default='approve')",
+            "session.symbolic.fit(source='declared', rules=rules, default_consequent='approve')",
             "session.symbolic.evaluate(partition='test')",
         ),
         check=(
@@ -96,7 +96,7 @@ SYMBOLIC_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.symbolic.fit(method='decision_tree', max_depth=4, random_state=0)",
+            "session.symbolic.fit(source='decision_tree', max_depth=4, random_state=0)",
             "for rule in session.symbolic.plan.rules:",
             "    print(rule.condition, '->', rule.outcome, rule.support)",
         ),
@@ -146,8 +146,8 @@ SYMBOLIC_BEGINNER: dict[str, BeginnerLayer] = _index(
         example=(
             "result = session.symbolic.predict(partition='test')",
             "print(result.predictions[:5])",
-            "print(result.fired_rules[:5], result.deciding_rule[:5])",
-            "print(result.default_rate)",
+            "print(result.traces[:5])",
+            "print(session.symbolic.evaluate(partition='test').metrics)",
         ),
         check=(
             "Which of your rules never fires on real data?",
@@ -195,8 +195,8 @@ SYMBOLIC_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         example=(
             "session.symbolic.fit_neuro(",
-            "    mode='overlay', rules=hard_constraints,",
-            "    estimator=HistGradientBoostingClassifier(random_state=0),",
+            "    mode='constraint_overlay', rules=hard_constraints,",
+            "    base_estimator='random_forest',",
             ")",
             "session.symbolic.evaluate_neuro(partition='validation')",
         ),
@@ -245,7 +245,7 @@ SYMBOLIC_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         example=(
             "session.symbolic.save_bundle('artifacts/underwriting-rules')",
-            "audit = Session.ingest(cases).symbolic.load_bundle('artifacts/underwriting-rules')",
+            "audit = Session.ingest(cases).symbolic.load_bundle('artifacts/underwriting-rules', trusted=True)",
             "print(audit.symbolic_plan.rules)",
         ),
         check=(

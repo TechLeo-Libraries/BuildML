@@ -366,8 +366,8 @@ CLASSICAL_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.encode(strategy='onehot', columns=['region', 'channel'])",
-            "session.encode(strategy='ordinal', columns=['size'])   # small < medium < large",
+            "session.encode(method='onehot', columns=['region', 'channel'])",
+            "session.encode(method='ordinal', columns=['size'])   # small < medium < large",
             "# new columns appear: region_north, region_south, ...",
             "print(session.metadata()['n_columns'])",
         ),
@@ -418,7 +418,7 @@ CLASSICAL_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         example=(
             "session.split(test_size=0.2, random_state=0)",
-            "session.scale(strategy='standard')      # mean/std learned on train",
+            "session.scale(method='standard')      # mean/std learned on train",
             "session.fit(KNeighborsClassifier(n_neighbors=5))",
             "# use strategy='robust' when a few extreme values dominate",
         ),
@@ -470,7 +470,7 @@ CLASSICAL_BEGINNER: dict[str, BeginnerLayer] = _index(
             "session.split(test_size=0.2, stratify=True, random_state=0)",
             "session.fit(LogisticRegression(class_weight='balanced'))",
             "session.tune_threshold(partition='validation', fp_cost=1.0, fn_cost=10.0)",
-            "session.evaluate(partition='test', metrics=['precision', 'recall', 'average_precision'])",
+            "session.evaluate(partition='test')",
         ),
         check=(
             "What score would 'always predict the majority class' get on your metric?",
@@ -521,7 +521,7 @@ CLASSICAL_BEGINNER: dict[str, BeginnerLayer] = _index(
             "    {'logreg': LogisticRegression(), 'forest': RandomForestClassifier(random_state=0)},",
             "    partition='validation',",
             ")",
-            "session.cv_score(cv=5)          # is the winner's lead bigger than the fold spread?",
+            "session.cv_score(LogisticRegression(max_iter=1000), cv=5)          # is the winner's lead bigger than the fold spread?",
         ),
         check=(
             "Is the gap between your top two models larger than the variation across cross-validation folds?",
@@ -568,9 +568,9 @@ CLASSICAL_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "result = session.cv_score(cv=5, scoring='roc_auc')",
-            "print(result.mean_score, result.std_score)   # level and wobble",
-            "nested = session.nested_cv_score(inner_cv=3, outer_cv=5)   # honest score for the whole search",
+            "result = session.cv_score(LogisticRegression(max_iter=1000), cv=5, scoring_metric='balanced_accuracy')",
+            "print(result.mean_metrics, result.std_metrics)   # level and wobble",
+            "nested = session.nested_cv_score(LogisticRegression(max_iter=1000), param_grid={'C': [0.1, 1.0]}, inner_cv=3, outer_cv=5)   # honest score for the whole search",
         ),
         check=(
             "Is your fold-to-fold spread bigger than the difference you are trying to detect?",
@@ -617,8 +617,8 @@ CLASSICAL_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "cv = session.cv_score(cv=5)",
-            "print(cv.mean_score, '+/-', cv.std_score)",
+            "cv = session.cv_score(LogisticRegression(max_iter=1000), cv=5)",
+            "print(cv.mean_metrics, '+/-', cv.std_metrics)",
             "slices = session.error_slices(by=['region'])   # small-n segments are down-ranked",
         ),
         check=(
@@ -667,8 +667,8 @@ CLASSICAL_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "report = session.calibration(partition='validation', n_bins=10)",
-            "print(report.brier_score, report.expected_calibration_error)",
+            "report = session.calibration(partition='validation')",
+            "print(report.payload.get('brier_score'), report.payload.get('ece'))",
             "# then re-check on test after the calibrator is frozen",
         ),
         check=(
@@ -721,8 +721,8 @@ CLASSICAL_BEGINNER: dict[str, BeginnerLayer] = _index(
             "sweep = session.tune_threshold(",
             "    partition='validation', fp_cost=1.0, fn_cost=20.0,",
             ")",
-            "print(sweep.best_threshold, sweep.best_expected_cost)",
-            "session.evaluate(partition='test', threshold=sweep.best_threshold)",
+            "print(sweep.payload['recommended_threshold'])",
+            "# Apply the chosen validation threshold to test probabilities in your scoring code.",
         ),
         check=(
             "In your problem, how many false alarms is one missed case worth?",
@@ -770,7 +770,7 @@ CLASSICAL_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         example=(
             "session.checkpoint_save('artifacts/after-split')",
-            "restored = Session.checkpoint_load('artifacts/after-split')",
+            "restored = Session.checkpoint_load('artifacts/after-split', trusted=True)",
             "print(restored.metadata()['n_rows'], restored.split_plan is not None)",
         ),
         check=(
@@ -973,7 +973,7 @@ CLASSICAL_BEGINNER: dict[str, BeginnerLayer] = _index(
             "train_score = session.evaluate(partition='train')",
             "valid_score = session.evaluate(partition='validation')",
             "print(train_score.metrics, valid_score.metrics)   # mind the gap",
-            "curve = session.learning_curve(cv=5)              # more data, or a different model?",
+            "curve = session.learning_curve(LogisticRegression(max_iter=1000), cv=5)              # more data, or a different model?",
         ),
         check=(
             "What is your train-minus-validation gap, in the units of your primary metric?",
@@ -1021,10 +1021,10 @@ CLASSICAL_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         example=(
             "report = session.feature_importance(",
-            "    method='permutation', partition='validation', n_repeats=10, random_state=0,",
+            "    partition='validation', n_repeats=10,",
             ")",
-            "for row in report.importances[:5]:",
-            "    print(row.feature, row.mean_importance, row.std_importance)",
+            "for row in report.payload['rows'][:5]:",
+            "    print(row['feature'], row['importance_mean'], row['importance_std'])",
         ),
         check=(
             "Does your top feature make sense given when the prediction has to be made?",
@@ -1123,8 +1123,8 @@ CLASSICAL_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         example=(
             "report = session.eda()",
-            "for row in report.associations.mutual_information[:5]:",
-            "    print(row.feature, row.score)",
+            "for feature, score in list(report.bivariate['mutual_information_vs_target'].items())[:5]:",
+            "    print(feature, score)",
             "# then plot the top scorer against the target to see the shape",
         ),
         check=(
@@ -1222,7 +1222,7 @@ CLASSICAL_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.scale(strategy='standard')          # required before PCA",
+            "session.scale(method='standard')          # required before PCA",
             "session.reduce_dimensions(n_components=0.95)",
             "print(session.metadata()['n_columns'])      # components replace the originals",
         ),
@@ -1272,8 +1272,8 @@ CLASSICAL_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         example=(
             "report = session.eda()",
-            "for row in report.distributions.normality:",
-            "    print(row.column, row.statistic, row.p_value, row.skew)",
+            "for column, profile in report.univariate['per_column'].items():",
+            "    print(column, profile.get('normality_stat'), profile.get('normality_pvalue'), profile.get('skew'))",
             "# large n: read skew and the histogram, not just the p-value",
         ),
         check=(
@@ -1321,8 +1321,8 @@ CLASSICAL_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.handle_outliers(strategy='detect', method='iqr')   # look first",
-            "session.handle_outliers(strategy='cap', method='iqr', factor=1.5)",
+            "session.handle_outliers(action='detect', method='iqr')   # look first",
+            "session.handle_outliers(action='cap', method='iqr', iqr_multiplier=1.5)",
             "# fences are learned on train and reused on validation/test",
         ),
         check=(
@@ -1371,7 +1371,7 @@ CLASSICAL_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         example=(
             "session.bin(columns=['age'], strategy='quantile', n_bins=5)",
-            "session.encode(strategy='onehot', columns=['age_binned'])",
+            "session.encode(method='onehot', columns=['age_binned'])",
             "# edges are learned on train and frozen for other partitions",
         ),
         check=(
@@ -1420,8 +1420,8 @@ CLASSICAL_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         example=(
             "session.encode(",
-            "    strategy='target', columns=['merchant_id'],",
-            "    smoothing=20.0, cv=5,   # out-of-fold inside train",
+            "    method='target', columns=['merchant_id'],",
+            "    smoothing=20.0, n_folds=5,   # out-of-fold inside train",
             ")",
             "# unseen categories fall back to the smoothed global mean",
         ),
@@ -1470,9 +1470,9 @@ CLASSICAL_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.select_features(method='model', k=20, random_state=0)",
+            "session.select_features(strategy='model', k=20)",
             "print(session.metadata()['n_columns'])",
-            "session.cv_score(cv=5)   # compare against the full-column score",
+            "session.fit(LogisticRegression(max_iter=1000)); session.evaluate(partition='validation')   # compare with the full-column model on the same holdout",
         ),
         check=(
             "Was your selection score computed on training rows only?",
@@ -1522,8 +1522,8 @@ CLASSICAL_BEGINNER: dict[str, BeginnerLayer] = _index(
         example=(
             "session.split(test_size=0.2, random_state=0)",
             "session.impute(strategy='median')",
-            "session.encode(strategy='onehot')",
-            "session.scale(strategy='standard')",
+            "session.encode(method='onehot')",
+            "session.scale(method='standard')",
             "session.save_pipeline('artifacts/pipeline')   # plans travel with the model",
         ),
         check=(
@@ -1622,11 +1622,11 @@ CLASSICAL_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "def add_ratio(frame):",
+            "def add_ratio(frame, artifact):",
             "    frame['spend_per_visit'] = frame['spend'] / frame['visits'].clip(lower=1)",
             "    return frame",
-            "session.register_transform('add_ratio', add_ratio)",
-            "session.apply_custom_transform('add_ratio')",
+            "session.register_transform('add_ratio', fit=lambda frame, params: None, transform=add_ratio)",
+            "session.apply_custom_transform('add_ratio', columns=['spend', 'visits'])",
         ),
         check=(
             "Does your function produce the same columns on a frame with different data?",

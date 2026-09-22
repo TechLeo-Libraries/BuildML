@@ -45,7 +45,7 @@ RL_BEGINNER: dict[str, BeginnerLayer] = _index(
         example=(
             "session.set_roles({'action_taken': 'target', 'episode_id': 'group'})",
             "session.group_split(group_column='episode_id', test_size=0.2, random_state=0)",
-            "session.rl.fit_imitation(estimator=HistGradientBoostingClassifier())",
+            "session.rl.fit_imitation(estimator='hist_gradient_boosting')",
             "session.rl.evaluate_imitation(partition='test')",
         ),
         check=(
@@ -93,8 +93,8 @@ RL_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         example=(
             "session.rl.save_imitation_bundle('artifacts/routing-policy')",
-            "service = Session.ingest(state_frame).rl.load_imitation_bundle('artifacts/routing-policy')",
-            "action = service.rl.predict_imitation()",
+            "service = Session.ingest(state_frame).rl.load_imitation_bundle('artifacts/routing-policy', trusted=True)",
+            "action = service.rl.predict_imitation(partition='all')",
         ),
         check=(
             "When were your demonstrations recorded, and is that behaviour still current?",
@@ -142,10 +142,10 @@ RL_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         example=(
             "session.rl.fit(",
-            "    method='linucb', context_columns=['segment', 'recency'],",
+            "    mode='contextual_bandit', algorithm='linucb', columns=['segment', 'recency'],",
             "    action_column='offer_shown', reward_column='converted', alpha=1.0,",
             ")",
-            "action = session.rl.act(context={'segment': 'A', 'recency': 3})",
+            "action = session.rl.act(partition='test')",
         ),
         check=(
             "Did your logging policy try every action at least sometimes?",
@@ -190,12 +190,12 @@ RL_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
             (
                 "IPS is unbiased, so it is reliable.",
-                "It is unbiased and can have enormous variance. An unbiased estimator with a huge spread is not a usable number.",
+                "Unbiasedness requires correct logging propensities and adequate action support. BuildML estimates propensities from training data, so bias and high variance remain possible.",
             ),
         ),
         example=(
-            "report = session.rl.evaluate(partition='test', estimator='ips')",
-            "print(report.estimated_value, report.effective_sample_size)",
+            "report = session.rl.evaluate(partition='test')",
+            "print(report.metrics)",
             "print(report.disclosures)",
         ),
         check=(
@@ -244,10 +244,10 @@ RL_BEGINNER: dict[str, BeginnerLayer] = _index(
         example=(
             "# pip install \"buildml[rl]\"",
             "session.rl.fit(",
-            "    method='reinforce', env_id='CartPole-v1',",
+            "    mode='gym_reinforce', algorithm='reinforce', env_id='CartPole-v1',",
             "    n_episodes=500, random_state=0,",
             ")",
-            "session.rl.evaluate(n_eval_episodes=20)",
+            "session.rl.evaluate(n_episodes=20)",
         ),
         check=(
             "Do you have an environment, or only logs?",
@@ -304,10 +304,10 @@ RL_BEGINNER: dict[str, BeginnerLayer] = _index(
         example=(
             "# pip install \"buildml[rl-industry]\"",
             "session.rl.fit(",
-            "    method='ppo', env_id='CartPole-v1',",
+            "    mode='gym_sb3', algorithm='ppo', env_id='CartPole-v1',",
             "    total_timesteps=50_000, random_state=0,",
             ")",
-            "session.rl.evaluate(n_eval_episodes=50)",
+            "session.rl.evaluate(n_episodes=50)",
         ),
         check=(
             "Do your actions change the state you will see next?",
@@ -354,8 +354,8 @@ RL_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         example=(
             "session.rl.save_bundle('artifacts/offer-policy')",
-            "service = Session().rl.load_bundle('artifacts/offer-policy')",
-            "action = service.rl.act(context={'segment': 'A', 'recency': 3})",
+            "service = Session.ingest(state_frame).rl.load_bundle('artifacts/offer-policy', trusted=True)",
+            "action = service.rl.act(partition='all')",
         ),
         check=(
             "Is your deployed policy still exploring, and at what rate?",

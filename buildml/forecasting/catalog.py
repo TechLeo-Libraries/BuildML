@@ -281,7 +281,7 @@ def forecast_capability_matrix() -> dict[str, Any]:
             "timeseries-ml": "pip install 'buildml[timeseries-ml]'",
         },
         "non_goals": [
-            "Full Nixtla research zoo",
+            "Nixtla models beyond the documented backends",
             "Streaming / online forecasting product",
         ],
         "industry_forecast_present": industry_forecast_available(),

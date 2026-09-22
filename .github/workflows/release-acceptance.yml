@@ -1,0 +1,81 @@
+name: Release acceptance
+
+on:
+  pull_request:
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Build one candidate for every matrix cell
+        run: |
+          python -m pip install build twine
+          python -m build --outdir candidate
+          python scripts/check_wheel_contents.py candidate
+          python -m twine check candidate/*
+          git rev-parse HEAD > candidate/source-commit.txt
+          sha256sum candidate/*.whl candidate/*.tar.gz > candidate/SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-acceptance-candidate
+          path: candidate/
+          retention-days: 90
+  installed-core:
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python: ["3.10", "3.11", "3.12", "3.13"]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-acceptance-candidate
+          path: candidate
+      - name: Install candidate in fresh environment and exercise outside checkout
+        shell: bash
+        run: |
+          python - <<'PY'
+          import os, pathlib, shutil, subprocess, sys
+          root = pathlib.Path.cwd().resolve()
+          area = pathlib.Path(os.environ['RUNNER_TEMP']) / 'buildml-acceptance'
+          area.mkdir()
+          env = area / 'venv'
+          subprocess.run([sys.executable, '-m', 'venv', str(env)], check=True)
+          executable = env / ('Scripts/python.exe' if os.name == 'nt' else 'bin/python')
+          wheel, = (root / 'candidate').glob('*.whl')
+          runner = area / 'check_installed_release.py'
+          shutil.copy2(root / 'scripts/check_installed_release.py', runner)
+          evidence = root / 'acceptance-evidence'
+          evidence.mkdir()
+          with (evidence / 'execution.log').open('w', encoding='utf-8') as log:
+              for command in (
+                  [str(executable), '-m', 'pip', 'install', str(wheel)],
+                  [str(executable), '-m', 'pip', 'check'],
+                  [str(executable), '-I', str(runner), '--source-root', str(root), '--wheel', str(wheel), '--output', str(evidence / 'result.json')],
+              ):
+                  log.write(repr(command) + '\n')
+                  log.flush()
+                  subprocess.run(command, cwd=area, stdout=log, stderr=subprocess.STDOUT, check=True)
+          PY
+      - name: Preserve results including failures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: acceptance-${{ matrix.os }}-python-${{ matrix.python }}
+          path: acceptance-evidence/
+          retention-days: 90

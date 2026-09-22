@@ -1,6 +1,6 @@
 """Semi-supervised learning domain (scarce labels + unlabeled train rows).
 
-Industry depth (R6.1):
+Supported backends:
   - Core sklearn: LabelPropagation, LabelSpreading, SelfTrainingClassifier.
   - Industry (``buildml[semisupervised-industry]``): XGBoost/LightGBM pseudo-label.
   - Torch (``buildml[torch]``): FixMatch/MixMatch-style tabular consistency.

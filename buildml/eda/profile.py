@@ -6,8 +6,9 @@ findings and recommendations, plans the plots, and optionally renders and
 exports.
 
 Two budgets exist because unbounded EDA does not finish. Rows are capped at
-100,000 for the expensive sections, since a Kolmogorov-Smirnov test on ten
-million rows tells you nothing a sample would not. Columns are capped at 100,
+100,000 for the expensive sections to bound computational cost; sampling can
+miss rare patterns and reduces precision. Drift uses the full split partitions.
+Columns are capped at 100,
 since pairwise analysis is quadratic and a thousand columns is half a million
 pairs. Both caps are recorded in the report's warnings, so a reader always knows
 what was and was not examined.
@@ -31,7 +32,7 @@ import pandas as pd
 from buildml.core.errors import MissingExtraError
 from buildml.core.types import ColumnRole
 from buildml.data.dataset import Dataset
-from buildml.data.splits import SplitPlan
+from buildml.data.splits import SplitPlan, frame_for_partition
 from buildml.eda.adaptive import build_adaptive_plan
 from buildml.eda.analyzers.bivariate import analyze_bivariate
 from buildml.eda.analyzers.drift import analyze_drift
@@ -58,6 +59,7 @@ def explore_dataset(
     dataset: Dataset,
     *,
     split_plan: SplitPlan | None = None,
+    partition: Literal["all", "train", "validation", "test"] = "all",
     sample_rows: int | None = None,
     max_columns: int = DEFAULT_COLUMN_CAP,
     max_plots: int = 36,
@@ -91,6 +93,10 @@ def explore_dataset(
     split_plan:
         Partition membership. Supplying it enables the drift analysis, which is
         worth having before you trust any evaluation score.
+    partition:
+        Rows to profile. ``'all'`` preserves the dataset-wide default; use
+        ``'train'`` after splitting for model-development exploration. Drift
+        remains a separate aggregate comparison of train and test.
     sample_rows:
         Row cap for the expensive sections. ``None`` uses 100,000. Quality
         checks always run on the full frame: you cannot count duplicates in a
@@ -164,8 +170,29 @@ def explore_dataset(
     --------
     summarize_dataset : A much smaller subset of this.
     """
-    full = dataset._ensure_pandas()
+    if partition not in {"all", "train", "validation", "test"}:
+        raise ValueError("partition must be all, train, validation, or test")
+    if partition != "all" and split_plan is None:
+        raise ValueError("A split is required to explore a named partition")
+    full = (
+        dataset._ensure_pandas() if partition == "all"
+        else frame_for_partition(dataset, split_plan, partition)
+    )
+    if full.empty:
+        raise ValueError("EDA requires at least one row in the selected scope")
     warnings: list[str] = []
+    scope_disclosure = (
+        f"Analysis scope: {partition} rows. "
+        + ("Drift scope: full train versus test partitions (including held-out rows)."
+           if split_plan is not None else "Drift unavailable: no split is defined.")
+    )
+    warnings.append(scope_disclosure)
+    if split_plan is not None and partition != "train":
+        warnings.append(
+            f"EDA scope is '{partition}' and includes held-out rows. "
+            "Use partition='train' for model-development exploration; "
+            "drift separately compares aggregate train/test distributions."
+        )
     analysis_cap = DEFAULT_ANALYSIS_CAP if sample_rows is None else sample_rows
     if analysis_cap < 1:
         raise ValueError("sample_rows must be positive or None")
@@ -185,7 +212,16 @@ def explore_dataset(
     target = target_cols[0] if target_cols else None
 
     overview = _overview(dataset, full, frame)
+    overview["analysis_partition"] = partition
+    overview["drift_scope"] = "train_vs_test" if split_plan is not None else None
+    overview["scope_disclosure"] = scope_disclosure
     quality = analyze_quality(full, frame)
+    if quality["nonfinite_cell_count"]:
+        warnings.append(
+            f"Found {quality['nonfinite_cell_count']} infinite numeric values in the "
+            "analysis scope. Numeric statistics and plots exclude these values; "
+            "original missingness counts remain separate. The Session data is unchanged."
+        )
     analysis_columns = _bounded_analysis_columns(dataset, frame, max_columns=max_columns)
     if len(analysis_columns) < len(frame.columns):
         omitted = len(frame.columns) - len(analysis_columns)
@@ -194,7 +230,10 @@ def explore_dataset(
             f"{len(frame.columns):,} columns; {omitted:,} columns remain covered by "
             "dataset-wide quality checks."
         )
-    analysis_frame = frame.loc[:, analysis_columns]
+    analysis_frame = frame.loc[:, analysis_columns].copy()
+    numeric_columns = analysis_frame.select_dtypes(include="number").columns
+    for column in numeric_columns:
+        analysis_frame[column] = analysis_frame[column].replace([float("inf"), float("-inf")], float("nan"))
     overview["analysis_columns"] = analysis_columns
     overview["analysis_column_count"] = len(analysis_columns)
     overview["analysis_column_budget"] = max_columns
@@ -217,6 +256,13 @@ def explore_dataset(
     bivariate = analyze_bivariate(analysis_frame, target=target, feature_columns=feature_columns)
     multivariate = analyze_multivariate(analysis_frame, bivariate, feature_columns=feature_columns)
     target_info = analyze_target(dataset, analysis_frame, feature_columns=feature_columns)
+    if target is not None and target_info and target in numeric_columns:
+        invalid_target_rows = int(frame[target].isin([float("inf"), float("-inf")]).sum())
+        target_info["nonfinite_target_rows"] = invalid_target_rows
+        target_info["missing_target_rows"] = int(frame[target].isna().sum())
+        if "missing_target_rows" in target_info.get("summary", {}):
+            target_info["summary"]["missing_target_rows"] = int(frame[target].isna().sum())
+            target_info["summary"]["nonfinite_target_rows"] = invalid_target_rows
     outliers = analyze_outliers(analysis_frame, feature_columns=feature_columns)
     drift = analyze_drift(dataset, split_plan, feature_columns=feature_columns)
     adaptive_plan = build_adaptive_plan(
@@ -477,7 +523,7 @@ def _feature_exclusion_reasons(
         if column in available:
             reasons.setdefault(column, []).append("constant-column detection")
     for column in map(str, quality.get("id_like_columns", [])):
-        if column in available and dataset.roles.get(column) is not ColumnRole.ID:
+        if column in available and dataset.roles.get(column) not in {ColumnRole.ID, ColumnRole.FEATURE}:
             reasons.setdefault(column, []).append("heuristic identifier-like detection")
     for column, role in dataset.roles.items():
         if column in available and role in disallowed_roles:

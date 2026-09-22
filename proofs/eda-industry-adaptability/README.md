@@ -27,7 +27,7 @@ Twelve cases shared with `scripts/eda_adaptability_gauntlet.py`:
 
 ## Leakage
 
-EDA is screening only: no model fit, no transform fit that poisons holdout.
+EDA is screening only: no model fit, no preprocessing is fitted on holdout rows.
 When a target is declared, Session `split` runs for partition context;
 Static and App still report full-dataset EDA diagnostics (disclosed as
 exploration, not causal discovery).

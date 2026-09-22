@@ -225,7 +225,7 @@ def run_automl(
         When True, Session-global preprocess was already applied to the frame.
     allow_session_global_preprocess:
         Same hard refusal as classical ``cv_score`` / ``grid_search`` when
-        Session-global prep already poisoned the frame.
+        Session-global fitted preprocessing has already transformed the frame.
     refit:
         When True, refit the best candidate on all train rows after selection.
     random_state:
@@ -1627,7 +1627,7 @@ def _disclosures(
     if session_global_override:
         tips.append(
             "allow_session_global_preprocess=True was set; Session-global prep may have "
-            "poisoned fold honesty."
+            "biased fold evaluation."
         )
     if method == "optuna" or backend == "optuna":
         tips.append(

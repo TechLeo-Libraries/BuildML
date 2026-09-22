@@ -140,9 +140,9 @@ def extract_date_features(
     adjacent. Tree models handle this fine. For linear models and neural
     networks, consider a sine and cosine encoding of the part instead.
 
-    **This step cannot leak**: the calendar does not depend on your data: so
-    it is safe to run before splitting, unlike almost everything else in this
-    package.
+    **This step learns no dataset statistics.** A fixed calendar extraction
+    can run before splitting, but source dates must be available at prediction
+    time. Extracting parts does not remove leakage already present in a date.
 
     Examples
     --------

@@ -77,11 +77,11 @@ def main() -> None:
         proof_slug="wine-cluster-segments",
         context="sklearn wine external cluster validation",
     )
-    # Also refuse near-perfect ARI theater on this small but real table.
+    # Also refuse ARI at or above the configured ceiling on this small but real table.
     ari = external.get("adjusted_rand_index")
     if isinstance(ari, (int, float)) and float(ari) >= 0.98:
         raise SystemExit(
-            "wine-cluster-segments refused near-perfect ARI theater: "
+            "wine-cluster-segments refused ARI at or above the configured ceiling: "
             f"adjusted_rand_index={float(ari):.4f} >= 0.98 on real wine cultivars."
         )
 

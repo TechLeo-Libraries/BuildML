@@ -44,7 +44,7 @@ MULTITASK_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         example=(
             "session.set_roles({'churn_risk': 'target', 'upsell_score': 'target'})",
-            "session.multitask.fit(method='multioutput', estimator=HistGradientBoostingRegressor())",
+            "session.multitask.fit(method='multi_output', task='regression', base_estimator='hist_gradient_boosting_regressor')",
             "session.multitask.evaluate(partition='validation')   # per-target metrics",
         ),
         check=(
@@ -146,7 +146,7 @@ MULTITASK_BEGINNER: dict[str, BeginnerLayer] = _index(
             "session.set_roles({'renewed': 'target'})",
             "session.fit(LogisticRegression())              # exactly one target",
             "session.set_roles({'renewed': 'target', 'upsold': 'target'})",
-            "session.multitask.fit(method='multioutput')    # two or more",
+            "session.multitask.fit(method='multi_output')    # two or more",
         ),
         check=(
             "How many columns currently hold the target role?",
@@ -193,8 +193,8 @@ MULTITASK_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         example=(
             "session.multitask.save_bundle('artifacts/customer-outcomes')",
-            "job = Session.ingest(new_frame).multitask.load_bundle('artifacts/customer-outcomes')",
-            "predictions = job.multitask.predict()",
+            "job = Session.ingest(new_frame).multitask.load_bundle('artifacts/customer-outcomes', trusted=True)",
+            "predictions = job.multitask.predict(partition='all')",
         ),
         check=(
             "Does your consuming system rely on target order or on target name?",

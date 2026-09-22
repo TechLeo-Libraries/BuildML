@@ -67,7 +67,7 @@ def ensemble_capability_matrix() -> dict[str, Any]:
         "platform_markers": [],
         "non_goals": [
             "AutoML recipe search (see buildml.automl)",
-            "Industry GBDT zoo as base learners beyond what the caller supplies",
+            "Automatic integration of GBDT base learners beyond the estimators supplied by the caller",
             "Distributed / multi-node ensemble product",
         ],
         "domain_floor": {

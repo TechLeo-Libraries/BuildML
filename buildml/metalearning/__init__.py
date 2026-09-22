@@ -1,6 +1,6 @@
 """Meta-learning domain (tabular few-shot / episodic Session protocols).
 
-Industry depth (R6.5):
+Supported backends:
   - Core sklearn: ``prototypical`` nearest-centroid + ``warm_start`` adapt.
   - Torch (``buildml[torch]``): ``prototypical_torch`` deep tabular encoder.
   - Industry (``buildml[metalearning-industry,torch]``): ``maml`` / ``reptile``

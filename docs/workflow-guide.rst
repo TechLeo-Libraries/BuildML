@@ -103,7 +103,7 @@ the whole training partition. If Session-global fit-capable plans
 already exist, CV and search refuse with ``LeakageError`` even if you
 pass a recipe. Recipes do not rebuild from raw rows. Opt in only with
 ``allow_session_global_preprocess=True``, or re-ingest / checkpoint-load
-unpoisoned data. Resample and ``apply_custom_transform`` stay
+data without Session-global fitted preprocessing. Resample and ``apply_custom_transform`` stay
 Session-global only.
 
 The full recipe, weight, and refuse patterns live in

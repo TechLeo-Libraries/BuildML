@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import argparse
+import ast
 import re
+import subprocess
 import sys
 from collections.abc import Iterable
 from dataclasses import dataclass
@@ -17,6 +19,16 @@ ARCHIVAL_DOCS: set[str] = set()
 QUOTED_EXAMPLE_DOCS: set[str] = set()
 
 COPY_RULES: tuple[tuple[str, re.Pattern[str]], ...] = (
+    (
+        "internal-or-dismissive-copy",
+        re.compile(
+            r"\b(?:estimator\s+zoo|empty\s+theater|perfect[- ]score\s+theater|"
+            r"keep\s+this\s+method\s+as\s+a\s+thin\s+delegate|"
+            r"do\s+not\s+spray\s+stubs|phase\s+coverage\s+tracker|"
+            r"yank\s+them\s+on\s+pypi)\b",
+            re.IGNORECASE,
+        ),
+    ),
     (
         "unsupported-quality-label",
         re.compile(
@@ -106,26 +118,57 @@ class Violation:
 
 
 def _relative(path: Path) -> str:
-    return path.resolve().relative_to(ROOT).as_posix()
+    try:
+        return path.resolve().relative_to(ROOT).as_posix()
+    except ValueError:
+        return path.resolve().as_posix()
 
 
 def iter_targets() -> Iterable[Path]:
-    """Yield current docs and Python sources in stable order."""
-    docs = [ROOT / "README.md"]
+    """Yield authored documentation, sources, scripts, and benchmark copy."""
+    try:
+        tracked = subprocess.run(
+            ["git", "ls-files", "--cached", "--others", "--exclude-standard", "-z"],
+            cwd=ROOT, capture_output=True, check=False
+        )
+    except FileNotFoundError:
+        tracked = None
+    tracked_paths = (
+        set(tracked.stdout.decode("utf-8").split("\0"))
+        if tracked is not None and tracked.returncode == 0 else None
+    )
+    docs = list(ROOT.glob("*.md"))
     docs.extend((ROOT / "guides").rglob("*.md"))
     docs.extend((ROOT / "docs").rglob("*.rst"))
+    docs.extend((ROOT / "docs").rglob("*.md"))
     docs.append(ROOT / "examples" / "README.md")
     docs.extend((ROOT / "proofs").rglob("README.md"))
     python = (ROOT / "buildml").rglob("*.py")
+    extra = [
+        path
+        for directory in ("buildml", "examples", "proofs", "benchmarks", "scripts")
+        for path in (ROOT / directory).rglob("*")
+        if path.suffix in {".py", ".md", ".rst", ".html", ".js", ".json"}
+    ]
 
     paths: list[Path] = []
-    for path in [*docs, *python]:
+    for path in [*docs, *python, *extra]:
+        if not path.is_file():
+            continue
         relative = _relative(path)
+        if tracked_paths is not None and relative not in tracked_paths:
+            continue
+        if any(part in {"_build", "__pycache__", "node_modules", ".pytest_tmp"} for part in path.parts):
+            continue
         if relative in ARCHIVAL_DOCS or relative in QUOTED_EXAMPLE_DOCS:
             continue
         if any(relative.startswith(prefix) for prefix in ARCHIVAL_DOC_PREFIXES):
             continue
         if relative.startswith("buildml/_legacy/"):
+            continue
+        # This file defines prohibited phrases as rule fixtures. Test fixtures
+        # live under tests/, outside the authored-copy roots above.
+        if relative == "scripts/lint_user_copy.py":
             continue
         paths.append(path)
     yield from sorted(set(paths), key=_relative)
@@ -147,6 +190,27 @@ def lint_paths(paths: Iterable[Path] | None = None) -> list[Violation]:
     for path in selected:
         relative = _relative(path)
         lines = path.read_text(encoding="utf-8").splitlines()
+        # Preserve the existing typography policy on its original surfaces;
+        # public-copy checks cover all additional assets below.
+        typography = (
+            path.suffix not in {".js", ".html", ".json"}
+            and not relative.startswith(("examples/", "proofs/", "benchmarks/", "scripts/"))
+        ) or path.name == "README.md"
+        # Parse Python literals so adjacent strings and wrapped docstrings are
+        # checked as the text users actually receive.
+        if path.suffix == ".py":
+            try:
+                tree = ast.parse("\n".join(lines))
+            except SyntaxError:
+                tree = None
+            for node in ast.walk(tree) if tree is not None else ():
+                if isinstance(node, ast.Constant) and isinstance(node.value, str):
+                    normalized = re.sub(r"\s+", " ", node.value)
+                    for rule, pattern in COPY_RULES:
+                        if pattern.search(normalized) and not any(
+                            pattern.search(line) for line in lines[node.lineno - 1:node.end_lineno]
+                        ):
+                            violations.append(Violation(relative, node.lineno, rule, normalized[:200]))
         seen_soft: set[tuple[int, str]] = set()
         for number, line in enumerate(lines, start=1):
             for rule, pattern in COPY_RULES:
@@ -154,9 +218,11 @@ def lint_paths(paths: Iterable[Path] | None = None) -> list[Violation]:
                     violations.append(Violation(relative, number, rule, line.strip()))
             if STALE_API.search(line) and not LEGACY_CONTEXT.search(line):
                 violations.append(Violation(relative, number, "stale-public-api", line.strip()))
-            if MOJIBAKE_MARKERS.search(line):
+            if MOJIBAKE_MARKERS.search(line) and not (
+                relative == "CHANGELOG.md" and "mojibake" in line
+            ):
                 violations.append(Violation(relative, number, "mojibake-text", line.strip()))
-            if EM_DASH.search(line):
+            if typography and EM_DASH.search(line):
                 violations.append(Violation(relative, number, "em-dash-punctuation", line.strip()))
         for number, window in _soft_leakage_windows(lines):
             if not SOFT_LEAKAGE_FALSE_CLAIM.search(window):
@@ -172,6 +238,8 @@ def lint_paths(paths: Iterable[Path] | None = None) -> list[Violation]:
 
 
 def main(argv: list[str] | None = None) -> int:
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(errors="backslashreplace")
     parser = argparse.ArgumentParser(description=__doc__)
     parser.parse_args(argv)
     violations = lint_paths()

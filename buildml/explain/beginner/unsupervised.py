@@ -45,7 +45,7 @@ UNSUPERVISED_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         example=(
             "session.split(test_size=0.2, random_state=0)",
-            "session.scale(strategy='standard')",
+            "session.scale(method='standard')",
             "session.unsupervised.fit(method='kmeans', n_clusters=4, random_state=0)",
             "session.unsupervised.evaluate(partition='validation')",
         ),
@@ -95,7 +95,7 @@ UNSUPERVISED_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         example=(
             "report = session.unsupervised.evaluate(partition='validation')",
-            "print(report.silhouette, report.cluster_sizes)",
+            "print(report.metrics, report.diagnostics)",
             "print(report.disclosures)   # what the score cannot tell you",
         ),
         check=(
@@ -143,7 +143,7 @@ UNSUPERVISED_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.unsupervised.fit(method='hdbscan', min_cluster_size=25)",
+            "session.unsupervised.fit(method='hdbscan', hdbscan_min_cluster_size=25)",
             "session.unsupervised.assign(partition='validation')",
             "session.unsupervised.evaluate(partition='validation')",
         ),
@@ -192,7 +192,7 @@ UNSUPERVISED_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.scale(strategy='standard')",
+            "session.scale(method='standard')",
             "session.reduce_dimensions(n_components=0.9)",
             "session.unsupervised.fit(method='kmeans', n_clusters=4, prefer_reduce_components=True)",
             "session.unsupervised.evaluate(partition='validation')",
@@ -244,8 +244,8 @@ UNSUPERVISED_BEGINNER: dict[str, BeginnerLayer] = _index(
         example=(
             "session.unsupervised.fit(method='kmeans', n_clusters=4, random_state=0)",
             "session.unsupervised.save_bundle('artifacts/segments')",
-            "later = Session.ingest(new_frame).unsupervised.load_bundle('artifacts/segments')",
-            "labels = later.unsupervised.assign()",
+            "later = Session.ingest(new_frame).unsupervised.load_bundle('artifacts/segments', trusted=True)",
+            "labels = later.unsupervised.assign(partition='all')",
         ),
         check=(
             "If you deleted your notebook today, which file would restore the segmentation?",

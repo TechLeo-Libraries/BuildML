@@ -96,7 +96,7 @@ KG_BEGINNER: dict[str, BeginnerLayer] = _index(
         example=(
             "session.kg.fit(",
             "    backend='native', method='distmult',",
-            "    embedding_dim=64, n_negatives=10, epochs=100, random_state=0,",
+            "    embedding_dim=64, neg_ratio=10, epochs=100, random_state=0,",
             ")",
             "# pip install \"buildml[kg-industry]\" for RotatE / ComplEx via PyKEEN",
         ),
@@ -145,10 +145,10 @@ KG_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "scores = session.kg.score_triples([('paris', 'capital_of', 'france')])",
-            "candidates = session.kg.predict_links(head='paris', relation='capital_of', k=10)",
+            "scores = session.kg.score_triples(triples=[('paris', 'capital_of', 'france')])",
+            "candidates = session.kg.predict_links(heads=['paris'], relations=['capital_of'], k=10)",
             "report = session.kg.evaluate(partition='test', k=[1, 3, 10])",
-            "print(report.filtered_mrr, report.hits_at_k)",
+            "print(report.metrics)",
         ),
         check=(
             "Are your reported metrics filtered or unfiltered?",
@@ -198,7 +198,7 @@ KG_BEGINNER: dict[str, BeginnerLayer] = _index(
         example=(
             "session.kg.query(mode='neighbors', entity='paris')",
             "session.kg.query(mode='typed', entity='paris', relation='capital_of')",
-            "session.kg.query(mode='path', entity='paris', target='berlin', max_depth=4)",
+            "session.kg.query(mode='path', source='paris', target='berlin', max_hops=4)",
         ),
         check=(
             "Do you need what is recorded, or what is plausible?",
@@ -246,8 +246,8 @@ KG_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         example=(
             "session.kg.save_bundle('artifacts/product-kg')",
-            "service = Session().kg.load_bundle('artifacts/product-kg')",
-            "service.kg.predict_links(head='sku_1042', relation='compatible_with', k=10)",
+            "service = Session().kg.load_bundle('artifacts/product-kg', trusted=True)",
+            "service.kg.predict_links(heads=['sku_1042'], relations=['compatible_with'], k=10)",
         ),
         check=(
             "Which of the four bundle types does your question actually need?",

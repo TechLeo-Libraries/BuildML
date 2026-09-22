@@ -7,6 +7,7 @@ on:
   # Manual re-run when a push was made with a token that skipped workflow events,
   # or when validating CI wiring without an empty commit.
   workflow_dispatch:
+  workflow_call:
 
 # Least-privilege GITHUB_TOKEN for every job. Jobs that only checkout and
 # test do not need write access to contents, issues, or pull requests.
@@ -45,6 +46,12 @@ jobs:
 
       - name: Teaching surface sync
         run: python scripts/sync_teaching_surface.py --check
+
+      - name: Teaching example contracts
+        run: python scripts/check_teaching_examples.py
+
+      - name: Release claim references
+        run: python scripts/check_release_claims.py
 
       # Ratchet: enforces the CONTRIBUTING.md docstring standard on the
       # packages listed in scripts/audit_docstrings.py ENFORCED_PREFIXES.

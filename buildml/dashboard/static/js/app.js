@@ -640,7 +640,7 @@ async function renderCockpit() {
 
   const figuresBody = chartIds.length
     ? figureCards(chartIds)
-    : `<p class="text-muted">No non-empty figures for this session — empty theater omitted.</p>`;
+    : `<p class="text-muted">No figures are available for this session. Check which analyses ran and whether their required data is available.</p>`;
 
   const methodStatusCounts = methods.reduce(
     (acc, card) => {

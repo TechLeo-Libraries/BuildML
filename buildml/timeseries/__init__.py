@@ -1,4 +1,4 @@
-"""Time-series analysis domain (Phase R3).
+"""Time-series analysis for decomposition, diagnostics, and change points.
 
 Industry-depth coverage:
   - Decomposition: STL / classical (statsmodels default), moving-average fallback

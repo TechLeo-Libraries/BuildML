@@ -46,7 +46,7 @@ def main() -> None:
         cv.std_metrics[cv.scoring_metric],
     )
 
-    # Poison the frame, then show the hard refuse.
+    # Fit Session-global preprocessing, then demonstrate the CV leakage guard.
     session.impute(strategy="median")
     session.scale(method="standard")
     try:

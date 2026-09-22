@@ -1,6 +1,6 @@
 """Multi-task / multi-output learning domain (sklearn + industry + torch).
 
-Industry depth (R6.4):
+Supported backends:
   - Core sklearn: MultiOutput / Chain façades (always available).
   - Industry (``buildml[multitask-industry]``): XGBoost/LightGBM/CatBoost
     multi-target when installed.

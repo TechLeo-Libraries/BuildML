@@ -36,7 +36,7 @@ from buildml.preprocess.text import TextFeaturePlan
 from buildml.session.audit import DryRunReport, HistorySummary
 from buildml.session.walkthrough import WorkflowWalkthroughReport
 
-# Fit-capable Session-global plans that poison fold-eval rows when applied before CV.
+# Fit-capable Session-global plans that leak information from fold-evaluation rows when applied before CV.
 FIT_CAPABLE_PLAN_KEYS = (
     "impute_plan",
     "encode_plan",
@@ -197,7 +197,7 @@ class WorkflowState:
         """Clear every Session-global preprocess plan slot on this state object.
 
         Does not reset dataset, split, fit results, or history: only the
-        train-global transform plans that can poison fold-local evaluation.
+        train-global transform plans that can bias fold-local evaluation.
         """
         self.impute_plan = None
         self.encode_plan = None
@@ -347,7 +347,7 @@ def clear_plans(session: Any) -> None:
     """Clear every Session-global preprocess plan slot on the live Session.
 
     Does not reset dataset, split, fit results, or history: only the
-    train-global transform plans that can poison fold-local evaluation.
+    train-global transform plans that can bias fold-local evaluation.
 
     Parameters
     ----------

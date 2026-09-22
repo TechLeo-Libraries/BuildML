@@ -36,12 +36,14 @@ class WorkflowSessionMixin:
     ) -> DryRunReport:
         """See what an operation would do, without doing it.
 
-        Session facade over :func:`buildml.session.workflow_ops.dry_run`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.workflow_ops.dry_run`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------
         ~buildml.session.audit.DryRunReport
             What each previewed operation requires, whether those requirements
+            are met, what it would change, and any warnings. Also stored on
+            :attr:`last_dry_run`.
 
         See Also
         --------
@@ -62,12 +64,13 @@ class WorkflowSessionMixin:
     def summarize_history(self) -> HistorySummary:
         """Condense what this session did, and flag what looks risky.
 
-        Session facade over :func:`buildml.session.workflow_ops.summarize_history`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.workflow_ops.summarize_history`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------
         ~buildml.session.audit.HistorySummary
             The condensed record with its risk list. Also stored on
+            :attr:`last_history_summary`.
 
         See Also
         --------
@@ -88,12 +91,14 @@ class WorkflowSessionMixin:
     def workflow(self) -> tuple[WorkflowStep, ...]:
         """List every operation, with what it needs and whether it can run now.
 
-        Session facade over :func:`buildml.session.workflow_ops.workflow`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.workflow_ops.workflow`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------
         tuple of ~buildml.explain.schemas.WorkflowStep
             One entry per public operation, with its identifier, what it
+            requires, whether those requirements are currently met, and whether
+            it has already run.
 
         See Also
         --------
@@ -110,12 +115,14 @@ class WorkflowSessionMixin:
     ) -> WorkflowWalkthroughReport:
         """Narrate everything this session did, and why.
 
-        Session facade over :func:`buildml.session.workflow_ops.walkthrough`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.workflow_ops.walkthrough`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------
         ~buildml.session.walkthrough.WorkflowWalkthroughReport
             The narrated report: the ordered steps, the reasoning behind each,
+            and any warnings raised along the way. Also stored on
+            :attr:`last_walkthrough`.
 
         See Also
         --------
@@ -151,12 +158,14 @@ class WorkflowSessionMixin:
     ) -> Any:
         """Ask what an operation does, in plain language, at any point.
 
-        Session facade over :func:`buildml.session.workflow_ops.explain`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.workflow_ops.explain`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------
         object
             An explanation record for the named operation, or the full workflow
+            tuple when ``operation`` is ``None``. Operation explanations carry a
+            ``beginner`` primer alongside the expert sections.
 
         See Also
         --------
@@ -168,12 +177,13 @@ class WorkflowSessionMixin:
     def learn(self, topic: str | None = None, *, level: str = "beginner") -> Any:
         """Teach a concept, an operation, or a term: and say what to read first.
 
-        Session facade over :func:`buildml.session.workflow_ops.learn`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.workflow_ops.learn`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------
         ~buildml.explain.academy.LearningBrief
             The material for the topic, plus ``read_first`` and ``read_next``
+            concept notes giving a reading order rather than an index.
 
         See Also
         --------

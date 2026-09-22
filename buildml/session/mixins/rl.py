@@ -40,7 +40,7 @@ class RlSessionMixin:
     ) -> ImitationFitResult:
         """Fit behavioral cloning on Session train demonstrations.
 
-        Session facade over :func:`buildml.session.rl_ops.fit_imitation_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.rl_ops.fit_imitation_op`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------
@@ -73,7 +73,7 @@ class RlSessionMixin:
     ) -> ImitationPredictResult:
         """Predict actions under the fitted BC policy.
 
-        Session facade over :func:`buildml.session.rl_ops.predict_imitation_action_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.rl_ops.predict_imitation_action_op`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------
@@ -94,7 +94,7 @@ class RlSessionMixin:
     ) -> ImitationEvalResult:
         """Evaluate BC against held-out demonstration actions.
 
-        Session facade over :func:`buildml.session.rl_ops.evaluate_imitation_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.rl_ops.evaluate_imitation_op`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------
@@ -147,7 +147,7 @@ class RlSessionMixin:
     def save_imitation_bundle(self, path: str | Path) -> Path:
         """Persist the active ImitationPlan as ``buildml.imitation_bundle.v1``.
 
-        Session facade over :func:`buildml.session.rl_ops.save_imitation_bundle_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.rl_ops.save_imitation_bundle_op`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------
@@ -164,7 +164,7 @@ class RlSessionMixin:
     def load_imitation_bundle(self, path: str | Path, *, trusted: bool = False) -> Session:
         """Load an imitation bundle into this Session.
 
-        Session facade over :func:`buildml.session.rl_ops.load_imitation_bundle_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.rl_ops.load_imitation_bundle_op`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------
@@ -182,7 +182,7 @@ class RlSessionMixin:
     def rl_capability_matrix() -> dict[str, Any]:
         """Return the RL / imitation capability matrix for this installation.
 
-        Session facade over :func:`buildml.session.rl_ops.rl_capability_matrix_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.rl_ops.rl_capability_matrix_op`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------
@@ -222,7 +222,7 @@ class RlSessionMixin:
     ) -> RlFitResult:
         """Fit a contextual bandit (core) or a Gymnasium env policy (``buildml[rl]``).
 
-        Session facade over :func:`buildml.session.rl_ops.fit_rl_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.rl_ops.fit_rl_op`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------
@@ -268,7 +268,7 @@ class RlSessionMixin:
     ) -> RlActResult:
         """Choose actions under the fitted RL policy.
 
-        Session facade over :func:`buildml.session.rl_ops.act_rl_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.rl_ops.act_rl_op`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------
@@ -299,7 +299,7 @@ class RlSessionMixin:
     ) -> RlEvalResult:
         """Evaluate RL (offline bandit metrics or Gymnasium rollouts).
 
-        Session facade over :func:`buildml.session.rl_ops.evaluate_rl_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.rl_ops.evaluate_rl_op`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------
@@ -374,7 +374,7 @@ class RlSessionMixin:
     def save_rl_bundle(self, path: str | Path) -> Path:
         """Persist the active RlPlan as ``buildml.rl_bundle.v1``.
 
-        Session facade over :func:`buildml.session.rl_ops.save_rl_bundle_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.rl_ops.save_rl_bundle_op`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------
@@ -391,7 +391,7 @@ class RlSessionMixin:
     def load_rl_bundle(self, path: str | Path, *, trusted: bool = False) -> Session:
         """Load an RL bundle into this Session.
 
-        Session facade over :func:`buildml.session.rl_ops.load_rl_bundle_op`. Canonical Parameters, Raises, Notes, and Examples live on that ops function: keep this method as a thin delegate.
+        Session facade over :func:`buildml.session.rl_ops.load_rl_bundle_op`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 
         Returns
         -------

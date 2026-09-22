@@ -1,0 +1,2099 @@
+{
+  "schema_version": 1,
+  "title": "BuildML claim-to-evidence acceptance register",
+  "baseline_head": "83d1b14571ad9ec44e30d986f256bb552488bda4",
+  "candidate_commit": null,
+  "candidate_manifest": null,
+  "scope": "Material capability claims in README/PyPI long-description source, docs/features.rst and EDA guide/report behavior. Related assertions are grouped; this is not acceptance of every repository sentence.",
+  "status": "awaiting_frozen_candidate_and_independent_acceptance",
+  "assurance_statement": "Release confidence is supported by reproducible checks of documented workflows and environments, with validation coverage and remaining limitations recorded explicitly.",
+  "status_definitions": {
+    "pending_frozen_candidate_review": "Source and regression references mapped; historical execution attached. Independent acceptance of an identified candidate is required."
+  },
+  "evidence": {
+    "prior-full-suite": {
+      "path": "artifacts/implementation-audit/release-final.xml",
+      "kind": "historical_junit",
+      "environment": "Windows; Python 3.12; existing .venv",
+      "binding": "Pre-freeze evidence; not bound to a final candidate",
+      "sha256_at_register_creation": "3ef9b3fdda6996b3f37129e86d85b7ab085181f305aeff03c4c02e7b0e3331e4"
+    },
+    "teaching-closeout": {
+      "path": "artifacts/documentation-audit/teaching-closeout.log",
+      "kind": "historical_scoped_rerun",
+      "scope": "44 beginner/teaching tests after jargon correction",
+      "sha256_at_register_creation": "78c97c20f541b52581d5c3abc25b2d89c6a7a721a64572a9cb06ab80b048d79f"
+    },
+    "repair-report": {
+      "path": "artifacts/documentation-audit/REPAIR_REPORT.md",
+      "kind": "coordinator_report",
+      "sha256_at_register_creation": "dc718d13454685a2d46d47b1949c1c67371c7bea480fac9574ff28e96a47951e"
+    },
+    "implementation-review": {
+      "path": "artifacts/implementation-audit/REPORT.md",
+      "kind": "implementation_audit_report",
+      "sha256_at_register_creation": "2edef2bb2c0587384f20e30715bc42832adbb1fdd661d3be26e2e7f33775b30c"
+    },
+    "documentation-review": {
+      "path": "artifacts/documentation-verification/REPORT.md",
+      "kind": "documentation_audit_report",
+      "sha256_at_register_creation": "5269496e31eca64a95f3ca0dc8d257e189eebcca09b521e22ba764f44174f83b"
+    },
+    "artifact-manifest": {
+      "path": "artifacts/documentation-audit/release-final/verification-manifest.json",
+      "kind": "historical_artifact_hashes",
+      "sha256_at_register_creation": "2c3211d0ca6d4afb938da6dd63fa60b45b5b41b37f6a4f2886a19dd023afe94a"
+    },
+    "eda-acceptance-local": {
+      "path": "artifacts/release-review/eda-tests.log",
+      "kind": "scoped_rerun",
+      "scope": "12 EDA regression tests; pre-freeze run",
+      "sha256_at_register_creation": "e01a6abf40d9f16988df2302acd371cd53d3b37038387030f1c31994f8528368"
+    },
+    "conformal-acceptance-local": {
+      "path": "artifacts/probabilistic-acceptance.log",
+      "kind": "scoped_rerun",
+      "scope": "34 passed, 3 skipped; probabilistic and teaching regressions after finite-cutoff fix",
+      "sha256_at_register_creation": "8b81ec6c5f20cfd29ddf7a036af47dade4d4013d354d71f63e35c0ab80e0caf9"
+    },
+    "fresh-wheel-local": {
+      "path": "artifacts/release-review/fresh-install.json",
+      "kind": "installed_artifact_acceptance",
+      "scope": "Six checks passed in fresh Windows Python 3.12 environment; independent core dependency installation; other matrix cells pending",
+      "sha256_at_register_creation": "a621333746920e8cac0111fa1dc966a1b92fb9ec73e3f22e117af4863aa37bec"
+    }
+  },
+  "claims": [
+    {
+      "id": "BML-CORE-001",
+      "claim": "Session coordinates data, roles, partitions, preprocessing, fitted models and operation history.",
+      "public_sources": [
+        {
+          "path": "README.md",
+          "section": "BuildML"
+        }
+      ],
+      "implementation_paths": [
+        "buildml/session/state.py",
+        "buildml/session/data_ops.py",
+        "buildml/session/classical_ops.py"
+      ],
+      "dependency_scope": "core",
+      "assumptions_and_limits": [
+        "Stateful orchestration does not infer the correct scientific study design."
+      ],
+      "test_paths": [
+        "tests/integration/test_classical_alpha_smoke.py",
+        "tests/integration/test_classical_parity_flow.py",
+        "tests/unit/test_session_facades.py"
+      ],
+      "recorded_evidence": {
+        "reference": "prior-full-suite",
+        "selected_test_file_counts": {
+          "passed": 18,
+          "failed": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        "interpretation": "Historical file-level counts, not per-claim acceptance or coverage of all branches."
+      },
+      "verification_status": "pending_frozen_candidate_review",
+      "acceptance": {
+        "independent_reviewer": null,
+        "human_reviewer": null,
+        "decision": "pending",
+        "evidence": []
+      },
+      "test_selectors": []
+    },
+    {
+      "id": "BML-DATA-001",
+      "claim": "Ingest supports DataFrames and documented file formats with detection and loading reports.",
+      "public_sources": [
+        {
+          "path": "docs/features.rst",
+          "section": "Data and workflow"
+        }
+      ],
+      "implementation_paths": [
+        "buildml/ingest/loaders.py",
+        "buildml/ingest/pipeline.py"
+      ],
+      "dependency_scope": "core",
+      "assumptions_and_limits": [
+        "Excel and optional engines require their dependencies. Individual formats and malformed inputs need separate acceptance; file-level tests are not exhaustive format validation."
+      ],
+      "test_paths": [
+        "tests/integration/test_import_and_ingest.py",
+        "tests/unit/test_data_mode.py"
+      ],
+      "recorded_evidence": {
+        "reference": "prior-full-suite",
+        "selected_test_file_counts": {
+          "passed": 11,
+          "failed": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        "interpretation": "Historical file-level counts, not per-claim acceptance or coverage of all branches."
+      },
+      "verification_status": "pending_frozen_candidate_review",
+      "acceptance": {
+        "independent_reviewer": null,
+        "human_reviewer": null,
+        "decision": "pending",
+        "evidence": []
+      },
+      "test_selectors": []
+    },
+    {
+      "id": "BML-DATA-002",
+      "claim": "Random, stratified, grouped, chronological and injected partitions are available.",
+      "public_sources": [
+        {
+          "path": "docs/features.rst",
+          "section": "Data and workflow"
+        }
+      ],
+      "implementation_paths": [
+        "buildml/session/data_ops.py"
+      ],
+      "dependency_scope": "core",
+      "assumptions_and_limits": [
+        "Users must identify repeated entities and temporal ordering. Random partitions do not establish statistical independence."
+      ],
+      "test_paths": [
+        "tests/unit/test_group_time_splits.py",
+        "tests/unit/test_splits_and_leakage.py"
+      ],
+      "recorded_evidence": {
+        "reference": "prior-full-suite",
+        "selected_test_file_counts": {
+          "passed": 10,
+          "failed": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        "interpretation": "Historical file-level counts, not per-claim acceptance or coverage of all branches."
+      },
+      "verification_status": "pending_frozen_candidate_review",
+      "acceptance": {
+        "independent_reviewer": null,
+        "human_reviewer": null,
+        "decision": "pending",
+        "evidence": []
+      },
+      "test_selectors": []
+    },
+    {
+      "id": "BML-PREP-001",
+      "claim": "Fit-capable core preprocessing learns on training rows and applies fitted plans to holdouts.",
+      "public_sources": [
+        {
+          "path": "docs/features.rst",
+          "section": "Preparation"
+        }
+      ],
+      "implementation_paths": [
+        "buildml/session/preprocess_ops.py"
+      ],
+      "dependency_scope": "core",
+      "assumptions_and_limits": [
+        "Custom transforms are Session-global, not automatically fold-local. External feature engineering can introduce leakage. Resampling requires the imbalanced extra."
+      ],
+      "test_paths": [
+        "tests/unit/test_prep_depth_and_audit.py",
+        "tests/unit/test_preprocess.py",
+        "tests/unit/test_preprocess_depth.py",
+        "tests/unit/test_preprocess_native_sync.py",
+        "tests/unit/test_preprocess_role_skip.py",
+        "tests/unit/test_preprocess_scope_teaching.py"
+      ],
+      "recorded_evidence": {
+        "reference": "prior-full-suite",
+        "selected_test_file_counts": {
+          "passed": 27,
+          "failed": 0,
+          "errors": 0,
+          "skipped": 3
+        },
+        "interpretation": "Historical file-level counts, not per-claim acceptance or coverage of all branches."
+      },
+      "verification_status": "pending_frozen_candidate_review",
+      "acceptance": {
+        "independent_reviewer": null,
+        "human_reviewer": null,
+        "decision": "pending",
+        "evidence": []
+      },
+      "test_selectors": []
+    },
+    {
+      "id": "BML-CV-001",
+      "claim": "Classical CV/search use training-partition folds and support fold-local PreprocessRecipe.",
+      "public_sources": [
+        {
+          "path": "README.md",
+          "section": "What the Session protects"
+        }
+      ],
+      "implementation_paths": [
+        "buildml/model/selection.py",
+        "buildml/session/classical_ops.py"
+      ],
+      "dependency_scope": "core",
+      "assumptions_and_limits": [
+        "Start from unprocessed data; allow_session_global_preprocess explicitly accepts biased validation risk. Optuna is optional. Repeated consultation of test scores can still bias selection."
+      ],
+      "test_paths": [
+        "tests/unit/test_evolutionary_search.py",
+        "tests/unit/test_nested_cv.py",
+        "tests/unit/test_nested_cv_optuna.py",
+        "tests/unit/test_nested_cv_warm_start.py",
+        "tests/unit/test_optuna_search.py",
+        "tests/unit/test_selection_cv.py"
+      ],
+      "recorded_evidence": {
+        "reference": "prior-full-suite",
+        "selected_test_file_counts": {
+          "passed": 32,
+          "failed": 0,
+          "errors": 0,
+          "skipped": 6
+        },
+        "interpretation": "Historical file-level counts, not per-claim acceptance or coverage of all branches."
+      },
+      "verification_status": "pending_frozen_candidate_review",
+      "acceptance": {
+        "independent_reviewer": null,
+        "human_reviewer": null,
+        "decision": "pending",
+        "evidence": []
+      },
+      "test_selectors": []
+    },
+    {
+      "id": "BML-MODEL-001",
+      "claim": "Core classification/regression fit sklearn-compatible estimators and evaluate named partitions.",
+      "public_sources": [
+        {
+          "path": "docs/features.rst",
+          "section": "Classical models and diagnostics"
+        }
+      ],
+      "implementation_paths": [
+        "buildml/session/classical_ops.py"
+      ],
+      "dependency_scope": "core",
+      "assumptions_and_limits": [
+        "Compatibility and metric validity depend on task/data. compare_models defaults to test; select validation during iterative model selection."
+      ],
+      "test_paths": [
+        "tests/integration/test_classical_alpha_smoke.py",
+        "tests/integration/test_classical_parity_flow.py",
+        "tests/unit/test_model_reporting_milestone4.py"
+      ],
+      "recorded_evidence": {
+        "reference": "prior-full-suite",
+        "selected_test_file_counts": {
+          "passed": 5,
+          "failed": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        "interpretation": "Historical file-level counts, not per-claim acceptance or coverage of all branches."
+      },
+      "verification_status": "pending_frozen_candidate_review",
+      "acceptance": {
+        "independent_reviewer": null,
+        "human_reviewer": null,
+        "decision": "pending",
+        "evidence": []
+      },
+      "test_selectors": []
+    },
+    {
+      "id": "BML-ARTIFACT-001",
+      "claim": "Checkpoints store workflow data/roles/splits/history; pipeline bundles store fitted plans and estimator.",
+      "public_sources": [
+        {
+          "path": "README.md",
+          "section": "Save, reload, and trust"
+        }
+      ],
+      "implementation_paths": [
+        "buildml/checkpoint/bundle.py",
+        "buildml/checkpoint/validate.py",
+        "buildml/pipeline/persist.py",
+        "buildml/pipeline/bundle.py"
+      ],
+      "dependency_scope": "core",
+      "assumptions_and_limits": [
+        "Trusted loading is required for pickle/joblib payloads; integrity checking does not establish trusted authorship. Checkpoints and pipeline bundles do not embed each other. Cross-version compatibility requires review."
+      ],
+      "test_paths": [
+        "tests/integration/test_checkpoint_pipeline_smoke.py",
+        "tests/integration/test_checkpoint_roundtrip.py",
+        "tests/integration/test_pipeline_bundle_roundtrip.py",
+        "tests/integration/test_predict_from_pipeline.py",
+        "tests/unit/test_checkpoint_native_reattach.py",
+        "tests/unit/test_checkpoint_native_sidecar.py",
+        "tests/unit/test_checkpoint_sidecar_layout.py"
+      ],
+      "recorded_evidence": {
+        "reference": "prior-full-suite",
+        "selected_test_file_counts": {
+          "passed": 15,
+          "failed": 0,
+          "errors": 0,
+          "skipped": 10
+        },
+        "interpretation": "Historical file-level counts, not per-claim acceptance or coverage of all branches."
+      },
+      "verification_status": "pending_frozen_candidate_review",
+      "acceptance": {
+        "independent_reviewer": null,
+        "human_reviewer": null,
+        "decision": "pending",
+        "evidence": []
+      },
+      "test_selectors": []
+    },
+    {
+      "id": "BML-ENGINES-001",
+      "claim": "Optional Polars and DuckDB materialization integrates with Session data.",
+      "public_sources": [
+        {
+          "path": "docs/features.rst",
+          "section": "Data and workflow"
+        }
+      ],
+      "implementation_paths": [
+        "buildml/session/data_ops.py"
+      ],
+      "dependency_scope": "polars / duckdb / engines",
+      "assumptions_and_limits": [
+        "Availability depends on installed engines; no out-of-core sklearn training guarantee."
+      ],
+      "test_paths": [
+        "tests/unit/test_dataset_native.py",
+        "tests/unit/test_engine_aggregate.py",
+        "tests/unit/test_engine_prep.py",
+        "tests/unit/test_engines.py"
+      ],
+      "recorded_evidence": {
+        "reference": "prior-full-suite",
+        "selected_test_file_counts": {
+          "passed": 9,
+          "failed": 0,
+          "errors": 0,
+          "skipped": 12
+        },
+        "interpretation": "Historical file-level counts, not per-claim acceptance or coverage of all branches."
+      },
+      "verification_status": "pending_frozen_candidate_review",
+      "acceptance": {
+        "independent_reviewer": null,
+        "human_reviewer": null,
+        "decision": "pending",
+        "evidence": []
+      },
+      "test_selectors": []
+    },
+    {
+      "id": "BML-TEACH-001",
+      "claim": "Versioned explanations and workflow guidance describe public operations and expose state.",
+      "public_sources": [
+        {
+          "path": "docs/features.rst",
+          "section": "Teaching and reports"
+        }
+      ],
+      "implementation_paths": [
+        "buildml/session/workflow_ops.py",
+        "buildml/explain/generated/operation_index.json"
+      ],
+      "dependency_scope": "core",
+      "assumptions_and_limits": [
+        "Teaching explains contracts, not scientific suitability. The historical full run includes one jargon failure repaired in a later scoped run; see teaching-closeout evidence."
+      ],
+      "test_paths": [
+        "tests/unit/test_explain_beginner_layer.py",
+        "tests/unit/test_explain_catalog.py",
+        "tests/unit/test_explain_runtime.py",
+        "tests/unit/test_session_discovery.py",
+        "tests/unit/test_teaching_examples.py",
+        "tests/unit/test_teaching_surface_sync.py"
+      ],
+      "recorded_evidence": {
+        "reference": "prior-full-suite",
+        "selected_test_file_counts": {
+          "passed": 68,
+          "failed": 1,
+          "errors": 0,
+          "skipped": 0
+        },
+        "interpretation": "Historical file-level counts, not per-claim acceptance or coverage of all branches."
+      },
+      "verification_status": "pending_frozen_candidate_review",
+      "acceptance": {
+        "independent_reviewer": null,
+        "human_reviewer": null,
+        "decision": "pending",
+        "evidence": []
+      },
+      "test_selectors": []
+    },
+    {
+      "id": "BML-EDA-001",
+      "claim": "EDA accepts explicit exploration partitions and discloses the separate train-versus-test drift scope.",
+      "public_sources": [
+        {
+          "path": "guides/eda-teaching-studio.md",
+          "section": "Use case: findings before preparation"
+        }
+      ],
+      "implementation_paths": [
+        "buildml/session/eda_ops.py",
+        "buildml/eda/profile.py",
+        "buildml/eda/report.py",
+        "buildml/eda/analyzers/drift.py"
+      ],
+      "dependency_scope": "core",
+      "assumptions_and_limits": [
+        "Default exploration uses all rows. partition=train still permits the separately disclosed full train/test drift comparison. Using holdout findings for model/feature selection compromises an untouched test set.",
+        "Drift results record train/test row counts and analyzed feature columns. Scores describe the supplied data representation; review prior preprocessing separately. Columns with too few usable observations and output limits constrain screening coverage."
+      ],
+      "test_paths": [
+        "tests/unit/test_eda_audit_regressions.py"
+      ],
+      "recorded_evidence": {
+        "reference": "prior-full-suite",
+        "selected_test_file_counts": {
+          "passed": 11,
+          "failed": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        "interpretation": "Historical file-level counts, not per-claim acceptance or coverage of all branches."
+      },
+      "verification_status": "pending_frozen_candidate_review",
+      "acceptance": {
+        "independent_reviewer": null,
+        "human_reviewer": null,
+        "decision": "pending",
+        "evidence": []
+      },
+      "test_selectors": [
+        "tests/unit/test_eda_audit_regressions.py::test_train_scope_excludes_holdout_from_quality_and_target",
+        "tests/unit/test_eda_audit_regressions.py::test_export_discloses_train_analysis_and_heldout_drift"
+      ]
+    },
+    {
+      "id": "BML-EDA-002",
+      "claim": "Continuous declared feature columns remain eligible; unavailable drift differs from no flagged drift.",
+      "public_sources": [
+        {
+          "path": "docs/features.rst",
+          "section": "Teaching and reports"
+        }
+      ],
+      "implementation_paths": [
+        "buildml/eda/analyzers/quality.py",
+        "buildml/eda/analyzers/drift.py",
+        "buildml/eda/profile.py"
+      ],
+      "dependency_scope": "core",
+      "assumptions_and_limits": [
+        "Identifier screening and drift thresholds are heuristics; no warning does not establish absence of drift or deployment fitness."
+      ],
+      "test_paths": [
+        "tests/unit/test_eda_audit_regressions.py",
+        "tests/unit/test_eda_depth.py"
+      ],
+      "recorded_evidence": {
+        "reference": "prior-full-suite",
+        "selected_test_file_counts": {
+          "passed": 17,
+          "failed": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        "interpretation": "Historical file-level counts, not per-claim acceptance or coverage of all branches."
+      },
+      "verification_status": "pending_frozen_candidate_review",
+      "acceptance": {
+        "independent_reviewer": null,
+        "human_reviewer": null,
+        "decision": "pending",
+        "evidence": []
+      },
+      "test_selectors": [
+        "tests/unit/test_eda_audit_regressions.py::test_continuous_features_remain_in_analysis_and_detect_drift",
+        "tests/unit/test_eda_audit_regressions.py::test_no_eligible_drift_is_unavailable_not_reassuring"
+      ]
+    },
+    {
+      "id": "BML-EDA-003",
+      "claim": "EDA separates missing/nonfinite observations from usable data and discloses quality counts.",
+      "public_sources": [
+        {
+          "path": "docs/features.rst",
+          "section": "Teaching and reports"
+        }
+      ],
+      "implementation_paths": [
+        "buildml/eda/analyzers/target.py",
+        "buildml/eda/profile.py",
+        "buildml/eda/visualize.py"
+      ],
+      "dependency_scope": "core",
+      "assumptions_and_limits": [
+        "Task inference remains heuristic for integer-coded targets and can differ from intent. Exclusion changes denominators; review counts. EDA does not repair the original Session data."
+      ],
+      "test_paths": [
+        "tests/unit/test_eda_audit_regressions.py"
+      ],
+      "recorded_evidence": {
+        "reference": "prior-full-suite",
+        "selected_test_file_counts": {
+          "passed": 11,
+          "failed": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        "interpretation": "Historical file-level counts, not per-claim acceptance or coverage of all branches."
+      },
+      "verification_status": "pending_frozen_candidate_review",
+      "acceptance": {
+        "independent_reviewer": null,
+        "human_reviewer": null,
+        "decision": "pending",
+        "evidence": []
+      },
+      "test_selectors": [
+        "tests/unit/test_eda_audit_regressions.py::test_missing_labels_are_not_an_extra_class",
+        "tests/unit/test_eda_audit_regressions.py::test_nonfinite_features_and_target_are_disclosed_and_excluded"
+      ]
+    },
+    {
+      "id": "BML-EDA-004",
+      "claim": "Read-only EDA findings and recommendations are available through research HTML, offline studio and local dashboard.",
+      "public_sources": [
+        {
+          "path": "docs/features.rst",
+          "section": "Teaching and reports"
+        }
+      ],
+      "implementation_paths": [
+        "buildml/eda/html_report.py",
+        "buildml/dashboard/app.py"
+      ],
+      "dependency_scope": "eda / viz / dashboard",
+      "assumptions_and_limits": [
+        "Readiness gates are heuristic aids and tab-local UI marks, not persisted approvals. Route/schema tests do not replace browser/accessibility review."
+      ],
+      "test_paths": [
+        "tests/unit/test_eda_academy.py",
+        "tests/unit/test_eda_adaptability.py",
+        "tests/unit/test_eda_audit_regressions.py",
+        "tests/unit/test_eda_cockpit_ux.py",
+        "tests/unit/test_eda_dashboard.py",
+        "tests/unit/test_eda_depth.py",
+        "tests/unit/test_eda_gates.py",
+        "tests/unit/test_eda_sheet_coverage.py",
+        "tests/unit/test_reporting_shell.py"
+      ],
+      "recorded_evidence": {
+        "reference": "prior-full-suite",
+        "selected_test_file_counts": {
+          "passed": 64,
+          "failed": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        "interpretation": "Historical file-level counts, not per-claim acceptance or coverage of all branches."
+      },
+      "verification_status": "pending_frozen_candidate_review",
+      "acceptance": {
+        "independent_reviewer": null,
+        "human_reviewer": null,
+        "decision": "pending",
+        "evidence": []
+      },
+      "test_selectors": []
+    },
+    {
+      "id": "BML-DOMAIN-UNSUPERVISED",
+      "claim": "Train-fitted clustering with holdout assignment and geometric evaluation.",
+      "public_sources": [
+        {
+          "path": "docs/features.rst",
+          "section": "Unsupervised"
+        }
+      ],
+      "implementation_paths": [
+        "buildml/session/unsupervised_ops.py"
+      ],
+      "dependency_scope": "core; unsupervised extra",
+      "assumptions_and_limits": [
+        "Clusters are not ground-truth classes. Capability availability and smoke tests are not benchmark-quality evidence."
+      ],
+      "test_paths": [
+        "tests/integration/test_unsupervised_alpha_smoke.py",
+        "tests/unit/test_unsupervised_m2_depth.py",
+        "tests/unit/test_unsupervised_r2_depth.py",
+        "tests/unit/test_unsupervised_slice.py"
+      ],
+      "recorded_evidence": {
+        "reference": "prior-full-suite",
+        "selected_test_file_counts": {
+          "passed": 28,
+          "failed": 0,
+          "errors": 0,
+          "skipped": 3
+        },
+        "interpretation": "Historical file-level counts, not per-claim acceptance or coverage of all branches."
+      },
+      "verification_status": "pending_frozen_candidate_review",
+      "acceptance": {
+        "independent_reviewer": null,
+        "human_reviewer": null,
+        "decision": "pending",
+        "evidence": []
+      },
+      "test_selectors": []
+    },
+    {
+      "id": "BML-DOMAIN-ENSEMBLE",
+      "claim": "Voting, stacking and blending keep internal folds/holdouts within train.",
+      "public_sources": [
+        {
+          "path": "docs/features.rst",
+          "section": "Ensembles"
+        }
+      ],
+      "implementation_paths": [
+        "buildml/session/ensemble_ops.py"
+      ],
+      "dependency_scope": "core",
+      "assumptions_and_limits": [
+        "Group/time dependencies still require appropriate fold design. Capability availability and smoke tests are not benchmark-quality evidence."
+      ],
+      "test_paths": [
+        "tests/integration/test_ensemble_alpha_smoke.py",
+        "tests/unit/test_ensemble_m2_depth.py",
+        "tests/unit/test_ensemble_reporting_high.py",
+        "tests/unit/test_ensemble_slice.py"
+      ],
+      "recorded_evidence": {
+        "reference": "prior-full-suite",
+        "selected_test_file_counts": {
+          "passed": 19,
+          "failed": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        "interpretation": "Historical file-level counts, not per-claim acceptance or coverage of all branches."
+      },
+      "verification_status": "pending_frozen_candidate_review",
+      "acceptance": {
+        "independent_reviewer": null,
+        "human_reviewer": null,
+        "decision": "pending",
+        "evidence": []
+      },
+      "test_selectors": []
+    },
+    {
+      "id": "BML-DOMAIN-AUTOML",
+      "claim": "Budgeted model-family and preprocessing search exposes backend capabilities.",
+      "public_sources": [
+        {
+          "path": "docs/features.rst",
+          "section": "AutoML"
+        }
+      ],
+      "implementation_paths": [
+        "buildml/session/automl_ops.py"
+      ],
+      "dependency_scope": "core; optuna / automl-industry",
+      "assumptions_and_limits": [
+        "Installation and data constrain backend search; not NAS or causal discovery. Capability availability and smoke tests are not benchmark-quality evidence."
+      ],
+      "test_paths": [
+        "tests/integration/test_automl_alpha_smoke.py",
+        "tests/unit/test_automl_m2_depth.py",
+        "tests/unit/test_automl_r5_industry.py",
+        "tests/unit/test_automl_reporting_high.py",
+        "tests/unit/test_automl_slice.py"
+      ],
+      "recorded_evidence": {
+        "reference": "prior-full-suite",
+        "selected_test_file_counts": {
+          "passed": 25,
+          "failed": 0,
+          "errors": 0,
+          "skipped": 4
+        },
+        "interpretation": "Historical file-level counts, not per-claim acceptance or coverage of all branches."
+      },
+      "verification_status": "pending_frozen_candidate_review",
+      "acceptance": {
+        "independent_reviewer": null,
+        "human_reviewer": null,
+        "decision": "pending",
+        "evidence": []
+      },
+      "test_selectors": []
+    },
+    {
+      "id": "BML-DOMAIN-FORECAST",
+      "claim": "Forecast fit/generate/evaluate follows time roles and time splits.",
+      "public_sources": [
+        {
+          "path": "docs/features.rst",
+          "section": "Forecasting"
+        }
+      ],
+      "implementation_paths": [
+        "buildml/session/forecast_ops.py"
+      ],
+      "dependency_scope": "core; see capability catalog",
+      "assumptions_and_limits": [
+        "Required future exogenous values must be provided; no unrestricted econometrics/sequence-model platform. Capability availability and smoke tests are not benchmark-quality evidence."
+      ],
+      "test_paths": [
+        "tests/integration/test_forecasting_alpha_smoke.py",
+        "tests/unit/test_forecasting_m2_depth.py",
+        "tests/unit/test_forecasting_r3_depth.py",
+        "tests/unit/test_forecasting_slice.py"
+      ],
+      "recorded_evidence": {
+        "reference": "prior-full-suite",
+        "selected_test_file_counts": {
+          "passed": 19,
+          "failed": 0,
+          "errors": 0,
+          "skipped": 1
+        },
+        "interpretation": "Historical file-level counts, not per-claim acceptance or coverage of all branches."
+      },
+      "verification_status": "pending_frozen_candidate_review",
+      "acceptance": {
+        "independent_reviewer": null,
+        "human_reviewer": null,
+        "decision": "pending",
+        "evidence": []
+      },
+      "test_selectors": []
+    },
+    {
+      "id": "BML-DOMAIN-TIMESERIES",
+      "claim": "Time-series analysis/decomposition/diagnostics are distinct from forecast fitting.",
+      "public_sources": [
+        {
+          "path": "docs/features.rst",
+          "section": "Time-series analysis"
+        }
+      ],
+      "implementation_paths": [
+        "buildml/session/timeseries_ops.py"
+      ],
+      "dependency_scope": "timeseries / timeseries-prophet / timeseries-ml",
+      "assumptions_and_limits": [
+        "Optional algorithms need installed backends; analysis alone does not fit a forecast model. Capability availability and smoke tests are not benchmark-quality evidence."
+      ],
+      "test_paths": [
+        "tests/unit/test_timeseries_r3_depth.py",
+        "tests/unit/test_timeseries_teaching_wiring.py"
+      ],
+      "recorded_evidence": {
+        "reference": "prior-full-suite",
+        "selected_test_file_counts": {
+          "passed": 7,
+          "failed": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        "interpretation": "Historical file-level counts, not per-claim acceptance or coverage of all branches."
+      },
+      "verification_status": "pending_frozen_candidate_review",
+      "acceptance": {
+        "independent_reviewer": null,
+        "human_reviewer": null,
+        "decision": "pending",
+        "evidence": []
+      },
+      "test_selectors": []
+    },
+    {
+      "id": "BML-DOMAIN-ANOMALY",
+      "claim": "Supported anomaly estimators score/evaluate and tune thresholds.",
+      "public_sources": [
+        {
+          "path": "docs/features.rst",
+          "section": "Anomaly / fraud"
+        }
+      ],
+      "implementation_paths": [
+        "buildml/session/anomaly_ops.py"
+      ],
+      "dependency_scope": "core; anomaly-industry",
+      "assumptions_and_limits": [
+        "Scores do not establish fraud or causality; threshold tuning must preserve evaluation independence. Capability availability and smoke tests are not benchmark-quality evidence."
+      ],
+      "test_paths": [
+        "tests/integration/test_anomaly_alpha_smoke.py",
+        "tests/unit/test_anomaly_industry_depth.py",
+        "tests/unit/test_anomaly_m2_depth.py",
+        "tests/unit/test_anomaly_slice.py"
+      ],
+      "recorded_evidence": {
+        "reference": "prior-full-suite",
+        "selected_test_file_counts": {
+          "passed": 23,
+          "failed": 0,
+          "errors": 0,
+          "skipped": 4
+        },
+        "interpretation": "Historical file-level counts, not per-claim acceptance or coverage of all branches."
+      },
+      "verification_status": "pending_frozen_candidate_review",
+      "acceptance": {
+        "independent_reviewer": null,
+        "human_reviewer": null,
+        "decision": "pending",
+        "evidence": []
+      },
+      "test_selectors": []
+    },
+    {
+      "id": "BML-DOMAIN-SEMISUPERVISED",
+      "claim": "Fitting uses labeled/unlabeled train rows; holdout metrics are labeled-only.",
+      "public_sources": [
+        {
+          "path": "docs/features.rst",
+          "section": "Semi-supervised"
+        }
+      ],
+      "implementation_paths": [
+        "buildml/session/semisupervised_ops.py"
+      ],
+      "dependency_scope": "core; semisupervised-industry",
+      "assumptions_and_limits": [
+        "Missing targets indicate unlabeled rows; algorithm assumptions/class coverage matter. Capability availability and smoke tests are not benchmark-quality evidence."
+      ],
+      "test_paths": [
+        "tests/integration/test_semisupervised_alpha_smoke.py",
+        "tests/unit/test_semisupervised_industry_depth.py",
+        "tests/unit/test_semisupervised_m2_depth.py",
+        "tests/unit/test_semisupervised_slice.py"
+      ],
+      "recorded_evidence": {
+        "reference": "prior-full-suite",
+        "selected_test_file_counts": {
+          "passed": 17,
+          "failed": 0,
+          "errors": 0,
+          "skipped": 1
+        },
+        "interpretation": "Historical file-level counts, not per-claim acceptance or coverage of all branches."
+      },
+      "verification_status": "pending_frozen_candidate_review",
+      "acceptance": {
+        "independent_reviewer": null,
+        "human_reviewer": null,
+        "decision": "pending",
+        "evidence": []
+      },
+      "test_selectors": []
+    },
+    {
+      "id": "BML-DOMAIN-SSL",
+      "claim": "Documented pretext training, transforms, supervised heads and bundle roundtrips are supported.",
+      "public_sources": [
+        {
+          "path": "docs/features.rst",
+          "section": "Self-supervised"
+        }
+      ],
+      "implementation_paths": [
+        "buildml/session/selfsupervised_ops.py"
+      ],
+      "dependency_scope": "core; torch / ssl",
+      "assumptions_and_limits": [
+        "Five Torch tabular roundtrips have recorded execution; vision/HF downloads require separate acceptance. Capability availability and smoke tests are not benchmark-quality evidence."
+      ],
+      "test_paths": [
+        "tests/integration/test_selfsupervised_alpha_smoke.py",
+        "tests/unit/test_selfsupervised_m2_depth.py",
+        "tests/unit/test_selfsupervised_slice.py",
+        "tests/unit/test_selfsupervised_torch.py"
+      ],
+      "recorded_evidence": {
+        "reference": "prior-full-suite",
+        "selected_test_file_counts": {
+          "passed": 24,
+          "failed": 0,
+          "errors": 0,
+          "skipped": 1
+        },
+        "interpretation": "Historical file-level counts, not per-claim acceptance or coverage of all branches."
+      },
+      "verification_status": "pending_frozen_candidate_review",
+      "acceptance": {
+        "independent_reviewer": null,
+        "human_reviewer": null,
+        "decision": "pending",
+        "evidence": []
+      },
+      "test_selectors": []
+    },
+    {
+      "id": "BML-DOMAIN-ACTIVE",
+      "claim": "Queries target the unlabeled train pool and respect budgets.",
+      "public_sources": [
+        {
+          "path": "docs/features.rst",
+          "section": "Active learning"
+        }
+      ],
+      "implementation_paths": [
+        "buildml/session/activelearning_ops.py"
+      ],
+      "dependency_scope": "core; activelearning-industry",
+      "assumptions_and_limits": [
+        "Human labels are required; the query strategy is not an oracle. Capability availability and smoke tests are not benchmark-quality evidence."
+      ],
+      "test_paths": [
+        "tests/integration/test_activelearning_alpha_smoke.py",
+        "tests/unit/test_activelearning_industry_depth.py",
+        "tests/unit/test_activelearning_m2_depth.py",
+        "tests/unit/test_activelearning_slice.py"
+      ],
+      "recorded_evidence": {
+        "reference": "prior-full-suite",
+        "selected_test_file_counts": {
+          "passed": 26,
+          "failed": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        "interpretation": "Historical file-level counts, not per-claim acceptance or coverage of all branches."
+      },
+      "verification_status": "pending_frozen_candidate_review",
+      "acceptance": {
+        "independent_reviewer": null,
+        "human_reviewer": null,
+        "decision": "pending",
+        "evidence": []
+      },
+      "test_selectors": []
+    },
+    {
+      "id": "BML-DOMAIN-ONLINE",
+      "claim": "Incremental updates use train chunks with supported estimators.",
+      "public_sources": [
+        {
+          "path": "docs/features.rst",
+          "section": "Online / continual"
+        }
+      ],
+      "implementation_paths": [
+        "buildml/session/online_ops.py"
+      ],
+      "dependency_scope": "core; online-industry",
+      "assumptions_and_limits": [
+        "No distributed streaming guarantee; unsupported silent full refits are refused. Capability availability and smoke tests are not benchmark-quality evidence."
+      ],
+      "test_paths": [
+        "tests/integration/test_online_alpha_smoke.py",
+        "tests/unit/test_online_industry_depth.py",
+        "tests/unit/test_online_m2_depth.py",
+        "tests/unit/test_online_slice.py"
+      ],
+      "recorded_evidence": {
+        "reference": "prior-full-suite",
+        "selected_test_file_counts": {
+          "passed": 19,
+          "failed": 0,
+          "errors": 0,
+          "skipped": 1
+        },
+        "interpretation": "Historical file-level counts, not per-claim acceptance or coverage of all branches."
+      },
+      "verification_status": "pending_frozen_candidate_review",
+      "acceptance": {
+        "independent_reviewer": null,
+        "human_reviewer": null,
+        "decision": "pending",
+        "evidence": []
+      },
+      "test_selectors": []
+    },
+    {
+      "id": "BML-DOMAIN-MULTITASK",
+      "claim": "Multioutput/chained methods support multiple same-type targets.",
+      "public_sources": [
+        {
+          "path": "docs/features.rst",
+          "section": "Multi-task"
+        }
+      ],
+      "implementation_paths": [
+        "buildml/session/multitask_ops.py"
+      ],
+      "dependency_scope": "core; multitask-industry",
+      "assumptions_and_limits": [
+        "Mixed classification/regression targets are unsupported in the documented path. Capability availability and smoke tests are not benchmark-quality evidence."
+      ],
+      "test_paths": [
+        "tests/integration/test_multitask_alpha_smoke.py",
+        "tests/unit/test_multitask_industry_depth.py",
+        "tests/unit/test_multitask_m2_depth.py",
+        "tests/unit/test_multitask_slice.py"
+      ],
+      "recorded_evidence": {
+        "reference": "prior-full-suite",
+        "selected_test_file_counts": {
+          "passed": 22,
+          "failed": 0,
+          "errors": 0,
+          "skipped": 1
+        },
+        "interpretation": "Historical file-level counts, not per-claim acceptance or coverage of all branches."
+      },
+      "verification_status": "pending_frozen_candidate_review",
+      "acceptance": {
+        "independent_reviewer": null,
+        "human_reviewer": null,
+        "decision": "pending",
+        "evidence": []
+      },
+      "test_selectors": []
+    },
+    {
+      "id": "BML-DOMAIN-META",
+      "claim": "Documented episodic methods evaluate held-out tasks and disclose overlap.",
+      "public_sources": [
+        {
+          "path": "docs/features.rst",
+          "section": "Meta-learning"
+        }
+      ],
+      "implementation_paths": [
+        "buildml/session/metalearning_ops.py"
+      ],
+      "dependency_scope": "core; torch / metalearning-industry",
+      "assumptions_and_limits": [
+        "Task identities/episode construction determine validity; no foundation-model meta-learning claim. Capability availability and smoke tests are not benchmark-quality evidence."
+      ],
+      "test_paths": [
+        "tests/integration/test_metalearning_alpha_smoke.py",
+        "tests/unit/test_metalearning_m2_depth.py",
+        "tests/unit/test_metalearning_r65_industry.py",
+        "tests/unit/test_metalearning_slice.py"
+      ],
+      "recorded_evidence": {
+        "reference": "prior-full-suite",
+        "selected_test_file_counts": {
+          "passed": 17,
+          "failed": 0,
+          "errors": 0,
+          "skipped": 1
+        },
+        "interpretation": "Historical file-level counts, not per-claim acceptance or coverage of all branches."
+      },
+      "verification_status": "pending_frozen_candidate_review",
+      "acceptance": {
+        "independent_reviewer": null,
+        "human_reviewer": null,
+        "decision": "pending",
+        "evidence": []
+      },
+      "test_selectors": []
+    },
+    {
+      "id": "BML-DOMAIN-FEDERATED",
+      "claim": "Local FedAvg/FedProx simulation uses declared clients/groups.",
+      "public_sources": [
+        {
+          "path": "docs/features.rst",
+          "section": "Federated"
+        }
+      ],
+      "implementation_paths": [
+        "buildml/session/federated_ops.py"
+      ],
+      "dependency_scope": "core; federated-industry adapters",
+      "assumptions_and_limits": [
+        "Local simulation is not network federation, secure aggregation or a privacy guarantee. Capability availability and smoke tests are not benchmark-quality evidence."
+      ],
+      "test_paths": [
+        "tests/integration/test_federated_alpha_smoke.py",
+        "tests/unit/test_federated_industry_depth.py",
+        "tests/unit/test_federated_m2_depth.py",
+        "tests/unit/test_federated_slice.py"
+      ],
+      "recorded_evidence": {
+        "reference": "prior-full-suite",
+        "selected_test_file_counts": {
+          "passed": 19,
+          "failed": 0,
+          "errors": 0,
+          "skipped": 1
+        },
+        "interpretation": "Historical file-level counts, not per-claim acceptance or coverage of all branches."
+      },
+      "verification_status": "pending_frozen_candidate_review",
+      "acceptance": {
+        "independent_reviewer": null,
+        "human_reviewer": null,
+        "decision": "pending",
+        "evidence": []
+      },
+      "test_selectors": []
+    },
+    {
+      "id": "BML-DOMAIN-PROBABILISTIC",
+      "claim": "Documented probabilistic models and train-contained conformal intervals expose coverage evaluation.",
+      "public_sources": [
+        {
+          "path": "docs/features.rst",
+          "section": "Probabilistic"
+        }
+      ],
+      "implementation_paths": [
+        "buildml/session/probabilistic_ops.py"
+      ],
+      "dependency_scope": "core; probabilistic-industry",
+      "assumptions_and_limits": [
+        "Conformal guarantees require statistical assumptions; empirical coverage is not universal calibration. No general MCMC engine. Capability availability and smoke tests are not benchmark-quality evidence."
+      ],
+      "test_paths": [
+        "tests/integration/test_probabilistic_alpha_smoke.py",
+        "tests/unit/test_probabilistic_industry.py",
+        "tests/unit/test_probabilistic_m2_depth.py",
+        "tests/unit/test_probabilistic_slice.py"
+      ],
+      "recorded_evidence": {
+        "reference": "prior-full-suite",
+        "selected_test_file_counts": {
+          "passed": 10,
+          "failed": 0,
+          "errors": 0,
+          "skipped": 3
+        },
+        "interpretation": "Historical file-level counts, not per-claim acceptance or coverage of all branches."
+      },
+      "verification_status": "pending_frozen_candidate_review",
+      "acceptance": {
+        "independent_reviewer": null,
+        "human_reviewer": null,
+        "decision": "pending",
+        "evidence": []
+      },
+      "test_selectors": []
+    },
+    {
+      "id": "BML-DOMAIN-CAUSAL",
+      "claim": "Explicit assumptions/estimand precede supported backdoor effect estimation and refutation.",
+      "public_sources": [
+        {
+          "path": "docs/features.rst",
+          "section": "Causal"
+        }
+      ],
+      "implementation_paths": [
+        "buildml/session/causal_ops.py"
+      ],
+      "dependency_scope": "core; causal-industry",
+      "assumptions_and_limits": [
+        "Declarations do not prove assumptions; confounding, positivity and misspecification require expert review. Capability availability and smoke tests are not benchmark-quality evidence."
+      ],
+      "test_paths": [
+        "tests/integration/test_causal_alpha_smoke.py",
+        "tests/unit/test_causal_industry_depth.py",
+        "tests/unit/test_causal_m2_depth.py"
+      ],
+      "recorded_evidence": {
+        "reference": "prior-full-suite",
+        "selected_test_file_counts": {
+          "passed": 15,
+          "failed": 0,
+          "errors": 0,
+          "skipped": 3
+        },
+        "interpretation": "Historical file-level counts, not per-claim acceptance or coverage of all branches."
+      },
+      "verification_status": "pending_frozen_candidate_review",
+      "acceptance": {
+        "independent_reviewer": null,
+        "human_reviewer": null,
+        "decision": "pending",
+        "evidence": []
+      },
+      "test_selectors": []
+    },
+    {
+      "id": "BML-DOMAIN-GRAPH",
+      "claim": "Supported node-classification backends include NetworkX, Torch GCN and optional PyG.",
+      "public_sources": [
+        {
+          "path": "docs/features.rst",
+          "section": "Graph ML"
+        }
+      ],
+      "implementation_paths": [
+        "buildml/session/graph_ops.py"
+      ],
+      "dependency_scope": "graph / torch / graph-pyg",
+      "assumptions_and_limits": [
+        "Graph construction/transductive boundaries require review; not a graph database. Capability availability and smoke tests are not benchmark-quality evidence."
+      ],
+      "test_paths": [
+        "tests/integration/test_graph_alpha_smoke.py",
+        "tests/unit/test_graph_catalog.py",
+        "tests/unit/test_graph_m2_depth.py",
+        "tests/unit/test_graph_slice.py"
+      ],
+      "recorded_evidence": {
+        "reference": "prior-full-suite",
+        "selected_test_file_counts": {
+          "passed": 12,
+          "failed": 0,
+          "errors": 0,
+          "skipped": 3
+        },
+        "interpretation": "Historical file-level counts, not per-claim acceptance or coverage of all branches."
+      },
+      "verification_status": "pending_frozen_candidate_review",
+      "acceptance": {
+        "independent_reviewer": null,
+        "human_reviewer": null,
+        "decision": "pending",
+        "evidence": []
+      },
+      "test_selectors": []
+    },
+    {
+      "id": "BML-DOMAIN-SYMBOLIC",
+      "claim": "Declared/induced rules and supported hybrid methods return traces.",
+      "public_sources": [
+        {
+          "path": "docs/features.rst",
+          "section": "Symbolic"
+        }
+      ],
+      "implementation_paths": [
+        "buildml/session/symbolic_ops.py"
+      ],
+      "dependency_scope": "core; symbolic-industry",
+      "assumptions_and_limits": [
+        "Traceability does not establish rule validity or comprehensive logical inference. Capability availability and smoke tests are not benchmark-quality evidence."
+      ],
+      "test_paths": [
+        "tests/integration/test_symbolic_alpha_smoke.py",
+        "tests/unit/test_symbolic_industry.py",
+        "tests/unit/test_symbolic_m2_depth.py",
+        "tests/unit/test_symbolic_slice.py"
+      ],
+      "recorded_evidence": {
+        "reference": "prior-full-suite",
+        "selected_test_file_counts": {
+          "passed": 20,
+          "failed": 0,
+          "errors": 0,
+          "skipped": 2
+        },
+        "interpretation": "Historical file-level counts, not per-claim acceptance or coverage of all branches."
+      },
+      "verification_status": "pending_frozen_candidate_review",
+      "acceptance": {
+        "independent_reviewer": null,
+        "human_reviewer": null,
+        "decision": "pending",
+        "evidence": []
+      },
+      "test_selectors": []
+    },
+    {
+      "id": "BML-DOMAIN-CBR",
+      "claim": "Case memory uses train rows with supported retrieval/prediction.",
+      "public_sources": [
+        {
+          "path": "docs/features.rst",
+          "section": "Case-based reasoning"
+        }
+      ],
+      "implementation_paths": [
+        "buildml/session/cbr_ops.py"
+      ],
+      "dependency_scope": "core; cbr-industry / cbr-faiss",
+      "assumptions_and_limits": [
+        "Similarity choices determine validity; distinct from RAG. Capability availability and smoke tests are not benchmark-quality evidence."
+      ],
+      "test_paths": [
+        "tests/integration/test_cbr_alpha_smoke.py",
+        "tests/unit/test_cbr_industry_depth.py",
+        "tests/unit/test_cbr_m2_depth.py",
+        "tests/unit/test_cbr_slice.py"
+      ],
+      "recorded_evidence": {
+        "reference": "prior-full-suite",
+        "selected_test_file_counts": {
+          "passed": 19,
+          "failed": 0,
+          "errors": 0,
+          "skipped": 3
+        },
+        "interpretation": "Historical file-level counts, not per-claim acceptance or coverage of all branches."
+      },
+      "verification_status": "pending_frozen_candidate_review",
+      "acceptance": {
+        "independent_reviewer": null,
+        "human_reviewer": null,
+        "decision": "pending",
+        "evidence": []
+      },
+      "test_selectors": []
+    },
+    {
+      "id": "BML-DOMAIN-RL",
+      "claim": "Core behavioral cloning/contextual bandits and documented optional RL integrations are available.",
+      "public_sources": [
+        {
+          "path": "docs/features.rst",
+          "section": "Imitation + RL"
+        }
+      ],
+      "implementation_paths": [
+        "buildml/session/rl_ops.py"
+      ],
+      "dependency_scope": "core; rl / rl-industry",
+      "assumptions_and_limits": [
+        "Offline/toy tests do not establish environment correctness, deployment safety or online exploration quality. Capability availability and smoke tests are not benchmark-quality evidence."
+      ],
+      "test_paths": [
+        "tests/integration/test_rl_alpha_smoke.py",
+        "tests/unit/test_rl_industry.py",
+        "tests/unit/test_rl_m2_depth.py",
+        "tests/unit/test_rl_slice.py",
+        "tests/unit/test_rl_tabular.py"
+      ],
+      "recorded_evidence": {
+        "reference": "prior-full-suite",
+        "selected_test_file_counts": {
+          "passed": 31,
+          "failed": 0,
+          "errors": 0,
+          "skipped": 18
+        },
+        "interpretation": "Historical file-level counts, not per-claim acceptance or coverage of all branches."
+      },
+      "verification_status": "pending_frozen_candidate_review",
+      "acceptance": {
+        "independent_reviewer": null,
+        "human_reviewer": null,
+        "decision": "pending",
+        "evidence": []
+      },
+      "test_selectors": []
+    },
+    {
+      "id": "BML-DOMAIN-TDA",
+      "claim": "Vietoris-Rips features and vectorization can feed a sklearn head.",
+      "public_sources": [
+        {
+          "path": "docs/features.rst",
+          "section": "TDA"
+        }
+      ],
+      "implementation_paths": [
+        "buildml/session/tda_ops.py"
+      ],
+      "dependency_scope": "tda / tda-industry",
+      "assumptions_and_limits": [
+        "Absent optional dependencies were skipped; complexity and filtration assumptions constrain use. Capability availability and smoke tests are not benchmark-quality evidence."
+      ],
+      "test_paths": [
+        "tests/integration/test_tda_alpha_smoke.py",
+        "tests/unit/test_tda_giotto_padding.py",
+        "tests/unit/test_tda_m2_depth.py",
+        "tests/unit/test_tda_r5_industry.py",
+        "tests/unit/test_tda_slice.py"
+      ],
+      "recorded_evidence": {
+        "reference": "prior-full-suite",
+        "selected_test_file_counts": {
+          "passed": 6,
+          "failed": 0,
+          "errors": 0,
+          "skipped": 13
+        },
+        "interpretation": "Historical file-level counts, not per-claim acceptance or coverage of all branches."
+      },
+      "verification_status": "pending_frozen_candidate_review",
+      "acceptance": {
+        "independent_reviewer": null,
+        "human_reviewer": null,
+        "decision": "pending",
+        "evidence": []
+      },
+      "test_selectors": []
+    },
+    {
+      "id": "BML-DOMAIN-RECOMMENDER",
+      "claim": "Collaborative/content recommendation supports ranking evaluation.",
+      "public_sources": [
+        {
+          "path": "docs/features.rst",
+          "section": "Recommenders"
+        }
+      ],
+      "implementation_paths": [
+        "buildml/session/recommender_ops.py"
+      ],
+      "dependency_scope": "core; recommenders-industry / recommenders-lightfm",
+      "assumptions_and_limits": [
+        "Cold-start, exposure bias and temporal evaluation require review. LightFM is a separate platform-limited extra. Capability availability and smoke tests are not benchmark-quality evidence."
+      ],
+      "test_paths": [
+        "tests/integration/test_recommender_alpha_smoke.py",
+        "tests/unit/test_recommender_industry.py",
+        "tests/unit/test_recommender_m2_depth.py",
+        "tests/unit/test_recommender_slice.py"
+      ],
+      "recorded_evidence": {
+        "reference": "prior-full-suite",
+        "selected_test_file_counts": {
+          "passed": 20,
+          "failed": 0,
+          "errors": 0,
+          "skipped": 3
+        },
+        "interpretation": "Historical file-level counts, not per-claim acceptance or coverage of all branches."
+      },
+      "verification_status": "pending_frozen_candidate_review",
+      "acceptance": {
+        "independent_reviewer": null,
+        "human_reviewer": null,
+        "decision": "pending",
+        "evidence": []
+      },
+      "test_selectors": []
+    },
+    {
+      "id": "BML-DOMAIN-RANKING",
+      "claim": "Query-item ranking supports sklearn and installed Torch/industry alternatives.",
+      "public_sources": [
+        {
+          "path": "docs/features.rst",
+          "section": "Learning to rank"
+        }
+      ],
+      "implementation_paths": [
+        "buildml/session/ranking_ops.py"
+      ],
+      "dependency_scope": "core; torch / ranking-industry",
+      "assumptions_and_limits": [
+        "Metrics require correct query groups; availability is not ranking-quality evidence. Capability availability and smoke tests are not benchmark-quality evidence."
+      ],
+      "test_paths": [
+        "tests/integration/test_ranking_alpha_smoke.py",
+        "tests/unit/test_ranking_industry_depth.py",
+        "tests/unit/test_ranking_m2_depth.py",
+        "tests/unit/test_ranking_slice.py"
+      ],
+      "recorded_evidence": {
+        "reference": "prior-full-suite",
+        "selected_test_file_counts": {
+          "passed": 22,
+          "failed": 0,
+          "errors": 0,
+          "skipped": 2
+        },
+        "interpretation": "Historical file-level counts, not per-claim acceptance or coverage of all branches."
+      },
+      "verification_status": "pending_frozen_candidate_review",
+      "acceptance": {
+        "independent_reviewer": null,
+        "human_reviewer": null,
+        "decision": "pending",
+        "evidence": []
+      },
+      "test_selectors": []
+    },
+    {
+      "id": "BML-DOMAIN-KG",
+      "claim": "Supported triple embeddings and symbolic queries operate on graph triples.",
+      "public_sources": [
+        {
+          "path": "docs/features.rst",
+          "section": "Knowledge graphs"
+        }
+      ],
+      "implementation_paths": [
+        "buildml/session/kg_ops.py"
+      ],
+      "dependency_scope": "core; kg-industry",
+      "assumptions_and_limits": [
+        "Negative-sampling/evaluation design matters; not a graph database or RAG engine. Capability availability and smoke tests are not benchmark-quality evidence."
+      ],
+      "test_paths": [
+        "tests/integration/test_kg_alpha_smoke.py",
+        "tests/unit/test_kg_industry_depth.py",
+        "tests/unit/test_kg_m2_depth.py",
+        "tests/unit/test_kg_slice.py"
+      ],
+      "recorded_evidence": {
+        "reference": "prior-full-suite",
+        "selected_test_file_counts": {
+          "passed": 22,
+          "failed": 0,
+          "errors": 0,
+          "skipped": 2
+        },
+        "interpretation": "Historical file-level counts, not per-claim acceptance or coverage of all branches."
+      },
+      "verification_status": "pending_frozen_candidate_review",
+      "acceptance": {
+        "independent_reviewer": null,
+        "human_reviewer": null,
+        "decision": "pending",
+        "evidence": []
+      },
+      "test_selectors": []
+    },
+    {
+      "id": "BML-DOMAIN-DECISION",
+      "claim": "Threshold/cost/top-K/knapsack and documented LP decisions are available.",
+      "public_sources": [
+        {
+          "path": "docs/features.rst",
+          "section": "Decisions"
+        }
+      ],
+      "implementation_paths": [
+        "buildml/session/decision_ops.py"
+      ],
+      "dependency_scope": "core; optional optimization solvers",
+      "assumptions_and_limits": [
+        "Results depend on costs, constraints and solver availability; not a general optimization platform. Capability availability and smoke tests are not benchmark-quality evidence."
+      ],
+      "test_paths": [
+        "tests/integration/test_optimize_alpha_smoke.py",
+        "tests/unit/test_optimize_cvxpy_adapter.py",
+        "tests/unit/test_optimize_industry_depth.py",
+        "tests/unit/test_optimize_m2_depth.py",
+        "tests/unit/test_optimize_slice.py"
+      ],
+      "recorded_evidence": {
+        "reference": "prior-full-suite",
+        "selected_test_file_counts": {
+          "passed": 22,
+          "failed": 0,
+          "errors": 0,
+          "skipped": 3
+        },
+        "interpretation": "Historical file-level counts, not per-claim acceptance or coverage of all branches."
+      },
+      "verification_status": "pending_frozen_candidate_review",
+      "acceptance": {
+        "independent_reviewer": null,
+        "human_reviewer": null,
+        "decision": "pending",
+        "evidence": []
+      },
+      "test_selectors": []
+    },
+    {
+      "id": "BML-DOMAIN-FAIRNESS",
+      "claim": "Observational holdout fairness metrics support optional stability/intersectional analysis.",
+      "public_sources": [
+        {
+          "path": "docs/features.rst",
+          "section": "Fairness"
+        }
+      ],
+      "implementation_paths": [
+        "buildml/session/fairness_ops.py"
+      ],
+      "dependency_scope": "core; shap optional",
+      "assumptions_and_limits": [
+        "Groups, sample size and normative meaning require judgment; not automatic mitigation or legal certification. Capability availability and smoke tests are not benchmark-quality evidence."
+      ],
+      "test_paths": [
+        "tests/unit/test_fairness_slice.py"
+      ],
+      "recorded_evidence": {
+        "reference": "prior-full-suite",
+        "selected_test_file_counts": {
+          "passed": 14,
+          "failed": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        "interpretation": "Historical file-level counts, not per-claim acceptance or coverage of all branches."
+      },
+      "verification_status": "pending_frozen_candidate_review",
+      "acceptance": {
+        "independent_reviewer": null,
+        "human_reviewer": null,
+        "decision": "pending",
+        "evidence": []
+      },
+      "test_selectors": []
+    },
+    {
+      "id": "BML-DOMAIN-SYNTHETIC",
+      "claim": "Bootstrap/copula/SMOTE and optional SDV support fidelity/TSTR evaluation.",
+      "public_sources": [
+        {
+          "path": "docs/features.rst",
+          "section": "Synthetic data"
+        }
+      ],
+      "implementation_paths": [
+        "buildml/session/synthetic_ops.py"
+      ],
+      "dependency_scope": "core; synthetic-industry / imbalanced as required",
+      "assumptions_and_limits": [
+        "Fidelity does not establish privacy, representativeness or downstream benefit; no differential privacy guarantee. Capability availability and smoke tests are not benchmark-quality evidence."
+      ],
+      "test_paths": [
+        "tests/integration/test_synthetic_alpha_smoke.py",
+        "tests/unit/test_synthetic_industry_depth.py",
+        "tests/unit/test_synthetic_m2_depth.py",
+        "tests/unit/test_synthetic_slice.py"
+      ],
+      "recorded_evidence": {
+        "reference": "prior-full-suite",
+        "selected_test_file_counts": {
+          "passed": 22,
+          "failed": 0,
+          "errors": 0,
+          "skipped": 2
+        },
+        "interpretation": "Historical file-level counts, not per-claim acceptance or coverage of all branches."
+      },
+      "verification_status": "pending_frozen_candidate_review",
+      "acceptance": {
+        "independent_reviewer": null,
+        "human_reviewer": null,
+        "decision": "pending",
+        "evidence": []
+      },
+      "test_selectors": []
+    },
+    {
+      "id": "BML-DOMAIN-NLP",
+      "claim": "Core corpus/classification/topic/keyphrase/summary/entity/sentiment/language tools support text columns.",
+      "public_sources": [
+        {
+          "path": "docs/features.rst",
+          "section": "NLP"
+        }
+      ],
+      "implementation_paths": [
+        "buildml/session/nlp_ops.py"
+      ],
+      "dependency_scope": "core; nlp / nlp-industry",
+      "assumptions_and_limits": [
+        "Extractive summaries can omit context or repeat source errors; optional pretrained models may download files. Capability availability and smoke tests are not benchmark-quality evidence."
+      ],
+      "test_paths": [
+        "tests/integration/test_nlp_alpha_smoke.py",
+        "tests/unit/test_nlp_industry_depth.py",
+        "tests/unit/test_nlp_m2_depth.py",
+        "tests/unit/test_nlp_slice.py"
+      ],
+      "recorded_evidence": {
+        "reference": "prior-full-suite",
+        "selected_test_file_counts": {
+          "passed": 64,
+          "failed": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        "interpretation": "Historical file-level counts, not per-claim acceptance or coverage of all branches."
+      },
+      "verification_status": "pending_frozen_candidate_review",
+      "acceptance": {
+        "independent_reviewer": null,
+        "human_reviewer": null,
+        "decision": "pending",
+        "evidence": []
+      },
+      "test_selectors": []
+    },
+    {
+      "id": "BML-DOMAIN-RAG",
+      "claim": "Corpus ingest, hashing/BM25/NumPy retrieval, cited generation and bundles are supported.",
+      "public_sources": [
+        {
+          "path": "docs/features.rst",
+          "section": "RAG"
+        }
+      ],
+      "implementation_paths": [
+        "buildml/session/rag_ops.py"
+      ],
+      "dependency_scope": "core; rag / rag-advanced",
+      "assumptions_and_limits": [
+        "Retrieval/citations do not guarantee factual correctness; hosted providers need credentials and semantic models may download. Capability availability and smoke tests are not benchmark-quality evidence."
+      ],
+      "test_paths": [
+        "tests/integration/test_rag_alpha_smoke.py",
+        "tests/integration/test_rag_smoke.py",
+        "tests/unit/test_rag_generate.py",
+        "tests/unit/test_rag_m2_depth.py",
+        "tests/unit/test_rag_nlp_restore_high.py",
+        "tests/unit/test_rag_r4_depth.py",
+        "tests/unit/test_rag_slice.py"
+      ],
+      "recorded_evidence": {
+        "reference": "prior-full-suite",
+        "selected_test_file_counts": {
+          "passed": 38,
+          "failed": 0,
+          "errors": 0,
+          "skipped": 2
+        },
+        "interpretation": "Historical file-level counts, not per-claim acceptance or coverage of all branches."
+      },
+      "verification_status": "pending_frozen_candidate_review",
+      "acceptance": {
+        "independent_reviewer": null,
+        "human_reviewer": null,
+        "decision": "pending",
+        "evidence": []
+      },
+      "test_selectors": []
+    },
+    {
+      "id": "BML-DOMAIN-AI",
+      "claim": "Advisor/planning, confirmed execution and explicitly autonomous execution apply documented caps.",
+      "public_sources": [
+        {
+          "path": "docs/features.rst",
+          "section": "AI operator"
+        }
+      ],
+      "implementation_paths": [
+        "buildml/session/ai_ops.py"
+      ],
+      "dependency_scope": "ai",
+      "assumptions_and_limits": [
+        "Mock tests do not establish hosted-provider reliability; credentials/network routes need separate validation. Capability availability and smoke tests are not benchmark-quality evidence."
+      ],
+      "test_paths": [
+        "tests/unit/test_ai_phase_c.py",
+        "tests/unit/test_ai_slice.py"
+      ],
+      "recorded_evidence": {
+        "reference": "prior-full-suite",
+        "selected_test_file_counts": {
+          "passed": 5,
+          "failed": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        "interpretation": "Historical file-level counts, not per-claim acceptance or coverage of all branches."
+      },
+      "verification_status": "pending_frozen_candidate_review",
+      "acceptance": {
+        "independent_reviewer": null,
+        "human_reviewer": null,
+        "decision": "pending",
+        "evidence": []
+      },
+      "test_selectors": []
+    },
+    {
+      "id": "BML-DOMAIN-TORCH",
+      "claim": "Documented Torch loaders/modules/training, CV/search, distributed paths and exports are exposed.",
+      "public_sources": [
+        {
+          "path": "docs/features.rst",
+          "section": "Torch"
+        }
+      ],
+      "implementation_paths": [
+        "buildml/session/dl_ops.py"
+      ],
+      "dependency_scope": "torch / onnx",
+      "assumptions_and_limits": [
+        "CPU-local tests do not establish GPU/AMP, multi-node DDP or every modality/export runtime. Capability availability and smoke tests are not benchmark-quality evidence."
+      ],
+      "test_paths": [
+        "tests/integration/test_dl_alpha_smoke.py",
+        "tests/integration/test_dl_torch_smoke.py",
+        "tests/unit/test_dl_m2_depth.py",
+        "tests/unit/test_dl_phase_c.py",
+        "tests/unit/test_dl_torch_slice.py"
+      ],
+      "recorded_evidence": {
+        "reference": "prior-full-suite",
+        "selected_test_file_counts": {
+          "passed": 22,
+          "failed": 0,
+          "errors": 0,
+          "skipped": 1
+        },
+        "interpretation": "Historical file-level counts, not per-claim acceptance or coverage of all branches."
+      },
+      "verification_status": "pending_frozen_candidate_review",
+      "acceptance": {
+        "independent_reviewer": null,
+        "human_reviewer": null,
+        "decision": "pending",
+        "evidence": []
+      },
+      "test_selectors": []
+    },
+    {
+      "id": "BML-SPEECH-001",
+      "claim": "Speech supports documented ASR stub/transformer modes and WER/CER evaluation.",
+      "public_sources": [
+        {
+          "path": "docs/features.rst",
+          "section": "Speech"
+        }
+      ],
+      "implementation_paths": [
+        "buildml/dl/speech.py"
+      ],
+      "dependency_scope": "speech",
+      "assumptions_and_limits": [
+        "Stub outputs are fixtures, not transcription-quality evidence; pretrained downloads/device behavior require separate validation."
+      ],
+      "test_paths": [
+        "tests/unit/test_pass_o_speech_ddp_serve.py",
+        "tests/unit/test_speech_asr_default_high.py"
+      ],
+      "recorded_evidence": {
+        "reference": "prior-full-suite",
+        "selected_test_file_counts": {
+          "passed": 17,
+          "failed": 0,
+          "errors": 0,
+          "skipped": 1
+        },
+        "interpretation": "Historical file-level counts, not per-claim acceptance or coverage of all branches."
+      },
+      "verification_status": "pending_frozen_candidate_review",
+      "acceptance": {
+        "independent_reviewer": null,
+        "human_reviewer": null,
+        "decision": "pending",
+        "evidence": []
+      },
+      "test_selectors": []
+    },
+    {
+      "id": "BML-PRETRAINED-001",
+      "claim": "Curated backbones support documented none/mock/pretrained weight sources.",
+      "public_sources": [
+        {
+          "path": "docs/features.rst",
+          "section": "Pretrained backbones"
+        }
+      ],
+      "implementation_paths": [
+        "buildml/dl/zoo.py"
+      ],
+      "dependency_scope": "vision / speech / pretrained",
+      "assumptions_and_limits": [
+        "Mock/random weights are not pretrained quality evidence. Downloads/licenses/architectures require per-source review."
+      ],
+      "test_paths": [
+        "tests/unit/test_pass_r_pretrained_serve_k8s.py"
+      ],
+      "recorded_evidence": {
+        "reference": "prior-full-suite",
+        "selected_test_file_counts": {
+          "passed": 11,
+          "failed": 0,
+          "errors": 0,
+          "skipped": 2
+        },
+        "interpretation": "Historical file-level counts, not per-claim acceptance or coverage of all branches."
+      },
+      "verification_status": "pending_frozen_candidate_review",
+      "acceptance": {
+        "independent_reviewer": null,
+        "human_reviewer": null,
+        "decision": "pending",
+        "evidence": []
+      },
+      "test_selectors": []
+    },
+    {
+      "id": "BML-SERVE-001",
+      "claim": "Local FastAPI exposes documented pipeline/TorchScript serving endpoints.",
+      "public_sources": [
+        {
+          "path": "docs/features.rst",
+          "section": "Serve"
+        }
+      ],
+      "implementation_paths": [
+        "buildml/serving/app.py",
+        "buildml/serving/launch.py"
+      ],
+      "dependency_scope": "serve",
+      "assumptions_and_limits": [
+        "Localhost defaults and route tests are not a security assessment or cloud IAM. Authentication/network boundaries/load need acceptance."
+      ],
+      "test_paths": [
+        "tests/unit/test_pass_o_speech_ddp_serve.py",
+        "tests/unit/test_pass_r_pretrained_serve_k8s.py"
+      ],
+      "recorded_evidence": {
+        "reference": "prior-full-suite",
+        "selected_test_file_counts": {
+          "passed": 24,
+          "failed": 0,
+          "errors": 0,
+          "skipped": 3
+        },
+        "interpretation": "Historical file-level counts, not per-claim acceptance or coverage of all branches."
+      },
+      "verification_status": "pending_frozen_candidate_review",
+      "acceptance": {
+        "independent_reviewer": null,
+        "human_reviewer": null,
+        "decision": "pending",
+        "evidence": []
+      },
+      "test_selectors": []
+    },
+    {
+      "id": "BML-DIST-001",
+      "claim": "Metadata declares Python 3.10-3.13, four core dependencies and optional extras.",
+      "public_sources": [
+        {
+          "path": "README.md",
+          "section": "Optional extras"
+        }
+      ],
+      "implementation_paths": [
+        "pyproject.toml"
+      ],
+      "dependency_scope": "core",
+      "assumptions_and_limits": [
+        "Executed validation used existing Windows/Python 3.12 dependencies. Fresh online resolution and full OS/Python/extra matrix remain acceptance work. Production extras are best-effort."
+      ],
+      "test_paths": [
+        "tests/integration/test_import_and_ingest.py",
+        "tests/unit/test_documentation_copy.py"
+      ],
+      "recorded_evidence": {
+        "reference": "prior-full-suite",
+        "selected_test_file_counts": {
+          "passed": 18,
+          "failed": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        "interpretation": "Historical file-level counts, not per-claim acceptance or coverage of all branches."
+      },
+      "verification_status": "pending_frozen_candidate_review",
+      "acceptance": {
+        "independent_reviewer": null,
+        "human_reviewer": null,
+        "decision": "pending",
+        "evidence": []
+      },
+      "test_selectors": []
+    },
+    {
+      "id": "BML-DOCS-001",
+      "claim": "README supplies the package long description; sources and examples have local validation evidence.",
+      "public_sources": [
+        {
+          "path": "README.md",
+          "section": "BuildML"
+        }
+      ],
+      "implementation_paths": [
+        "pyproject.toml",
+        "README.md",
+        "docs/conf.py"
+      ],
+      "dependency_scope": "core",
+      "assumptions_and_limits": [
+        "Local builds do not update deployed PyPI/Read the Docs. Current 2.6.2 validation archives must not replace existing published distributions."
+      ],
+      "test_paths": [
+        "tests/unit/test_copy_audit_coverage.py",
+        "tests/unit/test_documentation_copy.py",
+        "tests/unit/test_teaching_examples.py"
+      ],
+      "recorded_evidence": {
+        "reference": "prior-full-suite",
+        "selected_test_file_counts": {
+          "passed": 32,
+          "failed": 0,
+          "errors": 0,
+          "skipped": 0
+        },
+        "interpretation": "Historical file-level counts, not per-claim acceptance or coverage of all branches."
+      },
+      "verification_status": "pending_frozen_candidate_review",
+      "acceptance": {
+        "independent_reviewer": null,
+        "human_reviewer": null,
+        "decision": "pending",
+        "evidence": []
+      },
+      "test_selectors": []
+    },
+    {
+      "id": "BML-CONFORMAL-001",
+      "claim": "Finite-sample conformal calibration rejects unattainable finite cutoffs and nonfinite calibration scores.",
+      "public_sources": [
+        {
+          "path": "docs/features.rst",
+          "section": "Probabilistic"
+        },
+        {
+          "path": "buildml/probabilistic/conformal.py",
+          "section": "conformal_quantile docstring"
+        }
+      ],
+      "implementation_paths": [
+        "buildml/probabilistic/conformal.py"
+      ],
+      "test_paths": [
+        "tests/unit/test_conformal_acceptance.py",
+        "tests/unit/test_probabilistic_m2_depth.py"
+      ],
+      "test_selectors": [
+        "tests/unit/test_conformal_acceptance.py::test_unattainable_finite_coverage_is_rejected",
+        "tests/unit/test_conformal_acceptance.py::test_smallest_supported_alpha_uses_largest_score",
+        "tests/unit/test_conformal_acceptance.py::test_nonfinite_calibration_scores_are_rejected"
+      ],
+      "dependency_scope": "core",
+      "recorded_evidence": {
+        "reference": "conformal-acceptance-local",
+        "interpretation": "Scoped regressions; human acceptance pending."
+      },
+      "verification_status": "pending_frozen_candidate_review",
+      "assumptions_and_limits": [
+        "With n calibration observations, the requested alpha must permit a finite order-statistic cutoff; otherwise the method rejects instead of silently returning a misleading bounded interval. Coverage assumptions still require exchangeability and an appropriate calibration design; time/group dependence is not resolved by the numeric cutoff check."
+      ],
+      "acceptance": {
+        "independent_reviewer": "statistical_acceptance (see STATISTICAL_REVIEW.md, STAT01 and STAT02)",
+        "human_reviewer": null,
+        "decision": "pending",
+        "evidence": [
+          "review/release/STATISTICAL_REVIEW.md",
+          "artifacts/probabilistic-acceptance.log"
+        ]
+      }
+    }
+  ]
+}

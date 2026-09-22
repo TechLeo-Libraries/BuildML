@@ -222,7 +222,7 @@ def selfsupervised_status(
             "Self-supervised hooks learn train-only representations via Torch "
             "(SimCLR/BYOL/VICReg/MAE/VAE) or deprecated sklearn masked_tabular, "
             "then attach a supervised head. Distinct from semi-supervised label "
-            "propagation and from Torch zoo backbone transfer."
+            "propagation and from Torch pretrained-backbone transfer."
         ),
     },
         "ssl_capability_matrix",

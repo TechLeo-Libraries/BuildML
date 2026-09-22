@@ -225,7 +225,7 @@ class NumpyCosineStore:
             If ``k`` is not positive, or the query width does not match the
             index. **A width mismatch usually means the query was embedded by a
             different model than the index**: the check is what turns that into
-            an error rather than confident nonsense.
+            an error rather than semantically invalid retrieval results.
 
         Notes
         -----

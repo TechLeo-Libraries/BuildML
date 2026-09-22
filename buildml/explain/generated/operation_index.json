@@ -1455,6 +1455,13 @@
       "name": "eda",
       "parameters": [
         {
+          "annotation": "Literal['all', 'train', 'validation', 'test']",
+          "default": "'all'",
+          "kind": "KEYWORD_ONLY",
+          "name": "partition",
+          "required": false
+        },
+        {
           "annotation": "bool",
           "default": "False",
           "kind": "KEYWORD_ONLY",
@@ -2591,7 +2598,7 @@
       "qualname": "OnlineSessionMixin.evaluate_online"
     },
     "evaluate_probabilistic": {
-      "doc_summary": "Evaluate the probabilistic plan on a holdout partition.",
+      "doc_summary": "Evaluate the probabilistic plan on the selected population.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "evaluate_probabilistic",
@@ -9186,7 +9193,7 @@
       "qualname": "DlSessionMixin.make_torch_loaders"
     },
     "metadata": {
-      "doc_summary": "Take a serialisable snapshot of everything the session knows.",
+      "doc_summary": "Collect the session's dataset metadata and operation history.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "metadata",

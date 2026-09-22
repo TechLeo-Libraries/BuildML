@@ -62,7 +62,7 @@ def main() -> None:
         value = test_metrics.get(key)
         if isinstance(value, (int, float)) and float(value) >= 0.97:
             raise SystemExit(
-                "compliance-neuro-symbolic refused perfect-score theater: "
+                "compliance-neuro-symbolic refused scores at or above the configured ceiling: "
                 f"{key}={float(value):.4f} >= 0.97 on noisy KYC labels."
             )
     neuro = {"ran": False, "skip_torch_paths": TORCH_STATUS.get("skip_torch_paths", True)}

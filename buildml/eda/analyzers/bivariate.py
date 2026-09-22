@@ -2,20 +2,19 @@
 
 There is no single "correlation". Pearson measures straight-line relationships
 between numbers. Spearman measures whether one rises as the other rises, curve
-or not. Kendall agrees with Spearman in spirit and is more robust on small
-samples. Cramér's V handles two categoricals. Mutual information handles any
-relationship at all, including ones no correlation coefficient can see.
+or not. Kendall measures agreement between pair orderings. Cramér's V measures
+association between categoricals. Mutual information can detect nonlinear
+dependence, but finite-sample estimates can miss relationships or reflect noise.
 
-Using the wrong one is how relationships get missed. A perfect U-shape has a
-Pearson correlation near zero, and reporting only Pearson would say those
-columns are unrelated when one determines the other exactly.
+Using the wrong one is how relationships get missed. A symmetric U-shaped relationship can have
+Pearson correlation near zero despite deterministic dependence; a near-zero
+linear correlation should not be interpreted as independence.
 
 Cost is why not everything is computed for everything. Pearson and Spearman are
-cheap and run over all numeric pairs. Kendall is quadratic in rows and runs only
-on the strongest dozen. Cramér's V runs on the first few low-cardinality
-categoricals. Mutual information runs only against the target. The caps are
-arbitrary in their exact values and deliberate in their existence: an EDA pass
-that takes an hour is one nobody runs.
+cheap and run over all numeric pairs. Kendall runs only
+on up to 20 of the strongest numeric pairs. Cramér's V runs on the first few low-cardinality
+categoricals. Mutual information runs only against the target. These caps limit analysis cost
+and should be considered when interpreting missing results.
 
 See Also
 --------
@@ -41,8 +40,8 @@ def analyze_bivariate(
 ) -> dict[str, Any]:
     """Measure pairwise association, using each measure where it applies.
 
-    Runs several association measures and returns them together, so a
-    relationship that one method cannot see is still likely caught by another.
+    Runs several association measures and returns them together to provide complementary screens;
+    none guarantees detection of every relationship.
     Correlations over numeric pairs, Cramér's V over categorical pairs, and
     mutual information against the target when one is named.
 
@@ -79,13 +78,13 @@ def analyze_bivariate(
     -----
     **Pearson near zero does not mean unrelated.** It means not *linearly*
     related. Compare it with Spearman and with the mutual information: a large
-    gap between Pearson and Spearman is the signature of a monotone but curved
-    relationship.
+    gap can motivate checking for nonlinear monotone structure, outliers,
+    or other distributional effects.
 
     **Mutual information is not a correlation.** It is non-negative, unbounded,
     and has no sign, so 0.4 is meaningful only relative to the other features in
-    the same ranking. It does catch relationships of any shape, which is why it
-    is worth the cost.
+    the same ranking. It can screen for nonlinear dependence, but its sensitivity depends on
+    sample size, encoding, and estimator settings.
 
     **Mutual information here has no cross-validation and no significance
     test.** It is a screening tool for deciding what to look at, not evidence
@@ -93,8 +92,9 @@ def analyze_bivariate(
     that.
 
     **Categoricals are label-encoded before mutual information**, which imposes
-    an arbitrary order on unordered categories. The estimator is fairly robust
-    to this, and it is still an approximation.
+    an arbitrary order on unordered categories. This encoding can influence the estimate, especially when codes are
+    treated as continuous values; confirm important rankings with suitable
+    categorical methods and held-out evaluation.
 
     **The caps are real and silent.** Cramér's V covers at most the first eight
     categoricals with 40 or fewer levels; Kendall covers only the strongest
@@ -190,7 +190,9 @@ def _mi_vs_target(frame: pd.DataFrame, target: str) -> dict[str, float]:
         return {}
 
     try:
-        if pd.api.types.is_numeric_dtype(y) and y.nunique(dropna=True) > 15:
+        from buildml.eda.analyzers.target import is_regression_target
+
+        if is_regression_target(y):
             scores = mutual_info_regression(x, y, random_state=0)
         else:
             y_enc = LabelEncoder().fit_transform(y.astype(str))

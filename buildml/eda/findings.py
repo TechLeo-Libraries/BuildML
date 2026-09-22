@@ -115,6 +115,31 @@ def build_findings(sections: dict[str, Any]) -> list[Finding]:
         )
     ]
 
+    nonfinite = int(quality.get("nonfinite_cell_count", 0))
+    if nonfinite:
+        findings.append(
+            Finding(
+                key="quality.nonfinite",
+                title="Infinite numeric values",
+                detail=(
+                    f"{nonfinite:,} numeric cells contain positive or negative infinity. "
+                    "Review their source before modelling; EDA excludes them from numeric "
+                    "statistics and keeps their counts separate from missing values."
+                ),
+                severity=FindingSeverity.HIGH,
+                affected_columns=tuple(
+                    column for column, count in quality.get("nonfinite_by_column", {}).items() if count
+                ),
+                evidence=(
+                    _evidence(
+                        "quality.nonfinite_cells", "Infinite numeric cell counts",
+                        quality.get("nonfinite_by_column", {}), "quality",
+                        ("EDA does not replace or repair the values in the Session dataset.",),
+                    ),
+                ),
+            )
+        )
+
     missing = int(quality.get("missing_cell_count", 0))
     findings.append(
         Finding(

@@ -1,4 +1,4 @@
-"""Build a report that opens anywhere, forever, with no network.
+"""Build self-contained HTML reports for offline browser viewing.
 
 Every ``export_html`` across BuildML comes through here. The shared vocabulary :
 cards, badges, tables, the five-part reading frame: is what makes an EDA report
@@ -51,4 +51,3 @@ __all__ = [
     "severity_tone",
     "write_report",
 ]
-

@@ -452,7 +452,7 @@ def _ledger_example(key: str, items: list[dict[str, str]], ctx: dict[str, Any]) 
                 "Adjust test_size to your protocol.",
             ],
             flexible=["Omit split only when a single-frame descriptive pass is intentional."],
-            reading="No split ⇒ drift group omitted (empty theater), not a silent all-clear.",
+            reading="No split: train/test drift is unavailable; this does not establish distribution stability.",
         )
 
     if key == "skipped":
@@ -542,7 +542,7 @@ def build_ledger_group_teaching(
     )
     advanced = (
         "Ledger groups are produced by shared sheet_coverage builders used by both the "
-        "App cockpit and Static EDA. Empty theater is omitted: if a group is absent, its "
+        "App cockpit and Static EDA. Unavailable analysis groups are omitted: if a group is absent, its "
         "analyzer produced no values for this frame (or was skipped - see the skipped group)."
     )
 

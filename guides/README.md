@@ -19,7 +19,7 @@ Do this much before you pick a domain.
 | --- | --- | --- |
 | 1 | [Installation](../docs/installation.rst), then [a first Session](../docs/usage.rst) | Install, run ingest → roles → split → prepare → fit → evaluate |
 | 2 | [Concepts](../docs/concepts.rst) and the [workflow guide](../docs/workflow-guide.rst) | Know why the order exists, and when random split is the wrong split |
-| 3 | [Classical quickstart](quickstart-classical.md), then [leakage and recipes](leakage-cv-recipes.md) | Repeat the loop on messier data; understand why CV refuses poisoned prep |
+| 3 | [Classical quickstart](quickstart-classical.md), then [leakage and recipes](leakage-cv-recipes.md) | Repeat the loop on messier data; understand why CV refuses Session-global fitted preprocessing |
 
 If machine-learning vocabulary is new, start a Session and run
 `session.learn()`, then `session.explain("split")`. The
@@ -54,7 +54,7 @@ refuses. Method lists live on `session.explain("<name>")` and the
 | [Time-series analysis](quickstart-timeseries-analysis.md) | core; depth via `timeseries` / `timeseries-prophet` / `timeseries-ml` | `session.timeseries.analyze` / decompose / diagnostics (no forecast fit) |
 | [Anomaly / fraud](quickstart-anomaly.md) | core + `anomaly-industry` + `torch` | sklearn/PyOD/torch AE + supervised HGB/XGB/LGBM; validation threshold tuning |
 | [Semi-supervised](quickstart-semisupervised.md) | core | Label propagation / spreading / self-training; scarce labels |
-| [Self-supervised](quickstart-selfsupervised.md) | core (torch optional for zoo transfer) | Masked tabular pretext → head; zoo freeze/finetune separate |
+| [Self-supervised](quickstart-selfsupervised.md) | core (torch optional for backbone transfer) | Masked tabular pretext → head; backbone freezing/fine-tuning separate |
 | [Active learning](quickstart-active-learning.md) | core | Train-pool uncertainty query → human labels → refit / bundle |
 | [Online / continual](quickstart-online-learning.md) | core | Train-chunk `partial_fit` → holdout eval → online bundle |
 | [Multi-task / multi-output](quickstart-multi-task.md) | core + `multitask-industry` / `torch` | sklearn / GBDT / torch shared-trunk → per-task + aggregate eval → multitask bundle |
@@ -139,7 +139,7 @@ refuses. Method lists live on `session.explain("<name>")` and the
 
 If a surface is not in the map above, it is not a Session product. That
 includes legal fairness certification, causality from EDA, PyMC/Stan,
-a full Hugging Face zoo, managed cloud IAM, and Whisper-scale pretrain.
+the full Hugging Face model catalog, managed cloud IAM, and Whisper-scale pretrain.
 Each domain guide states its own refuse next to the example.
 `session.explain` and `session.learn` cover knob-level detail that would
 drown a tutorial.
@@ -150,7 +150,7 @@ When an API is alpha, the page says so.
 
 ## Paste, then evidence
 
-[`examples/`](../examples/) is the paste contract. [`proofs/`](../proofs/README.md)
+[`examples/`](../examples/) contains runnable starting points. [`proofs/`](../proofs/README.md)
 is one end-to-end run per job. Composition slugs in the harness are not
 extra products.
 

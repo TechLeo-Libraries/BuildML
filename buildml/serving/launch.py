@@ -235,7 +235,7 @@ def _ensure_bind_security(
         "api_keys or basic_auth. Pass api_keys= / basic_auth= (or CLI --api-key / "
         "--basic-auth) for public/non-localhost binds, or set "
         "allow_insecure_public_bind=True / --allow-insecure-public-bind to "
-        "override deliberately. Localhost defaults remain open-with-honesty."
+        "override deliberately. Localhost serving has no authentication unless credentials are configured."
     )
 
 

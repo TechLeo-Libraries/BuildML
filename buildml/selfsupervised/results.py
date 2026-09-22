@@ -11,7 +11,7 @@ class SelfSupervisedPlan:
     """Train-fitted self-supervised pretext plan (encoder + feature contract).
 
     Persist via ``buildml.ssl_bundle.v2``. Distinct from Session
-    checkpoints, Torch trainer bundles, semi-supervised plans, and zoo
+    checkpoints, Torch trainer bundles, semi-supervised plans, and pretrained-backbone
     pretrained backbones (vision/audio/speech transfer hooks).
     """
 

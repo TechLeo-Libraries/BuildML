@@ -24,7 +24,7 @@ RL_NOTES: dict[str, ConceptNote] = {
             ),
             formal_idea="π_θ ≈ argmin_θ Σ_{(s,a)∈D_train} ℓ(π_θ(s), a).",
             why_it_matters=(
-                "Train-only cloning preserves holdout honesty for imitation metrics.",
+                "Train-only cloning preserves holdout independence for imitation metrics.",
                 "Simple, Session-shaped entry point before online RL.",
             ),
             how_buildml_uses=(
@@ -92,7 +92,7 @@ RL_NOTES: dict[str, ConceptNote] = {
                 "Offline: DM = E[r_hat(x,π(x))]; IPS = E[r 1[π=a]/π_b(a|x)]."
             ),
             why_it_matters=(
-                "Train-only updates preserve holdout honesty.",
+                "Train-only updates preserve holdout independence.",
                 "Offline metrics must not be confused with online A/B lifts.",
             ),
             how_buildml_uses=(

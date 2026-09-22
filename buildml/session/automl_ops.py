@@ -120,7 +120,7 @@ def run_automl_op(
     Notes
     -----
     **Leakage:** Same refusal as classical CV/search when Session-global
-    preprocess already poisoned the frame. Session test never enters selection.
+    preprocessing has already transformed the frame. Session test never enters selection.
     """
     session.assert_can_fit("train")
     plan, result, fit_result = run_automl(
