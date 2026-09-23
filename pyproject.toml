@@ -172,7 +172,7 @@ nlp-industry = [
     "spacy>=3.7",
 ]
 optimize-industry = [
-  "pulp>=2.7",
+  "pulp[cbc]>=2.7",
   "ortools>=9.8",
   "cvxpy>=1.4",
   "xgboost>=2.0",

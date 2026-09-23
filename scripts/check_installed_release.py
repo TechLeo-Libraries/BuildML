@@ -64,6 +64,7 @@ def main() -> int:
         )
         dist = metadata.distribution("buildml")
         direct = json.loads(dist.read_text("direct_url.json") or "{}")
+        evidence["installation_provenance"] = direct
         assert not direct.get("dir_info", {}).get("editable"), "Editable installation forbidden"
         installed_hash = archive_sha256(direct)
         assert installed_hash == evidence["wheel_sha256"], "Installed artifact does not match wheel"

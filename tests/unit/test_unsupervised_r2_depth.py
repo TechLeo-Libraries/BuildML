@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import importlib.util
+import warnings
 
 import numpy as np
 import pandas as pd
@@ -132,9 +133,17 @@ def test_dec_when_torch_installed() -> None:
 
 @pytest.mark.skipif(importlib.util.find_spec("umap") is None, reason="umap extra")
 def test_umap_reduce_dimensions() -> None:
-    session = _ready_session().reduce_dimensions(
-        method="umap", n_components=2, prefix="um", drop_input_columns=False
-    )
+    # Seeded UMAP runs serially; some supported versions announce that choice.
+    with warnings.catch_warnings(record=True) as notices:
+        warnings.simplefilter("always", UserWarning)
+        session = _ready_session().reduce_dimensions(
+            method="umap", n_components=2, prefix="um", drop_input_columns=False
+        )
+    for notice in notices:
+        if issubclass(notice.category, UserWarning) and "overridden to 1 by setting random_state" in str(notice.message):
+            assert "n_jobs" in str(notice.message)
+        else:
+            warnings.warn_explicit(notice.message, notice.category, notice.filename, notice.lineno)
     assert session.reduce_plan is not None
     assert session.reduce_plan.method == "umap"
     fit = session.unsupervised.fit(method="kmeans", n_clusters=3, prefer_reduce_components=True)

@@ -17,11 +17,17 @@ cross-platform evidence.
 - Fold preprocessing implements sklearn estimator tags and cloning. Online
   passive-aggressive aliases use the supported equivalent on newer sklearn.
 - The wheel provenance checker supports both standardized PEP 610 hash formats,
-  fixing Python 3.10 matrix failures without weakening hash comparison.
+  and the matrix updates pip inside each fresh environment before installation.
+  The SHA-256 comparison remains mandatory; recorded provenance is retained for
+  diagnosing installation metadata mismatches.
 - Copy inventory excludes generated directories relative to the repository root,
   fixing the Linux test failure when the checkout is inside a temporary directory.
 - Cliff-walking examples use the current Gymnasium environment ID, while tests
   select the registered ID for the installed version.
+- PuLP uses current variable and CBC discovery APIs with older-version
+  compatibility, and refuses to label an unproven solution as exact. Real solves
+  passed with warnings treated as errors on PuLP 2.7.0, 3.3.2 and the 4.0.0a12
+  prerelease; that prerelease probe is not a production-version support claim.
 - Documentation enables strict reference checking, removes blanket missing-link
   suppression, and provides verified build-local source links. A rendered-link
   audit checks actual output files and fragment anchors.

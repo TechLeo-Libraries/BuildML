@@ -379,7 +379,7 @@ def test_continuous_action_envs_are_refused() -> None:
 @requires_gym
 def test_session_tabular_q_fit_act_evaluate_bundle(tmp_path: Path) -> None:
     session = _tiny_session()
-    fit = session.fit_rl(
+    fit = session.rl.fit(
         mode="tabular_q",
         algorithm="q_learning",
         env_id="FrozenLake-v1",
@@ -402,18 +402,18 @@ def test_session_tabular_q_fit_act_evaluate_bundle(tmp_path: Path) -> None:
     assert plan.config["n_bins"] == 8
     assert plan.config["epsilon_decay"] == 0.99
 
-    ev = session.evaluate_rl(n_episodes=10, max_steps=100)
+    ev = session.rl.evaluate(n_episodes=10, max_steps=100)
     assert ev.offline is False
     assert "mean_return" in ev.metrics
     assert "unseen_state_rate" in ev.metrics
 
-    act = session.act_rl(observations=[0, 1, 2])
+    act = session.rl.act(observations=[0, 1, 2])
     assert act.n_rows == 3
     assert all(0 <= int(a) < 4 for a in act.actions)
     assert len(act.scores[0]) == 4
 
     out = tmp_path / "tabular_bundle"
-    session.save_rl_bundle(out)
+    session.rl.save_bundle(out)
     assert (out / "meta.json").is_file()
 
     other = _tiny_session()
@@ -429,7 +429,7 @@ def test_session_tabular_q_fit_act_evaluate_bundle(tmp_path: Path) -> None:
 @requires_gym
 def test_session_algorithm_alone_routes_to_tabular() -> None:
     session = _tiny_session()
-    fit = session.fit_rl(
+    fit = session.rl.fit(
         algorithm="expected_sarsa",
         env_id="FrozenLake-v1",
         n_episodes=50,
@@ -443,7 +443,7 @@ def test_session_algorithm_alone_routes_to_tabular() -> None:
 @requires_gym
 def test_walkthrough_reports_tabular_mode() -> None:
     session = _tiny_session()
-    session.fit_rl(
+    session.rl.fit(
         mode="tabular_q",
         env_id="FrozenLake-v1",
         n_episodes=30,

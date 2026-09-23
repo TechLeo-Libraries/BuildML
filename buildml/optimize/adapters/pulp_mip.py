@@ -10,6 +10,23 @@ from buildml.core.errors import ValidationError
 from buildml.optimize.extras import require_pulp
 
 
+def _cbc_solver(pulp: Any) -> Any:
+    """Find CBC via modern discovery or an older PuLP bundled executable."""
+    solver = pulp.COIN_CMD(msg=False)
+    if solver.available():
+        return solver
+    # PuLP 2.x/3.x shipped CBC; passing its path avoids constructing the
+    # deprecated PULP_CBC_CMD wrapper. PuLP 4 discovers pulp[cbc] directly.
+    bundled_path = getattr(getattr(pulp, "PULP_CBC_CMD", None), "pulp_cbc_path", None)
+    if bundled_path:
+        solver = pulp.COIN_CMD(path=bundled_path, msg=False)
+        if solver.available():
+            return solver
+    raise ValidationError(
+        "CBC solver is unavailable. Install 'pulp[cbc]' or put the CBC executable on PATH."
+    )
+
+
 def _pulp_selected(pulp: Any, variable: Any) -> bool:
     """Return whether a binary PuLP variable is selected after solve.
 
@@ -94,16 +111,19 @@ def select_knapsack_pulp(
         }
 
     prob = pulp.LpProblem("buildml_knapsack", pulp.LpMaximize)
+    make_variable = getattr(prob, "add_variable", None)
+    if make_variable is None:
+        make_variable = pulp.LpVariable
     x_vars = {
-        int(i): pulp.LpVariable(f"x_{i}", cat=pulp.LpBinary) for i in eligible.tolist()
+        int(i): make_variable(f"x_{i}", cat=pulp.LpBinary) for i in eligible.tolist()
     }
     prob += pulp.lpSum(float(values[i]) * x_vars[int(i)] for i in eligible.tolist())
     prob += (
         pulp.lpSum(float(costs[i]) * x_vars[int(i)] for i in eligible.tolist())
         <= float(budget)
     )
-    status = prob.solve(pulp.PULP_CBC_CMD(msg=False))
-    if pulp.LpStatus[status] not in {"Optimal", "Not Solved"}:
+    status = prob.solve(_cbc_solver(pulp))
+    if pulp.LpStatus[status] != "Optimal":
         raise ValidationError(
             f"PuLP knapsack MIP failed with status {pulp.LpStatus[status]!r}."
         )
