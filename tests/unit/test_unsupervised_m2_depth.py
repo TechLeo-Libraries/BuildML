@@ -39,7 +39,7 @@ def test_refuse_null_features() -> None:
         .split(test_size=0.25, random_state=0)
     )
     with pytest.raises(ValidationError, match="non-null"):
-        session.fit_clusters(method="kmeans", n_clusters=2)
+        session.unsupervised.fit(method="kmeans", n_clusters=2)
 
 
 def test_target_column_excluded_from_auto_features() -> None:
@@ -50,7 +50,7 @@ def test_target_column_excluded_from_auto_features() -> None:
         .split(test_size=0.25, random_state=0, stratify=True)
         .scale(method="standard")
     )
-    fit = session.fit_clusters(method="kmeans", n_clusters=2)
+    fit = session.unsupervised.fit(method="kmeans", n_clusters=2)
     assert "segment" not in fit.columns
 
 
@@ -61,8 +61,8 @@ def test_validation_fallback_to_test() -> None:
         .split(test_size=0.25, random_state=0)  # no validation carve
         .scale(method="standard")
     )
-    session.fit_clusters(method="kmeans", n_clusters=2)
-    result = session.evaluate_clusters(partition="validation")
+    session.unsupervised.fit(method="kmeans", n_clusters=2)
+    result = session.unsupervised.evaluate(partition="validation")
     assert result.partition == "test"
 
 
@@ -73,8 +73,8 @@ def test_train_partition_eval_recommends_holdout() -> None:
         .split(test_size=0.25, validation_size=0.2, random_state=0)
         .scale(method="standard")
     )
-    session.fit_clusters(method="kmeans", n_clusters=2)
-    result = session.evaluate_clusters(partition="train")
+    session.unsupervised.fit(method="kmeans", n_clusters=2)
+    result = session.unsupervised.evaluate(partition="train")
     assert any("optimistic" in r.lower() or "train" in r.lower() for r in result.recommendations)
 
 
@@ -86,7 +86,7 @@ def test_explicit_columns_override_reduce_preference() -> None:
         .scale(method="standard")
         .reduce_dimensions(method="pca", n_components=2, prefix="pc", drop_input_columns=False)
     )
-    fit = session.fit_clusters(
+    fit = session.unsupervised.fit(
         method="kmeans",
         n_clusters=2,
         columns=["a", "b"],
@@ -105,7 +105,7 @@ def test_status_and_explain_prerequisites() -> None:
     )
     before = session.explain("assign_clusters", moment="before")
     assert before.prerequisite_status.get("cluster-plan") is False
-    session.fit_clusters(method="kmeans", n_clusters=2)
+    session.unsupervised.fit(method="kmeans", n_clusters=2)
     after = session.explain("assign_clusters", moment="before")
     assert after.prerequisite_status.get("cluster-plan") is True
     status = unsupervised_status_for_session(session)
@@ -123,7 +123,7 @@ def test_n_clusters_exceeds_train_rows() -> None:
     )
     n_train = len(session.partition("train"))
     with pytest.raises(ValidationError, match="n_train"):
-        session.fit_clusters(method="kmeans", n_clusters=n_train + 1)
+        session.unsupervised.fit(method="kmeans", n_clusters=n_train + 1)
 
 
 def test_fit_without_split_raises_leakage() -> None:

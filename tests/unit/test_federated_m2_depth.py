@@ -193,6 +193,6 @@ def test_explain_before_prereq() -> None:
     session = _session()
     before = session.explain("evaluate_federated", moment="before")
     assert before.prerequisite_status.get("federated-plan") is False
-    session.fit_federated(backend="native", method="fedavg", n_rounds=2)
+    session.federated.fit(backend="native", method="fedavg", n_rounds=2)
     after = session.explain("evaluate_federated", moment="before")
     assert after.prerequisite_status.get("federated-plan") is True

@@ -94,7 +94,7 @@ def test_native_rotate_rejected() -> None:
 
 def test_session_backend_routing_native() -> None:
     session = _session()
-    fit = session.fit_kg(
+    fit = session.kg.fit(
         backend="native",
         method="transe",
         head_column="head",

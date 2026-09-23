@@ -23,7 +23,7 @@ def test_forecasting_alpha_gate_smoke(tmp_path: Path) -> None:
         .time_split(test_size=0.2, validation_size=0.2)
     )
 
-    fit = session.fit_forecast(
+    fit = session.forecast.fit(
         method="lag_ridge",
         horizon=7,
         lags=[1, 2, 3, 7],
@@ -33,19 +33,19 @@ def test_forecasting_alpha_gate_smoke(tmp_path: Path) -> None:
     assert session.forecast_plan is not None
     assert session.forecast_fit_result is not None
 
-    val = session.evaluate_forecast(partition="validation", strategy="rolling_one_step")
+    val = session.forecast.evaluate(partition="validation", strategy="rolling_one_step")
     assert val.partition == "validation"
     assert "mae" in val.metrics
     assert session.forecast_eval_result is not None
 
-    gen = session.generate_forecast(horizon=7, origin="train_end")
+    gen = session.forecast.generate(horizon=7, origin="train_end")
     assert len(gen.predictions) == 7
 
     before = session.explain("fit_forecast", moment="before")
     assert before.operation == "fit_forecast"
     assert before.prerequisite_status.get("split") is True
 
-    bundle = session.save_forecast_bundle(tmp_path / "forecast_bundle")
+    bundle = session.forecast.save_bundle(tmp_path / "forecast_bundle")
     assert (bundle / "meta.json").is_file()
     assert (bundle / "forecast_plan.joblib").is_file()
 
@@ -54,8 +54,8 @@ def test_forecasting_alpha_gate_smoke(tmp_path: Path) -> None:
         .set_roles({"ts": "time", "y": "target"})
         .time_split(test_size=0.2, validation_size=0.2)
     )
-    restored.load_forecast_bundle(bundle, trusted=True)
-    again = restored.generate_forecast(horizon=7)
+    restored.forecast.load_bundle(bundle, trusted=True)
+    again = restored.forecast.generate(horizon=7)
     assert again.predictions == gen.predictions
 
     # Baseline comparison path still works on the same temporal split recipe
@@ -64,6 +64,6 @@ def test_forecasting_alpha_gate_smoke(tmp_path: Path) -> None:
         .set_roles({"ts": "time", "y": "target"})
         .time_split(test_size=0.2, validation_size=0.2)
     )
-    baseline.fit_forecast(method="seasonal_naive", seasonal_period=7, horizon=7)
-    base_metrics = baseline.evaluate_forecast(partition="test")
+    baseline.forecast.fit(method="seasonal_naive", seasonal_period=7, horizon=7)
+    base_metrics = baseline.forecast.evaluate(partition="test")
     assert "rmse" in base_metrics.metrics

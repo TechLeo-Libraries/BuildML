@@ -256,6 +256,7 @@ dev = [
   "build>=1.0",
   "pandas-stubs>=2.0",
   "httpx>=0.27",
+  "httpx2>=2.10",
   "sphinx",
   "sphinx-rtd-theme",
   "myst-parser",

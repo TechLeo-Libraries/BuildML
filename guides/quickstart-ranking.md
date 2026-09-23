@@ -14,7 +14,7 @@ RAG and not `session.recommender`.
 
 [LTR deep](ranking-deep.md) ·
 Paste: [`examples/ranking_pointwise_loop.py`](../examples/ranking_pointwise_loop.py) ·
-Evidence: [search-relevance-ltr](../proofs/search-relevance-ltr/)
+Evidence: [search-relevance-ltr](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/search-relevance-ltr)
 
 ---
 

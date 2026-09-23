@@ -76,30 +76,30 @@ def test_fit_requires_split() -> None:
         {"x": "feature", "y": "feature", "segment": "ignore"}
     )
     with pytest.raises((LeakageError, ValidationError)):
-        session.fit_clusters(method="kmeans", n_clusters=2)
+        session.unsupervised.fit(method="kmeans", n_clusters=2)
 
 
 def test_kmeans_fit_assign_evaluate_and_bundle(tmp_path: Path) -> None:
     session = _ready_session()
-    fit = session.fit_clusters(method="kmeans", n_clusters=2, random_state=0)
+    fit = session.unsupervised.fit(method="kmeans", n_clusters=2, random_state=0)
     assert fit.n_clusters == 2
     assert fit.assign_strategy == "native"
     assert session.cluster_plan is not None
     assert sum(fit.cluster_sizes.values()) == fit.n_train_rows
 
-    assigned = session.assign_clusters(partition="test")
+    assigned = session.unsupervised.assign(partition="test")
     assert assigned.n_rows > 0
     assert assigned.assign_strategy == "native"
     assert set(assigned.labels).issubset({0, 1})
 
-    metrics = session.evaluate_clusters(
+    metrics = session.unsupervised.evaluate(
         partition="test", external_label_column="segment"
     )
     assert "silhouette" in metrics.metrics
     assert "adjusted_rand_index" in metrics.external_metrics
     assert 0.0 <= metrics.external_metrics["adjusted_rand_index"] <= 1.0
 
-    path = session.save_unsupervised_bundle(tmp_path / "unsup")
+    path = session.unsupervised.save_bundle(tmp_path / "unsup")
     assert (path / "meta.json").is_file()
     assert (path / "cluster_plan.joblib").is_file()
     plan = load_unsupervised_bundle(path, trusted=True)
@@ -110,8 +110,8 @@ def test_kmeans_fit_assign_evaluate_and_bundle(tmp_path: Path) -> None:
         {"x": "feature", "y": "feature", "segment": "ignore"}
     )
     restored.split(test_size=0.25, random_state=0).scale(method="standard")
-    restored.load_unsupervised_bundle(path, trusted=True)
-    again = restored.assign_clusters(partition="test")
+    restored.unsupervised.load_bundle(path, trusted=True)
+    again = restored.unsupervised.assign(partition="test")
     assert again.labels == assigned.labels
 
     with pytest.raises(ValidationError, match=BUNDLE_FORMAT):
@@ -131,32 +131,32 @@ def test_prefer_reduce_components() -> None:
         .scale(method="standard")
         .reduce_dimensions(method="pca", n_components=2, prefix="pc")
     )
-    fit = session.fit_clusters(method="kmeans", n_clusters=2, prefer_reduce_components=True)
+    fit = session.unsupervised.fit(method="kmeans", n_clusters=2, prefer_reduce_components=True)
     assert fit.used_reduce_components is True
     assert all(c.startswith("pc_") for c in fit.columns)
 
 
 def test_agglomerative_and_dbscan_disclosures() -> None:
     session = _ready_session()
-    agg = session.fit_clusters(method="agglomerative", n_clusters=2)
+    agg = session.unsupervised.fit(method="agglomerative", n_clusters=2)
     assert agg.assign_strategy == "nearest_centroid"
     assert any("centroid" in d.lower() for d in agg.disclosures)
-    labels = session.assign_clusters(partition="test")
+    labels = session.unsupervised.assign(partition="test")
     assert labels.n_rows > 0
 
-    db = session.fit_clusters(method="dbscan", eps=1.0, min_samples=3, n_clusters=None)
+    db = session.unsupervised.fit(method="dbscan", eps=1.0, min_samples=3, n_clusters=None)
     assert db.assign_strategy == "nearest_core"
     assert any("core" in d.lower() for d in db.disclosures)
-    assigned = session.assign_clusters(partition="test")
+    assigned = session.unsupervised.assign(partition="test")
     assert assigned.n_rows > 0
 
 
 def test_attach_requires_all_partition() -> None:
     session = _ready_session()
-    session.fit_clusters(method="kmeans", n_clusters=2)
+    session.unsupervised.fit(method="kmeans", n_clusters=2)
     with pytest.raises(ValidationError, match="partition='all'"):
-        session.assign_clusters(partition="test", attach=True)
-    attached = session.assign_clusters(partition="all", attach=True)
+        session.unsupervised.assign(partition="test", attach=True)
+    attached = session.unsupervised.assign(partition="all", attach=True)
     assert attached.attached is True
     assert "cluster_id" in session.dataset.columns
 

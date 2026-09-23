@@ -57,27 +57,27 @@ def test_core_import_and_catalog() -> None:
 
 def test_fit_partial_evaluate_bundle(tmp_path: Path) -> None:
     session = _ready_session()
-    fit = session.fit_online(estimator="sgd_classifier", chunk_size=40, n_init=40)
+    fit = session.online.fit(estimator="sgd_classifier", chunk_size=40, n_init=40)
     assert fit.n_init_rows == 40
     assert session.online_plan is not None
     assert session.online_plan.classes_ is not None
 
-    update = session.partial_fit_online(n_rows=40)
+    update = session.online.partial_fit(n_rows=40)
     assert update.n_updates == 1
     assert update.update_mode == "partial_fit"
     assert update.n_seen_rows >= 80
 
-    ev = session.evaluate_online(partition="validation")
+    ev = session.online.evaluate(partition="validation")
     assert "accuracy" in ev.metrics
     assert session.online_eval_result is not None
 
-    preds = session.predict_online(partition="test")
+    preds = session.online.predict(partition="test")
     assert preds.n_rows == len(preds.predictions)
 
     before = session.explain("partial_fit_online", moment="before")
     assert before.prerequisite_status.get("online-plan") is True
 
-    bundle = session.save_online_bundle(tmp_path / "online_bundle")
+    bundle = session.online.save_bundle(tmp_path / "online_bundle")
     assert (bundle / "meta.json").is_file()
     plan = load_online_bundle(bundle, trusted=True)
     assert plan.n_updates == 1
@@ -87,23 +87,23 @@ def test_fit_partial_evaluate_bundle(tmp_path: Path) -> None:
     )
     restored._split_plan = session.split_plan
     restored._dataset = session.dataset
-    restored.load_online_bundle(bundle, trusted=True)
+    restored.online.load_bundle(bundle, trusted=True)
     assert restored.online_plan is not None
     assert restored.online_plan.n_updates == 1
 
 
 def test_refuse_holdout_indices() -> None:
     session = _ready_session()
-    session.fit_online(chunk_size=30, n_init=30)
+    session.online.fit(chunk_size=30, n_init=30)
     test_idx = list(session.split_plan.test_indices)[:3]
     with pytest.raises(ValidationError, match="non-train indices"):
-        session.partial_fit_online(indices=test_idx)
+        session.online.partial_fit(indices=test_idx)
 
 
 def test_unknown_estimator() -> None:
     session = _ready_session()
     with pytest.raises(ValidationError, match="Unknown online estimator|not valid for backend"):
-        session.fit_online(estimator="hist_gradient_boosting")  # type: ignore[arg-type]
+        session.online.fit(estimator="hist_gradient_boosting")  # type: ignore[arg-type]
 
 
 def test_ai_allowlist() -> None:

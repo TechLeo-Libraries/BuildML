@@ -79,13 +79,13 @@ def test_refuse_without_assumptions_acknowledgements() -> None:
 def test_session_refuses_fit_without_declare() -> None:
     session = _session()
     with pytest.raises(ValidationError, match="No CausalAssumptions"):
-        session.fit_causal(method="aipw", bootstrap_samples=0)
+        session.causal.fit(method="aipw", bootstrap_samples=0)
 
 
 def test_session_refuse_incomplete_declare() -> None:
     session = _session()
     with pytest.raises(ValidationError, match="confounders"):
-        session.declare_causal_assumptions(
+        session.causal.declare_assumptions(
             treatment="t",
             outcome="y",
             confounders=None,

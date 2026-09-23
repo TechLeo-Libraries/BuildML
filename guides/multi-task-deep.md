@@ -24,7 +24,7 @@ which columns are targets (`role="target"` or `targets=`), whether to
 chain them, and whether mixed heads on torch are what you meant.
 
 Short on-ramp: [multi-task quickstart](quickstart-multi-task.md).
-Proof: [multi-target-underwriting](../proofs/multi-target-underwriting/).
+Proof: [multi-target-underwriting](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/multi-target-underwriting).
 
 ## A first joint fit
 

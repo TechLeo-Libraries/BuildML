@@ -30,7 +30,7 @@ the leak. The API refuses a missing split, threshold/cost-matrix without
 `session.fit`, and test tuning without the flag.
 
 Short on-ramp: [decisions quickstart](quickstart-optimize.md). Proof:
-[cost-sensitive-collections](../proofs/cost-sensitive-collections/).
+[cost-sensitive-collections](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/cost-sensitive-collections).
 
 ## Threshold after a classical fit
 

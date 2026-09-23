@@ -67,13 +67,13 @@ def test_explicit_classes_and_new_class_refused() -> None:
         .split(test_size=0.25, stratify=True, random_state=0)
         .scale(method="standard")
     )
-    session.fit_online(classes=[0, 1], chunk_size=30, n_init=30)
+    session.online.fit(classes=[0, 1], chunk_size=30, n_init=30)
     plan = session.online_plan
     assert plan is not None
     bad = pd.DataFrame({c: [0.0, 0.1] for c in plan.columns})
     bad[plan.target_column] = [0, 99]
     with pytest.raises(ValidationError, match="new class label"):
-        session.partial_fit_online(frame=bad)
+        session.online.partial_fit(frame=bad)
 
 
 def test_regression_sgd() -> None:
@@ -83,10 +83,10 @@ def test_regression_sgd() -> None:
         .split(test_size=0.25, random_state=0)
         .scale(method="standard")
     )
-    fit = session.fit_online(estimator="sgd_regressor", chunk_size=40, n_init=40)
+    fit = session.online.fit(estimator="sgd_regressor", chunk_size=40, n_init=40)
     assert fit.task == "regression"
-    session.partial_fit_online(n_rows=40)
-    ev = session.evaluate_online(partition="test")
+    session.online.partial_fit(n_rows=40)
+    ev = session.online.evaluate(partition="test")
     assert "mae" in ev.metrics
     assert "rmse" in ev.metrics
 
@@ -98,11 +98,11 @@ def test_external_frame_update() -> None:
         .split(test_size=0.25, stratify=True, random_state=0)
         .scale(method="standard")
     )
-    session.fit_online(chunk_size=30, n_init=30, classes=[0, 1])
+    session.online.fit(chunk_size=30, n_init=30, classes=[0, 1])
     cursor_before = session.online_plan.cursor  # type: ignore[union-attr]
     chunk = session.to_pandas().loc[list(session.split_plan.train_indices)[:10]]
     # Use a copy so we don't depend on cursor advancement.
-    upd = session.partial_fit_online(frame=chunk[list(session.online_plan.columns) + ["y"]])  # type: ignore[union-attr]
+    upd = session.online.partial_fit(frame=chunk[list(session.online_plan.columns) + ["y"]])  # type: ignore[union-attr]
     assert upd.n_chunk_rows == 10
     assert session.online_plan.cursor == cursor_before  # type: ignore[union-attr]
 

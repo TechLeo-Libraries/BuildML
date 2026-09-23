@@ -24,7 +24,7 @@ API refuses a missing split, missing triple columns, and a PyKEEN
 method without the extra.
 
 Short on-ramp: [KG quickstart](quickstart-kg.md). Proof:
-[kg-biomed-linkpred](../proofs/kg-biomed-linkpred/).
+[kg-biomed-linkpred](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/kg-biomed-linkpred).
 
 ## A first loop
 

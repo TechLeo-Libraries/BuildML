@@ -43,7 +43,7 @@ def test_federated_alpha_smoke(tmp_path: Path) -> None:
         .scale(method="standard")
     )
 
-    fit = session.fit_federated(
+    fit = session.federated.fit(
         backend="native",
         method="fedavg",
         estimator="sgd_classifier",
@@ -54,11 +54,11 @@ def test_federated_alpha_smoke(tmp_path: Path) -> None:
     assert fit.n_clients >= 2
     assert len(fit.round_history) >= 1
 
-    ev = session.evaluate_federated(partition="validation", per_client=True)
+    ev = session.federated.evaluate(partition="validation", per_client=True)
     assert ev.n_rows > 0
     assert "accuracy" in ev.metrics
 
-    preds = session.predict_federated(partition="test")
+    preds = session.federated.predict(partition="test")
     assert len(preds.predictions) > 0
 
     walk = session.walkthrough()
@@ -66,7 +66,7 @@ def test_federated_alpha_smoke(tmp_path: Path) -> None:
     assert status.get("has_federated_plan") is True
     assert status.get("method") == "fedavg"
 
-    bundle = session.save_federated_bundle(tmp_path / "fed_bundle")
+    bundle = session.federated.save_bundle(tmp_path / "fed_bundle")
     other = Session.ingest(frame).set_roles(
         {
             "x": "feature",
@@ -77,6 +77,6 @@ def test_federated_alpha_smoke(tmp_path: Path) -> None:
     )
     other._split_plan = session.split_plan
     other._dataset = session.dataset
-    other.load_federated_bundle(bundle, trusted=True)
-    ev2 = other.evaluate_federated(partition="test", per_client=False)
+    other.federated.load_bundle(bundle, trusted=True)
+    ev2 = other.federated.evaluate(partition="test", per_client=False)
     assert ev2.method == "fedavg"

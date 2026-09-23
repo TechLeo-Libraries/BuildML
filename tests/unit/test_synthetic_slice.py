@@ -79,29 +79,29 @@ def test_requires_split() -> None:
         {**{c: "feature" for c in frame.columns if c.startswith("f")}, "y": "target"}
     )
     with pytest.raises(ValidationError, match="split"):
-        session.fit_synthesizer(method="bootstrap")
+        session.synthetic.fit(method="bootstrap")
 
 
 def test_bootstrap_and_copula_e2e() -> None:
     session = _mixed_session()
-    boot = session.fit_synthesizer(method="bootstrap", smooth_sigma=0.1, random_state=0)
+    boot = session.synthetic.fit(method="bootstrap", smooth_sigma=0.1, random_state=0)
     assert boot.method == "bootstrap"
     assert session.synthesizer_plan is not None
-    sample = session.sample_synthetic(n=40, random_state=1)
+    sample = session.synthetic.sample(n=40, random_state=1)
     assert sample.n_rows == 40
     assert sample.frame is not None
     assert sample.merged is False
 
-    session.fit_synthesizer(method="gaussian_copula", random_state=0)
-    sample2 = session.sample_synthetic(n=50, random_state=2)
+    session.synthetic.fit(method="gaussian_copula", random_state=0)
+    sample2 = session.synthetic.sample(n=50, random_state=2)
     assert "grp" in sample2.frame.columns
     assert set(sample2.frame["grp"].astype(str).unique()).issubset({"A", "B"})
 
-    fid = session.evaluate_synthetic(mode="fidelity", partition="test")
+    fid = session.synthetic.evaluate(mode="fidelity", partition="test")
     assert "mean_ks" in fid.metrics
     assert "mean_tv" in fid.metrics
 
-    tstr = session.evaluate_synthetic(mode="tstr", partition="test")
+    tstr = session.synthetic.evaluate(mode="tstr", partition="test")
     assert "score" in tstr.metrics
     assert "differential" in " ".join(tstr.disclosures).lower() or any(
         "privacy" in d.lower() for d in tstr.disclosures
@@ -116,8 +116,8 @@ def test_merge_extend_train_provenance() -> None:
         list(session._split_plan.test_indices)
     ].reset_index(drop=True)
 
-    session.fit_synthesizer(method="bootstrap", random_state=0)
-    result = session.sample_synthetic(
+    session.synthetic.fit(method="bootstrap", random_state=0)
+    result = session.synthetic.sample(
         n=15, merge_mode="extend_train", provenance_column="_synthetic"
     )
     assert result.merged is True
@@ -133,20 +133,20 @@ def test_merge_extend_train_provenance() -> None:
 
 def test_bundle_roundtrip(tmp_path) -> None:
     session = _mixed_session()
-    session.fit_synthesizer(method="gaussian_copula", random_state=0)
+    session.synthetic.fit(method="gaussian_copula", random_state=0)
     path = tmp_path / "syn_bundle"
-    session.save_synthetic_bundle(path)
+    session.synthetic.save_bundle(path)
     other = _mixed_session()
-    other.load_synthetic_bundle(path, trusted=True)
+    other.synthetic.load_bundle(path, trusted=True)
     assert other.synthesizer_plan is not None
     assert other.synthesizer_plan.method == "gaussian_copula"
-    sample = other.sample_synthetic(n=20, random_state=9)
+    sample = other.synthetic.sample(n=20, random_state=9)
     assert sample.n_rows == 20
 
 
 def test_walkthrough_synthetic_status() -> None:
     session = _mixed_session()
-    session.fit_synthesizer(method="bootstrap", random_state=0)
+    session.synthetic.fit(method="bootstrap", random_state=0)
     walk = session.walkthrough()
     assert walk.synthetic_status.get("enabled") is True
     assert walk.synthetic_status.get("method") == "bootstrap"

@@ -11,7 +11,7 @@ Default is native TransE. Fit is train-only. This is not Neo4j and not
 
 [KG deep](kg-deep.md) ·
 Paste: [`examples/kg_transe_loop.py`](../examples/kg_transe_loop.py) ·
-Evidence: [kg-biomed-linkpred](../proofs/kg-biomed-linkpred/)
+Evidence: [kg-biomed-linkpred](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/kg-biomed-linkpred)
 
 ---
 

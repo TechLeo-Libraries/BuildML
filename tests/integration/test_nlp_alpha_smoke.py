@@ -70,13 +70,13 @@ def test_nlp_alpha_smoke(tmp_path: Path) -> None:
     frame = _tickets()
     session = _session(frame)
 
-    profile = session.profile_text_corpus(near_duplicate_threshold=0.9)
+    profile = session.nlp.profile_corpus(near_duplicate_threshold=0.9)
     assert profile.text_column == "body"
     assert profile.n_documents == len(frame)
     assert profile.near_duplicate_threshold == 0.9
     assert profile.language_counts.get("en", 0) > 0
 
-    fit = session.fit_text_classifier(
+    fit = session.nlp.fit_classifier(
         estimator="logistic",
         ngram_range=(1, 2),
         min_df=2,
@@ -86,8 +86,8 @@ def test_nlp_alpha_smoke(tmp_path: Path) -> None:
     assert fit.n_train_rows == len(session.split_plan.train_indices)
     assert set(fit.classes) == set(_POOLS)
 
-    validation = session.evaluate_text_classifier(partition="validation")
-    test = session.evaluate_text_classifier(partition="test")
+    validation = session.nlp.evaluate(partition="validation")
+    test = session.nlp.evaluate(partition="test")
     assert validation.partition == "validation"
     assert test.partition == "test"
     # Structured synthetic tickets are separable; a broken pipeline would not be.
@@ -96,11 +96,11 @@ def test_nlp_alpha_smoke(tmp_path: Path) -> None:
     assert set(test.per_class) == set(_POOLS)
     assert len(test.confusion) == 4
 
-    predicted = session.predict_text(partition="test")
+    predicted = session.nlp.predict(partition="test")
     assert predicted.n_rows == len(session.split_plan.test_indices)
     assert set(predicted.predictions) <= set(_POOLS)
 
-    interpret = session.interpret_text_prediction(
+    interpret = session.nlp.interpret(
         partition="test", top_k=6, max_documents=3
     )
     assert interpret.n_documents == 3
@@ -109,29 +109,29 @@ def test_nlp_alpha_smoke(tmp_path: Path) -> None:
         for item in row:
             assert item.contribution == float(np.float64(item.weight * item.value))
 
-    topics = session.fit_topics(
+    topics = session.nlp.fit_topics(
         method="nmf", n_topics=4, min_df=3, max_df=0.9, random_state=0
     )
-    assigned = session.assign_topics(partition="test")
+    assigned = session.nlp.assign_topics(partition="test")
     assert topics.mean_coherence is not None
     assert -1.0 <= topics.mean_coherence <= 1.0
     assert assigned.n_rows == predicted.n_rows
     assert set(assigned.dominant_topics) <= set(range(4))
 
-    keyphrases = session.extract_keyphrases(partition="train", method="tfidf", top_n=10)
-    summaries = session.summarize_text(partition="test", method="textrank", n_sentences=1)
-    entities = session.extract_entities(
+    keyphrases = session.nlp.extract_keyphrases(partition="train", method="tfidf", top_n=10)
+    summaries = session.nlp.summarize(partition="test", method="textrank", n_sentences=1)
+    entities = session.nlp.extract_entities(
         partition="test", backend="rules", gazetteers={"TERM": ["invoice", "portal"]}
     )
-    sentiment = session.analyze_sentiment(partition="test", backend="lexicon")
-    languages = session.detect_language(partition="test")
+    sentiment = session.nlp.analyze_sentiment(partition="test", backend="lexicon")
+    languages = session.nlp.detect_language(partition="test")
     assert keyphrases.corpus_keyphrases
     assert summaries.summaries
     assert entities.n_entities > 0
     assert sentiment.n_rows == predicted.n_rows
     assert languages.dominant_language == "en"
 
-    bundle = session.save_nlp_bundle(tmp_path / "nlp_alpha")
+    bundle = session.nlp.save_bundle(tmp_path / "nlp_alpha")
     assert (bundle / "meta.json").is_file()
     assert (bundle / "nlp_text_plan.joblib").is_file()
     assert (bundle / "nlp_topic_plan.joblib").is_file()
@@ -139,12 +139,12 @@ def test_nlp_alpha_smoke(tmp_path: Path) -> None:
     # A reloaded bundle must reproduce the holdout score exactly; anything less
     # means the normalization plan did not travel with the vectorizer.
     reloaded = _session(frame)
-    reloaded.load_nlp_bundle(bundle, trusted=True)
+    reloaded.nlp.load_bundle(bundle, trusted=True)
     assert reloaded.nlp_text_plan is not None
     assert reloaded.nlp_topic_plan is not None
-    again = reloaded.evaluate_text_classifier(partition="test")
+    again = reloaded.nlp.evaluate(partition="test")
     assert again.metrics["accuracy"] == test.metrics["accuracy"]
-    reassigned = reloaded.assign_topics(partition="test")
+    reassigned = reloaded.nlp.assign_topics(partition="test")
     assert reassigned.dominant_topics == assigned.dominant_topics
 
     report = session.walkthrough()

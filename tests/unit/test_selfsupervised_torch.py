@@ -39,7 +39,7 @@ def test_torch_tabular_methods(method: str) -> None:
         .split(test_size=0.25, stratify=True, random_state=0)
         .scale(method="standard")
     )
-    fit = session.fit_ssl_pretext(
+    fit = session.ssl.fit_pretext(
         method=method,
         latent_dim=6,
         epochs=8,
@@ -49,9 +49,9 @@ def test_torch_tabular_methods(method: str) -> None:
     )
     assert fit.method == method
     assert fit.modality == "tabular"
-    head = session.finetune_ssl_head()
+    head = session.ssl.finetune_head()
     assert head.n_labeled_train > 0
-    ev = session.evaluate_ssl(partition="test")
+    ev = session.ssl.evaluate(partition="test")
     assert "accuracy" in ev.metrics
 
 
@@ -76,12 +76,12 @@ def test_ssl_bundle_v2_roundtrip(tmp_path: Path, method: str) -> None:
         .split(test_size=0.25, stratify=True, random_state=0)
         .scale(method="standard")
     )
-    session.fit_ssl_pretext(method=method, latent_dim=5, epochs=2, batch_size=16)
-    session.finetune_ssl_head()
-    ev = session.evaluate_ssl(partition="test")
-    out = session.save_ssl_bundle(tmp_path / "ssl_v2")
+    session.ssl.fit_pretext(method=method, latent_dim=5, epochs=2, batch_size=16)
+    session.ssl.finetune_head()
+    ev = session.ssl.evaluate(partition="test")
+    out = session.ssl.save_bundle(tmp_path / "ssl_v2")
     # Save must preserve the live encoder and fitted supervised head.
-    assert session.evaluate_ssl(partition="test").metrics == ev.metrics
+    assert session.ssl.evaluate(partition="test").metrics == ev.metrics
     meta = (out / "meta.json").read_text(encoding="utf-8")
     assert "buildml.ssl_bundle.v2" in meta
     restored = (
@@ -90,8 +90,8 @@ def test_ssl_bundle_v2_roundtrip(tmp_path: Path, method: str) -> None:
         .split(test_size=0.25, stratify=True, random_state=0)
         .scale(method="standard")
     )
-    restored.load_ssl_bundle(out, trusted=True)
-    again = restored.evaluate_ssl(partition="test")
+    restored.ssl.load_bundle(out, trusted=True)
+    again = restored.ssl.evaluate(partition="test")
     assert again.metrics["accuracy"] == pytest.approx(ev.metrics["accuracy"])
     from buildml.core.errors import ValidationError
     from buildml.selfsupervised.checkpoint import load_ssl_bundle
@@ -107,8 +107,8 @@ def test_reusing_bundle_directory_does_not_restore_stale_torch_state(tmp_path: P
     from buildml.selfsupervised.checkpoint import load_ssl_bundle, save_ssl_bundle
 
     session = Session.ingest(_frame()).set_roles({"y": "target"}).split(test_size=.25)
-    session.fit_ssl_pretext(method="simclr_tabular", latent_dim=3, epochs=1)
-    destination = session.save_ssl_bundle(tmp_path / "reused")
+    session.ssl.fit_pretext(method="simclr_tabular", latent_dim=3, epochs=1)
+    destination = session.ssl.save_bundle(tmp_path / "reused")
     torch_plan, _ = load_ssl_bundle(destination, trusted=True)
     legacy = replace(torch_plan, method="masked_tabular", encoder_={"legacy_marker": True})
     save_ssl_bundle(destination, legacy)

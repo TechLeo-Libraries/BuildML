@@ -236,7 +236,7 @@ def test_cross_encoder_rerank_optional() -> None:
 
 def test_session_upsert_delete_hybrid_and_walkthrough_status() -> None:
     session = Session()
-    session.rag_ingest_corpus(
+    session.rag.ingest_corpus(
         [
             {
                 "doc_id": "py",
@@ -255,10 +255,10 @@ def test_session_upsert_delete_hybrid_and_walkthrough_status() -> None:
             },
         ]
     )
-    session.rag_embed_and_index(chunk_size=128, chunk_overlap=0, embedder="hashing")
-    hybrid = session.rag_retrieve("systems programming rust", k=2, mode="hybrid")
+    session.rag.embed_and_index(chunk_size=128, chunk_overlap=0, embedder="hashing")
+    hybrid = session.rag.retrieve("systems programming rust", k=2, mode="hybrid")
     assert hybrid.mode == "hybrid"
-    filtered = session.rag_retrieve(
+    filtered = session.rag.retrieve(
         "programming language",
         k=3,
         mode="bm25",
@@ -267,7 +267,7 @@ def test_session_upsert_delete_hybrid_and_walkthrough_status() -> None:
     assert filtered.hits
     assert all(h.metadata.get("lang") == "rust" for h in filtered.hits)
 
-    session.rag_upsert(
+    session.rag.upsert(
         [
             {
                 "doc_id": "js",
@@ -277,10 +277,10 @@ def test_session_upsert_delete_hybrid_and_walkthrough_status() -> None:
         ]
     )
     assert any(c.doc_id == "js" for c in session._rag_index.chunks)
-    session.rag_delete(doc_ids=["js"])
+    session.rag.delete(doc_ids=["js"])
     assert all(c.doc_id != "js" for c in session._rag_index.chunks)
 
-    metrics = session.rag_evaluate(
+    metrics = session.rag.evaluate(
         {"systems programming rust": ["rs"]},
         k=2,
         mode="hybrid",

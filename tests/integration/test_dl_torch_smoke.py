@@ -56,22 +56,22 @@ def test_session_torch_vertical_slice(tmp_path) -> None:
         .set_roles({"a": "feature", "b": "feature", "label": "target"})
         .split(test_size=0.2, validation_size=0.2, stratify=True, random_state=7)
     )
-    session.make_torch_loaders(batch_size=32, normalize=True, seed=7)
-    session.fit_torch(TinyMLP(), epochs=4, learning_rate=5e-3, device="cpu")
-    result = session.evaluate_torch(partition="test")
+    session.dl.make_loaders(batch_size=32, normalize=True, seed=7)
+    session.dl.fit(TinyMLP(), epochs=4, learning_rate=5e-3, device="cpu")
+    result = session.dl.evaluate(partition="test")
     assert result.partition == "test"
     assert result.n_rows > 0
     assert "accuracy" in result.metrics
 
-    bundle_path = session.save_torch_bundle(tmp_path / "bundle")
+    bundle_path = session.dl.save_bundle(tmp_path / "bundle")
     restored = (
         Session.ingest(frame)
         .set_roles({"a": "feature", "b": "feature", "label": "target"})
         .split(test_size=0.2, validation_size=0.2, stratify=True, random_state=7)
     )
-    restored.load_torch_bundle(bundle_path, TinyMLP(), map_location="cpu", trusted=True)
-    restored.make_torch_loaders(batch_size=32, normalize=True, seed=7)
-    again = restored.evaluate_torch(partition="test")
+    restored.dl.load_bundle(bundle_path, TinyMLP(), map_location="cpu", trusted=True)
+    restored.dl.make_loaders(batch_size=32, normalize=True, seed=7)
+    again = restored.dl.evaluate(partition="test")
     assert again.metrics["accuracy"] == pytest.approx(result.metrics["accuracy"], abs=1e-5)
 
     before = session.explain("fit_torch", moment="before")

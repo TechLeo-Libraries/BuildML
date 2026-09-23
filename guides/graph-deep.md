@@ -18,7 +18,7 @@ or `method="pyg"` when you want a GNN. This is not Neo4j, and it is not
 `session.kg`.
 
 Short on-ramp: [graph quickstart](quickstart-graph.md). Proof:
-[graph-fraud-rings](../proofs/graph-fraud-rings/).
+[graph-fraud-rings](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/graph-fraud-rings).
 
 ## A first loop
 
@@ -155,5 +155,5 @@ for a file you made. Loaders default to `trusted=False`.
 | Unsupported task | Anything other than `node_classification` |
 
 [Graph quickstart](quickstart-graph.md) ·
-[graph-fraud-rings](../proofs/graph-fraud-rings/) ·
+[graph-fraud-rings](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/graph-fraud-rings) ·
 [Artifacts](artifacts-checkpoints-bundles.md)

@@ -67,7 +67,7 @@ np.ndarray
         torch = require_torch_anomaly()
         self.model.eval()
         with torch.no_grad():
-            tensor = torch.as_tensor(x, dtype=torch.float32)
+            tensor = torch.as_tensor(x if x.flags.writeable else x.copy(), dtype=torch.float32)
             _, recon = self.model(tensor)
             err = torch.mean((tensor - recon) ** 2, dim=1)
             return err.cpu().numpy().astype(float)
@@ -165,7 +165,7 @@ np.ndarray
     torch = require_torch_anomaly()
     model.eval()
     with torch.no_grad():
-        tensor = torch.as_tensor(x, dtype=torch.float32)
+        tensor = torch.as_tensor(x if x.flags.writeable else x.copy(), dtype=torch.float32)
         _, recon = model(tensor)
         err = torch.mean((tensor - recon) ** 2, dim=1)
         return err.cpu().numpy().astype(float)

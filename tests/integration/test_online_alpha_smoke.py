@@ -24,7 +24,7 @@ def test_online_alpha_gate_smoke(tmp_path: Path) -> None:
         .scale(method="standard")
     )
 
-    fit = session.fit_online(
+    fit = session.online.fit(
         estimator="sgd_classifier",
         chunk_size=50,
         n_init=50,
@@ -39,14 +39,14 @@ def test_online_alpha_gate_smoke(tmp_path: Path) -> None:
         remaining = plan.n_train_rows - plan.cursor
         if remaining <= 0:
             break
-        upd = session.partial_fit_online(n_rows=min(50, remaining))
+        upd = session.online.partial_fit(n_rows=min(50, remaining))
         assert upd.update_mode == "partial_fit"
         updates += 1
         if updates > 20:
             break
     assert updates >= 1
 
-    ev = session.evaluate_online(partition="validation")
+    ev = session.online.evaluate(partition="validation")
     assert ev.partition == "validation"
     assert "accuracy" in ev.metrics
     assert session.online_eval_result is not None
@@ -57,14 +57,14 @@ def test_online_alpha_gate_smoke(tmp_path: Path) -> None:
     wt = session.walkthrough()
     assert wt.online_status.get("has_online_plan") is True
 
-    bundle = session.save_online_bundle(tmp_path / "online_bundle")
+    bundle = session.online.save_bundle(tmp_path / "online_bundle")
     restored = Session.ingest(session.to_pandas()).set_roles(
         {"x": "feature", "y": "feature", "label": "target"}
     )
     restored._split_plan = session.split_plan
     restored._dataset = session.dataset
-    restored.load_online_bundle(bundle, trusted=True)
+    restored.online.load_bundle(bundle, trusted=True)
     assert restored.online_plan is not None
     assert restored.online_plan.n_updates == session.online_plan.n_updates
-    again = restored.evaluate_online(partition="test")
+    again = restored.online.evaluate(partition="test")
     assert "accuracy" in again.metrics

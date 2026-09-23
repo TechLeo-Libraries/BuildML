@@ -81,27 +81,27 @@ def test_fit_requires_split() -> None:
         {"x": "feature", "y": "feature", "label": "target"}
     )
     with pytest.raises((LeakageError, ValidationError)):
-        session.fit_semisupervised()
+        session.semisupervised.fit()
 
 
 def test_label_propagation_fit_predict_evaluate_bundle(tmp_path: Path) -> None:
     session = _ready_session()
-    fit = session.fit_semisupervised(method="label_propagation", n_neighbors=5)
+    fit = session.semisupervised.fit(method="label_propagation", n_neighbors=5)
     assert fit.method == "label_propagation"
     assert fit.n_unlabeled_train > 0
     assert fit.n_labeled_train >= 2
     assert session.semisupervised_plan is not None
 
-    preds = session.predict_semisupervised(partition="test")
+    preds = session.semisupervised.predict(partition="test")
     assert preds.n_rows > 0
     assert len(preds.predictions) == preds.n_rows
 
-    ev = session.evaluate_semisupervised(partition="test")
+    ev = session.semisupervised.evaluate(partition="test")
     assert ev.n_labeled_eval == ev.n_rows  # holdout fully labeled
     assert "accuracy" in ev.metrics
     assert ev.metrics["accuracy"] >= 0.5
 
-    bundle = session.save_semisupervised_bundle(tmp_path / "semi")
+    bundle = session.semisupervised.save_bundle(tmp_path / "semi")
     assert (bundle / "meta.json").is_file()
     plan = load_semisupervised_bundle(bundle, trusted=True)
     assert plan.method == "label_propagation"
@@ -113,13 +113,13 @@ def test_label_propagation_fit_predict_evaluate_bundle(tmp_path: Path) -> None:
 
 def test_self_training_and_ai_allowlist() -> None:
     session = _ready_session()
-    fit = session.fit_semisupervised(
+    fit = session.semisupervised.fit(
         method="self_training",
         base_estimator="logistic_regression",
         threshold=0.7,
     )
     assert fit.method == "self_training"
-    ev = session.evaluate_semisupervised(partition="test")
+    ev = session.semisupervised.evaluate(partition="test")
     assert "f1_macro" in ev.metrics
 
     registry = build_default_registry()
@@ -134,7 +134,7 @@ def test_self_training_and_ai_allowlist() -> None:
 
 def test_walkthrough_status() -> None:
     session = _ready_session()
-    session.fit_semisupervised(method="label_spreading", n_neighbors=5)
+    session.semisupervised.fit(method="label_spreading", n_neighbors=5)
     report = session.walkthrough()
     status = report.semisupervised_status
     assert status["enabled"] is True

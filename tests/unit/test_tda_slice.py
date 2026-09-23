@@ -62,13 +62,13 @@ def test_fit_requires_split() -> None:
         {"a": "feature", "b": "feature", "y": "target"}
     )
     with pytest.raises((LeakageError, ValidationError)):
-        session.fit_tda()
+        session.tda.fit()
 
 
 @pytest.mark.skipif(not tda_available(), reason="buildml[tda] missing")
 def test_session_fit_transform_evaluate_bundle(tmp_path: Path) -> None:
     session = _demo_session()
-    fit = session.fit_tda(
+    fit = session.tda.fit(
         vectorization="persistence_image",
         knn=10,
         n_bins=10,
@@ -77,25 +77,25 @@ def test_session_fit_transform_evaluate_bundle(tmp_path: Path) -> None:
     )
     assert fit.feature_dim > 0
     assert session.tda_plan is not None
-    tr = session.transform_tda(partition="test")
+    tr = session.tda.transform(partition="test")
     assert tr.features.shape == (tr.n_rows, fit.feature_dim)
-    pred = session.predict_tda(partition="test")
+    pred = session.tda.predict(partition="test")
     assert pred.n_rows == tr.n_rows
-    ev = session.evaluate_tda(partition="validation")
+    ev = session.tda.evaluate(partition="validation")
     assert "accuracy" in ev.metrics
 
-    session.save_tda_bundle(tmp_path / "tda")
+    session.tda.save_bundle(tmp_path / "tda")
     other = _demo_session()
-    other.load_tda_bundle(tmp_path / "tda", trusted=True)
+    other.tda.load_bundle(tmp_path / "tda", trusted=True)
     assert other.tda_plan is not None
-    assert other.evaluate_tda(partition="test").n_rows > 0
+    assert other.tda.evaluate(partition="test").n_rows > 0
 
 
 @pytest.mark.skipif(not tda_available(), reason="buildml[tda] missing")
 @pytest.mark.parametrize("vectorization", ["landscape", "silhouette"])
 def test_vectorization_variants(vectorization: str) -> None:
     session = _demo_session(n=120)
-    fit = session.fit_tda(
+    fit = session.tda.fit(
         vectorization=vectorization,  # type: ignore[arg-type]
         knn=8,
         n_bins=8,
@@ -104,7 +104,7 @@ def test_vectorization_variants(vectorization: str) -> None:
         random_state=0,
     )
     assert fit.vectorization == vectorization
-    assert session.evaluate_tda(partition="validation").metrics
+    assert session.tda.evaluate(partition="validation").metrics
 
 
 def test_missing_extra_raises() -> None:
@@ -116,17 +116,17 @@ def test_missing_extra_raises() -> None:
             side_effect=MissingExtraError("tda", "fit_tda"),
         ):
             with pytest.raises(MissingExtraError, match="buildml\\[tda\\]"):
-                session.fit_tda()
+                session.tda.fit()
 
 
 def test_head_none_blocks_evaluate() -> None:
     if not tda_available():
         pytest.skip("buildml[tda] missing")
     session = _demo_session(n=100)
-    session.fit_tda(head="none", knn=8, n_bins=8, random_state=0)
+    session.tda.fit(head="none", knn=8, n_bins=8, random_state=0)
     with pytest.raises(ValidationError, match="head"):
-        session.evaluate_tda()
-    tr = session.transform_tda(partition="test")
+        session.tda.evaluate()
+    tr = session.tda.transform(partition="test")
     assert tr.feature_dim > 0
 
 

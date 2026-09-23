@@ -369,7 +369,7 @@ def normalize_history(history: Sequence[Mapping[str, Any]] | None) -> list[dict[
 
     See Also
     --------
-    make_operation_record : The target shape.
+    buildml.explain.history.make_operation_record : The target shape.
     """
     normalized: list[dict[str, Any]] = []
     previous = dict(_EMPTY_STATE)

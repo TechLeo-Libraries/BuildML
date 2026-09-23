@@ -11,6 +11,10 @@ demonstration table. `fit` is a contextual bandit on logged
 (context, action, reward) rows, or a Gymnasium loop when you ask for
 one.
 
+The cliff-walking teaching examples use `CliffWalking-v1`, as registered by
+current Gymnasium releases. Older Gymnasium releases may register only
+`CliffWalking-v0`; choose the environment ID supported by your installed version.
+
 `session.rl.fit()` with no extra knobs uses `algorithm="linucb"`, which
 resolves to the **sklearn contextual bandit** even when
 `buildml[rl-industry]` is installed. Gymnasium and Stable-Baselines3 are
@@ -23,7 +27,7 @@ rows; the env is the signal. This is not robotics, not MuJoCo, and not
 batch offline RL (CQL / IQL / Decision Transformer).
 
 Short on-ramp: [imitation + RL quickstart](quickstart-imitation-rl.md).
-Proof: [imitation-cartpole-control](../proofs/imitation-cartpole-control/).
+Proof: [imitation-cartpole-control](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/imitation-cartpole-control).
 
 ## Behavioral cloning
 
@@ -262,5 +266,5 @@ you made.
 | Continuous / MultiDiscrete actions or obs | Lite Gym paths do not take them |
 
 [Imitation + RL quickstart](quickstart-imitation-rl.md) ·
-[imitation-cartpole-control](../proofs/imitation-cartpole-control/) ·
+[imitation-cartpole-control](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/imitation-cartpole-control) ·
 [Artifacts](artifacts-checkpoints-bundles.md)

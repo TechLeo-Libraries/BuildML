@@ -10,7 +10,7 @@ for meta-train. This is not MAML-at-scale.
 
 [Meta-learning deep](meta-learning-deep.md) ·
 Paste: [`examples/metalearning_prototypical_loop.py`](../examples/metalearning_prototypical_loop.py) ·
-Evidence: [few-shot-domain-adapt](../proofs/few-shot-domain-adapt/)
+Evidence: [few-shot-domain-adapt](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/few-shot-domain-adapt)
 
 ```python
 import numpy as np

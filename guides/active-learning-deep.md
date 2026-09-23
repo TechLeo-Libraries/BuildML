@@ -23,7 +23,7 @@ unlabeled holdout rows as truth. You decide who labels, when the budget
 stops, and whether each round refits.
 
 Short on-ramp: [active learning quickstart](quickstart-active-learning.md).
-Proof: [active-labeling-budget](../proofs/active-labeling-budget/).
+Proof: [active-labeling-budget](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/active-labeling-budget).
 This is not [semi-supervised](semisupervised-deep.md): that path
 propagates missing labels without a human loop.
 

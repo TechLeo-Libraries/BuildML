@@ -35,18 +35,18 @@ def test_synthetic_session_smoke(tmp_path: Path) -> None:
         .split(test_size=0.2, validation_size=0.2, random_state=0)
     )
 
-    session.fit_synthesizer(method="gaussian_copula", random_state=0)
-    session.sample_synthetic(n=60, random_state=1)
-    fid = session.evaluate_synthetic(mode="fidelity", partition="test")
+    session.synthetic.fit(method="gaussian_copula", random_state=0)
+    session.synthetic.sample(n=60, random_state=1)
+    fid = session.synthetic.evaluate(mode="fidelity", partition="test")
     assert fid.n_synthetic >= 60
-    tstr = session.evaluate_synthetic(mode="tstr", partition="test")
+    tstr = session.synthetic.evaluate(mode="tstr", partition="test")
     assert "score" in tstr.metrics
 
-    session.fit_synthesizer(method="bootstrap", smooth_sigma=0.0, random_state=2)
-    session.sample_synthetic(n=10, merge_mode="extend_train")
+    session.synthetic.fit(method="bootstrap", smooth_sigma=0.0, random_state=2)
+    session.synthetic.sample(n=10, merge_mode="extend_train")
 
     bundle = tmp_path / "syn"
-    session.save_synthetic_bundle(bundle)
+    session.synthetic.save_bundle(bundle)
     assert (bundle / "meta.json").is_file()
     assert (bundle / "synthetic_plan.joblib").is_file()
 

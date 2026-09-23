@@ -166,7 +166,6 @@ def _fit_modern_mapie(
     if task == "regression":
         from mapie.regression import (
             CrossConformalRegressor,
-            JackknifeAfterBootstrapRegressor,
             SplitConformalRegressor,
         )
 
@@ -196,7 +195,7 @@ def _fit_modern_mapie(
             model.fit_conformalize(x_fit, y_fit)
             disclosures.append("MAPIE CrossConformalRegressor (CV+) on Session train.")
         elif method == "jackknife_plus":
-            model = JackknifeAfterBootstrapRegressor(
+            model = CrossConformalRegressor(
                 estimator=_base_regressor(),
                 confidence_level=confidence,
                 method="plus",
@@ -205,7 +204,7 @@ def _fit_modern_mapie(
             )
             model.fit_conformalize(x_fit, y_fit)
             disclosures.append(
-                "MAPIE JackknifeAfterBootstrapRegressor (jackknife+) on Session train."
+                "MAPIE CrossConformalRegressor (jackknife+, leave-one-out CV) on Session train."
             )
         else:
             raise ValidationError(f"Unknown MAPIE method '{method}'.")

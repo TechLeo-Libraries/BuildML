@@ -14,7 +14,7 @@ implemented. Default method is native AIPW.
 
 [Causal deep](causal-deep.md) ·
 Paste: [`examples/causal_aipw_ate.py`](../examples/causal_aipw_ate.py) ·
-Evidence: [causal-treatment-effect](../proofs/causal-treatment-effect/)
+Evidence: [causal-treatment-effect](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/causal-treatment-effect)
 
 ```python
 import numpy as np

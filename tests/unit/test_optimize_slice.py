@@ -73,13 +73,13 @@ def test_requires_split() -> None:
         {**{c: "feature" for c in frame.columns if c.startswith("f")}, "y": "target"}
     )
     with pytest.raises(ValidationError, match="split"):
-        session.fit_decision_policy(method="threshold", fp_cost=1.0, fn_cost=2.0)
+        session.decision.fit(method="threshold", fp_cost=1.0, fn_cost=2.0)
 
 
 def test_refuses_test_tuning_without_opt_in() -> None:
     session = _binary_session()
     with pytest.raises(LeakageError, match="allow_test_tuning"):
-        session.fit_decision_policy(
+        session.decision.fit(
             method="threshold",
             partition="test",
             fp_cost=1.0,
@@ -89,7 +89,7 @@ def test_refuses_test_tuning_without_opt_in() -> None:
 
 def test_threshold_policy_and_tune_threshold_crosslink() -> None:
     session = _binary_session()
-    result = session.fit_decision_policy(
+    result = session.decision.fit(
         method="threshold",
         partition="validation",
         fp_cost=1.0,
@@ -107,7 +107,7 @@ def test_threshold_policy_and_tune_threshold_crosslink() -> None:
     assert report.payload["recommendation_basis"] == "min_expected_cost"
     assert session.decision_plan is not None
 
-    eval_result = session.evaluate_decisions(partition="test")
+    eval_result = session.decision.evaluate(partition="test")
     assert "f1" in eval_result.metrics
     assert eval_result.realized_cost is not None
 
@@ -126,7 +126,7 @@ def test_knapsack_and_topk_helpers() -> None:
 
 def test_allocation_session_smoke() -> None:
     session = _binary_session()
-    fit = session.fit_decision_policy(
+    fit = session.decision.fit(
         method="topk",
         partition="validation",
         capacity=5,
@@ -135,11 +135,11 @@ def test_allocation_session_smoke() -> None:
         id_column="cid",
     )
     assert fit.n_selected == 5
-    applied = session.apply_decisions(partition="test")
+    applied = session.decision.apply(partition="test")
     assert applied.n_selected <= 5
     assert len(applied.selected_ids) == applied.n_selected
 
-    knap = session.fit_decision_policy(
+    knap = session.decision.fit(
         method="knapsack",
         partition="validation",
         budget=20.0,
@@ -152,26 +152,26 @@ def test_allocation_session_smoke() -> None:
 
 def test_bundle_roundtrip(tmp_path) -> None:
     session = _binary_session()
-    session.fit_decision_policy(
+    session.decision.fit(
         method="threshold",
         partition="validation",
         fp_cost=1.0,
         fn_cost=2.0,
     )
     path = tmp_path / "decision_bundle"
-    session.save_decision_bundle(path)
+    session.decision.save_bundle(path)
     other = _binary_session()
-    other.load_decision_bundle(path, trusted=True)
+    other.decision.load_bundle(path, trusted=True)
     assert other.decision_plan is not None
     assert other.decision_plan.method == "threshold"
     assert other.decision_plan.threshold is not None
-    eval_result = other.evaluate_decisions(partition="test")
+    eval_result = other.decision.evaluate(partition="test")
     assert eval_result.n_rows > 0
 
 
 def test_walkthrough_decision_status() -> None:
     session = _binary_session()
-    session.fit_decision_policy(
+    session.decision.fit(
         method="threshold", partition="validation", fp_cost=1.0, fn_cost=2.0
     )
     report = session.walkthrough()

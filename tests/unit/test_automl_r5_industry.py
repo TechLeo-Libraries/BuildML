@@ -51,7 +51,7 @@ def test_capability_matrix_native_always_available() -> None:
 
 def test_evolutionary_method_runs_without_extra() -> None:
     session = _ready()
-    result = session.run_automl(
+    result = session.automl.run(
         backend="native",
         method="evolutionary",
         n_trials=6,
@@ -68,7 +68,7 @@ def test_evolutionary_method_runs_without_extra() -> None:
 
 def test_export_comparison_metrics(tmp_path: Path) -> None:
     session = _ready()
-    result = session.run_automl(
+    result = session.automl.run(
         n_trials=6,
         cv=2,
         families=("logistic", "random_forest"),
@@ -84,7 +84,7 @@ def test_export_comparison_metrics(tmp_path: Path) -> None:
 
 def test_stacking_ensemble_mode() -> None:
     session = _ready()
-    result = session.run_automl(
+    result = session.automl.run(
         n_trials=8,
         cv=3,
         families=("logistic", "random_forest", "decision_tree"),
@@ -104,7 +104,7 @@ def test_stacking_ensemble_mode() -> None:
 @pytest.mark.skipif(not optuna_available(), reason="buildml[automl] not installed")
 def test_optuna_backend_with_budget() -> None:
     session = _ready()
-    result = session.run_automl(
+    result = session.automl.run(
         backend="optuna",
         n_trials=4,
         cv=2,
@@ -122,7 +122,7 @@ def test_optuna_backend_with_budget() -> None:
 @pytest.mark.skipif(not gradient_boosting_extras_available(), reason="GBDT extras missing")
 def test_industry_families_in_native_catalog() -> None:
     session = _ready()
-    result = session.run_automl(
+    result = session.automl.run(
         n_trials=4,
         cv=2,
         include_industry_families=True,
@@ -194,4 +194,4 @@ def test_flaml_nested_rejected_without_extra() -> None:
         pytest.skip("FLAML installed — use integration env for nested rejection")
     session = _ready()
     with pytest.raises((MissingExtraError, ValidationError)):
-        session.run_automl(backend="flaml", selection="nested", time_budget=10.0)
+        session.automl.run(backend="flaml", selection="nested", time_budget=10.0)

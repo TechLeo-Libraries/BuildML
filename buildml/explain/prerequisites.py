@@ -4,7 +4,7 @@
 One prerequisite key answers three questions, and every consumer needs a
 different one:
 
-* :func:`probe`: is it satisfied right now, and what should the expert message
+* :func:`~buildml.explain.prerequisites.probe`: is it satisfied right now, and what should the expert message
   say? Used by the workflow resolver.
 * ``PROVIDERS``: which operations establish it? Used to build prerequisite
   chains and remedies.
@@ -576,7 +576,7 @@ def probe(session: Any, key: str) -> tuple[bool, str]:
 def plain_prerequisite(key: str) -> str:
     """Say what a precondition means to someone who has not used BuildML.
 
-    The expert message from :func:`probe` names session attributes and plan
+    The expert message from :func:`~buildml.explain.prerequisites.probe` names session attributes and plan
     objects. This is the same condition stated as something a newcomer can act
     on, and it is what the beginner primer renders.
 

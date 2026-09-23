@@ -12,7 +12,7 @@ sequence labelling, not generation, not Torch fine-tuning, and not RAG.
 
 [NLP deep](nlp-deep.md) ·
 Paste: [`examples/nlp_text_classifier_loop.py`](../examples/nlp_text_classifier_loop.py) ·
-Evidence: [ticket-routing-nlp](../proofs/ticket-routing-nlp/)
+Evidence: [ticket-routing-nlp](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/ticket-routing-nlp)
 
 ```python
 import pandas as pd

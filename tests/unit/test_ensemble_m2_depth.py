@@ -38,7 +38,7 @@ def test_soft_voting_requires_predict_proba() -> None:
         .split(test_size=0.25, random_state=0, stratify=True)
     )
     with pytest.raises(ValidationError, match="predict_proba"):
-        session.fit_voting(
+        session.ensemble.fit_voting(
             {"svc": LinearSVC(), "rf": RandomForestClassifier(n_estimators=10, random_state=0)},
             voting="soft",
         )
@@ -51,7 +51,7 @@ def test_blending_discloses_train_inner_holdout() -> None:
         .split(test_size=0.2, validation_size=0.2, random_state=0, stratify=True)
         .scale(method="standard")
     )
-    fit = session.fit_blending(_bases(), holdout_fraction=0.2, random_state=0)
+    fit = session.ensemble.fit_blending(_bases(), holdout_fraction=0.2, random_state=0)
     joined = " ".join(fit.disclosures).lower()
     assert "holdout_fraction" in joined
     assert "validation/test" in joined or "session test" in joined
@@ -66,7 +66,7 @@ def test_stacking_sets_classical_fit_result_for_predict() -> None:
         .split(test_size=0.25, random_state=0, stratify=True)
         .scale(method="standard")
     )
-    session.fit_stacking(_bases(), cv=3)
+    session.ensemble.fit_stacking(_bases(), cv=3)
     preds = session.predict(partition="test")
     assert len(preds) > 0
 
@@ -81,7 +81,7 @@ def test_explain_prerequisites_for_ensemble_ops() -> None:
     assert before.operation == "fit_voting"
     assert before.prerequisite_status.get("split") is True
 
-    session.fit_voting(_bases(), voting="hard")
+    session.ensemble.fit_voting(_bases(), voting="hard")
     after_save = session.explain("save_ensemble_bundle", moment="before")
     assert after_save.prerequisite_status.get("ensemble-plan") is True
 
@@ -107,7 +107,7 @@ def test_fit_without_split_raises_leakage() -> None:
         {"x1": "feature", "x2": "feature", "y": "target"}
     )
     with pytest.raises((LeakageError, ValidationError)):
-        session.fit_stacking(_bases(), cv=3)
+        session.ensemble.fit_stacking(_bases(), cv=3)
 
 
 def test_walkthrough_includes_ensemble_status() -> None:
@@ -117,7 +117,7 @@ def test_walkthrough_includes_ensemble_status() -> None:
         .split(test_size=0.25, random_state=0, stratify=True)
         .scale(method="standard")
     )
-    session.fit_voting(_bases())
+    session.ensemble.fit_voting(_bases())
     report = session.walkthrough()
     status = report.ensemble_status
     assert status.get("has_ensemble_plan") is True

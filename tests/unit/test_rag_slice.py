@@ -45,9 +45,9 @@ def test_missing_rag_extra_message_for_sentence_transformers() -> None:
         pytest.skip("rag extras installed and importable in this environment")
     if _RAG_SPEC and not _rag_usable():
         pytest.skip("sentence-transformers present but not importable")
-    session = Session().rag_ingest_corpus(["alpha beta gamma for retrieval"])
+    session = Session().rag.ingest_corpus(["alpha beta gamma for retrieval"])
     with pytest.raises(MissingExtraError, match="buildml\\[rag\\]"):
-        session.rag_embed_and_index(embedder="sentence-transformers")
+        session.rag.embed_and_index(embedder="sentence-transformers")
 
 
 def test_catalog_covers_rag_operations() -> None:
@@ -156,23 +156,23 @@ def test_corpus_from_frame_requires_text_column() -> None:
 
 def test_session_rag_vertical_slice(tmp_path: Path) -> None:
     session = Session()
-    session.rag_ingest_corpus(
+    session.rag.ingest_corpus(
         [
             {"doc_id": "py", "text": "python is a programming language for data work"},
             {"doc_id": "rs", "text": "rust is a systems programming language"},
             {"doc_id": "go", "text": "go is a programming language for concurrent services"},
         ]
     )
-    session.rag_chunk(size=128, overlap=16)
-    session.rag_embed_and_index(embedder="hashing")
+    session.rag.chunk(size=128, overlap=16)
+    session.rag.embed_and_index(embedder="hashing")
     assert session.rag_index_result is not None
-    result = session.rag_retrieve("systems programming rust", k=2)
+    result = session.rag.retrieve("systems programming rust", k=2)
     assert len(result.hits) == 2
-    metrics = session.rag_evaluate({"systems programming rust": ["rs"]}, k=2)
+    metrics = session.rag.evaluate({"systems programming rust": ["rs"]}, k=2)
     assert metrics.recall_at_k >= 0.0
-    path = session.save_rag_bundle(tmp_path / "bundle")
+    path = session.rag.save_bundle(tmp_path / "bundle")
     other = Session()
-    other.load_rag_bundle(path)
+    other.rag.load_bundle(path)
     assert other.rag_index_result is not None
     assert other.rag_index_result.n_chunks == session.rag_index_result.n_chunks
     before = session.explain("rag_retrieve", moment="before")

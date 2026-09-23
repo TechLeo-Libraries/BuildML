@@ -80,7 +80,7 @@ def test_fit_requires_split() -> None:
         {"x1": "feature", "x2": "feature", "y": "target"}
     )
     with pytest.raises((LeakageError, ValidationError)):
-        session.fit_voting(
+        session.ensemble.fit_voting(
             {
                 "lr": LogisticRegression(max_iter=500),
                 "rf": RandomForestClassifier(n_estimators=20, random_state=0),
@@ -90,7 +90,7 @@ def test_fit_requires_split() -> None:
 
 def test_voting_fit_evaluate_and_bundle(tmp_path: Path) -> None:
     session = _ready_clf()
-    fit = session.fit_voting(
+    fit = session.ensemble.fit_voting(
         {
             "lr": LogisticRegression(max_iter=500),
             "rf": RandomForestClassifier(n_estimators=30, random_state=0),
@@ -103,11 +103,11 @@ def test_voting_fit_evaluate_and_bundle(tmp_path: Path) -> None:
     assert session.fit_result is not None
     assert set(fit.estimator_names) == {"lr", "rf"}
 
-    metrics = session.evaluate_ensemble(partition="test")
+    metrics = session.ensemble.evaluate(partition="test")
     assert "accuracy" in metrics.metrics or "f1_weighted" in metrics.metrics
     assert metrics.diagnostics.get("ensemble", {}).get("strategy") == "voting"
 
-    bundle = session.save_ensemble_bundle(tmp_path / "ens_bundle")
+    bundle = session.ensemble.save_bundle(tmp_path / "ens_bundle")
     assert (bundle / "meta.json").is_file()
     assert (bundle / "ensemble_plan.joblib").is_file()
     meta = (bundle / "meta.json").read_text(encoding="utf-8")
@@ -118,10 +118,10 @@ def test_voting_fit_evaluate_and_bundle(tmp_path: Path) -> None:
         .set_roles({"x1": "feature", "x2": "feature", "y": "target"})
         .split(test_size=0.25, random_state=0, stratify=True)
     )
-    restored.load_ensemble_bundle(bundle, trusted=True)
+    restored.ensemble.load_bundle(bundle, trusted=True)
     assert restored.ensemble_plan is not None
     assert restored.fit_result is not None
-    again = restored.evaluate_ensemble(partition="test")
+    again = restored.ensemble.evaluate(partition="test")
     assert again.metrics
 
 
@@ -131,13 +131,13 @@ def test_stacking_and_blending_paths() -> None:
         "lr": LogisticRegression(max_iter=500),
         "rf": RandomForestClassifier(n_estimators=25, random_state=0),
     }
-    stack = session.fit_stacking(bases, cv=3, task="classification")
+    stack = session.ensemble.fit_stacking(bases, cv=3, task="classification")
     assert stack.strategy == "stacking"
     assert stack.cv == 3
     eval_s = session.evaluate(partition="test")
     assert eval_s.n_rows > 0
 
-    blend = session.fit_blending(
+    blend = session.ensemble.fit_blending(
         bases,
         holdout_fraction=0.25,
         task="classification",
@@ -146,7 +146,7 @@ def test_stacking_and_blending_paths() -> None:
     assert blend.strategy == "blending"
     assert blend.holdout_fraction == 0.25
     assert any("train only" in d.lower() or "holdout_fraction" in d for d in blend.disclosures)
-    eval_b = session.evaluate_ensemble(partition="validation")
+    eval_b = session.ensemble.evaluate(partition="validation")
     assert eval_b.partition == "validation"
 
 
@@ -157,7 +157,7 @@ def test_regression_voting() -> None:
         .split(test_size=0.25, random_state=0)
         .scale(method="standard")
     )
-    fit = session.fit_voting(
+    fit = session.ensemble.fit_voting(
         {
             "ridge": Ridge(),
             "rf": RandomForestRegressor(n_estimators=20, random_state=0),
@@ -165,11 +165,11 @@ def test_regression_voting() -> None:
         task="regression",
     )
     assert fit.task == "regression"
-    metrics = session.evaluate_ensemble(partition="test")
+    metrics = session.ensemble.evaluate(partition="test")
     assert "r2" in metrics.metrics or "rmse" in metrics.metrics
 
 
 def test_rejects_single_estimator() -> None:
     session = _ready_clf()
     with pytest.raises(ValidationError):
-        session.fit_voting({"lr": LogisticRegression(max_iter=200)})
+        session.ensemble.fit_voting({"lr": LogisticRegression(max_iter=200)})

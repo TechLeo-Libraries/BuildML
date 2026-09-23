@@ -17,7 +17,7 @@ def _indexed_session() -> Session:
         "Classical Session.fit trains sklearn estimators on tabular data.",
         "Torch fit_torch trains neural networks with optional early stopping.",
     ]
-    return Session().rag_ingest_corpus(docs).rag_embed_and_index(embedder="hashing")
+    return Session().rag.ingest_corpus(docs).rag.embed_and_index(embedder="hashing")
 
 
 def test_catalog_covers_rag_generate() -> None:
@@ -43,18 +43,18 @@ def test_hits_to_citations_and_prompt_assembly() -> None:
 def test_rag_generate_missing_index() -> None:
     session = Session()
     with pytest.raises(ValidationError, match="No RAG index"):
-        session.rag_generate("hello", provider=EchoGroundedProvider())
+        session.rag.generate("hello", provider=EchoGroundedProvider())
 
 
 def test_rag_generate_missing_provider() -> None:
     session = _indexed_session()
     with pytest.raises(ValidationError, match="provider"):
-        session.rag_generate("What does RAG do?")
+        session.rag.generate("What does RAG do?")
 
 
 def test_rag_generate_grounded_with_echo_provider() -> None:
     session = _indexed_session()
-    result = session.rag_generate(
+    result = session.rag.generate(
         "How does BuildML RAG generate answers?",
         provider=EchoGroundedProvider(),
         k=3,
@@ -81,16 +81,16 @@ def test_rag_generate_empty_retrieval_fails() -> None:
 
 
 def test_rag_generate_reuses_session_ai_provider() -> None:
-    session = _indexed_session().ai_configure(provider="mock")
-    result = session.rag_generate("What is classical fit?", k=2)
+    session = _indexed_session().ai.configure(provider="mock")
+    result = session.rag.generate("What is classical fit?", k=2)
     assert result.answer
     assert result.n_citations >= 1
 
 
 def test_rag_generate_use_last_retrieve() -> None:
     session = _indexed_session()
-    retrieved = session.rag_retrieve("Torch neural networks", k=2)
-    result = session.rag_generate(
+    retrieved = session.rag.retrieve("Torch neural networks", k=2)
+    result = session.rag.generate(
         "Torch neural networks",
         provider=EchoGroundedProvider(),
         use_last_retrieve=True,

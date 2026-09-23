@@ -60,9 +60,9 @@ def test_injected_split_ok_when_chronological() -> None:
     train_idx = list(range(0, 40))
     test_idx = list(range(40, 60))
     session.inject_split(train_indices=train_idx, test_indices=test_idx)
-    fit = session.fit_forecast(method="naive", horizon=3)
+    fit = session.forecast.fit(method="naive", horizon=3)
     assert fit.n_train_rows == 40
-    metrics = session.evaluate_forecast(partition="test", strategy="rolling_one_step")
+    metrics = session.forecast.evaluate(partition="test", strategy="rolling_one_step")
     assert metrics.n_points == 20
 
 
@@ -75,7 +75,7 @@ def test_injected_split_refuses_time_overlap() -> None:
         test_indices=list(range(0, 10)),
     )
     with pytest.raises(LeakageError, match="Temporal leakage"):
-        session.fit_forecast(method="mean")
+        session.forecast.fit(method="mean")
 
 
 def test_walkthrough_and_ai_tools_include_forecast() -> None:
@@ -84,8 +84,8 @@ def test_walkthrough_and_ai_tools_include_forecast() -> None:
         .set_roles({"clock": "time", "sales": "target"})
         .time_split(test_size=0.25)
     )
-    session.fit_forecast(method="lag_ridge", lags=[1, 2], horizon=3)
-    session.evaluate_forecast(partition="test")
+    session.forecast.fit(method="lag_ridge", lags=[1, 2], horizon=3)
+    session.forecast.evaluate(partition="test")
     report = session.walkthrough()
     payload = report.to_dict()
     status = payload["forecasting_status"]
@@ -112,4 +112,4 @@ def test_short_series_raises() -> None:
         .time_split(test_size=3)
     )
     with pytest.raises(ValidationError, match="max\\(lags\\)"):
-        session.fit_forecast(method="lag_ridge", lags=[1, 2, 3, 7, 14])
+        session.forecast.fit(method="lag_ridge", lags=[1, 2, 3, 7, 14])

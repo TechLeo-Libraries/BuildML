@@ -45,11 +45,11 @@ def test_session_analyze_and_walkthrough() -> None:
         .set_roles({"ts": "time", "y": "target"})
         .time_split(test_size=0.25)
     )
-    out = session.analyze_timeseries(scope="train")
+    out = session.timeseries.analyze(scope="train")
     assert out.decompose is not None
-    decomp = session.ts_decompose(seasonal_period=7)
+    decomp = session.timeseries.decompose(seasonal_period=7)
     assert decomp.decompose is not None
-    diag = session.ts_diagnostics(acf_lags=20, pacf_lags=10)
+    diag = session.timeseries.diagnostics(acf_lags=20, pacf_lags=10)
     assert diag.diagnostics is not None
 
     report = session.walkthrough()
@@ -66,7 +66,7 @@ def test_refuses_random_split() -> None:
     session = Session.ingest(frame).set_roles({"ts": "time", "y": "target"})
     session.split(test_size=0.2, random_state=0)
     with pytest.raises(LeakageError):
-        session.analyze_timeseries()
+        session.timeseries.analyze()
 
 
 def test_ts_decompose_only_low_level() -> None:

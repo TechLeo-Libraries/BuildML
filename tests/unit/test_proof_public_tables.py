@@ -33,13 +33,15 @@ def test_breast_cancer_is_offline_public() -> None:
     assert all(roles[col] == "feature" for col in meta["feature_columns"])
 
 
-def test_classical_credit_table_records_which_loader_ran() -> None:
+def test_classical_credit_table_records_which_loader_ran(monkeypatch) -> None:
     ds = _datasets()
+    # Test loader-selection metadata without depending on network/cache state.
+    frame_fixture, meta_fixture = ds.load_credit_approval_synthetic(n=40, seed=0)
+    monkeypatch.setattr(
+        ds, "load_openml_credit_g", lambda: (frame_fixture, meta_fixture)
+    )
     frame, meta = ds.load_classical_credit_table(seed=0)
-    assert meta["loader_selected"] in {
-        "openml_credit_g",
-        "credit_approval_synthetic",
-    }
+    assert meta["loader_selected"] == "openml_credit_g"
     assert meta["target"] in frame.columns
     assert meta["feature_columns"]
     roles = ds.supervised_roles(meta)

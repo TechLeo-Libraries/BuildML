@@ -42,11 +42,11 @@ def test_lag_ridge_still_works(tmp_path: Path) -> None:
         .set_roles({"clock": "time", "sales": "target"})
         .time_split(test_size=0.2, validation_size=0.2)
     )
-    fit = session.fit_forecast(method="lag_ridge", lags=[1, 2, 3], horizon=5)
+    fit = session.forecast.fit(method="lag_ridge", lags=[1, 2, 3], horizon=5)
     assert fit.method == "lag_ridge"
-    gen = session.generate_forecast(horizon=5)
+    gen = session.forecast.generate(horizon=5)
     assert len(gen.predictions) == 5
-    ev = session.evaluate_forecast(partition="validation", strategy="rolling_origin")
+    ev = session.forecast.evaluate(partition="validation", strategy="rolling_origin")
     assert ev.metrics["rmse"] >= 0.0
 
     plan = session.forecast_plan
@@ -65,14 +65,14 @@ def test_ets_forecast_when_statsmodels() -> None:
         .set_roles({"clock": "time", "sales": "target"})
         .time_split(test_size=0.2)
     )
-    fit = session.fit_forecast(method="ets", horizon=7, seasonal_period=7)
+    fit = session.forecast.fit(method="ets", horizon=7, seasonal_period=7)
     assert fit.method == "ets"
     plan = session.forecast_plan
     assert plan is not None
     assert plan.backend == "statsmodels"
-    gen = session.generate_forecast(horizon=7)
+    gen = session.forecast.generate(horizon=7)
     assert len(gen.predictions) == 7
-    metrics = session.evaluate_forecast(partition="test", strategy="rolling_one_step")
+    metrics = session.forecast.evaluate(partition="test", strategy="rolling_one_step")
     assert metrics.n_points > 0
 
 
@@ -85,7 +85,7 @@ def test_industry_method_raises_without_extra() -> None:
         .time_split(test_size=0.2)
     )
     with pytest.raises(MissingExtraError):
-        session.fit_forecast(method="ets")
+        session.forecast.fit(method="ets")
 
 
 def test_catalog_and_ai_tools() -> None:

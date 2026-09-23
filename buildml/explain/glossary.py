@@ -403,7 +403,7 @@ def lookup(term: str) -> GlossaryTerm | None:
     See Also
     --------
     require : The same lookup, raising instead of returning ``None``.
-    concept_for_term : The concept note that teaches a term in depth.
+    buildml.explain.glossary.concept_for_term : The concept note that teaches a term in depth.
     """
     key = _ALIAS_TO_KEY.get(str(term).strip().lower())
     return GLOSSARY.get(key) if key else None

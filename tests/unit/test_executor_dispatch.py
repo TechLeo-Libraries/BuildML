@@ -43,7 +43,7 @@ def session_with_roles(tiny_df: pd.DataFrame) -> Session:
 @pytest.fixture
 def session_with_split(session_with_roles: Session) -> Session:
     """Session with split, ready for prep/fit."""
-    session_with_roles.split(test_size=0.25, random_state=42)
+    session_with_roles.split(test_size=0.25, stratify=True, random_state=42)
     return session_with_roles
 
 
@@ -52,6 +52,7 @@ def session_ready_for_fit(session_with_split: Session) -> Session:
     """Session with split and encoded, ready for fit."""
     session_with_split.impute(strategy="median")
     session_with_split.encode(method="onehot", columns=["category"])
+    session_with_split.scale(method="standard")
     return session_with_split
 
 
@@ -67,7 +68,7 @@ class TestReadToolDispatch:
     def test_head_dispatch(self, session_with_roles: Session, registry) -> None:
         """head tool dispatches correctly to Session.head()."""
         session = session_with_roles
-        session.ai_configure(provider="mock")
+        session.ai.configure(provider="mock")
 
         proposal = propose_tool_execution("head", {"n": 3}, registry)
         result = execute_tool(session, proposal, confirmed=True, registry=registry)
@@ -80,7 +81,7 @@ class TestReadToolDispatch:
     def test_head_default_n(self, session_with_roles: Session, registry) -> None:
         """head tool uses default n=5 when not specified."""
         session = session_with_roles
-        session.ai_configure(provider="mock")
+        session.ai.configure(provider="mock")
 
         proposal = propose_tool_execution("head", {}, registry)
         result = execute_tool(session, proposal, confirmed=True, registry=registry)
@@ -91,7 +92,7 @@ class TestReadToolDispatch:
     def test_walkthrough_dispatch(self, session_with_roles: Session, registry) -> None:
         """walkthrough tool dispatches correctly to Session.walkthrough()."""
         session = session_with_roles
-        session.ai_configure(provider="mock")
+        session.ai.configure(provider="mock")
 
         proposal = propose_tool_execution("walkthrough", {}, registry)
         result = execute_tool(session, proposal, confirmed=True, registry=registry)
@@ -103,7 +104,7 @@ class TestReadToolDispatch:
     def test_ai_status_dispatch(self, session_with_roles: Session, registry) -> None:
         """ai_status tool dispatches correctly to Session.ai_status()."""
         session = session_with_roles
-        session.ai_configure(provider="mock")
+        session.ai.configure(provider="mock")
 
         proposal = propose_tool_execution("ai_status", {}, registry)
         result = execute_tool(session, proposal, confirmed=True, registry=registry)
@@ -121,7 +122,7 @@ class TestSplitDispatch:
     def test_split_dispatch_basic(self, session_with_roles: Session, registry) -> None:
         """split tool dispatches correctly with default args."""
         session = session_with_roles
-        session.ai_configure(provider="mock")
+        session.ai.configure(provider="mock")
 
         proposal = propose_tool_execution("split", {"test_size": 0.25}, registry)
         result = execute_tool(session, proposal, confirmed=True, registry=registry)
@@ -134,7 +135,7 @@ class TestSplitDispatch:
     def test_split_with_validation(self, session_with_roles: Session, registry) -> None:
         """split tool handles validation_size correctly."""
         session = session_with_roles
-        session.ai_configure(provider="mock")
+        session.ai.configure(provider="mock")
 
         proposal = propose_tool_execution(
             "split",
@@ -150,7 +151,7 @@ class TestSplitDispatch:
     def test_split_stratify_default_is_false(self, session_with_roles: Session, registry) -> None:
         """split defaults stratify to False (matching Session signature)."""
         session = session_with_roles
-        session.ai_configure(provider="mock")
+        session.ai.configure(provider="mock")
 
         # Don't pass stratify - should use default False
         proposal = propose_tool_execution("split", {"test_size": 0.25}, registry)
@@ -168,7 +169,7 @@ class TestPrepToolDispatch:
     ) -> None:
         """impute tool uses correct Session signature (strategy, not numeric/categorical)."""
         session = session_with_split
-        session.ai_configure(provider="mock")
+        session.ai.configure(provider="mock")
 
         # Use the corrected schema: single 'strategy' param
         proposal = propose_tool_execution(
@@ -187,7 +188,7 @@ class TestPrepToolDispatch:
     ) -> None:
         """impute tool correctly passes columns parameter."""
         session = session_with_split
-        session.ai_configure(provider="mock")
+        session.ai.configure(provider="mock")
 
         proposal = propose_tool_execution(
             "impute",
@@ -202,7 +203,7 @@ class TestPrepToolDispatch:
     def test_encode_dispatch(self, session_with_split: Session, registry) -> None:
         """encode tool dispatches correctly."""
         session = session_with_split
-        session.ai_configure(provider="mock")
+        session.ai.configure(provider="mock")
 
         proposal = propose_tool_execution(
             "encode",
@@ -218,7 +219,7 @@ class TestPrepToolDispatch:
     def test_scale_dispatch(self, session_with_split: Session, registry) -> None:
         """scale tool dispatches correctly."""
         session = session_with_split
-        session.ai_configure(provider="mock")
+        session.ai.configure(provider="mock")
 
         proposal = propose_tool_execution(
             "scale",
@@ -240,7 +241,7 @@ class TestFitEvaluateDispatch:
     ) -> None:
         """fit tool resolves string estimator name to actual class."""
         session = session_ready_for_fit
-        session.ai_configure(provider="mock")
+        session.ai.configure(provider="mock")
 
         proposal = propose_tool_execution(
             "fit",
@@ -259,7 +260,7 @@ class TestFitEvaluateDispatch:
     ) -> None:
         """fit tool passes hyperparameters to estimator constructor."""
         session = session_ready_for_fit
-        session.ai_configure(provider="mock")
+        session.ai.configure(provider="mock")
 
         proposal = propose_tool_execution(
             "fit",
@@ -283,7 +284,7 @@ class TestFitEvaluateDispatch:
     def test_evaluate_dispatch(self, session_ready_for_fit: Session, registry) -> None:
         """evaluate tool dispatches correctly after fit."""
         session = session_ready_for_fit
-        session.ai_configure(provider="mock")
+        session.ai.configure(provider="mock")
 
         # First fit
         from sklearn.linear_model import LogisticRegression
@@ -309,7 +310,7 @@ class TestDestructiveToolConfirmation:
     ) -> None:
         """drop_columns requires explicit confirmation."""
         session = session_with_roles
-        session.ai_configure(provider="mock")
+        session.ai.configure(provider="mock")
 
         proposal = propose_tool_execution(
             "drop_columns",
@@ -333,7 +334,7 @@ class TestDestructiveToolConfirmation:
     ) -> None:
         """drop_columns executes when confirmed."""
         session = session_with_roles
-        session.ai_configure(provider="mock")
+        session.ai.configure(provider="mock")
 
         proposal = propose_tool_execution(
             "drop_columns",
@@ -391,7 +392,7 @@ class TestOtherToolDispatch:
     ) -> None:
         """describe_dataset dispatches to Session.metadata()."""
         session = session_with_roles
-        session.ai_configure(provider="mock")
+        session.ai.configure(provider="mock")
 
         proposal = propose_tool_execution("describe_dataset", {}, registry)
         result = execute_tool(session, proposal, confirmed=True, registry=registry)
@@ -405,7 +406,7 @@ class TestOtherToolDispatch:
     ) -> None:
         """workflow_status dispatches to Session.workflow()."""
         session = session_with_roles
-        session.ai_configure(provider="mock")
+        session.ai.configure(provider="mock")
 
         proposal = propose_tool_execution("workflow_status", {}, registry)
         result = execute_tool(session, proposal, confirmed=True, registry=registry)
@@ -418,7 +419,7 @@ class TestOtherToolDispatch:
     ) -> None:
         """eda_summary dispatches to Session.eda()."""
         session = session_with_roles
-        session.ai_configure(provider="mock")
+        session.ai.configure(provider="mock")
 
         proposal = propose_tool_execution("eda_summary", {}, registry)
         result = execute_tool(session, proposal, confirmed=True, registry=registry)
@@ -431,7 +432,7 @@ class TestOtherToolDispatch:
     ) -> None:
         """checkpoint_save dispatches to Session.checkpoint_save()."""
         session = session_with_split
-        session.ai_configure(provider="mock")
+        session.ai.configure(provider="mock")
 
         checkpoint_path = str(tmp_path / "test_checkpoint.buildml")
         proposal = propose_tool_execution(

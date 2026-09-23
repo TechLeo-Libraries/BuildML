@@ -86,33 +86,33 @@ def test_core_import_and_catalog() -> None:
 
 def test_imitation_fit_predict_eval_bundle(tmp_path: Path) -> None:
     session = _demo_session()
-    fit = session.fit_imitation(task="classification")
+    fit = session.rl.fit_imitation(task="classification")
     assert session.imitation_plan is not None
     assert fit.n_train_rows >= 1
     assert fit.train_score is not None
 
-    pred = session.predict_imitation_action(partition="test")
+    pred = session.rl.predict_imitation(partition="test")
     assert len(pred.actions) == pred.n_rows
 
-    ev = session.evaluate_imitation(partition="validation")
+    ev = session.rl.evaluate_imitation(partition="validation")
     assert "accuracy" in ev.metrics
     assert "macro_f1" in ev.metrics
 
     out = tmp_path / "imitation_bundle"
-    session.save_imitation_bundle(out)
+    session.rl.save_imitation_bundle(out)
     assert (out / "meta.json").is_file()
     assert (out / "imitation_plan.joblib").is_file()
 
     other = _demo_session()
-    other.load_imitation_bundle(out, trusted=True)
+    other.rl.load_imitation_bundle(out, trusted=True)
     assert other.imitation_plan is not None
-    reloaded = other.evaluate_imitation(partition="test")
+    reloaded = other.rl.evaluate_imitation(partition="test")
     assert "accuracy" in reloaded.metrics
 
 
 def test_bandit_fit_act_eval_bundle(tmp_path: Path) -> None:
     session = _bandit_session()
-    fit = session.fit_rl(
+    fit = session.rl.fit(
         mode="contextual_bandit",
         algorithm="linucb",
         action_column="arm",
@@ -122,26 +122,26 @@ def test_bandit_fit_act_eval_bundle(tmp_path: Path) -> None:
     assert fit.mode == "contextual_bandit"
     assert fit.n_arms == 2
 
-    act = session.act_rl(partition="test", deterministic=True)
+    act = session.rl.act(partition="test", deterministic=True)
     assert len(act.actions) == act.n_rows
     assert len(act.scores) == act.n_rows
 
-    ev = session.evaluate_rl(partition="validation")
+    ev = session.rl.evaluate(partition="validation")
     assert ev.offline is True
     assert "direct_method" in ev.metrics
     assert "ips" in ev.metrics
     assert "action_match_rate" in ev.metrics
 
     out = tmp_path / "rl_bundle"
-    session.save_rl_bundle(out)
+    session.rl.save_bundle(out)
     assert (out / "meta.json").is_file()
     assert (out / "rl_plan.joblib").is_file()
 
     other = _bandit_session()
-    other.load_rl_bundle(out, trusted=True)
+    other.rl.load_bundle(out, trusted=True)
     assert other.rl_plan is not None
     assert other.rl_plan.algorithm == "linucb"
-    reloaded = other.evaluate_rl(partition="test")
+    reloaded = other.rl.evaluate(partition="test")
     assert reloaded.offline is True
 
 
@@ -179,7 +179,7 @@ def test_bandit_bundle_roundtrip_metric_parity(tmp_path: Path) -> None:
 
 def test_epsilon_greedy_bandit() -> None:
     session = _bandit_session()
-    fit = session.fit_rl(
+    fit = session.rl.fit(
         mode="contextual_bandit",
         algorithm="epsilon_greedy",
         action_column="arm",
@@ -187,7 +187,7 @@ def test_epsilon_greedy_bandit() -> None:
         epsilon=0.05,
     )
     assert fit.algorithm == "epsilon_greedy"
-    ev = session.evaluate_rl(partition="test")
+    ev = session.rl.evaluate(partition="test")
     assert "direct_method" in ev.metrics
 
 
@@ -204,7 +204,7 @@ def test_imitation_leakage_refuses_fit_without_split() -> None:
         {"a": "feature", "b": "feature", "y": "target"}
     )
     with pytest.raises((ValidationError, LeakageError)):
-        session.fit_imitation()
+        session.rl.fit_imitation()
 
 
 def test_bandit_leakage_refuses_fit_without_split() -> None:
@@ -220,19 +220,19 @@ def test_bandit_leakage_refuses_fit_without_split() -> None:
         {"a": "feature", "arm": "target", "reward": "feature"}
     )
     with pytest.raises((ValidationError, LeakageError)):
-        session.fit_rl(action_column="arm", reward_column="reward")
+        session.rl.fit(action_column="arm", reward_column="reward")
 
 
 def test_walkthrough_exposes_imitation_and_rl_status() -> None:
     session = _demo_session()
-    session.fit_imitation()
+    session.rl.fit_imitation()
     report = session.walkthrough()
     payload = report.to_dict()
     assert "imitation_status" in payload
     assert payload["imitation_status"]["enabled"] is True
 
     bandit = _bandit_session()
-    bandit.fit_rl(action_column="arm", reward_column="reward")
+    bandit.rl.fit(action_column="arm", reward_column="reward")
     payload2 = bandit.walkthrough().to_dict()
     assert "rl_status" in payload2
     assert payload2["rl_status"]["enabled"] is True
@@ -243,7 +243,7 @@ def test_gym_reinforce_optional() -> None:
     session = _demo_session()
     if not gymnasium_available():
         with pytest.raises(MissingExtraError, match="rl"):
-            session.fit_rl(mode="gym_reinforce", n_episodes=5, max_steps=50)
+            session.rl.fit(mode="gym_reinforce", n_episodes=5, max_steps=50)
         return
     fit = session.fit_rl(
         mode="gym_reinforce",

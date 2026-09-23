@@ -525,7 +525,7 @@ def test_bundle_round_trip_preserves_the_normalization_plan(
     from buildml.nlp.checkpoint import load_nlp_bundle, save_nlp_bundle
 
     session = nlp_frame_session
-    session.fit_text_classifier(
+    session.nlp.fit_classifier(
         text_column="body", stopword_language="en", stem=True, ngram_range=(1, 2)
     )
     plan = session.nlp_text_plan

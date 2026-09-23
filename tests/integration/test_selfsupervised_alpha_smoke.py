@@ -25,21 +25,23 @@ def test_selfsupervised_alpha_gate_smoke(tmp_path: Path) -> None:
         .scale(method="standard")
     )
 
-    pre = session.fit_ssl_pretext(
-        method="masked_tabular",
-        latent_dim=8,
-        mask_ratio=0.2,
-        max_iter=100,
-        random_state=0,
-    )
+    # Exercise the retained legacy backend and verify its migration warning.
+    with pytest.warns(DeprecationWarning, match="legacy sklearn MLP"):
+        pre = session.ssl.fit_pretext(
+            method="masked_tabular",
+            latent_dim=8,
+            mask_ratio=0.2,
+            max_iter=1000,
+            random_state=0,
+        )
     assert pre.method == "masked_tabular"
     assert session.ssl_plan is not None
 
-    head = session.finetune_ssl_head(estimator="logistic_regression", random_state=0)
+    head = session.ssl.finetune_head(estimator="logistic_regression", random_state=0)
     assert head.n_labeled_train > 0
     assert session.ssl_head_plan is not None
 
-    ev = session.evaluate_ssl(partition="validation")
+    ev = session.ssl.evaluate(partition="validation")
     assert ev.partition == "validation"
     assert "accuracy" in ev.metrics
     assert session.ssl_eval_result is not None
@@ -47,13 +49,13 @@ def test_selfsupervised_alpha_gate_smoke(tmp_path: Path) -> None:
     before = session.explain("fit_ssl_pretext", moment="before")
     assert before.prerequisite_status.get("split") is True
 
-    bundle = session.save_ssl_bundle(tmp_path / "ssl_bundle")
+    bundle = session.ssl.save_bundle(tmp_path / "ssl_bundle")
     restored = (
         Session.ingest(session.to_pandas())
         .set_roles({"x": "feature", "y": "feature", "label": "target"})
         .split(test_size=0.2, validation_size=0.2, stratify=True, random_state=0)
         .scale(method="standard")
     )
-    restored.load_ssl_bundle(bundle, trusted=True)
-    again = restored.evaluate_ssl(partition="validation")
+    restored.ssl.load_bundle(bundle, trusted=True)
+    again = restored.ssl.evaluate(partition="validation")
     assert again.metrics["accuracy"] == pytest.approx(ev.metrics["accuracy"])

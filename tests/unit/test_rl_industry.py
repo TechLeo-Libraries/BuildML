@@ -30,7 +30,7 @@ def test_capability_matrix_shape() -> None:
 
 
 def test_session_rl_capability_matrix() -> None:
-    matrix = Session.rl_capability_matrix()
+    matrix = Session.ingest(pd.DataFrame({"x": [1]})).rl.capability_matrix()
     assert matrix["rl_backends"]["native"]["algorithms_by_mode"]["tabular_q"]
 
 
@@ -118,7 +118,7 @@ def test_industry_missing_extra() -> None:
         .split(test_size=0.5, random_state=0)
     )
     with pytest.raises(MissingExtraError, match="rl-industry"):
-        session.fit_rl(backend="industry", mode="gym_sb3", algorithm="ppo")
+        session.rl.fit(backend="industry", mode="gym_sb3", algorithm="ppo")
 
 
 @pytest.mark.skipif(not gymnasium_available(), reason="gymnasium not installed")
@@ -128,7 +128,7 @@ def test_native_reinforce_still_works() -> None:
         .set_roles({"a": "feature", "y": "target"})
         .split(test_size=0.5, random_state=0)
     )
-    fit = session.fit_rl(
+    fit = session.rl.fit(
         backend="native",
         mode="gym_reinforce",
         env_id="CartPole-v1",

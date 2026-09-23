@@ -47,7 +47,7 @@ def test_metric_helpers_perfect_ranking() -> None:
 
 def test_holdout_does_not_expand_item_catalog() -> None:
     session = _session()
-    session.fit_recommender(
+    session.recommender.fit(
         method="item_knn",
         user_column="user_id",
         item_column="item_id",
@@ -58,14 +58,14 @@ def test_holdout_does_not_expand_item_catalog() -> None:
     train_items = set(plan.item_ids)
     # Inject a holdout-only item into a recommend call indirectly via eval path:
     # recommendations must only contain train catalog ids.
-    recs = session.recommend(partition="test", k=10)
+    recs = session.recommender.recommend(partition="test", k=10)
     for items in recs.recommendations:
         assert set(items).issubset(train_items)
 
 
 def test_exclude_train_items_from_recommendations() -> None:
     session = _session()
-    session.fit_recommender(
+    session.recommender.fit(
         method="svd",
         user_column="user_id",
         item_column="item_id",
@@ -86,7 +86,7 @@ def test_exclude_train_items_from_recommendations() -> None:
 def test_content_requires_features() -> None:
     session = _session()
     with pytest.raises(ValidationError, match="item_feature_columns"):
-        session.fit_recommender(
+        session.recommender.fit(
             method="content",
             user_column="user_id",
             item_column="item_id",

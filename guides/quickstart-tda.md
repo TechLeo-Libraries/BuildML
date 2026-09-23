@@ -11,7 +11,7 @@ that default image. Not a Mapper suite.
 
 [TDA deep](tda-deep.md) ·
 Paste: [`examples/tda_loop.py`](../examples/tda_loop.py) ·
-Evidence: [credit-tda-shape](../proofs/credit-tda-shape/)
+Evidence: [credit-tda-shape](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/credit-tda-shape)
 
 ---
 

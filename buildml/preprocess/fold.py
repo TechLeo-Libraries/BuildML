@@ -7,6 +7,7 @@ from typing import Any, Literal
 
 import numpy as np
 import pandas as pd
+from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.decomposition import PCA
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.feature_selection import (
@@ -363,7 +364,7 @@ class PreprocessRecipe:
         return replace(self, **updates)
 
 
-class FoldLocalPreprocessor:
+class FoldLocalPreprocessor(TransformerMixin, BaseEstimator):
     """A whole preprocessing sequence, refitted from scratch inside a single fold.
 
     This is what makes cross-validated scores honest. If you impute, encode,

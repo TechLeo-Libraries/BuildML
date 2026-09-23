@@ -12,6 +12,15 @@ import traceback
 from pathlib import Path
 
 
+def archive_sha256(direct: dict) -> str | None:
+    """Read modern or legacy PEP 610 SHA256 installation provenance."""
+    archive = direct.get("archive_info", {})
+    if "hashes" in archive:
+        return archive["hashes"].get("sha256")
+    algorithm, separator, value = archive.get("hash", "").partition("=")
+    return value if separator and algorithm == "sha256" else None
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--source-root", type=Path, required=True)
@@ -56,7 +65,7 @@ def main() -> int:
         dist = metadata.distribution("buildml")
         direct = json.loads(dist.read_text("direct_url.json") or "{}")
         assert not direct.get("dir_info", {}).get("editable"), "Editable installation forbidden"
-        installed_hash = direct.get("archive_info", {}).get("hashes", {}).get("sha256")
+        installed_hash = archive_sha256(direct)
         assert installed_hash == evidence["wheel_sha256"], "Installed artifact does not match wheel"
         evidence["buildml_import"] = str(Path(buildml.__file__).resolve())
         evidence["buildml_version"] = metadata.version("buildml")

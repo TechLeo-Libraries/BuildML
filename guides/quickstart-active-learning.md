@@ -10,7 +10,7 @@ oracle. Default strategy is margin. `label_budget` defaults to 50.
 
 [Active learning deep](active-learning-deep.md) ·
 Paste: [`examples/activelearning_margin_loop.py`](../examples/activelearning_margin_loop.py) ·
-Evidence: [active-labeling-budget](../proofs/active-labeling-budget/)
+Evidence: [active-labeling-budget](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/active-labeling-budget)
 
 ```bash
 pip install buildml

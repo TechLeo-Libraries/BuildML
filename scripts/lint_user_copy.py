@@ -158,7 +158,7 @@ def iter_targets() -> Iterable[Path]:
         relative = _relative(path)
         if tracked_paths is not None and relative not in tracked_paths:
             continue
-        if any(part in {"_build", "__pycache__", "node_modules", ".pytest_tmp"} for part in path.parts):
+        if any(part in {"_build", "__pycache__", "node_modules", ".pytest_tmp"} for part in Path(relative).parts):
             continue
         if relative in ARCHIVAL_DOCS or relative in QUOTED_EXAMPLE_DOCS:
             continue

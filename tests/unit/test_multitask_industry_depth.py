@@ -90,14 +90,14 @@ def test_industry_xgb_classification_session_path() -> None:
         .split(test_size=0.2, validation_size=0.2, random_state=0)
         .scale(method="standard")
     )
-    fit = session.fit_multitask(
+    fit = session.multitask.fit(
         backend="industry",
         method="multi_output_xgb",
         task="classification",
         prefer_reduce_components=False,
     )
     assert fit.backend == "industry"
-    ev = session.evaluate_multitask(partition="test")
+    ev = session.multitask.evaluate(partition="test")
     assert "mean_accuracy" in ev.metrics
     assert set(ev.per_task_metrics) == {"t1", "t2"}
 
@@ -118,7 +118,7 @@ def test_torch_shared_trunk_mixed_targets() -> None:
         .scale(method="standard")
     )
     try:
-        fit = session.fit_multitask(
+        fit = session.multitask.fit(
             backend="torch",
             method="shared_trunk_multihead",
             task="auto",
@@ -132,7 +132,7 @@ def test_torch_shared_trunk_mixed_targets() -> None:
         raise
     assert fit.backend == "torch"
     assert fit.task == "mixed"
-    ev = session.evaluate_multitask(partition="test")
+    ev = session.multitask.evaluate(partition="test")
     assert "mean_accuracy" in ev.metrics
     assert "mean_mae" in ev.metrics
 
@@ -152,7 +152,7 @@ def test_sklearn_refuses_mixed_targets() -> None:
         .scale(method="standard")
     )
     with pytest.raises(ValidationError, match="Mixed classification/regression"):
-        session.fit_multitask(backend="sklearn", task="auto")
+        session.multitask.fit(backend="sklearn", task="auto")
 
 
 def test_multitask_status_includes_capability_matrix() -> None:
@@ -172,17 +172,17 @@ def test_bundle_roundtrip_with_backend(tmp_path: Path) -> None:
         .split(test_size=0.2, validation_size=0.2, random_state=0)
         .scale(method="standard")
     )
-    session.fit_multitask(
+    session.multitask.fit(
         method="multi_output",
         task="regression",
         base_estimator="ridge",
         prefer_reduce_components=False,
     )
-    out = session.save_multitask_bundle(tmp_path / "bundle")
+    out = session.multitask.save_bundle(tmp_path / "bundle")
     session2 = Session.ingest(_reg_frame()).set_roles(
         {"x": "feature", "y": "feature", "t1": "target", "t2": "target"}
     )
-    session2.load_multitask_bundle(out, trusted=True)
+    session2.multitask.load_bundle(out, trusted=True)
     assert session2.multitask_plan is not None
     assert session2.multitask_plan.method == "multi_output"
 

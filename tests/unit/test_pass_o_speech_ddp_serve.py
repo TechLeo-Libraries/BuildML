@@ -59,7 +59,7 @@ def test_speech_classify_finetune_and_evaluate() -> None:
         .set_roles({"audio": "feature", "y": "target"})
         .split(test_size=0.25, validation_size=0.2, stratify=True, random_state=0)
     )
-    bundle = session.make_speech_torch_loaders(
+    bundle = session.dl.make_speech_loaders(
         audio_column="audio",
         sample_rate=_AUDIO_SR,
         max_samples=_AUDIO_LEN,
@@ -68,10 +68,10 @@ def test_speech_classify_finetune_and_evaluate() -> None:
     )
     assert getattr(bundle, "modality", None) == "speech_classify"
     assert getattr(bundle, "speech_contract", None) is not None
-    session.fit_speech_torch(epochs=2, device="cpu")
+    session.dl.fit_speech(epochs=2, device="cpu")
     assert session.dl_train_result is not None
     assert getattr(session.dl_train_result.module, "modality", None) == "speech_classify"
-    ev = session.evaluate_torch(partition="validation")
+    ev = session.dl.evaluate(partition="validation")
     assert ev.n_rows > 0
 
 
@@ -81,7 +81,7 @@ def test_transcribe_speech_stub_backend() -> None:
     session = Session.ingest(_speech_frame(12)).set_roles(
         {"audio": "feature", "y": "target"}
     )
-    result = session.transcribe_speech(
+    result = session.dl.transcribe(
         audio_column="audio",
         backend="stub",
         sample_rate=_AUDIO_SR,
@@ -146,7 +146,7 @@ def test_speech_executor_dispatch() -> None:
         .set_roles({"audio": "feature", "y": "target"})
         .split(test_size=0.25, validation_size=0.2, stratify=True, random_state=7)
     )
-    session.ai_configure(provider="mock")
+    session.ai.configure(provider="mock")
     registry = build_default_registry()
 
     loaders = execute_tool(
@@ -282,7 +282,7 @@ def test_multi_node_ddp_refuses_incomplete_env() -> None:
         .set_roles({"x1": "feature", "x2": "feature", "y": "target"})
         .split(test_size=0.25, validation_size=0.2, stratify=True, random_state=0)
     )
-    bundle = session.make_torch_loaders(batch_size=8, seed=0)
+    bundle = session.dl.make_loaders(batch_size=8, seed=0)
     with pytest.raises(ValidationError, match="torchrun|WORLD_SIZE|MASTER_ADDR"):
         train_supervised_module_ddp(
             lambda: build_tabular_mlp(2, task="classification", n_classes=2),
@@ -308,11 +308,11 @@ def test_fit_torch_ddp_multi_node_flag_wires() -> None:
         .set_roles({"x1": "feature", "x2": "feature", "y": "target"})
         .split(test_size=0.25, validation_size=0.2, stratify=True, random_state=0)
     )
-    session.make_torch_loaders(batch_size=8)
+    session.dl.make_loaders(batch_size=8)
     from buildml.dl.models import build_tabular_mlp
 
     with pytest.raises(ValidationError, match="torchrun|WORLD_SIZE|MASTER"):
-        session.fit_torch_ddp(
+        session.dl.fit_ddp(
             lambda: build_tabular_mlp(2, task="classification", n_classes=2),
             epochs=1,
             multi_node=True,

@@ -58,8 +58,8 @@ def test_evaluate_diagram_distances_smoke() -> None:
         .set_roles({"a": "feature", "b": "feature", "c": "feature", "y": "target"})
         .split(test_size=0.25, validation_size=0.2, random_state=0, stratify=True)
     )
-    session.fit_tda(knn=8, n_bins=8, head="logistic_regression", random_state=0)
-    ev = session.evaluate_tda(
+    session.tda.fit(knn=8, n_bins=8, head="logistic_regression", random_state=0)
+    ev = session.tda.evaluate(
         partition="validation",
         compare_diagram_distances=True,
         diagram_distance_metric="wasserstein",

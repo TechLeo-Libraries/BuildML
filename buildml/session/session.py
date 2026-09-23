@@ -441,25 +441,25 @@ class Session(
     object and call steps on it. The session tracks four things you would
     otherwise have to track by hand:
 
-    **The data and what each column means.** :meth:`ingest` attaches a table;
-    :meth:`set_roles` labels each column as a ``feature``, the ``target``, an
+    **The data and what each column means.** :meth:`~buildml.Session.ingest` attaches a table;
+    :meth:`~buildml.Session.set_roles` labels each column as a ``feature``, the ``target``, an
     ``id``, a ``group``, a ``time`` stamp, a sample ``weight``, or ``ignore``.
     Every later step reads those roles, which is why you never re-list your
     feature columns.
 
-    **Which rows may be learned from.** A split (:meth:`split`,
-    :meth:`group_split`, :meth:`time_split`, :meth:`inject_split`) records
+    **Which rows may be learned from.** A split (:meth:`~buildml.Session.split`,
+    :meth:`~buildml.Session.group_split`, :meth:`~buildml.Session.time_split`, :meth:`~buildml.Session.inject_split`) records
     train/validation/test membership once. Preprocessing steps then fit their
     statistics on the train rows alone and apply them everywhere: the single
     most common source of silently optimistic scores, handled for you.
 
-    **A record of every decision.** Each call appends to :attr:`history` with
+    **A record of every decision.** Each call appends to :attr:`~buildml.Session.history` with
     its parameters and whether the choice was yours or a default. That history
-    drives :meth:`summarize_history`, :meth:`walkthrough`, :meth:`workflow`,
+    drives :meth:`~buildml.Session.summarize_history`, :meth:`~buildml.Session.walkthrough`, :meth:`~buildml.Session.workflow`,
     and the model card, so a finished session can explain itself.
 
     **Fitted plans and results.** Transforms return reusable plan objects
-    (:attr:`scale_plan`, :attr:`encode_plan`, …) and trainers store their
+    (:attr:`~buildml.Session.scale_plan`, :attr:`~buildml.Session.encode_plan`, …) and trainers store their
     outputs on ``*_result`` properties, so scoring new data later reproduces
     exactly what training did.
 
@@ -509,17 +509,17 @@ class Session(
     -----
     **Leakage:** Split before you preprocess. Fitting a scaler or encoder on
     all rows lets test-set information reach the model and inflates your
-    scores. :meth:`assert_can_fit` turns that rule into an error rather than a
+    scores. :meth:`~buildml.Session.assert_can_fit` turns that rule into an error rather than a
     convention.
 
-    ``with session:`` calls :meth:`close_native` on exit so owned DuckDB
+    ``with session:`` calls :meth:`~buildml.Session.close_native` on exit so owned DuckDB
     connections on the Session dataset are released safely.
 
     See Also
     --------
-    Session.ingest : Entry point that creates a session from data.
-    Session.explain : Plain-language explanation of any BuildML concept.
-    Session.walkthrough : Narrated report of everything this session did.
+    buildml.Session.ingest : Entry point that creates a session from data.
+    buildml.Session.explain : Plain-language explanation of any BuildML concept.
+    buildml.Session.walkthrough : Narrated report of everything this session did.
     """
 
     def __init__(
@@ -532,7 +532,7 @@ class Session(
     ) -> None:
         """Construct a session directly from already-prepared state.
 
-        Prefer :meth:`ingest` for new work and :meth:`checkpoint_load` for
+        Prefer :meth:`~buildml.Session.ingest` for new work and :meth:`~buildml.Session.checkpoint_load` for
         resumed work. This constructor exists for those two paths and for
         tests that need to place a session in a specific state.
 
@@ -540,12 +540,12 @@ class Session(
         ----------
         dataset:
             Data handle to attach. ``None`` creates an empty session, which is
-            what :meth:`ingest` produces for a dry run: every data-dependent
+            what :meth:`~buildml.Session.ingest` produces for a dry run: every data-dependent
             method then raises until a dataset arrives.
         ingest_report:
             Findings from the automated ingest scan (detected format, chosen
             engine, size warnings). ``None`` when the session was not created
-            by :meth:`ingest`.
+            by :meth:`~buildml.Session.ingest`.
         split_plan:
             Pre-existing train/validation/test membership. ``None`` means no
             split yet, and fit-capable steps will refuse to run.
@@ -755,7 +755,7 @@ class Session(
 
         Using a session as a context manager guarantees that native database
         connections are closed when the block ends, even if an exception is
-        raised inside it. This matters when :meth:`with_engine` has attached a
+        raised inside it. This matters when :meth:`~buildml.Session.with_engine` has attached a
         DuckDB connection, which holds a file handle.
 
         Returns
@@ -774,7 +774,7 @@ class Session(
     ) -> None:
         """Leave a ``with session:`` block, releasing native resources.
 
-        Calls :meth:`close_native`. Exceptions are not suppressed: returning
+        Calls :meth:`~buildml.Session.close_native`. Exceptions are not suppressed: returning
         ``None`` lets any error propagate to the caller as normal.
 
         Parameters
@@ -810,7 +810,7 @@ class Session(
         ------
         ~buildml.core.errors.ValidationError
             No data is attached. This happens on a session built by a dry-run
-            :meth:`ingest`, which carries a report but no table.
+            :meth:`~buildml.Session.ingest`, which carries a report but no table.
         """
         if self._dataset is None:
             raise ValidationError("Session has no dataset. Call Session.ingest(...) first.")

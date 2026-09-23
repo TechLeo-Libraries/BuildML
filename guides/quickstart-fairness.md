@@ -15,7 +15,7 @@ instead of inventing zero rates.
 
 [Fairness deep](fairness-deep.md) ·
 Paste: [`examples/fairness_observational_loop.py`](../examples/fairness_observational_loop.py) ·
-Evidence: [loan-fairness-observational](../proofs/loan-fairness-observational/)
+Evidence: [loan-fairness-observational](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/loan-fairness-observational)
 
 ```python
 import numpy as np

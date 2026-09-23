@@ -99,7 +99,7 @@ def test_explicit_targets_override() -> None:
         .split(test_size=0.2, validation_size=0.2, random_state=0)
         .scale(method="standard")
     )
-    fit = session.fit_multitask(targets=["t1", "t3"], task="classification")
+    fit = session.multitask.fit(targets=["t1", "t3"], task="classification")
     assert list(fit.target_columns) == ["t1", "t3"]
 
 
@@ -121,7 +121,7 @@ def test_refuse_mixed_task_kinds() -> None:
         .scale(method="standard")
     )
     with pytest.raises(ValidationError, match="Mixed classification/regression"):
-        session.fit_multitask(task="auto")
+        session.multitask.fit(task="auto")
 
 
 def test_explain_prereq_before_fit() -> None:
@@ -135,7 +135,7 @@ def test_explain_prereq_before_fit() -> None:
     )
     before = session.explain("fit_multitask", moment="before")
     assert before.prerequisite_status.get("split") is True
-    after_fit = session.fit_multitask()
+    after_fit = session.multitask.fit()
     assert after_fit.n_tasks == 2
     before_eval = session.explain("evaluate_multitask", moment="before")
     assert before_eval.prerequisite_status.get("multitask-plan") is True

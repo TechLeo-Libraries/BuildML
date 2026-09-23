@@ -484,12 +484,20 @@ def _resolve_session_callable(session: Any, session_method: str) -> Any | None:
     ``session.fairness.evaluate``. Facade paths traverse the live namespaced
     view so preferred spellings do not force a deprecated flat alias call.
     """
-    from buildml.session.facade_registry import DOMAIN_FACADES, resolve_operation_name
+    from buildml.session.facade_registry import (
+        DOMAIN_FACADES,
+        preferred_path,
+        resolve_operation_name,
+    )
 
     cleaned = str(session_method or "").strip()
     if not cleaned:
         return None
     path = cleaned[len("session.") :] if cleaned.startswith("session.") else cleaned
+    if "." not in path:
+        preferred = preferred_path(path)
+        if preferred:
+            path = preferred.removeprefix("session.")
     if "." in path:
         attr, method = path.split(".", 1)
         if attr in DOMAIN_FACADES and method in DOMAIN_FACADES[attr]["bindings"]:
@@ -652,7 +660,7 @@ def _dispatch_tool(
         return {"checkpoint_path": str(result)}, tuple(state_changes)
 
     elif call.tool_name == "ai_status":
-        result = session.ai_status()
+        result = session.ai.status()
         return result, ()
 
     elif call.tool_name == "fit_clusters":
@@ -1787,7 +1795,7 @@ def _dispatch_tool(
         return {"loaded": True}, tuple(state_changes)
 
     elif call.tool_name == "nlp_capability_matrix":
-        return session.nlp_capability_matrix(), ()
+        return session.nlp.capability_matrix(), ()
 
     elif call.tool_name == "profile_text_corpus":
         kwargs = {
@@ -1801,7 +1809,7 @@ def _dispatch_tool(
             )
             if key in call.arguments
         }
-        result = session.profile_text_corpus(**kwargs)
+        result = session.nlp.profile_corpus(**kwargs)
         return result, ()
 
     elif call.tool_name == "detect_language":
@@ -1810,7 +1818,7 @@ def _dispatch_tool(
             for key in ("partition", "backend", "text_column", "min_characters")
             if key in call.arguments
         }
-        result = session.detect_language(**kwargs)
+        result = session.nlp.detect_language(**kwargs)
         return result, ()
 
     elif call.tool_name == "fit_text_classifier":
@@ -1834,7 +1842,7 @@ def _dispatch_tool(
             )
             if key in call.arguments
         }
-        result = session.fit_text_classifier(**kwargs)
+        result = session.nlp.fit_classifier(**kwargs)
         return (
             f"Fitted text classifier backend={result.backend} "
             f"estimator={result.estimator} n_train_rows={result.n_train_rows} "
@@ -1849,14 +1857,14 @@ def _dispatch_tool(
             for key in ("partition", "return_probabilities")
             if key in call.arguments
         }
-        result = session.predict_text(**kwargs)
+        result = session.nlp.predict(**kwargs)
         return result, ()
 
     elif call.tool_name == "evaluate_text_classifier":
         kwargs = {
             key: call.arguments[key] for key in ("partition",) if key in call.arguments
         }
-        result = session.evaluate_text_classifier(**kwargs)
+        result = session.nlp.evaluate(**kwargs)
         return result, ()
 
     elif call.tool_name == "interpret_text_prediction":
@@ -1871,7 +1879,7 @@ def _dispatch_tool(
             )
             if key in call.arguments
         }
-        result = session.interpret_text_prediction(**kwargs)
+        result = session.nlp.interpret(**kwargs)
         return result, ()
 
     elif call.tool_name == "fit_topics":
@@ -1889,7 +1897,7 @@ def _dispatch_tool(
             )
             if key in call.arguments
         }
-        result = session.fit_topics(**kwargs)
+        result = session.nlp.fit_topics(**kwargs)
         return (
             f"Fitted topics method={result.method} n_topics={result.n_topics} "
             f"n_train_rows={result.n_train_rows} "
@@ -1901,7 +1909,7 @@ def _dispatch_tool(
         kwargs = {
             key: call.arguments[key] for key in ("partition",) if key in call.arguments
         }
-        result = session.assign_topics(**kwargs)
+        result = session.nlp.assign_topics(**kwargs)
         return result, ()
 
     elif call.tool_name == "extract_keyphrases":
@@ -1919,7 +1927,7 @@ def _dispatch_tool(
             )
             if key in call.arguments
         }
-        result = session.extract_keyphrases(**kwargs)
+        result = session.nlp.extract_keyphrases(**kwargs)
         return result, ()
 
     elif call.tool_name == "analyze_sentiment":
@@ -1934,7 +1942,7 @@ def _dispatch_tool(
             )
             if key in call.arguments
         }
-        result = session.analyze_sentiment(**kwargs)
+        result = session.nlp.analyze_sentiment(**kwargs)
         return result, ()
 
     elif call.tool_name == "extract_entities":
@@ -1950,7 +1958,7 @@ def _dispatch_tool(
             )
             if key in call.arguments
         }
-        result = session.extract_entities(**kwargs)
+        result = session.nlp.extract_entities(**kwargs)
         return result, ()
 
     elif call.tool_name == "summarize_text":
@@ -1966,14 +1974,14 @@ def _dispatch_tool(
             )
             if key in call.arguments
         }
-        result = session.summarize_text(**kwargs)
+        result = session.nlp.summarize(**kwargs)
         return result, ()
 
     elif call.tool_name == "save_nlp_bundle":
         path = call.arguments.get("path")
         if not path:
             raise ValidationError("save_nlp_bundle requires a path argument.")
-        result = session.save_nlp_bundle(path)
+        result = session.nlp.save_bundle(path)
         state_changes.append(f"Saved NLP bundle to: {path}")
         return {"path": str(result)}, tuple(state_changes)
 
@@ -1981,7 +1989,7 @@ def _dispatch_tool(
         path = call.arguments.get("path")
         if not path:
             raise ValidationError("load_nlp_bundle requires a path argument.")
-        session.load_nlp_bundle(path, trusted=bool(call.arguments.get("trusted", False)))
+        session.nlp.load_bundle(path, trusted=bool(call.arguments.get("trusted", False)))
         state_changes.append(f"Loaded NLP bundle from: {path}")
         return {"loaded": True}, tuple(state_changes)
 
@@ -2549,7 +2557,7 @@ def _dispatch_tool(
         query = call.arguments.get("query", "")
         if not query:
             raise ValidationError("rag_retrieve requires a non-empty query.")
-        result = session.rag_retrieve(
+        result = session.rag.retrieve(
             query,
             k=int(call.arguments.get("k", 5)),
             mode=call.arguments.get("mode"),
@@ -2560,7 +2568,7 @@ def _dispatch_tool(
         query = call.arguments.get("query", "")
         if not query:
             raise ValidationError("rag_generate requires a non-empty query.")
-        result = session.rag_generate(
+        result = session.rag.generate(
             query,
             k=int(call.arguments.get("k", 5)),
         )
@@ -2582,7 +2590,7 @@ def _dispatch_tool(
         return {"rag_index_built": True}, tuple(state_changes)
 
     elif call.tool_name == "make_torch_loaders":
-        session.make_torch_loaders(
+        session.dl.make_loaders(
             batch_size=int(call.arguments.get("batch_size", 32)),
             normalize=bool(call.arguments.get("normalize", True)),
             apply_plans=bool(call.arguments.get("apply_plans", False)),
@@ -2603,7 +2611,7 @@ def _dispatch_tool(
         return {"text_torch_loaders_built": True}, tuple(state_changes)
 
     elif call.tool_name == "fit_torch":
-        session.fit_torch(
+        session.dl.fit(
             epochs=int(call.arguments.get("epochs", 5)),
             learning_rate=float(call.arguments.get("learning_rate", 1e-3)),
             device=call.arguments.get("device", "auto"),
@@ -2672,7 +2680,7 @@ def _dispatch_tool(
             img_kwargs["audio_sample_rate"] = int(call.arguments["audio_sample_rate"])
         if call.arguments.get("audio_max_samples") is not None:
             img_kwargs["audio_max_samples"] = int(call.arguments["audio_max_samples"])
-        session.make_image_multimodal_torch_loaders(**img_kwargs)
+        session.dl.make_image_loaders(**img_kwargs)
         state_changes.append(
             "Built image multimodal Torch DataLoaders (train-only image/channel stats)."
         )
@@ -2701,7 +2709,7 @@ def _dispatch_tool(
             aud_kwargs["audio_source_sample_rate"] = int(
                 call.arguments["audio_source_sample_rate"]
             )
-        session.make_audio_multimodal_torch_loaders(**aud_kwargs)
+        session.dl.make_audio_loaders(**aud_kwargs)
         state_changes.append(
             "Built audio multimodal Torch DataLoaders (train-only audio amplitude stats)."
         )
@@ -2717,7 +2725,7 @@ def _dispatch_tool(
             search_kwargs["param_grid"] = call.arguments["param_grid"]
         if call.arguments.get("param_distributions") is not None:
             search_kwargs["param_distributions"] = call.arguments["param_distributions"]
-        result = session.search_torch(**search_kwargs)
+        result = session.dl.search(**search_kwargs)
         state_changes.append("Completed inner-fold Torch hyperparameter search.")
         return result, tuple(state_changes)
 
@@ -2740,7 +2748,7 @@ def _dispatch_tool(
         path = call.arguments.get("path")
         if not path:
             raise ValidationError("export_torch requires a path argument.")
-        result = session.export_torch(
+        result = session.dl.export(
             path,
             format=call.arguments.get("format", "torchscript"),
         )
@@ -2758,7 +2766,7 @@ def _dispatch_tool(
             speech_kwargs["sample_rate"] = int(call.arguments["sample_rate"])
         if call.arguments.get("max_samples") is not None:
             speech_kwargs["max_samples"] = int(call.arguments["max_samples"])
-        session.make_speech_torch_loaders(**speech_kwargs)
+        session.dl.make_speech_loaders(**speech_kwargs)
         state_changes.append(
             "Built speech classification Torch DataLoaders (finetune-lite)."
         )
@@ -2771,7 +2779,7 @@ def _dispatch_tool(
         }
         if call.arguments.get("audio_column") is not None:
             fit_speech_kwargs["audio_column"] = str(call.arguments["audio_column"])
-        session.fit_speech_torch(**fit_speech_kwargs)
+        session.dl.fit_speech(**fit_speech_kwargs)
         state_changes.append("Fine-tuned tiny speech classifier (finetune-lite).")
         return {"speech_torch_fitted": True}, tuple(state_changes)
 
@@ -2779,7 +2787,7 @@ def _dispatch_tool(
         audio_column = call.arguments.get("audio_column")
         if not audio_column:
             raise ValidationError("transcribe_speech requires audio_column.")
-        result = session.transcribe_speech(
+        result = session.dl.transcribe(
             audio_column=str(audio_column),
             backend=call.arguments.get("backend", "stub"),
             model_id=call.arguments.get("model_id"),

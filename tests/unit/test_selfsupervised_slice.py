@@ -56,36 +56,38 @@ def test_fit_requires_split() -> None:
         {"x": "feature", "y": "feature", "label": "target"}
     )
     with pytest.raises((LeakageError, ValidationError)):
-        session.fit_ssl_pretext()
+        session.ssl.fit_pretext()
 
 
 def test_masked_tabular_pretext_head_eval_bundle(tmp_path: Path) -> None:
     session = _ready()
-    pre = session.fit_ssl_pretext(
-        method="masked_tabular",
-        latent_dim=6,
-        mask_ratio=0.2,
-        max_iter=80,
-        random_state=0,
-    )
+    # Exercise the retained legacy backend and verify its migration warning.
+    with pytest.warns(DeprecationWarning, match="legacy sklearn MLP"):
+        pre = session.ssl.fit_pretext(
+            method="masked_tabular",
+            latent_dim=6,
+            mask_ratio=0.2,
+            max_iter=1000,
+            random_state=0,
+        )
     assert pre.method == "masked_tabular"
     assert pre.latent_dim == 6
     assert session.ssl_plan is not None
     assert pre.reconstruction_mae is not None
 
-    tr = session.transform_ssl(partition="test")
+    tr = session.ssl.transform(partition="test")
     assert tr.n_rows > 0
     assert len(tr.representation_columns) == 6
 
-    head = session.finetune_ssl_head(estimator="logistic_regression", random_state=0)
+    head = session.ssl.finetune_head(estimator="logistic_regression", random_state=0)
     assert head.n_labeled_train >= 2
     assert session.ssl_head_plan is not None
 
-    ev = session.evaluate_ssl(partition="test")
+    ev = session.ssl.evaluate(partition="test")
     assert "accuracy" in ev.metrics
     assert ev.n_labeled_eval == ev.n_rows
 
-    bundle = session.save_ssl_bundle(tmp_path / "ssl")
+    bundle = session.ssl.save_bundle(tmp_path / "ssl")
     assert (bundle / "meta.json").is_file()
     plan, loaded_head = load_ssl_bundle(bundle, trusted=True)
     assert plan.latent_dim == 6
@@ -98,8 +100,8 @@ def test_masked_tabular_pretext_head_eval_bundle(tmp_path: Path) -> None:
 
 def test_attach_embeddings_and_ai_allowlist() -> None:
     session = _ready()
-    session.fit_ssl_pretext(latent_dim=4, max_iter=60, random_state=0)
-    attached = session.transform_ssl(partition="all", attach=True)
+    session.ssl.fit_pretext(latent_dim=4, max_iter=1000, random_state=0)
+    attached = session.ssl.transform(partition="all", attach=True)
     assert attached.attached is True
     for col in session.ssl_plan.representation_columns:
         assert col in session.to_pandas().columns
@@ -117,8 +119,8 @@ def test_attach_embeddings_and_ai_allowlist() -> None:
 
 def test_walkthrough_status() -> None:
     session = _ready()
-    session.fit_ssl_pretext(latent_dim=4, max_iter=50, random_state=0)
-    session.finetune_ssl_head()
+    session.ssl.fit_pretext(latent_dim=4, max_iter=1000, random_state=0)
+    session.ssl.finetune_head()
     report = session.walkthrough()
     status = report.selfsupervised_status
     assert status["enabled"] is True

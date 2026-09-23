@@ -102,9 +102,9 @@ class TabularMetaLearner:
         if self.module_ is None:
             raise ValidationError("TabularMetaLearner module is not initialized.")
         device = torch.device(self.device)
-        x_s = torch.as_tensor(x_support, dtype=torch.float32, device=device)
-        y_s = torch.as_tensor(y_support, dtype=torch.long, device=device)
-        x_q = torch.as_tensor(x_query, dtype=torch.float32, device=device)
+        x_s = torch.tensor(x_support, dtype=torch.float32, device=device)
+        y_s = torch.tensor(y_support, dtype=torch.long, device=device)
+        x_q = torch.tensor(x_query, dtype=torch.float32, device=device)
 
         if self.method == "maml" and self.maml_wrapper_ is not None:
             learner = self.maml_wrapper_.clone()
@@ -159,10 +159,10 @@ def _episode_tensors(
     if len(np.unique(y_s)) < 2:
         return None
     return (
-        torch.as_tensor(x_s, dtype=torch.float32, device=device),
-        torch.as_tensor(y_s, dtype=torch.long, device=device),
-        torch.as_tensor(x_q, dtype=torch.float32, device=device),
-        torch.as_tensor(y_q, dtype=torch.long, device=device),
+        torch.tensor(x_s, dtype=torch.float32, device=device),
+        torch.tensor(y_s, dtype=torch.long, device=device),
+        torch.tensor(x_q, dtype=torch.float32, device=device),
+        torch.tensor(y_q, dtype=torch.long, device=device),
     )
 
 

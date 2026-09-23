@@ -86,7 +86,7 @@ def test_public_surface_and_catalog() -> None:
 
 def test_session_fedavg_loop_and_bundle(tmp_path: Path) -> None:
     session = _session()
-    fit = session.fit_federated(
+    fit = session.federated.fit(
         backend="native",
         method="fedavg",
         estimator="sgd_classifier",
@@ -99,18 +99,18 @@ def test_session_fedavg_loop_and_bundle(tmp_path: Path) -> None:
     assert len(fit.round_history) >= 1
     assert "client_id" not in session.federated_plan.columns
 
-    ev = session.evaluate_federated(partition="test", per_client=True)
+    ev = session.federated.evaluate(partition="test", per_client=True)
     assert "accuracy" in ev.metrics
     assert session.federated_eval_result is not None
 
-    preds = session.predict_federated(partition="test")
+    preds = session.federated.predict(partition="test")
     assert len(preds.predictions) == ev.n_rows
 
     before = session.explain("evaluate_federated", moment="before")
     assert before.prerequisite_status.get("federated-plan") is True
 
-    bundle = session.save_federated_bundle(tmp_path / "federated_bundle")
-    rounds_path = session.export_round_history(tmp_path / "rounds.json")
+    bundle = session.federated.save_bundle(tmp_path / "federated_bundle")
+    rounds_path = session.federated.export_round_history(tmp_path / "rounds.json")
     assert rounds_path.is_file()
     assert rounds_path.read_text(encoding="utf-8").count("round_history") >= 1
 
@@ -127,7 +127,7 @@ def test_session_fedavg_loop_and_bundle(tmp_path: Path) -> None:
     )
     restored._split_plan = session.split_plan
     restored._dataset = session.dataset
-    restored.load_federated_bundle(bundle, trusted=True)
+    restored.federated.load_bundle(bundle, trusted=True)
     assert restored.federated_plan is not None
     assert restored.federated_plan.estimator_name == "sgd_classifier"
 
@@ -179,7 +179,7 @@ def test_refuse_without_split() -> None:
         }
     )
     with pytest.raises(LeakageError):
-        session.fit_federated()
+        session.federated.fit()
 
 
 def test_refuse_without_client_column() -> None:
@@ -196,4 +196,4 @@ def test_refuse_without_client_column() -> None:
         .split(test_size=0.2, random_state=0)
     )
     with pytest.raises(ValidationError, match="client/group"):
-        session.fit_federated()
+        session.federated.fit()

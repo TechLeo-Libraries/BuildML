@@ -17,7 +17,14 @@ Its environment link points to the run containing CI and candidate evidence.
 
 ## Configuration required before publication
 
-This configuration has not been applied or verified remotely:
+On 2026-09-22 the GitHub `pypi-release` environment was created and its live API
+response passed `check_release_gate.validate_environment`: LeonardLeo is the
+required reviewer, self-review is prevented, administrator bypass is disabled,
+and custom deployment policies allow `v2.*` and `v3.*` tags. Evidence is retained
+in `artifacts/validation-gaps/release-environment.json`. PyPI publisher registration
+and candidate-specific deployment approval remain pending.
+
+Required configuration and operating procedure:
 
 1. Create `pypi-release` in repository Settings, Environments. Set the human
    reviewer as a required reviewer, enable Prevent self-review, and disable
@@ -37,7 +44,8 @@ This configuration has not been applied or verified remotely:
 
 Dry runs build and test without requesting publishing approval. They do not
 establish that remote environment configuration or PyPI publisher setup works.
-No remote setup, workflow execution, or publication was performed for this repair.
+Non-publishing CI and installation-matrix runs have been executed; their results
+must be checked against the exact candidate commit. No publication was performed.
 
 ## Verification
 

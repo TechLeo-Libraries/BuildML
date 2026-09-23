@@ -23,13 +23,13 @@ Do this much before you pick a domain.
 
 If machine-learning vocabulary is new, start a Session and run
 `session.learn()`, then `session.explain("split")`. The
-[EDA / Teaching Studio](eda-teaching-studio.md#teaching-surfaces-explain-learn-workflow-walkthrough)
+[EDA / Teaching Studio](eda-teaching-studio.md#teaching-surfaces-explain--learn--workflow--walkthrough)
 page is the long form of that. Domain work lives on `session.<domain>.*`.
 
 After that, pick a domain from the map below. Quickstarts are short
 on-ramps. Deep guides carry use cases, failure modes, and cross-links.
-Paste the loop from [`examples/`](../examples/). Then run one proof from
-the [evidence index](../proofs/README.md).
+Paste the loop from [`examples/`](https://github.com/TechLeo-Libraries/BuildML/tree/main/examples). Then run one proof from
+the [evidence index](https://github.com/TechLeo-Libraries/BuildML/blob/main/proofs/README.md).
 
 ---
 
@@ -133,7 +133,7 @@ refuses. Method lists live on `session.explain("<name>")` and the
 - [Glossary](glossary.md)
 - [Features / boundaries](../docs/features.rst)
 - [Sphinx package API](../docs/package.rst)
-- Paste scripts (the guide contract): [`examples/`](../examples/)
+- Paste scripts (the guide contract): [`examples/`](https://github.com/TechLeo-Libraries/BuildML/tree/main/examples)
 
 ## What these pages do not cover
 
@@ -150,43 +150,43 @@ When an API is alpha, the page says so.
 
 ## Paste, then evidence
 
-[`examples/`](../examples/) contains runnable starting points. [`proofs/`](../proofs/README.md)
+[`examples/`](https://github.com/TechLeo-Libraries/BuildML/tree/main/examples) contains runnable starting points. [`proofs/`](https://github.com/TechLeo-Libraries/BuildML/blob/main/proofs/README.md)
 is one end-to-end run per job. Composition slugs in the harness are not
 extra products.
 
 | Domain | Paste | Evidence |
 | --- | --- | --- |
-| Classical | [classical_loan_loop.py](../examples/classical_loan_loop.py) | [loan-approval-classical](../proofs/loan-approval-classical/), [breast-cancer-classical](../proofs/breast-cancer-classical/) |
-| Leakage / CV | [leakage_cv_recipe.py](../examples/leakage_cv_recipe.py) | [loan-approval-classical](../proofs/loan-approval-classical/) |
-| Unsupervised | [unsupervised_cluster_loop.py](../examples/unsupervised_cluster_loop.py) | [cluster-customer-segments](../proofs/cluster-customer-segments/), [wine-cluster-segments](../proofs/wine-cluster-segments/) |
-| Ensembles | [ensemble_vote_stack_loop.py](../examples/ensemble_vote_stack_loop.py) | [voting-ensemble-attrition](../proofs/voting-ensemble-attrition/) |
-| AutoML | [automl_search_loop.py](../examples/automl_search_loop.py) | [churn-automl-search](../proofs/churn-automl-search/) (sklearn breast cancer) |
-| Anomaly | [anomaly_iforest_loop.py](../examples/anomaly_iforest_loop.py) | [network-intrusion-anomaly](../proofs/network-intrusion-anomaly/) |
-| Forecast | [forecast_lag_loop.py](../examples/forecast_lag_loop.py) | [store-sales-forecast](../proofs/store-sales-forecast/) |
-| Time-series analysis | [timeseries_analyze_loop.py](../examples/timeseries_analyze_loop.py) | [store-sales-forecast](../proofs/store-sales-forecast/) |
-| RAG | [rag_hashing_loop.py](../examples/rag_hashing_loop.py) | [support-kb-rag](../proofs/support-kb-rag/) |
-| Recommenders | [recommender_item_knn_loop.py](../examples/recommender_item_knn_loop.py) | [movie-recs-collaborative](../proofs/movie-recs-collaborative/) |
-| LTR | [ranking_pointwise_loop.py](../examples/ranking_pointwise_loop.py) | [search-relevance-ltr](../proofs/search-relevance-ltr/) |
-| Knowledge graphs | [kg_transe_loop.py](../examples/kg_transe_loop.py) | [kg-biomed-linkpred](../proofs/kg-biomed-linkpred/) |
-| TDA | [tda_loop.py](../examples/tda_loop.py) | [credit-tda-shape](../proofs/credit-tda-shape/) |
-| Semi-supervised | [semisupervised_label_propagation_loop.py](../examples/semisupervised_label_propagation_loop.py) | [semi-label-efficiency](../proofs/semi-label-efficiency/) |
-| Active learning | [activelearning_margin_loop.py](../examples/activelearning_margin_loop.py) | [active-labeling-budget](../proofs/active-labeling-budget/) |
-| Self-supervised | [selfsupervised_masked_tabular_loop.py](../examples/selfsupervised_masked_tabular_loop.py) | [ssl-representation-probe](../proofs/ssl-representation-probe/) |
-| Online | [online_partial_fit_loop.py](../examples/online_partial_fit_loop.py) | [stream-fraud-online](../proofs/stream-fraud-online/) |
-| Multi-task | [multitask_multioutput_loop.py](../examples/multitask_multioutput_loop.py) | [multi-target-underwriting](../proofs/multi-target-underwriting/) |
-| Meta-learning | [metalearning_prototypical_loop.py](../examples/metalearning_prototypical_loop.py) | [few-shot-domain-adapt](../proofs/few-shot-domain-adapt/) |
-| Federated | [federated_fedavg_loop.py](../examples/federated_fedavg_loop.py) | [federated-hospital-sim](../proofs/federated-hospital-sim/) |
-| Probabilistic | [probabilistic_bayesian_ridge.py](../examples/probabilistic_bayesian_ridge.py) | [prob-interval-risk](../proofs/prob-interval-risk/) |
-| Causal | [causal_aipw_ate.py](../examples/causal_aipw_ate.py) | [causal-treatment-effect](../proofs/causal-treatment-effect/) |
-| Graph | [graph_node_classification.py](../examples/graph_node_classification.py) | [graph-fraud-rings](../proofs/graph-fraud-rings/) |
-| Symbolic | [symbolic_rules_loop.py](../examples/symbolic_rules_loop.py) | [policy-rules-neuro-symbolic](../proofs/policy-rules-neuro-symbolic/) |
-| CBR | [cbr_knn_loop.py](../examples/cbr_knn_loop.py) | [case-memory-claims](../proofs/case-memory-claims/) |
-| Decisions | [decision_threshold_loop.py](../examples/decision_threshold_loop.py) | [cost-sensitive-collections](../proofs/cost-sensitive-collections/) |
-| Synthetic | [synthetic_copula_loop.py](../examples/synthetic_copula_loop.py) | [synthetic-privacy-utility](../proofs/synthetic-privacy-utility/) |
-| NLP | [nlp_text_classifier_loop.py](../examples/nlp_text_classifier_loop.py) | [ticket-routing-nlp](../proofs/ticket-routing-nlp/) |
-| Imitation + RL | [imitation_rl_loop.py](../examples/imitation_rl_loop.py) | [imitation-cartpole-control](../proofs/imitation-cartpole-control/) |
-| Fairness | [fairness_observational_loop.py](../examples/fairness_observational_loop.py) | [loan-fairness-observational](../proofs/loan-fairness-observational/), [adult-fairness-observational](../proofs/adult-fairness-observational/) |
-| Torch | [torch_tabular_mlp_loop.py](../examples/torch_tabular_mlp_loop.py) | [torch-tabular-underwrite](../proofs/torch-tabular-underwrite/) |
-| Industry EDA | | [eda-industry-adaptability](../proofs/eda-industry-adaptability/) |
+| Classical | [classical_loan_loop.py](../examples/classical_loan_loop.py) | [loan-approval-classical](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/loan-approval-classical), [breast-cancer-classical](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/breast-cancer-classical) |
+| Leakage / CV | [leakage_cv_recipe.py](../examples/leakage_cv_recipe.py) | [loan-approval-classical](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/loan-approval-classical) |
+| Unsupervised | [unsupervised_cluster_loop.py](../examples/unsupervised_cluster_loop.py) | [cluster-customer-segments](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/cluster-customer-segments), [wine-cluster-segments](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/wine-cluster-segments) |
+| Ensembles | [ensemble_vote_stack_loop.py](../examples/ensemble_vote_stack_loop.py) | [voting-ensemble-attrition](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/voting-ensemble-attrition) |
+| AutoML | [automl_search_loop.py](../examples/automl_search_loop.py) | [churn-automl-search](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/churn-automl-search) (sklearn breast cancer) |
+| Anomaly | [anomaly_iforest_loop.py](../examples/anomaly_iforest_loop.py) | [network-intrusion-anomaly](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/network-intrusion-anomaly) |
+| Forecast | [forecast_lag_loop.py](../examples/forecast_lag_loop.py) | [store-sales-forecast](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/store-sales-forecast) |
+| Time-series analysis | [timeseries_analyze_loop.py](../examples/timeseries_analyze_loop.py) | [store-sales-forecast](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/store-sales-forecast) |
+| RAG | [rag_hashing_loop.py](../examples/rag_hashing_loop.py) | [support-kb-rag](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/support-kb-rag) |
+| Recommenders | [recommender_item_knn_loop.py](../examples/recommender_item_knn_loop.py) | [movie-recs-collaborative](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/movie-recs-collaborative) |
+| LTR | [ranking_pointwise_loop.py](../examples/ranking_pointwise_loop.py) | [search-relevance-ltr](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/search-relevance-ltr) |
+| Knowledge graphs | [kg_transe_loop.py](../examples/kg_transe_loop.py) | [kg-biomed-linkpred](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/kg-biomed-linkpred) |
+| TDA | [tda_loop.py](../examples/tda_loop.py) | [credit-tda-shape](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/credit-tda-shape) |
+| Semi-supervised | [semisupervised_label_propagation_loop.py](../examples/semisupervised_label_propagation_loop.py) | [semi-label-efficiency](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/semi-label-efficiency) |
+| Active learning | [activelearning_margin_loop.py](../examples/activelearning_margin_loop.py) | [active-labeling-budget](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/active-labeling-budget) |
+| Self-supervised | [selfsupervised_masked_tabular_loop.py](../examples/selfsupervised_masked_tabular_loop.py) | [ssl-representation-probe](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/ssl-representation-probe) |
+| Online | [online_partial_fit_loop.py](../examples/online_partial_fit_loop.py) | [stream-fraud-online](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/stream-fraud-online) |
+| Multi-task | [multitask_multioutput_loop.py](../examples/multitask_multioutput_loop.py) | [multi-target-underwriting](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/multi-target-underwriting) |
+| Meta-learning | [metalearning_prototypical_loop.py](../examples/metalearning_prototypical_loop.py) | [few-shot-domain-adapt](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/few-shot-domain-adapt) |
+| Federated | [federated_fedavg_loop.py](../examples/federated_fedavg_loop.py) | [federated-hospital-sim](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/federated-hospital-sim) |
+| Probabilistic | [probabilistic_bayesian_ridge.py](../examples/probabilistic_bayesian_ridge.py) | [prob-interval-risk](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/prob-interval-risk) |
+| Causal | [causal_aipw_ate.py](../examples/causal_aipw_ate.py) | [causal-treatment-effect](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/causal-treatment-effect) |
+| Graph | [graph_node_classification.py](../examples/graph_node_classification.py) | [graph-fraud-rings](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/graph-fraud-rings) |
+| Symbolic | [symbolic_rules_loop.py](../examples/symbolic_rules_loop.py) | [policy-rules-neuro-symbolic](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/policy-rules-neuro-symbolic) |
+| CBR | [cbr_knn_loop.py](../examples/cbr_knn_loop.py) | [case-memory-claims](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/case-memory-claims) |
+| Decisions | [decision_threshold_loop.py](../examples/decision_threshold_loop.py) | [cost-sensitive-collections](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/cost-sensitive-collections) |
+| Synthetic | [synthetic_copula_loop.py](../examples/synthetic_copula_loop.py) | [synthetic-privacy-utility](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/synthetic-privacy-utility) |
+| NLP | [nlp_text_classifier_loop.py](../examples/nlp_text_classifier_loop.py) | [ticket-routing-nlp](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/ticket-routing-nlp) |
+| Imitation + RL | [imitation_rl_loop.py](../examples/imitation_rl_loop.py) | [imitation-cartpole-control](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/imitation-cartpole-control) |
+| Fairness | [fairness_observational_loop.py](../examples/fairness_observational_loop.py) | [loan-fairness-observational](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/loan-fairness-observational), [adult-fairness-observational](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/adult-fairness-observational) |
+| Torch | [torch_tabular_mlp_loop.py](../examples/torch_tabular_mlp_loop.py) | [torch-tabular-underwrite](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/torch-tabular-underwrite) |
+| Industry EDA | | [eda-industry-adaptability](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/eda-industry-adaptability) |
 
-Harness lists and composition scripts: [proofs/README.md](../proofs/README.md).
+Harness lists and composition scripts: [proofs/README.md](https://github.com/TechLeo-Libraries/BuildML/blob/main/proofs/README.md).

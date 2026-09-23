@@ -15,7 +15,7 @@ This is not the EDA IsolationForest screen. That stays descriptive.
 
 [Unsupervised deep](unsupervised-deep.md) ·
 Paste: [`examples/unsupervised_cluster_loop.py`](../examples/unsupervised_cluster_loop.py) ·
-Evidence: [cluster-customer-segments](../proofs/cluster-customer-segments/)
+Evidence: [cluster-customer-segments](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/cluster-customer-segments)
 
 ```python
 import numpy as np

@@ -100,4 +100,4 @@ def test_majority_rejects_regression_reuse() -> None:
         .split(test_size=0.25, random_state=0)
     )
     with pytest.raises(ValidationError, match="classification-only"):
-        session.fit_cbr(task="regression", reuse="majority")
+        session.cbr.fit(task="regression", reuse="majority")

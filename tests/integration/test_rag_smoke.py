@@ -30,13 +30,13 @@ def test_session_rag_vertical_slice(tmp_path) -> None:
         },
     ]
     session = Session()
-    session.rag_ingest_corpus(docs)
-    session.rag_chunk(size=160, overlap=32)
-    session.rag_embed_and_index(embedder="hashing")
+    session.rag.ingest_corpus(docs)
+    session.rag.chunk(size=160, overlap=32)
+    session.rag.embed_and_index(embedder="hashing")
     assert session.rag_index_result is not None
     assert session.rag_index_result.embedder_id == "buildml.hashing_embed.v1"
 
-    retrieved = session.rag_retrieve(
+    retrieved = session.rag.retrieve(
         "retrieval corpus contamination indexed answers",
         k=3,
         mode="dense",
@@ -44,7 +44,7 @@ def test_session_rag_vertical_slice(tmp_path) -> None:
     assert len(retrieved.hits) == 3
     assert retrieved.hits[0].doc_id in {"ml", "rag", "leak"}
 
-    metrics = session.rag_evaluate(
+    metrics = session.rag.evaluate(
         {
             "retrieval corpus contamination": ["leak"],
             "supervised learning hold out test": ["ml"],
@@ -55,9 +55,9 @@ def test_session_rag_vertical_slice(tmp_path) -> None:
     assert 0.0 <= metrics.recall_at_k <= 1.0
     assert 0.0 <= metrics.mrr <= 1.0
 
-    bundle = session.save_rag_bundle(tmp_path / "rag_bundle")
-    restored = Session().load_rag_bundle(bundle)
-    again = restored.rag_retrieve("retrieval corpus contamination indexed answers", k=3)
+    bundle = session.rag.save_bundle(tmp_path / "rag_bundle")
+    restored = Session().rag.load_bundle(bundle)
+    again = restored.rag.retrieve("retrieval corpus contamination indexed answers", k=3)
     assert again.hits[0].doc_id == retrieved.hits[0].doc_id
 
     before = session.explain("rag_retrieve", moment="before")

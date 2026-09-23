@@ -43,8 +43,8 @@ def _session_with_cats() -> Session:
 
 def test_gaussian_copula_preserves_rough_correlation() -> None:
     session = _session_with_cats()
-    session.fit_synthesizer(method="gaussian_copula", random_state=0)
-    sample = session.sample_synthetic(n=400, random_state=1)
+    session.synthetic.fit(method="gaussian_copula", random_state=0)
+    sample = session.synthetic.sample(n=400, random_state=1)
     assert sample.frame is not None
     real_corr = (
         session.dataset.frame.iloc[list(session._split_plan.train_indices)][["x1", "x2"]]
@@ -60,8 +60,8 @@ def test_gaussian_copula_preserves_rough_correlation() -> None:
 
 def test_copula_condition_rejection() -> None:
     session = _session_with_cats()
-    session.fit_synthesizer(method="gaussian_copula", random_state=0)
-    sample = session.sample_synthetic(
+    session.synthetic.fit(method="gaussian_copula", random_state=0)
+    sample = session.synthetic.sample(
         n=30, condition={"cat": "u"}, random_state=2
     )
     assert (sample.frame["cat"].astype(str) == "u").all()
@@ -69,9 +69,9 @@ def test_copula_condition_rejection() -> None:
 
 def test_bootstrap_plain_is_subset_of_train_values() -> None:
     session = _session_with_cats()
-    session.fit_synthesizer(method="bootstrap", smooth_sigma=0.0, random_state=0)
+    session.synthetic.fit(method="bootstrap", smooth_sigma=0.0, random_state=0)
     train = session.dataset.frame.iloc[list(session._split_plan.train_indices)]
-    sample = session.sample_synthetic(n=25, random_state=3)
+    sample = session.synthetic.sample(n=25, random_state=3)
     # Every sampled x1 must appear in train (plain bootstrap)
     train_vals = set(np.round(train["x1"].to_numpy(), 10))
     for val in np.round(sample.frame["x1"].to_numpy(), 10):
@@ -96,7 +96,7 @@ def test_smote_method_optional_extra() -> None:
         import imblearn  # noqa: F401
     except ImportError:
         with pytest.raises(MissingExtraError):
-            session.fit_synthesizer(method="smote", random_state=0)
+            session.synthetic.fit(method="smote", random_state=0)
         return
 
     fit = session.fit_synthesizer(method="smote", random_state=0)
@@ -121,7 +121,7 @@ def test_resample_still_works_alongside_synthetic() -> None:
         .set_roles({**{c: "feature" for c in frame.columns if c.startswith("f")}, "y": "target"})
         .split(test_size=0.25, validation_size=0.2, random_state=1)
     )
-    session.fit_synthesizer(method="bootstrap", random_state=0)
+    session.synthetic.fit(method="bootstrap", random_state=0)
     assert session.synthesizer_plan is not None
     try:
         import imblearn  # noqa: F401
@@ -136,7 +136,7 @@ def test_resample_still_works_alongside_synthetic() -> None:
 def test_unknown_method_raises() -> None:
     session = _session_with_cats()
     with pytest.raises(ValidationError, match="Unknown synthesizer"):
-        session.fit_synthesizer(method="not_a_real_method")  # type: ignore[arg-type]
+        session.synthetic.fit(method="not_a_real_method")  # type: ignore[arg-type]
 
 
 def test_column_specs_mixed() -> None:

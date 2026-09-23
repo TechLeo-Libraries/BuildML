@@ -78,10 +78,10 @@ class TabularProtoNet:
         if self.encoder_ is None:
             raise ValidationError("TabularProtoNet encoder is not initialized.")
         self.encoder_.train()
-        x_s = torch.as_tensor(x_support, dtype=torch.float32, device=device)
-        y_s = torch.as_tensor(y_support, dtype=torch.long, device=device)
-        x_q = torch.as_tensor(x_query, dtype=torch.float32, device=device)
-        y_q = torch.as_tensor(y_query, dtype=torch.long, device=device)
+        x_s = torch.tensor(x_support, dtype=torch.float32, device=device)
+        y_s = torch.tensor(y_support, dtype=torch.long, device=device)
+        x_q = torch.tensor(x_query, dtype=torch.float32, device=device)
+        y_q = torch.tensor(y_query, dtype=torch.long, device=device)
         emb_s = self.encoder_(x_s)
         emb_q = self.encoder_(x_q)
         protos = {}
@@ -128,7 +128,7 @@ class TabularProtoNet:
         device = torch.device(self.device)
         self.encoder_.eval()
         with torch.no_grad():
-            tensor_x = torch.as_tensor(x, dtype=torch.float32, device=device)
+            tensor_x = torch.tensor(x, dtype=torch.float32, device=device)
             emb = self.encoder_(tensor_x)
         return emb.cpu().numpy()
 
@@ -294,10 +294,10 @@ def meta_train_prototypical_torch(
 
             encoder.train()
             optimizer.zero_grad()
-            x_s_t = torch.as_tensor(x_s, dtype=torch.float32, device=dev)
-            y_s_t = torch.as_tensor(y_s, dtype=torch.long, device=dev)
-            x_q_t = torch.as_tensor(x_q, dtype=torch.float32, device=dev)
-            y_q_t = torch.as_tensor(y_q, dtype=torch.long, device=dev)
+            x_s_t = torch.tensor(x_s, dtype=torch.float32, device=dev)
+            y_s_t = torch.tensor(y_s, dtype=torch.long, device=dev)
+            x_q_t = torch.tensor(x_q, dtype=torch.float32, device=dev)
+            y_q_t = torch.tensor(y_q, dtype=torch.long, device=dev)
             emb_s = encoder(x_s_t)
             emb_q = encoder(x_q_t)
             protos: dict[int, Any] = {}

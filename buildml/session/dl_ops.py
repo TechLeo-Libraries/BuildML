@@ -627,7 +627,7 @@ def evaluate_torch(
         )
     _refuse_silent_tabular_loader_rebuild(session, operation="evaluate_torch")
     if session._torch_loaders is None:
-        session.make_torch_loaders(
+        session.dl.make_loaders(
             normalize=session._dl_train_result.contract.normalize_mean is not None,
             task=session._dl_train_result.task,
         )

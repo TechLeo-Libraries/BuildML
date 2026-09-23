@@ -70,7 +70,7 @@ def test_search_torch_and_nested_cv_tiny() -> None:
         .set_roles({"x1": "feature", "x2": "feature", "y": "target"})
         .split(test_size=0.25, validation_size=0.2, stratify=True, random_state=0)
     )
-    search = session.search_torch(
+    search = session.dl.search(
         param_grid={"learning_rate": [1e-2, 1e-3], "hidden": [(8,), (16, 8)]},
         n_folds=2,
         epochs=1,
@@ -86,7 +86,7 @@ def test_search_torch_and_nested_cv_tiny() -> None:
         for lim in search.limitations
     )
 
-    nested = session.nested_cv_torch(
+    nested = session.dl.nested_cv(
         param_grid={"learning_rate": [1e-2, 1e-3]},
         outer_cv=2,
         inner_cv=2,
@@ -110,7 +110,7 @@ def test_search_torch_requires_space() -> None:
         .split(test_size=0.25, random_state=0)
     )
     with pytest.raises(ValidationError, match="param_grid|param_distributions"):
-        session.search_torch(epochs=1, n_folds=2, device="cpu")
+        session.dl.search(epochs=1, n_folds=2, device="cpu")
 
 
 @pytest.mark.skipif(not _TORCH_SPEC, reason="torch not installed")
@@ -128,17 +128,18 @@ def test_multimodal_fusion_fit_evaluate() -> None:
         )
         .split(test_size=0.25, validation_size=0.2, stratify=True, random_state=0)
     )
-    bundle = session.make_multimodal_torch_loaders(batch_size=8, max_len=16, seed=0)
+    bundle = session.dl.make_multimodal_loaders(batch_size=8, max_len=16, seed=0)
     assert getattr(bundle, "modality", None) == "tabular_text_fusion"
-    session.fit_torch(epochs=2, device="cpu", mixed_precision=True)
+    session.dl.fit(epochs=2, device="cpu", mixed_precision=True)
     assert session.dl_train_result is not None
     assert any("AMP" in w or "mixed_precision" in w for w in session.dl_train_result.warnings)
-    ev = session.evaluate_torch(partition="validation")
+    ev = session.dl.evaluate(partition="validation")
     assert ev.n_rows > 0
     assert "accuracy" in ev.metrics or "loss" in ev.metrics
 
 
 @pytest.mark.skipif(not _TORCH_SPEC, reason="torch not installed")
+@pytest.mark.usefixtures("torchscript_deprecation_contract")
 def test_export_torchscript_roundtrip(tmp_path: Path) -> None:
     _require_torch_or_skip()
     import torch
@@ -150,10 +151,10 @@ def test_export_torchscript_roundtrip(tmp_path: Path) -> None:
         .set_roles({"x1": "feature", "x2": "feature", "y": "target"})
         .split(test_size=0.25, validation_size=0.2, random_state=0)
     )
-    session.make_torch_loaders(batch_size=8, seed=0)
-    session.fit_torch(epochs=1, device="cpu")
+    session.dl.make_loaders(batch_size=8, seed=0)
+    session.dl.fit(epochs=1, device="cpu")
     out = tmp_path / "model.ts.pt"
-    result = session.export_torch(out, format="torchscript")
+    result = session.dl.export(out, format="torchscript")
     assert result.path.exists()
     loaded = load_torchscript(result.path, trusted=True)
     xb, _ = next(iter(session._torch_loaders.loaders["train"]))
@@ -192,14 +193,14 @@ def test_ddp_refuses_without_multi_gpu_unless_opt_in() -> None:
         .set_roles({"x1": "feature", "x2": "feature", "y": "target"})
         .split(test_size=0.25, validation_size=0.2, random_state=0)
     )
-    session.make_torch_loaders(batch_size=8, seed=0)
+    session.dl.make_loaders(batch_size=8, seed=0)
 
     def factory():
         return build_tabular_mlp(2, task="classification", n_classes=2, hidden=(8,))
 
     if ddp_cuda_device_count() < 2:
         with pytest.raises(ValidationError, match="device_count|allow_cpu_ddp"):
-            session.fit_torch_ddp(factory, epochs=1, world_size=2)
+            session.dl.fit_ddp(factory, epochs=1, world_size=2)
     else:
         result = session.fit_torch_ddp(factory, epochs=1)
         assert result.train_result is not None
@@ -227,7 +228,7 @@ def test_multimodal_vocab_and_normalize_are_train_only() -> None:
     frame = session.dataset._ensure_pandas()
     test_idx = list(session._split_plan.indices_for("test"))
     frame.loc[test_idx, "text"] = "zzzzuniqueheldouttoken"
-    bundle = session.make_multimodal_torch_loaders(batch_size=8, max_len=16, seed=0)
+    bundle = session.dl.make_multimodal_loaders(batch_size=8, max_len=16, seed=0)
     vocab = bundle.text_vocab
     assert "zzzzuniqueheldouttoken" not in vocab.token_to_id
     train_idx = list(session._split_plan.indices_for("train"))
@@ -281,6 +282,7 @@ def test_nested_cv_outer_eval_disjoint_from_inner_universe() -> None:
 
 
 @pytest.mark.skipif(not _TORCH_SPEC, reason="torch not installed")
+@pytest.mark.usefixtures("torchscript_deprecation_contract")
 def test_multimodal_export_torchscript_dual_call_convention(tmp_path: Path) -> None:
     _require_torch_or_skip()
     import torch
@@ -299,8 +301,8 @@ def test_multimodal_export_torchscript_dual_call_convention(tmp_path: Path) -> N
         )
         .split(test_size=0.25, validation_size=0.2, stratify=True, random_state=0)
     )
-    session.make_multimodal_torch_loaders(batch_size=8, max_len=16, seed=0)
-    session.fit_torch(epochs=1, device="cpu")
+    session.dl.make_multimodal_loaders(batch_size=8, max_len=16, seed=0)
+    session.dl.fit(epochs=1, device="cpu")
     mod = session.dl_train_result.module.cpu().eval()
     batch = next(iter(session._torch_loaders.loaders["train"]))
     x_tab, tok, _y = batch
@@ -309,7 +311,7 @@ def test_multimodal_export_torchscript_dual_call_convention(tmp_path: Path) -> N
         y_args = mod(x_tab, tok)
     assert y_tuple.shape == y_args.shape
     out = tmp_path / "mm.ts.pt"
-    result = session.export_torch(out, format="torchscript")
+    result = session.dl.export(out, format="torchscript")
     assert result.path.exists()
     loaded = load_torchscript(result.path, trusted=True)
     with torch.no_grad():

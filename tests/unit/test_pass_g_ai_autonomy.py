@@ -49,16 +49,16 @@ def test_registry_includes_pass_g_tools() -> None:
 
 
 def test_autonomy_requires_explicit_confirm() -> None:
-    session = Session.ingest(_frame()).ai_configure(provider="mock")
+    session = Session.ingest(_frame()).ai.configure(provider="mock")
     with pytest.raises(ValidationError, match="confirm_autonomy"):
-        session.ai_run_autonomous("describe the dataset")
+        session.ai.run_autonomous("describe the dataset")
 
 
 def test_autonomy_executes_allowlisted_plan_with_mock() -> None:
     session = (
         Session.ingest(_frame())
         .set_roles({"x1": "feature", "x2": "feature", "y": "target"})
-        .ai_configure(provider="mock", egress_level="stats_only")
+        .ai.configure(provider="mock", egress_level="stats_only")
     )
     plan = PlanResult(
         goal="split then describe",
@@ -72,7 +72,7 @@ def test_autonomy_executes_allowlisted_plan_with_mock() -> None:
         limitations=(),
         raw_response="mock plan",
     )
-    result = session.ai_run_autonomous(
+    result = session.ai.run_autonomous(
         "prepare a split",
         plan=plan,
         confirm_autonomy=True,
@@ -82,13 +82,13 @@ def test_autonomy_executes_allowlisted_plan_with_mock() -> None:
     assert result.completed_steps >= 1
     assert any(s.auto_confirmed and s.executed for s in result.steps)
     assert result.residual_risks
-    status = session.ai_status()
+    status = session.ai.status()
     assert status["autonomy"]["autonomy_enabled_last_run"] is True
     assert session._split_plan is not None
 
 
 def test_autonomy_blocks_sample_egress() -> None:
-    session = Session.ingest(_frame()).ai_configure(provider="mock")
+    session = Session.ingest(_frame()).ai.configure(provider="mock")
     from buildml.ai.privacy import EgressConfig, EgressLevel
 
     session._ai_egress_config = EgressConfig(level=EgressLevel.FULL_SAMPLE)
@@ -101,7 +101,7 @@ def test_autonomy_blocks_sample_egress() -> None:
         raw_response="",
     )
     with pytest.raises(ValidationError, match="egress"):
-        session.ai_run_autonomous(
+        session.ai.run_autonomous(
             "x", plan=plan, confirm_autonomy=True, provider_plan=False
         )
 
@@ -110,7 +110,7 @@ def test_autonomy_skips_tools_outside_allowlist() -> None:
     session = (
         Session.ingest(_frame())
         .set_roles({"x1": "feature", "x2": "feature", "y": "target"})
-        .ai_configure(provider="mock")
+        .ai.configure(provider="mock")
     )
     plan = PlanResult(
         goal="unknown",
@@ -120,7 +120,7 @@ def test_autonomy_skips_tools_outside_allowlist() -> None:
         limitations=(),
         raw_response="",
     )
-    result = session.ai_run_autonomous(
+    result = session.ai.run_autonomous(
         "x",
         plan=plan,
         confirm_autonomy=True,
@@ -155,7 +155,7 @@ def test_pass_g_tools_have_executor_dispatch() -> None:
         Session.ingest(_frame())
         .set_roles({"x1": "feature", "x2": "feature", "y": "target"})
         .split(test_size=0.25, random_state=0)
-        .ai_configure(provider="mock")
+        .ai.configure(provider="mock")
     )
     registry = build_default_registry()
     # search_torch without space should fail inside Session, not "No dispatch handler".

@@ -25,7 +25,7 @@ It is not RAG, not learning-to-rank, and not an EDA "recommendation"
 finding (those are teaching notes on the report, they never rank items).
 
 Short on-ramp: [recommenders quickstart](quickstart-recommenders.md).
-Proof: [movie-recs-collaborative](../proofs/movie-recs-collaborative/).
+Proof: [movie-recs-collaborative](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/movie-recs-collaborative).
 
 ## Fit, recommend, evaluate
 
@@ -180,5 +180,5 @@ Benchmark: `python benchmarks/recommenders/ranking_quality.py`.
 | Method not valid for backend | Pairing the catalog does not advertise |
 
 [Recommenders quickstart](quickstart-recommenders.md) ·
-[movie-recs-collaborative](../proofs/movie-recs-collaborative/) ·
+[movie-recs-collaborative](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/movie-recs-collaborative) ·
 [Artifacts](artifacts-checkpoints-bundles.md)

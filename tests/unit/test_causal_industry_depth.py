@@ -129,14 +129,14 @@ def test_econml_causal_forest_cate_std() -> None:
 
 def test_session_backend_routing_native() -> None:
     session = _session()
-    session.declare_causal_assumptions(
+    session.causal.declare_assumptions(
         treatment="t",
         outcome="y",
         confounders=["x1", "x2"],
         acknowledge_unconfoundedness=True,
         acknowledge_positivity=True,
     )
-    fit = session.fit_causal(backend="native", method="aipw", bootstrap_samples=0)
+    fit = session.causal.fit(backend="native", method="aipw", bootstrap_samples=0)
     assert fit.backend == "native"
 
 

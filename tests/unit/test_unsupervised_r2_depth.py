@@ -44,45 +44,47 @@ def test_catalog_lists_all_methods() -> None:
 
 def test_gmm_bic_fit_and_evaluate() -> None:
     session = _ready_session()
-    fit = session.fit_clusters(method="gmm", n_clusters=3, gmm_max_components=5)
+    fit = session.unsupervised.fit(method="gmm", n_clusters=3, gmm_max_components=5)
     assert fit.n_clusters == 3
     assert "gmm_bic" in fit.diagnostics or "gmm_bic" in session.cluster_plan.config
-    ev = session.evaluate_clusters(partition="test", external_label_column="segment")
+    ev = session.unsupervised.evaluate(partition="test", external_label_column="segment")
     assert "silhouette" in ev.metrics
     assert "adjusted_rand_index" in ev.external_metrics
 
 
 def test_spectral_and_optics_transductive_disclosure() -> None:
     session = _ready_session()
-    spec = session.fit_clusters(method="spectral", n_clusters=3, random_state=0)
+    # Separated clusters deliberately produce a disconnected neighbour graph.
+    with pytest.warns(UserWarning, match="Graph is not fully connected"):
+        spec = session.unsupervised.fit(method="spectral", n_clusters=3, random_state=0)
     assert spec.assign_strategy == "nearest_centroid"
     assert any("transductive" in d.lower() for d in spec.disclosures)
-    ev = session.evaluate_clusters(partition="test")
+    ev = session.unsupervised.evaluate(partition="test")
     assert any("transductive" in d.lower() for d in ev.disclosures)
 
-    session.fit_clusters(method="optics", optics_min_samples=4, n_clusters=None)
-    assigned = session.assign_clusters(partition="test")
+    session.unsupervised.fit(method="optics", optics_min_samples=4, n_clusters=None)
+    assigned = session.unsupervised.assign(partition="test")
     assert assigned.n_rows > 0
 
 
 def test_mean_shift_observed_k() -> None:
     session = _ready_session()
-    fit = session.fit_clusters(method="mean_shift", n_clusters=None)
+    fit = session.unsupervised.fit(method="mean_shift", n_clusters=None)
     assert fit.n_clusters is not None
     assert fit.n_clusters >= 1
 
 
 def test_auto_k_elbow_kmeans() -> None:
     session = _ready_session()
-    fit = session.fit_clusters(method="kmeans", auto_k=True, auto_k_min=2, auto_k_max=5)
+    fit = session.unsupervised.fit(method="kmeans", auto_k=True, auto_k_min=2, auto_k_max=5)
     assert fit.n_clusters is not None
     assert 2 <= fit.n_clusters <= 5
 
 
 def test_evaluate_stability_and_elbow() -> None:
     session = _ready_session()
-    session.fit_clusters(method="kmeans", n_clusters=3)
-    ev = session.evaluate_clusters(
+    session.unsupervised.fit(method="kmeans", n_clusters=3)
+    ev = session.unsupervised.evaluate(
         partition="test",
         compute_stability=True,
         stability_runs=4,
@@ -96,9 +98,9 @@ def test_evaluate_stability_and_elbow() -> None:
 @pytest.mark.skipif(importlib.util.find_spec("hdbscan") is None, reason="hdbscan extra")
 def test_hdbscan_when_installed() -> None:
     session = _ready_session()
-    fit = session.fit_clusters(method="hdbscan", hdbscan_min_cluster_size=5, n_clusters=None)
+    fit = session.unsupervised.fit(method="hdbscan", hdbscan_min_cluster_size=5, n_clusters=None)
     assert fit.assign_strategy == "nearest_core"
-    labels = session.assign_clusters(partition="test")
+    labels = session.unsupervised.assign(partition="test")
     assert labels.n_rows > 0
 
 
@@ -107,7 +109,7 @@ def test_hdbscan_missing_extra_raises() -> None:
         pytest.skip("hdbscan installed")
     session = _ready_session()
     with pytest.raises(MissingExtraError):
-        session.fit_clusters(method="hdbscan", n_clusters=None)
+        session.unsupervised.fit(method="hdbscan", n_clusters=None)
 
 
 @pytest.mark.skip(reason="DEC requires working torch runtime; isolated in CI")
@@ -135,7 +137,7 @@ def test_umap_reduce_dimensions() -> None:
     )
     assert session.reduce_plan is not None
     assert session.reduce_plan.method == "umap"
-    fit = session.fit_clusters(method="kmeans", n_clusters=3, prefer_reduce_components=True)
+    fit = session.unsupervised.fit(method="kmeans", n_clusters=3, prefer_reduce_components=True)
     assert fit.used_reduce_components is True
 
 
@@ -147,8 +149,8 @@ def test_tsne_reduce_disclosure() -> None:
 
 def test_bundle_v2_format(tmp_path) -> None:
     session = _ready_session()
-    session.fit_clusters(method="kmeans", n_clusters=3)
-    path = session.save_unsupervised_bundle(tmp_path / "v2")
+    session.unsupervised.fit(method="kmeans", n_clusters=3)
+    path = session.unsupervised.save_bundle(tmp_path / "v2")
     meta = (path / "meta.json").read_text(encoding="utf-8")
     assert BUNDLE_FORMAT in meta
     assert BUNDLE_FORMAT_V1 not in meta or BUNDLE_FORMAT_V2 in meta
@@ -176,5 +178,5 @@ def test_load_v1_bundle_still_works(tmp_path) -> None:
     meta = json.loads(meta_path.read_text(encoding="utf-8"))
     meta["format"] = BUNDLE_FORMAT_V1
     meta_path.write_text(json.dumps(meta), encoding="utf-8")
-    session.load_unsupervised_bundle(dest, trusted=True)
+    session.unsupervised.load_bundle(dest, trusted=True)
     assert session.cluster_plan is not None

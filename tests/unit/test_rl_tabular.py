@@ -237,7 +237,7 @@ def test_tabular_q_requires_the_rl_extra_when_absent() -> None:
     if gymnasium_available():
         pytest.skip("gymnasium installed")
     with pytest.raises(MissingExtraError, match="rl"):
-        _tiny_session().fit_rl(mode="tabular_q", n_episodes=5)
+        _tiny_session().rl.fit(mode="tabular_q", n_episodes=5)
 
 
 # --------------------------------------------------------------------------
@@ -287,8 +287,10 @@ def test_q_learning_solves_deterministic_frozenlake() -> None:
 @requires_gym
 @pytest.mark.parametrize("algorithm", list(TABULAR_ALGORITHMS))
 def test_every_tabular_algorithm_learns_the_cliff(algorithm: str) -> None:
+    import gymnasium as gym
+
     policy, metrics, _disclosures, _warnings = train_tabular_control(
-        env_id="CliffWalking-v0",
+        env_id="CliffWalking-v1" if "CliffWalking-v1" in gym.envs.registry else "CliffWalking-v0",
         algorithm=algorithm,
         n_episodes=400,
         max_steps=200,
@@ -310,8 +312,10 @@ def test_every_tabular_algorithm_learns_the_cliff(algorithm: str) -> None:
 @requires_gym
 def test_q_learning_recovers_the_optimal_cliff_path() -> None:
     """Off-policy control learns the -13 cliff-edge path its behaviour avoids."""
+    import gymnasium as gym
+
     policy, _metrics, _disclosures, _warnings = train_tabular_control(
-        env_id="CliffWalking-v0",
+        env_id="CliffWalking-v1" if "CliffWalking-v1" in gym.envs.registry else "CliffWalking-v0",
         algorithm="q_learning",
         n_episodes=500,
         max_steps=200,

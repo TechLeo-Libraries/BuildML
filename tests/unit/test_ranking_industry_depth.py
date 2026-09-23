@@ -89,7 +89,7 @@ def test_resolve_industry_requires_extra_when_missing() -> None:
 
 def test_sklearn_pointwise_session_path() -> None:
     session = _grouped_session()
-    fit = session.fit_ranker(
+    fit = session.ranking.fit(
         backend="sklearn",
         method="pointwise",
         query_column="query_id",
@@ -97,14 +97,14 @@ def test_sklearn_pointwise_session_path() -> None:
     )
     assert fit.backend == "sklearn"
     assert fit.method == "pointwise"
-    ev = session.evaluate_ranker(k=5)
+    ev = session.ranking.evaluate(k=5)
     assert 0.0 <= float(ev.metrics["ndcg_at_k"]) <= 1.0
 
 
 @pytest.mark.skipif(not lightgbm_available(), reason="lightgbm not installed")
 def test_lambdarank_lgbm_session_path() -> None:
     session = _grouped_session()
-    fit = session.fit_ranker(
+    fit = session.ranking.fit(
         backend="industry",
         method="lambdarank_lgbm",
         query_column="query_id",
@@ -113,14 +113,14 @@ def test_lambdarank_lgbm_session_path() -> None:
     )
     assert fit.backend == "industry"
     assert fit.method == "lambdarank_lgbm"
-    ev = session.evaluate_ranker(k=5)
+    ev = session.ranking.evaluate(k=5)
     assert ev.n_queries_scored > 0
 
 
 @pytest.mark.skipif(not xgboost_available(), reason="xgboost not installed")
 def test_rank_ndcg_xgb_session_path() -> None:
     session = _grouped_session()
-    fit = session.fit_ranker(
+    fit = session.ranking.fit(
         backend="industry",
         method="rank_ndcg_xgb",
         query_column="query_id",
@@ -128,7 +128,7 @@ def test_rank_ndcg_xgb_session_path() -> None:
         n_estimators=40,
     )
     assert fit.method == "rank_ndcg_xgb"
-    ranked = session.rank(partition="test", k=3)
+    ranked = session.ranking.rank(partition="test", k=3)
     assert ranked.n_queries > 0
 
 
@@ -136,7 +136,7 @@ def test_rank_ndcg_xgb_session_path() -> None:
 def test_listwise_lite_session_path() -> None:
     session = _grouped_session()
     try:
-        fit = session.fit_ranker(
+        fit = session.ranking.fit(
             backend="torch",
             method="listwise_lite",
             query_column="query_id",
@@ -148,20 +148,20 @@ def test_listwise_lite_session_path() -> None:
         pytest.skip("torch not usable in this environment")
     assert fit.backend == "torch"
     assert fit.method == "listwise_lite"
-    ev = session.evaluate_ranker(k=5)
+    ev = session.ranking.evaluate(k=5)
     assert set(ev.metrics) >= {"ndcg_at_k", "map_at_k", "mrr_at_k"}
 
 
 def test_backend_mismatch_raises_on_rank() -> None:
     session = _grouped_session()
-    session.fit_ranker(
+    session.ranking.fit(
         backend="sklearn",
         method="pointwise",
         query_column="query_id",
         item_column="item_id",
     )
     with pytest.raises(ValidationError, match="backend"):
-        session.rank(partition="test", k=3, backend="industry")
+        session.ranking.rank(partition="test", k=3, backend="industry")
 
 
 def test_ai_registry_has_ranking_capability_matrix() -> None:
@@ -172,6 +172,6 @@ def test_ai_registry_has_ranking_capability_matrix() -> None:
 
 
 def test_session_ranking_capability_matrix() -> None:
-    matrix = Session.ranking_capability_matrix()
+    matrix = Session.ingest(pd.DataFrame({"x": [1]})).ranking.capability_matrix()
     assert "backends" in matrix
     assert matrix["backends"]["sklearn"]["available"] is True

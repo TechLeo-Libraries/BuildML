@@ -26,7 +26,7 @@ def test_automl_alpha_gate_smoke(tmp_path: Path) -> None:
         .split(test_size=0.2, validation_size=0.2, random_state=0, stratify=True)
     )
 
-    result = session.run_automl(
+    result = session.automl.run(
         method="randomized",
         selection="cv",
         n_trials=10,
@@ -40,7 +40,7 @@ def test_automl_alpha_gate_smoke(tmp_path: Path) -> None:
     assert result.best_family
     assert session.automl_plan is not None
 
-    val = session.evaluate_automl(partition="validation")
+    val = session.automl.evaluate(partition="validation")
     assert val.n_rows > 0
     test = session.evaluate(partition="test")
     assert "accuracy" in test.metrics or "f1_weighted" in test.metrics
@@ -48,7 +48,7 @@ def test_automl_alpha_gate_smoke(tmp_path: Path) -> None:
     before = session.explain("run_automl", moment="before")
     assert before.operation == "run_automl"
 
-    automl_bundle = session.save_automl_bundle(tmp_path / "automl_bundle")
+    automl_bundle = session.automl.save_bundle(tmp_path / "automl_bundle")
     assert (automl_bundle / "meta.json").is_file()
 
     pipeline = session.save_pipeline(tmp_path / "automl_pipeline", evaluate_partition="test")
@@ -59,6 +59,6 @@ def test_automl_alpha_gate_smoke(tmp_path: Path) -> None:
         .set_roles({"x1": "feature", "x2": "feature", "cat": "feature", "y": "target"})
         .split(test_size=0.2, validation_size=0.2, random_state=0, stratify=True)
     )
-    restored.load_automl_bundle(automl_bundle, trusted=True)
-    again = restored.evaluate_automl(partition="test")
+    restored.automl.load_bundle(automl_bundle, trusted=True)
+    again = restored.automl.evaluate(partition="test")
     assert again.n_rows == test.n_rows

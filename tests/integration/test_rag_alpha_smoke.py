@@ -36,14 +36,14 @@ def test_rag_alpha_gate_smoke(tmp_path: Path) -> None:
     ]
 
     session = Session()
-    session.rag_ingest_corpus(docs)
-    session.rag_chunk(size=160, overlap=32)
-    session.rag_embed_and_index(embedder="hashing")
+    session.rag.ingest_corpus(docs)
+    session.rag.chunk(size=160, overlap=32)
+    session.rag.embed_and_index(embedder="hashing")
     assert session.rag_index_result is not None
     assert session.rag_index_result.embedder_id == "buildml.hashing_embed.v1"
     assert session.rag_index_result.n_chunks >= 3
 
-    dense = session.rag_retrieve(
+    dense = session.rag.retrieve(
         "retrieval corpus contamination indexed answers",
         k=3,
         mode="dense",
@@ -51,7 +51,7 @@ def test_rag_alpha_gate_smoke(tmp_path: Path) -> None:
     assert len(dense.hits) == 3
     assert dense.hits[0].doc_id in {"ml", "rag", "leak"}
 
-    hybrid = session.rag_retrieve(
+    hybrid = session.rag.retrieve(
         "retrieval corpus contamination indexed answers",
         k=3,
         mode="hybrid",
@@ -60,7 +60,7 @@ def test_rag_alpha_gate_smoke(tmp_path: Path) -> None:
     assert hybrid.fusion == "rrf"
     assert len(hybrid.hits) == 3
 
-    metrics = session.rag_evaluate(
+    metrics = session.rag.evaluate(
         {
             "retrieval corpus contamination": ["leak"],
             "supervised learning hold out test": ["ml"],
@@ -75,22 +75,22 @@ def test_rag_alpha_gate_smoke(tmp_path: Path) -> None:
     assert session.rag_eval_result is not None
 
     before_chunks = session.rag_index_result.n_chunks
-    session.rag_upsert(
+    session.rag.upsert(
         [{"doc_id": "extra", "text": "Temporary chunk for upsert and delete smoke."}]
     )
     assert session.rag_index_result.n_chunks >= before_chunks
-    session.rag_delete(doc_ids=["extra"])
+    session.rag.delete(doc_ids=["extra"])
     assert session.rag_index_result.n_chunks == before_chunks
 
-    bundle = session.save_rag_bundle(tmp_path / "rag_bundle")
+    bundle = session.rag.save_bundle(tmp_path / "rag_bundle")
     assert (bundle / "meta.json").is_file()
     assert (bundle / "chunks.jsonl").is_file()
     assert (bundle / "embeddings.npy").is_file()
 
-    restored = Session().load_rag_bundle(bundle)
+    restored = Session().rag.load_bundle(bundle)
     assert restored.rag_index_result is not None
     assert restored.rag_index_result.embedder_id == "buildml.hashing_embed.v1"
-    again = restored.rag_retrieve("retrieval corpus contamination indexed answers", k=3)
+    again = restored.rag.retrieve("retrieval corpus contamination indexed answers", k=3)
     assert again.hits[0].doc_id == dense.hits[0].doc_id
     assert again.hits[0].chunk_id == dense.hits[0].chunk_id
 

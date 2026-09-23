@@ -19,7 +19,7 @@ lexical hashing + dense-only retrieve (CI-safe, disclosed in results).
 
 **Go deeper:** [RAG deep](rag-deep.md) ·
 Paste: [`examples/rag_hashing_loop.py`](../examples/rag_hashing_loop.py) ·
-Evidence: [support-kb-rag](../proofs/support-kb-rag/).
+Evidence: [support-kb-rag](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/support-kb-rag).
 [Artifacts](artifacts-checkpoints-bundles.md) ·
 [AI tools](ai-tools-operator-patterns.md) (RAG on the allowlist).
 

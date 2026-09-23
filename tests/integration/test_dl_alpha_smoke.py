@@ -61,11 +61,11 @@ def test_dl_alpha_gate_smoke(tmp_path: Path) -> None:
         .set_roles({"a": "feature", "b": "feature", "label": "target"})
         .split(test_size=0.2, validation_size=0.2, stratify=True, random_state=11)
     )
-    loaders = session.make_torch_loaders(batch_size=16, normalize=True, seed=11)
+    loaders = session.dl.make_loaders(batch_size=16, normalize=True, seed=11)
     assert loaders.report.normalize is True
     assert "train" in loaders.loaders
 
-    session.fit_torch(
+    session.dl.fit(
         TinyMLP(),
         epochs=4,
         learning_rate=5e-3,
@@ -76,18 +76,18 @@ def test_dl_alpha_gate_smoke(tmp_path: Path) -> None:
     assert session.dl_train_result is not None
     assert session.dl_train_result.n_epochs_ran >= 1
 
-    evaluation = session.evaluate_torch(partition="test")
+    evaluation = session.dl.evaluate(partition="test")
     assert evaluation.partition == "test"
     assert evaluation.n_rows > 0
     assert "accuracy" in evaluation.metrics
     before_acc = evaluation.metrics["accuracy"]
 
-    curve = session.torch_training_curve()
+    curve = session.dl.training_curve()
     assert curve.epochs
     assert curve.disclosures
     assert any("Device resolved=" in item for item in curve.disclosures)
 
-    bundle = session.save_torch_bundle(tmp_path / "torch_bundle")
+    bundle = session.dl.save_bundle(tmp_path / "torch_bundle")
     assert (bundle / "meta.json").is_file()
     assert (bundle / "trainer.pt").is_file()
 
@@ -95,14 +95,14 @@ def test_dl_alpha_gate_smoke(tmp_path: Path) -> None:
         Session.ingest(frame)
         .set_roles({"a": "feature", "b": "feature", "label": "target"})
         .split(test_size=0.2, validation_size=0.2, stratify=True, random_state=11)
-        .load_torch_bundle(bundle, TinyMLP(), map_location="cpu", trusted=True)
+        .dl.load_bundle(bundle, TinyMLP(), map_location="cpu", trusted=True)
     )
-    restored.make_torch_loaders(batch_size=16, normalize=True, seed=11)
-    again = restored.evaluate_torch(partition="test")
+    restored.dl.make_loaders(batch_size=16, normalize=True, seed=11)
+    again = restored.dl.evaluate(partition="test")
     assert again.metrics["accuracy"] == pytest.approx(before_acc, abs=1e-5)
 
     epochs_before = restored.dl_train_result.n_epochs_ran
-    restored.fit_torch(TinyMLP(), epochs=1, resume=True, device="cpu", learning_rate=5e-3)
+    restored.dl.fit(TinyMLP(), epochs=1, resume=True, device="cpu", learning_rate=5e-3)
     assert restored.dl_train_result.n_epochs_ran >= epochs_before
 
     before = session.explain("fit_torch", moment="before")

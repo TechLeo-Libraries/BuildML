@@ -319,7 +319,7 @@ RL_NOTES: dict[str, ConceptNote] = {
             ),
             worked_example_pattern=(
                 "session.rl.fit(mode='tabular_q', algorithm='sarsa', "
-                "env_id='CliffWalking-v0', n_episodes=2000).",
+                "env_id='CliffWalking-v1', n_episodes=2000).",
             ),
             related_concepts=(
                 "rl-tabular-q-learning",

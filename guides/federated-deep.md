@@ -24,7 +24,7 @@ client column, how many rounds, `client_fraction`, and (for FedProx)
 `mu`.
 
 Short on-ramp: [federated quickstart](quickstart-federated.md).
-Proof: [federated-hospital-sim](../proofs/federated-hospital-sim/).
+Proof: [federated-hospital-sim](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/federated-hospital-sim).
 
 ## A local FedAvg loop
 

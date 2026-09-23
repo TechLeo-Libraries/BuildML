@@ -179,5 +179,5 @@ def test_anomaly_bundle_requires_trusted(tmp_path: Path) -> None:
     frame = pd.DataFrame({"a": [1.0, 2.0], "b": [1.0, 1.1]})
     path2 = save_anomaly_bundle(tmp_path / "anomaly2", plan)
     with pytest.raises(ValidationError, match="trusted=True"):
-        Session.ingest(frame).load_anomaly_bundle(path2)
-    Session.ingest(frame).load_anomaly_bundle(path2, trusted=True)
+        Session.ingest(frame).anomaly.load_bundle(path2)
+    Session.ingest(frame).anomaly.load_bundle(path2, trusted=True)
