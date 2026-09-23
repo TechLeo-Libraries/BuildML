@@ -24,14 +24,17 @@ def protected_environment():
                                   "reviewers": [{"type": "User", "reviewer": {"id": 42}}]}]}
 
 
-def test_protected_environment():
-    gate.validate_environment(protected_environment())
+@pytest.mark.parametrize("prevent_self_review", [True, False])
+def test_protected_environment(prevent_self_review):
+    payload = protected_environment()
+    payload["protection_rules"][0]["prevent_self_review"] = prevent_self_review
+    gate.validate_environment(payload)
 
 
 @pytest.mark.parametrize("change", [
     {"name": "other"}, {"can_admins_bypass": True}, {"can_admins_bypass": None},
     {"protection_rules": []},
-    {"protection_rules": [{"type": "required_reviewers", "prevent_self_review": False,
+    {"protection_rules": [{"type": "required_reviewers", "prevent_self_review": None,
                            "reviewers": [42]}]},
     {"protection_rules": [{"type": "required_reviewers", "prevent_self_review": True,
                            "reviewers": []}]},
