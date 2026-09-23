@@ -6,7 +6,7 @@ For supported APIs, see the [stability policy](stability.md).
 
 ## Release history
 
-BuildML 2.6.2 is the release documented by this checkout. Releases
+BuildML 2.6.3 is the release documented by this checkout. Releases
 `2.4.0a3`, `2.4.0`, `2.5.0`, and `2.6.0` were yanked because their wheels
 omitted `operation_index.json` and could not import. Version `2.6.1` corrected
 the packaging; `2.6.2` includes dependency and backend compatibility fixes.

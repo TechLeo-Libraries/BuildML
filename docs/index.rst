@@ -14,7 +14,8 @@ safeguards, fold-local preprocessing, contextual teaching, workflow
 guidance, checkpointing, and auditable export live on that same object.
 
 Install with ``pip install buildml`` (Python 3.10 through 3.13). This repo
-is BuildML 2.6.2, the current stable Session line. PyPI serves 2.6.2.
+contains BuildML 2.6.3. The install command selects the latest published
+stable release from PyPI.
 
 Start here
 ==========

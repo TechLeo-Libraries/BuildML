@@ -8,6 +8,31 @@ with pre-release tags for alpha (`aN`) builds.
 
 ## [Unreleased]
 
+## [2.6.3] - 2026-09-23
+
+### Fixed
+
+- MAPIE jackknife-plus regression uses leave-one-out cross-conformal fitting.
+- Fold-local preprocessing implements the scikit-learn estimator interface.
+- Torch adapters safely handle read-only input arrays, and label validation
+  rejects unknown labels before categorical conversion.
+- Online passive-aggressive learning supports current scikit-learn releases.
+- PuLP optimization supports current solver interfaces and requires an optimal
+  solution before reporting an exact result.
+- Reinforcement-learning examples use supported Gymnasium environments.
+- Documentation references, source links, and workflow explanations have been
+  corrected and checked against the implemented behavior.
+
+### Changed
+
+- Documentation builds enforce strict reference checks. CI exercises real
+  optional backends and installed wheels across Windows, Linux, and macOS on
+  Python 3.10–3.13.
+- Tests use supported facades and explicitly check expected compatibility
+  notices, making unexpected warnings easier to identify.
+- Releases use PyPI Trusted Publishing with a protected GitHub environment
+  and verification of the tested distribution hashes and source commit.
+
 ## [2.6.2] - 2026-09-17
 
 ### Changed

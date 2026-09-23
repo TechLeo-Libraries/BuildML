@@ -1,7 +1,7 @@
 Current capabilities
 ====================
 
-BuildML 2.6.2 centers on :class:`buildml.Session`. Classical tabular work
+BuildML 2.6.3 centers on :class:`buildml.Session`. Classical tabular work
 is the core path. Optional domains attach to the same Session, the same
 history, and the same explain catalog.
 A Session is a unified, stateful ML lifecycle. Enforced leakage
