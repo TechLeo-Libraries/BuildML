@@ -55,8 +55,9 @@ Existing PyPI distributions are not silently skipped or replaced.
 
 Publishing uses OIDC Trusted Publishing. Register owner `TechLeo-Libraries`,
 repository `BuildML`, workflow `release.yml`, and environment `pypi-release` in
-PyPI. Configure required reviewers, prevent self-review and disable administrator
-bypass in the GitHub Environment before attempting publication. The workflow
+PyPI. Configure required reviewers and disable administrator bypass in the GitHub
+Environment before attempting publication. Self-approval is allowed for the
+single-maintainer workflow; manual deployment approval remains required. The workflow
 fails closed if it cannot confirm those protections. See the
 [release gate setup](https://github.com/TechLeo-Libraries/BuildML/blob/main/review/release/RELEASE_GATES.md)
 for the complete configuration and approval procedure.

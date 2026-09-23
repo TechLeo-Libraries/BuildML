@@ -11,7 +11,7 @@ that already exist on PyPI.
 The `pypi-release` GitHub Environment records human acceptance for the specific
 workflow run. A preflight job queries its existing configuration before any job
 requests that environment. Missing environments, inaccessible API responses,
-missing required reviewers, self-review permission, and administrator bypass all
+missing required reviewers, an unspecified self-review policy, and administrator bypass all
 fail the gate. The publishing job checks the configuration again after approval.
 Its environment link points to the run containing CI and candidate evidence.
 
@@ -25,20 +25,22 @@ in `artifacts/validation-gaps/release-environment.json`. On 2026-09-23 the PyPI
 Trusted Publisher was registered and verified for `TechLeo-Libraries/BuildML`,
 `release.yml`, and environment `pypi-release`. Additional external remediation
 review was waived by the user; GitHub deployment protections remain active.
-Candidate-specific deployment approval remains pending.
+On 2026-09-23 the owner authorized self-approval for the single-maintainer
+workflow. Required reviewers, disabled administrator bypass, tag restrictions,
+candidate verification, and Trusted Publishing remain required.
 
 Required configuration and operating procedure:
 
 1. Create `pypi-release` in repository Settings, Environments. Set the human
-   reviewer as a required reviewer, enable Prevent self-review, and disable
+   reviewer as a required reviewer, allow self-approval, and disable
    administrator bypass. Configure deployment tag restrictions for release tags.
 2. Register a PyPI Trusted Publisher for this repository, `release.yml`, and the
    exact environment name `pypi-release`. Publishing uses OIDC; a repository API
    token is no longer a fallback.
 3. Ensure the workflow token can read environment settings. API permission or
    plan restrictions fail closed and must be resolved before publishing.
-4. Have another authorized account initiate the release if the designated human
-   reviewer will approve it. Prevent self-review prohibits approving one's own run.
+4. The designated reviewer may initiate the release and approve its deployment.
+   Self-approval does not skip the manual deployment approval step.
 5. Review the exact commit, candidate hashes, all CI jobs and matrix evidence in
    the run before approving its deployment. Earlier review acceptance does not
    approve a changed candidate. Repository administrators should restrict workflow

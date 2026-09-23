@@ -25,8 +25,8 @@ def validate_environment(payload: dict) -> None:
     if len(reviewers) != 1:
         raise ValueError("Exactly one required-reviewers rule is required")
     rule = reviewers[0]
-    if rule.get("prevent_self_review") is not True or not rule.get("reviewers"):
-        raise ValueError("Named reviewers and prevention of self-review are required")
+    if not isinstance(rule.get("prevent_self_review"), bool) or not rule.get("reviewers"):
+        raise ValueError("Named reviewers and an explicit self-review policy are required")
 
 
 def validate_candidate(directory: Path, commit: str, tag: str | None) -> None:
