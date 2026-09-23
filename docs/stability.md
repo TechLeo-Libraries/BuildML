@@ -1,11 +1,10 @@
 # BuildML 2.x surface stability policy
 
-BuildML **2.6.2** continues the stable Session 2.x line (first stable was
-**2.4.0**). This repo is **2.6.2**. `pip install buildml` resolves
-**2.6.2** on PyPI
-([project page](https://pypi.org/project/buildml/2.6.2/)). Wheels
+BuildML **2.6.3** continues the stable Session 2.x line (first stable was
+**2.4.0**). This repo is **2.6.3**. `pip install buildml` selects the latest
+published stable release on [PyPI](https://pypi.org/project/buildml/). Wheels
 **2.4.0a3–2.6.0** omit `operation_index.json` and cannot import; install
-**2.6.2** (or pin **2.6.1**). This policy describes supported APIs,
+**2.6.1 or later**. This policy describes supported APIs,
 deprecation rules, and dependency availability.
 
 ## What “stable” means here

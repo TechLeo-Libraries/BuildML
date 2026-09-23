@@ -21,8 +21,11 @@ On 2026-09-22 the GitHub `pypi-release` environment was created and its live API
 response passed `check_release_gate.validate_environment`: LeonardLeo is the
 required reviewer, self-review is prevented, administrator bypass is disabled,
 and custom deployment policies allow `v2.*` and `v3.*` tags. Evidence is retained
-in `artifacts/validation-gaps/release-environment.json`. PyPI publisher registration
-and candidate-specific deployment approval remain pending.
+in `artifacts/validation-gaps/release-environment.json`. On 2026-09-23 the PyPI
+Trusted Publisher was registered and verified for `TechLeo-Libraries/BuildML`,
+`release.yml`, and environment `pypi-release`. Additional external remediation
+review was waived by the user; GitHub deployment protections remain active.
+Candidate-specific deployment approval remains pending.
 
 Required configuration and operating procedure:
 

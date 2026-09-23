@@ -39,8 +39,8 @@ Pandas is the sklearn-facing materialization path. Polars and DuckDB
 help with ingest and engine-aware prep. They do not make every Session
 operation lazy or out-of-core.
 
-Version 2.6.2 is the current Session 2.x line. PyPI serves
-`2.6.2 <https://pypi.org/project/buildml/2.6.2/>`_. See :doc:`stability` and
+This documentation covers version 2.6.3 of the Session 2.x line. Published
+releases are available on `PyPI <https://pypi.org/project/buildml/>`_. See :doc:`stability` and
 :doc:`session-facade-migration` for the public API policy.
 
 Start with :doc:`usage`. The ideas sit in :doc:`concepts`. Tutorials

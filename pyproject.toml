@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "buildml"
-version = "2.6.2"
+version = "2.6.3"
 description = "Python machine-learning library where one object holds your data, split, preprocessing, model, and run history, and that same object also runs forecasting, AutoML, fairness, recommenders, RAG, graphs, NLP, Torch, and more."
 readme = "README.md"
 license = { text = "Apache-2.0" }
