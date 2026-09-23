@@ -36,11 +36,11 @@ def test_semisupervised_alpha_gate_smoke(tmp_path: Path) -> None:
         roles=dict(session.dataset.roles),
     )
 
-    fit = session.fit_semisupervised(method="label_propagation", n_neighbors=7)
+    fit = session.semisupervised.fit(method="label_propagation", n_neighbors=7)
     assert fit.n_unlabeled_train > 0
     assert session.semisupervised_plan is not None
 
-    ev = session.evaluate_semisupervised(partition="validation")
+    ev = session.semisupervised.evaluate(partition="validation")
     assert ev.partition == "validation"
     assert "accuracy" in ev.metrics
     assert session.semisupervised_eval_result is not None
@@ -48,8 +48,8 @@ def test_semisupervised_alpha_gate_smoke(tmp_path: Path) -> None:
     before = session.explain("fit_semisupervised", moment="before")
     assert before.prerequisite_status.get("split") is True
 
-    first = session.predict_semisupervised(partition="validation")
-    bundle = session.save_semisupervised_bundle(tmp_path / "semi_bundle")
+    first = session.semisupervised.predict(partition="validation")
+    bundle = session.semisupervised.save_bundle(tmp_path / "semi_bundle")
     # Restore into a Session that keeps the same masked frame + SplitPlan
     # (stratify cannot run on NaN targets).
     restored = Session.ingest(session.to_pandas()).set_roles(
@@ -57,6 +57,6 @@ def test_semisupervised_alpha_gate_smoke(tmp_path: Path) -> None:
     )
     restored._split_plan = session.split_plan
     restored._dataset = session.dataset
-    restored.load_semisupervised_bundle(bundle, trusted=True)
-    again = restored.predict_semisupervised(partition="validation")
+    restored.semisupervised.load_bundle(bundle, trusted=True)
+    again = restored.semisupervised.predict(partition="validation")
     assert again.predictions == first.predictions

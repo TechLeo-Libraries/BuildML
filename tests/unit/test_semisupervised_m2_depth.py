@@ -81,7 +81,7 @@ def test_needs_labeled_rows() -> None:
         .scale(method="standard")
     )
     with pytest.raises(ValidationError, match="at least 2 labeled"):
-        session.fit_semisupervised()
+        session.semisupervised.fit()
 
 
 def test_explain_before() -> None:

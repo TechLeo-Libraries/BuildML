@@ -28,14 +28,14 @@ def test_multitask_alpha_smoke(tmp_path: Path) -> None:
         .scale(method="standard")
     )
 
-    fit = session.fit_multitask(
+    fit = session.multitask.fit(
         method="multi_output",
         task="classification",
         base_estimator="logistic_regression",
     )
     assert fit.n_tasks == 2
 
-    ev = session.evaluate_multitask(partition="validation")
+    ev = session.multitask.evaluate(partition="validation")
     assert "mean_accuracy" in ev.metrics
     assert set(ev.per_task_metrics) == {"t1", "t2"}
 
@@ -44,7 +44,7 @@ def test_multitask_alpha_smoke(tmp_path: Path) -> None:
     assert status.get("has_multitask_plan") is True
     assert status.get("n_tasks") == 2
 
-    bundle = session.save_multitask_bundle(tmp_path / "mt_bundle")
+    bundle = session.multitask.save_bundle(tmp_path / "mt_bundle")
     other = (
         Session.ingest(frame)
         .set_roles(
@@ -53,7 +53,7 @@ def test_multitask_alpha_smoke(tmp_path: Path) -> None:
     )
     other._split_plan = session.split_plan
     other._dataset = session.dataset
-    other.load_multitask_bundle(bundle, trusted=True)
-    ev2 = other.evaluate_multitask(partition="test")
+    other.multitask.load_bundle(bundle, trusted=True)
+    ev2 = other.multitask.evaluate(partition="test")
     assert "mean_accuracy" in ev2.metrics
     assert ev2.n_rows > 0

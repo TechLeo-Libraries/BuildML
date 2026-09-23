@@ -237,7 +237,7 @@ def test_tabular_q_requires_the_rl_extra_when_absent() -> None:
     if gymnasium_available():
         pytest.skip("gymnasium installed")
     with pytest.raises(MissingExtraError, match="rl"):
-        _tiny_session().fit_rl(mode="tabular_q", n_episodes=5)
+        _tiny_session().rl.fit(mode="tabular_q", n_episodes=5)
 
 
 # --------------------------------------------------------------------------
@@ -287,8 +287,10 @@ def test_q_learning_solves_deterministic_frozenlake() -> None:
 @requires_gym
 @pytest.mark.parametrize("algorithm", list(TABULAR_ALGORITHMS))
 def test_every_tabular_algorithm_learns_the_cliff(algorithm: str) -> None:
+    import gymnasium as gym
+
     policy, metrics, _disclosures, _warnings = train_tabular_control(
-        env_id="CliffWalking-v0",
+        env_id="CliffWalking-v1" if "CliffWalking-v1" in gym.envs.registry else "CliffWalking-v0",
         algorithm=algorithm,
         n_episodes=400,
         max_steps=200,
@@ -310,8 +312,10 @@ def test_every_tabular_algorithm_learns_the_cliff(algorithm: str) -> None:
 @requires_gym
 def test_q_learning_recovers_the_optimal_cliff_path() -> None:
     """Off-policy control learns the -13 cliff-edge path its behaviour avoids."""
+    import gymnasium as gym
+
     policy, _metrics, _disclosures, _warnings = train_tabular_control(
-        env_id="CliffWalking-v0",
+        env_id="CliffWalking-v1" if "CliffWalking-v1" in gym.envs.registry else "CliffWalking-v0",
         algorithm="q_learning",
         n_episodes=500,
         max_steps=200,
@@ -375,7 +379,7 @@ def test_continuous_action_envs_are_refused() -> None:
 @requires_gym
 def test_session_tabular_q_fit_act_evaluate_bundle(tmp_path: Path) -> None:
     session = _tiny_session()
-    fit = session.fit_rl(
+    fit = session.rl.fit(
         mode="tabular_q",
         algorithm="q_learning",
         env_id="FrozenLake-v1",
@@ -398,18 +402,18 @@ def test_session_tabular_q_fit_act_evaluate_bundle(tmp_path: Path) -> None:
     assert plan.config["n_bins"] == 8
     assert plan.config["epsilon_decay"] == 0.99
 
-    ev = session.evaluate_rl(n_episodes=10, max_steps=100)
+    ev = session.rl.evaluate(n_episodes=10, max_steps=100)
     assert ev.offline is False
     assert "mean_return" in ev.metrics
     assert "unseen_state_rate" in ev.metrics
 
-    act = session.act_rl(observations=[0, 1, 2])
+    act = session.rl.act(observations=[0, 1, 2])
     assert act.n_rows == 3
     assert all(0 <= int(a) < 4 for a in act.actions)
     assert len(act.scores[0]) == 4
 
     out = tmp_path / "tabular_bundle"
-    session.save_rl_bundle(out)
+    session.rl.save_bundle(out)
     assert (out / "meta.json").is_file()
 
     other = _tiny_session()
@@ -425,7 +429,7 @@ def test_session_tabular_q_fit_act_evaluate_bundle(tmp_path: Path) -> None:
 @requires_gym
 def test_session_algorithm_alone_routes_to_tabular() -> None:
     session = _tiny_session()
-    fit = session.fit_rl(
+    fit = session.rl.fit(
         algorithm="expected_sarsa",
         env_id="FrozenLake-v1",
         n_episodes=50,
@@ -439,7 +443,7 @@ def test_session_algorithm_alone_routes_to_tabular() -> None:
 @requires_gym
 def test_walkthrough_reports_tabular_mode() -> None:
     session = _tiny_session()
-    session.fit_rl(
+    session.rl.fit(
         mode="tabular_q",
         env_id="FrozenLake-v1",
         n_episodes=30,

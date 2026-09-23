@@ -44,9 +44,9 @@ def test_pyod_ecod_fit_evaluate() -> None:
         .split(test_size=0.25, validation_size=0.15, stratify=True, random_state=0)
         .scale(method="standard")
     )
-    fit = session.fit_anomaly(backend="pyod", method="ecod", contamination=0.1)
+    fit = session.anomaly.fit(backend="pyod", method="ecod", contamination=0.1)
     assert fit.backend == "pyod"
-    ev = session.evaluate_anomaly(partition="test")
+    ev = session.anomaly.evaluate(partition="test")
     assert ev.labeled_metrics["average_precision"] >= 0.0
 
 
@@ -59,7 +59,7 @@ def test_pyod_catalog_methods(method: str) -> None:
         .split(test_size=0.25, stratify=True, random_state=0)
         .scale(method="standard")
     )
-    fit = session.fit_anomaly(backend="pyod", method=method, contamination=0.1)
+    fit = session.anomaly.fit(backend="pyod", method=method, contamination=0.1)
     assert fit.method == method
 
 
@@ -73,17 +73,24 @@ def test_pyod_missing_extra_raises() -> None:
         .scale(method="standard")
     )
     with pytest.raises(MissingExtraError):
-        session.fit_anomaly(backend="pyod", method="ecod")
+        session.anomaly.fit(backend="pyod", method="ecod")
 
 
 @pytest.mark.skipif(not torch_spec_available(), reason="torch not installed")
 def test_torch_autoencoder_fit() -> None:
-    import importlib.util
-
-    if importlib.util.find_spec("torch") is None:
-        pytest.skip("torch not installed")
-    # Avoid hard crashes on broken torch wheels (common on Windows CI/dev boxes).
-    pytest.skip("torch autoencoder integration test skipped unless run in torch CI")
+    session = (
+        Session.ingest(_frame(n_normal=40, n_fraud=8))
+        .set_roles({"a": "feature", "b": "feature", "is_fraud": "target"})
+        .split(test_size=0.25, stratify=True, random_state=0)
+        .scale(method="standard")
+    )
+    fit = session.anomaly.fit(
+        backend="torch", method="autoencoder", ae_epochs=2,
+        ae_batch_size=16, latent_dim=1, random_state=0,
+    )
+    assert fit.backend == "torch"
+    evaluation = session.anomaly.evaluate(partition="test")
+    assert np.isfinite(evaluation.labeled_metrics["average_precision"])
 
 
 def test_tune_anomaly_threshold_validation_only() -> None:
@@ -93,12 +100,12 @@ def test_tune_anomaly_threshold_validation_only() -> None:
         .split(test_size=0.25, validation_size=0.15, stratify=True, random_state=0)
         .scale(method="standard")
     )
-    session.fit_anomaly(method="isolation_forest", contamination=0.1)
-    tuned = session.tune_anomaly_threshold(partition="validation", metric="f1")
+    session.anomaly.fit(method="isolation_forest", contamination=0.1)
+    tuned = session.anomaly.tune_threshold(partition="validation", metric="f1")
     assert tuned.threshold != tuned.old_threshold or tuned.metric == "f1"
     assert session.anomaly_plan.threshold_policy == "validation_tuned"
     with pytest.raises(ValidationError, match="Refusing to tune"):
-        session.tune_anomaly_threshold(partition="test")
+        session.anomaly.tune_threshold(partition="test")
 
 
 def test_supervised_xgb_skip_without_extra() -> None:
@@ -113,7 +120,7 @@ def test_supervised_xgb_skip_without_extra() -> None:
         .scale(method="standard")
     )
     with pytest.raises(MissingExtraError):
-        session.fit_anomaly(method="supervised_xgb", mode="supervised")
+        session.anomaly.fit(method="supervised_xgb", mode="supervised")
 
 
 def test_anomaly_bundle_roundtrip_backend(tmp_path: Path) -> None:
@@ -123,11 +130,11 @@ def test_anomaly_bundle_roundtrip_backend(tmp_path: Path) -> None:
         .split(test_size=0.25, stratify=True, random_state=0)
         .scale(method="standard")
     )
-    session.fit_anomaly(method="isolation_forest", contamination=0.1)
-    path = session.save_anomaly_bundle(tmp_path / "bundle")
+    session.anomaly.fit(method="isolation_forest", contamination=0.1)
+    path = session.anomaly.save_bundle(tmp_path / "bundle")
     fresh = Session.ingest(session.to_pandas()).set_roles(
         {"a": "feature", "b": "feature", "is_fraud": "target"}
     )
     fresh.split(test_size=0.25, stratify=True, random_state=0).scale(method="standard")
-    fresh.load_anomaly_bundle(path, trusted=True)
+    fresh.anomaly.load_bundle(path, trusted=True)
     assert fresh.anomaly_plan.backend == "sklearn"

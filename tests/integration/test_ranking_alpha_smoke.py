@@ -49,20 +49,20 @@ def test_ranking_alpha_smoke(tmp_path: Path) -> None:
         .group_split(test_size=0.25, validation_size=0.15, random_state=0)
     )
 
-    fit = session.fit_ranker(
+    fit = session.ranking.fit(
         method="pointwise",
         query_column="query_id",
         item_column="item_id",
     )
     assert fit.n_train_rows > 0
     assert fit.n_train_queries > 0
-    ranked = session.rank(partition="test", k=5)
+    ranked = session.ranking.rank(partition="test", k=5)
     assert ranked.n_queries > 0
-    ev = session.evaluate_ranker(partition="test", k=5)
+    ev = session.ranking.evaluate(partition="test", k=5)
     assert set(ev.metrics) >= {"ndcg_at_k", "map_at_k", "mrr_at_k"}
 
     bundle = tmp_path / "ranker_bundle"
-    session.save_ranker_bundle(bundle)
+    session.ranking.save_bundle(bundle)
     assert (bundle / "meta.json").is_file()
     assert (bundle / "ranker_plan.joblib").is_file()
 
@@ -80,9 +80,9 @@ def test_ranking_alpha_smoke(tmp_path: Path) -> None:
         )
         .group_split(test_size=0.25, validation_size=0.15, random_state=0)
     )
-    other.load_ranker_bundle(bundle, trusted=True)
+    other.ranking.load_bundle(bundle, trusted=True)
     assert other.ranker_plan is not None
-    assert other.evaluate_ranker(k=5).n_holdout_rows > 0
+    assert other.ranking.evaluate(k=5).n_holdout_rows > 0
 
     walk = session.walkthrough()
     assert walk.ranking_status.get("has_ranker_plan") is True

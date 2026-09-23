@@ -14,7 +14,7 @@ unless `BUILDML_ALLOW_CBR_INDUSTRY_WINDOWS=1`.
 
 [CBR deep](cbr-deep.md) ·
 Paste: [`examples/cbr_knn_loop.py`](../examples/cbr_knn_loop.py) ·
-Evidence: [case-memory-claims](../proofs/case-memory-claims/)
+Evidence: [case-memory-claims](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/case-memory-claims)
 
 ```python
 import numpy as np

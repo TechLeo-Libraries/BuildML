@@ -95,7 +95,7 @@ def test_needs_labeled_rows() -> None:
         .scale(method="standard")
     )
     with pytest.raises(ValidationError, match="at least 2 labeled"):
-        session.fit_active_learner()
+        session.active_learning.fit()
 
 
 def test_null_label_refused() -> None:
@@ -106,10 +106,10 @@ def test_null_label_refused() -> None:
         .scale(method="standard")
     )
     session, _ = _mask(session)
-    session.fit_active_learner(label_budget=5)
-    q = session.suggest_query(batch_size=1)
+    session.active_learning.fit(label_budget=5)
+    q = session.active_learning.suggest_query(batch_size=1)
     with pytest.raises(ValidationError, match="null label"):
-        session.label_rows(indices=q.indices, labels=[np.nan])
+        session.active_learning.label_rows(indices=q.indices, labels=[np.nan])
 
 
 def test_explain_before() -> None:

@@ -83,7 +83,7 @@ def test_tabular_audio_fusion_fit_evaluate() -> None:
         )
         .split(test_size=0.25, validation_size=0.2, stratify=True, random_state=0)
     )
-    bundle = session.make_audio_multimodal_torch_loaders(
+    bundle = session.dl.make_audio_loaders(
         audio_column="audio",
         audio_sample_rate=_AUDIO_SR,
         audio_max_samples=_AUDIO_LEN,
@@ -92,13 +92,13 @@ def test_tabular_audio_fusion_fit_evaluate() -> None:
     )
     assert getattr(bundle, "modality", None) == "tabular_audio_fusion"
     assert list(getattr(bundle, "input_layout", ())) == ["numeric", "audio"]
-    session.fit_torch(epochs=2, device="cpu")
+    session.dl.fit(epochs=2, device="cpu")
     assert session.dl_train_result is not None
     mod = session.dl_train_result.module
     assert getattr(mod, "audio_channels", 0) == 1
     assert getattr(mod, "n_numeric", 0) == 2
     assert hasattr(mod, "audio_net")
-    ev = session.evaluate_torch(partition="validation")
+    ev = session.dl.evaluate(partition="validation")
     assert ev.n_rows > 0
 
 
@@ -110,7 +110,7 @@ def test_text_audio_and_richer_fusion() -> None:
         .set_roles({"text": "feature", "audio": "feature", "y": "target"})
         .split(test_size=0.25, validation_size=0.2, stratify=True, random_state=1)
     )
-    b1 = text_aud.make_audio_multimodal_torch_loaders(
+    b1 = text_aud.dl.make_audio_loaders(
         audio_column="audio",
         text_column="text",
         audio_sample_rate=_AUDIO_SR,
@@ -118,7 +118,7 @@ def test_text_audio_and_richer_fusion() -> None:
         batch_size=8,
     )
     assert getattr(b1, "modality", None) == "text_audio_fusion"
-    text_aud.fit_torch(epochs=1, device="cpu")
+    text_aud.dl.fit(epochs=1, device="cpu")
 
     rich = (
         Session.ingest(_audio_all_frame(48))
@@ -134,7 +134,7 @@ def test_text_audio_and_richer_fusion() -> None:
         )
         .split(test_size=0.25, validation_size=0.2, stratify=True, random_state=2)
     )
-    b2 = rich.make_multimodal_torch_loaders(
+    b2 = rich.dl.make_multimodal_loaders(
         audio_column="audio",
         image_column="image",
         text_column="text",
@@ -151,7 +151,7 @@ def test_text_audio_and_richer_fusion() -> None:
         "image",
         "audio",
     ]
-    rich.fit_torch(epochs=1, device="cpu")
+    rich.dl.fit(epochs=1, device="cpu")
     assert rich.dl_train_result is not None
 
 
@@ -172,7 +172,7 @@ def test_audio_waveform_stats_are_train_only() -> None:
     for i in test_idx:
         frame.at[i, "audio"] = np.ones(_AUDIO_LEN, dtype=np.float32)
 
-    bundle = session.make_audio_multimodal_torch_loaders(
+    bundle = session.dl.make_audio_loaders(
         audio_column="audio",
         audio_sample_rate=_AUDIO_SR,
         audio_max_samples=_AUDIO_LEN,
@@ -198,6 +198,7 @@ def test_audio_waveform_stats_are_train_only() -> None:
 
 
 @pytest.mark.skipif(not _TORCH_SPEC, reason="torch not installed")
+@pytest.mark.usefixtures("torchscript_deprecation_contract")
 def test_path_audio_cells_and_export(tmp_path: Path) -> None:
     _require_torch_or_skip()
     try:
@@ -229,14 +230,14 @@ def test_path_audio_cells_and_export(tmp_path: Path) -> None:
         .set_roles({"x1": "feature", "audio": "feature", "y": "target"})
         .split(test_size=0.25, validation_size=0.2, stratify=True, random_state=0)
     )
-    session.make_audio_multimodal_torch_loaders(
+    session.dl.make_audio_loaders(
         audio_column="audio",
         audio_sample_rate=_AUDIO_SR,
         audio_max_samples=_AUDIO_LEN,
         batch_size=8,
         seed=0,
     )
-    session.fit_torch(epochs=1, device="cpu")
+    session.dl.fit(epochs=1, device="cpu")
     mod = session.dl_train_result.module.cpu().eval()
     batch = next(iter(session._torch_loaders.loaders["train"]))
     x_tab, audio, _y = batch
@@ -245,7 +246,7 @@ def test_path_audio_cells_and_export(tmp_path: Path) -> None:
         y_args = mod(x_tab, audio)
     assert y_tuple.shape == y_args.shape
     out = tmp_path / "aud_mm.ts.pt"
-    result = session.export_torch(out, format="torchscript")
+    result = session.dl.export(out, format="torchscript")
     assert result.path.exists()
     loaded = load_torchscript(result.path, trusted=True)
     with torch.no_grad():
@@ -263,17 +264,17 @@ def test_export_refuses_silent_tabular_rebuild_after_audio_fit(tmp_path: Path) -
         )
         .split(test_size=0.25, validation_size=0.2, stratify=True, random_state=0)
     )
-    session.make_audio_multimodal_torch_loaders(
+    session.dl.make_audio_loaders(
         audio_column="audio",
         audio_sample_rate=_AUDIO_SR,
         audio_max_samples=_AUDIO_LEN,
         batch_size=8,
         seed=0,
     )
-    session.fit_torch(epochs=1, device="cpu")
+    session.dl.fit(epochs=1, device="cpu")
     session._torch_loaders = None
     with pytest.raises(ValidationError, match="Refusing silent tabular loader rebuild"):
-        session.export_torch(tmp_path / "bad.ts.pt", format="torchscript")
+        session.dl.export(tmp_path / "bad.ts.pt", format="torchscript")
 
 
 @pytest.mark.skipif(not _TORCH_SPEC, reason="torch not installed")
@@ -286,19 +287,19 @@ def test_evaluate_and_fit_refuse_silent_tabular_rebuild_after_audio_fit() -> Non
         )
         .split(test_size=0.25, validation_size=0.2, stratify=True, random_state=0)
     )
-    session.make_audio_multimodal_torch_loaders(
+    session.dl.make_audio_loaders(
         audio_column="audio",
         audio_sample_rate=_AUDIO_SR,
         audio_max_samples=_AUDIO_LEN,
         batch_size=8,
         seed=0,
     )
-    session.fit_torch(epochs=1, device="cpu")
+    session.dl.fit(epochs=1, device="cpu")
     session._torch_loaders = None
     with pytest.raises(ValidationError, match="Refusing silent tabular loader rebuild"):
-        session.evaluate_torch(partition="validation")
+        session.dl.evaluate(partition="validation")
     with pytest.raises(ValidationError, match="Refusing silent tabular loader rebuild"):
-        session.fit_torch(epochs=1, device="cpu")
+        session.dl.fit(epochs=1, device="cpu")
 
 
 @pytest.mark.skipif(not _TORCH_SPEC, reason="torch not installed")
@@ -318,7 +319,7 @@ def test_media_path_column_not_inferred_as_text() -> None:
         .split(test_size=0.25, validation_size=0.2, stratify=True, random_state=0)
     )
     with pytest.raises(ValidationError, match="audio_column=|image_column="):
-        session.make_multimodal_torch_loaders(batch_size=4)
+        session.dl.make_multimodal_loaders(batch_size=4)
 
 
 @pytest.mark.skipif(not _TORCH_SPEC, reason="torch not installed")
@@ -373,7 +374,7 @@ def test_audio_alone_refused() -> None:
         .split(test_size=0.25, validation_size=0.2, stratify=True, random_state=0)
     )
     with pytest.raises(ValidationError, match="tabular numeric|text column|media"):
-        session.make_audio_multimodal_torch_loaders(
+        session.dl.make_audio_loaders(
             audio_column="audio",
             audio_sample_rate=_AUDIO_SR,
             audio_max_samples=_AUDIO_LEN,
@@ -420,7 +421,7 @@ def test_audio_loader_bundle_slots_hold_modality_metadata() -> None:
         )
         .split(test_size=0.25, validation_size=0.2, stratify=True, random_state=0)
     )
-    bundle = session.make_audio_multimodal_torch_loaders(
+    bundle = session.dl.make_audio_loaders(
         audio_column="audio",
         audio_sample_rate=_AUDIO_SR,
         audio_max_samples=_AUDIO_LEN,
@@ -466,7 +467,7 @@ def test_torch_bundle_persists_audio_preprocess_meta(tmp_path: Path) -> None:
         )
         .split(test_size=0.25, validation_size=0.2, stratify=True, random_state=0)
     )
-    session.make_audio_multimodal_torch_loaders(
+    session.dl.make_audio_loaders(
         audio_column="audio",
         audio_sample_rate=_AUDIO_SR,
         audio_max_samples=_AUDIO_LEN,
@@ -474,7 +475,7 @@ def test_torch_bundle_persists_audio_preprocess_meta(tmp_path: Path) -> None:
         batch_size=8,
         seed=0,
     )
-    session.fit_torch(epochs=1, device="cpu")
+    session.dl.fit(epochs=1, device="cpu")
     assert session.dl_train_result is not None
     meta_fit = session.dl_train_result.multimodal_preprocess
     assert meta_fit is not None
@@ -485,7 +486,7 @@ def test_torch_bundle_persists_audio_preprocess_meta(tmp_path: Path) -> None:
     assert meta_fit["audio_mean"] is not None
     assert meta_fit["input_layout"] == ["numeric", "audio"]
 
-    path = session.save_torch_bundle(tmp_path / "aud_bundle")
+    path = session.dl.save_bundle(tmp_path / "aud_bundle")
     disk_meta = json.loads((path / "meta.json").read_text(encoding="utf-8"))
     assert disk_meta["multimodal_preprocess"]["audio_mean"] == meta_fit["audio_mean"]
 
@@ -504,7 +505,7 @@ def test_torch_bundle_persists_audio_preprocess_meta(tmp_path: Path) -> None:
         )
         .split(test_size=0.25, validation_size=0.2, stratify=True, random_state=0)
     )
-    other.load_torch_bundle(path, shell, map_location="cpu", trusted=True)
+    other.dl.load_bundle(path, shell, map_location="cpu", trusted=True)
     assert other.dl_train_result is not None
     loaded = other.dl_train_result.multimodal_preprocess
     assert loaded is not None
@@ -514,7 +515,7 @@ def test_torch_bundle_persists_audio_preprocess_meta(tmp_path: Path) -> None:
     # Load-path honesty: evaluate refuses silent tabular rebuild.
     other._torch_loaders = None
     with pytest.raises(ValidationError, match="Refusing silent tabular loader rebuild"):
-        other.evaluate_torch(partition="validation")
+        other.dl.evaluate(partition="validation")
 
 
 @pytest.mark.skipif(not _TORCH_SPEC, reason="torch not installed")
@@ -530,7 +531,7 @@ def test_ai_executor_dispatches_make_audio_multimodal_torch_loaders() -> None:
             {"x1": "feature", "x2": "feature", "audio": "feature", "y": "target"}
         )
         .split(test_size=0.25, validation_size=0.2, stratify=True, random_state=0)
-        .ai_configure(provider="mock")
+        .ai.configure(provider="mock")
     )
     registry = build_default_registry()
     assert registry.get("make_audio_multimodal_torch_loaders") is not None

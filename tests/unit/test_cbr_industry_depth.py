@@ -164,7 +164,7 @@ def test_sklearn_fallback_always_runs() -> None:
         .set_roles({"a": "feature", "b": "feature", "y": "target"})
         .split(test_size=0.25, stratify=True, random_state=0)
     )
-    fit = session.fit_cbr(backend="sklearn", metric="mixed", k=3)
+    fit = session.cbr.fit(backend="sklearn", metric="mixed", k=3)
     assert fit.backend == "sklearn"
-    neighbors = session.retrieve_cases(partition="test", k=3)
+    neighbors = session.cbr.retrieve(partition="test", k=3)
     assert neighbors.traces[0].distances

@@ -71,18 +71,18 @@ def test_resolve_sdv_requires_extra_when_missing() -> None:
 
 def test_native_copula_session_path() -> None:
     session = _session_tabular()
-    fit = session.fit_synthesizer(backend="native", method="gaussian_copula", random_state=0)
+    fit = session.synthetic.fit(backend="native", method="gaussian_copula", random_state=0)
     assert fit.backend == "native"
-    sample = session.sample_synthetic(n=50, random_state=1, validate=True)
+    sample = session.synthetic.sample(n=50, random_state=1, validate=True)
     assert sample.n_rows == 50
-    ev = session.evaluate_synthetic(mode="tstr", partition="test")
+    ev = session.synthetic.evaluate(mode="tstr", partition="test")
     assert "score" in ev.metrics
 
 
 def test_validate_synthetic_builtin_checks() -> None:
     session = _session_tabular()
-    session.fit_synthesizer(method="bootstrap", random_state=0)
-    sample = session.sample_synthetic(n=30, random_state=2)
+    session.synthetic.fit(method="bootstrap", random_state=0)
+    sample = session.synthetic.sample(n=30, random_state=2)
     assert session.synthesizer_plan is not None
     assert sample.frame is not None
     result = validate_synthetic(session.synthesizer_plan, sample.frame)
@@ -93,7 +93,7 @@ def test_validate_synthetic_builtin_checks() -> None:
 def test_unknown_method_raises() -> None:
     session = _session_tabular()
     with pytest.raises(ValidationError, match="Unknown synthesizer"):
-        session.fit_synthesizer(method="not_a_real_method")  # type: ignore[arg-type]
+        session.synthetic.fit(method="not_a_real_method")  # type: ignore[arg-type]
 
 
 @pytest.mark.skipif(not sdv_available(), reason="SDV not installed")
@@ -115,7 +115,7 @@ def test_sdv_ctgan_session_path() -> None:
 
 
 def test_session_synthetic_capability_matrix() -> None:
-    matrix = Session.synthetic_capability_matrix()
+    matrix = Session.ingest(pd.DataFrame({"x": [1]})).synthetic.capability_matrix()
     assert matrix["backends"]["native"]["available"] is True
 
 

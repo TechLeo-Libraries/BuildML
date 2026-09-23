@@ -62,7 +62,7 @@ def test_fit_requires_split() -> None:
         {"head": "id", "relation": "id", "tail": "id"}
     )
     with pytest.raises((LeakageError, ValidationError)):
-        session.fit_kg(
+        session.kg.fit(
             head_column="head",
             relation_column="relation",
             tail_column="tail",
@@ -110,7 +110,7 @@ def test_fit_predict_query_smoke() -> None:
         .set_roles({"head": "id", "relation": "id", "tail": "id"})
         .split(test_size=0.25, validation_size=0.15, random_state=0)
     )
-    fit = session.fit_kg(
+    fit = session.kg.fit(
         method="transe",
         head_column="head",
         relation_column="relation",
@@ -125,10 +125,10 @@ def test_fit_predict_query_smoke() -> None:
     assert session.kg_plan is not None
     assert any("Negative sampling" in d for d in fit.disclosures)
 
-    scored = session.score_triples(partition="test")
+    scored = session.kg.score_triples(partition="test")
     assert scored.n_triples >= 0
 
-    preds = session.predict_links(
+    preds = session.kg.predict_links(
         mode="tail",
         heads=[frame["head"].iloc[0]],
         relations=[frame["relation"].iloc[0]],
@@ -136,9 +136,9 @@ def test_fit_predict_query_smoke() -> None:
     )
     assert preds.n_queries == 1
 
-    nbrs = session.query_kg(mode="neighbors", entity=frame["head"].iloc[0])
+    nbrs = session.kg.query(mode="neighbors", entity=frame["head"].iloc[0])
     assert nbrs.mode == "neighbors"
 
-    ev = session.evaluate_kg(partition="test", k=3)
+    ev = session.kg.evaluate(partition="test", k=3)
     assert "mrr" in ev.metrics
     assert "hits_at_1" in ev.metrics

@@ -27,7 +27,7 @@ to subsample. `mapper=True` is a KeplerMapper **train summary** on
 giotto, not a Mapper research product.
 
 Short on-ramp: [TDA quickstart](quickstart-tda.md). Proof:
-[credit-tda-shape](../proofs/credit-tda-shape/).
+[credit-tda-shape](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/credit-tda-shape).
 
 ## Fit, transform, predict, evaluate
 
@@ -138,5 +138,5 @@ Benchmark: `python benchmarks/tda/persistence_pipeline.py`.
 | `mapper=True` on native | Mapper summary is giotto-only |
 
 [TDA quickstart](quickstart-tda.md) ·
-[credit-tda-shape](../proofs/credit-tda-shape/) ·
+[credit-tda-shape](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/credit-tda-shape) ·
 [Artifacts](artifacts-checkpoints-bundles.md)

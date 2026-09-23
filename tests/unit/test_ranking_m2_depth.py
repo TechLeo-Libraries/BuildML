@@ -62,7 +62,7 @@ def test_metric_helpers_perfect_ranking() -> None:
 
 def test_group_split_marks_disclosed() -> None:
     session = _grouped_session()
-    session.fit_ranker(
+    session.ranking.fit(
         method="pointwise",
         query_column="query_id",
         item_column="item_id",
@@ -88,7 +88,7 @@ def test_random_split_warns_on_query_overlap() -> None:
         )
         .split(test_size=0.25, validation_size=0.15, random_state=1)
     )
-    fit = session.fit_ranker(
+    fit = session.ranking.fit(
         method="pointwise",
         query_column="query_id",
         item_column="item_id",
@@ -99,7 +99,7 @@ def test_random_split_warns_on_query_overlap() -> None:
 
 def test_pairwise_fit_and_eval() -> None:
     session = _grouped_session()
-    fit = session.fit_ranker(
+    fit = session.ranking.fit(
         method="pairwise",
         query_column="query_id",
         item_column="item_id",
@@ -108,7 +108,7 @@ def test_pairwise_fit_and_eval() -> None:
     )
     assert fit.n_pairwise_examples is not None
     assert fit.n_pairwise_examples > 0
-    ev = session.evaluate_ranker(k=5)
+    ev = session.ranking.evaluate(k=5)
     assert set(ev.metrics) >= {"ndcg_at_k", "map_at_k", "mrr_at_k"}
     for value in ev.metrics.values():
         assert 0.0 <= float(value) <= 1.0
@@ -116,7 +116,7 @@ def test_pairwise_fit_and_eval() -> None:
 
 def test_holdout_labels_not_required_for_rank() -> None:
     session = _grouped_session()
-    session.fit_ranker(
+    session.ranking.fit(
         method="pointwise",
         query_column="query_id",
         item_column="item_id",
@@ -127,7 +127,7 @@ def test_holdout_labels_not_required_for_rank() -> None:
     test_q = session.dataset.frame.iloc[
         list(session._split_plan.test_indices)
     ]["query_id"].iloc[0]
-    out = session.rank(query_ids=[test_q], k=3)
+    out = session.ranking.rank(query_ids=[test_q], k=3)
     assert out.n_queries == 1
     assert len(out.rankings[0]) <= 3
 
@@ -135,7 +135,7 @@ def test_holdout_labels_not_required_for_rank() -> None:
 def test_requires_query_and_item_columns() -> None:
     session = _grouped_session()
     with pytest.raises(ValidationError, match="query_column"):
-        session.fit_ranker(item_column="item_id")
+        session.ranking.fit(item_column="item_id")
 
 
 def test_distinct_from_recommender_and_rag_schemas() -> None:

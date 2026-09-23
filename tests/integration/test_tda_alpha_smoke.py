@@ -28,7 +28,7 @@ def test_tda_end_to_end_smoke(tmp_path: Path) -> None:
         .split(test_size=0.2, validation_size=0.2, random_state=0, stratify=True)
         .scale(method="standard")
     )
-    fit = session.fit_tda(
+    fit = session.tda.fit(
         vectorization="silhouette",
         knn=10,
         n_bins=10,
@@ -36,10 +36,10 @@ def test_tda_end_to_end_smoke(tmp_path: Path) -> None:
         random_state=0,
     )
     assert fit.n_train_rows > 0
-    assert session.transform_tda(partition="test").n_rows > 0
-    ev = session.evaluate_tda(partition="validation")
+    assert session.tda.transform(partition="test").n_rows > 0
+    ev = session.tda.evaluate(partition="validation")
     assert "accuracy" in ev.metrics
-    session.save_tda_bundle(tmp_path / "tda")
+    session.tda.save_bundle(tmp_path / "tda")
 
     wt = session.walkthrough()
     assert wt.tda_status.get("has_tda_plan") is True
@@ -50,5 +50,5 @@ def test_tda_end_to_end_smoke(tmp_path: Path) -> None:
         .split(test_size=0.2, validation_size=0.2, random_state=0, stratify=True)
         .scale(method="standard")
     )
-    other.load_tda_bundle(tmp_path / "tda", trusted=True)
-    assert other.evaluate_tda(partition="test").n_rows > 0
+    other.tda.load_bundle(tmp_path / "tda", trusted=True)
+    assert other.tda.evaluate(partition="test").n_rows > 0

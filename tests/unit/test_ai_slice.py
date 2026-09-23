@@ -368,23 +368,23 @@ class TestSessionAIIntegration:
     def test_ai_configure_with_mock(self, session_with_data: Session) -> None:
         """ai_configure works with mock provider."""
         session = session_with_data
-        session.ai_configure(provider="mock")
+        session.ai.configure(provider="mock")
         assert session._ai_provider is not None
         assert isinstance(session._ai_provider, MockProvider)
 
     def test_ai_egress_preview(self, session_with_data: Session) -> None:
         """ai_egress_preview returns manifest."""
         session = session_with_data
-        session.ai_configure(provider="mock")
-        manifest = session.ai_egress_preview()
+        session.ai.configure(provider="mock")
+        manifest = session.ai.egress_preview()
         assert manifest.level == EgressLevel.STATS_ONLY
         assert len(manifest.columns_sent) > 0
 
     def test_ai_dry_run(self, session_with_data: Session) -> None:
         """ai_dry_run returns payload without API call."""
         session = session_with_data
-        session.ai_configure(provider="mock")
-        payload = session.ai_dry_run("Describe the data")
+        session.ai.configure(provider="mock")
+        payload = session.ai.dry_run("Describe the data")
         assert "messages" in payload
         assert "tools" in payload
         assert "egress_manifest" in payload
@@ -393,15 +393,15 @@ class TestSessionAIIntegration:
     def test_ai_advisor_with_mock(self, session_with_data: Session) -> None:
         """ai_advisor works with mock provider."""
         session = session_with_data
-        session.ai_configure(provider="mock")
-        result = session.ai_advisor("What columns are available?")
+        session.ai.configure(provider="mock")
+        result = session.ai.advisor("What columns are available?")
         assert result.question == "What columns are available?"
         assert len(result.answer) > 0
 
     def test_ai_plan_with_mock(self, session_with_data: Session) -> None:
         """ai_plan works with mock provider."""
         session = session_with_data
-        session.ai_configure(provider="mock")
+        session.ai.configure(provider="mock")
         # Mock provider returns non-JSON by default, so plan will have limitations
         result = session.ai_plan("Build a classification model")
         assert result.goal == "Build a classification model"
@@ -409,8 +409,8 @@ class TestSessionAIIntegration:
     def test_ai_execute_proposal(self, session_with_data: Session) -> None:
         """ai_execute returns proposal when not confirmed."""
         session = session_with_data
-        session.ai_configure(provider="mock")
-        result = session.ai_execute("set_roles", {"mapping": {"age": "feature"}})
+        session.ai.configure(provider="mock")
+        result = session.ai.execute("set_roles", {"mapping": {"age": "feature"}})
         # set_roles requires confirmation, so we get a proposal
         assert hasattr(result, "requires_confirmation")
         assert result.requires_confirmation
@@ -418,8 +418,8 @@ class TestSessionAIIntegration:
     def test_ai_execute_confirmed(self, session_with_data: Session) -> None:
         """ai_execute executes when confirmed."""
         session = session_with_data
-        session.ai_configure(provider="mock")
-        result = session.ai_execute(
+        session.ai.configure(provider="mock")
+        result = session.ai.execute(
             "set_roles",
             {"mapping": {"age": "feature", "target": "target"}},
             confirm=True,
@@ -433,16 +433,16 @@ class TestSessionAIIntegration:
     ) -> None:
         """Transcripts can be saved and loaded via Session."""
         session = session_with_data
-        session.ai_configure(provider="mock")
-        session.ai_advisor("Test question")
+        session.ai.configure(provider="mock")
+        session.ai.advisor("Test question")
 
         path = tmp_path / "transcript.json"
-        session.save_ai_transcript(path)
+        session.ai.save_transcript(path)
         assert path.exists()
 
         # Load in fresh session
         session2 = session_with_data
-        session2.load_ai_transcript(path)
+        session2.ai.load_transcript(path)
         assert session2.ai_transcript is not None
         assert len(session2.ai_transcript.entries) > 0
 
@@ -451,10 +451,10 @@ class TestSessionAIIntegration:
     ) -> None:
         """Destructive-like tools are refused without confirmation."""
         session = session_with_data
-        session.ai_configure(provider="mock")
+        session.ai.configure(provider="mock")
 
         # set_roles is a write operation
-        result = session.ai_execute(
+        result = session.ai.execute(
             "set_roles",
             {"mapping": {"age": "feature"}},
             confirm=False,
@@ -554,40 +554,40 @@ class TestEgressConfirmationPolicy:
             "age": [25, 30],
         })
         session = Session.ingest(df)
-        session.ai_configure(provider="mock")
+        session.ai.configure(provider="mock")
         return session
 
     def test_full_sample_requires_confirm_advisor(self, session_with_mock: Session) -> None:
         """FULL_SAMPLE egress in ai_advisor requires confirm=True (lock-doc rule)."""
         with pytest.raises(ValidationError, match="FULL_SAMPLE egress sends raw data"):
-            session_with_mock.ai_advisor("question", level="full_sample")
+            session_with_mock.ai.advisor("question", level="full_sample")
 
     def test_full_sample_allowed_with_confirm_advisor(self, session_with_mock: Session) -> None:
         """FULL_SAMPLE egress in ai_advisor works with confirm=True."""
-        result = session_with_mock.ai_advisor("question", level="full_sample", confirm=True)
+        result = session_with_mock.ai.advisor("question", level="full_sample", confirm=True)
         assert result.egress_manifest is not None
         assert result.egress_manifest.level.value == "full_sample"
 
     def test_redacted_sample_requires_confirm_advisor(self, session_with_mock: Session) -> None:
         """REDACTED_SAMPLE egress in ai_advisor requires confirm=True (lock-doc rule)."""
         with pytest.raises(ValidationError, match="REDACTED_SAMPLE egress sends sample rows"):
-            session_with_mock.ai_advisor("question", level="redacted_sample")
+            session_with_mock.ai.advisor("question", level="redacted_sample")
 
     def test_redacted_sample_allowed_with_confirm_advisor(self, session_with_mock: Session) -> None:
         """REDACTED_SAMPLE egress in ai_advisor works with confirm=True."""
-        result = session_with_mock.ai_advisor("question", level="redacted_sample", confirm=True)
+        result = session_with_mock.ai.advisor("question", level="redacted_sample", confirm=True)
         assert result.egress_manifest is not None
         assert result.egress_manifest.level.value == "redacted_sample"
 
     def test_stats_only_no_confirm_needed_advisor(self, session_with_mock: Session) -> None:
         """STATS_ONLY egress does not require confirm (default safe mode)."""
-        result = session_with_mock.ai_advisor("question", level="stats_only")
+        result = session_with_mock.ai.advisor("question", level="stats_only")
         assert result.egress_manifest is not None
         assert result.egress_manifest.level.value == "stats_only"
 
     def test_schema_only_no_confirm_needed_advisor(self, session_with_mock: Session) -> None:
         """SCHEMA_ONLY egress does not require confirm."""
-        result = session_with_mock.ai_advisor("question", level="schema_only")
+        result = session_with_mock.ai.advisor("question", level="schema_only")
         assert result.egress_manifest is not None
         assert result.egress_manifest.level.value == "schema_only"
 
@@ -615,7 +615,7 @@ class TestEgressConfirmationPolicy:
 
     def test_default_egress_is_stats_only(self, session_with_mock: Session) -> None:
         """Default egress level is STATS_ONLY (lock-doc rule)."""
-        result = session_with_mock.ai_advisor("question")
+        result = session_with_mock.ai.advisor("question")
         assert result.egress_manifest is not None
         assert result.egress_manifest.level.value == "stats_only"
 
@@ -711,7 +711,7 @@ class TestM2BudgetEnforcement:
         """Session stores budget tracker from ai_configure."""
         df = pd.DataFrame({"a": [1, 2, 3], "b": [4, 5, 6]})
         session = Session.ingest(df)
-        session.ai_configure(provider="mock", max_tokens=1000, max_cost_usd=5.0)
+        session.ai.configure(provider="mock", max_tokens=1000, max_cost_usd=5.0)
 
         assert session._ai_budget_tracker is not None
         assert session._ai_budget_tracker.max_tokens == 1000
@@ -721,7 +721,7 @@ class TestM2BudgetEnforcement:
         """ai_plan records token usage to budget tracker (security-critical)."""
         df = pd.DataFrame({"a": [1, 2, 3], "b": [4, 5, 6], "target": [0, 1, 0]})
         session = Session.ingest(df)
-        session.ai_configure(provider="mock", max_tokens=1000)
+        session.ai.configure(provider="mock", max_tokens=1000)
 
         assert session._ai_budget_tracker.tokens_used == 0
 
@@ -735,7 +735,7 @@ class TestM2BudgetEnforcement:
 
         df = pd.DataFrame({"a": [1, 2, 3], "b": [4, 5, 6], "target": [0, 1, 0]})
         session = Session.ingest(df)
-        session.ai_configure(provider="mock", max_tokens=10)
+        session.ai.configure(provider="mock", max_tokens=10)
 
         with pytest.raises(BudgetExceeded, match="budget exceeded"):
             session.ai_plan("Build a model")
@@ -802,7 +802,7 @@ class TestM2MultiStepPlanner:
             "target": [0, 1, 0, 1],
         })
         session = Session.ingest(df)
-        session.ai_configure(provider="mock")
+        session.ai.configure(provider="mock")
         return session
 
     def test_ai_run_plan_no_prior_plan(self, session_with_data: Session) -> None:
@@ -812,7 +812,7 @@ class TestM2MultiStepPlanner:
 
     def test_ai_status_returns_config(self, session_with_data: Session) -> None:
         """ai_status returns provider and budget info."""
-        status = session_with_data.ai_status()
+        status = session_with_data.ai.status()
         assert "enabled" in status
         assert "provider" in status
         assert "budget" in status
@@ -920,12 +920,12 @@ class TestM2MaxIterationsPlumbing:
         """ai_configure stores max_iterations in session."""
         df = pd.DataFrame({"a": [1, 2, 3]})
         session = Session.ingest(df)
-        session.ai_configure(provider="mock", max_iterations=5)
+        session.ai.configure(provider="mock", max_iterations=5)
         assert session._ai_max_iterations == 5
 
     def test_default_max_iterations(self) -> None:
         """Default max_iterations is 10."""
         df = pd.DataFrame({"a": [1, 2, 3]})
         session = Session.ingest(df)
-        session.ai_configure(provider="mock")
+        session.ai.configure(provider="mock")
         assert session._ai_max_iterations == 10

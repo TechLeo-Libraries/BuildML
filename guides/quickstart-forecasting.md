@@ -14,7 +14,7 @@ This is not the analysis path. Stationarity and decompose live on
 
 [Forecasting deep](forecasting-deep.md) ·
 Paste: [`examples/forecast_lag_loop.py`](../examples/forecast_lag_loop.py) ·
-Evidence: [store-sales-forecast](../proofs/store-sales-forecast/) ·
+Evidence: [store-sales-forecast](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/store-sales-forecast) ·
 [Time-series analysis](quickstart-timeseries-analysis.md)
 
 ---

@@ -15,6 +15,24 @@ from buildml.preprocess import PreprocessRecipe
 from buildml.preprocess.fold import FoldLocalPreprocessor, build_fold_preprocessor
 
 
+def test_fold_preprocessor_supports_sklearn_clone_and_pipeline_tags() -> None:
+    from sklearn.base import clone
+    from sklearn.pipeline import Pipeline
+
+    recipe = PreprocessRecipe()
+    original = FoldLocalPreprocessor(recipe)
+    copied = clone(original)
+    assert copied is not original
+    assert copied.recipe == recipe
+    assert copied.recipe is not recipe
+    frame = _cls_frame()
+    pipeline = Pipeline(
+        [("preprocess", copied), ("model", LogisticRegression(max_iter=400))]
+    )
+    pipeline.fit(frame[["x1", "x2"]], frame["y"])
+    assert pipeline.predict(frame[["x1", "x2"]]).shape == (len(frame),)
+
+
 def _cls_frame(n: int = 60) -> pd.DataFrame:
     rng = np.random.default_rng(0)
     x1 = rng.normal(size=n)

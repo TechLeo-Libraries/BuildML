@@ -139,7 +139,7 @@ def test_session_embedding_backend_refuses_cleanly_without_the_extra() -> None:
     if sentence_transformers_available():
         pytest.skip("sentence-transformers installed; covered by the resolved path")
     with pytest.raises(MissingExtraError) as excinfo:
-        session.fit_text_classifier(backend="embedding")
+        session.nlp.fit_classifier(backend="embedding")
     assert "buildml[nlp]" in str(excinfo.value)
 
 
@@ -152,10 +152,10 @@ def test_langdetect_backend_is_used_or_named_as_missing() -> None:
         require_langdetect()
     else:
         with pytest.raises(MissingExtraError) as excinfo:
-            session.detect_language(partition="all", backend="langdetect")
+            session.nlp.detect_language(partition="all", backend="langdetect")
         assert excinfo.value.extra == "nlp"
     # The native scorer never depends on the extra.
-    native = session.detect_language(partition="all", backend="native")
+    native = session.nlp.detect_language(partition="all", backend="native")
     assert native.backend == "native"
 
 
@@ -174,9 +174,9 @@ def test_spacy_ner_is_used_or_named_as_missing() -> None:
             session.extract_entities(partition="test", backend="spacy")
     else:
         with pytest.raises(MissingExtraError) as excinfo:
-            session.extract_entities(partition="test", backend="spacy")
+            session.nlp.extract_entities(partition="test", backend="spacy")
         assert excinfo.value.extra == "nlp-industry"
-    rules = session.extract_entities(partition="test", backend="rules")
+    rules = session.nlp.extract_entities(partition="test", backend="rules")
     assert rules.backend == "rules"
 
 
@@ -184,9 +184,9 @@ def test_transformer_sentiment_is_used_or_named_as_missing() -> None:
     session = _session()
     if not transformers_available():
         with pytest.raises(MissingExtraError) as excinfo:
-            session.analyze_sentiment(partition="test", backend="transformer")
+            session.nlp.analyze_sentiment(partition="test", backend="transformer")
         assert excinfo.value.extra == "nlp"
-    lexicon = session.analyze_sentiment(partition="test", backend="lexicon")
+    lexicon = session.nlp.analyze_sentiment(partition="test", backend="lexicon")
     assert lexicon.backend == "lexicon"
     assert lexicon.matched_term_rate is not None
 
@@ -215,14 +215,14 @@ def test_lemmatization_requires_the_extra_explicitly() -> None:
 
 def test_core_path_reaches_a_full_result_with_no_extras_at_all() -> None:
     session = _session()
-    session.profile_text_corpus()
-    session.fit_text_classifier(estimator="logistic")
-    ev = session.evaluate_text_classifier(partition="validation")
-    session.interpret_text_prediction(partition="test", max_documents=2)
-    session.fit_topics(n_topics=2, min_df=2)
-    session.assign_topics(partition="test")
-    session.extract_keyphrases(partition="train", method="rake", top_n=5)
-    session.summarize_text(partition="test", method="lexrank", max_documents=3)
+    session.nlp.profile_corpus()
+    session.nlp.fit_classifier(estimator="logistic")
+    ev = session.nlp.evaluate(partition="validation")
+    session.nlp.interpret(partition="test", max_documents=2)
+    session.nlp.fit_topics(n_topics=2, min_df=2)
+    session.nlp.assign_topics(partition="test")
+    session.nlp.extract_keyphrases(partition="train", method="rake", top_n=5)
+    session.nlp.summarize(partition="test", method="lexrank", max_documents=3)
     assert 0.0 <= ev.metrics["accuracy"] <= 1.0
     matrix = nlp_capability_matrix()
     assert matrix["tasks"]["text_classification"]["available"] is True

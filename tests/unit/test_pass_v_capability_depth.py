@@ -88,7 +88,7 @@ def test_evaluate_asr_wer_cer_and_session() -> None:
         texts = ["hello world", "good night"]
 
     session._dl_speech_result = _Speech()
-    scored = session.evaluate_asr(references=["hello world", "good morning"])
+    scored = session.dl.evaluate_asr(references=["hello world", "good morning"])
     assert session.dl_asr_eval is scored
     session_wer = getattr(scored, "wer", None)
     if session_wer is None and hasattr(scored, "to_dict"):
@@ -133,7 +133,7 @@ def test_k8s_configmap_and_serve_deployment(tmp_path: Path) -> None:
     assert "buildml-serve" in text
 
     session = Session.ingest(_tiny_frame()).set_roles({"a": "feature", "y": "target"})
-    result = session.emit_k8s_serve_deployment(tmp_path / "session-serve.yaml")
+    result = session.dl.emit_k8s_serve(tmp_path / "session-serve.yaml")
     assert result.path.is_file()
     assert any("not" in lim.lower() for lim in result.limitations)
 
@@ -362,7 +362,7 @@ def test_gated_fusion_and_frozen_preprocess() -> None:
         .set_roles({"num": "feature", "text": "feature", "y": "target"})
         .split(test_size=0.25, random_state=0)
     )
-    bundle = session.make_multimodal_torch_loaders(
+    bundle = session.dl.make_multimodal_loaders(
         text_column="text",
         numeric_columns=["num"],
         batch_size=4,
@@ -381,7 +381,7 @@ def test_gated_fusion_and_frozen_preprocess() -> None:
     assert module is not None
 
     preprocess = contract.to_dict() if hasattr(contract, "to_dict") else contract
-    restored = session.make_multimodal_torch_loaders(
+    restored = session.dl.make_multimodal_loaders(
         text_column="text",
         numeric_columns=["num"],
         batch_size=4,
@@ -395,6 +395,7 @@ def test_gated_fusion_and_frozen_preprocess() -> None:
 
 
 @pytest.mark.skipif(not (_TORCH_SPEC and _FASTAPI_SPEC), reason="torch/fastapi missing")
+@pytest.mark.usefixtures("torchscript_deprecation_contract")
 def test_torchscript_serve_predict(tmp_path: Path) -> None:
     _require_torch_or_skip()
     import torch

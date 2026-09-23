@@ -26,7 +26,7 @@ outcome, confounder list, and whether those acknowledgements are
 honest for your data.
 
 Short on-ramp: [causal quickstart](quickstart-causal.md).
-Proof: [causal-treatment-effect](../proofs/causal-treatment-effect/).
+Proof: [causal-treatment-effect](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/causal-treatment-effect).
 
 ## Declare, then fit
 

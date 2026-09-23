@@ -11,7 +11,7 @@ platform.
 
 [Decisions deep](optimize-deep.md) ·
 Paste: [`examples/decision_threshold_loop.py`](../examples/decision_threshold_loop.py) ·
-Evidence: [cost-sensitive-collections](../proofs/cost-sensitive-collections/)
+Evidence: [cost-sensitive-collections](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/cost-sensitive-collections)
 
 **Not** a general operations-research platform, arbitrary MIP suite, or digital twin.
 

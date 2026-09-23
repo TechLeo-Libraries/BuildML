@@ -144,7 +144,7 @@ def test_every_nlp_tool_reaches_a_session_method(tmp_path: Path) -> None:
     """
     from buildml.ai.executor import execute_tool, propose_tool_execution
 
-    session = _text_session().ai_configure(provider="mock")
+    session = _text_session().ai.configure(provider="mock")
     registry = build_default_registry()
     calls: tuple[tuple[str, dict[str, object]], ...] = (
         ("nlp_capability_matrix", {}),
@@ -174,7 +174,7 @@ def test_every_nlp_tool_reaches_a_session_method(tmp_path: Path) -> None:
 
 
 def test_capability_matrix_is_honest_about_extras() -> None:
-    matrix = Session.nlp_capability_matrix()
+    matrix = Session.ingest(pd.DataFrame({"x": [1]})).nlp.capability_matrix()
     assert matrix["backends"]["sklearn"]["available"] is True
     assert matrix["backends"]["sklearn"]["token_attributions"] is True
     assert matrix["backends"]["embedding"]["token_attributions"] is False
@@ -186,13 +186,13 @@ def test_capability_matrix_is_honest_about_extras() -> None:
 def test_fit_predict_evaluate_interpret_and_bundle(tmp_path: Path) -> None:
     session = _text_session()
 
-    profile = session.profile_text_corpus(near_duplicate_threshold=0.95)
+    profile = session.nlp.profile_corpus(near_duplicate_threshold=0.95)
     assert profile.text_column == "review"
     assert profile.n_documents == 240
     assert profile.vocabulary_size > 0
     assert session.nlp_profile_result is profile
 
-    fit = session.fit_text_classifier(estimator="logistic", stopword_language=None)
+    fit = session.nlp.fit_classifier(estimator="logistic", stopword_language=None)
     assert fit.backend == "sklearn"
     assert fit.estimator == "logistic"
     assert fit.text_column == "review"
@@ -200,19 +200,19 @@ def test_fit_predict_evaluate_interpret_and_bundle(tmp_path: Path) -> None:
     assert set(fit.classes) == {"negative", "positive"}
     assert session.nlp_text_plan is not None
 
-    ev = session.evaluate_text_classifier(partition="validation")
+    ev = session.nlp.evaluate(partition="validation")
     assert ev.partition == "validation"
     assert 0.0 <= ev.metrics["accuracy"] <= 1.0
     assert "balanced_accuracy" in ev.metrics
     assert len(ev.confusion) == len(ev.classes)
     assert ev.oov_rate is not None
 
-    pred = session.predict_text(partition="test")
+    pred = session.nlp.predict(partition="test")
     assert pred.n_rows == len(pred.predictions)
     assert pred.probabilities  # logistic exposes calibrated probabilities
     assert len(pred.probabilities[0]) == len(pred.classes)
 
-    interpret = session.interpret_text_prediction(partition="test", max_documents=4)
+    interpret = session.nlp.interpret(partition="test", max_documents=4)
     assert interpret.n_documents == 4
     assert interpret.method == "linear-coefficient x feature-value"
     assert len(interpret.document_attributions) == 4
@@ -221,41 +221,41 @@ def test_fit_predict_evaluate_interpret_and_bundle(tmp_path: Path) -> None:
     assert first.contribution == pytest.approx(first.weight * first.value)
 
     bundle = tmp_path / "nlp_bundle"
-    session.save_nlp_bundle(bundle)
+    session.nlp.save_bundle(bundle)
     assert (bundle / "meta.json").is_file()
     assert (bundle / "nlp_text_plan.joblib").is_file()
 
     other = _text_session()
-    other.load_nlp_bundle(bundle, trusted=True)
+    other.nlp.load_bundle(bundle, trusted=True)
     assert other.nlp_text_plan is not None
     assert other.nlp_text_plan.estimator == "logistic"
-    reloaded = other.evaluate_text_classifier(partition="test")
+    reloaded = other.nlp.evaluate(partition="test")
     assert "accuracy" in reloaded.metrics
 
 
 def test_margin_only_head_reports_missing_probabilities() -> None:
     session = _text_session()
-    session.fit_text_classifier(estimator="linear_svm", stopword_language=None)
-    pred = session.predict_text(partition="test")
+    session.nlp.fit_classifier(estimator="linear_svm", stopword_language=None)
+    pred = session.nlp.predict(partition="test")
     assert pred.probabilities == ()
     assert any("predict_proba" in item for item in pred.warnings)
 
-    ev = session.evaluate_text_classifier(partition="validation")
+    ev = session.nlp.evaluate(partition="validation")
     assert "log_loss" not in ev.metrics
     assert "roc_auc" not in ev.metrics
 
 
 def test_interpret_refuses_representations_without_a_vocabulary() -> None:
     session = _text_session()
-    session.fit_text_classifier(vectorizer="hashing", estimator="logistic")
+    session.nlp.fit_classifier(vectorizer="hashing", estimator="logistic")
     assert session.nlp_fit_result.vocabulary_size == 0
     with pytest.raises(ValidationError, match="invertible vocabulary"):
-        session.interpret_text_prediction(partition="test")
+        session.nlp.interpret(partition="test")
 
 
 def test_topics_fit_on_train_and_assign_is_transform_only() -> None:
     session = _text_session()
-    topics = session.fit_topics(method="nmf", n_topics=3, min_df=2, top_terms=5)
+    topics = session.nlp.fit_topics(method="nmf", n_topics=3, min_df=2, top_terms=5)
     assert topics.method == "nmf"
     assert len(topics.topics) == 3
     assert all(len(topic.terms) == 5 for topic in topics.topics)
@@ -263,20 +263,20 @@ def test_topics_fit_on_train_and_assign_is_transform_only() -> None:
     assert topics.reconstruction_error is not None
 
     model_before = session.nlp_topic_plan.model_
-    assigned = session.assign_topics(partition="test")
+    assigned = session.nlp.assign_topics(partition="test")
     assert assigned.n_topics == 3
     assert assigned.n_rows == len(assigned.dominant_topics)
     assert sum(assigned.topic_share.values()) == pytest.approx(1.0)
     assert session.nlp_topic_plan.model_ is model_before
 
-    lda = session.fit_topics(method="lda", n_topics=3, min_df=2, max_iter=20)
+    lda = session.nlp.fit_topics(method="lda", n_topics=3, min_df=2, max_iter=20)
     assert lda.perplexity is not None
 
 
 @pytest.mark.parametrize("method", ["tfidf", "rake", "textrank"])
 def test_keyphrases_produce_alphabetic_candidates(method: str) -> None:
     session = _text_session()
-    result = session.extract_keyphrases(partition="train", method=method, top_n=8)
+    result = session.nlp.extract_keyphrases(partition="train", method=method, top_n=8)
     assert result.method == method
     assert result.corpus_keyphrases
     for phrase in result.corpus_keyphrases:
@@ -288,7 +288,7 @@ def test_keyphrases_produce_alphabetic_candidates(method: str) -> None:
 
 def test_sentiment_lexicon_and_supervised_backends() -> None:
     session = _text_session()
-    lexicon = session.analyze_sentiment(
+    lexicon = session.nlp.analyze_sentiment(
         partition="test", backend="lexicon", compare_to_target=True
     )
     assert lexicon.backend == "lexicon"
@@ -298,17 +298,17 @@ def test_sentiment_lexicon_and_supervised_backends() -> None:
     assert lexicon.agreement["n_compared"] == lexicon.n_rows
 
     with pytest.raises(ValidationError, match="fit_text_classifier"):
-        session.analyze_sentiment(partition="test", backend="supervised")
+        session.nlp.analyze_sentiment(partition="test", backend="supervised")
 
-    session.fit_text_classifier(estimator="logistic", stopword_language=None)
-    supervised = session.analyze_sentiment(partition="test", backend="supervised")
+    session.nlp.fit_classifier(estimator="logistic", stopword_language=None)
+    supervised = session.nlp.analyze_sentiment(partition="test", backend="supervised")
     assert supervised.backend == "supervised"
     assert supervised.matched_term_rate is None
 
 
 def test_entities_rules_and_gazetteers() -> None:
     session = _text_session()
-    result = session.extract_entities(
+    result = session.nlp.extract_entities(
         partition="test",
         backend="rules",
         gazetteers={"PRODUCT": ["portal", "invoice"]},
@@ -323,7 +323,7 @@ def test_entities_rules_and_gazetteers() -> None:
         for span in mentions
     )
     with pytest.raises(ValidationError, match="not produced by the rules backend"):
-        session.extract_entities(partition="test", labels=["GPE"])
+        session.nlp.extract_entities(partition="test", labels=["GPE"])
 
 
 @pytest.mark.parametrize("method", ["textrank", "lexrank", "lead"])
@@ -353,7 +353,7 @@ def test_summaries_only_reuse_document_sentences(method: str) -> None:
         .set_roles({"note": "feature", "label": "target"})
         .split(test_size=0.25, validation_size=0.2, random_state=0)
     )
-    result = session.summarize_text(partition="test", method=method, n_sentences=2)
+    result = session.nlp.summarize(partition="test", method=method, n_sentences=2)
     assert result.method == method
     assert result.summaries
     assert all(len(indices) <= 2 for indices in result.selected_sentence_indices)
@@ -367,14 +367,14 @@ def test_summaries_only_reuse_document_sentences(method: str) -> None:
 
 def test_language_detection_reports_undetermined_instead_of_guessing() -> None:
     session = _text_session()
-    result = session.detect_language(partition="all", backend="native")
+    result = session.nlp.detect_language(partition="all", backend="native")
     assert result.dominant_language == "en"
     assert result.language_counts["en"] > 0
     assert 0.0 <= result.undetermined_rate <= 1.0
 
     short = pd.DataFrame({"txt": ["ok", "no", "yes", "hm"] * 10, "y": [0, 1] * 20})
     tiny = Session.ingest(short).set_roles({"txt": "feature", "y": "target"})
-    tiny_result = tiny.detect_language(partition="all")
+    tiny_result = tiny.nlp.detect_language(partition="all")
     assert tiny_result.language_counts.get("und", 0) == 40
     assert tiny_result.undetermined_rate == pytest.approx(1.0)
 
@@ -384,23 +384,23 @@ def test_fit_requires_a_split() -> None:
         {"review": "feature", "channel": "feature", "sentiment": "target"}
     )
     with pytest.raises((ValidationError, LeakageError)):
-        session.fit_text_classifier()
+        session.nlp.fit_classifier()
     with pytest.raises((ValidationError, LeakageError)):
-        session.fit_topics(n_topics=2)
+        session.nlp.fit_topics(n_topics=2)
 
 
 def test_operations_requiring_a_plan_refuse_without_one() -> None:
     session = _text_session()
     with pytest.raises(ValidationError, match="No NLP text plan"):
-        session.predict_text(partition="test")
+        session.nlp.predict(partition="test")
     with pytest.raises(ValidationError, match="No NLP text plan"):
-        session.evaluate_text_classifier(partition="validation")
+        session.nlp.evaluate(partition="validation")
     with pytest.raises(ValidationError, match="No NLP text plan"):
-        session.interpret_text_prediction(partition="test")
+        session.nlp.interpret(partition="test")
     with pytest.raises(ValidationError, match="No NLP topic plan"):
-        session.assign_topics(partition="test")
+        session.nlp.assign_topics(partition="test")
     with pytest.raises(ValidationError, match="No NLP plan to save"):
-        session.save_nlp_bundle("unused")
+        session.nlp.save_bundle("unused")
 
 
 def test_ambiguous_and_missing_text_columns_are_refused() -> None:
@@ -417,19 +417,19 @@ def test_ambiguous_and_missing_text_columns_are_refused() -> None:
         .split(test_size=0.3, random_state=0)
     )
     with pytest.raises(ValidationError, match="text_column"):
-        session.fit_text_classifier()
-    assert session.fit_text_classifier(text_column="left").text_column == "left"
+        session.nlp.fit_classifier()
+    assert session.nlp.fit_classifier(text_column="left").text_column == "left"
 
     with pytest.raises(ValidationError, match="not a dataset column"):
-        session.extract_keyphrases(text_column="missing")
+        session.nlp.extract_keyphrases(text_column="missing")
 
 
 def test_history_and_walkthrough_disclose_nlp_state() -> None:
     session = _text_session()
-    session.profile_text_corpus()
-    session.fit_text_classifier(estimator="logistic", stopword_language=None)
-    session.evaluate_text_classifier(partition="validation")
-    session.fit_topics(n_topics=2, min_df=2)
+    session.nlp.profile_corpus()
+    session.nlp.fit_classifier(estimator="logistic", stopword_language=None)
+    session.nlp.evaluate(partition="validation")
+    session.nlp.fit_topics(n_topics=2, min_df=2)
 
     operations = [record["operation_id"] for record in session.history]
     for expected in (

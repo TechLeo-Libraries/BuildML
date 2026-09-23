@@ -115,14 +115,14 @@ def encode_class_targets(y: Any, class_labels: Sequence[Any]) -> np.ndarray:
     series = pd.Series(y)
     if series.isna().any():
         raise ValidationError("Target contains NaN; clean labels before Torch loaders")
-    cat = pd.Categorical(series, categories=list(class_labels), ordered=True)
-    codes = np.asarray(cat.codes, dtype=np.int64)
-    if (codes < 0).any():
+    if not series.isin(class_labels).all():
         known = ", ".join(repr(v) for v in class_labels)
         raise ValidationError(
             "Target contains class labels not present in the train partition "
             f"(known labels: {known})."
         )
+    cat = pd.Categorical(series, categories=list(class_labels), ordered=True)
+    codes = np.asarray(cat.codes, dtype=np.int64)
     return codes
 
 

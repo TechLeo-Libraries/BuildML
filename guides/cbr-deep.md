@@ -30,7 +30,7 @@ solution from similar cases, it does not retrieve passages for a
 generator.
 
 Short on-ramp: [CBR quickstart](quickstart-cbr.md). Proof:
-[case-memory-claims](../proofs/case-memory-claims/).
+[case-memory-claims](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/case-memory-claims).
 
 ## Fit, retrieve, predict, evaluate
 
@@ -200,5 +200,5 @@ Benchmark: `python benchmarks/cbr/retrieval_accuracy.py`.
 | reuse vs task mismatch | `majority` on regression, or `local_mean` on classification |
 
 [CBR quickstart](quickstart-cbr.md) ·
-[case-memory-claims](../proofs/case-memory-claims/) ·
+[case-memory-claims](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/case-memory-claims) ·
 [Artifacts](artifacts-checkpoints-bundles.md)

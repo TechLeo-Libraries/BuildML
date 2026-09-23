@@ -24,7 +24,7 @@ def test_nested_selection_records_outer_estimate() -> None:
         .set_roles({"x1": "feature", "x2": "feature", "y": "target"})
         .split(test_size=0.2, validation_size=0.2, stratify=True, random_state=0)
     )
-    result = session.run_automl(
+    result = session.automl.run(
         method="randomized",
         selection="nested",
         n_trials=6,
@@ -60,7 +60,7 @@ def test_walkthrough_and_audit_include_automl() -> None:
         .set_roles({"x1": "feature", "x2": "feature", "y": "target"})
         .split(test_size=0.25, stratify=True, random_state=0)
     )
-    session.run_automl(
+    session.automl.run(
         n_trials=4,
         cv=2,
         families=("logistic",),
@@ -90,7 +90,7 @@ def test_regression_families() -> None:
         .set_roles({"x1": "feature", "x2": "feature", "y": "target"})
         .split(test_size=0.25, random_state=0)
     )
-    result = session.run_automl(
+    result = session.automl.run(
         task="regression",
         n_trials=6,
         cv=3,
@@ -101,5 +101,5 @@ def test_regression_families() -> None:
     )
     assert result.task == "regression"
     assert result.best_family in {"ridge", "random_forest"}
-    metrics = session.evaluate_automl(partition="test")
+    metrics = session.automl.evaluate(partition="test")
     assert "r2" in metrics.metrics or "mae" in metrics.metrics

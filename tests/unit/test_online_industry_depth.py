@@ -73,7 +73,7 @@ def test_river_session_path() -> None:
         .split(test_size=0.25, stratify=True, random_state=0)
         .scale(method="standard")
     )
-    fit = session.fit_online(
+    fit = session.online.fit(
         backend="industry",
         estimator="river_logistic",
         chunk_size=35,
@@ -83,8 +83,8 @@ def test_river_session_path() -> None:
         prefer_reduce_components=False,
     )
     assert fit.backend == "industry"
-    session.partial_fit_online(n_rows=35)
-    ev = session.evaluate_online(partition="test")
+    session.online.partial_fit(n_rows=35)
+    ev = session.online.evaluate(partition="test")
     assert ev.metrics["accuracy"] >= 0.0
     assert session.online_plan is not None
     assert session.online_plan.backend == "industry"
@@ -99,7 +99,7 @@ def test_replay_mlp_torch_session_path() -> None:
         .scale(method="standard")
     )
     try:
-        fit = session.fit_online(
+        fit = session.online.fit(
             backend="torch",
             estimator="replay_mlp",
             chunk_size=30,
@@ -113,8 +113,8 @@ def test_replay_mlp_torch_session_path() -> None:
             pytest.skip("torch not runnable on this host")
         raise
     assert fit.backend == "torch"
-    session.partial_fit_online(n_rows=30)
-    ev = session.evaluate_online(partition="test")
+    session.online.partial_fit(n_rows=30)
+    ev = session.online.evaluate(partition="test")
     assert "accuracy" in ev.metrics
 
 
@@ -126,7 +126,7 @@ def test_adwin_on_sklearn_backend_refused() -> None:
         .scale(method="standard")
     )
     with pytest.raises(ValidationError, match="requires backend='industry'"):
-        session.fit_online(
+        session.online.fit(
             backend="sklearn",
             drift_detector="adwin",
             classes=[0, 1],

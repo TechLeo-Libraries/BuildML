@@ -10,7 +10,7 @@ single-target. Default is sklearn `multi_output`.
 
 [Multi-task deep](multi-task-deep.md) ·
 Paste: [`examples/multitask_multioutput_loop.py`](../examples/multitask_multioutput_loop.py) ·
-Evidence: [multi-target-underwriting](../proofs/multi-target-underwriting/)
+Evidence: [multi-target-underwriting](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/multi-target-underwriting)
 
 ```bash
 pip install buildml

@@ -64,7 +64,7 @@ def test_fit_requires_split() -> None:
         {"ts": "time", "y": "target", "promo": "ignore"}
     )
     with pytest.raises((LeakageError, ValidationError)):
-        session.fit_forecast(method="naive")
+        session.forecast.fit(method="naive")
 
 
 def test_refuses_random_split() -> None:
@@ -74,12 +74,12 @@ def test_refuses_random_split() -> None:
         .split(test_size=0.2, random_state=0)
     )
     with pytest.raises(LeakageError, match="refuses split kind"):
-        session.fit_forecast(method="lag_ridge", lags=[1, 2, 3])
+        session.forecast.fit(method="lag_ridge", lags=[1, 2, 3])
 
 
 def test_lag_ridge_fit_generate_evaluate_and_bundle(tmp_path: Path) -> None:
     session = _ready_session()
-    fit = session.fit_forecast(
+    fit = session.forecast.fit(
         method="lag_ridge",
         horizon=5,
         lags=[1, 2, 3, 7],
@@ -90,10 +90,10 @@ def test_lag_ridge_fit_generate_evaluate_and_bundle(tmp_path: Path) -> None:
     assert fit.n_fit_rows < fit.n_train_rows
     assert session.forecast_plan is not None
 
-    gen = session.generate_forecast(horizon=5)
+    gen = session.forecast.generate(horizon=5)
     assert len(gen.predictions) == 5
 
-    metrics = session.evaluate_forecast(
+    metrics = session.forecast.evaluate(
         partition="test", strategy="rolling_one_step"
     )
     assert metrics.n_points > 0
@@ -102,7 +102,7 @@ def test_lag_ridge_fit_generate_evaluate_and_bundle(tmp_path: Path) -> None:
     assert "mape" in metrics.metrics
     assert metrics.metrics["mae"] >= 0.0
 
-    path = session.save_forecast_bundle(tmp_path / "fc")
+    path = session.forecast.save_bundle(tmp_path / "fc")
     assert (path / "meta.json").is_file()
     assert (path / "forecast_plan.joblib").is_file()
     plan = load_forecast_bundle(path, trusted=True)
@@ -114,8 +114,8 @@ def test_lag_ridge_fit_generate_evaluate_and_bundle(tmp_path: Path) -> None:
         .set_roles({"ts": "time", "y": "target", "promo": "feature"})
         .time_split(test_size=0.2, validation_size=0.2)
     )
-    restored.load_forecast_bundle(path, trusted=True)
-    again = restored.generate_forecast(horizon=5)
+    restored.forecast.load_bundle(path, trusted=True)
+    again = restored.forecast.generate(horizon=5)
     assert again.predictions == gen.predictions
 
     with pytest.raises(ValidationError, match=BUNDLE_FORMAT):
@@ -130,27 +130,27 @@ def test_lag_ridge_fit_generate_evaluate_and_bundle(tmp_path: Path) -> None:
 
 def test_seasonal_naive_and_baselines() -> None:
     session = _ready_session()
-    fit = session.fit_forecast(
+    fit = session.forecast.fit(
         method="seasonal_naive", seasonal_period=7, horizon=7
     )
     assert fit.method == "seasonal_naive"
-    gen = session.generate_forecast(horizon=7)
+    gen = session.forecast.generate(horizon=7)
     assert len(gen.predictions) == 7
     # Seasonal naive repeats the last season block.
     assert gen.predictions[0] == pytest.approx(session.forecast_plan.seasonal_history_[0])
-    metrics = session.evaluate_forecast(partition="validation")
+    metrics = session.forecast.evaluate(partition="validation")
     assert "mae" in metrics.metrics
 
     for method in ("naive", "mean", "drift"):
         s = _ready_session()
-        s.fit_forecast(method=method, horizon=3)  # type: ignore[arg-type]
-        out = s.generate_forecast(horizon=3)
+        s.forecast.fit(method=method, horizon=3)  # type: ignore[arg-type]
+        out = s.forecast.generate(horizon=3)
         assert len(out.predictions) == 3
 
 
 def test_exog_requires_future_for_generate() -> None:
     session = _ready_session()
-    session.fit_forecast(
+    session.forecast.fit(
         method="lag_ridge",
         lags=[1, 2, 3],
         exog_columns=["promo"],
@@ -159,19 +159,19 @@ def test_exog_requires_future_for_generate() -> None:
     assert session.forecast_plan is not None
     assert session.forecast_plan.univariate is False
     with pytest.raises(ValidationError, match="future_exog"):
-        session.generate_forecast(horizon=4)
+        session.forecast.generate(horizon=4)
     future = np.zeros((4, 1), dtype=float)
-    gen = session.generate_forecast(horizon=4, future_exog=future)
+    gen = session.forecast.generate(horizon=4, future_exog=future)
     assert len(gen.predictions) == 4
     # rolling eval can use holdout exog
-    metrics = session.evaluate_forecast(partition="test", strategy="rolling_one_step")
+    metrics = session.forecast.evaluate(partition="test", strategy="rolling_one_step")
     assert metrics.n_points > 0
 
 
 def test_origin_strategy_and_explain() -> None:
     session = _ready_session()
-    session.fit_forecast(method="lag_ridge", lags=[1, 2, 3], horizon=5)
-    origin = session.evaluate_forecast(partition="test", strategy="origin")
+    session.forecast.fit(method="lag_ridge", lags=[1, 2, 3], horizon=5)
+    origin = session.forecast.evaluate(partition="test", strategy="origin")
     assert origin.strategy == "origin"
     assert origin.n_points == len(origin.predictions)
     before = session.explain("fit_forecast", moment="before")

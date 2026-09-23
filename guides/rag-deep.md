@@ -27,7 +27,7 @@ choose k, mode, and whether to generate. The API refuses eval-only
 contamination and generate without a provider.
 
 Short on-ramp: [RAG quickstart](quickstart-rag.md). Proof:
-[support-kb-rag](../proofs/support-kb-rag/).
+[support-kb-rag](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/support-kb-rag).
 
 ## Ingest, chunk, index, retrieve
 

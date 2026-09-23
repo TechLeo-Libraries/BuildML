@@ -11,7 +11,7 @@ pretext.
 
 [Semi-supervised deep](semisupervised-deep.md) ·
 Paste: [`examples/semisupervised_label_propagation_loop.py`](../examples/semisupervised_label_propagation_loop.py) ·
-Evidence: [semi-label-efficiency](../proofs/semi-label-efficiency/)
+Evidence: [semi-label-efficiency](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/semi-label-efficiency)
 
 ```bash
 pip install buildml

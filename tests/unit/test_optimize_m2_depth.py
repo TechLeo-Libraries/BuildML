@@ -41,17 +41,17 @@ def test_cost_matrix_bayes_policy() -> None:
     n = len(classes)
     matrix = np.ones((n, n), dtype=float) - np.eye(n)
     matrix[0, n - 1] = 10.0
-    fit = session.fit_decision_policy(
+    fit = session.decision.fit(
         method="cost_matrix",
         partition="validation",
         cost_matrix=matrix.tolist(),
         class_labels=classes,
     )
     assert fit.expected_cost is not None
-    applied = session.apply_decisions(partition="test")
+    applied = session.decision.apply(partition="test")
     assert applied.n_rows > 0
     assert set(map(str, applied.decisions)).issubset(set(classes))
-    eval_result = session.evaluate_decisions(partition="test")
+    eval_result = session.decision.evaluate(partition="test")
     assert "realized_cost_total" in eval_result.metrics
 
 
@@ -66,10 +66,10 @@ def test_allow_test_tuning_opt_in() -> None:
         .fit(LogisticRegression(max_iter=300), task="classification")
     )
     with pytest.raises(LeakageError):
-        session.fit_decision_policy(
+        session.decision.fit(
             method="threshold", partition="test", fp_cost=1.0, fn_cost=2.0
         )
-    result = session.fit_decision_policy(
+    result = session.decision.fit(
         method="threshold",
         partition="test",
         allow_test_tuning=True,
@@ -101,7 +101,7 @@ def test_lp_session_smoke() -> None:
         .split(test_size=0.25, validation_size=0.25, random_state=4)
         .fit(LogisticRegression(max_iter=400), task="classification")
     )
-    fit = session.fit_decision_policy(
+    fit = session.decision.fit(
         method="lp_allocate",
         partition="validation",
         budget=10.0,
@@ -110,7 +110,7 @@ def test_lp_session_smoke() -> None:
     )
     assert fit.selected_cost is not None
     assert fit.selected_cost <= 10.0 + 1e-5
-    applied = session.apply_decisions(partition="test")
+    applied = session.decision.apply(partition="test")
     assert applied.n_selected >= 1
     assert all(0.0 < f <= 1.0 + 1e-9 for f in applied.fractions)
 
@@ -131,7 +131,7 @@ def test_column_driven_topk_without_model_scores() -> None:
         .split(test_size=0.25, validation_size=0.25, random_state=0)
     )
     # No fit — column-driven allocation
-    fit = session.fit_decision_policy(
+    fit = session.decision.fit(
         method="topk",
         partition="validation",
         capacity=2,
@@ -141,7 +141,7 @@ def test_column_driven_topk_without_model_scores() -> None:
         id_column="id",
     )
     assert fit.n_selected == 2
-    applied = session.apply_decisions(
+    applied = session.decision.apply(
         candidates=pd.DataFrame(
             {"score": [0.95, 0.2, 0.85], "cost": [1, 1, 1], "id": ["x", "y", "z"]}
         )
@@ -160,6 +160,6 @@ def test_threshold_requires_both_costs_when_partial() -> None:
         .fit(LogisticRegression(max_iter=300), task="classification")
     )
     with pytest.raises(ValidationError, match="fp_cost"):
-        session.fit_decision_policy(
+        session.decision.fit(
             method="threshold", partition="validation", fp_cost=1.0
         )

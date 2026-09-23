@@ -10,7 +10,7 @@ This is not BERT-from-scratch and not `session.nlp`.
 
 [Self-supervised deep](selfsupervised-deep.md) ·
 Paste: [`examples/selfsupervised_masked_tabular_loop.py`](../examples/selfsupervised_masked_tabular_loop.py) ·
-Evidence: [ssl-representation-probe](../proofs/ssl-representation-probe/)
+Evidence: [ssl-representation-probe](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/ssl-representation-probe)
 
 ```bash
 pip install "buildml[torch]"

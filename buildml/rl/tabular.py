@@ -397,7 +397,7 @@ def build_discretizer(
     if hasattr(obs_space, "nvec"):
         raise ValidationError(
             "tabular_q does not support MultiDiscrete observation spaces. "
-            "Use a Discrete env (FrozenLake-v1 / Taxi-v3 / CliffWalking-v0) or "
+            "Use a Discrete env (FrozenLake-v1 / Taxi-v3) or "
             "a Box env, or switch to mode='gym_reinforce'."
         )
 

@@ -86,7 +86,7 @@ def test_pseudo_label_xgb_session_path() -> None:
         .scale(method="standard")
     )
     session = _mask(session)
-    fit = session.fit_semisupervised(
+    fit = session.semisupervised.fit(
         backend="industry",
         method="pseudo_label_xgb",
         prefer_reduce_components=False,
@@ -94,7 +94,7 @@ def test_pseudo_label_xgb_session_path() -> None:
     )
     assert fit.backend == "industry"
     assert fit.n_unlabeled_train > 0
-    ev = session.evaluate_semisupervised(partition="test")
+    ev = session.semisupervised.evaluate(partition="test")
     assert ev.metrics["accuracy"] >= 0.5
 
 
@@ -108,7 +108,7 @@ def test_fixmatch_tabular_session_path() -> None:
     )
     session = _mask(session)
     try:
-        fit = session.fit_semisupervised(
+        fit = session.semisupervised.fit(
             backend="torch",
             method="fixmatch_tabular",
             prefer_reduce_components=False,
@@ -120,7 +120,7 @@ def test_fixmatch_tabular_session_path() -> None:
             pytest.skip("torch installed but not importable on this host")
         raise
     assert fit.backend == "torch"
-    ev = session.evaluate_semisupervised(partition="test")
+    ev = session.semisupervised.evaluate(partition="test")
     assert "accuracy" in ev.metrics
 
 
@@ -140,12 +140,12 @@ def test_bundle_roundtrip_with_backend(tmp_path: Path) -> None:
         .scale(method="standard")
     )
     session = _mask(session)
-    session.fit_semisupervised(method="label_spreading", prefer_reduce_components=False)
-    out = session.save_semisupervised_bundle(tmp_path / "bundle")
+    session.semisupervised.fit(method="label_spreading", prefer_reduce_components=False)
+    out = session.semisupervised.save_bundle(tmp_path / "bundle")
     session2 = Session.ingest(_frame()).set_roles(
         {"a": "feature", "b": "feature", "y": "target"}
     )
-    session2.load_semisupervised_bundle(out, trusted=True)
+    session2.semisupervised.load_bundle(out, trusted=True)
     assert session2.semisupervised_plan is not None
     assert session2.semisupervised_plan.method == "label_spreading"
 

@@ -65,16 +65,16 @@ def test_ai_execute_rag_generate_flow() -> None:
     ]
     session = (
         Session()
-        .rag_ingest_corpus(docs)
-        .rag_embed_and_index(embedder="hashing")
-        .ai_configure(provider="mock")
+        .rag.ingest_corpus(docs)
+        .rag.embed_and_index(embedder="hashing")
+        .ai.configure(provider="mock")
     )
     # Prefer echo grounded provider for deterministic citations in generate tool path.
     session._ai_provider = EchoGroundedProvider()
-    proposal = session.ai_execute("rag_retrieve", {"query": "What is Session?", "k": 2})
+    proposal = session.ai.execute("rag_retrieve", {"query": "What is Session?", "k": 2})
     # read-only auto-confirms
     assert getattr(proposal, "executed", False) or getattr(proposal, "tool_call", None)
-    result = session.ai_execute(
+    result = session.ai.execute(
         "rag_generate", {"query": "What does BuildML Session do?", "k": 2}, confirm=True
     )
     assert result.executed
@@ -91,7 +91,7 @@ def test_ai_run_plan_multi_step_classical() -> None:
             "y": np.asarray([0, 1] * 40, dtype=np.int64),
         }
     )
-    session = Session.ingest(df).ai_configure(provider="mock")
+    session = Session.ingest(df).ai.configure(provider="mock")
     plan = PlanResult(
         goal="Prepare and split",
         steps=(
@@ -140,11 +140,11 @@ def test_ai_execute_fit_torch_tool() -> None:
         Session.ingest(df)
         .set_roles({"x1": "feature", "x2": "feature", "y": "target"})
         .split(test_size=0.2, validation_size=0.2, stratify=True, random_state=0)
-        .ai_configure(provider="mock")
+        .ai.configure(provider="mock")
     )
-    loaders = session.ai_execute("make_torch_loaders", {"batch_size": 16}, confirm=True)
+    loaders = session.ai.execute("make_torch_loaders", {"batch_size": 16}, confirm=True)
     assert loaders.executed
-    fitted = session.ai_execute(
+    fitted = session.ai.execute(
         "fit_torch", {"epochs": 1, "device": "cpu"}, confirm=True
     )
     assert fitted.executed

@@ -121,12 +121,12 @@ def test_native_round_history_has_client_weights() -> None:
 
 def test_session_backend_routing_native() -> None:
     session = _session()
-    fit = session.fit_federated(backend="native", method="fedavg", n_rounds=2)
+    fit = session.federated.fit(backend="native", method="fedavg", n_rounds=2)
     assert fit.backend == "native"
 
 
 def test_evaluate_backend_mismatch_refused() -> None:
     session = _session()
-    session.fit_federated(backend="native", method="fedavg", n_rounds=2)
+    session.federated.fit(backend="native", method="fedavg", n_rounds=2)
     with pytest.raises(ValidationError, match="does not match"):
-        session.evaluate_federated(backend="flower")
+        session.federated.evaluate(backend="flower")

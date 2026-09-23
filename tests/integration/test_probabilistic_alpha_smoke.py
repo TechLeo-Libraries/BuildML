@@ -31,7 +31,7 @@ def test_probabilistic_alpha_smoke(tmp_path: Path) -> None:
         .scale(method="standard")
     )
 
-    fit = session.fit_probabilistic(
+    fit = session.probabilistic.fit(
         estimator="bayesian_ridge",
         conformal=True,
         alpha=0.1,
@@ -40,19 +40,19 @@ def test_probabilistic_alpha_smoke(tmp_path: Path) -> None:
     assert fit.estimator_name == "bayesian_ridge"
     assert fit.conformal_quantile is not None
 
-    preds = session.predict_probabilistic(partition="test", return_std=True)
+    preds = session.probabilistic.predict(partition="test", return_std=True)
     assert preds.std is not None
     assert len(preds.predictions) == preds.n_rows
 
-    intervals = session.predict_interval(partition="test")
+    intervals = session.probabilistic.predict_interval(partition="test")
     assert intervals.lower is not None and intervals.upper is not None
 
-    ev = session.evaluate_probabilistic(partition="validation")
+    ev = session.probabilistic.evaluate(partition="validation")
     assert "nll" in ev.metrics
     assert "interval_coverage" in ev.metrics
 
     bundle = tmp_path / "probabilistic_bundle"
-    session.save_probabilistic_bundle(bundle)
+    session.probabilistic.save_bundle(bundle)
     clone = (
         Session.ingest(frame)
         .set_roles(
@@ -61,6 +61,6 @@ def test_probabilistic_alpha_smoke(tmp_path: Path) -> None:
         .split(test_size=0.2, validation_size=0.2, random_state=0)
         .scale(method="standard")
     )
-    clone.load_probabilistic_bundle(bundle, trusted=True)
-    again = clone.predict_interval(partition="test")
+    clone.probabilistic.load_bundle(bundle, trusted=True)
+    again = clone.probabilistic.predict_interval(partition="test")
     assert again.n_rows == intervals.n_rows

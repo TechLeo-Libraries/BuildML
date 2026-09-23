@@ -30,7 +30,7 @@ You choose the representation and the head. The API refuses a missing
 split, an ambiguous text column, and combinations that cannot work.
 
 Short on-ramp: [NLP quickstart](quickstart-nlp.md). Proof:
-[ticket-routing-nlp](../proofs/ticket-routing-nlp/).
+[ticket-routing-nlp](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/ticket-routing-nlp).
 
 ## Profile, fit, choose, read test
 

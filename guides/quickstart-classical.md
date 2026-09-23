@@ -14,9 +14,9 @@ A longer walk with dirtier data is
 [`examples/classical_loan_loop.py`](../examples/classical_loan_loop.py)
 (120 rows, calibration and threshold on validation). The snippet below
 is a short table so you can read every cell. The proof on German Credit (OpenML `credit-g` when cached) is
-[loan-approval-classical](../proofs/loan-approval-classical/). Wisconsin
+[loan-approval-classical](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/loan-approval-classical). Wisconsin
 breast cancer is
-[breast-cancer-classical](../proofs/breast-cancer-classical/) or
+[breast-cancer-classical](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/breast-cancer-classical) or
 [`examples/breast_cancer_classical_loop.py`](../examples/breast_cancer_classical_loop.py).
 
 ## A first loop
@@ -262,4 +262,4 @@ you mutate state. The teaching studio is
 - [Leakage and recipes](leakage-cv-recipes.md) for fold-local honesty
 - [Preprocess depth](preprocess-depth.md) for encode, dates, text, custom transforms
 - [Artifacts](artifacts-checkpoints-bundles.md) for checkpoint vs pipeline
-- [loan-approval-classical](../proofs/loan-approval-classical/) for the same spine on German Credit (`credit-g` when cached)
+- [loan-approval-classical](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/loan-approval-classical) for the same spine on German Credit (`credit-g` when cached)

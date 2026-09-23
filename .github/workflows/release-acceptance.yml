@@ -64,6 +64,7 @@ jobs:
           evidence.mkdir()
           with (evidence / 'execution.log').open('w', encoding='utf-8') as log:
               for command in (
+                  [str(executable), '-m', 'pip', 'install', '--upgrade', 'pip'],
                   [str(executable), '-m', 'pip', 'install', str(wheel)],
                   [str(executable), '-m', 'pip', 'check'],
                   [str(executable), '-I', str(runner), '--source-root', str(root), '--wheel', str(wheel), '--output', str(evidence / 'result.json')],

@@ -15,6 +15,23 @@ permissions:
   contents: read
 
 jobs:
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install documentation dependencies
+        run: python -m pip install -e ".[docs]"
+      - name: Build documentation with strict references
+        run: python -m sphinx -n -W --keep-going -b html -w sphinx-warnings.log docs artifacts/docs-html
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: documentation-reference-check
+          path: sphinx-warnings.log
+
   test:
     runs-on: ubuntu-latest
     strategy:
@@ -184,6 +201,9 @@ jobs:
           python -m pip install --upgrade pip
           pip install -e ".[dev,engines]"
 
+      - name: Require engine backends
+        run: python -c "import polars, duckdb"
+
       - name: Engine adapter and native-depth tests
         run: |
           pytest \
@@ -273,6 +293,11 @@ jobs:
 
       - name: DL alpha-gate smoke (explicit)
         run: pytest tests/integration/test_dl_alpha_smoke.py -q
+
+      - name: Torch anomaly autoencoder acceptance
+        run: |
+          python -c "import torch"
+          python -m pytest tests/unit/test_anomaly_industry_depth.py::test_torch_autoencoder_fit -q
 
   rag:
     runs-on: ubuntu-latest
@@ -411,8 +436,12 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -e ".[${{ matrix.extra }}]"
-          # Starlette TestClient needs httpx (dashboard FastAPI route tests).
-          pip install pytest pytest-cov ruff httpx
+          # Keep both clients for older and current Starlette test support.
+          pip install pytest pytest-cov ruff httpx httpx2
+
+      - name: Require imbalance backend
+        if: matrix.extra == 'imbalanced'
+        run: python -c "import imblearn"
 
       - name: Extra-focused tests (skip-friendly)
         run: pytest ${{ matrix.tests }} -q
@@ -471,3 +500,83 @@ jobs:
 
       - name: Tier A proof smoke (no skip-existing)
         run: python -m proofs._lib.run_all --smoke --timeout 600
+
+  probabilistic-industry:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install real probabilistic backends
+        run: python -m pip install -e ".[probabilistic-industry]" pytest
+      - name: Require installed backends
+        run: python -c "import mapie, ngboost; from mapie.regression import CrossConformalRegressor; print(mapie.__version__, ngboost.__version__)"
+      - name: Verify dependency compatibility and record versions
+        run: |
+          python -m pip check
+          python -m pip freeze > optional-environment.txt
+      - name: Real MAPIE methods, alpha contracts, persistence and NGBoost scoring
+        run: python -m pytest tests/unit/test_mapie_real_contract.py tests/unit/test_mapie_alpha_contract.py tests/unit/test_probabilistic_industry.py -q -rs --junitxml=optional-results.xml
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: probabilistic-industry-${{ matrix.python-version }}
+          path: |
+            optional-results.xml
+            optional-environment.txt
+
+  practical-optional:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - group: rl-tda
+            extra: rl,tda
+            imports: gymnasium,ripser,persim
+            tests: tests/unit/test_rl_tabular.py tests/unit/test_tda_slice.py tests/unit/test_tda_m2_depth.py
+          - group: excel
+            extra: excel
+            imports: openpyxl
+            tests: tests/unit/test_excel_ingest.py
+          - group: timeseries
+            extra: timeseries
+            imports: statsmodels,ruptures
+            tests: tests/unit/test_timeseries_r3_depth.py tests/unit/test_forecasting_r3_depth.py
+          - group: optimize
+            extra: optimize-industry
+            imports: pulp,ortools,cvxpy,xgboost
+            tests: tests/unit/test_optimize_industry_depth.py tests/unit/test_optimize_cvxpy_adapter.py
+          - group: anomaly
+            extra: anomaly-industry
+            imports: pyod,lightgbm,xgboost
+            tests: tests/unit/test_anomaly_industry_depth.py
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install selected optional group
+        run: python -m pip install -e ".[${{ matrix.extra }}]" pytest
+      - name: Require advertised group dependencies
+        env:
+          REQUIRED_IMPORTS: ${{ matrix.imports }}
+        run: python -c "import importlib, os; [importlib.import_module(name) for name in os.environ['REQUIRED_IMPORTS'].split(',')]"
+      - name: Verify dependency compatibility and record versions
+        run: |
+          python -m pip check
+          python -m pip freeze > optional-environment.txt
+      - name: Run focused optional tests and record explicit skip reasons
+        run: python -m pytest ${{ matrix.tests }} -q -rs --junitxml=optional-results.xml
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: practical-optional-${{ matrix.group }}
+          path: |
+            optional-results.xml
+            optional-environment.txt

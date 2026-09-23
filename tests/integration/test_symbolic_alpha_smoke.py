@@ -26,16 +26,16 @@ def test_symbolic_and_neuro_symbolic_alpha_smoke(tmp_path: Path) -> None:
         .scale(method="standard")
     )
 
-    sym = session.fit_symbolic(source="decision_tree", task="classification")
+    sym = session.symbolic.fit(source="decision_tree", task="classification")
     assert sym.n_rules >= 1
-    pred = session.predict_symbolic(partition="test", return_traces=True)
+    pred = session.symbolic.predict(partition="test", return_traces=True)
     assert pred.n_rows > 0
     assert len(pred.traces) == pred.n_rows
-    ev = session.evaluate_symbolic(partition="validation")
+    ev = session.symbolic.evaluate(partition="validation")
     assert "accuracy" in ev.metrics
 
     bundle = tmp_path / "sym_bundle"
-    session.save_symbolic_bundle(bundle)
+    session.symbolic.save_bundle(bundle)
 
     # Neuro-symbolic hybrid on a fresh session path (same data).
     session2 = (
@@ -56,7 +56,7 @@ def test_symbolic_and_neuro_symbolic_alpha_smoke(tmp_path: Path) -> None:
             "priority": 50,
         }
     ]
-    neuro = session2.fit_neuro_symbolic(
+    neuro = session2.symbolic.fit_neuro(
         mode="constraint_overlay",
         base_estimator="logistic_regression",
         task="classification",
@@ -64,9 +64,9 @@ def test_symbolic_and_neuro_symbolic_alpha_smoke(tmp_path: Path) -> None:
         rule_source="declared",
     )
     assert neuro.n_rules >= 1
-    npred = session2.predict_neuro_symbolic(partition="test")
+    npred = session2.symbolic.predict_neuro(partition="test")
     assert npred.neural_predictions is not None
-    nev = session2.evaluate_neuro_symbolic(partition="validation")
+    nev = session2.symbolic.evaluate_neuro(partition="validation")
     assert "accuracy" in nev.metrics
 
     report = session2.walkthrough()
@@ -81,6 +81,6 @@ def test_symbolic_and_neuro_symbolic_alpha_smoke(tmp_path: Path) -> None:
         .split(test_size=0.2, validation_size=0.2, random_state=0, stratify=True)
         .scale(method="standard")
     )
-    session3.load_symbolic_bundle(bundle, trusted=True)
+    session3.symbolic.load_bundle(bundle, trusted=True)
     assert session3.symbolic_plan is not None
-    assert "accuracy" in session3.evaluate_symbolic(partition="test").metrics
+    assert "accuracy" in session3.symbolic.evaluate(partition="test").metrics

@@ -11,7 +11,7 @@ classical fit path.
 
 [Probabilistic deep](probabilistic-deep.md) ·
 Paste: [`examples/probabilistic_bayesian_ridge.py`](../examples/probabilistic_bayesian_ridge.py) ·
-Evidence: [prob-interval-risk](../proofs/prob-interval-risk/)
+Evidence: [prob-interval-risk](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/prob-interval-risk)
 
 ```python
 import numpy as np

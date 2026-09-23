@@ -23,7 +23,7 @@ whether conformal stays on, and whether Gaussian `return_std` bands
 are enough or you need the conformal overlay.
 
 Short on-ramp: [probabilistic quickstart](quickstart-probabilistic.md).
-Proof: [prob-interval-risk](../proofs/prob-interval-risk/).
+Proof: [prob-interval-risk](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/prob-interval-risk).
 Classical `session.calibration()` stays on the classical `fit` path.
 This plan does not replace it.
 

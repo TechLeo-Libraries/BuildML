@@ -234,7 +234,7 @@ def prerequisite_status(session: Any, operation: str) -> dict[str, bool]:
 
     Returns
     -------
-    dict of str to bool
+    dict[str, bool]
         Prerequisite key mapped to whether it currently holds. Optional and
         recommended prerequisites are included; read
         :attr:`~buildml.explain.schemas.Prerequisite.status` on the catalog

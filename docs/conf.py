@@ -15,6 +15,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+sys.path.insert(0, str(Path(__file__).resolve().parent / "_ext"))
 buildml = importlib.import_module("buildml")
 
 
@@ -32,7 +33,7 @@ author = "Leonard Onyiriuba"
 # ones.
 extensions = [
     "myst_parser",
-    "sphinx.ext.viewcode",
+    "buildml_source_refs",
     "sphinx.ext.autodoc",
     "sphinx.ext.napoleon",
     "sphinx.ext.intersphinx",
@@ -48,7 +49,8 @@ napoleon_include_init_with_doc = True
 napoleon_include_special_with_doc = True
 napoleon_use_param = True
 napoleon_use_rtype = True
-napoleon_preprocess_types = True
+napoleon_preprocess_types = False
+autodoc_type_aliases = {}
 
 # Session methods are two-line delegations to `buildml.session.*_ops`; the
 # signature plus docstring is the whole user-facing surface, so keep both.
@@ -57,7 +59,7 @@ autodoc_member_order = "bysource"
 autodoc_default_options = {
     "members": True,
     "undoc-members": False,
-    "show-inheritance": True,
+    "show-inheritance": False,
 }
 
 # Lets `:class:`pandas.DataFrame`` and friends resolve to upstream docs rather
@@ -68,7 +70,7 @@ intersphinx_mapping = {
     "pandas": ("https://pandas.pydata.org/docs/", None),
     "sklearn": ("https://scikit-learn.org/stable/", None),
 }
-# Read the Docs builds must not fail when an inventory host is unreachable.
+# Bound inventory network waits; failed downloads remain visible build warnings.
 intersphinx_timeout = 10
 
 # Add any paths that contain templates here, relative to this directory.
@@ -102,7 +104,9 @@ pygments_style = "sphinx"
 # If true, `todo` and `todoList` produce output, else they produce nothing.
 todo_include_todos = False
 
-suppress_warnings = ["myst.xref_missing"]
+nitpicky = True
+# Included Markdown headings remain addressable from guide cross-links.
+myst_heading_anchors = 6
 
 
 # -- Options for HTML output -------------------------------------------------

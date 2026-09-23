@@ -51,14 +51,14 @@ def test_resolve_backend_native_knapsack() -> None:
 
 def test_resolve_backend_defaults_f1_threshold_to_native() -> None:
     session = _binary_session()
-    fit = session.fit_decision_policy(method="threshold", partition="validation")
+    fit = session.decision.fit(method="threshold", partition="validation")
     assert fit.backend in {None, "native"}
     assert fit.threshold is not None
 
 
 def test_calibrated_threshold_session_smoke() -> None:
     session = _binary_session()
-    fit = session.fit_decision_policy(
+    fit = session.decision.fit(
         method="threshold",
         backend="calibrated",
         partition="validation",
@@ -67,14 +67,14 @@ def test_calibrated_threshold_session_smoke() -> None:
     )
     assert fit.backend == "calibrated"
     assert fit.threshold is not None
-    ev = session.evaluate_decisions(partition="test")
+    ev = session.decision.evaluate(partition="test")
     assert "f1" in ev.metrics
 
 
 @pytest.mark.skipif(not xgboost_available(), reason="xgboost not installed")
 def test_xgb_threshold_session_smoke() -> None:
     session = _binary_session()
-    fit = session.fit_decision_policy(
+    fit = session.decision.fit(
         method="threshold",
         backend="xgb",
         partition="validation",
@@ -82,7 +82,7 @@ def test_xgb_threshold_session_smoke() -> None:
         fn_cost=6.0,
     )
     assert fit.backend == "xgb"
-    applied = session.apply_decisions(partition="test")
+    applied = session.decision.apply(partition="test")
     assert applied.n_rows > 0
 
 
@@ -108,7 +108,7 @@ def test_missing_extra_raises_for_pulp_when_absent() -> None:
 def test_backend_unsupported_for_cost_matrix() -> None:
     session = _binary_session()
     with pytest.raises(ValidationError, match="not supported"):
-        session.fit_decision_policy(
+        session.decision.fit(
             method="cost_matrix",
             backend="pulp",
             partition="validation",
@@ -119,7 +119,7 @@ def test_backend_unsupported_for_cost_matrix() -> None:
 
 def test_walkthrough_includes_capability_matrix() -> None:
     session = _binary_session()
-    session.fit_decision_policy(
+    session.decision.fit(
         method="threshold",
         partition="validation",
         fp_cost=1.0,

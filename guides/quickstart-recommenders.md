@@ -14,7 +14,7 @@ recommendation finding.
 
 [Recommenders deep](recommenders-deep.md) ·
 Paste: [`examples/recommender_item_knn_loop.py`](../examples/recommender_item_knn_loop.py) ·
-Evidence: [movie-recs-collaborative](../proofs/movie-recs-collaborative/)
+Evidence: [movie-recs-collaborative](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/movie-recs-collaborative)
 
 ---
 

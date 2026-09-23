@@ -82,7 +82,7 @@ def test_core_import_and_catalog() -> None:
 
 def test_fit_adapt_evaluate_bundle(tmp_path: Path) -> None:
     session = _ready_session()
-    fit = session.fit_metalearning(
+    fit = session.metalearning.fit(
         method="prototypical",
         k_shot=3,
         n_query=6,
@@ -95,11 +95,11 @@ def test_fit_adapt_evaluate_bundle(tmp_path: Path) -> None:
 
     # Adapt on a meta-train task support set.
     task_id = session.metalearning_plan.train_task_ids[0]
-    adapt = session.adapt_to_task(task_id=task_id, partition="train", max_support_per_class=3)
+    adapt = session.metalearning.adapt(task_id=task_id, partition="train", max_support_per_class=3)
     assert adapt.n_support >= 2
     assert adapt.n_classes_adapted >= 2
 
-    ev = session.evaluate_metalearning(
+    ev = session.metalearning.evaluate(
         partition="validation",
         k_shot=3,
         prefer_novel_tasks=True,
@@ -113,7 +113,7 @@ def test_fit_adapt_evaluate_bundle(tmp_path: Path) -> None:
     before = session.explain("evaluate_metalearning", moment="before")
     assert before.prerequisite_status.get("metalearning-plan") is True
 
-    bundle = session.save_metalearning_bundle(tmp_path / "metalearning_bundle")
+    bundle = session.metalearning.save_bundle(tmp_path / "metalearning_bundle")
     assert (bundle / "meta.json").is_file()
     plan = load_metalearning_bundle(bundle, trusted=True)
     assert plan.n_train_rows == fit.n_train_rows
@@ -128,7 +128,7 @@ def test_fit_adapt_evaluate_bundle(tmp_path: Path) -> None:
     )
     restored._split_plan = session.split_plan
     restored._dataset = session.dataset
-    restored.load_metalearning_bundle(bundle, trusted=True)
+    restored.metalearning.load_bundle(bundle, trusted=True)
     assert restored.metalearning_plan is not None
     assert restored.metalearning_plan.method == "prototypical"
 
@@ -143,7 +143,7 @@ def test_refuse_without_split() -> None:
         }
     )
     with pytest.raises(LeakageError, match="split"):
-        session.fit_metalearning()
+        session.metalearning.fit()
 
 
 def test_refuse_without_task_column() -> None:
@@ -154,7 +154,7 @@ def test_refuse_without_task_column() -> None:
         .scale(method="standard")
     )
     with pytest.raises(ValidationError, match="task/group"):
-        session.fit_metalearning()
+        session.metalearning.fit()
 
 
 def test_ai_allowlist() -> None:

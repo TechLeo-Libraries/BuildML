@@ -25,7 +25,7 @@ hard antecedents when z3-solver is present, not a proof that the rule
 set is globally consistent.
 
 Short on-ramp: [symbolic quickstart](quickstart-symbolic.md). Proof:
-[policy-rules-neuro-symbolic](../proofs/policy-rules-neuro-symbolic/).
+[policy-rules-neuro-symbolic](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/policy-rules-neuro-symbolic).
 
 ## Induce, predict, evaluate
 
@@ -174,6 +174,6 @@ Benchmark: `python benchmarks/symbolic/rule_fidelity.py`.
 | Invalid industry method | Name not in the methods that actually imported |
 
 [Symbolic quickstart](quickstart-symbolic.md) ·
-[policy-rules-neuro-symbolic](../proofs/policy-rules-neuro-symbolic/) ·
+[policy-rules-neuro-symbolic](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/policy-rules-neuro-symbolic) ·
 [Artifacts](artifacts-checkpoints-bundles.md) ·
 [Leakage and recipes](leakage-cv-recipes.md)

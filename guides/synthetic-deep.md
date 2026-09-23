@@ -28,7 +28,7 @@ fit before `split`, SDV methods without the extra, and sample/evaluate
 without a synthesizer plan.
 
 Short on-ramp: [synthetic quickstart](quickstart-synthetic.md). Proof:
-[synthetic-privacy-utility](../proofs/synthetic-privacy-utility/).
+[synthetic-privacy-utility](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/synthetic-privacy-utility).
 
 ## Fit, sample, evaluate
 

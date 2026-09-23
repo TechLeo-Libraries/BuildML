@@ -25,7 +25,7 @@ and whether overlapping task ids on a random split are acceptable (they
 are disclosed, not hidden).
 
 Short on-ramp: [meta-learning quickstart](quickstart-meta-learning.md).
-Proof: [few-shot-domain-adapt](../proofs/few-shot-domain-adapt/).
+Proof: [few-shot-domain-adapt](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/few-shot-domain-adapt).
 This is tabular few-shot, not Mini-ImageNet, not MAML-at-scale, and not
 [causal](causal-deep.md) meta.
 

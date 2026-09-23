@@ -6,6 +6,8 @@ from scripts import lint_user_copy
 
 
 def test_inventory_includes_scripts_benchmarks_and_untracked_sources(tmp_path, monkeypatch):
+    # Exclusion directories outside the scan root must not hide authored files.
+    tmp_path = tmp_path / ".pytest_tmp" / "repository"
     names = (
         "scripts/new_helper.py",
         "benchmarks/new_benchmark.py",

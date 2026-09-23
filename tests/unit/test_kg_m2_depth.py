@@ -49,7 +49,7 @@ def test_metric_helpers() -> None:
 
 def test_never_trains_on_test_triples() -> None:
     session = _session()
-    session.fit_kg(
+    session.kg.fit(
         method="transe",
         head_column="head",
         relation_column="relation",
@@ -77,7 +77,7 @@ def test_never_trains_on_test_triples() -> None:
 
 def test_distmult_fit_and_eval() -> None:
     session = _session()
-    fit = session.fit_kg(
+    fit = session.kg.fit(
         method="distmult",
         head_column="head",
         relation_column="relation",
@@ -91,14 +91,14 @@ def test_distmult_fit_and_eval() -> None:
     )
     assert fit.method == "distmult"
     assert fit.neg_ratio == 2
-    ev = session.evaluate_kg(partition="test", k=5)
+    ev = session.kg.evaluate(partition="test", k=5)
     assert set(ev.metrics) >= {"mrr", "hits_at_1", "hits_at_3", "hits_at_5"}
     assert ev.n_triples_scored >= 0
 
 
 def test_relation_prediction_mode() -> None:
     session = _session()
-    session.fit_kg(
+    session.kg.fit(
         method="transe",
         head_column="head",
         relation_column="relation",
@@ -111,7 +111,7 @@ def test_relation_prediction_mode() -> None:
     assert plan is not None
     h = plan.entity_ids[0]
     t = plan.entity_ids[min(1, len(plan.entity_ids) - 1)]
-    pred = session.predict_links(mode="relation", heads=[h], tails=[t], k=3)
+    pred = session.kg.predict_links(mode="relation", heads=[h], tails=[t], k=3)
     assert pred.mode == "relation"
     assert pred.n_queries == 1
     assert len(pred.predictions[0]) <= 3
@@ -119,7 +119,7 @@ def test_relation_prediction_mode() -> None:
 
 def test_symbolic_neighbors_typed_path() -> None:
     session = _session()
-    session.fit_kg(
+    session.kg.fit(
         method="transe",
         head_column="head",
         relation_column="relation",
@@ -183,7 +183,7 @@ def test_query_does_not_see_holdout_only_edges() -> None:
         .set_roles({"head": "id", "relation": "id", "tail": "id"})
         .split(test_size=0.25, validation_size=0.15, random_state=0)
     )
-    session.fit_kg(
+    session.kg.fit(
         method="transe",
         head_column="head",
         relation_column="relation",
@@ -202,7 +202,7 @@ def test_query_does_not_see_holdout_only_edges() -> None:
         assert q.n_results == 0
     else:
         # Relation in train: neighbors of HOLD_H must be exactly train tails
-        q = session.query_kg(mode="neighbors", entity="HOLD_H", direction="out")
+        q = session.kg.query(mode="neighbors", entity="HOLD_H", direction="out")
         train_tails = {
             plan.entity_ids[n]
             for r, n in plan.out_edges_.get(plan.entity_index_["HOLD_H"], [])

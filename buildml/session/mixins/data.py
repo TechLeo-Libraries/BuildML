@@ -51,7 +51,7 @@ class DataSessionMixin:
         Session
             A new session. It carries a dataset unless ``dry_run=True`` (or a
             large-source refusal under dry run), and always carries
-            :attr:`ingest_report`. Read that report's ``warnings`` before
+            :attr:`~buildml.Session.ingest_report`. Read that report's ``warnings`` before
             continuing; it is where scale and engine advice appears.
 
         See Also

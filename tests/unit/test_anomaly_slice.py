@@ -78,12 +78,12 @@ def test_fit_requires_split() -> None:
         {"x": "feature", "y": "feature", "is_fraud": "target"}
     )
     with pytest.raises((LeakageError, ValidationError)):
-        session.fit_anomaly(method="isolation_forest")
+        session.anomaly.fit(method="isolation_forest")
 
 
 def test_isolation_forest_fit_score_evaluate_and_bundle(tmp_path: Path) -> None:
     session = _ready_session()
-    fit = session.fit_anomaly(
+    fit = session.anomaly.fit(
         method="isolation_forest",
         mode="unsupervised",
         contamination=0.1,
@@ -96,20 +96,20 @@ def test_isolation_forest_fit_score_evaluate_and_bundle(tmp_path: Path) -> None:
     assert 0.0 < fit.train_alert_rate < 0.5
     assert "is_fraud" not in fit.columns
 
-    scored = session.score_anomalies(partition="test")
+    scored = session.anomaly.score(partition="test")
     assert scored.n_rows > 0
     assert scored.n_flagged >= 0
     assert scored.threshold == fit.threshold
     assert len(scored.scores) == scored.n_rows
     assert set(scored.flags).issubset({0, 1})
 
-    metrics = session.evaluate_anomaly(partition="test", positive_label=1)
+    metrics = session.anomaly.evaluate(partition="test", positive_label=1)
     assert "alert_rate" in metrics.metrics
     assert "average_precision" in metrics.labeled_metrics
     assert "precision_at_k" in metrics.labeled_metrics
     assert metrics.positive_rate is not None
 
-    path = session.save_anomaly_bundle(tmp_path / "anomaly")
+    path = session.anomaly.save_bundle(tmp_path / "anomaly")
     assert (path / "meta.json").is_file()
     assert (path / "anomaly_plan.joblib").is_file()
     plan = load_anomaly_bundle(path, trusted=True)
@@ -120,8 +120,8 @@ def test_isolation_forest_fit_score_evaluate_and_bundle(tmp_path: Path) -> None:
         {"x": "feature", "y": "feature", "is_fraud": "target"}
     )
     restored.split(test_size=0.25, stratify=True, random_state=0).scale(method="standard")
-    restored.load_anomaly_bundle(path, trusted=True)
-    again = restored.score_anomalies(partition="test")
+    restored.anomaly.load_bundle(path, trusted=True)
+    again = restored.anomaly.score(partition="test")
     assert again.flags == scored.flags
 
     with pytest.raises(ValidationError, match=BUNDLE_FORMAT):
@@ -134,7 +134,7 @@ def test_isolation_forest_fit_score_evaluate_and_bundle(tmp_path: Path) -> None:
 
 def test_novelty_and_supervised_modes() -> None:
     session = _ready_session()
-    nov = session.fit_anomaly(
+    nov = session.anomaly.fit(
         method="lof",
         mode="novelty",
         normal_label_value=0,
@@ -144,20 +144,20 @@ def test_novelty_and_supervised_modes() -> None:
     assert nov.mode == "novelty"
     assert nov.n_fit_rows < nov.n_train_rows
     assert any("normal-only" in d.lower() or "novelty" in d.lower() for d in nov.disclosures)
-    scored = session.score_anomalies(partition="test")
+    scored = session.anomaly.score(partition="test")
     assert scored.n_rows > 0
 
     supervised = _ready_session()
-    fit = supervised.fit_anomaly(method="supervised_hgb", mode="supervised")
+    fit = supervised.anomaly.fit(method="supervised_hgb", mode="supervised")
     assert fit.mode == "supervised"
     assert fit.method == "supervised_hgb"
-    ev = supervised.evaluate_anomaly(partition="test", k=5)
+    ev = supervised.anomaly.evaluate(partition="test", k=5)
     assert "average_precision" in ev.labeled_metrics
 
 
 def test_one_class_svm_decision_zero() -> None:
     session = _ready_session()
-    fit = session.fit_anomaly(
+    fit = session.anomaly.fit(
         method="one_class_svm",
         mode="unsupervised",
         threshold_policy="decision_zero",
@@ -165,16 +165,16 @@ def test_one_class_svm_decision_zero() -> None:
     )
     assert fit.threshold == 0.0
     assert fit.threshold_policy == "decision_zero"
-    scored = session.score_anomalies(partition="test")
+    scored = session.anomaly.score(partition="test")
     assert scored.n_rows > 0
 
 
 def test_attach_requires_all_partition() -> None:
     session = _ready_session()
-    session.fit_anomaly(method="isolation_forest", contamination=0.1)
+    session.anomaly.fit(method="isolation_forest", contamination=0.1)
     with pytest.raises(ValidationError, match="partition='all'"):
-        session.score_anomalies(partition="test", attach=True)
-    attached = session.score_anomalies(partition="all", attach=True)
+        session.anomaly.score(partition="test", attach=True)
+    attached = session.anomaly.score(partition="all", attach=True)
     assert attached.attached is True
     assert "is_anomaly" in session.dataset.columns
     assert "anomaly_score" in session.dataset.columns
@@ -188,7 +188,7 @@ def test_prefer_reduce_components() -> None:
         .scale(method="standard")
         .reduce_dimensions(method="pca", n_components=2, prefix="pc")
     )
-    fit = session.fit_anomaly(
+    fit = session.anomaly.fit(
         method="isolation_forest",
         contamination=0.1,
         prefer_reduce_components=True,

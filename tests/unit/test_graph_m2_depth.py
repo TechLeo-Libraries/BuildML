@@ -63,7 +63,7 @@ def _session() -> Session:
         .split(test_size=0.2, validation_size=0.2, random_state=0, stratify=True)
     )
     # Snapshot node ids before scale; scale features only (id stays stable).
-    session.set_graph(edges, node_id_col="node_id", directed=False)
+    session.graph.set_spec(edges, node_id_col="node_id", directed=False)
     session.scale(columns=["f1", "f2"], method="standard")
     return session
 
@@ -71,7 +71,7 @@ def _session() -> Session:
 @pytest.mark.skipif(not networkx_available(), reason="buildml[graph] / networkx missing")
 def test_classical_inductive_fit_eval_bundle(tmp_path) -> None:
     session = _session()
-    fit = session.fit_graph(
+    fit = session.graph.fit(
         method="classical",
         mode="inductive",
         classical_estimator="logistic_regression",
@@ -81,13 +81,13 @@ def test_classical_inductive_fit_eval_bundle(tmp_path) -> None:
     assert fit.mode == "inductive"
     assert fit.n_train_nodes > 0
     assert fit.train_accuracy is not None and fit.train_accuracy > 0.55
-    ev = session.evaluate_graph(partition="validation")
+    ev = session.graph.evaluate(partition="validation")
     assert "accuracy" in ev.metrics
     assert ev.metrics["accuracy"] >= 0.5
-    pred = session.predict_graph(partition="test")
+    pred = session.graph.predict(partition="test")
     assert pred.n_nodes > 0
     out = tmp_path / "graph_bundle"
-    session.save_graph_bundle(out)
+    session.graph.save_bundle(out)
     other_nodes, other_edges = _community_graph()
     other = (
         Session.ingest(other_nodes)
@@ -102,17 +102,17 @@ def test_classical_inductive_fit_eval_bundle(tmp_path) -> None:
         .split(test_size=0.2, validation_size=0.2, random_state=0, stratify=True)
         .scale(columns=["f1", "f2"], method="standard")
     )
-    other.load_graph_bundle(out, trusted=True)
+    other.graph.load_bundle(out, trusted=True)
     assert other.graph_plan is not None
     assert other.graph_spec is not None
-    ev2 = other.evaluate_graph(partition="test")
+    ev2 = other.graph.evaluate(partition="test")
     assert "f1_macro" in ev2.metrics
 
 
 @pytest.mark.skipif(not networkx_available(), reason="buildml[graph] / networkx missing")
 def test_transductive_classical_path() -> None:
     session = _session()
-    fit = session.fit_graph(method="classical", mode="transductive", random_state=1)
+    fit = session.graph.fit(method="classical", mode="transductive", random_state=1)
     assert fit.mode == "transductive"
     assert any("Transductive" in d or "transductive" in d for d in fit.disclosures)
 
@@ -203,7 +203,7 @@ def test_refuse_fit_without_set_graph() -> None:
         .split(test_size=0.2, validation_size=0.2, random_state=0)
     )
     with pytest.raises(ValidationError, match="No GraphSpec"):
-        session.fit_graph(method="classical")
+        session.graph.fit(method="classical")
 
 
 def test_refuse_duplicate_node_ids() -> None:
@@ -222,7 +222,7 @@ def test_refuse_duplicate_node_ids() -> None:
         .split(test_size=0.2, random_state=0)
     )
     with pytest.raises(ValidationError, match="unique"):
-        session.set_graph(edges, node_id_col="node_id")
+        session.graph.set_spec(edges, node_id_col="node_id")
 
 
 def test_ai_allowlist_includes_graph() -> None:

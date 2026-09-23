@@ -12,7 +12,7 @@ clears a classical `FitResult`.
 
 [Synthetic deep](synthetic-deep.md) ·
 Paste: [`examples/synthetic_copula_loop.py`](../examples/synthetic_copula_loop.py) ·
-Evidence: [synthetic-privacy-utility](../proofs/synthetic-privacy-utility/)
+Evidence: [synthetic-privacy-utility](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/synthetic-privacy-utility)
 
 ---
 

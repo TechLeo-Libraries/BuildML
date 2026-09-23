@@ -38,19 +38,19 @@ def test_capability_matrix_sklearn_always_available() -> None:
 
 
 def test_session_capability_matrix() -> None:
-    matrix = Session.symbolic_capability_matrix()
+    matrix = Session.ingest(pd.DataFrame({"x": [1]})).symbolic.capability_matrix()
     assert "backends" in matrix
     assert "neuro_symbolic_backends" in matrix
 
 
 def test_sklearn_backend_explicit() -> None:
     session = _clf_session()
-    fit = session.fit_symbolic(backend="sklearn", source="decision_tree")
+    fit = session.symbolic.fit(backend="sklearn", source="decision_tree")
     assert fit.backend == "sklearn"
     assert fit.n_rules >= 1
-    ev = session.evaluate_symbolic(partition="test")
+    ev = session.symbolic.evaluate(partition="test")
     assert ev.metrics.get("accuracy") is not None
-    pred = session.predict_symbolic(partition="test", return_traces=True)
+    pred = session.symbolic.predict(partition="test", return_traces=True)
     assert len(pred.traces) == pred.n_rows
 
 
@@ -86,7 +86,7 @@ def test_industry_backend_raises_without_extra(monkeypatch: pytest.MonkeyPatch) 
     )
     session = _clf_session()
     with pytest.raises(MissingExtraError, match="symbolic-industry"):
-        session.fit_symbolic(backend="industry", method="skope_rules")
+        session.symbolic.fit(backend="industry", method="skope_rules")
 
 
 def test_torch_concept_bottleneck_neuro_symbolic() -> None:
@@ -94,7 +94,7 @@ def test_torch_concept_bottleneck_neuro_symbolic() -> None:
         pytest.skip("torch not installed")
     session = _clf_session()
     try:
-        fit = session.fit_neuro_symbolic(
+        fit = session.symbolic.fit_neuro(
             backend="torch",
             base_estimator="concept_bottleneck_lite",
             mode="constraint_overlay",
@@ -104,15 +104,15 @@ def test_torch_concept_bottleneck_neuro_symbolic() -> None:
         pytest.skip("torch installed but not importable in this environment")
     assert fit.backend == "torch"
     assert fit.torch_method == "concept_bottleneck_lite"
-    ev = session.evaluate_neuro_symbolic(partition="test")
+    ev = session.symbolic.evaluate_neuro(partition="test")
     assert ev.metrics.get("accuracy") is not None
-    pred = session.predict_neuro_symbolic(partition="test", return_traces=True)
+    pred = session.symbolic.predict_neuro(partition="test", return_traces=True)
     assert pred.neural_predictions is not None
 
 
 def test_verify_constraints_skipped_without_z3() -> None:
     session = _clf_session()
-    fit = session.fit_symbolic(
+    fit = session.symbolic.fit(
         backend="sklearn",
         source="declared",
         rules=[

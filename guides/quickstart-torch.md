@@ -12,7 +12,7 @@ refused.
 
 [Torch deep](torch-deep.md) ·
 Paste: [`examples/torch_tabular_mlp_loop.py`](../examples/torch_tabular_mlp_loop.py) ·
-Evidence: [torch-tabular-underwrite](../proofs/torch-tabular-underwrite/) ·
+Evidence: [torch-tabular-underwrite](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/torch-tabular-underwrite) ·
 [Speech](speech-asr-finetune.md) ·
 [Serve](serve-deploy.md)
 

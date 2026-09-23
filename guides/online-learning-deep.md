@@ -24,7 +24,7 @@ defaults to False). You decide chunk size, whether to pass `classes=`
 yourself, and whether to opt into a disclosed full-refit fallback.
 
 Short on-ramp: [online quickstart](quickstart-online-learning.md).
-Proof: [stream-fraud-online](../proofs/stream-fraud-online/).
+Proof: [stream-fraud-online](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/stream-fraud-online).
 
 ## A first stream
 

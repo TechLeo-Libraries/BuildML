@@ -63,16 +63,16 @@ def test_core_import_and_catalog() -> None:
 
 def test_fit_predict_evaluate_bundle(tmp_path: Path) -> None:
     session = _ready_session()
-    fit = session.fit_multitask(method="multi_output", task="classification")
+    fit = session.multitask.fit(method="multi_output", task="classification")
     assert fit.n_tasks == 2
     assert session.multitask_plan is not None
     assert set(session.multitask_plan.target_columns) == {"t1", "t2"}
 
-    preds = session.predict_multitask(partition="test")
+    preds = session.multitask.predict(partition="test")
     assert preds.n_rows == len(preds.predictions["t1"])
     assert set(preds.predictions) == {"t1", "t2"}
 
-    ev = session.evaluate_multitask(partition="validation")
+    ev = session.multitask.evaluate(partition="validation")
     assert "mean_accuracy" in ev.metrics
     assert "t1" in ev.per_task_metrics and "t2" in ev.per_task_metrics
     assert session.multitask_eval_result is not None
@@ -80,7 +80,7 @@ def test_fit_predict_evaluate_bundle(tmp_path: Path) -> None:
     before = session.explain("evaluate_multitask", moment="before")
     assert before.prerequisite_status.get("multitask-plan") is True
 
-    bundle = session.save_multitask_bundle(tmp_path / "multitask_bundle")
+    bundle = session.multitask.save_bundle(tmp_path / "multitask_bundle")
     assert (bundle / "meta.json").is_file()
     plan = load_multitask_bundle(bundle, trusted=True)
     assert plan.n_train_rows == fit.n_train_rows
@@ -90,7 +90,7 @@ def test_fit_predict_evaluate_bundle(tmp_path: Path) -> None:
     )
     restored._split_plan = session.split_plan
     restored._dataset = session.dataset
-    restored.load_multitask_bundle(bundle, trusted=True)
+    restored.multitask.load_bundle(bundle, trusted=True)
     assert restored.multitask_plan is not None
     assert restored.multitask_plan.method == "multi_output"
 
@@ -100,7 +100,7 @@ def test_refuse_without_split() -> None:
         {"x": "feature", "y": "feature", "t1": "target", "t2": "target"}
     )
     with pytest.raises(LeakageError, match="split"):
-        session.fit_multitask()
+        session.multitask.fit()
 
 
 def test_refuse_single_target() -> None:
@@ -111,7 +111,7 @@ def test_refuse_single_target() -> None:
         .scale(method="standard")
     )
     with pytest.raises(ValidationError, match="at least 2 target"):
-        session.fit_multitask()
+        session.multitask.fit()
 
 
 def test_classical_fit_still_requires_one_target() -> None:

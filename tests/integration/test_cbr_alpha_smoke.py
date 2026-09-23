@@ -22,7 +22,7 @@ def test_cbr_alpha_smoke(tmp_path: Path) -> None:
         .split(test_size=0.2, validation_size=0.2, random_state=7, stratify=True)
         .scale(method="standard")
     )
-    fit = session.fit_cbr(
+    fit = session.cbr.fit(
         task="classification",
         metric="manhattan",
         reuse="majority",
@@ -30,15 +30,15 @@ def test_cbr_alpha_smoke(tmp_path: Path) -> None:
     )
     assert fit.n_cases == session.cbr_plan.case_base.n_cases
 
-    pred = session.predict_cbr(partition="test", return_traces=True)
+    pred = session.cbr.predict(partition="test", return_traces=True)
     assert pred.n_rows > 0
     assert all(t.reuse_mode == "majority" for t in pred.traces)
 
-    ev = session.evaluate_cbr(partition="validation")
+    ev = session.cbr.evaluate(partition="validation")
     assert 0.0 <= ev.metrics["accuracy"] <= 1.0
 
     bundle = tmp_path / "cbr_alpha"
-    session.save_cbr_bundle(bundle)
+    session.cbr.save_bundle(bundle)
 
     report = session.walkthrough()
     assert report.cbr_status["enabled"] is True
@@ -52,6 +52,6 @@ def test_cbr_alpha_smoke(tmp_path: Path) -> None:
         .split(test_size=0.2, validation_size=0.2, random_state=7, stratify=True)
         .scale(method="standard")
     )
-    other.load_cbr_bundle(bundle, trusted=True)
+    other.cbr.load_bundle(bundle, trusted=True)
     assert other.cbr_plan is not None
-    assert other.evaluate_cbr(partition="test").n_rows > 0
+    assert other.cbr.evaluate(partition="test").n_rows > 0

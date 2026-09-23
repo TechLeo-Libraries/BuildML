@@ -71,7 +71,7 @@ def test_tabular_image_fusion_fit_evaluate() -> None:
         )
         .split(test_size=0.25, validation_size=0.2, stratify=True, random_state=0)
     )
-    bundle = session.make_image_multimodal_torch_loaders(
+    bundle = session.dl.make_image_loaders(
         image_column="image",
         image_size=(8, 8),
         batch_size=8,
@@ -79,12 +79,12 @@ def test_tabular_image_fusion_fit_evaluate() -> None:
     )
     assert getattr(bundle, "modality", None) == "tabular_image_fusion"
     assert list(getattr(bundle, "input_layout", ())) == ["numeric", "image"]
-    session.fit_torch(epochs=2, device="cpu")
+    session.dl.fit(epochs=2, device="cpu")
     assert session.dl_train_result is not None
     mod = session.dl_train_result.module
     assert getattr(mod, "image_channels", 0) == 3
     assert getattr(mod, "n_numeric", 0) == 2
-    ev = session.evaluate_torch(partition="validation")
+    ev = session.dl.evaluate(partition="validation")
     assert ev.n_rows > 0
 
 
@@ -96,11 +96,11 @@ def test_text_image_and_triple_fusion() -> None:
         .set_roles({"text": "feature", "image": "feature", "y": "target"})
         .split(test_size=0.25, validation_size=0.2, stratify=True, random_state=1)
     )
-    b1 = text_img.make_image_multimodal_torch_loaders(
+    b1 = text_img.dl.make_image_loaders(
         image_column="image", text_column="text", image_size=(8, 8), batch_size=8
     )
     assert getattr(b1, "modality", None) == "text_image_fusion"
-    text_img.fit_torch(epochs=1, device="cpu")
+    text_img.dl.fit(epochs=1, device="cpu")
 
     triple = (
         Session.ingest(_image_all_frame(48))
@@ -115,7 +115,7 @@ def test_text_image_and_triple_fusion() -> None:
         )
         .split(test_size=0.25, validation_size=0.2, stratify=True, random_state=2)
     )
-    b2 = triple.make_multimodal_torch_loaders(
+    b2 = triple.dl.make_multimodal_loaders(
         image_column="image",
         text_column="text",
         image_size=(8, 8),
@@ -124,7 +124,7 @@ def test_text_image_and_triple_fusion() -> None:
     )
     assert getattr(b2, "modality", None) == "tabular_text_image_fusion"
     assert list(getattr(b2, "input_layout", ())) == ["numeric", "tokens", "image"]
-    triple.fit_torch(epochs=1, device="cpu")
+    triple.dl.fit(epochs=1, device="cpu")
     assert triple.dl_train_result is not None
 
 
@@ -146,7 +146,7 @@ def test_image_channel_stats_are_train_only() -> None:
     for i in test_idx:
         frame.at[i, "image"] = np.ones((8, 8, 3), dtype=np.float32)
 
-    bundle = session.make_image_multimodal_torch_loaders(
+    bundle = session.dl.make_image_loaders(
         image_column="image", image_size=(8, 8), batch_size=8, seed=0
     )
     contract = bundle.multimodal_contract
@@ -165,6 +165,7 @@ def test_image_channel_stats_are_train_only() -> None:
 
 
 @pytest.mark.skipif(not _TORCH_SPEC, reason="torch not installed")
+@pytest.mark.usefixtures("torchscript_deprecation_contract")
 def test_path_image_cells_and_export(tmp_path: Path) -> None:
     _require_torch_or_skip()
     try:
@@ -196,10 +197,10 @@ def test_path_image_cells_and_export(tmp_path: Path) -> None:
         .set_roles({"x1": "feature", "image": "feature", "y": "target"})
         .split(test_size=0.25, validation_size=0.2, stratify=True, random_state=0)
     )
-    session.make_image_multimodal_torch_loaders(
+    session.dl.make_image_loaders(
         image_column="image", image_size=(8, 8), batch_size=8, seed=0
     )
-    session.fit_torch(epochs=1, device="cpu")
+    session.dl.fit(epochs=1, device="cpu")
     mod = session.dl_train_result.module.cpu().eval()
     batch = next(iter(session._torch_loaders.loaders["train"]))
     x_tab, images, _y = batch
@@ -208,7 +209,7 @@ def test_path_image_cells_and_export(tmp_path: Path) -> None:
         y_args = mod(x_tab, images)
     assert y_tuple.shape == y_args.shape
     out = tmp_path / "img_mm.ts.pt"
-    result = session.export_torch(out, format="torchscript")
+    result = session.dl.export(out, format="torchscript")
     assert result.path.exists()
     loaded = load_torchscript(result.path, trusted=True)
     with torch.no_grad():
@@ -226,13 +227,13 @@ def test_export_refuses_silent_tabular_rebuild_after_image_fit(tmp_path: Path) -
         )
         .split(test_size=0.25, validation_size=0.2, stratify=True, random_state=0)
     )
-    session.make_image_multimodal_torch_loaders(
+    session.dl.make_image_loaders(
         image_column="image", image_size=(8, 8), batch_size=8, seed=0
     )
-    session.fit_torch(epochs=1, device="cpu")
+    session.dl.fit(epochs=1, device="cpu")
     session._torch_loaders = None
     with pytest.raises(ValidationError, match="Refusing silent tabular loader rebuild"):
-        session.export_torch(tmp_path / "bad.ts.pt", format="torchscript")
+        session.dl.export(tmp_path / "bad.ts.pt", format="torchscript")
 
 
 @pytest.mark.skipif(not _TORCH_SPEC, reason="torch not installed")
@@ -250,7 +251,7 @@ def test_image_alone_refused() -> None:
         .split(test_size=0.25, validation_size=0.2, stratify=True, random_state=0)
     )
     with pytest.raises(ValidationError, match="tabular numeric|text column"):
-        session.make_image_multimodal_torch_loaders(image_column="image", image_size=(8, 8))
+        session.dl.make_image_loaders(image_column="image", image_size=(8, 8))
 
 
 @pytest.mark.skipif(not _TORCH_SPEC, reason="torch not installed")
@@ -288,7 +289,7 @@ def test_image_loader_bundle_slots_hold_modality_metadata() -> None:
         )
         .split(test_size=0.25, validation_size=0.2, stratify=True, random_state=0)
     )
-    bundle = session.make_image_multimodal_torch_loaders(
+    bundle = session.dl.make_image_loaders(
         image_column="image", image_size=(8, 8), batch_size=8, seed=0
     )
     assert isinstance(bundle, TorchLoaderBundle)
@@ -317,7 +318,7 @@ def test_ai_executor_dispatches_make_image_multimodal_torch_loaders() -> None:
             {"x1": "feature", "x2": "feature", "image": "feature", "y": "target"}
         )
         .split(test_size=0.25, validation_size=0.2, stratify=True, random_state=0)
-        .ai_configure(provider="mock")
+        .ai.configure(provider="mock")
     )
     registry = build_default_registry()
     assert registry.get("make_image_multimodal_torch_loaders") is not None

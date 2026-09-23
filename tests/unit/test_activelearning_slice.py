@@ -83,13 +83,13 @@ def test_fit_requires_split() -> None:
         {"x": "feature", "y": "feature", "label": "target"}
     )
     with pytest.raises((LeakageError, ValidationError)):
-        session.fit_active_learner()
+        session.active_learning.fit()
 
 
 def test_margin_loop_evaluate_bundle(tmp_path: Path) -> None:
     session, truth = _ready_session()
     assert truth is not None
-    fit = session.fit_active_learner(
+    fit = session.active_learning.fit(
         strategy="margin",
         base_estimator="logistic_regression",
         batch_size=6,
@@ -99,21 +99,21 @@ def test_margin_loop_evaluate_bundle(tmp_path: Path) -> None:
     assert fit.n_labeled_train >= 2
     assert session.activelearning_plan is not None
 
-    q = session.suggest_query(batch_size=6)
+    q = session.active_learning.suggest_query(batch_size=6)
     assert len(q.indices) == 6
     # Simulated oracle for tests only.
     labels = [int(truth.loc[i]) for i in q.indices]
-    labeled = session.label_rows(indices=q.indices, labels=labels)
+    labeled = session.active_learning.label_rows(indices=q.indices, labels=labels)
     assert labeled.n_newly_labeled == 6
     assert labeled.refit is True
     assert session.activelearning_plan.n_queries_used == 6
 
-    ev = session.evaluate_active_learning(partition="test")
+    ev = session.active_learning.evaluate(partition="test")
     assert ev.n_labeled_eval == ev.n_rows
     assert "accuracy" in ev.metrics
     assert ev.metrics["accuracy"] >= 0.5
 
-    bundle = session.save_active_learning_bundle(tmp_path / "al")
+    bundle = session.active_learning.save_bundle(tmp_path / "al")
     assert (bundle / "meta.json").is_file()
     plan = load_active_learning_bundle(bundle, trusted=True)
     assert plan.strategy == "margin"
@@ -126,19 +126,19 @@ def test_margin_loop_evaluate_bundle(tmp_path: Path) -> None:
 def test_strategies_and_ai_allowlist() -> None:
     session, truth = _ready_session()
     assert truth is not None
-    session.fit_active_learner(strategy="entropy", label_budget=20)
-    q = session.suggest_query(batch_size=4, strategy="least_confidence")
+    session.active_learning.fit(strategy="entropy", label_budget=20)
+    q = session.active_learning.suggest_query(batch_size=4, strategy="least_confidence")
     assert len(q.indices) == 4
 
     session2, _ = _ready_session()
-    session2.fit_active_learner(strategy="committee", committee_size=4, label_budget=12)
-    q2 = session2.suggest_query(batch_size=3)
+    session2.active_learning.fit(strategy="committee", committee_size=4, label_budget=12)
+    q2 = session2.active_learning.suggest_query(batch_size=3)
     assert len(q2.indices) == 3
     assert q2.strategy == "committee"
 
     session3, _ = _ready_session()
-    session3.fit_active_learner(strategy="expected_model_change_lite", label_budget=12)
-    q3 = session3.suggest_query(batch_size=3)
+    session3.active_learning.fit(strategy="expected_model_change_lite", label_budget=12)
+    q3 = session3.active_learning.suggest_query(batch_size=3)
     assert len(q3.indices) == 3
 
     registry = build_default_registry()
@@ -157,24 +157,24 @@ def test_strategies_and_ai_allowlist() -> None:
 def test_refuse_test_indices_and_budget() -> None:
     session, truth = _ready_session()
     assert truth is not None
-    session.fit_active_learner(strategy="margin", label_budget=2)
+    session.active_learning.fit(strategy="margin", label_budget=2)
     test_idx = list(session.split_plan.test_indices)[0]
     with pytest.raises(ValidationError, match="validation/test"):
-        session.label_rows(indices=[test_idx], labels=[0])
+        session.active_learning.label_rows(indices=[test_idx], labels=[0])
 
-    q = session.suggest_query(batch_size=5)
+    q = session.active_learning.suggest_query(batch_size=5)
     # Budget remaining is 2, so suggest_query should clamp.
     assert len(q.indices) <= 2
     labels = [int(truth.loc[i]) for i in q.indices]
-    session.label_rows(indices=q.indices, labels=labels)
-    q2 = session.suggest_query(batch_size=5)
+    session.active_learning.label_rows(indices=q.indices, labels=labels)
+    q2 = session.active_learning.suggest_query(batch_size=5)
     assert q2.indices == ()
     assert q2.budget_remaining == 0
 
 
 def test_walkthrough_status() -> None:
     session, _ = _ready_session()
-    session.fit_active_learner(strategy="margin")
+    session.active_learning.fit(strategy="margin")
     report = session.walkthrough()
     status = report.activelearning_status
     assert status["enabled"] is True

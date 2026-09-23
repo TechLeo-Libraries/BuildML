@@ -69,7 +69,7 @@ class Dataset:
     _owns_native_connection:
         When True and ``engine`` is DuckDB, this Dataset owns the connection
         inside the ``DuckDBTable`` handle and will close it on
-        :meth:`close_native`. Derived project/filter Datasets share the
+        :meth:`~buildml.data.dataset.Dataset.close_native`. Derived project/filter Datasets share the
         connection with ``_owns_native_connection=False``.
 
     Notes
@@ -83,11 +83,11 @@ class Dataset:
     Root Datasets created by native ingest / ``attach_native`` own the DuckDB
     connection. ``get_engine('duckdb')`` returns a cached adapter that does not
     open a connection per call; relation ops reuse ``DuckDBTable.connection``.
-    Call :meth:`close_native` on the owner when finished (tests should always
+    Call :meth:`~buildml.data.dataset.Dataset.close_native` on the owner when finished (tests should always
     close) so connections are not leaked. Shared derived handles must not close
     the owner's connection.
 
-    ``with dataset:`` (and ``with session:``) calls :meth:`close_native` on exit
+    ``with dataset:`` (and ``with session:``) calls :meth:`~buildml.data.dataset.Dataset.close_native` on exit
     so owned DuckDB connections are released even when an exception is raised.
     """
 
@@ -242,7 +242,7 @@ class Dataset:
         not read dtypes off a Dataset in this state.
 
         **A DuckDB relation brings a connection that must be closed.** This
-        Dataset owns it; call :meth:`close_native` or use ``with``.
+        Dataset owns it; call :meth:`~buildml.data.dataset.Dataset.close_native` or use ``with``.
 
         **Still not an out-of-core fit path.** Fitting materialises, and the
         estimator boundary is the same limit it always was.
@@ -528,7 +528,7 @@ class Dataset:
     def clear_native(self) -> None:
         """Drop the native handle (keeps the Pandas frame).
 
-        Equivalent to :meth:`close_native` for ownership-safe release.
+        Equivalent to :meth:`~buildml.data.dataset.Dataset.close_native` for ownership-safe release.
         """
         self.close_native()
 

@@ -452,8 +452,8 @@ RL_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.rl.fit(mode='tabular_q', algorithm='sarsa', env_id='CliffWalking-v0')",
-            "session.rl.fit(mode='tabular_q', algorithm='expected_sarsa', env_id='CliffWalking-v0')",
+            "session.rl.fit(mode='tabular_q', algorithm='sarsa', env_id='CliffWalking-v1')",
+            "session.rl.fit(mode='tabular_q', algorithm='expected_sarsa', env_id='CliffWalking-v1')",
             "# compare mean_return against algorithm='q_learning' with the same seed",
         ),
         check=(
@@ -584,7 +584,7 @@ RL_BEGINNER: dict[str, BeginnerLayer] = _index(
             ("One-step TD is always lower variance than Monte Carlo.", "Bias-variance trade-off depends on n and noise."),
         ),
         example=(
-            "session.rl.fit(mode='tabular_q', algorithm='sarsa', env_id='CliffWalking-v0')",
+            "session.rl.fit(mode='tabular_q', algorithm='sarsa', env_id='CliffWalking-v1')",
             "session.rl.evaluate()",
         ),
         check=(

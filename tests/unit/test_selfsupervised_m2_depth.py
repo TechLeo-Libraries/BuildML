@@ -30,7 +30,7 @@ def _frame(n: int = 140, seed: int = 5) -> pd.DataFrame:
 def test_masked_encoder_roundtrip() -> None:
     rng = np.random.default_rng(0)
     x = rng.normal(size=(80, 4))
-    enc = MaskedTabularEncoder(latent_dim=5, hidden=(16,), max_iter=60, random_state=0)
+    enc = MaskedTabularEncoder(latent_dim=5, hidden=(16,), max_iter=1000, random_state=0)
     enc.fit(x)
     z = enc.transform(x)
     assert z.shape == (80, 5)
@@ -45,14 +45,16 @@ def test_low_level_pretext_head_eval(tmp_path: Path) -> None:
         .split(test_size=0.25, stratify=True, random_state=0)
         .scale(method="standard")
     )
-    plan, fit = fit_ssl_pretext(
-        session.dataset,
-        session.split_plan,
-        method="masked_tabular",
-        latent_dim=5,
-        max_iter=70,
-        prefer_reduce_components=False,
-    )
+    # Exercise the retained legacy backend and verify its migration warning.
+    with pytest.warns(DeprecationWarning, match="legacy sklearn MLP"):
+        plan, fit = fit_ssl_pretext(
+            session.dataset,
+            session.split_plan,
+            method="masked_tabular",
+            latent_dim=5,
+            max_iter=1000,
+            prefer_reduce_components=False,
+        )
     assert fit.n_train_rows > 0
     head_plan, head_fit = finetune_ssl_head(
         session.dataset, session.split_plan, plan, estimator="logistic_regression"
@@ -83,7 +85,9 @@ def test_head_skips_unlabeled_train() -> None:
         .split(test_size=0.25, stratify=True, random_state=0)
         .scale(method="standard")
     )
-    session.fit_ssl_pretext(method="masked_tabular", latent_dim=4, max_iter=50, random_state=0)
+    # Exercise the retained legacy backend and verify its migration warning.
+    with pytest.warns(DeprecationWarning, match="legacy sklearn MLP"):
+        session.ssl.fit_pretext(method="masked_tabular", latent_dim=4, max_iter=1000, random_state=0)
     # Blank half of train labels
     rng = np.random.default_rng(7)
     full = session.to_pandas().copy()
@@ -96,7 +100,7 @@ def test_head_skips_unlabeled_train() -> None:
         schema=schema_from_dataframe(full),
         roles=dict(session.dataset.roles),
     )
-    head = session.finetune_ssl_head()
+    head = session.ssl.finetune_head()
     assert head.n_unlabeled_skipped > 0
     assert head.n_labeled_train + head.n_unlabeled_skipped == len(idx)
 

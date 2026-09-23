@@ -13,7 +13,7 @@ tabular partitions. Not robotics, not batch offline RL.
 
 [Imitation + RL deep](imitation-rl-deep.md) ·
 Paste: [`examples/imitation_rl_loop.py`](../examples/imitation_rl_loop.py) ·
-Evidence: [imitation-cartpole-control](../proofs/imitation-cartpole-control/)
+Evidence: [imitation-cartpole-control](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/imitation-cartpole-control)
 
 ---
 

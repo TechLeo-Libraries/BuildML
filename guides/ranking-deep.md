@@ -27,7 +27,7 @@ This is tabular LTR. It is not a search engine, not
 `session.rag.retrieve`, and not `session.recommender`.
 
 Short on-ramp: [ranking quickstart](quickstart-ranking.md). Proof:
-[search-relevance-ltr](../proofs/search-relevance-ltr/).
+[search-relevance-ltr](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/search-relevance-ltr).
 
 ## Fit, rank, evaluate
 
@@ -197,5 +197,5 @@ Benchmark: `python benchmarks/ranking/ndcg_lift.py`.
 | NaN/Inf features at score | Clean inputs before `rank` |
 
 [Ranking quickstart](quickstart-ranking.md) ·
-[search-relevance-ltr](../proofs/search-relevance-ltr/) ·
+[search-relevance-ltr](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/search-relevance-ltr) ·
 [Artifacts](artifacts-checkpoints-bundles.md)

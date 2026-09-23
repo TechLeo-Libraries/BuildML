@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
+import re
 from typing import Any
 
+import sklearn
 from sklearn.linear_model import (
-    PassiveAggressiveClassifier,
-    PassiveAggressiveRegressor,
     Perceptron,
     SGDClassifier,
     SGDRegressor,
@@ -71,6 +71,11 @@ def resolve_sklearn_task(estimator: str, task: OnlineTask | None) -> OnlineTask:
     )
 
 
+def _has_pa_learning_rate() -> bool:
+    match = re.match(r"^(\d+)\.(\d+)", sklearn.__version__)
+    return match is not None and tuple(map(int, match.groups())) >= (1, 8)
+
+
 def build_sklearn_estimator(name: str, random_state: int | None) -> Any:
     """Build a sklearn estimator from the online partial_fit family.
 
@@ -99,8 +104,22 @@ def build_sklearn_estimator(name: str, random_state: int | None) -> Any:
     if name == "sgd_regressor":
         return SGDRegressor(random_state=random_state)
     if name == "passive_aggressive_classifier":
+        if _has_pa_learning_rate():
+            return SGDClassifier(
+                loss="hinge", penalty=None, learning_rate="pa1", eta0=1.0,
+                random_state=random_state,
+            )
+        from sklearn.linear_model import PassiveAggressiveClassifier
+
         return PassiveAggressiveClassifier(random_state=random_state)
     if name == "passive_aggressive_regressor":
+        if _has_pa_learning_rate():
+            return SGDRegressor(
+                loss="epsilon_insensitive", penalty=None, learning_rate="pa1",
+                eta0=1.0, random_state=random_state,
+            )
+        from sklearn.linear_model import PassiveAggressiveRegressor
+
         return PassiveAggressiveRegressor(random_state=random_state)
     if name == "perceptron":
         return Perceptron(random_state=random_state)

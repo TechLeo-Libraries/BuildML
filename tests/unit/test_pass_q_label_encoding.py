@@ -66,15 +66,15 @@ def test_tabular_non_contiguous_labels_train_and_eval() -> None:
         .set_roles({"x1": "feature", "x2": "feature", "y": "target"})
         .split(test_size=0.25, validation_size=0.2, stratify=True, random_state=0)
     )
-    bundle = session.make_torch_loaders(batch_size=8, seed=0)
+    bundle = session.dl.make_loaders(batch_size=8, seed=0)
     assert bundle.contract.class_labels == (10, 20)
     xs, ys = next(iter(bundle.loaders["train"]))
     assert int(ys.min()) >= 0
     assert int(ys.max()) <= 1
-    session.fit_torch(epochs=2, device="cpu")
+    session.dl.fit(epochs=2, device="cpu")
     assert session.dl_train_result is not None
     assert getattr(session.dl_train_result.module, "n_classes", None) == 2
-    ev = session.evaluate_torch(partition="validation")
+    ev = session.dl.evaluate(partition="validation")
     assert ev.n_rows > 0
     assert "accuracy" in ev.metrics
     assert ev.class_labels == (10, 20)
@@ -99,7 +99,7 @@ def test_speech_non_contiguous_labels_train_and_eval() -> None:
         .set_roles({"audio": "feature", "y": "target"})
         .split(test_size=0.25, validation_size=0.2, stratify=True, random_state=1)
     )
-    bundle = session.make_speech_torch_loaders(
+    bundle = session.dl.make_speech_loaders(
         audio_column="audio",
         sample_rate=_AUDIO_SR,
         max_samples=_AUDIO_LEN,
@@ -110,9 +110,9 @@ def test_speech_non_contiguous_labels_train_and_eval() -> None:
     _, ys = next(iter(bundle.loaders["train"]))
     assert int(ys.min()) >= 0
     assert int(ys.max()) <= 2
-    session.fit_speech_torch(epochs=2, device="cpu")
+    session.dl.fit_speech(epochs=2, device="cpu")
     assert getattr(session.dl_train_result.module, "n_classes", None) == 3
-    ev = session.evaluate_torch(partition="validation")
+    ev = session.dl.evaluate(partition="validation")
     assert ev.n_rows > 0
     assert ev.class_labels == (10, 20, 30)
 
@@ -133,9 +133,9 @@ def test_text_non_contiguous_labels_train() -> None:
         .set_roles({"text": "feature", "y": "target"})
         .split(test_size=0.25, validation_size=0.2, stratify=True, random_state=2)
     )
-    bundle = session.make_text_torch_loaders(text_column="text", batch_size=8, seed=2)
+    bundle = session.dl.make_text_loaders(text_column="text", batch_size=8, seed=2)
     assert bundle.contract.class_labels == (100, 200)
     _, ys = next(iter(bundle.loaders["train"]))
     assert set(int(v) for v in ys.unique().tolist()) <= {0, 1}
-    session.fit_torch(epochs=1, device="cpu")
+    session.dl.fit(epochs=1, device="cpu")
     assert getattr(session.dl_train_result.module, "n_classes", None) == 2

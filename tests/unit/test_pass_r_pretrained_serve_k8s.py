@@ -46,7 +46,7 @@ def test_refuse_foundation_model_pretrain_message() -> None:
 def test_session_refuse_speech_foundation_pretrain() -> None:
     session = Session.ingest(_tiny_frame()).set_roles({"a": "feature", "y": "target"})
     with pytest.raises(ValidationError, match="foundation"):
-        session.refuse_speech_foundation_pretrain()
+        session.dl.refuse_speech_pretrain()
 
 
 def test_pack_torchserve_and_tensorrt_plan(tmp_path: Path) -> None:
@@ -72,11 +72,11 @@ def test_session_pack_helpers(tmp_path: Path) -> None:
     session = Session.ingest(_tiny_frame()).set_roles({"a": "feature", "y": "target"})
     ts = tmp_path / "m.pt"
     ts.write_bytes(b"abc")
-    pack = session.pack_torchserve(tmp_path / "out_ts", torchscript_path=ts)
+    pack = session.dl.pack_torchserve(tmp_path / "out_ts", torchscript_path=ts)
     assert pack.path.is_dir()
     onnx_path = tmp_path / "m.onnx"
     onnx_path.write_bytes(b"xyz")
-    plan = session.prepare_tensorrt_export(tmp_path / "out_trt", onnx_path=onnx_path)
+    plan = session.dl.prepare_tensorrt(tmp_path / "out_trt", onnx_path=onnx_path)
     assert plan.path.is_dir()
 
 
@@ -101,7 +101,7 @@ def test_k8s_torchrun_job_render(tmp_path: Path) -> None:
         assert [d["kind"] for d in docs] == ["Job", "Service", "ConfigMap"]
         assert docs[0]["spec"]["template"]["spec"]["serviceAccountName"] == "buildml-trainer"
     session = Session.ingest(_tiny_frame()).set_roles({"a": "feature", "y": "target"})
-    result = session.emit_k8s_ddp_job(tmp_path / "session-job.yaml", nnodes=2)
+    result = session.dl.emit_k8s_ddp(tmp_path / "session-job.yaml", nnodes=2)
     assert result.path.is_file()
     assert any(
         "multi-cluster" in lim.lower() or "not live" in lim.lower() for lim in result.limitations

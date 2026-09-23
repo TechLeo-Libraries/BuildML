@@ -13,7 +13,7 @@ streaming fraud platform.
 
 [Anomaly deep](anomaly-deep.md) ·
 Paste: [`examples/anomaly_iforest_loop.py`](../examples/anomaly_iforest_loop.py) ·
-Evidence: [network-intrusion-anomaly](../proofs/network-intrusion-anomaly/)
+Evidence: [network-intrusion-anomaly](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/network-intrusion-anomaly)
 
 Classical `Session.fit` stays unchanged. Anomaly methods are
 `session.anomaly.fit` / `session.anomaly.score` / `session.anomaly.evaluate` /

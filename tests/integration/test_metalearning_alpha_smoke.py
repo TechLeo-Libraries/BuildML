@@ -43,7 +43,7 @@ def test_metalearning_alpha_smoke(tmp_path: Path) -> None:
         .scale(method="standard")
     )
 
-    fit = session.fit_metalearning(
+    fit = session.metalearning.fit(
         method="prototypical",
         k_shot=3,
         n_query=6,
@@ -53,7 +53,7 @@ def test_metalearning_alpha_smoke(tmp_path: Path) -> None:
     assert fit.n_meta_train_tasks >= 2
 
     # Episodic eval on train held-out tasks (true task-disjoint within train).
-    ev_train = session.evaluate_metalearning(
+    ev_train = session.metalearning.evaluate(
         partition="train",
         k_shot=3,
         prefer_novel_tasks=True,
@@ -61,7 +61,7 @@ def test_metalearning_alpha_smoke(tmp_path: Path) -> None:
     assert ev_train.n_tasks_evaluated >= 1
     assert "mean_accuracy" in ev_train.metrics
 
-    adapt = session.adapt_to_task(
+    adapt = session.metalearning.adapt(
         task_id=session.metalearning_plan.train_task_ids[0],
         partition="train",
         max_support_per_class=3,
@@ -73,7 +73,7 @@ def test_metalearning_alpha_smoke(tmp_path: Path) -> None:
     assert status.get("has_metalearning_plan") is True
     assert status.get("method") == "prototypical"
 
-    bundle = session.save_metalearning_bundle(tmp_path / "meta_bundle")
+    bundle = session.metalearning.save_bundle(tmp_path / "meta_bundle")
     other = Session.ingest(frame).set_roles(
         {
             "x": "feature",
@@ -84,6 +84,6 @@ def test_metalearning_alpha_smoke(tmp_path: Path) -> None:
     )
     other._split_plan = session.split_plan
     other._dataset = session.dataset
-    other.load_metalearning_bundle(bundle, trusted=True)
-    ev2 = other.evaluate_metalearning(partition="test", prefer_novel_tasks=False)
+    other.metalearning.load_bundle(bundle, trusted=True)
+    ev2 = other.metalearning.evaluate(partition="test", prefer_novel_tasks=False)
     assert ev2.method == "prototypical"

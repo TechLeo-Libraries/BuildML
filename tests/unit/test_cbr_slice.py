@@ -55,7 +55,7 @@ def test_core_import_and_catalog() -> None:
 
 def test_session_fit_predict_eval_bundle(tmp_path: Path) -> None:
     session = _clf_session()
-    fit = session.fit_cbr(
+    fit = session.cbr.fit(
         task="classification",
         metric="euclidean",
         reuse="distance_weighted",
@@ -65,30 +65,30 @@ def test_session_fit_predict_eval_bundle(tmp_path: Path) -> None:
     assert fit.n_cases >= 1
     assert fit.metric == "euclidean"
 
-    retrieved = session.retrieve_cases(partition="test", k=3)
+    retrieved = session.cbr.retrieve(partition="test", k=3)
     assert retrieved.n_queries == len(retrieved.traces)
     assert len(retrieved.traces[0].neighbor_case_ids) == 3
 
-    pred = session.predict_cbr(partition="test", return_traces=True)
+    pred = session.cbr.predict(partition="test", return_traces=True)
     assert len(pred.predictions) == pred.n_rows
     assert len(pred.traces) == pred.n_rows
     assert pred.traces[0].prediction is not None
     assert len(pred.traces[0].weights) == 5
 
-    ev = session.evaluate_cbr(partition="validation")
+    ev = session.cbr.evaluate(partition="validation")
     assert "accuracy" in ev.metrics
     assert ev.mean_neighbor_distance is not None
 
     out = tmp_path / "cbr_bundle"
-    session.save_cbr_bundle(out)
+    session.cbr.save_bundle(out)
     assert (out / "meta.json").is_file()
     assert (out / "cbr_plan.joblib").is_file()
 
     other = _clf_session()
-    other.load_cbr_bundle(out, trusted=True)
+    other.cbr.load_bundle(out, trusted=True)
     assert other.cbr_plan is not None
     assert other.cbr_plan.metric == "euclidean"
-    reloaded = other.evaluate_cbr(partition="test")
+    reloaded = other.cbr.evaluate(partition="test")
     assert "accuracy" in reloaded.metrics
 
 
@@ -110,7 +110,7 @@ def test_regression_and_mixed_metric() -> None:
         .split(test_size=0.2, validation_size=0.2, random_state=0)
         .scale(method="standard", columns=["a", "b"])
     )
-    fit = session.fit_cbr(
+    fit = session.cbr.fit(
         task="regression",
         metric="mixed",
         reuse="distance_weighted",
@@ -118,7 +118,7 @@ def test_regression_and_mixed_metric() -> None:
         k=4,
     )
     assert fit.n_cases >= 1
-    ev = session.evaluate_cbr(partition="test")
+    ev = session.cbr.evaluate(partition="test")
     assert "rmse" in ev.metrics
 
     session2 = (
@@ -129,7 +129,7 @@ def test_regression_and_mixed_metric() -> None:
         .split(test_size=0.2, validation_size=0.2, random_state=1)
         .scale(method="standard", columns=["a", "b"])
     )
-    fit2 = session2.fit_cbr(
+    fit2 = session2.cbr.fit(
         task="regression",
         metric="euclidean",
         reuse="local_ridge",
@@ -137,19 +137,19 @@ def test_regression_and_mixed_metric() -> None:
         columns=["a", "b"],
     )
     assert fit2.reuse == "local_ridge"
-    assert "r2" in session2.evaluate_cbr(partition="validation").metrics
+    assert "r2" in session2.cbr.evaluate(partition="validation").metrics
 
 
 def test_retain_refuses_holdout_and_accepts_external() -> None:
     session = _clf_session()
-    session.fit_cbr(task="classification", k=3)
+    session.cbr.fit(task="classification", k=3)
     split = session._split_plan
     assert split is not None
     frame = session.dataset._ensure_pandas()
     test_label = frame.index[list(split.test_indices)[0]]
 
     with pytest.raises(ValidationError, match="validation/test"):
-        session.retain_cbr(
+        session.cbr.retain(
             row_indices=[test_label],
             source_disclosure="should fail — test index",
         )
@@ -159,7 +159,7 @@ def test_retain_refuses_holdout_and_accepts_external() -> None:
     train_frame = frame.iloc[list(split.train_indices)[:2]].copy()
     train_frame.index = [20_000, 20_001]
     before = session.cbr_plan.case_base.n_cases
-    result = session.retain_cbr(
+    result = session.cbr.retain(
         labeled_frame=train_frame,
         source_disclosure="synthetic external labels for unit test",
     )
@@ -181,12 +181,12 @@ def test_leakage_refuses_fit_without_split() -> None:
         {"a": "feature", "b": "feature", "y": "target"}
     )
     with pytest.raises((ValidationError, LeakageError)):
-        session.fit_cbr(task="classification")
+        session.cbr.fit(task="classification")
 
 
 def test_walkthrough_exposes_cbr_status() -> None:
     session = _clf_session()
-    session.fit_cbr(task="classification", k=3)
+    session.cbr.fit(task="classification", k=3)
     report = session.walkthrough()
     payload = report.to_dict()
     assert "cbr_status" in payload

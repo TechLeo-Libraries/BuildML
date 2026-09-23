@@ -56,30 +56,30 @@ def test_core_import_and_catalog() -> None:
 
 def test_session_fit_predict_eval_bundle(tmp_path: Path) -> None:
     session = _clf_session()
-    fit = session.fit_symbolic(source="decision_tree", task="classification")
+    fit = session.symbolic.fit(source="decision_tree", task="classification")
     assert session.symbolic_plan is not None
     assert fit.n_rules >= 1
     assert fit.provenance == "induced_tree"
 
-    pred = session.predict_symbolic(partition="test", return_traces=True)
+    pred = session.symbolic.predict(partition="test", return_traces=True)
     assert len(pred.predictions) == pred.n_rows
     assert len(pred.traces) == pred.n_rows
     assert pred.traces[0].chosen_rule_id is not None or pred.traces[0].notes
 
-    ev = session.evaluate_symbolic(partition="validation")
+    ev = session.symbolic.evaluate(partition="validation")
     assert "accuracy" in ev.metrics
     assert ev.rule_coverage is not None
 
     out = tmp_path / "symbolic_bundle"
-    session.save_symbolic_bundle(out)
+    session.symbolic.save_bundle(out)
     assert (out / "meta.json").is_file()
     assert (out / "symbolic_plan.joblib").is_file()
 
     other = _clf_session()
-    other.load_symbolic_bundle(out, trusted=True)
+    other.symbolic.load_bundle(out, trusted=True)
     assert other.symbolic_plan is not None
     assert other.symbolic_plan.source == "decision_tree"
-    reloaded = other.evaluate_symbolic(partition="test")
+    reloaded = other.symbolic.evaluate(partition="test")
     assert "accuracy" in reloaded.metrics
 
 
@@ -97,15 +97,15 @@ def test_declared_rules_and_decision_list() -> None:
             "priority": 5,
         },
     ]
-    fit = session.fit_symbolic(
+    fit = session.symbolic.fit(
         source="declared", task="classification", rules=rules
     )
     assert fit.provenance == "declared"
-    pred = session.predict_symbolic(partition="test")
+    pred = session.symbolic.predict(partition="test")
     assert len(pred.predictions) > 0
 
     session2 = _clf_session()
-    fit2 = session2.fit_symbolic(source="decision_list", task="classification")
+    fit2 = session2.symbolic.fit(source="decision_list", task="classification")
     assert fit2.provenance == "induced_list"
     assert fit2.n_rules >= 1
 
@@ -122,7 +122,7 @@ def test_neuro_symbolic_overlay_and_bundle(tmp_path: Path) -> None:
             "priority": 100,
         }
     ]
-    fit = session.fit_neuro_symbolic(
+    fit = session.symbolic.fit_neuro(
         mode="constraint_overlay",
         base_estimator="logistic_regression",
         task="classification",
@@ -133,28 +133,28 @@ def test_neuro_symbolic_overlay_and_bundle(tmp_path: Path) -> None:
     assert fit.mode == "constraint_overlay"
     assert fit.rule_provenance == "declared"
 
-    pred = session.predict_neuro_symbolic(partition="test")
+    pred = session.symbolic.predict_neuro(partition="test")
     assert pred.neural_predictions is not None
     assert len(pred.traces) == pred.n_rows
 
-    ev = session.evaluate_neuro_symbolic(partition="validation")
+    ev = session.symbolic.evaluate_neuro(partition="validation")
     assert "accuracy" in ev.metrics
 
     # rules_as_features path
     session2 = _clf_session()
-    fit2 = session2.fit_neuro_symbolic(
+    fit2 = session2.symbolic.fit_neuro(
         mode="rules_as_features",
         rule_source="decision_tree",
         task="classification",
     )
     assert fit2.n_rules >= 1
-    ev2 = session2.evaluate_neuro_symbolic(partition="test")
+    ev2 = session2.symbolic.evaluate_neuro(partition="test")
     assert "accuracy" in ev2.metrics
 
     out = tmp_path / "neuro_bundle"
-    session2.save_symbolic_bundle(out)
+    session2.symbolic.save_bundle(out)
     other = _clf_session()
-    other.load_symbolic_bundle(out, trusted=True)
+    other.symbolic.load_bundle(out, trusted=True)
     assert other.neuro_symbolic_plan is not None
     assert other.neuro_symbolic_plan.mode == "rules_as_features"
 
@@ -172,14 +172,14 @@ def test_leakage_refuses_fit_without_split() -> None:
         {"a": "feature", "b": "feature", "y": "target"}
     )
     with pytest.raises((ValidationError, LeakageError)):
-        session.fit_symbolic(source="decision_tree")
+        session.symbolic.fit(source="decision_tree")
     with pytest.raises((ValidationError, LeakageError)):
-        session.fit_neuro_symbolic(mode="constraint_overlay")
+        session.symbolic.fit_neuro(mode="constraint_overlay")
 
 
 def test_walkthrough_exposes_symbolic_status() -> None:
     session = _clf_session()
-    session.fit_symbolic(source="decision_tree")
+    session.symbolic.fit(source="decision_tree")
     report = session.walkthrough()
     payload = report.to_dict()
     assert "symbolic_status" in payload

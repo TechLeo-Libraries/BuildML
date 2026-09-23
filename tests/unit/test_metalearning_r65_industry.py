@@ -94,7 +94,7 @@ def test_torch_backend_missing_extra() -> None:
 
 def test_held_out_task_ids_preserved() -> None:
     session = _session()
-    fit = session.fit_metalearning(
+    fit = session.metalearning.fit(
         method="prototypical",
         k_shot=3,
         n_episodes=6,
@@ -111,7 +111,7 @@ def test_held_out_task_ids_preserved() -> None:
 def test_torch_prototypical_smoke() -> None:
     _skip_if_torch_unusable()
     session = _session()
-    fit = session.fit_metalearning(
+    fit = session.metalearning.fit(
         backend="torch",
         method="prototypical_torch",
         k_shot=3,
@@ -122,7 +122,7 @@ def test_torch_prototypical_smoke() -> None:
     assert fit.backend == "torch"
     assert fit.method == "prototypical_torch"
     assert session.metalearning_plan.meta_learner_ is not None
-    ev = session.evaluate_metalearning(partition="test", k_shot=3)
+    ev = session.metalearning.evaluate(partition="test", k_shot=3)
     assert ev.method == "prototypical_torch"
 
 
@@ -130,7 +130,7 @@ def test_torch_prototypical_smoke() -> None:
 def test_industry_maml_smoke() -> None:
     _skip_if_torch_unusable()
     session = _session()
-    fit = session.fit_metalearning(
+    fit = session.metalearning.fit(
         backend="industry",
         method="maml",
         k_shot=3,
@@ -141,7 +141,7 @@ def test_industry_maml_smoke() -> None:
     )
     assert fit.backend == "industry"
     assert fit.method == "maml"
-    adapt = session.adapt_to_task(
+    adapt = session.metalearning.adapt(
         task_id=session.metalearning_plan.train_task_ids[0],
         partition="train",
         max_support_per_class=3,

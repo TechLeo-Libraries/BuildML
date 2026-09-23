@@ -113,19 +113,19 @@ def test_evaluate_generation_echo_provider() -> None:
 
 def test_session_explicit_hashing_and_hybrid_override() -> None:
     session = Session()
-    session.rag_ingest_corpus(
+    session.rag.ingest_corpus(
         [
             {"doc_id": "py", "text": "python data science language"},
             {"doc_id": "rs", "text": "rust systems programming language"},
         ]
     )
-    session.rag_chunk(size=80, overlap=8, strategy="recursive")
-    session.rag_embed_and_index(embedder="hashing", chunk_size=80, chunk_overlap=8)
+    session.rag.chunk(size=80, overlap=8, strategy="recursive")
+    session.rag.embed_and_index(embedder="hashing", chunk_size=80, chunk_overlap=8)
     assert session.rag_index_result.embedder_id == "buildml.hashing_embed.v1"
-    dense = session.rag_retrieve("systems rust", k=2, mode="dense")
-    hybrid = session.rag_retrieve("systems rust", k=2, mode="hybrid")
+    dense = session.rag.retrieve("systems rust", k=2, mode="dense")
+    hybrid = session.rag.retrieve("systems rust", k=2, mode="hybrid")
     assert dense.mode == "dense"
     assert hybrid.mode == "hybrid"
 
-    metrics = session.rag_evaluate({"systems rust": ["rs"]}, k=2, mode="hybrid")
+    metrics = session.rag.evaluate({"systems rust": ["rs"]}, k=2, mode="hybrid")
     assert metrics.retrieve_mode == "hybrid"

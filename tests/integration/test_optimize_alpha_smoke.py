@@ -31,28 +31,28 @@ def test_decision_end_to_end_smoke(tmp_path) -> None:
         .fit(LogisticRegression(max_iter=500), task="classification")
     )
 
-    session.fit_decision_policy(
+    session.decision.fit(
         method="threshold",
         partition="validation",
         fp_cost=1.0,
         fn_cost=3.0,
     )
-    eval_thr = session.evaluate_decisions(partition="test")
+    eval_thr = session.decision.evaluate(partition="test")
     assert eval_thr.realized_cost is not None
 
-    session.fit_decision_policy(
+    session.decision.fit(
         method="knapsack",
         partition="validation",
         budget=30.0,
         cost_column="cost",
         knapsack_solver="dp",
     )
-    applied = session.apply_decisions(partition="test")
+    applied = session.decision.apply(partition="test")
     assert applied.n_selected >= 1
     assert float(applied.selected_cost or 0.0) <= 30.0 + 1e-5
 
     bundle = tmp_path / "decision_bundle"
-    session.save_decision_bundle(bundle)
+    session.decision.save_bundle(bundle)
     assert (bundle / "meta.json").is_file()
     assert (bundle / "decision_plan.joblib").is_file()
 

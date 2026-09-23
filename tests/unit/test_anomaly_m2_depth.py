@@ -69,7 +69,7 @@ def test_novelty_requires_normal_definition() -> None:
         .scale(method="standard")
     )
     with pytest.raises(ValidationError, match="novelty mode requires"):
-        session.fit_anomaly(method="lof", mode="novelty", contamination=0.1)
+        session.anomaly.fit(method="lof", mode="novelty", contamination=0.1)
 
 
 def test_supervised_requires_binary_target() -> None:
@@ -81,7 +81,7 @@ def test_supervised_requires_binary_target() -> None:
         .scale(method="standard")
     )
     with pytest.raises(ValidationError, match="binary target"):
-        session.fit_anomaly(method="supervised_hgb", mode="supervised")
+        session.anomaly.fit(method="supervised_hgb", mode="supervised")
 
 
 def test_null_features_refused() -> None:
@@ -93,7 +93,7 @@ def test_null_features_refused() -> None:
         .split(test_size=0.25, stratify=True, random_state=0)
     )
     with pytest.raises(ValidationError, match="non-null"):
-        session.fit_anomaly(method="isolation_forest", contamination=0.1)
+        session.anomaly.fit(method="isolation_forest", contamination=0.1)
 
 
 def test_validation_fallback_and_explain() -> None:
@@ -103,9 +103,9 @@ def test_validation_fallback_and_explain() -> None:
         .split(test_size=0.25, stratify=True, random_state=0)
         .scale(method="standard")
     )
-    session.fit_anomaly(method="isolation_forest", contamination=0.1)
+    session.anomaly.fit(method="isolation_forest", contamination=0.1)
     # No validation partition → evaluate_anomaly falls back to test
-    ev = session.evaluate_anomaly(partition="validation")
+    ev = session.anomaly.evaluate(partition="validation")
     assert ev.partition == "test"
     before = session.explain("fit_anomaly", moment="before")
     assert before.operation == "fit_anomaly"
@@ -119,8 +119,8 @@ def test_walkthrough_and_ai_tools_include_anomaly() -> None:
         .split(test_size=0.25, stratify=True, random_state=0)
         .scale(method="standard")
     )
-    session.fit_anomaly(method="isolation_forest", contamination=0.1)
-    session.evaluate_anomaly(partition="test")
+    session.anomaly.fit(method="isolation_forest", contamination=0.1)
+    session.anomaly.evaluate(partition="test")
     report = session.walkthrough()
     payload = report.to_dict()
     status = payload["anomaly_status"]
@@ -147,9 +147,9 @@ def test_score_threshold_policy() -> None:
         .scale(method="standard")
     )
     # First fit to learn a score scale, then refit with absolute threshold.
-    probe = session.fit_anomaly(method="isolation_forest", contamination=0.1)
+    probe = session.anomaly.fit(method="isolation_forest", contamination=0.1)
     thr = float(probe.train_score_stats["p90"])
-    fit = session.fit_anomaly(
+    fit = session.anomaly.fit(
         method="isolation_forest",
         contamination=0.1,
         threshold_policy="score_threshold",

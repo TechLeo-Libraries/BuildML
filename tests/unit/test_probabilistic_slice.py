@@ -25,7 +25,7 @@ def _session() -> Session:
 
 def test_session_fit_interval_eval_bundle(tmp_path: Path) -> None:
     session = _session()
-    fit = session.fit_probabilistic(
+    fit = session.probabilistic.fit(
         estimator="bayesian_ridge",
         conformal=True,
         alpha=0.1,
@@ -33,11 +33,11 @@ def test_session_fit_interval_eval_bundle(tmp_path: Path) -> None:
     assert session.probabilistic_plan is not None
     assert fit.n_conformal_calib_rows > 0
 
-    interval = session.predict_interval(partition="test")
+    interval = session.probabilistic.predict_interval(partition="test")
     assert interval.lower is not None
     assert len(interval.lower) == len(interval.upper)
 
-    ev = session.evaluate_probabilistic(partition="validation")
+    ev = session.probabilistic.evaluate(partition="validation")
     assert "rmse" in ev.metrics
     assert ev.interval_coverage is not None
 
@@ -51,21 +51,21 @@ def test_session_fit_interval_eval_bundle(tmp_path: Path) -> None:
     assert raised
 
     out = tmp_path / "prob_bundle"
-    session.save_probabilistic_bundle(out)
+    session.probabilistic.save_bundle(out)
     assert (out / "meta.json").is_file()
     assert (out / "probabilistic_plan.joblib").is_file()
 
     other = _session()
-    other.load_probabilistic_bundle(out, trusted=True)
+    other.probabilistic.load_bundle(out, trusted=True)
     assert other.probabilistic_plan is not None
     assert other.probabilistic_plan.estimator_name == "bayesian_ridge"
-    reloaded = other.evaluate_probabilistic(partition="test")
+    reloaded = other.probabilistic.evaluate(partition="test")
     assert "mae" in reloaded.metrics
 
 
 def test_walkthrough_exposes_probabilistic_status() -> None:
     session = _session()
-    session.fit_probabilistic(estimator="bayesian_ridge", conformal=True)
+    session.probabilistic.fit(estimator="bayesian_ridge", conformal=True)
     report = session.walkthrough()
     payload = report.to_dict()
     assert "probabilistic_status" in payload

@@ -11,7 +11,7 @@ This is not `session.fit(RandomForest(...))` and not AutoML.
 
 [Ensemble deep](ensemble-deep.md) ·
 Paste: [`examples/ensemble_vote_stack_loop.py`](../examples/ensemble_vote_stack_loop.py) ·
-Evidence: [voting-ensemble-attrition](../proofs/voting-ensemble-attrition/)
+Evidence: [voting-ensemble-attrition](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/voting-ensemble-attrition)
 
 ---
 

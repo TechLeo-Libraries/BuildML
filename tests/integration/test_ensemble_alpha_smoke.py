@@ -32,29 +32,29 @@ def test_ensemble_alpha_gate_smoke(tmp_path: Path) -> None:
         .scale(method="standard")
     )
 
-    vote = session.fit_voting(bases, voting="soft", task="classification")
+    vote = session.ensemble.fit_voting(bases, voting="soft", task="classification")
     assert vote.strategy == "voting"
-    vote_eval = session.evaluate_ensemble(partition="validation")
+    vote_eval = session.ensemble.evaluate(partition="validation")
     assert vote_eval.n_rows > 0
 
-    stack = session.fit_stacking(bases, cv=3, task="classification")
+    stack = session.ensemble.fit_stacking(bases, cv=3, task="classification")
     assert stack.strategy == "stacking"
     assert session.ensemble_plan is not None
     stack_eval = session.evaluate(partition="test")
     assert "accuracy" in stack_eval.metrics or "f1_weighted" in stack_eval.metrics
 
-    blend = session.fit_blending(
+    blend = session.ensemble.fit_blending(
         bases, holdout_fraction=0.2, random_state=0, task="classification"
     )
     assert blend.strategy == "blending"
-    blend_eval = session.evaluate_ensemble(partition="test")
+    blend_eval = session.ensemble.evaluate(partition="test")
     assert blend_eval.diagnostics.get("ensemble", {}).get("strategy") == "blending"
 
     before = session.explain("fit_stacking", moment="before")
     assert before.operation == "fit_stacking"
     assert before.prerequisite_status.get("split") is True
 
-    ens_bundle = session.save_ensemble_bundle(tmp_path / "ensemble_bundle")
+    ens_bundle = session.ensemble.save_bundle(tmp_path / "ensemble_bundle")
     assert (ens_bundle / "meta.json").is_file()
 
     pipeline = session.save_pipeline(tmp_path / "ensemble_pipeline", evaluate_partition="test")
@@ -65,6 +65,6 @@ def test_ensemble_alpha_gate_smoke(tmp_path: Path) -> None:
         .set_roles({"x1": "feature", "x2": "feature", "y": "target"})
         .split(test_size=0.2, validation_size=0.2, random_state=0, stratify=True)
     )
-    restored.load_ensemble_bundle(ens_bundle, trusted=True)
-    again = restored.evaluate_ensemble(partition="test")
+    restored.ensemble.load_bundle(ens_bundle, trusted=True)
+    again = restored.ensemble.evaluate(partition="test")
     assert again.n_rows == blend_eval.n_rows

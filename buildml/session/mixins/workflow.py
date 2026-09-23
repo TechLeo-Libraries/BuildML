@@ -70,7 +70,7 @@ class WorkflowSessionMixin:
         -------
         ~buildml.session.audit.HistorySummary
             The condensed record with its risk list. Also stored on
-            :attr:`last_history_summary`.
+            :attr:`~buildml.Session.last_history_summary`.
 
         See Also
         --------
@@ -122,7 +122,7 @@ class WorkflowSessionMixin:
         ~buildml.session.walkthrough.WorkflowWalkthroughReport
             The narrated report: the ordered steps, the reasoning behind each,
             and any warnings raised along the way. Also stored on
-            :attr:`last_walkthrough`.
+            :attr:`~buildml.Session.last_walkthrough`.
 
         See Also
         --------

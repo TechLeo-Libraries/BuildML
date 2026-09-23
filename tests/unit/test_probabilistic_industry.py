@@ -34,30 +34,30 @@ def test_capability_matrix_native_always_available() -> None:
 @pytest.mark.skipif(not mapie_available(), reason="mapie not installed")
 def test_mapie_split_regression_intervals() -> None:
     session = _reg_session()
-    fit = session.fit_probabilistic(
+    fit = session.probabilistic.fit(
         backend="mapie",
         estimator="split",
         task="regression",
         alpha=0.1,
     )
     assert fit.backend == "mapie"
-    interval = session.predict_interval(partition="test")
+    interval = session.probabilistic.predict_interval(partition="test")
     assert interval.lower is not None
     assert len(interval.lower) == len(interval.upper)
-    ev = session.evaluate_probabilistic(partition="validation")
+    ev = session.probabilistic.evaluate(partition="validation")
     assert ev.metrics.get("interval_coverage") is not None
 
 
 @pytest.mark.skipif(not mapie_available(), reason="mapie not installed")
 def test_mapie_cv_plus_regression() -> None:
     session = _reg_session()
-    session.fit_probabilistic(
+    session.probabilistic.fit(
         backend="mapie",
         estimator="cv_plus",
         task="regression",
         alpha=0.1,
     )
-    ev = session.evaluate_probabilistic(partition="test")
+    ev = session.probabilistic.evaluate(partition="test")
     assert "rmse" in ev.metrics
     assert ev.metrics.get("interval_coverage") is not None
 
@@ -65,7 +65,7 @@ def test_mapie_cv_plus_regression() -> None:
 @pytest.mark.skipif(not ngboost_available(), reason="ngboost not installed")
 def test_ngboost_regressor_nll_crps() -> None:
     session = _reg_session()
-    fit = session.fit_probabilistic(
+    fit = session.probabilistic.fit(
         backend="ngboost",
         estimator="ngboost_regressor",
         conformal=True,
@@ -74,9 +74,9 @@ def test_ngboost_regressor_nll_crps() -> None:
         learning_rate=0.1,
     )
     assert fit.backend == "ngboost"
-    pred = session.predict_probabilistic(partition="test", return_std=True)
+    pred = session.probabilistic.predict(partition="test", return_std=True)
     assert pred.std is not None
-    ev = session.evaluate_probabilistic(partition="validation")
+    ev = session.probabilistic.evaluate(partition="validation")
     assert "nll" in ev.metrics
     assert "crps" in ev.metrics
 
@@ -94,4 +94,4 @@ def test_mapie_backend_raises_without_extra(monkeypatch: pytest.MonkeyPatch) -> 
     )
     session = _reg_session()
     with pytest.raises(MissingExtraError, match="probabilistic-industry"):
-        session.fit_probabilistic(backend="mapie", estimator="split", task="regression")
+        session.probabilistic.fit(backend="mapie", estimator="split", task="regression")

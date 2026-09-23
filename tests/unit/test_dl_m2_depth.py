@@ -83,9 +83,9 @@ def test_early_stopping_triggers_and_records_reason() -> None:
         .set_roles({"x1": "feature", "x2": "feature", "y": "target"})
         .split(test_size=0.2, validation_size=0.2, stratify=True, random_state=0)
     )
-    session.make_torch_loaders(batch_size=16, normalize=True, seed=0)
+    session.dl.make_loaders(batch_size=16, normalize=True, seed=0)
     # High LR + tiny patience encourages a stop before the full budget on noisy val.
-    session.fit_torch(
+    session.dl.fit(
         _tiny_module(),
         config=TrainConfig(
             epochs=30,
@@ -117,9 +117,9 @@ def test_early_stopping_requires_validation() -> None:
         .set_roles({"x1": "feature", "x2": "feature", "y": "target"})
         .split(test_size=0.3, random_state=0)
     )
-    session.make_torch_loaders(batch_size=16, normalize=False, seed=0)
+    session.dl.make_loaders(batch_size=16, normalize=False, seed=0)
     with pytest.raises(ValidationError, match="validation"):
-        session.fit_torch(
+        session.dl.fit(
             _tiny_module(),
             epochs=3,
             device="cpu",
@@ -145,8 +145,8 @@ def test_scheduler_and_grad_clip_defaults() -> None:
         .set_roles({"x1": "feature", "x2": "feature", "y": "target"})
         .split(test_size=0.25, validation_size=0.2, random_state=1)
     )
-    session.make_torch_loaders(batch_size=16, seed=1)
-    session.fit_torch(
+    session.dl.make_loaders(batch_size=16, seed=1)
+    session.dl.fit(
         _tiny_module(),
         config=TrainConfig(
             epochs=3,
@@ -187,7 +187,7 @@ def test_group_and_time_loaders_honor_membership() -> None:
         .set_roles({"x1": "feature", "x2": "feature", "g": "group", "y": "target"})
         .group_split(test_size=0.3, validation_size=0.3, random_state=0)
     )
-    bundle = session.make_torch_loaders(batch_size=8, normalize=True, seed=0)
+    bundle = session.dl.make_loaders(batch_size=8, normalize=True, seed=0)
     assert bundle.report.split_kind == "group"
     assert bundle.report.groups_disjoint is True
     assert bundle.report.n_train == len(session.split_plan.train_indices)
@@ -215,7 +215,7 @@ def test_group_and_time_loaders_honor_membership() -> None:
         .set_roles({"x1": "feature", "x2": "feature", "t": "time", "y": "target"})
         .time_split(test_size=0.25, validation_size=0.25)
     )
-    tbundle = tsession.make_torch_loaders(batch_size=8, shuffle_train=True, seed=0)
+    tbundle = tsession.dl.make_loaders(batch_size=8, shuffle_train=True, seed=0)
     assert tbundle.report.split_kind == "time"
     assert tbundle.report.time_order_ok is True
     assert any("Time split" in w for w in tbundle.report.warnings)
@@ -230,21 +230,21 @@ def test_resume_train_from_bundle(tmp_path) -> None:
         .set_roles({"x1": "feature", "x2": "feature", "y": "target"})
         .split(test_size=0.25, validation_size=0.2, random_state=0)
     )
-    session.make_torch_loaders(batch_size=16, seed=0)
-    session.fit_torch(_tiny_module(), epochs=2, learning_rate=1e-2, device="cpu")
+    session.dl.make_loaders(batch_size=16, seed=0)
+    session.dl.fit(_tiny_module(), epochs=2, learning_rate=1e-2, device="cpu")
     first = session.dl_train_result
     assert first is not None
     assert first.n_epochs_ran == 2
-    path = session.save_torch_bundle(tmp_path / "bundle")
+    path = session.dl.save_bundle(tmp_path / "bundle")
 
     other = (
         Session.ingest(_cls_frame(80))
         .set_roles({"x1": "feature", "x2": "feature", "y": "target"})
         .split(test_size=0.25, validation_size=0.2, random_state=0)
     )
-    other.make_torch_loaders(batch_size=16, seed=0)
-    other.load_torch_bundle(path, _tiny_module(), map_location="cpu", trusted=True)
-    other.fit_torch(_tiny_module(), epochs=2, learning_rate=1e-2, device="cpu", resume=True)
+    other.dl.make_loaders(batch_size=16, seed=0)
+    other.dl.load_bundle(path, _tiny_module(), map_location="cpu", trusted=True)
+    other.dl.fit(_tiny_module(), epochs=2, learning_rate=1e-2, device="cpu", resume=True)
     resumed = other.dl_train_result
     assert resumed is not None
     assert resumed.resumed_from_epochs == 2
@@ -262,15 +262,15 @@ def test_training_curve_walkthrough_and_evaluate_diagnostics() -> None:
         .set_roles({"x1": "feature", "x2": "feature", "y": "target"})
         .split(test_size=0.25, validation_size=0.2, random_state=3)
     )
-    session.make_torch_loaders(batch_size=16, seed=3)
-    session.fit_torch(
+    session.dl.make_loaders(batch_size=16, seed=3)
+    session.dl.fit(
         _tiny_module(),
         epochs=3,
         learning_rate=1e-2,
         device="cpu",
         early_stopping_patience=5,
     )
-    curve = session.torch_training_curve()
+    curve = session.dl.training_curve()
     assert curve.epochs
     assert curve.disclosures
     assert curve.limitations
@@ -279,7 +279,7 @@ def test_training_curve_walkthrough_and_evaluate_diagnostics() -> None:
     assert walk.torch_training_status["enabled"] is True
     assert walk.torch_training_status["early_stop"]["partition"] == "validation"
 
-    metrics = session.evaluate_torch(partition="test")
+    metrics = session.dl.evaluate(partition="test")
     assert metrics.confusion_matrix is not None
     assert metrics.n_rows > 0
 

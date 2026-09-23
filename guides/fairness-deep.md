@@ -26,7 +26,7 @@ in `y_true`. You still decide which column is sensitive, which
 partition to quote, and whether to act on a suggestion.
 
 Short on-ramp: [fairness quickstart](quickstart-fairness.md). Proof:
-[loan-fairness-observational](../proofs/loan-fairness-observational/).
+[loan-fairness-observational](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/loan-fairness-observational).
 
 ## Report after fit
 

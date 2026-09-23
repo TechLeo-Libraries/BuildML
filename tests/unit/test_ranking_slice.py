@@ -62,7 +62,7 @@ def test_fit_requires_split() -> None:
         }
     )
     with pytest.raises((LeakageError, ValidationError)):
-        session.fit_ranker(query_column="query_id", item_column="item_id")
+        session.ranking.fit(query_column="query_id", item_column="item_id")
 
 
 def test_resolve_defaults_feature_roles() -> None:

@@ -91,7 +91,7 @@ def test_train_shuffle_only_and_normalize_train_fit() -> None:
     from buildml.dl.transforms import apply_standardize, fit_standardize
 
     session = _session()
-    bundle = session.make_torch_loaders(batch_size=16, normalize=True, shuffle_train=True, seed=1)
+    bundle = session.dl.make_loaders(batch_size=16, normalize=True, shuffle_train=True, seed=1)
     assert isinstance(bundle.loaders["train"].sampler, torch.utils.data.RandomSampler)
     assert isinstance(bundle.loaders["validation"].sampler, torch.utils.data.SequentialSampler)
     assert isinstance(bundle.loaders["test"].sampler, torch.utils.data.SequentialSampler)
@@ -131,25 +131,25 @@ def test_fit_evaluate_and_bundle_roundtrip(tmp_path) -> None:
             return self.net(x)
 
     session = _session()
-    session.make_torch_loaders(batch_size=16, normalize=True, seed=0)
-    session.fit_torch(TinyMLP(), epochs=3, learning_rate=1e-2, device="cpu")
+    session.dl.make_loaders(batch_size=16, normalize=True, seed=0)
+    session.dl.fit(TinyMLP(), epochs=3, learning_rate=1e-2, device="cpu")
     assert session.dl_train_result is not None
     assert session.fit_result is None
     assert session.dl_train_result.n_epochs_ran == 3
     assert session.dl_train_result.history
 
-    metrics = session.evaluate_torch(partition="test")
+    metrics = session.dl.evaluate(partition="test")
     assert metrics.n_rows > 0
     assert "accuracy" in metrics.metrics
 
-    path = session.save_torch_bundle(tmp_path / "torch_bundle")
+    path = session.dl.save_bundle(tmp_path / "torch_bundle")
     assert (path / "meta.json").is_file()
     assert (path / "trainer.pt").is_file()
 
     other = _session()
-    other.load_torch_bundle(path, TinyMLP(), map_location="cpu", trusted=True)
+    other.dl.load_bundle(path, TinyMLP(), map_location="cpu", trusted=True)
     assert other.dl_train_result is not None
-    again = other.evaluate_torch(partition="test")
+    again = other.dl.evaluate(partition="test")
     assert again.metrics["accuracy"] == pytest.approx(metrics.metrics["accuracy"], abs=1e-5)
 
 

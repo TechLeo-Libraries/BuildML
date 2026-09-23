@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import pandas as pd
+
 from buildml import Session
 from buildml.explain.beginner import BEGINNER_LAYERS
 from buildml.explain.concepts import CONCEPT_NOTES, get_concept
@@ -21,8 +23,8 @@ def test_timeseries_concepts_have_beginner_layers() -> None:
 
 
 def test_session_graph_and_causal_capability_matrices() -> None:
-    causal = Session.causal_capability_matrix()
-    graph = Session.graph_capability_matrix()
+    causal = Session.ingest(pd.DataFrame({"x": [1]})).causal.capability_matrix()
+    graph = Session.ingest(pd.DataFrame({"x": [1]})).graph.capability_matrix()
     assert "backends" in causal
     assert "backends" in graph
 

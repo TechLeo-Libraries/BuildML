@@ -62,13 +62,13 @@ def test_run_requires_split() -> None:
         {"x1": "feature", "x2": "feature", "cat": "feature", "y": "target"}
     )
     with pytest.raises((LeakageError, ValidationError)):
-        session.run_automl(n_trials=4, cv=3, families=("logistic", "random_forest"))
+        session.automl.run(n_trials=4, cv=3, families=("logistic", "random_forest"))
 
 
 def test_refuses_session_global_preprocess() -> None:
     session = _ready_clf().scale(method="standard")
     with pytest.raises(LeakageError):
-        session.run_automl(
+        session.automl.run(
             n_trials=4,
             cv=3,
             families=("logistic",),
@@ -79,7 +79,7 @@ def test_refuses_session_global_preprocess() -> None:
 
 def test_randomized_search_evaluate_and_bundle(tmp_path: Path) -> None:
     session = _ready_clf()
-    result = session.run_automl(
+    result = session.automl.run(
         method="randomized",
         selection="cv",
         n_trials=8,
@@ -98,11 +98,11 @@ def test_randomized_search_evaluate_and_bundle(tmp_path: Path) -> None:
         for d in result.disclosures
     )
 
-    metrics = session.evaluate_automl(partition="test")
+    metrics = session.automl.evaluate(partition="test")
     assert "accuracy" in metrics.metrics or "f1_weighted" in metrics.metrics
     assert metrics.diagnostics.get("automl", {}).get("best_family") == result.best_family
 
-    bundle = session.save_automl_bundle(tmp_path / "automl_bundle")
+    bundle = session.automl.save_bundle(tmp_path / "automl_bundle")
     assert (bundle / "meta.json").is_file()
     assert (bundle / "automl_plan.joblib").is_file()
     meta = (bundle / "meta.json").read_text(encoding="utf-8")
@@ -113,8 +113,8 @@ def test_randomized_search_evaluate_and_bundle(tmp_path: Path) -> None:
         .set_roles({"x1": "feature", "x2": "feature", "cat": "feature", "y": "target"})
         .split(test_size=0.25, validation_size=0.2, random_state=0, stratify=True)
     )
-    restored.load_automl_bundle(bundle, trusted=True)
-    again = restored.evaluate_automl(partition="test")
+    restored.automl.load_bundle(bundle, trusted=True)
+    again = restored.automl.evaluate(partition="test")
     assert again.n_rows == metrics.n_rows
 
 
@@ -125,7 +125,7 @@ def test_validation_selection_requires_partition() -> None:
         .split(test_size=0.25, random_state=0, stratify=True)
     )
     with pytest.raises(ValidationError, match="validation"):
-        session.run_automl(
+        session.automl.run(
             selection="validation",
             n_trials=4,
             families=("logistic",),
@@ -135,7 +135,7 @@ def test_validation_selection_requires_partition() -> None:
 
 def test_validation_selection_ranks_without_test_touch() -> None:
     session = _ready_clf()
-    result = session.run_automl(
+    result = session.automl.run(
         method="randomized",
         selection="validation",
         n_trials=6,
@@ -147,13 +147,13 @@ def test_validation_selection_ranks_without_test_touch() -> None:
     assert result.selection == "validation"
     assert result.best_score is not None
     # Test evaluate still works after selection.
-    test = session.evaluate_automl(partition="test")
+    test = session.automl.evaluate(partition="test")
     assert test.n_rows > 0
 
 
 def test_include_ensembles_scores_voting() -> None:
     session = _ready_clf()
-    result = session.run_automl(
+    result = session.automl.run(
         method="randomized",
         n_trials=8,
         cv=3,

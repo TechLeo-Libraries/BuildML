@@ -127,6 +127,6 @@ def test_explain_before_prereq() -> None:
     session = _session()
     before = session.explain("adapt_to_task", moment="before")
     assert before.prerequisite_status.get("metalearning-plan") is False
-    session.fit_metalearning(method="prototypical", k_shot=2, n_episodes=5)
+    session.metalearning.fit(method="prototypical", k_shot=2, n_episodes=5)
     after = session.explain("adapt_to_task", moment="before")
     assert after.prerequisite_status.get("metalearning-plan") is True

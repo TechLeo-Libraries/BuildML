@@ -54,23 +54,23 @@ def test_graph_alpha_smoke(tmp_path: Path) -> None:
         )
         .split(test_size=0.2, validation_size=0.2, random_state=0, stratify=True)
     )
-    session.set_graph(edges, node_id_col="node_id", directed=False)
+    session.graph.set_spec(edges, node_id_col="node_id", directed=False)
     session.scale(columns=["f1", "f2"], method="standard")
 
-    fit = session.fit_graph(
+    fit = session.graph.fit(
         method="classical",
         mode="inductive",
         classical_estimator="logistic_regression",
         random_state=0,
     )
     assert fit.n_train_nodes > 0
-    pred = session.predict_graph(partition="test")
+    pred = session.graph.predict(partition="test")
     assert pred.n_nodes > 0
-    ev = session.evaluate_graph(partition="validation")
+    ev = session.graph.evaluate(partition="validation")
     assert "accuracy" in ev.metrics
 
     bundle = tmp_path / "graph_bundle"
-    session.save_graph_bundle(bundle)
+    session.graph.save_bundle(bundle)
     assert (bundle / "meta.json").is_file()
 
     walk = session.walkthrough()
@@ -90,6 +90,6 @@ def test_graph_alpha_smoke(tmp_path: Path) -> None:
         .split(test_size=0.2, validation_size=0.2, random_state=0, stratify=True)
         .scale(columns=["f1", "f2"], method="standard")
     )
-    other.load_graph_bundle(bundle, trusted=True)
+    other.graph.load_bundle(bundle, trusted=True)
     assert other.graph_plan is not None
-    assert other.evaluate_graph(partition="test").n_nodes > 0
+    assert other.graph.evaluate(partition="test").n_nodes > 0

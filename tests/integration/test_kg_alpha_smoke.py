@@ -42,7 +42,7 @@ def test_kg_alpha_smoke(tmp_path: Path) -> None:
         .split(test_size=0.2, validation_size=0.1, random_state=0)
     )
 
-    fit = session.fit_kg(
+    fit = session.kg.fit(
         method="transe",
         head_column="head",
         relation_column="relation",
@@ -58,23 +58,23 @@ def test_kg_alpha_smoke(tmp_path: Path) -> None:
     assert fit.n_entities > 0
     assert fit.n_relations > 0
 
-    preds = session.predict_links(
+    preds = session.kg.predict_links(
         mode="tail", heads=["p0"], relations=["works_at"], k=5
     )
     assert preds.n_queries == 1
     assert len(preds.predictions[0]) > 0
 
-    nbrs = session.query_kg(mode="neighbors", entity="p0")
+    nbrs = session.kg.query(mode="neighbors", entity="p0")
     assert nbrs.n_results >= 1
 
-    path = session.query_kg(mode="path", source="p0", target="c0", max_hops=3)
+    path = session.kg.query(mode="path", source="p0", target="c0", max_hops=3)
     assert path.mode == "path"
 
-    ev = session.evaluate_kg(partition="test", k=5)
+    ev = session.kg.evaluate(partition="test", k=5)
     assert set(ev.metrics) >= {"mrr", "hits_at_1", "hits_at_3", "hits_at_5"}
 
     bundle = tmp_path / "kg_bundle"
-    session.save_kg_bundle(bundle)
+    session.kg.save_bundle(bundle)
     assert (bundle / "meta.json").is_file()
     assert (bundle / "kg_plan.joblib").is_file()
 
@@ -83,9 +83,9 @@ def test_kg_alpha_smoke(tmp_path: Path) -> None:
         .set_roles({"head": "id", "relation": "id", "tail": "id"})
         .split(test_size=0.2, validation_size=0.1, random_state=0)
     )
-    other.load_kg_bundle(bundle, trusted=True)
+    other.kg.load_bundle(bundle, trusted=True)
     assert other.kg_plan is not None
-    ev2 = other.evaluate_kg(partition="test", k=5)
+    ev2 = other.kg.evaluate(partition="test", k=5)
     assert ev2.n_triples_scored == ev.n_triples_scored
     assert ev2.metrics["mrr"] == pytest.approx(ev.metrics["mrr"])
 

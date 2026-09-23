@@ -62,11 +62,11 @@ def test_builtin_mlp_happy_path() -> None:
         .set_roles({"x1": "feature", "x2": "feature", "y": "target"})
         .split(test_size=0.2, validation_size=0.2, stratify=True, random_state=0)
     )
-    session.make_torch_loaders(batch_size=16, normalize=True)
-    session.fit_torch(epochs=2, device="cpu")
+    session.dl.make_loaders(batch_size=16, normalize=True)
+    session.dl.fit(epochs=2, device="cpu")
     assert session.dl_train_result is not None
     assert session.dl_train_result.n_epochs_ran >= 1
-    metrics = session.evaluate_torch(partition="validation")
+    metrics = session.dl.evaluate(partition="validation")
     assert "accuracy" in metrics.metrics or "loss" in metrics.metrics
 
 
@@ -79,7 +79,7 @@ def test_classical_plans_disclosed_on_loaders() -> None:
         .split(test_size=0.2, validation_size=0.2, stratify=True, random_state=0)
         .scale()
     )
-    bundle = session.make_torch_loaders(batch_size=16, apply_plans=True)
+    bundle = session.dl.make_loaders(batch_size=16, apply_plans=True)
     joined = " ".join(bundle.report.warnings)
     assert "Classical preprocess plans" in joined or "scale" in joined.lower()
 
@@ -90,7 +90,7 @@ def test_cross_validate_torch_fold_local() -> None:
     session = Session.ingest(_cls_frame(n=60)).set_roles(
         {"x1": "feature", "x2": "feature", "y": "target"}
     )
-    result = session.cross_validate_torch(n_folds=3, epochs=1, batch_size=16, device="cpu")
+    result = session.dl.cross_validate(n_folds=3, epochs=1, batch_size=16, device="cpu")
     assert result.n_folds == 3
     assert "accuracy" in result.mean_metrics or "loss" in result.mean_metrics
     assert any("nested" in lim.lower() for lim in result.limitations)
@@ -105,11 +105,11 @@ def test_text_torch_path() -> None:
         .set_roles({"text": "feature", "y": "target"})
         .split(test_size=0.25, validation_size=0.2, stratify=True, random_state=0)
     )
-    bundle = session.make_text_torch_loaders(text_column="text", batch_size=8, max_len=16)
+    bundle = session.dl.make_text_loaders(text_column="text", batch_size=8, max_len=16)
     assert getattr(bundle, "text_vocab", None) is not None
-    session.fit_torch(epochs=2, device="cpu")
+    session.dl.fit(epochs=2, device="cpu")
     assert session.dl_train_result is not None
-    eval_result = session.evaluate_torch(partition="test")
+    eval_result = session.dl.evaluate(partition="test")
     assert eval_result.n_rows > 0
 
 
@@ -119,4 +119,4 @@ def test_text_vocab_refuses_without_split() -> None:
     session = Session.ingest(_text_frame()).set_roles({"text": "feature", "y": "target"})
     # Fit-capable guard raises LeakageError before modality ValidationError.
     with pytest.raises(LeakageError, match="split"):
-        session.make_text_torch_loaders(text_column="text")
+        session.dl.make_text_loaders(text_column="text")

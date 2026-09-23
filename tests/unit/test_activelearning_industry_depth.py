@@ -84,13 +84,13 @@ def test_core_set_session_path() -> None:
     )
     session, truth = _mask(session)
     try:
-        fit = session.fit_active_learner(
+        fit = session.active_learning.fit(
             backend="industry",
             strategy="core_set",
             prefer_reduce_components=False,
             label_budget=10,
         )
-        q = session.suggest_query(batch_size=4)
+        q = session.active_learning.suggest_query(batch_size=4)
     except (MissingExtraError, ValidationError, OSError) as exc:
         if any(token in str(exc).lower() for token in ("torch", "dll")):
             pytest.skip("backend not runnable on this host")
@@ -98,8 +98,8 @@ def test_core_set_session_path() -> None:
     assert fit.backend == "industry"
     assert len(q.indices) == 4
     labels = [int(truth.loc[i]) for i in q.indices]
-    session.label_rows(indices=q.indices, labels=labels)
-    ev = session.evaluate_active_learning(partition="test")
+    session.active_learning.label_rows(indices=q.indices, labels=labels)
+    ev = session.active_learning.evaluate(partition="test")
     assert ev.metrics["accuracy"] >= 0.0
 
 
@@ -112,13 +112,13 @@ def test_qbc_kl_session_path() -> None:
     )
     session, _ = _mask(session)
     try:
-        fit = session.fit_active_learner(
+        fit = session.active_learning.fit(
             backend="industry",
             strategy="qbc_kl",
             committee_size=4,
             label_budget=8,
         )
-        q = session.suggest_query(batch_size=3)
+        q = session.active_learning.suggest_query(batch_size=3)
     except (MissingExtraError, ValidationError, OSError) as exc:
         if any(token in str(exc).lower() for token in ("torch", "dll")):
             pytest.skip("backend not runnable on this host")
@@ -137,7 +137,7 @@ def test_bald_torch_session_path() -> None:
     )
     session, truth = _mask(session)
     try:
-        fit = session.fit_active_learner(
+        fit = session.active_learning.fit(
             backend="torch",
             strategy="bald",
             prefer_reduce_components=False,
@@ -150,11 +150,11 @@ def test_bald_torch_session_path() -> None:
             pytest.skip("torch installed but not importable on this host")
         raise
     assert fit.backend == "torch"
-    q = session.suggest_query(batch_size=4)
+    q = session.active_learning.suggest_query(batch_size=4)
     assert len(q.indices) == 4
     labels = [int(truth.loc[i]) for i in q.indices]
-    session.label_rows(indices=q.indices, labels=labels)
-    ev = session.evaluate_active_learning(partition="test")
+    session.active_learning.label_rows(indices=q.indices, labels=labels)
+    ev = session.active_learning.evaluate(partition="test")
     assert "accuracy" in ev.metrics
 
 
@@ -244,13 +244,13 @@ def test_industry_suggest_query_attaches_fallback_disclosure() -> None:
         .scale(method="standard")
     )
     session, _ = _mask(session)
-    session.fit_active_learner(
+    session.active_learning.fit(
         backend="industry",
         strategy="core_set",
         prefer_reduce_components=False,
         label_budget=10,
     )
-    q = session.suggest_query(batch_size=3)
+    q = session.active_learning.suggest_query(batch_size=3)
     assert len(q.indices) == 3
     joined = " ".join(q.disclosures)
     assert "native" in joined.lower() or "scikit-activeml" in joined.lower()
@@ -272,11 +272,11 @@ def test_bundle_roundtrip_with_backend(tmp_path: Path) -> None:
         .scale(method="standard")
     )
     session, _ = _mask(session)
-    session.fit_active_learner(strategy="margin", prefer_reduce_components=False)
-    out = session.save_active_learning_bundle(tmp_path / "bundle")
+    session.active_learning.fit(strategy="margin", prefer_reduce_components=False)
+    out = session.active_learning.save_bundle(tmp_path / "bundle")
     session2 = Session.ingest(_frame()).set_roles(
         {"a": "feature", "b": "feature", "y": "target"}
     )
-    session2.load_active_learning_bundle(out, trusted=True)
+    session2.active_learning.load_bundle(out, trusted=True)
     assert session2.activelearning_plan is not None
     assert session2.activelearning_plan.backend == "sklearn"

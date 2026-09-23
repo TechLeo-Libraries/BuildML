@@ -14,7 +14,7 @@ Default mode is inductive. This is not Neo4j and not `session.kg`.
 **Go deeper:** [Graph deep](graph-deep.md) ·
 
 Paste: [`examples/graph_node_classification.py`](../examples/graph_node_classification.py) ·
-Evidence: [graph-fraud-rings](../proofs/graph-fraud-rings/).
+Evidence: [graph-fraud-rings](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/graph-fraud-rings).
 [Artifacts](artifacts-checkpoints-bundles.md)
 
 ```python
