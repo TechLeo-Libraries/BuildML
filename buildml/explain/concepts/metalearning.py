@@ -76,7 +76,7 @@ METALEARNING_NOTES: dict[str, ConceptNote] = {
                 "c_k = mean({x ∈ S : y=k}); ŷ = argmin_k ||x − c_k||₂."
             ),
             why_it_matters=(
-                "A complete, honest few-shot baseline without pretending a neural ProtoNet.",
+                "Provides a centroid-based few-shot baseline without a learned neural embedding.",
             ),
             how_buildml_uses=(
                 "session.metalearning.fit(method='prototypical'); session.metalearning.adapt builds prototypes.",

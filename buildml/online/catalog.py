@@ -1,4 +1,4 @@
-"""Online / continual catalog and honest capability matrix."""
+"""Online / continual catalog and capability matrix."""
 
 from __future__ import annotations
 
@@ -42,7 +42,7 @@ DRIFT_DETECTORS = (
 
 
 def online_capability_matrix() -> dict[str, Any]:
-    """Build the honest capability matrix for online / continual backends.
+    """Build the capability matrix for online / continual backends.
 
     Reports sklearn, industry (River), and torch paths, chunk ingestion modes,
     evaluation metrics, install hints, and explicit non-goals for teaching
@@ -86,7 +86,7 @@ def online_capability_matrix() -> dict[str, Any]:
                 "drift_detectors": ["mean_shift"],
                 "notes": (
                     "Lite replay-buffer or EWC tabular MLP continual learner: "
-                    "honest small-scale, not a lifelong-learning research suite "
+                    "designed for small tabular examples "
                     "(buildml[torch])."
                 ),
             },
@@ -216,7 +216,7 @@ def resolve_backend_estimator(
     backend: OnlineBackendName | None,
     estimator: str,
 ) -> tuple[OnlineBackendName, str]:
-    """Validate backend/estimator pairing and apply honest defaults.
+    """Validate backend/estimator pairing and apply documented defaults.
 
     Infers the backend from the estimator name when ``backend`` is ``None`` and
     refuses pairings that require missing extras.

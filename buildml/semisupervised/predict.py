@@ -26,8 +26,6 @@ def predict_semisupervised(
 ) -> tuple[Dataset | None, SemiSupervisedPredictResult]:
     """Score a frozen semi-supervised plan on a partition (no refit).
 
-Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
-
 Parameters
 ----------
 dataset:

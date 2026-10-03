@@ -13,7 +13,7 @@ fills this in. Instruments are refused: IV and front-door are not
 implemented. Default method is native AIPW.
 
 [Causal deep](causal-deep.md) ·
-Paste: [`examples/causal_aipw_ate.py`](../examples/causal_aipw_ate.py) ·
+Runnable example: [`examples/causal_aipw_ate.py`](../examples/causal_aipw_ate.py) ·
 Evidence: [causal-treatment-effect](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/causal-treatment-effect)
 
 ```python
@@ -76,5 +76,3 @@ session.causal.save_bundle("artifacts/causal_bundle")
 | Train-only fit + bootstrap | Causality from EDA alone |
 | DoWhy refutation when installed | Proof of unconfoundedness from holdout |
 | Distinct `buildml.causal_bundle.v1` | Multi-valued / continuous treatment |
-
-Related next: federated learning.

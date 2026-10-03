@@ -9,24 +9,25 @@ from buildml.core.errors import MissingExtraError
 
 
 def require_pyod(*, feature: str = "PyOD anomaly detectors") -> Any:
-    """Import and return ``pyod``, or raise :class:`MissingExtraError`.
+    """Import and return ``pyod`` for the requested feature.
 
-Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+Dependency failures handled by this helper are reported with an installation
+hint identifying the required BuildML extra.
 
 Parameters
 ----------
-feature:
-    Capability name included in missing-extra error messages.
+feature : str
+    Feature name included in the missing-dependency message.
 
 Returns
 -------
 Any
-    Adapter-specific estimator or model object.
+    Imported ``pyod`` module.
 
 Raises
 ------
-ValidationError
-    When preconditions for this operation are not met.
+MissingExtraError
+    If the dependency cannot be imported by this helper.
     """
     try:
         import pyod
@@ -36,15 +37,27 @@ ValidationError
 
 
 def pyod_spec_present() -> bool:
-    """Cheap find_spec discovery for PyOD (may still fail at import)."""
+    """Check whether Python can locate ``pyod``.
+
+This discovery check does not import the package or establish runtime usability.
+
+Returns
+-------
+bool
+    Whether an import specification exists for the package.
+    """
     return importlib.util.find_spec("pyod") is not None
 
 
 def pyod_available() -> bool:
-    """Return whether PyOD imports cleanly (subprocess probe).
+    """Check runtime availability for pyod.
 
-    Capability matrices use this for backends.pyod.available so a broken wheel
-    cannot silently report available=True.
+The package must be discoverable and pass an isolated runtime import probe; an installed but broken package returns false.
+
+Returns
+-------
+bool
+    Whether the required runtime import checks succeed.
     """
     if not pyod_spec_present():
         return False
@@ -54,12 +67,28 @@ def pyod_available() -> bool:
 
 
 def lightgbm_spec_present() -> bool:
-    """Cheap find_spec discovery for LightGBM."""
+    """Check whether Python can locate ``lightgbm``.
+
+This discovery check does not import the package or establish runtime usability.
+
+Returns
+-------
+bool
+    Whether an import specification exists for the package.
+    """
     return importlib.util.find_spec("lightgbm") is not None
 
 
 def lightgbm_available() -> bool:
-    """Return whether LightGBM imports cleanly (subprocess probe)."""
+    """Check runtime availability for lightgbm.
+
+The package must be discoverable and pass an isolated runtime import probe; an installed but broken package returns false.
+
+Returns
+-------
+bool
+    Whether the required runtime import checks succeed.
+    """
     if not lightgbm_spec_present():
         return False
     from buildml.dl.extras import _subprocess_import_ok
@@ -68,12 +97,28 @@ def lightgbm_available() -> bool:
 
 
 def xgboost_spec_present() -> bool:
-    """Cheap find_spec discovery for XGBoost."""
+    """Check whether Python can locate ``xgboost``.
+
+This discovery check does not import the package or establish runtime usability.
+
+Returns
+-------
+bool
+    Whether an import specification exists for the package.
+    """
     return importlib.util.find_spec("xgboost") is not None
 
 
 def xgboost_available() -> bool:
-    """Return whether XGBoost imports cleanly (subprocess probe)."""
+    """Check runtime availability for xgboost.
+
+The package must be discoverable and pass an isolated runtime import probe; an installed but broken package returns false.
+
+Returns
+-------
+bool
+    Whether the required runtime import checks succeed.
+    """
     if not xgboost_spec_present():
         return False
     from buildml.dl.extras import _subprocess_import_ok
@@ -82,34 +127,51 @@ def xgboost_available() -> bool:
 
 
 def gradient_boosting_extras_available() -> bool:
-    """True when LightGBM or XGBoost import cleanly at runtime."""
+    """Check runtime availability for gradient boosting extras.
+
+At least one of LightGBM and XGBoost must pass its runtime import check.
+
+Returns
+-------
+bool
+    Whether the required runtime import checks succeed.
+    """
     return lightgbm_available() or xgboost_available()
 
 
 def anomaly_industry_available() -> bool:
-    """True when PyOD or industry supervised GBDT libraries import cleanly."""
+    """Check runtime availability for anomaly industry.
+
+PyOD or at least one of LightGBM and XGBoost must pass its runtime import check.
+
+Returns
+-------
+bool
+    Whether the required runtime import checks succeed.
+    """
     return pyod_available() or gradient_boosting_extras_available()
 
 
 def require_lightgbm(*, feature: str = "LightGBM supervised anomaly scorer") -> Any:
-    """Import optional dependency for lightgbm or raise MissingExtraError.
+    """Import and return ``lightgbm`` for the requested feature.
 
-Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+Dependency failures handled by this helper are reported with an installation
+hint identifying the required BuildML extra.
 
 Parameters
 ----------
-feature:
-    Capability name included in missing-extra error messages.
+feature : str
+    Feature name included in the missing-dependency message.
 
 Returns
 -------
 Any
-    Adapter-specific estimator or model object.
+    Imported ``lightgbm`` module.
 
 Raises
 ------
-ValidationError
-    When preconditions for this operation are not met.
+MissingExtraError
+    If the dependency cannot be imported by this helper.
     """
     try:
         import lightgbm
@@ -119,24 +181,25 @@ ValidationError
 
 
 def require_xgboost(*, feature: str = "XGBoost supervised anomaly scorer") -> Any:
-    """Import optional dependency for xgboost or raise MissingExtraError.
+    """Import and return ``xgboost`` for the requested feature.
 
-Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+Dependency failures handled by this helper are reported with an installation
+hint identifying the required BuildML extra.
 
 Parameters
 ----------
-feature:
-    Capability name included in missing-extra error messages.
+feature : str
+    Feature name included in the missing-dependency message.
 
 Returns
 -------
 Any
-    Adapter-specific estimator or model object.
+    Imported ``xgboost`` module.
 
 Raises
 ------
-ValidationError
-    When preconditions for this operation are not met.
+MissingExtraError
+    If the dependency cannot be imported by this helper.
     """
     try:
         import xgboost
@@ -146,19 +209,25 @@ ValidationError
 
 
 def require_torch_anomaly(*, feature: str = "Torch autoencoder anomaly detector") -> Any:
-    """Import optional dependency for torch anomaly or raise MissingExtraError.
+    """Import and return ``torch`` for the requested feature.
 
-Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+Dependency failures handled by this helper are reported with an installation
+hint identifying the required BuildML extra.
 
 Parameters
 ----------
-feature:
-    Capability name included in missing-extra error messages.
+feature : str
+    Feature name included in the missing-dependency message.
 
 Returns
 -------
 Any
-    Adapter-specific estimator or model object.
+    Imported ``torch`` module.
+
+Raises
+------
+MissingExtraError
+    If the dependency cannot be imported by this helper.
     """
     from buildml.dl.extras import require_torch
 

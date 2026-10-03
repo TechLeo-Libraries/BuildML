@@ -207,9 +207,23 @@ def pack_torchserve_model(
 
     Examples
     --------
-    Export then package::
+    Prepare packaging files for an untrained example module::
 
-        pack_torchserve_model("artifacts/model.pt", "serve/buildml_model")
+        # Install first: pip install "buildml[torch]"
+        import torch
+        from tempfile import TemporaryDirectory
+
+        module = torch.nn.Linear(4, 2).eval()
+        batch = torch.zeros(2, 4)
+        from buildml.dl.export import export_torchscript
+        from buildml.dl.packaging import pack_torchserve_model
+
+        with TemporaryDirectory() as directory:
+            exported = export_torchscript(module, directory + '/model.pt', example_input=batch)
+            result = pack_torchserve_model(exported.path, directory + '/package')
+            print(result.limitations)
+        # Packaging does not start a TorchServe server.
+
 
     See Also
     --------
@@ -355,12 +369,25 @@ def prepare_tensorrt_export_plan(
 
     Examples
     --------
-    Plan a half-precision engine::
+    Prepare conversion instructions from an example ONNX model::
 
-        result = prepare_tensorrt_export_plan(
-            "artifacts/model.onnx", "serve/trt", fp16=True
-        )
-        result.warnings  # empty when the ONNX checker passed
+        # Also install: pip install "buildml[onnx]"
+        # Install first: pip install "buildml[torch]"
+        import torch
+        from tempfile import TemporaryDirectory
+
+        module = torch.nn.Linear(4, 2).eval()
+        batch = torch.zeros(2, 4)
+        from buildml.dl.export import export_onnx
+
+        from buildml.dl.packaging import prepare_tensorrt_export_plan
+
+        with TemporaryDirectory() as directory:
+            exported = export_onnx(module, directory + '/model.onnx', example_input=batch)
+            result = prepare_tensorrt_export_plan(exported.path, directory + '/plan', fp16=True)
+            print(result.warnings)
+        # Building and running the engine separately requires a compatible TensorRT installation.
+
 
     See Also
     --------

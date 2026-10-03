@@ -1,4 +1,4 @@
-"""Active-learning catalog and honest capability matrix."""
+"""Active-learning catalog and capability matrix."""
 
 from __future__ import annotations
 
@@ -31,7 +31,7 @@ TORCH_STRATEGIES = (
 
 
 def activelearning_capability_matrix() -> dict[str, Any]:
-    """Build the honest capability matrix for active-learning backends and strategies.
+    """Build the capability matrix for active-learning backends and strategies.
 
     Reports sklearn, industry, and torch paths, human-label boundaries,
     evaluation metrics, install hints, and explicit non-goals for teaching
@@ -218,7 +218,7 @@ def resolve_backend_strategy(
     backend: ActiveLearningBackendName | None,
     strategy: str,
 ) -> tuple[ActiveLearningBackendName, str]:
-    """Validate backend/strategy pairing and apply honest defaults.
+    """Validate backend/strategy pairing and apply documented defaults.
 
     Infers the backend from the strategy when ``backend`` is ``None``, then
     verifies the strategy is allowed and the backend is installed.

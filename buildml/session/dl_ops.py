@@ -2597,7 +2597,7 @@ def refuse_speech_foundation_pretrain(session) -> None:
 
     Records the refusal on the Session and delegates to
     :func:`buildml.dl.speech.refuse_foundation_model_pretrain` so callers get a
-    clear, honest boundary instead of a silent no-op.
+    clear error for unsupported behavior.
 
     Parameters
     ----------

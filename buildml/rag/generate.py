@@ -1,29 +1,13 @@
-"""Answer a question using only the passages that were retrieved for it.
+"""Generate answers from retrieved passages and retain citation information.
 
-The last stage, and the one that determines whether the whole pipeline was worth
-building. A language model asked a question from its own memory will produce
-something plausible whether or not it knows the answer. Given a set of retrieved
-passages and told to answer from those alone, it can be checked: every claim
-either traces to a passage the caller can read or it does not.
+Prompts label each passage with a ``[source:N]`` marker and ask the provider to
+cite those markers. Results include passage text, document identifiers, and
+lexical grounding diagnostics. These diagnostics help inspect an answer; they
+do not establish factual correctness or enforce that every claim uses a source.
 
-Three things make that checkable in practice. The prompt labels each passage
-``[source:N]`` and instructs the model to cite those markers. The result carries
-the full :class:`~buildml.rag.results.Citation` list, so a marker resolves back
-to a chunk, a document, and its text. And a cheap faithfulness pass measures
-whether the answer actually used them.
-
-Failures here are loud on purpose. Zero retrieved passages, a provider error, or
-an empty completion all raise rather than falling back to an ungrounded answer :
-a wrong answer that looks grounded is worse than no answer.
-
-No provider is bundled. Core BuildML never imports an LLM SDK; pass any object
-with a ``chat`` method, or let Session supply the one it was configured with.
-
-See Also
---------
-buildml.rag.retrieve.retrieve : Producing the passages.
-buildml.rag.results.GenerateResult : What comes back.
-buildml.rag.evaluate.evaluate_generation : Measuring answer quality.
+Empty retrieval results, provider failures, and empty answers raise errors.
+Supply a compatible chat provider for model-generated answers.
+``EchoGroundedProvider`` supports offline interface demonstrations only.
 """
 
 from __future__ import annotations
@@ -356,7 +340,7 @@ def score_faithfulness(
     context: str = "",
     min_overlap: float = 0.05,
 ) -> FaithfulnessReport:
-    """Check cheaply whether the answer actually used the passages it was given.
+    """Measure citation-marker coverage and lexical overlap with retrieved passages.
 
     Two signals, both lexical and both fast. Citation coverage asks how many of
     the supplied sources the answer cited. Token overlap asks what fraction of
@@ -492,7 +476,23 @@ def generate_from_retrieve(
     --------
     Retrieve, inspect, then answer::
 
-        hits = retrieve(index, "what is the refund window?", k=5)
+        from buildml.rag.corpus import corpus_from_documents
+
+        corpus = corpus_from_documents([
+            {"doc_id": "refund", "text": "Refunds are available within 30 days of purchase.", "metadata": {"version": "2024"}},
+            {"doc_id": "cancel", "text": "Cancel a subscription from the account settings page.", "metadata": {"version": "2024"}},
+        ])
+        from buildml.rag.index import build_index
+        from buildml.rag.retrieve import retrieve
+
+        # Hashing runs locally without downloading an embedding model.
+        index = build_index(corpus, embedder="hashing", chunk_size=128, chunk_overlap=16)
+        from buildml.rag.generate import EchoGroundedProvider
+
+        # Offline API demonstration: this provider echoes evidence, not an LLM answer.
+        provider = EchoGroundedProvider()
+        from buildml.rag.generate import generate_from_retrieve
+        hits = retrieve(index, "what is the refund window?", k=2)
         result = generate_from_retrieve(hits, provider)
         print(result.answer, result.faithfulness.grounded)
 
@@ -615,7 +615,7 @@ def generate_grounded(
     context dilutes rather than helps, and models attend less well to the middle
     of a long prompt. Raise ``k`` with ``rerank=True`` rather than alone.
 
-    **The answer is only as good as the retrieval.** When answers are wrong,
+    **Inspect retrieval when diagnosing an incorrect answer.**
     inspect ``result.retrieve_result.hits`` before changing the prompt: usually
     the passage needed was never retrieved.
 
@@ -627,9 +627,24 @@ def generate_grounded(
     --------
     A grounded question with reranking::
 
-        result = generate_grounded(
-            index, "what is the refund window?", provider, k=5, rerank=True,
-        )
+        # Requires: pip install "buildml[rag]"; downloads cross-encoder weights on first use.
+        from buildml.rag.corpus import corpus_from_documents
+
+        corpus = corpus_from_documents([
+            {"doc_id": "refund", "text": "Refunds are available within 30 days of purchase.", "metadata": {"version": "2024"}},
+            {"doc_id": "cancel", "text": "Cancel a subscription from the account settings page.", "metadata": {"version": "2024"}},
+        ])
+        from buildml.rag.index import build_index
+        from buildml.rag.retrieve import retrieve
+
+        # Hashing runs locally without downloading an embedding model.
+        index = build_index(corpus, embedder="hashing", chunk_size=128, chunk_overlap=16)
+        from buildml.rag.generate import EchoGroundedProvider
+
+        # Offline API demonstration: this provider echoes evidence, not an LLM answer.
+        provider = EchoGroundedProvider()
+        from buildml.rag.generate import generate_grounded
+        result = generate_grounded(index, "what is the refund window?", provider, k=2, rerank=True)
         print(result.answer)
         for cite in result.citations:
             print(cite.source_id, cite.doc_id)
@@ -689,7 +704,20 @@ class EchoGroundedProvider:
     --------
     Exercise the pipeline offline::
 
-        result = generate_grounded(index, "anything", EchoGroundedProvider())
+        from buildml.rag.corpus import corpus_from_documents
+
+        corpus = corpus_from_documents([
+            {"doc_id": "refund", "text": "Refunds are available within 30 days of purchase.", "metadata": {"version": "2024"}},
+            {"doc_id": "cancel", "text": "Cancel a subscription from the account settings page.", "metadata": {"version": "2024"}},
+        ])
+        from buildml.rag.index import build_index
+        from buildml.rag.retrieve import retrieve
+
+        # Hashing runs locally without downloading an embedding model.
+        index = build_index(corpus, embedder="hashing", chunk_size=128, chunk_overlap=16)
+        from buildml.rag.generate import generate_grounded, EchoGroundedProvider
+        # Offline API demonstration, not a test of LLM answer quality.
+        result = generate_grounded(index, "refund window", EchoGroundedProvider())
         assert result.citations
 
     See Also

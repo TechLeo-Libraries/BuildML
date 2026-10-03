@@ -169,4 +169,5 @@ def test_domain_variable_shadow_warns_once() -> None:
 def test_list_facades_discloses_surface_policy() -> None:
     disclosures = " ".join(list_facades()["disclosures"])
     assert "3.0" in disclosures
-    assert "organized" in disclosures.lower() or "not reduced" in disclosures.lower()
+    assert "flat Session methods remain" in disclosures
+    assert "group related operations" in disclosures

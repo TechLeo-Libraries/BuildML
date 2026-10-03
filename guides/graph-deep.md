@@ -11,20 +11,20 @@ those nodes, and you want the holdout neighborhood to stay out of the
 fit. Rows are nodes. Edges are keyed by `node_id`, not by DataFrame
 position unless those two happen to be the same.
 
-`session.graph.fit()` with no extra knobs is **classical** NetworkX
+`session.graph.fit()` with default parameters is **classical** NetworkX
 metrics plus sklearn, in **inductive** mode. That stays classical even
-when PyTorch Geometric is sitting on the machine. Ask for `method="gcn"`
+when PyTorch Geometric is installed. Ask for `method="gcn"`
 or `method="pyg"` when you want a GNN. This is not Neo4j, and it is not
 `session.kg`.
 
-Short on-ramp: [graph quickstart](quickstart-graph.md). Proof:
+Quickstart: [graph quickstart](quickstart-graph.md). Proof:
 [graph-fraud-rings](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/graph-fraud-rings).
 
 ## A first loop
 
 Exactly one target. Attach structure with `set_spec` before fit. Scale
 the feature columns only: `node_id` has the `id` role so a default
-`scale()` leaves it alone, which is what you want.
+`scale()` leaves it alone, preserving the node identifiers.
 
 ```python
 import numpy as np
@@ -86,7 +86,7 @@ are done choosing.
 
 `classical_estimator` is `"logistic_regression"` unless you pass
 `"random_forest"`. `pyg_model` is `"gcn"` unless you pass `"graphsage"`
-or `"gat"`. GAT uses `heads=4` by default. Neural knobs (`hidden_dim=32`,
+or `"gat"`. GAT uses `heads=4` by default. Neural parameters (`hidden_dim=32`,
 `n_layers=2`, `epochs=80`, `learning_rate=0.01`) apply to `gcn` and
 `pyg` only.
 
@@ -94,12 +94,11 @@ PyG is a separate extra because it pins Torch/CUDA tightly. The
 pure-Torch `gcn` path is there for machines that should not take that
 stack.
 
-```python
-# When buildml[graph-pyg] is installed:
-# session.graph.fit(method="pyg", pyg_model="graphsage", epochs=60)
-```
+With `buildml[graph-pyg]` installed, the graph specification and split from
+the example above can also be used by `session.graph.fit` with
+`method="pyg"`, `pyg_model="graphsage"`, and an explicit epoch count.
 
-The only task on this surface is `node_classification`. Link prediction
+The supported task in this API is `node_classification`. Link prediction
 and graph-level classify are not here. Knowledge-graph triples belong on
 [session.kg](quickstart-kg.md).
 
@@ -110,8 +109,7 @@ full graph.
 
 **Inductive** (default): fit edges are train-train only. At score time,
 train-holdout edges are kept so a holdout node can still see its labeled
-neighbors. Holdout-holdout edges are dropped so unlabeled cliques cannot
-invent structure the fit never saw. Isolated nodes under that filter get
+neighbors. Holdout-holdout edges are dropped under the documented inductive scoring protocol. Isolated nodes under that filter get
 zero graph metrics, and the plan discloses it.
 
 **Transductive**: full adjacency at fit and at score. Labels for the
@@ -130,7 +128,7 @@ Dense adjacency (`gcn`) and Session materialization refuse more than
 Default `impute` / `encode` / `scale` touch `feature` columns and leave
 `id`, `target`, `group`, `time`, `weight`, and `ignore` alone. Pass
 `columns=` only when you mean to transform a non-feature column. Scaling
-`node_id` after `set_spec` is a good way to desync the spec snapshot
+`node_id` after `set_spec` can make the graph specification inconsistent
 from the frame.
 
 ## Bundles
@@ -139,9 +137,9 @@ from the frame.
 `GraphSpec`, the estimator or GNN, and the label encoder. A Session
 checkpoint does not embed `GraphPlan`. Reload the table with
 `checkpoint_load`, then `session.graph.load_bundle(..., trusted=True)`
-for a file you made. Loaders default to `trusted=False`.
+for a file you created or whose source and contents you trust. Loaders default to `trusted=False`.
 
-## When it refuses
+## Validation errors and prerequisites
 
 | What you see | What happened |
 | --- | --- |

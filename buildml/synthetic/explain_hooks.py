@@ -200,8 +200,6 @@ dict[str, Any]
 def synthetic_status_for_session(session: Any) -> dict[str, Any]:
     """Build synthetic walkthrough status from a Session instance.
 
-Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
-
 Parameters
 ----------
 session:

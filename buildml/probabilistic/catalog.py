@@ -1,4 +1,4 @@
-"""Probabilistic backend catalog and honest capability matrix."""
+"""Probabilistic backend catalog and capability matrix."""
 
 from __future__ import annotations
 
@@ -25,7 +25,7 @@ _NGBOOST_ESTIMATORS = ("ngboost_regressor", "ngboost_classifier")
 
 
 def probabilistic_capability_matrix() -> dict[str, Any]:
-    """Build the honest capability matrix for probabilistic backends.
+    """Build the capability matrix for probabilistic backends.
 
     Reports which native, MAPIE, and NGBoost paths are installed, supported
     uncertainty outputs, evaluation metrics, and explicit non-goals for teaching

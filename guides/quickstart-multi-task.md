@@ -9,7 +9,7 @@ regression is refused on sklearn/industry. Classical `session.fit` stays
 single-target. Default is sklearn `multi_output`.
 
 [Multi-task deep](multi-task-deep.md) ·
-Paste: [`examples/multitask_multioutput_loop.py`](../examples/multitask_multioutput_loop.py) ·
+Runnable example: [`examples/multitask_multioutput_loop.py`](../examples/multitask_multioutput_loop.py) ·
 Evidence: [multi-target-underwriting](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/multi-target-underwriting)
 
 ```bash
@@ -57,7 +57,7 @@ print(ev.per_task_metrics)  # per-target accuracy / F1
 session.multitask.save_bundle("artifacts/multitask_bundle")
 ```
 
-## Honest boundaries
+## Supported workflows and limitations
 
 | In scope | Out of scope |
 | --- | --- |
@@ -66,6 +66,3 @@ session.multitask.save_bundle("artifacts/multitask_bundle")
 | ≥2 targets via roles or `targets=` | Auto-switching classical `Session.fit` |
 | Per-task + aggregate holdout metrics | Causal multi-task / federated MTL |
 | Distinct `buildml.multitask_bundle.v1` | Session checkpoint embedding the plan |
-
-Related next: meta-learning
-(see [Meta-learning quickstart](quickstart-meta-learning.md)).

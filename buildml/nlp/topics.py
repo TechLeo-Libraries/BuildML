@@ -251,8 +251,15 @@ def fit_topics(
 
     Examples
     --------
-    >>> plan, result = fit_topics(dataset, split_plan, n_topics=8)  # doctest: +SKIP
-    >>> [topic.label for topic in result.topics]  # doctest: +SKIP
+    >>> import pandas as pd
+    >>> from buildml import Session
+    >>> texts = ["card payment declined", "invoice billing question", "payment refund requested", "billing invoice amount", "password login broken", "technical account access", "login password reset", "technical account error"] * 3
+    >>> frame = pd.DataFrame({"ticket_body": texts, "label": ["billing"] * 4 + ["technical"] * 4 + ["billing"] * 4 + ["technical"] * 4 + ["billing"] * 4 + ["technical"] * 4})
+    >>> session = Session.ingest(frame).set_roles({"ticket_body": "feature", "label": "target"})
+    >>> _ = session.split(test_size=0.25, stratify=True, random_state=42)
+    >>> dataset, split_plan = session.dataset, session.split_plan
+    >>> from buildml.nlp.topics import fit_topics
+    >>> plan, result = fit_topics(dataset, split_plan, text_column="ticket_body", n_topics=2, min_df=1)
 
     See Also
     --------

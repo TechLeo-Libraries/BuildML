@@ -8,8 +8,8 @@ pip install "buildml[tda]"
 You want local shape: for each train row, take its k nearest train
 neighbors, compute Vietoris-Rips persistence, vectorize the diagrams,
 optionally put a sklearn head on those vectors. Holdout rows reuse the
-frozen neighbor index and the frozen vectorizer. They do not refit
-homology.
+frozen neighbor index and the frozen vectorizer. Persistence diagrams are computed using the stored preprocessing and
+vectorization settings.
 
 This extra is required. There is no core-only TDA fallback.
 `session.tda.fit()` uses `vectorization="persistence_image"`. With
@@ -24,9 +24,9 @@ dims `(0, 1)`, `n_bins=20`, `standardize=True` on train,
 `max_points_guard=4000`. `subsample_strategy="error"` refuses when train
 is larger than that guard; pass `"random"` or `"stratified"` if you mean
 to subsample. `mapper=True` is a KeplerMapper **train summary** on
-giotto, not a Mapper research product.
+giotto, rather than a general Mapper analysis workflow.
 
-Short on-ramp: [TDA quickstart](quickstart-tda.md). Proof:
+Quickstart: [TDA quickstart](quickstart-tda.md). Proof:
 [credit-tda-shape](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/credit-tda-shape).
 
 ## Fit, transform, predict, evaluate
@@ -119,12 +119,12 @@ does not replace holdout classification or regression metrics.
 `tda_plan.joblib`). `meta.json` is format, library version, and the
 checkpoint boundary only; the fitted plan stays in joblib. v1 bundles
 still load. Session checkpoints do not embed `TdaPlan`. `trusted=True`
-only for a file you made.
+only for a file you created or whose source and contents you trust.
 
-Paste: [`examples/tda_loop.py`](../examples/tda_loop.py).
+Runnable example: [`examples/tda_loop.py`](../examples/tda_loop.py).
 Benchmark: `python benchmarks/tda/persistence_pipeline.py`.
 
-## When it refuses
+## Validation errors and prerequisites
 
 | What you see | What happened |
 | --- | --- |

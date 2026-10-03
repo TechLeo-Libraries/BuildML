@@ -16,9 +16,7 @@ FORECASTING_BEGINNER: dict[str, BeginnerLayer] = _index(
     _layer(
         "forecast-temporal-leakage",
         plain=(
-            "In forecasting, the split boundary is time. If any training row comes from after any "
-            "evaluation row, the model has seen the future and your score is fiction. A random split: "
-            "perfectly fine for ordinary tabular work: destroys a forecasting evaluation."
+            'In forecasting, the split boundary is time. If any training row comes from after any evaluation row, the model has seen the future and the evaluation may overstate performance on future data. Use chronological evaluation when deployment predicts later observations from earlier ones.'
         ),
         analogy=(
             "Predicting Monday's weather after being shown Tuesday's. Impressive on paper, useless on "
@@ -39,21 +37,22 @@ FORECASTING_BEGINNER: dict[str, BeginnerLayer] = _index(
             "Do not use `split(shuffle=True)` or stratified splitting on a time series.",
             "Do not shuffle rows for 'better mixing' before a forecasting fit: you are shuffling the future into the past.",
         ),
-        myths=(
-            (
-                "Random splits are more statistically rigorous.",
-                "They assume rows are exchangeable. Time-ordered data is the textbook case where that assumption is false.",
-            ),
-            (
-                "A feature computed only from other columns cannot leak.",
-                "It can, if those columns were themselves recorded later. A 'customer lifetime value' column usually contains the whole future.",
-            ),
-        ),
+        myths=(('Random splits are more statistically rigorous.', 'They assume rows are exchangeable. Time-ordered data is the textbook case where that assumption is false.'), ('A feature computed only from other columns cannot leak.', 'It can, if those columns were themselves recorded later. For example, a lifetime-value column computed after the prediction date can include future transactions.')),
         example=(
-            "session.set_roles({'sales': 'target', 'order_date': 'time'})",
-            "session.time_split(time_column='order_date', test_size=0.2)",
-            "session.forecast.fit(method='lag_ridge', lags=[1, 7, 28])",
-            "session.forecast.evaluate(partition='test')",
+            'import numpy as np',
+            'import pandas as pd',
+            'from buildml import Session',
+            '',
+            'rng = np.random.default_rng(0)',
+            'n = 120',
+            'frame = pd.DataFrame({',
+            "    'date': pd.date_range('2024-01-01', periods=n, freq='D'),",
+            "    'sales': 20 + 0.05 * np.arange(n) + 2 * np.sin(2 * np.pi * np.arange(n) / 7) + rng.normal(0, 0.3, n),",
+            '})',
+            "session = Session.ingest(frame).set_roles({'date': 'time', 'sales': 'target'})",
+            'session.time_split(test_size=0.2, validation_size=0.2)',
+            "session.forecast.fit(method='lag_ridge', lags=[1, 7, 14], horizon=7)",
+            "print(session.forecast.evaluate(partition='test').metrics)",
         ),
         check=(
             "What is the latest timestamp in your training rows and the earliest in your test rows?",
@@ -74,37 +73,28 @@ FORECASTING_BEGINNER: dict[str, BeginnerLayer] = _index(
             "Guessing today's temperature. You would want yesterday's, last week's same day, and maybe last "
             "month's average written down in front of you. Lag features write them down."
         ),
-        steps=(
-            "Choose lags that match the rhythm of your data: 1 for yesterday, 7 for the same weekday, 12 or 365 for yearly cycles.",
-            "For rolling summaries, construct strictly backward-looking features separately; forecast.fit does not accept rolling_windows.",
-            "BuildML builds the supervised table where each row's features are past values and its target is the current one.",
-            "Rows at the very start have no history and are dropped; note how many.",
-            "Fit any ordinary regression model on that table.",
-        ),
+        steps=('Choose lags in observation steps: 7 is one week for daily data, while 12 is one year for monthly data. Check frequency and missing timestamps first.', 'For rolling summaries, construct strictly backward-looking features separately; forecast.fit does not accept rolling_windows.', "BuildML builds the supervised table where each row's features are past values and its target is the current one.", 'Rows at the very start have no history and are dropped; note how many.', 'Fit a supported lag-regression method on that table; check the forecasting capability matrix for available estimators.'),
         use=(
             "As the first thing to try on almost any forecasting problem: it is fast, interpretable, and often hard to beat.",
             "When you want to reuse the gradient-boosting model you already trust rather than learn a new framework.",
         ),
-        avoid=(
-            "Do not add dozens of lags on a short series; you will run out of rows and start fitting noise.",
-            "Do not use a lag longer than your forecast horizon can support in recursive generation without understanding the error compounding.",
-        ),
-        myths=(
-            (
-                "Forecasting needs a specialized model like ARIMA or an LSTM.",
-                "Lag features plus a good tabular model is a genuinely competitive approach and is far easier to debug.",
-            ),
-            (
-                "More lags capture more of the pattern.",
-                "Each lag costs a row of history and a column of width. Lags matched to the actual seasonality beat a long undifferentiated list.",
-            ),
-        ),
+        avoid=('Do not add dozens of lags on a short series; you will run out of rows and start fitting noise.', 'Supply enough observed history for the largest lag. During recursive generation, some lag values become earlier predictions, so validate the full requested horizon.'),
+        myths=(('Forecasting needs a specialized model like ARIMA or an LSTM.', 'Lag features plus a good tabular model is a genuinely competitive approach and is far easier to debug.'), ('More lags capture more of the pattern.', 'The largest lag determines the required history, while each lag adds a feature column. Compare candidate lag sets on validation data.')),
         example=(
-            "session.forecast.fit(",
-            "    method='lag_ridge', lags=[1, 2, 7, 14, 28],",
-            "    horizon=14,",
-            ")",
-            "print(session.forecast.plan.n_train_rows - session.forecast.plan.n_fit_rows)",
+            'import numpy as np',
+            'import pandas as pd',
+            'from buildml import Session',
+            '',
+            'rng = np.random.default_rng(0)',
+            'n = 120',
+            'frame = pd.DataFrame({',
+            "    'date': pd.date_range('2024-01-01', periods=n, freq='D'),",
+            "    'sales': 20 + 0.05 * np.arange(n) + 2 * np.sin(2 * np.pi * np.arange(n) / 7) + rng.normal(0, 0.3, n),",
+            '})',
+            "session = Session.ingest(frame).set_roles({'date': 'time', 'sales': 'target'})",
+            'session.time_split(test_size=0.2, validation_size=0.2)',
+            "session.forecast.fit(method='lag_ridge', lags=[1, 7, 14], horizon=7)",
+            'print(session.forecast.plan.n_train_rows, session.forecast.plan.n_fit_rows)',
         ),
         check=(
             "Do your lag choices match a real cycle in the data: weekly, monthly, yearly?",
@@ -151,9 +141,21 @@ FORECASTING_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.time_split(test_size=0.2)",
-            "session.forecast.fit(method='ets', seasonal_period=7)",
-            "session.forecast.evaluate(partition='validation', strategy='rolling_one_step')",
+            '# Install first: pip install "buildml[timeseries]"',
+            'import numpy as np',
+            'import pandas as pd',
+            'from buildml import Session',
+            '',
+            'rng = np.random.default_rng(0)',
+            'n = 120',
+            'frame = pd.DataFrame({',
+            "    'date': pd.date_range('2024-01-01', periods=n, freq='D'),",
+            "    'sales': 20 + 0.05 * np.arange(n) + 2 * np.sin(2 * np.pi * np.arange(n) / 7) + rng.normal(0, 0.3, n),",
+            '})',
+            "session = Session.ingest(frame).set_roles({'date': 'time', 'sales': 'target'})",
+            'session.time_split(test_size=0.2, validation_size=0.2)',
+            "session.forecast.fit(method='ets', seasonal_period=7, horizon=7)",
+            "print(session.forecast.evaluate(partition='validation', strategy='rolling_one_step').metrics)",
         ),
         check=(
             "Is your train window long enough for the seasonal period you chose?",
@@ -167,7 +169,7 @@ FORECASTING_BEGINNER: dict[str, BeginnerLayer] = _index(
         "forecast-univariate-vs-exog",
         plain=(
             "A univariate forecast uses only the target's own history. An exogenous forecast also uses "
-            "outside drivers such as price or promotion. The catch with exogenous drivers is brutal: to "
+            "outside drivers such as price or promotion. To "
             "forecast H steps ahead you need to already know those drivers H steps ahead."
         ),
         analogy=(
@@ -175,7 +177,7 @@ FORECASTING_BEGINNER: dict[str, BeginnerLayer] = _index(
             "next month's sales now requires forecasting next month's weather."
         ),
         steps=(
-            "Start univariate. It is the honest baseline and often surprisingly strong.",
+            "Start with a univariate baseline so you can measure whether external drivers improve the forecast.",
             "If you add exogenous columns, list them explicitly and confirm they are numeric.",
             "For horizon generation, supply the future values of every exogenous column.",
             "Known-in-advance drivers (holidays, planned promotions, scheduled prices) are the safe ones.",
@@ -189,22 +191,25 @@ FORECASTING_BEGINNER: dict[str, BeginnerLayer] = _index(
             "Do not add an exogenous column whose future you cannot obtain: you will build a model you cannot run.",
             "Do not add many exogenous columns on a short series; each one costs degrees of freedom you do not have.",
         ),
-        myths=(
-            (
-                "Adding more drivers always improves a forecast.",
-                "It improves the fit on history. Out-of-sample it often makes things worse, because you have swapped one uncertainty for two.",
-            ),
-            (
-                "A driver that correlates strongly with the target is a good exogenous feature.",
-                "Only if you will know its value at forecast time. Otherwise the correlation is unusable.",
-            ),
-        ),
+        myths=(('Adding more drivers always improves a forecast.', 'Additional drivers may improve or worsen a forecast. Evaluate them using only values that would have been available at each forecast origin.'), ('A driver that correlates strongly with the target is a good exogenous feature.', 'Only if you will know its value at forecast time. Otherwise the correlation is unusable.')),
         example=(
-            "session.forecast.fit(",
-            "    method='lag_ridge', lags=[1, 7],",
-            "    exog_columns=['is_holiday', 'planned_discount'],",
-            ")",
-            "session.forecast.generate(horizon=14, future_exog=future_frame)",
+            'import numpy as np',
+            'import pandas as pd',
+            'from buildml import Session',
+            '',
+            'rng = np.random.default_rng(0)',
+            'n = 120',
+            'frame = pd.DataFrame({',
+            "    'date': pd.date_range('2024-01-01', periods=n, freq='D'),",
+            "    'sales': 20 + 0.05 * np.arange(n) + 2 * np.sin(2 * np.pi * np.arange(n) / 7) + rng.normal(0, 0.3, n),",
+            '})',
+            "frame['promotion'] = (np.arange(n) % 7 == 0).astype(float)",
+            "session = Session.ingest(frame).set_roles({'date': 'time', 'sales': 'target', 'promotion': 'ignore'})",
+            'session.time_split(test_size=0.2, validation_size=0.2)',
+            "session.forecast.fit(method='lag_ridge', lags=[1, 7], horizon=7, exog_columns=['promotion'])",
+            '# A known promotion schedule for the seven days after the training boundary.',
+            'future_exog = np.zeros((7, 1))',
+            "print(session.forecast.generate(horizon=7, origin='train_end', future_exog=future_exog).predictions)",
         ),
         check=(
             "For each exogenous column: will you actually know its value for the whole horizon?",
@@ -217,21 +222,12 @@ FORECASTING_BEGINNER: dict[str, BeginnerLayer] = _index(
     _layer(
         "forecast-horizon-generate",
         plain=(
-            "Generating an H-step forecast means predicting one step, then feeding that prediction back in "
-            "as if it were an observed value to predict the next, and so on. Errors compound: step 14 is "
-            "built on thirteen guesses."
+            'Generating an H-step forecast produces future values from a fixed origin. Lag-regression methods generate recursively, using earlier predictions as later inputs. ETS, ARIMA, and other backends use their own forecasting procedures.'
         ),
         analogy=(
-            "Photocopying a photocopy. The first copy is nearly perfect. The fourteenth is visibly degraded, "
-            "and every flaw you introduced early is still there, magnified."
+            'Planning several stages ahead: later decisions may depend on earlier estimates, so assess the complete planning horizon.'
         ),
-        steps=(
-            "Freeze the fitted plan: generation never refits.",
-            "Predict the next step from the real observed history.",
-            "Append that prediction to the history as if it were actual.",
-            "Repeat until you reach the horizon.",
-            "Report the horizon length alongside the numbers, and expect accuracy to decay with distance.",
-        ),
+        steps=('Freeze the fitted plan: generation never refits.', 'For recursive lag methods, predict the next step from the observed history.', 'For those methods, append the prediction to the working history for later lag inputs.', "Continue to the requested horizon, using the fitted backend's generation procedure.", 'Report the horizon and measure error at each forecast distance.'),
         use=(
             "When you genuinely need multiple future periods: a quarter of demand, a month of capacity.",
             "For planning scenarios where the trajectory matters more than any single point.",
@@ -240,20 +236,22 @@ FORECASTING_BEGINNER: dict[str, BeginnerLayer] = _index(
             "Do not compare a 14-step generated forecast against a rolling one-step evaluation and call them the same accuracy; they measure different tasks.",
             "Do not push the horizon far beyond what you validated: the error growth is not linear and not guessable.",
         ),
-        myths=(
-            (
-                "A model with good one-step accuracy has good multi-step accuracy.",
-                "One-step accuracy uses real history at every point. Multi-step accumulates its own mistakes, and the two can diverge dramatically.",
-            ),
-            (
-                "The forecast for step 14 is as trustworthy as the forecast for step 1.",
-                "It is built on thirteen previous predictions. Uncertainty grows with every step, which is why forecast intervals widen.",
-            ),
-        ),
+        myths=(('A model with good one-step accuracy has good multi-step accuracy.', 'One-step accuracy uses real history at every point. Recursive multi-step forecasts reuse predicted values, so one-step and multi-step performance can differ substantially.'), ('The forecast for step 14 is as trustworthy as the forecast for step 1.', 'Longer horizons can have different uncertainty from one-step forecasts. The pattern depends on the model and series; assess it with matching horizon evaluations.')),
         example=(
-            "result = session.forecast.generate(horizon=14)",
-            "print(result.predictions)          # 14 values",
-            "print(result.disclosures)             # 'recursive multi-step'",
+            'import numpy as np',
+            'import pandas as pd',
+            'from buildml import Session',
+            '',
+            'rng = np.random.default_rng(0)',
+            'n = 120',
+            'frame = pd.DataFrame({',
+            "    'date': pd.date_range('2024-01-01', periods=n, freq='D'),",
+            "    'sales': 20 + 0.05 * np.arange(n) + 2 * np.sin(2 * np.pi * np.arange(n) / 7) + rng.normal(0, 0.3, n),",
+            '})',
+            "session = Session.ingest(frame).set_roles({'date': 'time', 'sales': 'target'})",
+            'session.time_split(test_size=0.2, validation_size=0.2)',
+            "session.forecast.fit(method='lag_ridge', lags=[1, 7, 14], horizon=7)",
+            "print(session.forecast.generate(horizon=7, origin='train_end').predictions)",
         ),
         check=(
             "What is your accuracy at step 1 versus step H?",
@@ -266,22 +264,13 @@ FORECASTING_BEGINNER: dict[str, BeginnerLayer] = _index(
     _layer(
         "forecast-eval-protocols",
         plain=(
-            "There are two honest ways to score a forecast and they answer different questions. Rolling "
-            "one-step re-supplies the real value after each prediction, measuring 'how good is the next-step "
-            "model?'. Origin evaluation fixes a starting point and scores the whole recursive path, "
-            "measuring 'how good is the plan I would actually ship?'."
+            "Rolling one-step and origin evaluation answer different questions. Rolling one-step re-supplies the real value after each prediction, measuring 'how good is the next-step model?'. Origin evaluation fixes a starting point and scores the multi-step forecast available at that point."
         ),
         analogy=(
             "Testing a sat-nav by correcting the driver at every junction, versus letting them drive the "
             "whole route on the original instructions. Both are fair tests; they are not the same test."
         ),
-        steps=(
-            "Decide which question you need answered: next-step quality, or full-horizon planning quality.",
-            "For rolling one-step, the evaluator walks forward, predicting one step and then revealing the actual.",
-            "For origin evaluation, it fixes an origin and scores the recursive multi-step path from there.",
-            "Read the metric together with the protocol name; a number without a protocol is uninterpretable.",
-            "Report both when the audience might assume the more favourable one.",
-        ),
+        steps=('Decide which question you need answered: next-step quality, or full-horizon planning quality.', 'For rolling one-step, the evaluator walks forward, predicting one step and then revealing the actual.', 'For origin evaluation, it fixes an origin and scores the multi-step forecast from there.', 'Read the metric together with the protocol name; a number without a protocol is uninterpretable.', 'Report both when the audience might assume the more favourable one.'),
         use=(
             "Rolling one-step when you will retrain or re-observe every period anyway.",
             "Origin evaluation when a plan is committed for the whole horizon before any actuals arrive.",
@@ -290,20 +279,25 @@ FORECASTING_BEGINNER: dict[str, BeginnerLayer] = _index(
             "Do not quote rolling one-step accuracy for a system that must forecast a quarter ahead unaided.",
             "Do not switch protocols between model comparisons; the ranking can genuinely reverse.",
         ),
-        myths=(
-            (
-                "There is one correct way to score a forecast.",
-                "The protocol has to match how the forecast is used. That is a business fact, not a statistical one.",
-            ),
-            (
-                "Rolling evaluation is more rigorous because it uses more data.",
-                "It is more favourable, because it hands the model a real value after every step. Rigour comes from matching the deployment, not from the higher number.",
-            ),
-        ),
+        myths=(('There is one correct way to score a forecast.', 'The protocol has to match how the forecast is used. That is a business fact, not a statistical one.'), ('Rolling evaluation is more rigorous because it uses more data.', 'Rolling evaluation reveals actual observations between predictions. This changes the task and may change the score; the appropriate protocol depends on deployment.')),
         example=(
+            'import numpy as np',
+            'import pandas as pd',
+            'from buildml import Session',
+            '',
+            'rng = np.random.default_rng(0)',
+            'n = 120',
+            'frame = pd.DataFrame({',
+            "    'date': pd.date_range('2024-01-01', periods=n, freq='D'),",
+            "    'sales': 20 + 0.05 * np.arange(n) + 2 * np.sin(2 * np.pi * np.arange(n) / 7) + rng.normal(0, 0.3, n),",
+            '})',
+            "session = Session.ingest(frame).set_roles({'date': 'time', 'sales': 'target'})",
+            'session.time_split(test_size=0.2, validation_size=0.2)',
+            "session.forecast.fit(method='lag_ridge', lags=[1, 7, 14], horizon=7)",
             "rolling = session.forecast.evaluate(partition='test', strategy='rolling_one_step')",
             "origin = session.forecast.evaluate(partition='test', strategy='origin')",
-            "print(rolling.metrics['mae'], origin.metrics['mae'])   # expect origin to be worse",
+            "print(rolling.metrics['mae'], origin.metrics['mae'])",
+            '# The protocols answer different questions; either may score better on a given sample.',
         ),
         check=(
             "In production, will your model see actuals between predictions?",
@@ -339,20 +333,24 @@ FORECASTING_BEGINNER: dict[str, BeginnerLayer] = _index(
             "Do not use MAPE on intermittent demand: the zero days will dominate the average and hide everything else.",
             "Do not compare MAE across series with different scales; a MAE of 100 is excellent for revenue and catastrophic for a percentage.",
         ),
-        myths=(
-            (
-                "MAPE is a universal accuracy percentage.",
-                "It is scale-sensitive, asymmetric between over- and under-prediction, and undefined at zero. It is a communication tool, not a measure of truth.",
-            ),
-            (
-                "A low RMSE means a good forecast.",
-                "It means small squared errors on the rows you scored. Against a flat series, 'predict the previous value' often scores well and forecasts nothing.",
-            ),
-        ),
+        myths=(('MAPE is a universal accuracy percentage.', "MAPE is invariant when actuals and predictions are rescaled together, but it gives high weight to small actual values and is undefined at zero. Check the implementation's handling of zero denominators."), ('A low RMSE means a good forecast.', 'It means small squared errors on the rows you scored. A last-value forecast can score well on a stable series and is a useful baseline.')),
         example=(
+            'import numpy as np',
+            'import pandas as pd',
+            'from buildml import Session',
+            '',
+            'rng = np.random.default_rng(0)',
+            'n = 120',
+            'frame = pd.DataFrame({',
+            "    'date': pd.date_range('2024-01-01', periods=n, freq='D'),",
+            "    'sales': 20 + 0.05 * np.arange(n) + 2 * np.sin(2 * np.pi * np.arange(n) / 7) + rng.normal(0, 0.3, n),",
+            '})',
+            "session = Session.ingest(frame).set_roles({'date': 'time', 'sales': 'target'})",
+            'session.time_split(test_size=0.2, validation_size=0.2)',
+            "session.forecast.fit(method='lag_ridge', lags=[1, 7, 14], horizon=7)",
             "report = session.forecast.evaluate(partition='test')",
-            "print(report.metrics)",
-            "print(report.disclosures)   # includes MAPE instability notes",
+            'print(report.metrics)',
+            'print(report.disclosures)',
         ),
         check=(
             "Does your series ever approach zero?",
@@ -399,9 +397,26 @@ FORECASTING_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.forecast.save_bundle('artifacts/demand-forecast')",
-            "job = Session.ingest(latest_history).forecast.load_bundle('artifacts/demand-forecast', trusted=True)",
-            "job.forecast.generate(horizon=14)",
+            'import numpy as np',
+            'import pandas as pd',
+            'from buildml import Session',
+            '',
+            'rng = np.random.default_rng(0)',
+            'n = 120',
+            'frame = pd.DataFrame({',
+            "    'date': pd.date_range('2024-01-01', periods=n, freq='D'),",
+            "    'sales': 20 + 0.05 * np.arange(n) + 2 * np.sin(2 * np.pi * np.arange(n) / 7) + rng.normal(0, 0.3, n),",
+            '})',
+            "session = Session.ingest(frame).set_roles({'date': 'time', 'sales': 'target'})",
+            'session.time_split(test_size=0.2, validation_size=0.2)',
+            "session.forecast.fit(method='lag_ridge', lags=[1, 7, 14], horizon=7)",
+            'from tempfile import TemporaryDirectory',
+            '',
+            'with TemporaryDirectory() as directory:',
+            "    session.forecast.save_bundle(directory + '/forecast')",
+            "    job = Session.ingest(frame).set_roles({'date': 'time', 'sales': 'target'})",
+            "    job.forecast.load_bundle(directory + '/forecast', trusted=True)",
+            '    print(job.forecast.generate(horizon=7).predictions)',
         ),
         check=(
             "Does the reloaded plan's expected column list match your fresh data?",

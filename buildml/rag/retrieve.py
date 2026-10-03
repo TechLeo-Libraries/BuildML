@@ -161,7 +161,7 @@ def retrieve(
 
     Notes
     -----
-    **Something always comes back.** There is no relevance threshold, so a
+    **Results are not filtered by a relevance threshold.** A
     question the corpus cannot answer still produces ``k`` confidently ranked
     passages. Judging whether they are relevant is the caller's job.
 
@@ -181,11 +181,21 @@ def retrieve(
     --------
     Retrieve with reranking, restricted to one document version::
 
-        result = retrieve(
-            index, "how do I cancel?", k=5, rerank=True,
-            filters={"version": "2024"},
-        )
-        print(result.mode, [h.doc_id for h in result.hits])
+        # Requires: pip install "buildml[rag]"; downloads cross-encoder weights on first use.
+        from buildml.rag.corpus import corpus_from_documents
+
+        corpus = corpus_from_documents([
+            {"doc_id": "refund", "text": "Refunds are available within 30 days of purchase.", "metadata": {"version": "2024"}},
+            {"doc_id": "cancel", "text": "Cancel a subscription from the account settings page.", "metadata": {"version": "2024"}},
+        ])
+        from buildml.rag.index import build_index
+        from buildml.rag.retrieve import retrieve
+
+        # Hashing runs locally without downloading an embedding model.
+        index = build_index(corpus, embedder="hashing", chunk_size=128, chunk_overlap=16)
+        result = retrieve(index, "how do I cancel?", k=2, rerank=True,
+                          filters={"version": "2024"})
+        print(result.mode, [hit.doc_id for hit in result.hits])
 
     See Also
     --------

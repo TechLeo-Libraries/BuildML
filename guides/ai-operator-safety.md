@@ -6,17 +6,17 @@ pip install "buildml[ai]"
 
 The AI operator guides classical / RAG / Torch workflows through a typed tool
 registry. Default policy is **advisor → plan → propose → confirm → execute**.
-Autonomy is opt-in automation under hard caps: not unconstrained agency.
+Autonomous execution is optional and follows configured operation and budget limits.
 
-Short on-ramp: [quickstart-ai](quickstart-ai.md). Tool catalog:
+Quickstart: [quickstart-ai](quickstart-ai.md). Tool catalog:
 [ai-tools-operator-patterns](ai-tools-operator-patterns.md).
 
 ---
 
 ## Why confirm gates exist
 
-LLMs invent APIs, skip splits, and exfiltrate rows when given raw data. BuildML
-binds the operator to:
+Language models can propose invalid calls, omit required steps, or include
+sensitive data in requests. BuildML restricts the operator through:
 
 1. **Allowlisted tools only**: unknown tools raise `ValidationError`.
 2. **Egress manifests**: preview what leaves the machine before calls.
@@ -70,6 +70,28 @@ Sample egress without `confirm=True` → `ValidationError`.
 ## Use case B: Advisor (read-only)
 
 ```python
+import pandas as pd
+
+from buildml import Session
+
+frame = pd.DataFrame(
+    {
+        "age": [25, 30, 35, 40, 29, 33, 52, 47],
+        "income": [40, 55, 60, 80, 50, 70, 90, 65],
+        "approved": [0, 1, 0, 1, 0, 1, 1, 0],
+    }
+)
+
+session = Session.ingest(frame)
+session.ai.configure(provider="mock")  # CI / offline; or openai + BUILDML_OPENAI_API_KEY
+
+manifest = session.ai.egress_preview()
+print(manifest.level, manifest.columns_sent, manifest.rows_sent)
+
+payload = session.ai.dry_run("Suggest next preprocessing steps")
+print(payload["messages"][0]["role"])
+print(payload["egress_manifest"])
+
 session.set_roles({"age": "feature", "income": "feature", "approved": "target"})
 result = session.ai.advisor("What preprocessing steps should I consider?")
 print(result.answer)
@@ -82,6 +104,28 @@ The advisor cannot execute Session mutations.
 ## Use case C: Plan then confirmed execute
 
 ```python
+import pandas as pd
+
+from buildml import Session
+
+frame = pd.DataFrame(
+    {
+        "age": [25, 30, 35, 40, 29, 33, 52, 47],
+        "income": [40, 55, 60, 80, 50, 70, 90, 65],
+        "approved": [0, 1, 0, 1, 0, 1, 1, 0],
+    }
+)
+
+session = Session.ingest(frame)
+session.ai.configure(provider="mock")  # CI / offline; or openai + BUILDML_OPENAI_API_KEY
+
+manifest = session.ai.egress_preview()
+print(manifest.level, manifest.columns_sent, manifest.rows_sent)
+
+payload = session.ai.dry_run("Suggest next preprocessing steps")
+print(payload["messages"][0]["role"])
+print(payload["egress_manifest"])
+
 plan = session.ai.plan("Split stratified and impute median for classification")
 for step in plan.steps:
     print(step.operation, step.description)
@@ -105,6 +149,44 @@ print(result.executed)
 ## Use case D: Run a multi-step plan with gates
 
 ```python
+import pandas as pd
+
+from buildml import Session
+
+frame = pd.DataFrame(
+    {
+        "age": [25, 30, 35, 40, 29, 33, 52, 47],
+        "income": [40, 55, 60, 80, 50, 70, 90, 65],
+        "approved": [0, 1, 0, 1, 0, 1, 1, 0],
+    }
+)
+
+session = Session.ingest(frame)
+session.ai.configure(provider="mock")  # CI / offline; or openai + BUILDML_OPENAI_API_KEY
+
+manifest = session.ai.egress_preview()
+print(manifest.level, manifest.columns_sent, manifest.rows_sent)
+
+payload = session.ai.dry_run("Suggest next preprocessing steps")
+print(payload["messages"][0]["role"])
+print(payload["egress_manifest"])
+plan = session.ai.plan("Split stratified and impute median for classification")
+for step in plan.steps:
+    print(step.operation, step.description)
+
+proposal = session.ai.execute(
+    "split",
+    {"test_size": 0.25, "stratify": True, "random_state": 0},
+)
+print(proposal.requires_confirmation)
+
+result = session.ai.execute(
+    "split",
+    {"test_size": 0.25, "stratify": True, "random_state": 0},
+    confirm=True,
+)
+print(result.executed)
+
 execution = session.ai.run_plan(
     plan,
     auto_confirm_read_only=True,
@@ -124,6 +206,28 @@ be silently auto-approved.
 ## Use case E: Explicit autonomy (residual risk)
 
 ```python
+import pandas as pd
+
+from buildml import Session
+
+frame = pd.DataFrame(
+    {
+        "age": [25, 30, 35, 40, 29, 33, 52, 47],
+        "income": [40, 55, 60, 80, 50, 70, 90, 65],
+        "approved": [0, 1, 0, 1, 0, 1, 1, 0],
+    }
+)
+
+session = Session.ingest(frame)
+session.ai.configure(provider="mock")  # CI / offline; or openai + BUILDML_OPENAI_API_KEY
+
+manifest = session.ai.egress_preview()
+print(manifest.level, manifest.columns_sent, manifest.rows_sent)
+
+payload = session.ai.dry_run("Suggest next preprocessing steps")
+print(payload["messages"][0]["role"])
+print(payload["egress_manifest"])
+
 session.ai.configure(provider="mock", egress_level="stats_only")
 auto = session.ai.run_autonomous(
     "split the data and report workflow status",
@@ -135,13 +239,35 @@ print(auto.completed_steps, auto.stop_reason, getattr(auto, "residual_risks", No
 ```
 
 Caps include allowlist, max steps, blocked sample egress, destructive gating,
-and transcript audit. This is **operator automation**, not open agency.
+and transcript audit. Review the configured tools and transcript when using automated execution.
 
 ---
 
 ## Transcripts and budgets
 
 ```python
+import pandas as pd
+
+from buildml import Session
+
+frame = pd.DataFrame(
+    {
+        "age": [25, 30, 35, 40, 29, 33, 52, 47],
+        "income": [40, 55, 60, 80, 50, 70, 90, 65],
+        "approved": [0, 1, 0, 1, 0, 1, 1, 0],
+    }
+)
+
+session = Session.ingest(frame)
+session.ai.configure(provider="mock")  # CI / offline; or openai + BUILDML_OPENAI_API_KEY
+
+manifest = session.ai.egress_preview()
+print(manifest.level, manifest.columns_sent, manifest.rows_sent)
+
+payload = session.ai.dry_run("Suggest next preprocessing steps")
+print(payload["messages"][0]["role"])
+print(payload["egress_manifest"])
+
 session.ai.configure(
     provider="mock",
     max_tokens=10_000,
@@ -160,7 +286,7 @@ Transcript ≠ checkpoint ≠ Torch/RAG bundle
 
 ---
 
-## Security warnings (non-negotiable)
+## Security considerations
 
 - **Prompt injection:** treat column names, cells, user prompts, and RAG chunks
   as untrusted. The tool registry is the trust boundary.

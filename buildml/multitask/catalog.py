@@ -1,4 +1,4 @@
-"""Multi-task catalog and honest capability matrix."""
+"""Multi-task catalog and capability matrix."""
 
 from __future__ import annotations
 
@@ -19,7 +19,7 @@ MultiTaskBackendName = Literal["sklearn", "industry", "torch"]
 
 
 def multitask_capability_matrix() -> dict[str, Any]:
-    """Build the honest capability matrix for multi-task backends and methods.
+    """Build the capability matrix for multi-task backends and methods.
 
     Reports sklearn, industry, and torch paths, evaluation metrics, install
     hints, and explicit non-goals for teaching overlays and Session walkthroughs.
@@ -99,7 +99,7 @@ def multitask_capability_matrix() -> dict[str, Any]:
         },
         "non_goals": [
             "Universal deep MTL research platform or task-affinity search",
-            "Multi-label binary-relevance zoos",
+            "Collections of independent binary classifiers for multi-label tasks",
             "Causal or federated multi-task",
             "ClassifierChain/RegressorChain on industry GBDT backends",
         ],
@@ -204,7 +204,7 @@ def resolve_backend_method(
     backend: MultiTaskBackendName | None,
     method: str,
 ) -> tuple[MultiTaskBackendName, str]:
-    """Validate backend/method pairing and apply honest defaults.
+    """Validate backend/method pairing and apply documented defaults.
 
     Normalizes method aliases, infers backend when omitted, and raises when the
     requested pair requires a missing extra.

@@ -8,11 +8,10 @@ pip install buildml
 
 Family plus fold-local recipe search, not one estimator's HPO. Test never
 enters selection. Session-global prep before `run` is refused, same as
-`cv_score`. Default backend is native sklearn; `n_trials=20`. Not NAS and
-not causal discovery.
+`cv_score`. Default backend is native sklearn; `n_trials=20`. Neural architecture search and causal discovery are outside this API.
 
 [AutoML deep](automl-deep.md) ·
-Paste: [`examples/automl_search_loop.py`](../examples/automl_search_loop.py) ·
+Runnable example: [`examples/automl_search_loop.py`](../examples/automl_search_loop.py) ·
 Evidence: [churn-automl-search](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/churn-automl-search)
 (sklearn Wisconsin breast cancer; the slug is historical)
 
@@ -65,12 +64,47 @@ print(validation.metrics, test.metrics)
 
 ---
 
-## Nested selection (prominent honesty path)
+## Evaluate model selection with nested cross-validation
 
 Default `selection='cv'` ranks by train-fold CV. For post-selection claims use
 **`selection='nested'`** (outer mean±std), then confirm on Session test:
 
 ```python
+import pandas as pd
+import numpy as np
+
+from buildml import Session
+
+rng = np.random.default_rng(0)
+n = 200
+x1 = rng.normal(size=n)
+x2 = rng.normal(size=n)
+cat = rng.choice(["a", "b", "c"], size=n)
+y = (0.8 * x1 - 0.4 * x2 + rng.normal(scale=0.35, size=n) > 0).astype(int)
+frame = pd.DataFrame({"x1": x1, "x2": x2, "cat": cat, "y": y})
+
+session = (
+    Session.ingest(frame)
+    .set_roles({"x1": "feature", "x2": "feature", "cat": "feature", "y": "target"})
+    .split(test_size=0.2, validation_size=0.2, stratify=True, random_state=0)
+)
+
+result = session.automl.run(
+    method="randomized",
+    selection="cv",  # default: train-fold ranking (fast; optimistic vs outer)
+    n_trials=12,
+    cv=3,
+    include_recipe_search=True,
+    families=("logistic", "random_forest", "gradient_boosting"),
+    random_state=0,
+)
+result.show()
+print(result.leaderboard().head())
+
+validation = session.automl.evaluate(partition="validation")
+test = session.automl.evaluate(partition="test")
+print(validation.metrics, test.metrics)
+
 nested = session.automl.run(
     method="randomized",
     selection="nested",
@@ -95,6 +129,42 @@ Install `buildml[automl-industry]` for FLAML / AutoGluon adapters and
 LightGBM / XGBoost / CatBoost native families:
 
 ```python
+# Requires: pip install "buildml[automl-industry,automl]" (FLAML and Optuna).
+import pandas as pd
+import numpy as np
+
+from buildml import Session
+
+rng = np.random.default_rng(0)
+n = 200
+x1 = rng.normal(size=n)
+x2 = rng.normal(size=n)
+cat = rng.choice(["a", "b", "c"], size=n)
+y = (0.8 * x1 - 0.4 * x2 + rng.normal(scale=0.35, size=n) > 0).astype(int)
+frame = pd.DataFrame({"x1": x1, "x2": x2, "cat": cat, "y": y})
+
+session = (
+    Session.ingest(frame)
+    .set_roles({"x1": "feature", "x2": "feature", "cat": "feature", "y": "target"})
+    .split(test_size=0.2, validation_size=0.2, stratify=True, random_state=0)
+)
+
+result = session.automl.run(
+    method="randomized",
+    selection="cv",  # default: train-fold ranking (fast; optimistic vs outer)
+    n_trials=12,
+    cv=3,
+    include_recipe_search=True,
+    families=("logistic", "random_forest", "gradient_boosting"),
+    random_state=0,
+)
+result.show()
+print(result.leaderboard().head())
+
+validation = session.automl.evaluate(partition="validation")
+test = session.automl.evaluate(partition="test")
+print(validation.metrics, test.metrics)
+
 from buildml.automl import automl_capability_matrix
 
 print(automl_capability_matrix()["backends"])
@@ -121,7 +191,7 @@ from buildml.automl import export_comparison_metrics
 export_comparison_metrics(session.automl.result, "artifacts/automl_trials.json")
 ```
 
-Native `backend='native'` remains the leakage-first path with fold-local
+Native `backend='native'` remains the path supporting preprocessing fitted within each fold with fold-local
 recipe search. Industry adapters bypass recipe strategy search: see
 `limitations` on `AutoMLResult`.
 
@@ -130,6 +200,41 @@ recipe search. Industry adapters bypass recipe strategy search: see
 ## Optional voting of top families
 
 ```python
+import pandas as pd
+import numpy as np
+
+from buildml import Session
+
+rng = np.random.default_rng(0)
+n = 200
+x1 = rng.normal(size=n)
+x2 = rng.normal(size=n)
+cat = rng.choice(["a", "b", "c"], size=n)
+y = (0.8 * x1 - 0.4 * x2 + rng.normal(scale=0.35, size=n) > 0).astype(int)
+frame = pd.DataFrame({"x1": x1, "x2": x2, "cat": cat, "y": y})
+
+session = (
+    Session.ingest(frame)
+    .set_roles({"x1": "feature", "x2": "feature", "cat": "feature", "y": "target"})
+    .split(test_size=0.2, validation_size=0.2, stratify=True, random_state=0)
+)
+
+result = session.automl.run(
+    method="randomized",
+    selection="cv",  # default: train-fold ranking (fast; optimistic vs outer)
+    n_trials=12,
+    cv=3,
+    include_recipe_search=True,
+    families=("logistic", "random_forest", "gradient_boosting"),
+    random_state=0,
+)
+result.show()
+print(result.leaderboard().head())
+
+validation = session.automl.evaluate(partition="validation")
+test = session.automl.evaluate(partition="test")
+print(validation.metrics, test.metrics)
+
 session.automl.run(
     method="randomized",
     n_trials=10,
@@ -149,6 +254,41 @@ Stacking/blending remain separate Session APIs (`session.ensemble.fit_stacking` 
 ## Bundle
 
 ```python
+import pandas as pd
+import numpy as np
+
+from buildml import Session
+
+rng = np.random.default_rng(0)
+n = 200
+x1 = rng.normal(size=n)
+x2 = rng.normal(size=n)
+cat = rng.choice(["a", "b", "c"], size=n)
+y = (0.8 * x1 - 0.4 * x2 + rng.normal(scale=0.35, size=n) > 0).astype(int)
+frame = pd.DataFrame({"x1": x1, "x2": x2, "cat": cat, "y": y})
+
+session = (
+    Session.ingest(frame)
+    .set_roles({"x1": "feature", "x2": "feature", "cat": "feature", "y": "target"})
+    .split(test_size=0.2, validation_size=0.2, stratify=True, random_state=0)
+)
+
+result = session.automl.run(
+    method="randomized",
+    selection="cv",  # default: train-fold ranking (fast; optimistic vs outer)
+    n_trials=12,
+    cv=3,
+    include_recipe_search=True,
+    families=("logistic", "random_forest", "gradient_boosting"),
+    random_state=0,
+)
+result.show()
+print(result.leaderboard().head())
+
+validation = session.automl.evaluate(partition="validation")
+test = session.automl.evaluate(partition="test")
+print(validation.metrics, test.metrics)
+
 session.automl.save_bundle(".buildml-artifacts/automl_bundle")
 ```
 
@@ -157,13 +297,13 @@ Distinct from Session checkpoints and classical pipelines. See
 
 ---
 
-## Honest scope
+## Supported workflows and limitations
 
 | Is | Is not |
 | --- | --- |
 | Finite catalog of sklearn families + recipe strategies | Neural architecture search (NAS) |
 | Fold-local leakage-safe selection | Causal discovery |
-| Trial-budgeted search with disclosures | Fully automated AI scientist |
+| Trial-budgeted search with disclosures | Unrestricted model or experimental-design search |
 | Optional voting of top families | Unrestricted search across all auto-sklearn models |
 
 Session-global preprocess before AutoML is **refused** by default (same

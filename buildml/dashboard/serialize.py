@@ -34,6 +34,7 @@ def flagged_column_names(flagged: Any) -> list[str]:
 
     Examples
     --------
+    >>> from buildml.dashboard.serialize import flagged_column_names
     >>> flagged_column_names(["age", "income"])
     ['age', 'income']
     >>> flagged_column_names([{"column": "age", "ks_stat": 0.3}])
@@ -91,6 +92,7 @@ def json_safe(value: Any) -> Any:
 
     Examples
     --------
+    >>> from buildml.dashboard.serialize import json_safe
     >>> json_safe({"n": 5, "ok": True, "sub": [1, None]})
     {'n': 5, 'ok': True, 'sub': [1, None]}
     >>> import numpy as np

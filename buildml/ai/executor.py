@@ -325,11 +325,23 @@ def propose_tool_execution(
 
     Examples
     --------
-    Propose, review, then decide::
+    Inspect and approve a split proposal on toy data::
 
-        proposal = propose_tool_execution("split", {"test_size": 0.2}, registry)
-        proposal.expected_changes
+        import pandas as pd
+        from buildml import Session
+
+        frame = pd.DataFrame({'age': list(range(20, 40)), 'outcome': [0, 1] * 10})
+        session = Session.ingest(frame).set_roles({'age': 'feature', 'outcome': 'target'})
+        from buildml.ai.executor import propose_tool_execution, execute_tool
+        from buildml.ai.tools import build_default_registry
+
+        registry = build_default_registry()
+        proposal = propose_tool_execution('split', {'test_size': 0.2}, registry)
+        print(proposal.expected_changes)
         result = execute_tool(session, proposal, True, registry)
+        print(result)
+
+
 
     See Also
     --------

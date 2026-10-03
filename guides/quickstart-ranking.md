@@ -13,7 +13,7 @@ CatBoost). On a core install it is sklearn pointwise Ridge. This is not
 RAG and not `session.recommender`.
 
 [LTR deep](ranking-deep.md) ·
-Paste: [`examples/ranking_pointwise_loop.py`](../examples/ranking_pointwise_loop.py) ·
+Runnable example: [`examples/ranking_pointwise_loop.py`](../examples/ranking_pointwise_loop.py) ·
 Evidence: [search-relevance-ltr](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/search-relevance-ltr)
 
 ---

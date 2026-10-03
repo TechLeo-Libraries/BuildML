@@ -1,4 +1,4 @@
-"""Graph ML backend catalog and honest capability matrix."""
+"""Graph ML backend catalog and capability matrix."""
 
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ GraphBackendName = Literal["classical", "gcn", "pyg"]
 
 
 def graph_capability_matrix() -> dict[str, Any]:
-    """Build the honest capability matrix for graph backends and optional extras.
+    """Build the capability matrix for graph backends and optional extras.
 
     Reports install availability, supported methods/modes, message-passing
     semantics, and non-goals so walkthrough panels disclose Graph ML limits

@@ -96,8 +96,6 @@ def fit_backend(
 ) -> FitOutcome:
     """Fit backend on the train partition using the recorded contract.
 
-Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
-
 Parameters
 ----------
 x:
@@ -435,8 +433,6 @@ ValidationError
 
 def predict_backend(plan: Any, x: np.ndarray) -> np.ndarray:
     """Assign labels for holdout rows using a fitted plan.
-
-Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
 
 Parameters
 ----------

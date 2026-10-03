@@ -7,10 +7,10 @@ pip install buildml
 Voting, stacking, and holdout blending. You need a target and at least two
 named estimators. Stacking CV and blend holdouts stay inside train. The
 winner is written to `fit_result`, so classical `evaluate` still works.
-This is not `session.fit(RandomForest(...))` and not AutoML.
+Use `session.fit` for a single estimator and `session.automl` for model-family search.
 
 [Ensemble deep](ensemble-deep.md) ·
-Paste: [`examples/ensemble_vote_stack_loop.py`](../examples/ensemble_vote_stack_loop.py) ·
+Runnable example: [`examples/ensemble_vote_stack_loop.py`](../examples/ensemble_vote_stack_loop.py) ·
 Evidence: [voting-ensemble-attrition](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/voting-ensemble-attrition)
 
 ---
@@ -62,6 +62,41 @@ print(validation.metrics, test.metrics)
 ## Stacking (CV meta-learner inside train)
 
 ```python
+import pandas as pd
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LogisticRegression
+
+from buildml import Session
+
+frame = pd.DataFrame(
+    {
+        "age": [21, 35, 40, 29, 33, 52, 47, 25, 38, 44, 31, 50],
+        "income": [40, 60, 80, 50, 70, 90, 65, 45, 55, 75, 62, 88],
+        "approved": [0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1],
+    }
+)
+
+bases = {
+    "lr": LogisticRegression(max_iter=500),
+    "rf": RandomForestClassifier(n_estimators=50, random_state=0),
+}
+
+session = (
+    Session.ingest(frame)
+    .set_roles({"age": "feature", "income": "feature", "approved": "target"})
+    .split(test_size=0.25, validation_size=0.25, stratify=True, random_state=0)
+    .impute(strategy="median")
+    .scale(method="standard")
+)
+
+session.ensemble.fit_voting(bases, voting="soft", task="classification")
+validation = session.ensemble.evaluate(partition="validation")
+test = session.ensemble.evaluate(partition="test")
+# Base contributions + diversity (predict-only; no refit on the eval partition)
+print(test.diagnostics["base_contributions"])
+print(test.diagnostics["diversity"]["mean_pairwise_disagreement"])
+print(validation.metrics, test.metrics)
+
 session.ensemble.fit_stacking(bases, cv=3, task="classification")
 print(session.ensemble.evaluate(partition="test").metrics)
 ```
@@ -74,6 +109,41 @@ construction. Prefer this over blending when you want out-of-fold meta features.
 ## Blending (holdout carved from train)
 
 ```python
+import pandas as pd
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LogisticRegression
+
+from buildml import Session
+
+frame = pd.DataFrame(
+    {
+        "age": [21, 35, 40, 29, 33, 52, 47, 25, 38, 44, 31, 50],
+        "income": [40, 60, 80, 50, 70, 90, 65, 45, 55, 75, 62, 88],
+        "approved": [0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1],
+    }
+)
+
+bases = {
+    "lr": LogisticRegression(max_iter=500),
+    "rf": RandomForestClassifier(n_estimators=50, random_state=0),
+}
+
+session = (
+    Session.ingest(frame)
+    .set_roles({"age": "feature", "income": "feature", "approved": "target"})
+    .split(test_size=0.25, validation_size=0.25, stratify=True, random_state=0)
+    .impute(strategy="median")
+    .scale(method="standard")
+)
+
+session.ensemble.fit_voting(bases, voting="soft", task="classification")
+validation = session.ensemble.evaluate(partition="validation")
+test = session.ensemble.evaluate(partition="test")
+# Base contributions + diversity (predict-only; no refit on the eval partition)
+print(test.diagnostics["base_contributions"])
+print(test.diagnostics["diversity"]["mean_pairwise_disagreement"])
+print(validation.metrics, test.metrics)
+
 session.ensemble.fit_blending(bases, holdout_fraction=0.2, random_state=0)
 print(session.ensemble.plan.disclosures[:3])
 print(session.ensemble.evaluate(partition="test").metrics)
@@ -87,6 +157,41 @@ Bases are refit on full train after meta fit by default (disclosed).
 ## Persist
 
 ```python
+import pandas as pd
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LogisticRegression
+
+from buildml import Session
+
+frame = pd.DataFrame(
+    {
+        "age": [21, 35, 40, 29, 33, 52, 47, 25, 38, 44, 31, 50],
+        "income": [40, 60, 80, 50, 70, 90, 65, 45, 55, 75, 62, 88],
+        "approved": [0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1],
+    }
+)
+
+bases = {
+    "lr": LogisticRegression(max_iter=500),
+    "rf": RandomForestClassifier(n_estimators=50, random_state=0),
+}
+
+session = (
+    Session.ingest(frame)
+    .set_roles({"age": "feature", "income": "feature", "approved": "target"})
+    .split(test_size=0.25, validation_size=0.25, stratify=True, random_state=0)
+    .impute(strategy="median")
+    .scale(method="standard")
+)
+
+session.ensemble.fit_voting(bases, voting="soft", task="classification")
+validation = session.ensemble.evaluate(partition="validation")
+test = session.ensemble.evaluate(partition="test")
+# Base contributions + diversity (predict-only; no refit on the eval partition)
+print(test.diagnostics["base_contributions"])
+print(test.diagnostics["diversity"]["mean_pairwise_disagreement"])
+print(validation.metrics, test.metrics)
+
 session.ensemble.save_bundle("artifacts/ensemble_bundle")
 session.save_pipeline("artifacts/ensemble_pipeline", evaluate_partition="test")
 
@@ -95,7 +200,7 @@ fresh = (
     .set_roles({"age": "feature", "income": "feature", "approved": "target"})
     .split(test_size=0.25, validation_size=0.25, stratify=True, random_state=0)
 )
-fresh.ensemble.load_bundle("artifacts/ensemble_bundle")
+fresh.ensemble.load_bundle("artifacts/ensemble_bundle", trusted=True)
 print(fresh.ensemble.evaluate(partition="test").metrics)
 ```
 
@@ -105,7 +210,7 @@ estimator. Session checkpoints do **not** embed the ensemble.
 
 ---
 
-## Boundaries (honest)
+## Supported scope
 
 | Use | Do not confuse with |
 | --- | --- |

@@ -158,11 +158,13 @@ class Dataset:
 
         Examples
         --------
-        Load into a Polars-backed Dataset::
+        .. code-block:: python
 
-            dataset = Dataset.from_pandas(
-                frame, engine=EngineName.POLARS, attach_native=True,
-            )
+            import pandas as pd
+            from buildml.data.dataset import Dataset
+            frame = pd.DataFrame({"age": list(range(40)), "income": [float(i * 2) for i in range(40)], "region": ["north", "south"] * 20, "target": [0, 1] * 20})
+            dataset = Dataset.from_pandas(frame, attach_native=True)
+            print(dataset.columns)
 
         See Also
         --------
@@ -656,8 +658,8 @@ class Dataset:
 
         Notes
         -----
-        **Without a seed, every call returns something different.** Fine for
-        exploration, and a problem for anything that gets compared across runs.
+        **Without a seed, repeated draws need not match.** Use a fixed seed
+        when sample consistency matters for comparisons across runs.
 
         **Sampling counts rows, so a LazyFrame executes.** The plan runs to
         determine how many rows exist before the draw can be clamped.
@@ -680,10 +682,9 @@ class Dataset:
     def project(self, columns: Sequence[str], *, materialize: bool = False) -> Dataset:
         """Keep only the named columns, dropping the rest in the engine.
 
-        **The single most effective way to reduce what eventually gets
-        materialised.** A table with three hundred columns of which twelve are
-        modelled costs twenty-five times more to load than it needs to.
-        Projecting first means the engine never reads the rest.
+        Selecting columns before materialisation reduces the columns returned to
+        pandas. A lazy engine may also push the projection into the source scan;
+        storage format, query plan, and column sizes determine the I/O savings.
 
         Parameters
         ----------
@@ -717,10 +718,14 @@ class Dataset:
 
         Examples
         --------
-        Narrow before materialising::
+        .. code-block:: python
 
-            narrow = dataset.project(["age", "region", "outcome"])
-            frame = narrow.to_pandas()
+            import pandas as pd
+            from buildml.data.dataset import Dataset
+            frame = pd.DataFrame({"age": list(range(40)), "income": [float(i * 2) for i in range(40)], "region": ["north", "south"] * 20, "target": [0, 1] * 20})
+            dataset = Dataset.from_pandas(frame, attach_native=True)
+            narrow = dataset.project(["age", "income", "target"])
+            print(narrow.to_pandas().shape)
 
         See Also
         --------
@@ -811,11 +816,14 @@ class Dataset:
 
         Examples
         --------
-        Mean and count per region::
+        .. code-block:: python
 
-            summary = dataset.aggregate(
-                {"revenue": ["mean", "sum"], "*": "count"}, by=["region"],
-            )
+            import pandas as pd
+            from buildml.data.dataset import Dataset
+            frame = pd.DataFrame({"age": list(range(40)), "income": [float(i * 2) for i in range(40)], "region": ["north", "south"] * 20, "target": [0, 1] * 20})
+            dataset = Dataset.from_pandas(frame, attach_native=True)
+            summary = dataset.aggregate({"income": ["mean", "sum"], "*": "count"}, by=["region"])
+            print(summary)
 
         See Also
         --------
@@ -894,8 +902,9 @@ class Dataset:
         Notes
         -----
         **Building the mask usually requires reading the column it tests**, so
-        the saving here is smaller than with :meth:`filter_expr`, where the
-        predicate runs inside the engine and the source is never fully read.
+        using :meth:`filter_expr` can avoid constructing a separate pandas mask.
+        Engine-side filtering may still scan the source, depending on the
+        predicate, storage format, and query plan.
 
         **The result shares the parent's DuckDB connection without owning it.**
 
@@ -943,10 +952,10 @@ class Dataset:
     def filter_expr(self, expression: str, *, materialize: bool = False) -> Dataset:
         """Keep rows matching a predicate evaluated inside the engine.
 
-        The efficient filter. Because the condition is a string the engine
-        understands, it is applied during the scan: rows that fail are never
-        read into memory at all, and on a LazyFrame nothing executes until
-        something asks for the result.
+        The predicate is evaluated by the native engine. With a lazy engine it
+        remains part of the query plan until execution; the engine may push it
+        into the scan. Filtering reduces returned rows but does not guarantee
+        that excluded rows are never read or held in engine memory.
 
         Parameters
         ----------
@@ -984,9 +993,16 @@ class Dataset:
 
         Examples
         --------
-        Filter during the scan::
+        .. code-block:: python
 
-            recent = dataset.filter_expr("year >= 2020")
+            import pandas as pd
+            # Install the native engine first: pip install "buildml[polars]"
+            from buildml.data.dataset import Dataset
+            from buildml.core.types import EngineName
+            frame = pd.DataFrame({"age": list(range(40)), "income": [float(i * 2) for i in range(40)], "region": ["north", "south"] * 20, "target": [0, 1] * 20})
+            dataset = Dataset.from_pandas(frame, engine=EngineName.POLARS, attach_native=True)
+            recent = dataset.filter_expr("age >= 20")
+            print(recent.to_pandas().shape)
 
         See Also
         --------
@@ -1195,9 +1211,14 @@ class Dataset:
 
         Examples
         --------
-        Mark the target and an ID::
+        .. code-block:: python
 
-            dataset.set_roles({"churned": "target", "customer_id": "id"})
+            import pandas as pd
+            from buildml.data.dataset import Dataset
+            frame = pd.DataFrame({"age": list(range(40)), "income": [float(i * 2) for i in range(40)], "region": ["north", "south"] * 20, "target": [0, 1] * 20})
+            dataset = Dataset.from_pandas(frame, attach_native=True)
+            dataset.set_roles({"target": "target", "region": "group"})
+            print(dataset.roles)
 
         See Also
         --------

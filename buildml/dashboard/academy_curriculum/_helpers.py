@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from typing import Any
 
 from buildml.dashboard.gates import (
@@ -127,6 +128,68 @@ def quote_list(names: list[str], indent: str = "    ") -> str:
 
 def code_block(*lines: str) -> str:
     return "\n".join(line.rstrip() for line in lines if line is not None)
+
+
+def demo_example(example: Callable[[dict[str, Any]], str] | str, *, task: str | None = None) -> Callable[[dict[str, Any]], str]:
+    """Render a complete synthetic demonstration, separate from report evidence.
+
+    Lesson evidence remains attached to the uploaded report. Code uses stable
+    demonstration names and includes its entire setup so that copying it never
+    requires access to the uploaded table or an external fixture.
+
+    Parameters
+    ----------
+    example : callable or str
+        Lesson body or callable producing it from the synthetic context.
+    task : str, optional
+        Explicit demonstration task; otherwise inferred from the report context.
+
+    Returns
+    -------
+    Callable[[dict[str, Any]], str]
+        Renderer that prepends synthetic data setup to the lesson body.
+    """
+    def render(context: dict[str, Any]) -> str:
+        demo_task = task or ("regression" if is_regression(context) else "classification")
+        columns = ["measurement", "amount", "category", "entity_id", "timestamp", "outcome"]
+        demo = {
+            "target": {"name": "outcome", "task": demo_task},
+            "task": demo_task,
+            "has_target": True,
+            "rows": 120,
+            "colCount": len(columns),
+            "eligible": 2,
+            "features": ["measurement", "amount"],
+            "cols": [{"name": name} for name in columns],
+            "numeric": [{"name": "measurement"}, {"name": "amount"}],
+            "categorical": ["category"],
+            "idLike": ["entity_id"],
+            "timeCol": {"name": "timestamp"},
+            "missing": [{"name": "measurement"}],
+            "constants": ["constant_value"],
+            "mi": [{"name": "measurement", "mi": 0.3}],
+        }
+        target = "(frame.measurement > 0).astype(int)" if demo_task == "classification" else "2 * frame.measurement + rng.normal(scale=0.2, size=120)"
+        setup = code_block(
+            "# Runnable synthetic demonstration; these are not your uploaded rows.",
+            "# The surrounding lesson's evidence describes your report separately.",
+            "import numpy as np",
+            "import pandas as pd",
+            "rng = np.random.default_rng(42)",
+            "frame = pd.DataFrame({",
+            "    'measurement': rng.normal(size=120),",
+            "    'amount': rng.uniform(1, 10, size=120),",
+            "    'constant_value': 1,",
+            "    'category': ['retail', 'wholesale', 'online'] * 40,",
+            "    'entity_id': np.repeat(np.arange(12), 10),",
+            "    'timestamp': pd.date_range('2024-01-01', periods=120, freq='D'),",
+            "})",
+            f"frame['outcome'] = {target}",
+        )
+        body = example(demo) if callable(example) else str(example)
+        return setup + "\n\n" + body
+
+    return render
 
 
 def build_academy_context(report: dict[str, Any]) -> dict[str, Any]:

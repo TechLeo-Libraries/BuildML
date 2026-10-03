@@ -80,14 +80,22 @@ def export_studio_html(
 
     Examples
     --------
-    ::
+    Export a report to a local HTML file::
+
+        import pandas as pd
+        from buildml import Session
+
+        frame = pd.DataFrame({'age': list(range(20, 60)), 'income': list(range(40, 80)),
+                              'approved': [0, 1] * 20})
+        session = Session.ingest(frame).set_roles({'age': 'feature', 'income': 'feature', 'approved': 'target'})
+        session.split(test_size=0.2, stratify=True, random_state=0)
+        from buildml.dashboard.offline import export_studio_html
 
         report = session.eda()
-        export_studio_html(
-            report.to_dict(),
-            "artifacts/studio.html",
-            title="Session EDA · readiness sheet",
-        )
+        export_studio_html(report.to_dict(), 'artifacts/studio.html', title='Example data overview')
+
+
+
 
     See Also
     --------

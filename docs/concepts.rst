@@ -1,16 +1,15 @@
 Concept guide
 =============
 
-A few ideas decide whether a BuildML run is trustworthy. This page is
-those ideas. The short in-library notes live in
-``buildml.explain.CONCEPT_NOTES`` and come back through
-``session.learn("leakage")`` (or whatever word tripped you up). Use that
-when you are already in a Session. Use this page when you want the
-judgment written out.
+This page explains the concepts behind BuildML's data roles, preprocessing,
+and evaluation workflow. Shorter explanations are available through
+``session.learn("leakage")`` and the other topics in
+``buildml.explain.CONCEPT_NOTES``.
 
-A Session is a unified, stateful ML lifecycle. Enforced leakage
-safeguards, fold-local preprocessing, contextual teaching, workflow
-guidance, checkpointing, and auditable export live on that same object.
+A Session keeps data, preprocessing plans, fitted models, and operation
+history together. It checks training-partition requirements, supports
+preprocessing within cross-validation folds, and provides explanations
+and reports for the recorded workflow.
 
 Roles
 -----
@@ -21,7 +20,7 @@ stand-in for time. Columns you do not name default to ``feature``.
 Only the names you pass to ``set_roles`` change.
 
 Review target, feature, identifier, group, time, weight, and ignored
-roles before you do anything target-aware. Supervised ``fit`` wants
+roles before you do anything target-aware. Supervised ``fit`` requires
 exactly one ``target``.
 
 Do not continue when a feature would be unavailable at prediction time,
@@ -76,7 +75,7 @@ drift. Treat those as prompts, not conclusions:
 Do not move to model claims while the observation unit, target timing,
 duplicate policy, missingness mechanism, or partition design is still
 unresolved. Findings, evidence, recommendations, and limitations are
-recorded separately. Recommendations never mutate Session state.
+recorded separately. Recommendations do not change Session state.
 
 In a Session: ``session.learn("diagnostic-uncertainty")``.
 
@@ -191,8 +190,8 @@ were valid.
 
 In a Session: ``session.learn("checkpoint-integrity")``.
 
-Teaching surfaces
------------------
+Teaching methods
+----------------
 
 BuildML keeps a versioned operation catalog for every public Session
 callable. Each entry covers definition, purpose, pipeline role,
@@ -215,8 +214,7 @@ leakage risks, and failure modes appear at every level.
 ``session.learn(topic)`` answers the question that comes before
 ``explain``: what is this, and what should I understand first. The topic
 may be a concept key (``"leakage-boundary"``), an operation name
-(``"split"``), or a piece of jargon (``"stratified"``). Spacing and
-hyphenation are forgiven. Called with no topic it returns the foundation
+(``"split"``), or a piece of jargon (``"stratified"``). Topic lookup accepts spaces or hyphens. Called with no topic it returns the foundation
 concepts in reading order.
 
 ``session.workflow()`` resolves every cataloged operation to one of
@@ -227,7 +225,7 @@ prerequisites pass, not that you should run the step.
 catalog risks, and can export offline HTML.
 
 ``session.dry_run(...)`` previews operations without mutating state.
-``session.summarize_history()`` counts operations and surfaces heuristic
+``session.summarize_history()`` counts operations and reports heuristic
 unresolved risks. Those risks are review cues, not proof of invalid
 results.
 
@@ -242,8 +240,8 @@ sklearn.
 
 Practical guidance:
 
-* Stay on Pandas for small and medium frames and the simplest mental
-  model.
+* Stay on Pandas for small and medium frames and straightforward in-memory
+  processing.
 * Use Polars or DuckDB when filtering, projecting, or aggregating large
   files before sklearn materialization.
 * Use ``portable_filter_expr`` for simple predicates shared across

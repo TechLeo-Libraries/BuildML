@@ -91,10 +91,11 @@ def analyze_bivariate(
     for a feature-selection decision: see :mod:`buildml.model.selection` for
     that.
 
-    **Categoricals are label-encoded before mutual information**, which imposes
-    an arbitrary order on unordered categories. This encoding can influence the estimate, especially when codes are
-    treated as continuous values; confirm important rankings with suitable
-    categorical methods and held-out evaluation.
+    **Categoricals and booleans use discrete mutual-information estimates.**
+    Their codes identify categories without imposing numeric distances; missing
+    categories have a separate code. Other numeric features are treated as
+    continuous, with gaps filled by the median among observed-target rows.
+    Confirm important rankings with held-out evaluation.
 
     **The caps are real and silent.** Cramér's V covers at most the first eight
     categoricals with 40 or fewer levels; Kendall covers only the strongest
@@ -176,27 +177,41 @@ def _mi_vs_target(frame: pd.DataFrame, target: str) -> dict[str, float]:
     if not feature_cols or y_raw.isna().all():
         return {}
 
-    x = frame[feature_cols].copy()
-    for col in x.columns:
-        if not pd.api.types.is_numeric_dtype(x[col]):
-            x[col] = LabelEncoder().fit_transform(x[col].astype(str).fillna("__NA__"))
-        else:
-            x[col] = x[col].fillna(x[col].median())
-
     mask = y_raw.notna()
-    x = x.loc[mask]
+    x = frame.loc[mask, feature_cols].copy()
     y = y_raw.loc[mask]
     if len(x) < 10:
         return {}
+
+    discrete_features = []
+    for col in x.columns:
+        discrete = (
+            not pd.api.types.is_numeric_dtype(x[col])
+            or pd.api.types.is_bool_dtype(x[col])
+        )
+        discrete_features.append(discrete)
+        if discrete:
+            # Factorization preserves a separate missing category without
+            # merging it with literal strings such as "nan" or "<NA>".
+            x[col] = pd.factorize(x[col], sort=False)[0]
+        else:
+            # Nullable integers cannot hold a fractional median. Convert only
+            # the analysis copy, leaving the original Session dtype intact.
+            values = x[col].astype(float)
+            x[col] = values.fillna(values.median())
 
     try:
         from buildml.eda.analyzers.target import is_regression_target
 
         if is_regression_target(y):
-            scores = mutual_info_regression(x, y, random_state=0)
+            scores = mutual_info_regression(
+                x, y, discrete_features=discrete_features, random_state=0
+            )
         else:
             y_enc = LabelEncoder().fit_transform(y.astype(str))
-            scores = mutual_info_classif(x, y_enc, random_state=0)
+            scores = mutual_info_classif(
+                x, y_enc, discrete_features=discrete_features, random_state=0
+            )
         ranked = sorted(
             ((str(c), float(s)) for c, s in zip(feature_cols, scores, strict=True)),
             key=lambda item: item[1],

@@ -43,7 +43,7 @@ def evaluate_graph(
     Returns
     -------
     GraphEvalResult
-        Accuracy, macro-F1, optional ROC-AUC, and honesty disclosures.
+        Accuracy, macro-F1, optional ROC-AUC, and implementation limitations.
 
     Raises
     ------

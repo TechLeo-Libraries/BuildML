@@ -134,13 +134,27 @@ def launch_eda_app(
 
     Examples
     --------
-    ::
+    Start and stop a local dashboard::
 
-        report = session.eda()
-        handle = launch_eda_app(report)
-        print(handle.url)
-        ...
-        handle.stop()
+        # Install first: pip install "buildml[dashboard]"
+        import pandas as pd
+        from buildml import Session
+
+        frame = pd.DataFrame({'age': list(range(20, 60)), 'income': list(range(40, 80)),
+                              'approved': [0, 1] * 20})
+        session = Session.ingest(frame).set_roles({'age': 'feature', 'income': 'feature', 'approved': 'target'})
+        session.split(test_size=0.2, stratify=True, random_state=0)
+        from buildml.dashboard.launch import launch_eda_app
+
+        handle = launch_eda_app(session.eda(), open_browser=False)
+        try:
+            print(handle.url)
+            input('Open this URL in your browser, then press Enter to stop: ')
+        finally:
+            handle.stop()
+
+
+
 
     See Also
     --------

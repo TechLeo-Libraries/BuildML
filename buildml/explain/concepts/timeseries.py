@@ -191,7 +191,7 @@ TIMESERIES_NOTES: dict[str, ConceptNote] = {
                 "Analysis results do not include forecast metrics.",
                 "Use train scope unless explicitly documenting exploratory scope='all'.",
             ),
-            assumptions=("Temporal SplitPlan present for honest defaults.",),
+            assumptions=("Temporal SplitPlan present for documented defaults.",),
             failure_modes=(
                 "Random split then session.timeseries.analyze: refused or misleading.",
             ),

@@ -74,6 +74,7 @@ class MissingExtraError(BuildMLError):
 
     Examples
     --------
+    >>> from buildml.core.errors import MissingExtraError
     >>> exc = MissingExtraError("viz", "Plot boards")
     >>> print(exc)
     Plot boards requires the optional extra 'viz'. Install it with: pip install 'buildml[viz]'

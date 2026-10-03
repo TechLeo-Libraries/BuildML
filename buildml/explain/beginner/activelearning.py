@@ -9,18 +9,15 @@ ACTIVELEARNING_BEGINNER: dict[str, BeginnerLayer] = _index(
     _layer(
         "activelearning-train-pool",
         plain=(
-            "Active learning is about spending a limited labelling budget well. The pool it picks from is "
-            "the unlabelled rows inside your training partition: rows whose target is blank. Validation "
-            "and test rows are never candidates, because labelling them would consume the very data you "
-            "need for an honest score."
+            "Active learning is about spending a limited labelling budget well. The pool it picks from is the unlabelled rows inside your training partition: rows whose target is blank. Validation and test rows are never candidates, because labelling them would consume the very data you need for held-out evaluation."
         ),
         analogy=(
             "A student choosing which practice questions to ask the tutor about. They pick from the "
             "practice book, not from the sealed exam paper."
         ),
         steps=(
-            "Put labelled and unlabelled rows in one table with blank targets for the unlabelled ones.",
-            "Split as usual: the unlabelled pool lives inside the train partition.",
+            "Keep a labelled evaluation set separate from the training pool; unlabelled training rows have missing targets.",
+            "Assign train, validation, and test indices explicitly when labels are incomplete. The example masks training labels after creating a stratified split.",
             "Fit an active learner on the labelled training rows.",
             "Ask for query suggestions; BuildML returns row indices from the training pool only.",
             "Label those rows externally, feed the labels back, and refit.",
@@ -30,8 +27,8 @@ ACTIVELEARNING_BEGINNER: dict[str, BeginnerLayer] = _index(
             "When you have a large unlabelled backlog and need to decide what to send to annotators first.",
         ),
         avoid=(
-            "Do not use it when labelling is cheap and fast; just label a random sample and move on.",
-            "Do not let the pool include validation or test rows, even accidentally: you would be labelling your own exam.",
+            "Compare active selection with random sampling at the same annotation budget, particularly when labelling is inexpensive.",
+            "Keep queried rows out of validation and test partitions to preserve independent evaluation.",
         ),
         myths=(
             (
@@ -40,14 +37,32 @@ ACTIVELEARNING_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
             (
                 "The labelled subset produced by active learning is a representative sample.",
-                "It is deliberately biased toward difficult rows. That is the point, and it means you cannot use it to estimate class prevalence.",
+                "Selection depends on the query strategy, so queried rows may not represent the population. Do not estimate class prevalence from them without accounting for that selection.",
             ),
         ),
         example=(
-            "session.split(test_size=0.2, random_state=0)",
-            "session.active_learning.fit(base_estimator='logistic_regression')",
-            "indices = session.active_learning.suggest_query(batch_size=20, strategy='margin').indices",
-            "session.active_learning.label_rows(indices=indices, labels=[labels[i] for i in indices])",
+            "from pathlib import Path",
+            "import numpy as np",
+            "import pandas as pd",
+            "from buildml import Session",
+            "",
+            "rng = np.random.default_rng(42)",
+            'Path("artifacts").mkdir(exist_ok=True)',
+            'frame = pd.DataFrame(rng.normal(size=(160, 2)), columns=["x1", "x2"])',
+            'frame["label"] = (frame.x1 + frame.x2 > 0).astype(float)',
+            'truth = frame["label"].copy()',
+            'session = Session.ingest(frame).set_roles({"x1": "feature", "x2": "feature", "label": "target"})',
+            "session.split(test_size=0.2, validation_size=0.2, stratify=True, random_state=42)",
+            "split = session.split_plan",
+            "masked = frame.copy()",
+            'masked.loc[list(split.train_indices)[::2], "label"] = np.nan',
+            "session = Session.ingest(masked).set_roles(dict(session.dataset.roles))",
+            "session.inject_split(train_indices=split.train_indices, validation_indices=split.validation_indices, test_indices=split.test_indices)",
+            'session.active_learning.fit(backend="sklearn", base_estimator="logistic_regression", label_budget=40)',
+            'indices = session.active_learning.suggest_query(batch_size=10, strategy="margin").indices',
+            "# Example-only labels simulate an external annotation process.",
+            "session.active_learning.label_rows(indices=indices, labels=[int(truth.loc[i]) for i in indices])",
+            'print(session.active_learning.evaluate(partition="validation").metrics)',
         ),
         check=(
             "How many unlabelled rows are in your training partition?",
@@ -60,9 +75,7 @@ ACTIVELEARNING_BEGINNER: dict[str, BeginnerLayer] = _index(
     _layer(
         "activelearning-human-labels",
         plain=(
-            "BuildML suggests which rows to label. It never makes up the labels. There is no built-in "
-            "oracle, no auto-labelling, no silent guess: a human (or a test harness that stands in for "
-            "one) provides the answers and hands them back."
+            "BuildML suggests which rows to label. Your annotation process supplies the labels, and `session.active_learning.label_rows` records them. The example simulates annotation with labels saved before masking."
         ),
         analogy=(
             "A research assistant marks the passages worth checking and brings them to you. They do not "
@@ -90,15 +103,35 @@ ACTIVELEARNING_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
             (
                 "Any labeller will do since the model just needs a signal.",
-                "Query strategies deliberately select ambiguous rows. Those are the hardest cases, so they need your *best* labellers, not your fastest.",
+                "Query strategies deliberately select ambiguous rows. Review annotation guidelines and disagreements carefully, especially for ambiguous queries.",
             ),
         ),
         example=(
-            "indices = session.active_learning.suggest_query(batch_size=25, strategy='least_confidence').indices",
-            "batch = session.to_pandas().loc[list(indices)]      # export for annotation",
-            "# ... humans label the batch ...",
-            "session.active_learning.label_rows(indices=indices, labels=[reviewed_labels[i] for i in indices])",
-            "session.active_learning.fit(base_estimator='logistic_regression')",
+            "from pathlib import Path",
+            "import numpy as np",
+            "import pandas as pd",
+            "from buildml import Session",
+            "",
+            "rng = np.random.default_rng(42)",
+            'Path("artifacts").mkdir(exist_ok=True)',
+            'frame = pd.DataFrame(rng.normal(size=(160, 2)), columns=["x1", "x2"])',
+            'frame["label"] = (frame.x1 + frame.x2 > 0).astype(float)',
+            'truth = frame["label"].copy()',
+            'session = Session.ingest(frame).set_roles({"x1": "feature", "x2": "feature", "label": "target"})',
+            "session.split(test_size=0.2, validation_size=0.2, stratify=True, random_state=42)",
+            "split = session.split_plan",
+            "masked = frame.copy()",
+            'masked.loc[list(split.train_indices)[::2], "label"] = np.nan',
+            "session = Session.ingest(masked).set_roles(dict(session.dataset.roles))",
+            "session.inject_split(train_indices=split.train_indices, validation_indices=split.validation_indices, test_indices=split.test_indices)",
+            'session.active_learning.fit(backend="sklearn", base_estimator="logistic_regression", label_budget=40)',
+            'indices = session.active_learning.suggest_query(batch_size=10, strategy="least_confidence").indices',
+            "batch = session.to_pandas().iloc[list(indices)]",
+            "# For this runnable simulation, use the labels saved before masking.",
+            "# In an actual labeling workflow, replace these with reviewed annotations.",
+            "reviewed_labels = [int(truth.iloc[i]) for i in indices]",
+            "result = session.active_learning.label_rows(indices=indices, labels=reviewed_labels)",
+            "print(result.n_newly_labeled, result.budget_remaining)",
         ),
         check=(
             "Who is doing the labelling, and are the queried rows within their expertise?",
@@ -122,7 +155,7 @@ ACTIVELEARNING_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         steps=(
             "Least-confidence picks rows whose top predicted probability is lowest.",
-            "Margin picks rows where the top two classes are closest: usually the best default.",
+            "Margin picks rows where the top two predicted class probabilities are closest.",
             "Entropy picks rows whose whole probability distribution is flattest, which matters with many classes.",
             "Committee strategies train several models and pick rows they disagree about most.",
             "Coverage strategies such as CoreSet pick rows far from anything already labelled, guarding against blind spots.",
@@ -133,7 +166,7 @@ ACTIVELEARNING_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         avoid=(
             "Do not use uncertainty sampling with a badly calibrated model; its confidence numbers are the input to the whole strategy.",
-            "Do not query one row at a time on large pools: batch queries and accept some redundancy, or you will refit forever.",
+            "Use batch queries to reduce repeated fitting costs on large pools, and inspect batches for redundant rows.",
         ),
         myths=(
             (
@@ -142,14 +175,33 @@ ACTIVELEARNING_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
             (
                 "A more sophisticated strategy always beats random selection.",
-                "Random sampling is a genuinely strong baseline. Always measure your strategy against it before assuming the complexity pays.",
+                "Compare against random sampling at the same labelling budget before choosing a more complex strategy.",
             ),
         ),
         example=(
-            "session.active_learning.suggest_query(batch_size=20, strategy='margin')          # closest top-two",
-            "session.active_learning.suggest_query(batch_size=20, strategy='entropy')         # many classes",
-            "session.active_learning.suggest_query(batch_size=20, strategy='committee')       # disagreement",
-            "session.active_learning.evaluate(partition='validation')",
+            "from pathlib import Path",
+            "import numpy as np",
+            "import pandas as pd",
+            "from buildml import Session",
+            "",
+            "rng = np.random.default_rng(42)",
+            'Path("artifacts").mkdir(exist_ok=True)',
+            'frame = pd.DataFrame(rng.normal(size=(160, 2)), columns=["x1", "x2"])',
+            'frame["label"] = (frame.x1 + frame.x2 > 0).astype(float)',
+            'truth = frame["label"].copy()',
+            'session = Session.ingest(frame).set_roles({"x1": "feature", "x2": "feature", "label": "target"})',
+            "session.split(test_size=0.2, validation_size=0.2, stratify=True, random_state=42)",
+            "split = session.split_plan",
+            "masked = frame.copy()",
+            'masked.loc[list(split.train_indices)[::2], "label"] = np.nan',
+            "session = Session.ingest(masked).set_roles(dict(session.dataset.roles))",
+            "session.inject_split(train_indices=split.train_indices, validation_indices=split.validation_indices, test_indices=split.test_indices)",
+            'session.active_learning.fit(backend="sklearn", base_estimator="logistic_regression", label_budget=40)',
+            'session.active_learning.fit(backend="sklearn", base_estimator="logistic_regression", strategy="committee", label_budget=40)',
+            'for strategy in ("margin", "entropy", "committee"):',
+            "    query = session.active_learning.suggest_query(batch_size=10, strategy=strategy)",
+            "    print(strategy, query.indices)",
+            'print(session.active_learning.evaluate(partition="validation").metrics)',
         ),
         check=(
             "Does your strategy beat random selection at the same budget?",
@@ -171,9 +223,9 @@ ACTIVELEARNING_BEGINNER: dict[str, BeginnerLayer] = _index(
             "findings, but it does mean re-checking things you already did."
         ),
         steps=(
-            "Run at least one query-and-label round so a plan exists.",
+            "Fit an active learner to create a plan, and save it after any completed labelling rounds.",
             "Call `session.active_learning.save_bundle(path)` to store the model, the pool indices, and the query history.",
-            "Reload with `session.active_learning.load_bundle(path)` to resume the loop.",
+            "Restore the labelled table and the same split, then load a trusted bundle with `session.active_learning.load_bundle(path, trusted=True)`.",
             "Continue querying from where you left off, without re-suggesting rows you already labelled.",
             "Keep checkpoints separately for the data state itself.",
         ),
@@ -182,7 +234,7 @@ ACTIVELEARNING_BEGINNER: dict[str, BeginnerLayer] = _index(
             "When you need an audit trail of which rows were selected in which round and why.",
         ),
         avoid=(
-            "Do not restart from scratch each session; you lose the pool bookkeeping and will re-query labelled rows.",
+            "Keep the updated labels, split, and active-learning bundle together when resuming; rebuilding from an earlier unlabelled table can repeat annotation work.",
             "Do not assume a checkpoint preserves the query history: it does not embed the active-learning plan.",
         ),
         myths=(
@@ -192,22 +244,46 @@ ACTIVELEARNING_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
             (
                 "Only the model matters for resuming.",
-                "Without the pool state you will suggest rows that are already labelled, wasting the budget you were trying to protect.",
+                "The updated labels determine pool membership, while the bundle preserves query history and budget state. Restore both to continue the same run.",
             ),
         ),
         example=(
-            "session.active_learning.save_bundle('artifacts/al-round-3')",
-            "frame = session.to_pandas()   # preserve the original indexed rows for evaluation/resumption",
-            "resumed = Session.ingest(frame).active_learning.load_bundle('artifacts/al-round-3', trusted=True)",
-            "resumed.set_roles(session.dataset.roles)",
-            "resumed.inject_split(train_indices=session.split_plan.train_indices, test_indices=session.split_plan.test_indices, validation_indices=session.split_plan.validation_indices)",
-            "resumed.active_learning.suggest_query(batch_size=20, strategy='margin')   # continues the sequence",
+            "from pathlib import Path",
+            "import numpy as np",
+            "import pandas as pd",
+            "from buildml import Session",
+            "",
+            "rng = np.random.default_rng(42)",
+            'Path("artifacts").mkdir(exist_ok=True)',
+            'frame = pd.DataFrame(rng.normal(size=(160, 2)), columns=["x1", "x2"])',
+            'frame["label"] = (frame.x1 + frame.x2 > 0).astype(float)',
+            'truth = frame["label"].copy()',
+            'session = Session.ingest(frame).set_roles({"x1": "feature", "x2": "feature", "label": "target"})',
+            "session.split(test_size=0.2, validation_size=0.2, stratify=True, random_state=42)",
+            "split = session.split_plan",
+            "masked = frame.copy()",
+            'masked.loc[list(split.train_indices)[::2], "label"] = np.nan',
+            "session = Session.ingest(masked).set_roles(dict(session.dataset.roles))",
+            "session.inject_split(train_indices=split.train_indices, validation_indices=split.validation_indices, test_indices=split.test_indices)",
+            'session.active_learning.fit(backend="sklearn", base_estimator="logistic_regression", label_budget=40)',
+            "indices = session.active_learning.suggest_query(batch_size=5).indices",
+            "session.active_learning.label_rows(indices=indices, labels=[int(truth.loc[i]) for i in indices])",
+            'session.active_learning.save_bundle("artifacts/active-learning")',
+            "resumed = Session.ingest(session.to_pandas()).set_roles(dict(session.dataset.roles))",
+            "resumed.inject_split(train_indices=split.train_indices, validation_indices=split.validation_indices, test_indices=split.test_indices)",
+            'resumed.active_learning.load_bundle("artifacts/active-learning", trusted=True)',
+            "print(resumed.active_learning.suggest_query(batch_size=5).indices)",
         ),
         check=(
             "Does your saved bundle know which rows have already been labelled?",
             "Could two people resume the same loop independently and collide?",
         ),
-        tools=("save_active_learning_bundle", "load_active_learning_bundle", "suggest_query", "checkpoint_save"),
+        tools=(
+            "save_active_learning_bundle",
+            "load_active_learning_bundle",
+            "suggest_query",
+            "checkpoint_save",
+        ),
         terms=("bundle", "checkpoint", "active learning", "history"),
         difficulty=CORE,
     ),

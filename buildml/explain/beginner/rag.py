@@ -28,10 +28,7 @@ RAG_BEGINNER: dict[str, BeginnerLayer] = _index(
             "Before trusting any retrieval metric, and before comparing two retrieval configurations.",
             "Whenever the corpus and the evaluation set were built by the same process or the same person.",
         ),
-        avoid=(
-            "Do not build your evaluation questions by reading the indexed documents and writing questions about them: that is a different, easier task than real user queries.",
-            "Do not add documents to the index between evaluation runs without re-baselining; the comparison is no longer like for like.",
-        ),
+        avoid=('Questions written from the corpus are useful controlled tests. Also evaluate representative user queries, and record how each set was constructed.', 'Do not add documents to the index between evaluation runs without re-baselining; the comparison is no longer like for like.'),
         myths=(
             (
                 "Retrieval cannot leak because there is no training.",
@@ -43,10 +40,20 @@ RAG_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.rag.ingest_corpus('docs/')          # real corpus only",
-            "session.rag.embed_and_index()",
-            "report = session.rag.evaluate(qrels=eval_qrels, k=5)",
-            "print(report.recall_at_k, report.mrr)",
+            'from buildml import Session',
+            '',
+            'documents = [',
+            "    {'doc_id': 'refunds', 'text': 'Refunds are available within thirty days of purchase.'},",
+            "    {'doc_id': 'delivery', 'text': 'Standard delivery takes three to five business days.'},",
+            ']',
+            'session = Session()',
+            'session.rag.ingest_corpus(documents)',
+            'session.rag.chunk(size=160, overlap=16)',
+            "session.rag.embed_and_index(embedder='hashing')",
+            '# Toy relevance judgments remain separate from the indexed documents.',
+            "qrels = {'refunds within thirty days': ['refunds'], 'standard delivery business days': ['delivery']}",
+            'report = session.rag.evaluate(qrels, k=1)',
+            'print(report.recall_at_k, report.mrr, report.ndcg_at_k)',
         ),
         check=(
             "Where did the documents containing your gold answers come from?",
@@ -82,21 +89,20 @@ RAG_BEGINNER: dict[str, BeginnerLayer] = _index(
             "Do not chunk so small that a passage loses its context, or so large that a retrieved chunk is mostly irrelevant text.",
             "Do not treat the index as a model artifact you can hand to a classical pipeline; it belongs to the RAG surface.",
         ),
-        myths=(
-            (
-                "Building an index is training a model.",
-                "Nothing is fitted to a target. Embeddings come from a pretrained encoder; indexing only organizes them.",
-            ),
-            (
-                "Bigger chunks are safer because they contain more context.",
-                "Bigger chunks dilute the match, so retrieval quality drops and you spend more of the language model's context window on irrelevant text.",
-            ),
-        ),
+        myths=(('Building an index is training a model.', 'Index preparation does not train a supervised predictor. BuildML can use fixed token hashing or a pretrained embedding model; record which backend produced the vectors.'), ('Bigger chunks are safer because they contain more context.', 'Larger chunks can preserve context but also include irrelevant material. Compare chunk sizes using retrieval and answer-quality evaluations.')),
         example=(
-            "session.rag.ingest_corpus('docs/')",
-            "session.rag.chunk(size=512, overlap=64)",
-            "session.rag.embed_and_index(embedder='sentence-transformers/all-MiniLM-L6-v2')",
-            "hits = session.rag.retrieve('how do refunds work?', k=5)",
+            'from buildml import Session',
+            '',
+            'documents = [',
+            "    {'doc_id': 'refunds', 'text': 'Refunds are available within thirty days of purchase.'},",
+            "    {'doc_id': 'delivery', 'text': 'Standard delivery takes three to five business days.'},",
+            ']',
+            'session = Session()',
+            'session.rag.ingest_corpus(documents)',
+            'session.rag.chunk(size=160, overlap=16)',
+            "session.rag.embed_and_index(embedder='hashing')",
+            "hits = session.rag.retrieve('refunds within thirty days', k=1, mode='dense')",
+            'print(hits.hits[0].doc_id)',
         ),
         check=(
             "Does one of your chunks, read alone, make sense to a human?",
@@ -109,43 +115,34 @@ RAG_BEGINNER: dict[str, BeginnerLayer] = _index(
     _layer(
         "rag-retrieval-metrics",
         plain=(
-            "Retrieval metrics score a ranked list, not a yes/no answer. Recall@k asks whether the right "
-            "passage made the top k at all. MRR asks how high it landed. nDCG@k rewards putting the most "
-            "relevant material at the very top. None of them is accuracy."
+            'Retrieval metrics score a ranked list, not a yes/no answer. Recall@k measures the fraction of relevant passages retrieved in the first k results. MRR summarizes the rank of the first relevant result. nDCG@k rewards putting the most relevant material at the very top. None of them is accuracy.'
         ),
         analogy=(
             "Judging a librarian. Did they hand you a shelf containing the right book (recall@k)? Was it "
             "near the top of the pile (MRR)? Were the best books first (nDCG)?"
         ),
-        steps=(
-            "Assemble questions paired with the passages that should answer them.",
-            "Choose k to match how many passages you actually feed the language model.",
-            "Run retrieval and compute recall@k first: if the right passage is not in the top k, nothing downstream can save you.",
-            "Then look at MRR and nDCG@k to see whether ranking, not coverage, is the weak point.",
-            "Compare configurations at the same k, on the same questions, over the same corpus.",
-        ),
-        use=(
-            "Whenever you change the embedding model, the chunk size, or the number of retrieved passages.",
-            "To diagnose a RAG system that generates poor answers: retrieval is the usual culprit.",
-        ),
+        steps=('Assemble questions paired with the passages that should answer them.', 'Choose k to match how many passages you actually feed the language model.', 'Compute recall@k to check whether the retrieved context contains the relevant passages needed for a supported answer.', 'Then look at MRR and nDCG@k to see whether ranking, not coverage, is the weak point.', 'Compare configurations at the same k, on the same questions, over the same corpus.'),
+        use=('Whenever you change the embedding model, the chunk size, or the number of retrieved passages.', 'To distinguish missing or poorly ranked context from errors introduced during answer generation.'),
         avoid=(
             "Do not report these metrics as end-to-end answer quality; a perfect retrieval score says nothing about what the language model then wrote.",
             "Do not compare recall@5 against recall@20 as if they were the same measurement.",
         ),
-        myths=(
-            (
-                "Retrieval metrics measure whether the answer is correct.",
-                "They measure whether the right source was found. Generation quality is a separate evaluation with separate failure modes.",
-            ),
-            (
-                "A higher k is always better.",
-                "A higher k raises recall and fills the language model's context with more irrelevant text, which frequently makes the final answer worse.",
-            ),
-        ),
+        myths=(('Retrieval metrics measure whether the answer is correct.', 'They measure whether the right source was found. Generation quality is a separate evaluation with separate failure modes.'), ('A higher k is always better.', 'For a fixed ranked list, recall cannot decrease as k increases, but longer context may contain irrelevant passages. Evaluate the effect on generated answers separately.')),
         example=(
-            "report = session.rag.evaluate(qrels=qrels, k=5)",
-            "print(report.recall_at_k, report.mrr, report.ndcg_at_k)",
-            "# low recall -> fix chunking or embeddings, not the prompt",
+            'from buildml import Session',
+            '',
+            'documents = [',
+            "    {'doc_id': 'refunds', 'text': 'Refunds are available within thirty days of purchase.'},",
+            "    {'doc_id': 'delivery', 'text': 'Standard delivery takes three to five business days.'},",
+            ']',
+            'session = Session()',
+            'session.rag.ingest_corpus(documents)',
+            'session.rag.chunk(size=160, overlap=16)',
+            "session.rag.embed_and_index(embedder='hashing')",
+            '# Toy relevance judgments remain separate from the indexed documents.',
+            "qrels = {'refunds within thirty days': ['refunds'], 'standard delivery business days': ['delivery']}",
+            'report = session.rag.evaluate(qrels, k=1)',
+            'print(report.recall_at_k, report.mrr, report.ndcg_at_k)',
         ),
         check=(
             "Is your bottleneck coverage (recall) or ordering (MRR)?",

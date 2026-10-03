@@ -14,7 +14,7 @@ those train-fitted components.
 This is not the EDA IsolationForest screen. That stays descriptive.
 
 [Unsupervised deep](unsupervised-deep.md) ·
-Paste: [`examples/unsupervised_cluster_loop.py`](../examples/unsupervised_cluster_loop.py) ·
+Runnable example: [`examples/unsupervised_cluster_loop.py`](../examples/unsupervised_cluster_loop.py) ·
 Evidence: [cluster-customer-segments](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/cluster-customer-segments)
 
 ```python
@@ -57,14 +57,57 @@ fresh = Session.ingest(session.to_pandas()).set_roles(
     {"x": "feature", "y": "feature", "segment": "ignore"}
 )
 fresh.split(test_size=0.25, random_state=0).scale(method="standard")
-fresh.unsupervised.load_bundle(bundle)
+fresh.unsupervised.load_bundle(bundle, trusted=True)
 again = fresh.unsupervised.assign(partition="test")
 print(again.labels[:5])
 ```
 
-PCA then cluster (same ReducePlan: no forked PCA):
+Cluster the components produced by the fitted PCA plan:
 
 ```python
+import numpy as np
+import pandas as pd
+
+from buildml import Session
+
+rng = np.random.default_rng(0)
+frame = pd.DataFrame(
+    {
+        "x": np.concatenate([rng.normal(0, 0.4, 40), rng.normal(3, 0.4, 40)]),
+        "y": np.concatenate([rng.normal(0, 0.4, 40), rng.normal(3, 0.4, 40)]),
+        "segment": [0] * 40 + [1] * 40,  # optional reference labels for ARI/NMI only
+    }
+)
+
+session = (
+    Session.ingest(frame)
+    .set_roles({"x": "feature", "y": "feature", "segment": "ignore"})
+    .split(test_size=0.25, random_state=0)
+    .scale(method="standard")
+)
+
+fit = session.unsupervised.fit(method="kmeans", n_clusters=2)
+print(fit.cluster_sizes, fit.assign_strategy)
+
+labels = session.unsupervised.assign(partition="test")
+print(labels.n_rows, set(labels.labels))
+
+metrics = session.unsupervised.evaluate(
+    partition="test",
+    external_label_column="segment",  # optional agreement check: not used in fit
+)
+print(metrics.metrics, metrics.external_metrics)
+
+bundle = session.unsupervised.save_bundle("artifacts/unsupervised_bundle")
+# Bundle stores the ClusterPlan only: reload features/splits via checkpoint or re-ingest.
+fresh = Session.ingest(session.to_pandas()).set_roles(
+    {"x": "feature", "y": "feature", "segment": "ignore"}
+)
+fresh.split(test_size=0.25, random_state=0).scale(method="standard")
+fresh.unsupervised.load_bundle(bundle, trusted=True)
+again = fresh.unsupervised.assign(partition="test")
+print(again.labels[:5])
+
 session = (
     Session.ingest(frame)
     .set_roles({"x": "feature", "y": "feature", "segment": "ignore"})
@@ -79,11 +122,54 @@ assert session.unsupervised.fit_result.used_reduce_components
 Explain catalog coverage:
 
 ```python
+import numpy as np
+import pandas as pd
+
+from buildml import Session
+
+rng = np.random.default_rng(0)
+frame = pd.DataFrame(
+    {
+        "x": np.concatenate([rng.normal(0, 0.4, 40), rng.normal(3, 0.4, 40)]),
+        "y": np.concatenate([rng.normal(0, 0.4, 40), rng.normal(3, 0.4, 40)]),
+        "segment": [0] * 40 + [1] * 40,  # optional reference labels for ARI/NMI only
+    }
+)
+
+session = (
+    Session.ingest(frame)
+    .set_roles({"x": "feature", "y": "feature", "segment": "ignore"})
+    .split(test_size=0.25, random_state=0)
+    .scale(method="standard")
+)
+
+fit = session.unsupervised.fit(method="kmeans", n_clusters=2)
+print(fit.cluster_sizes, fit.assign_strategy)
+
+labels = session.unsupervised.assign(partition="test")
+print(labels.n_rows, set(labels.labels))
+
+metrics = session.unsupervised.evaluate(
+    partition="test",
+    external_label_column="segment",  # optional agreement check: not used in fit
+)
+print(metrics.metrics, metrics.external_metrics)
+
+bundle = session.unsupervised.save_bundle("artifacts/unsupervised_bundle")
+# Bundle stores the ClusterPlan only: reload features/splits via checkpoint or re-ingest.
+fresh = Session.ingest(session.to_pandas()).set_roles(
+    {"x": "feature", "y": "feature", "segment": "ignore"}
+)
+fresh.split(test_size=0.25, random_state=0).scale(method="standard")
+fresh.unsupervised.load_bundle(bundle, trusted=True)
+again = fresh.unsupervised.assign(partition="test")
+print(again.labels[:5])
+
 print(session.explain("fit_clusters", moment="before").operation)
-print(session.explain("evaluate_clusters", moment="before").concept_links)
+print(session.explain("evaluate_clusters", moment="before").concept_notes)
 ```
 
-## Honesty limits
+## Interpretation and limitations
 
 - Internal metrics (silhouette, Calinski–Harabasz, Davies–Bouldin) measure
   **geometry**, not ground-truth taxonomy or business value.
@@ -92,4 +178,4 @@ print(session.explain("evaluate_clusters", moment="before").concept_links)
 - Unsupervised bundles are complementary to Session checkpoints (data/splits/
   classical plans) and to Torch/RAG bundles: not interchangeable.
 - Dedicated anomaly/fraud scoring is ``session.anomaly.fit`` (separate Session path);
-  do not treat clustering or EDA IsolationForest as that product.
+  use that API when fitting a reusable anomaly detector.

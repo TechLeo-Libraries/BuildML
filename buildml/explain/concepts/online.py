@@ -29,7 +29,7 @@ ONLINE_NOTES: dict[str, ConceptNote] = {
                 "holdout H disjoint from update stream."
             ),
             why_it_matters=(
-                "Silent full refits pretend to be online and invalidate claims.",
+                "A full refit has different data and computational requirements from an incremental update.",
                 "Using validation/test for updates is leakage.",
             ),
             how_buildml_uses=(

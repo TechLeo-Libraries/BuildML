@@ -85,11 +85,12 @@ def cbr_capability_matrix() -> dict[str, Any]:
 
     Examples
     --------
-    Check before requesting a backend::
+    .. code-block:: python
 
+        from buildml.cbr.catalog import cbr_capability_matrix
         matrix = cbr_capability_matrix()
-        if not matrix["backends"]["industry"]["available"]:
-            print(matrix["install_hints"]["cbr-industry"])
+        print(matrix)
+
     """
     ann_lib = None
     if hnswlib_available():

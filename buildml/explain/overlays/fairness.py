@@ -87,7 +87,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             "slice diagnostics via error_slices.",
         ),
         rationale=(
-            "Surface group gaps honestly without pretending metrics alone are compliance.",
+            "Report measured group differences; these metrics do not establish regulatory compliance.",
         ),
         assumptions=(
             "The sensitive column(s) are correctly labeled and present on the chosen partition.",

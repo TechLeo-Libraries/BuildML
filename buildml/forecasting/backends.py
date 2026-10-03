@@ -24,7 +24,7 @@ class IndustryFitOutcome:
     """Container for a train-fitted industry forecasting backend.
 
     Wraps the fitted statsmodels, Prophet, or neuralforecast estimator together
-    with backend metadata and honesty disclosures for the ForecastPlan.
+    with backend metadata and implementation limitations for the ForecastPlan.
     """
 
     estimator: Any

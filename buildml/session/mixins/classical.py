@@ -270,7 +270,7 @@ class ClassicalSessionMixin:
         Returns
         -------
         ~buildml.model.selection.NestedCVResult
-            ``mean_metrics`` and ``std_metrics`` hold the honest estimate and
+            ``mean_metrics`` and ``std_metrics`` hold the held-out performance estimate and
             its fold-to-fold spread. ``outer_folds`` records each fold's chosen
             ``best_params`` and ``best_recipe_knobs``, which is where you look
             to judge whether tuning is stable or thrashing.

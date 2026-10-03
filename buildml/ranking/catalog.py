@@ -1,4 +1,4 @@
-"""LTR catalog and honest capability matrix."""
+"""LTR catalog and capability matrix."""
 
 from __future__ import annotations
 
@@ -59,7 +59,7 @@ def normalize_ranker_method(method: str) -> str:
 
 
 def ranking_capability_matrix() -> dict[str, Any]:
-    """Build the honest capability matrix for tabular LTR backends.
+    """Build the capability matrix for tabular LTR backends.
 
     Reports sklearn, industry GBDT, and torch listwise methods, evaluation
     metrics, split discipline, install hints, and explicit non-goals for
@@ -253,7 +253,7 @@ def resolve_backend_method(
     backend: RankingBackendName | None,
     method: str,
 ) -> tuple[RankingBackendName, str]:
-    """Validate backend/method pairing and apply honest defaults.
+    """Validate backend/method pairing and apply documented defaults.
 
     Infers the backend from the method when ``backend`` is ``None``, then
     checks the pair against :func:`list_ranking_methods` and install probes.

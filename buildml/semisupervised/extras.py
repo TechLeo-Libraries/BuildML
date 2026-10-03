@@ -25,49 +25,109 @@ def _runtime_ok(module: str) -> bool:
 
 
 def lightgbm_spec_present() -> bool:
-    """Cheap find_spec discovery for LightGBM."""
+    """Check whether Python can locate ``lightgbm``.
+
+This discovery check does not import the package or establish runtime usability.
+
+Returns
+-------
+bool
+    Whether an import specification exists for the package.
+    """
     return importlib.util.find_spec("lightgbm") is not None
 
 
 def xgboost_spec_present() -> bool:
-    """Cheap find_spec discovery for XGBoost."""
+    """Check whether Python can locate ``xgboost``.
+
+This discovery check does not import the package or establish runtime usability.
+
+Returns
+-------
+bool
+    Whether an import specification exists for the package.
+    """
     return importlib.util.find_spec("xgboost") is not None
 
 
 def lightgbm_available() -> bool:
-    """Return whether lightgbm imports cleanly for pseudo-label paths."""
+    """Check runtime availability for lightgbm.
+
+The package must be discoverable and pass an isolated runtime import probe; an installed but broken package returns false.
+
+Returns
+-------
+bool
+    Whether the required runtime import checks succeed.
+    """
     if not lightgbm_spec_present():
         return False
     return _runtime_ok("lightgbm")
 
 
 def xgboost_available() -> bool:
-    """Return whether xgboost imports cleanly for pseudo-label paths."""
+    """Check runtime availability for xgboost.
+
+The package must be discoverable and pass an isolated runtime import probe; an installed but broken package returns false.
+
+Returns
+-------
+bool
+    Whether the required runtime import checks succeed.
+    """
     if not xgboost_spec_present():
         return False
     return _runtime_ok("xgboost")
 
 
 def gradient_boosting_extras_available() -> bool:
-    """Return whether any industry GBDT library imports cleanly."""
+    """Check runtime availability for gradient boosting extras.
+
+At least one of LightGBM and XGBoost must pass its runtime import check.
+
+Returns
+-------
+bool
+    Whether the required runtime import checks succeed.
+    """
     return lightgbm_available() or xgboost_available()
 
 
 def semisupervised_industry_available() -> bool:
-    """True when industry GBDT pseudo-label libraries import cleanly."""
+    """Check runtime availability for semisupervised industry.
+
+At least one of LightGBM and XGBoost must pass its runtime import check.
+
+Returns
+-------
+bool
+    Whether the required runtime import checks succeed.
+    """
     return gradient_boosting_extras_available()
 
 
 def sentence_transformers_spec_present() -> bool:
-    """Cheap find_spec discovery for sentence-transformers."""
+    """Check whether Python can locate ``sentence_transformers``.
+
+This discovery check does not import the package or establish runtime usability.
+
+Returns
+-------
+bool
+    Whether an import specification exists for the package.
+    """
     return importlib.util.find_spec("sentence_transformers") is not None
 
 
 def sentence_transformers_available() -> bool:
-    """Return whether sentence-transformers imports cleanly (subprocess-safe).
+    """Check runtime availability for sentence transformers.
 
-    Defers to torch first, then probes sentence_transformers out-of-process so
-    a broken torch stack cannot hard-crash the parent process.
+Torch is checked first, then sentence-transformers is imported in a subprocess to isolate native-library failures.
+
+Returns
+-------
+bool
+    Whether the required runtime import checks succeed.
     """
     if not sentence_transformers_spec_present():
         return False
@@ -77,12 +137,39 @@ def sentence_transformers_available() -> bool:
 
 
 def hf_text_available() -> bool:
-    """HF text semi-supervised path needs sentence-transformers at runtime."""
+    """Check runtime availability for hf text.
+
+This delegates to the sentence-transformers check, including its Torch prerequisite.
+
+Returns
+-------
+bool
+    Whether the required runtime import checks succeed.
+    """
     return sentence_transformers_available()
 
 
 def require_xgboost(*, feature: str = "XGBoost pseudo-label semi-supervised") -> Any:
-    """Import and return ``xgboost``, or raise :class:`MissingExtraError`."""
+    """Import and return ``xgboost`` for the requested feature.
+
+Dependency failures handled by this helper are reported with an installation
+hint identifying the required BuildML extra.
+
+Parameters
+----------
+feature : str
+    Feature name included in the missing-dependency message.
+
+Returns
+-------
+Any
+    Imported ``xgboost`` module.
+
+Raises
+------
+MissingExtraError
+    If the dependency cannot be imported by this helper.
+    """
     try:
         import xgboost
     except ImportError as exc:
@@ -91,7 +178,26 @@ def require_xgboost(*, feature: str = "XGBoost pseudo-label semi-supervised") ->
 
 
 def require_lightgbm(*, feature: str = "LightGBM pseudo-label semi-supervised") -> Any:
-    """Import and return ``lightgbm``, or raise :class:`MissingExtraError`."""
+    """Import and return ``lightgbm`` for the requested feature.
+
+Dependency failures handled by this helper are reported with an installation
+hint identifying the required BuildML extra.
+
+Parameters
+----------
+feature : str
+    Feature name included in the missing-dependency message.
+
+Returns
+-------
+Any
+    Imported ``lightgbm`` module.
+
+Raises
+------
+MissingExtraError
+    If the dependency cannot be imported by this helper.
+    """
     try:
         import lightgbm
     except ImportError as exc:
@@ -102,7 +208,26 @@ def require_lightgbm(*, feature: str = "LightGBM pseudo-label semi-supervised") 
 def require_sentence_transformers(
     *, feature: str = "HF text pseudo-label semi-supervised"
 ) -> Any:
-    """Import sentence-transformers, or raise :class:`MissingExtraError`."""
+    """Import and return ``sentence_transformers`` for the requested feature.
+
+Dependency failures handled by this helper are reported with an installation
+hint identifying the required BuildML extra.
+
+Parameters
+----------
+feature : str
+    Feature name included in the missing-dependency message.
+
+Returns
+-------
+Any
+    Imported ``sentence_transformers`` module.
+
+Raises
+------
+MissingExtraError
+    If the dependency cannot be imported by this helper.
+    """
     try:
         import sentence_transformers
     except ImportError as exc:
@@ -111,7 +236,26 @@ def require_sentence_transformers(
 
 
 def require_torch_semisupervised(*, feature: str = "Torch consistency semi-supervised") -> Any:
-    """Import torch for consistency semi-supervised, or raise MissingExtraError."""
+    """Import and return ``torch`` for the requested feature.
+
+Dependency failures handled by this helper are reported with an installation
+hint identifying the required BuildML extra.
+
+Parameters
+----------
+feature : str
+    Feature name included in the missing-dependency message.
+
+Returns
+-------
+Any
+    Imported ``torch`` module.
+
+Raises
+------
+MissingExtraError
+    If the dependency cannot be imported by this helper.
+    """
     from buildml.dl.extras import require_torch
 
     return require_torch(feature=feature)

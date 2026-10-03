@@ -129,7 +129,7 @@ def evaluate_fairness(
     -------
     FairnessReport
         Per-group rates, gaps, optional classical bridge + stability, and
-        honesty disclosures.
+        implementation limitations.
 
     Raises
     ------

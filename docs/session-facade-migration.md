@@ -1,149 +1,83 @@
-# Session namespaced facades
+# Session domain methods
 
-**Status:** shipped in BuildML `2.4.0`  
-**Flat domain alias removal:** BuildML `3.0`
-
-## Why facades exist
-
-One `Session` entry point, with a surface you can navigate by domain:
+BuildML groups specialized methods by domain, such as `session.anomaly`
+and `session.fairness`. These namespaces make related operations easier to
+find. The following complete example fits and scores an anomaly model:
 
 ```python
-session.fairness.evaluate(sensitive_column="group")
+from sklearn.datasets import make_blobs
+import pandas as pd
+from buildml import Session
+
+values, _ = make_blobs(n_samples=100, centers=1, random_state=42)
+session = Session.ingest(pd.DataFrame(values, columns=["x", "y"]))
+session.split(test_size=0.2, random_state=42)
 session.anomaly.fit(method="isolation_forest")
-session.rag.retrieve(query="...")
+result = session.anomaly.score(partition="test")
+print(result)
 ```
 
-Flat domain methods still work during the deprecation window and emit
-`DeprecationWarning` pointing at the preferred facade. Classical core stays
-dual and first-class **without** warnings.
+## Compatibility with existing code
 
-## Version timeline
+Domain namespaces were introduced in BuildML 2.4.0. Older flat domain
+methods, such as `session.fit_anomaly`, remain available in the 2.x series
+and emit a `DeprecationWarning` identifying the replacement. They are
+scheduled for removal in BuildML 3.0.
 
-| Version | What lands |
+Classical methods such as `session.ingest`, `session.split`, `session.fit`,
+and `session.evaluate` remain supported without deprecation warnings.
+Their namespace equivalents are also supported.
+
+| Operation group | Namespace |
 | --- | --- |
-| `2.4.0a2` | Discovery helpers (`list_capabilities`, `describe_method`, …) |
-| **`2.4.0`** | Namespaced facades for all domains; flat domain actions warn; docs / guides / examples / proofs teach facades first |
-| `2.4.0` (stable intent) | Facades remain preferred; flat aliases still present |
-| **`2.5.0`** | Same facade policy continues on the stable Session line |
-| **`2.6.0`** | Same facade policy; calibration / threshold defaults move to validation |
-| **`3.0`** | Flat domain aliases eligible for removal (classical core policy re-evaluated then) |
+| Data ingestion, roles, and partitions | `session.data` |
+| Preprocessing | `session.preprocess` |
+| Classical models | `session.classical` |
+| Exploratory data analysis | `session.explore` |
+| Workflow and teaching | `session.audit` |
+| Specialized domains | For example, `session.anomaly`, `session.rag`, or `session.fairness` |
 
-## Product rules for 2.4+
+The EDA namespace is called `explore` because `session.eda()` is already
+an operation. Similarly, `audit` groups workflow methods without replacing
+`session.workflow()`.
 
-1. **Classical core does not warn.**  
-   Flat `ingest` / `set_roles` / `split` / preprocess / `fit` / `evaluate` / …
-   remain first-class. Facades exist as dual paths:
-   `session.data.*`, `session.preprocess.*`, `session.classical.*`,
-   `session.explore.*` (EDA), `session.audit.*` (workflow / teaching).
-2. **Domain industry methods warn on flat actions.**  
-   Prefer `session.<domain>.*`. Result / plan properties do not warn.
-3. **No functionality removed in `2.4.x` / `2.5.x` / `2.6.x`.** Deprecation means warnings
-   + docs preference only.
-4. **Name collisions avoided.**  
-   - EDA facade attr is `session.explore` (flat method remains `session.eda`)  
-   - Workflow / teaching facade attr is `session.audit` (flat method remains
-     `session.workflow`)
+## Discover available methods
 
-## Product decisions
-
-| Decision | Meaning |
-| --- | --- |
-| **Surface stays large until 3.0** | Facades organize the Session surface; they do not shrink it. Flat domain aliases remain until BuildML **3.0**. Use `Session.list_facades()` / `list_capabilities()` / `describe_method()` to navigate. |
-| **Classical dual stays first-class** | Flat classical chains stay without `DeprecationWarning`. |
-| **Catalog keys stay flat** | `OPERATION_CATALOG` and teaching sync keep **canonical flat** Session method names as keys. Explain / AI / discovery accept both flat and facade forms (`fairness.evaluate`, `session.fairness.evaluate`) and resolve to the flat key. |
-| **Variable naming** | Bind `session = Session()` (or another non-domain name). Binding `rag = Session()` produces awkward `rag.rag.*`; runtime emits a one-shot `UserWarning` when a Session is bound to a domain-named local and a facade is accessed. |
-
-## Stability tiers
-
-Discovery payloads (`list_capabilities`, `describe_method`, `list_facades`) expose:
-
-| Tier | Meaning | Examples |
-| --- | --- | --- |
-| `core` | Primary product path; dual flat+facade, no flat warnings | data, preprocess, classical, explore, audit |
-| `domain` | Specialized Session surface; prefer facade | fairness, anomaly, rag, forecast, … |
-| `experimental` | Evolving domains; review release notes for backend, behavior, and dependency changes | ai, rl, tda, metalearning |
-
-## Discovery APIs
+This example lists namespaces, their capabilities, and the methods in the
+fairness namespace. Discovery does not fit a model or require a dataset.
 
 ```python
-Session.list_facades()
-Session.list_capabilities()           # includes facades + preferred_facade / stability_tier
-Session.describe_method("evaluate_fairness")
-Session.describe_method("fairness.evaluate")
-session.fairness.describe()           # bindings for one namespace
-session.list_active_domains()
+from buildml import Session
+
+session = Session()
+print(Session.list_facades())
+print(Session.list_capabilities())
+print(Session.describe_method("fairness.evaluate"))
+print(session.fairness.describe())
+print(session.list_active_domains())
 ```
 
-Explain and AI tooling accept flat **and** facade preferred paths:
+Discovery results identify each method's stability tier:
+
+| Tier | Meaning |
+| --- | --- |
+| `core` | Data, preprocessing, classical modeling, EDA, and workflow methods; both flat and namespace forms are supported |
+| `domain` | Specialized methods; use the namespace form |
+| `experimental` | APIs that may change as their backends and behavior develop; review release notes before upgrading |
+
+## Explain a method
+
+The teaching APIs accept both namespace paths and legacy flat names.
+This example retrieves explanations without executing either operation:
 
 ```python
-session.explain("fairness.evaluate")          # → operation == "evaluate_fairness"
-session.explain("session.forecast.fit")       # → operation == "fit_forecast"
-from buildml.session.facade_registry import resolve_operation_name
-resolve_operation_name("rag.retrieve")        # → "rag_retrieve"
+from buildml import Session
+
+session = Session()
+fairness_explanation = session.explain("fairness.evaluate")
+forecast_explanation = session.explain("session.forecast.fit")
 ```
 
-Tool allowlists may set `session_method` / `catalog_operation` to either form;
-teaching sync canonicalizes before parity checks. Emitted catalog names and
-history IDs remain flat.
-
-## Registry / regeneration
-
-- Bindings source: `scripts/_facade_bindings.json`
-- Generated module: `buildml/session/facade_registry.py`
-- Runtime: `buildml/session/facades.py` (`DomainFacade`, deprecation install)
-- Regenerate: `python scripts/generate_facade_registry.py`
-- Content rewrite helper: `python scripts/migrate_session_facades.py --check|--write`
-
-The migrator rewrites:
-
-- Dot calls / attrs (`session.<flat>(` → `session.<domain>.<method>(`)
-- Narrative backticks with optional args (`` `<flat>(...)` `` → `` `session.<domain>.<method>(...)` ``)
-- RST double-backticks
-- Unquoted teaching tokens in `buildml/explain/{concepts,beginner,overlays,…}`
-  (exact catalog key strings like `"fit_anomaly"` stay flat; ambiguous English
-  verbs like rank / recommend are never rewritten as bare tokens)
-
-## Included in 2.4.0
-
-- All Session domains have namespaced facades
-- Domain flat actions deprecated with tests
-- Docs, guides, explain teachings, examples, and proof scripts prefer facades
-  (classical chains may stay flat)
-- Discovery shows preferred paths + tiers
-- Explain / AI / discovery accept facade and flat operation names
-- Migrator `--check` clean on examples / guides / docs / explain / proofs
-- Domain-variable shadowing warned at runtime
-
-## Documented exceptions
-
-- **Classical teaching** may keep flat `session.fit` / `session.evaluate` chains
-  (dual first-class, no deprecation warnings).
-- **`OPERATION_CATALOG` keys remain flat** by design. Dual-form acceptance lives
-  at resolver boundaries (`get_operation`, `session.explain`, AI tool binding
-  checks, `describe_method`).
-- **`Session.*_capability_matrix()`** static calls remain valid; prefer
-  `session.<domain>.capability_matrix()` when a live session exists.
-- **Package catalog discovery** (`from buildml.<domain> import
-  <domain>_capability_matrix`) remains a valid non-Session dual.
-- **Unit / integration tests** may call flat aliases to assert `DeprecationWarning`.
-- **Historical CHANGELOG** entries describing the past are not rewritten.
-- **Generated Sphinx `_build/`** may lag sources until docs are rebuilt; fix
-  sources under `docs/*.rst` / `docs/*.md`, not `_build`.
-
-## Deprecation window after 2.4.x
-
-Facades are the supported domain API for 2.4.x / 2.5.x / 2.6.x. Flat domain aliases stay
-supported-but-deprecated until **3.0**; that removal is out of the 2.x scope.
-
-Maintainers preparing a release can use the separate
-[release maintenance guide](pypi-2x-publish.md).
-
-## Maintainer checklist (before tagging a 2.x build)
-
-- [x] Facades are the supported public API for domains
-- [x] Flat domain actions emit `DeprecationWarning` (removal deferred to 3.0)
-- [x] Classical core remains dual first-class (no flat warnings)
-- [x] Teaching / docs / examples / proofs prefer facades (migrator `--check` clean)
-- [x] Discovery + explain / AI accept flat and facade operation forms
-- [x] Flat-alias removal deferred to **BuildML 3.0**
+Catalog entries and operation history retain their canonical flat names,
+so an explanation requested for `fairness.evaluate` identifies its
+operation as `evaluate_fairness`.

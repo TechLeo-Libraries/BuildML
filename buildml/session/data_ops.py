@@ -88,7 +88,7 @@ def ingest_session(
     small CSV loads straight into Pandas. A large one does not, because
     quietly pulling a multi-gigabyte file into memory is how notebooks die.
     Instead BuildML refuses and tells you the four ways forward: force it
-    with ``mode='memory'``, look before you leap with ``dry_run=True``,
+    with ``mode='memory'``, inspect the ingest plan with ``dry_run=True``,
     sample with ``read_nrows``, or install ``buildml[engines]`` and load
     natively through Polars or DuckDB.
 
@@ -158,27 +158,17 @@ def ingest_session(
 
     Examples
     --------
-    The ordinary case: a DataFrame already in hand:
-
     >>> import pandas as pd
+    >>> from tempfile import TemporaryDirectory
+    >>> from pathlib import Path
     >>> from buildml import Session
-    >>> session = Session.ingest(pd.DataFrame({"a": [1, 2], "y": [0, 1]}))
-    >>> session.dataset.frame.shape
-    (2, 2)
-
-    Inspect a file before deciding how to load it:
-
-    >>> probe = Session.ingest("events.parquet", dry_run=True)  # doctest: +SKIP
-    >>> probe.ingest_report.row_estimate  # doctest: +SKIP
-    4210332
-    >>> probe.ingest_report.warnings  # doctest: +SKIP
-    ['Source looks large (812993024 bytes estimated). ...']
-
-    Then load it natively rather than through Pandas:
-
-    >>> session = Session.ingest(
-    ...     "events.parquet", engine="duckdb", mode="lazy"
-    ... )  # doctest: +SKIP
+    >>> frame = pd.DataFrame({"x": [1, 2, 3, 4], "target": [0, 1, 0, 1]})
+    >>> session = Session.ingest(frame)
+    >>> with TemporaryDirectory() as directory:
+    ...     path = Path(directory) / "example.csv"
+    ...     frame.to_csv(path, index=False)
+    ...     loaded = Session.ingest(path)
+    ...     assert loaded.dataset.frame.shape == frame.shape
 
     See Also
     --------
@@ -264,16 +254,10 @@ def set_roles(session, mapping: dict[str, str | ColumnRole]) -> "Session":
     --------
     >>> import pandas as pd
     >>> from buildml import Session
-    >>> frame = pd.DataFrame({"id": [1, 2], "x": [0.5, 0.9], "y": [0, 1]})
-    >>> session = Session.ingest(frame)
-    >>> _ = session.set_roles({"id": "id", "y": "target"})
-    >>> session.dataset.roles["y"].value
-    'target'
-
-    Marking a grouping column is what makes a leakage-safe split possible:
-
-    >>> _ = session.set_roles({"customer_id": "group"})  # doctest: +SKIP
-    >>> _ = session.group_split(test_size=0.2)  # doctest: +SKIP
+    >>> frame = pd.DataFrame({"x": range(20), "target": [0, 1] * 10})
+    >>> frame["customer_id"] = [i // 2 for i in range(20)]
+    >>> session = Session.ingest(frame).set_roles({"target": "target", "customer_id": "group"})
+    >>> _ = session.group_split(group_column="customer_id", test_size=0.2, random_state=42)
 
     See Also
     --------
@@ -300,7 +284,7 @@ def split(
     random_state: int | None = 42,
     stratify: bool = False,
 ) -> "Session":
-    """Randomly hold back rows so you can measure honest performance.
+    """Randomly hold back rows so you can measure performance on held-out data.
 
     A model that has seen a row can usually predict it. To find out whether
     it learned anything general, you must score it on rows it never saw.
@@ -368,15 +352,10 @@ def split(
     --------
     >>> import pandas as pd
     >>> from buildml import Session
-    >>> frame = pd.DataFrame({"a": [1, 2, 3, 4], "y": [0, 1, 0, 1]})
-    >>> session = Session.ingest(frame).set_roles({"y": "target"})
-    >>> _ = session.split(test_size=0.5, stratify=True)
-    >>> len(session.partition("train")), len(session.partition("test"))
-    (2, 2)
-
-    Reserve a validation partition when you intend to tune:
-
-    >>> _ = session.split(test_size=0.2, validation_size=0.2)  # doctest: +SKIP
+    >>> frame = pd.DataFrame({"x": range(20), "target": [0, 1] * 10})
+    >>> session = Session.ingest(frame).set_roles({"target": "target"})
+    >>> _ = session.split(test_size=0.2, validation_size=0.2, stratify=True, random_state=42)
+    >>> assert len(session.partition("train")) + len(session.partition("validation")) + len(session.partition("test")) == len(frame)
 
     See Also
     --------
@@ -785,10 +764,12 @@ def assert_can_fit(session, partition: PartitionName = "train") -> "Session":
 
     Fitting anything of your own on a holdout is stopped outright:
 
-    >>> session.assert_can_fit("test")
-    Traceback (most recent call last):
-        ...
-    buildml.core.errors.LeakageError: ...
+    >>> from buildml.core.errors import LeakageError
+    >>> try:
+    ...     session.assert_can_fit("test")
+    ... except LeakageError:
+    ...     print("Fit only on training rows.")
+    Fit only on training rows.
 
     See Also
     --------
@@ -910,14 +891,16 @@ def checkpoint_save(
 
     Examples
     --------
-    >>> path = session.checkpoint_save("checkpoints/step_3")  # doctest: +SKIP
-
-    Later, in a new process:
-
+    >>> import pandas as pd
     >>> from buildml import Session
-    >>> session = Session.checkpoint_load("checkpoints/step_3")  # doctest: +SKIP
-    >>> session.reattach_result.status  # doctest: +SKIP
-    'clean'
+    >>> frame = pd.DataFrame({"amount": [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0], "target": [0, 1] * 4})
+    >>> session = Session.ingest(frame).set_roles({"target": "target"})
+    >>> _ = session.split(test_size=0.25, stratify=True, random_state=42)
+    >>> from tempfile import TemporaryDirectory
+    >>> with TemporaryDirectory() as directory:
+    ...     path = session.checkpoint_save(directory + "/checkpoint")
+    ...     restored = Session.checkpoint_load(path, trusted=True)
+    ...     assert len(restored.dataset.frame) == len(frame)
 
     See Also
     --------
@@ -1015,12 +998,16 @@ def checkpoint_load_session(session_cls, path: str | Path, *, data_only: bool = 
 
     Examples
     --------
+    >>> import pandas as pd
     >>> from buildml import Session
-    >>> session = Session.checkpoint_load("checkpoints/step_3")  # doctest: +SKIP
-    >>> session.reattach_result.status  # doctest: +SKIP
-    'clean'
-    >>> len(session.history)  # doctest: +SKIP
-    14
+    >>> frame = pd.DataFrame({"amount": [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0], "target": [0, 1] * 4})
+    >>> session = Session.ingest(frame).set_roles({"target": "target"})
+    >>> _ = session.split(test_size=0.25, stratify=True, random_state=42)
+    >>> from tempfile import TemporaryDirectory
+    >>> with TemporaryDirectory() as directory:
+    ...     path = session.checkpoint_save(directory + "/checkpoint")
+    ...     restored = Session.checkpoint_load(path, trusted=True)
+    ...     assert len(restored.dataset.frame) == len(frame)
 
     See Also
     --------
@@ -1356,9 +1343,14 @@ def with_engine(session, engine: EngineName | str) -> "Session":
 
     Examples
     --------
-    >>> session = Session.ingest("events.parquet")  # doctest: +SKIP
-    >>> with session.with_engine("duckdb") as s:  # doctest: +SKIP
-    ...     prepared = s.prepare_design_matrix(sample_rows=500_000)
+    >>> import pandas as pd
+    >>> from buildml import Session
+    >>> frame = pd.DataFrame({"amount": [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0], "target": [0, 1] * 4})
+    >>> session = Session.ingest(frame).set_roles({"target": "target"})
+    >>> _ = session.split(test_size=0.25, stratify=True, random_state=42)
+    >>> # Install the engine first: pip install "buildml[duckdb]"
+    >>> with session.with_engine("duckdb") as other:
+    ...     prepared = other.prepare_design_matrix(sample_rows=8)
 
     See Also
     --------

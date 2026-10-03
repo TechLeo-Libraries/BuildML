@@ -11,7 +11,7 @@ induced from train, with a trace of which rule fired. That is
 `session.symbolic`. The hybrid that wraps a sklearn (or lite Torch) model
 with the same rules is `session.symbolic.fit_neuro`.
 
-`session.symbolic.fit()` with no extra knobs uses `source="decision_tree"`
+`session.symbolic.fit()` with default parameters uses `source="decision_tree"`
 on the **sklearn** backend. That stays sklearn even when
 `buildml[symbolic-industry]` is installed. Industry export is something
 you ask for with `backend="industry"` or `method="skope_rules"` (or
@@ -19,12 +19,12 @@ you ask for with `backend="industry"` or `method="skope_rules"` (or
 `mode="constraint_overlay"` and `base_estimator="logistic_regression"`:
 sklearn, not Torch, until you name a torch method.
 
-This is tabular rules. It is not Prolog, not a Z3 product, and not an
-expert-system suite. `verify_constraints=True` is a lite SAT check on
+The API handles rules over tabular features. General-purpose logic
+programming and knowledge-base management require separate systems. `verify_constraints=True` is a lite SAT check on
 hard antecedents when z3-solver is present, not a proof that the rule
 set is globally consistent.
 
-Short on-ramp: [symbolic quickstart](quickstart-symbolic.md). Proof:
+Quickstart: [symbolic quickstart](quickstart-symbolic.md). Proof:
 [policy-rules-neuro-symbolic](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/policy-rules-neuro-symbolic).
 
 ## Induce, predict, evaluate
@@ -91,14 +91,13 @@ when you want the industry path.
 skope-rules is skipped on Python 3.13 (broken `collections.Iterable`).
 imodels and z3-solver still install from `symbolic-industry`.
 
-```python
-# When buildml[symbolic-industry] is installed:
-# session.symbolic.fit(backend="industry", method="skope_rules")
-```
+With `buildml[symbolic-industry]` installed, `session.symbolic.fit` also
+accepts `backend="industry"` and `method="skope_rules"`. It requires the
+same feature roles, target, and split as the complete example above.
 
 ## Neuro-symbolic hybrid
 
-Same split, same train-only rule of the game. `fit_neuro` fits a base
+The hybrid model uses the same split and training-only fitting requirements. `fit_neuro` fits a base
 estimator and binds rules in one of three modes you pick:
 
 | Mode | What happens at predict |
@@ -119,6 +118,34 @@ as `base_estimator` (or `torch_method`) is what selects `backend="torch"`.
 Torch is installed.
 
 ```python
+import numpy as np
+import pandas as pd
+
+from buildml import Session
+
+rng = np.random.default_rng(0)
+x = rng.normal(size=(220, 2))
+y = (x[:, 0] + 0.3 * x[:, 1] > 0).astype(int)
+frame = pd.DataFrame({"a": x[:, 0], "b": x[:, 1], "y": y})
+
+session = (
+    Session.ingest(frame)
+    .set_roles({"a": "feature", "b": "feature", "y": "target"})
+    .split(test_size=0.2, validation_size=0.2, random_state=0, stratify=True)
+    .scale(method="standard")
+)
+
+fit = session.symbolic.fit(source="decision_tree", task="classification")
+print(fit.backend, fit.n_rules, fit.provenance)
+
+pred = session.symbolic.predict(partition="test", return_traces=True)
+print(pred.traces[0].fired_rule_ids, pred.traces[0].chosen_rule_id)
+
+ev = session.symbolic.evaluate(partition="validation")
+print(ev.metrics, ev.rule_coverage)
+
+session.symbolic.save_bundle("artifacts/symbolic_bundle")
+
 constraints = [
     {
         "rule_id": "high_a",
@@ -141,7 +168,7 @@ print(neuro.mode, neuro.n_rules)
 print(session.symbolic.evaluate_neuro(partition="test").metrics)
 ```
 
-`evaluate_neuro` / `predict_neuro` are the hybrid twins. They do not
+`evaluate_neuro` / `predict_neuro` are the hybrid prediction and evaluation methods. They do not
 update the pure-symbolic plan.
 
 ## Z3 lite check
@@ -157,12 +184,12 @@ causal.
 `session.symbolic.save_bundle` writes `buildml.symbolic_bundle.v1`
 (`meta.json` + `symbolic_plan.joblib`). `meta.kind` is `symbolic` or
 `neuro_symbolic`. Session checkpoints do not embed either plan. Load
-with `trusted=True` only for a file you made.
+with `trusted=True` only for a file you created or whose source and contents you trust.
 
-Paste: [`examples/symbolic_rules_loop.py`](../examples/symbolic_rules_loop.py).
+Runnable example: [`examples/symbolic_rules_loop.py`](../examples/symbolic_rules_loop.py).
 Benchmark: `python benchmarks/symbolic/rule_fidelity.py`.
 
-## When it refuses
+## Validation errors and prerequisites
 
 | What you see | What happened |
 | --- | --- |

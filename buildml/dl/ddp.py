@@ -3,9 +3,9 @@
 DistributedDataParallel is the standard way to scale Torch training. Each
 process holds a full copy of the model and a distinct slice of the data. After
 every backward pass the processes average their gradients, which keeps the
-copies identical while spreading the work: so N processes get through an epoch
-in roughly a fraction of the time, at the cost of an effective batch size N
-times larger.
+parameters synchronized. The effective batch size increases with the number
+of processes. Throughput depends on the model, hardware, and communication
+overhead; additional processes do not guarantee a proportional speedup.
 
 Two ways in. **Single-node** spawns the processes for you, one per visible GPU,
 and is the simpler path when everything fits on one machine. **Multi-node**
@@ -18,9 +18,9 @@ mid-run, or manage a cluster. When the environment is incomplete it says which
 variable is missing rather than hanging at the rendezvous, which is the failure
 mode most worth avoiding.
 
-Treat the whole module as alpha. Single-process training handles most datasets,
-and the operational surface here: NCCL connectivity, firewall rules, pickling
-across the spawn boundary: is genuinely more than it appears.
+This API is experimental. Configure process-group connectivity and use a
+picklable module factory when spawning workers. The CPU Gloo path supports
+functional checks; GPU training uses NCCL when available.
 
 See Also
 --------
@@ -31,8 +31,11 @@ buildml.dl.k8s : Manifests for running this under Kubernetes.
 from __future__ import annotations
 
 import os
+import pickle
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
+from pathlib import Path
+from tempfile import TemporaryDirectory
 from typing import Any, Literal
 
 from buildml.core.errors import ValidationError
@@ -304,9 +307,8 @@ def parse_torchrun_env(
     """Read this process's distributed placement from the environment.
 
     ``torchrun`` communicates placement through environment variables. This
-    parses them, validates them against each other, and returns a typed record
-   : so a misconfigured launch fails with a clear message rather than a
-    confusing hang or a wrong-device error deep in training.
+    parses them, validates their consistency, and returns a typed record.
+    Invalid rank values and missing settings raise an error before training.
 
     Parameters
     ----------
@@ -340,10 +342,11 @@ def parse_torchrun_env(
 
     Examples
     --------
-    Read a torchrun launch::
+    .. code-block:: python
 
-        env = parse_torchrun_env(require_local_rank=True)
-        env.rank, env.local_rank
+        from buildml.dl.ddp import parse_torchrun_env
+        env = parse_torchrun_env({"RANK": "0", "LOCAL_RANK": "0", "WORLD_SIZE": "1", "MASTER_ADDR": "127.0.0.1", "MASTER_PORT": "29500"}, require_local_rank=True)
+        print(env.rank, env.local_rank)
 
     See Also
     --------
@@ -459,9 +462,8 @@ def _run_rank_training(
     sharded["train"] = _shard_loader(
         train_loader, rank=rank, world_size=world_size, seed=config.seed
     )
-    # Validation is rank-0 only to avoid duplicated metric noise.
-    if rank != 0:
-        sharded.pop("validation", None)
+    # All ranks must enter matching DDP forwards: modules with buffers may
+    # synchronize them even during evaluation. Only rank zero reports metrics.
     local_bundle = TorchLoaderBundle(
         loaders=sharded,
         contract=loader_bundle.contract,
@@ -494,7 +496,7 @@ def _worker(
     loader_bundle: TorchLoaderBundle,
     config: TrainConfig,
     find_unused_parameters: bool,
-    result_queue: Any,
+    result_path: str,
 ) -> None:
     torch = require_torch(feature="DDP worker")
     import torch.distributed as dist
@@ -520,17 +522,11 @@ def _worker(
             use_cuda=use_cuda,
         )
         if rank == 0:
-            result_queue.put(
-                {
-                    "ok": True,
-                    "train_result": train_result,
-                    "device": f"cuda:{rank}" if use_cuda else "cpu",
-                }
-            )
-    except Exception as exc:  # noqa: BLE001
-        if rank == 0:
-            result_queue.put({"ok": False, "error": str(exc)})
-        raise
+            # A multiprocessing queue can transfer tensor storage handles that
+            # expire when this worker exits. Persist the result by value before
+            # the parent joins the workers instead.
+            with open(result_path, "wb") as stream:
+                pickle.dump(train_result, stream, protocol=pickle.HIGHEST_PROTOCOL)
     finally:
         if dist.is_initialized():
             dist.destroy_process_group()
@@ -571,30 +567,30 @@ def _train_single_node(
             "(not a throughput optimization)."
         )
 
-    ctx = torch.multiprocessing.get_context("spawn")
-    queue: Any = ctx.Queue()
-    torch.multiprocessing.spawn(
-        _worker,
-        args=(
-            world_size,
-            backend,
-            dcfg.master_addr,
-            dcfg.master_port,
-            module_factory,
-            loader_bundle,
-            config,
-            dcfg.find_unused_parameters,
-            queue,
-        ),
-        nprocs=world_size,
-        join=True,
-    )
-    if queue.empty():
-        raise ValidationError("DDP training produced no rank-0 result")
-    payload = queue.get()
-    if not payload.get("ok"):
-        raise ValidationError(f"DDP training failed: {payload.get('error')}")
-    train_result: TrainResult = payload["train_result"]
+    with TemporaryDirectory(prefix="buildml-ddp-result-") as directory:
+        result_path = Path(directory) / "rank-zero.pkl"
+        torch.multiprocessing.spawn(
+            _worker,
+            args=(
+                world_size,
+                backend,
+                dcfg.master_addr,
+                dcfg.master_port,
+                module_factory,
+                loader_bundle,
+                config,
+                dcfg.find_unused_parameters,
+                str(result_path),
+            ),
+            nprocs=world_size,
+            join=True,
+        )
+        if not result_path.is_file():
+            raise ValidationError("DDP training produced no rank-0 result")
+        # This private temporary file was written by our own rank-zero worker;
+        # it is not a user-supplied model artifact.
+        with result_path.open("rb") as stream:
+            train_result: TrainResult = pickle.load(stream)
     device_ids = tuple(range(world_size)) if use_cuda else ()
     return DDPTrainResult(
         train_result=train_result,
@@ -603,7 +599,7 @@ def _train_single_node(
         device_ids=device_ids,
         disclosures=(
             f"Single-node DDP with world_size={world_size}, backend={backend}.",
-            "Train sampler shards batches per rank; validation metrics come from rank 0.",
+            "Training data is sharded; all ranks validate, and rank zero reports metrics.",
         ),
         limitations=(
             "Single-node spawn mode: for multi-node use multi_node=True under torchrun.",
@@ -686,7 +682,7 @@ def _train_multi_node(
         disclosures=(
             f"Multi-node / torchrun DDP with world_size={dist_env.world_size}, "
             f"rank={dist_env.rank}, local_rank={dist_env.local_rank}, backend={backend}.",
-            "Train sampler shards batches per global rank; validation on rank 0.",
+            "Training data is sharded; all ranks validate, and rank zero reports metrics.",
         ),
         limitations=(
             "Requires torchrun-compatible env (WORLD_SIZE/RANK/LOCAL_RANK/"
@@ -721,9 +717,12 @@ def train_supervised_module_ddp(
 
     Two modes. Single-node spawns the processes for you. Multi-node joins a
     rendezvous that ``torchrun`` already established, which is how you span
-    machines::
+    machines. With a training script saved as ``your_train_script.py`` and
+    ``MASTER_ADDR`` / ``MASTER_PORT`` set for the rendezvous, launch from a shell:
 
-        torchrun --nnodes=2 --nproc_per_node=2 --rdzv_backend=c10d \\
+    .. code-block:: bash
+
+        torchrun --nnodes=2 --nproc_per_node=2 --rdzv_backend=c10d \
           --rdzv_endpoint=$MASTER_ADDR:$MASTER_PORT your_train_script.py
 
     Parameters
@@ -738,7 +737,9 @@ def train_supervised_module_ddp(
         sampler so each rank sees a different shard. Datasets must be picklable
         for single-node spawn.
     config:
-        Training settings. ``device`` is overridden per rank.
+        Training settings. ``device`` is overridden per rank. Early stopping
+        and the plateau scheduler are currently unsupported and raise before
+        any process group is launched.
     ddp_config:
         Backend, world size, rendezvous, and mode.
     environ:
@@ -768,9 +769,11 @@ def train_supervised_module_ddp(
     128 rows, which usually means fewer, smoother updates per epoch: often
     worth raising the learning rate to compensate.
 
-    **Validation runs on rank 0 only.** Every rank evaluating the same
-    validation set would produce identical numbers logged four times, so the
-    other ranks skip it.
+    **Every rank evaluates the same validation loader.** This keeps DDP
+    buffer synchronization collectives aligned; only rank zero reports metrics.
+    Early stopping and plateau scheduling are not supported because their
+    decisions require synchronized metrics across ranks. Use fixed epochs and
+    a non-adaptive scheduler, or single-process training for these options.
 
     **This path is alpha.** Single-process ``fit_torch`` is better tested and
     fast enough for most datasets; reach for DDP when a model genuinely does not
@@ -782,14 +785,35 @@ def train_supervised_module_ddp(
 
     Examples
     --------
-    Single-node across the visible GPUs::
+    Run a two-process CPU example with a Torch build that supports Gloo::
 
-        result = train_supervised_module_ddp(
-            lambda: build_tabular_mlp(12, n_classes=3),
-            bundle,
-            config=TrainConfig(epochs=20),
-        )
-        result.train_result.n_epochs_ran
+        # Install first: pip install "buildml[torch]"
+        # Save this complete example as train_ddp.py, then run python train_ddp.py.
+        import pandas as pd
+        import torch
+        from sklearn.datasets import make_classification
+        from buildml import Session
+        from buildml.dl.ddp import DDPConfig, train_supervised_module_ddp
+        from buildml.dl.loaders import make_loaders
+        from buildml.dl.types import TrainConfig
+
+        def make_model():
+            return torch.nn.Linear(4, 2)
+
+        if __name__ == '__main__':
+            x, y = make_classification(n_samples=40, n_features=4, n_informative=3,
+                                       n_redundant=0, random_state=0)
+            frame = pd.DataFrame(x, columns=['a', 'b', 'c', 'd'])
+            frame['target'] = y
+            session = Session.ingest(frame).set_roles({'target': 'target'})
+            session.split(test_size=0.2, stratify=True, random_state=0)
+            bundle = make_loaders(session.dataset, session.split_plan, task='classification')
+            result = train_supervised_module_ddp(
+                make_model, bundle, config=TrainConfig(epochs=1, device='cpu'),
+                ddp_config=DDPConfig(world_size=2, allow_cpu_ddp=True, backend='gloo'),
+            )
+            print(result.train_result.n_epochs_ran)
+
 
     See Also
     --------
@@ -799,6 +823,13 @@ def train_supervised_module_ddp(
     require_torch(feature="DDP training")
     cfg = config or TrainConfig()
     dcfg = ddp_config or DDPConfig()
+    if cfg.early_stopping_patience is not None or cfg.scheduler == "plateau":
+        raise ValidationError(
+            "DDP does not yet support early stopping or plateau scheduling: "
+            "adaptive decisions require synchronized metrics across ranks. "
+            "Use fixed epochs with early_stopping_patience=None and a "
+            "non-plateau scheduler, or use single-process training."
+        )
     if dcfg.multi_node:
         return _train_multi_node(
             module_factory,

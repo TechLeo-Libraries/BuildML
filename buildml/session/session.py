@@ -495,15 +495,14 @@ class Session(
 
     >>> from sklearn.ensemble import RandomForestClassifier
     >>> report = (
-    ...     Session.ingest("customers.csv")
-    ...     .set_roles({"churned": "target", "customer_id": "id"})
-    ...     .split(test_size=0.2, stratify=True)
+    ...     Session.ingest(frame)
+    ...     .set_roles({"y": "target"})
+    ...     .split(test_size=0.5, stratify=True)
     ...     .impute()
-    ...     .encode()
     ...     .scale()
     ...     .fit(RandomForestClassifier())
     ...     .evaluate()
-    ... )  # doctest: +SKIP
+    ... )
 
     Notes
     -----

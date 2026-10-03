@@ -6,8 +6,8 @@ directory as Markdown. The pages below are the same content, rendered on
 Read the Docs alongside the rest of this site.
 
 Start at the :doc:`guide index <guide-index>` for the learning path and the
-Session-domain → guide coverage map. Quickstarts are short on-ramps; deep
-guides carry use cases, many examples, failure modes, and cross-links.
+mapping from Session domains to guides. Quickstarts introduce a working
+example; detailed guides cover additional use cases, errors, and related methods.
 
 .. toctree::
    :maxdepth: 2

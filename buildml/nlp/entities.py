@@ -84,6 +84,7 @@ def compile_gazetteers(
 
     Examples
     --------
+    >>> from buildml.nlp.entities import compile_gazetteers
     >>> rules = compile_gazetteers({"product": ["Widget Pro", "Widget"]})
     >>> len(rules)
     1
@@ -295,10 +296,15 @@ def extract_entities(
 
     Examples
     --------
-    >>> result = extract_entities(  # doctest: +SKIP
-    ...     dataset, split_plan, gazetteers={"product": ["Widget Pro"]}
-    ... )
-    >>> result.label_counts  # doctest: +SKIP
+    >>> import pandas as pd
+    >>> from buildml import Session
+    >>> texts = ["card payment declined", "invoice billing question", "payment refund requested", "billing invoice amount", "password login broken", "technical account access", "login password reset", "technical account error"] * 3
+    >>> frame = pd.DataFrame({"ticket_body": texts, "label": ["billing"] * 4 + ["technical"] * 4 + ["billing"] * 4 + ["technical"] * 4 + ["billing"] * 4 + ["technical"] * 4})
+    >>> session = Session.ingest(frame).set_roles({"ticket_body": "feature", "label": "target"})
+    >>> _ = session.split(test_size=0.25, stratify=True, random_state=42)
+    >>> dataset, split_plan = session.dataset, session.split_plan
+    >>> from buildml.nlp.entities import extract_entities
+    >>> result = extract_entities(dataset, split_plan, text_column="ticket_body", gazetteers={"topic": ["payment", "password"]})
 
     See Also
     --------

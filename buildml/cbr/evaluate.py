@@ -93,10 +93,24 @@ def evaluate_cbr(
 
     Examples
     --------
-    Score, and check the score is well founded::
+    .. code-block:: python
 
+        import pandas as pd
+        from sklearn.datasets import make_classification
+        from sklearn.tree import DecisionTreeClassifier
+        from buildml import Session
+        X, y = make_classification(n_samples=80, n_features=4, n_informative=3, n_redundant=0, random_state=42)
+        frame = pd.DataFrame(X, columns=["age", "income", "spend", "visits"])
+        frame["target"] = y
+        session = Session.ingest(frame).set_roles({"target": "target"})
+        session.split(test_size=0.2, validation_size=0.2, stratify=True, random_state=42)
+        dataset, split_plan = session.dataset, session.split_plan
+        estimator = DecisionTreeClassifier(max_depth=3, random_state=42)
+        from buildml.cbr.evaluate import evaluate_cbr
+        from buildml.cbr.fit import fit_cbr
+        plan, fitted = fit_cbr(dataset, split_plan, k=3)
         result = evaluate_cbr(dataset, plan, split_plan, partition="validation")
-        print(result.metrics, result.mean_neighbor_distance)
+        print(result.metrics)
 
     See Also
     --------

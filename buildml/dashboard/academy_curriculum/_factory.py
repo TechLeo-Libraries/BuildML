@@ -76,7 +76,7 @@ def starter_session(ctx: Ctx, *, stratify: bool | None = None) -> list[str]:
         use_stratify = isinstance(target, dict) and target.get("task") == "classification"
     else:
         use_stratify = bool(stratify)
-    split_args = "test_size=0.2, random_state=0"
+    split_args = "test_size=0.2, validation_size=0.2, random_state=0"
     if use_stratify:
         split_args += ", stratify=True"
     return [
@@ -84,7 +84,7 @@ def starter_session(ctx: Ctx, *, stratify: bool | None = None) -> list[str]:
         "import pandas as pd",
         "",
         "session = (",
-        "    Session.ingest(pd.read_csv(\"your_data.csv\"))  # <-- change path/columns",
+        "    Session.ingest(frame.copy())  # <-- change path/columns",
         "    .set_roles({",
         f'        "{target_name(ctx)}": "target",  # <-- change',
         f'        "{first_feature(ctx)}": "feature",  # <-- add all predictors',

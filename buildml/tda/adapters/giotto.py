@@ -134,13 +134,14 @@ def fit_giotto_vectorizer_state(
 
         bc = BettiCurve(n_bins=int(n_bins))
         probe = bc.fit_transform(stacked)
-        per_dim = int(probe.shape[1] // max(len(dims), 1))
+        feature_dim = int(np.prod(probe.shape[1:]))
+        per_dim = feature_dim // max(len(dims), 1)
         return {
             "kind": "giotto_betti_curve",
             "homology_dims": dims,
             "n_bins": int(n_bins),
             "per_dim": per_dim,
-            "feature_dim": int(probe.shape[1]),
+            "feature_dim": feature_dim,
             "giotto_obj": bc,
         }
 
@@ -154,7 +155,8 @@ def fit_giotto_vectorizer_state(
 
             vec = PersistenceLandscape(n_layers=int(n_layers), n_bins=int(n_bins))
         probe = vec.fit_transform(stacked)
-        per_dim = int(probe.shape[1] // max(len(dims), 1))
+        feature_dim = int(np.prod(probe.shape[1:]))
+        per_dim = feature_dim // max(len(dims), 1)
         kind = (
             "giotto_persistence_image"
             if key == "persistence_image"
@@ -166,7 +168,7 @@ def fit_giotto_vectorizer_state(
             "n_bins": int(n_bins),
             "n_layers": int(n_layers),
             "per_dim": per_dim,
-            "feature_dim": int(probe.shape[1]),
+            "feature_dim": feature_dim,
             "giotto_obj": vec,
         }
 
@@ -207,7 +209,7 @@ def vectorize_giotto_diagrams(
     obj = state.get("giotto_obj")
     if obj is None:
         raise ValidationError("giotto vectorizer state missing giotto_obj.")
-    out = np.asarray(obj.transform(batch)[0], dtype=float)
+    out = np.asarray(obj.transform(batch)[0], dtype=float).reshape(-1)
     target = int(state["feature_dim"])
     if out.size < target:
         out = np.pad(out, (0, target - out.size))
@@ -247,7 +249,10 @@ def _diagrams_to_giotto_batch(
         return np.zeros((0, 1, 3), dtype=float)
 
     per_sample: list[dict[int, np.ndarray]] = []
-    max_per_dim: dict[int, int] = {d: 0 for d in dim_ids}
+    # Retain every requested dimension even when it has no finite bars.
+    # Giotto infers its feature axes from these labels at fit time; omitting
+    # an empty dimension silently mislabels the remaining feature columns.
+    max_per_dim: dict[int, int] = {d: 1 for d in dim_ids}
     for sample in train_diagrams:
         by_dim: dict[int, np.ndarray] = {}
         for d in dim_ids:

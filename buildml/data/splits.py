@@ -1,8 +1,8 @@
-"""Decide which rows a model may learn from, and prove it never saw the rest.
+"""Define training and evaluation partitions and validate their membership.
 
-A model evaluated on data it was trained on will report a score it cannot
-reproduce on anything new. Splitting is how that is avoided, and the whole of
-this module exists to make the split correct and to keep it correct.
+Evaluation on training data can overestimate performance on new data. This
+module records separate partitions and checks their membership. Choosing a
+split strategy that represents the intended prediction task remains necessary.
 
 A :class:`SplitPlan` is membership, not data: positional indices into the
 frame. Nothing is copied, so a plan is cheap to carry and can be serialised
@@ -13,21 +13,21 @@ shuffles rows at random, optionally stratified so class proportions hold in each
 partition. :func:`create_group_split` keeps every row of a group together, which
 matters whenever rows are not independent: repeated measurements of one
 patient, several orders from one customer. :func:`create_time_split` cuts
-chronologically, because predicting the past from the future is not a problem
-anyone has. :func:`inject_partitions` accepts membership you determined
-elsewhere.
+chronologically for tasks that predict future observations.
+:func:`inject_partitions` accepts membership determined elsewhere.
 
-The invariants are checked rather than assumed. Every plan asserts disjoint
+The split-building functions check partition membership. They check disjoint
 partitions; group splits verify no group crosses a boundary; time splits verify
-no training timestamp lands after a test one. Violations raise
-:class:`~buildml.core.errors.LeakageError`, and :func:`assert_fit_partition`
+no training timestamp lands after a test one. Invalid membership raises
+:class:`~buildml.core.errors.ValidationError`; group or time boundary violations
+raise :class:`~buildml.core.errors.LeakageError`. :func:`assert_fit_partition`
 refuses any fit that has no split at all.
 
 Notes
 -----
-**The strategy matters more than the fraction.** A random split of grouped data
-gives an inflated score that looks fine, and choosing 80/20 over 75/25 will not
-save it.
+**Match the strategy to the prediction task.** A random split can place related
+rows in both training and evaluation partitions. Changing the holdout fraction
+does not remove that dependency.
 
 See Also
 --------
@@ -64,8 +64,8 @@ class SplitPlan:
     kind:
         How it was made: ``'random'``, ``'stratified'``, ``'group'``,
         ``'time'``, or ``'injected'``. **Read this before trusting a score**: a
-        random split of grouped data is the most common cause of an optimistic
-        result.
+        random split can overestimate performance when related rows occur in
+        both training and evaluation partitions.
     test_size:
         The fraction or count requested for test.
     validation_size:
@@ -227,10 +227,9 @@ class SplitPlan:
     def assert_disjoint(self) -> None:
         """Verify no row belongs to two partitions, and that the split is usable.
 
-        Called by every constructor in this module. A row appearing in both
-        train and test is the purest form of leakage: the model has memorised
-        the answer: and it is cheap enough to check that there is no reason
-        to assume it away.
+        Called by the split-building functions in this module. A row appearing in
+        both train and test exposes evaluation data during training and can
+        inflate the reported score.
 
         Returns
         -------
@@ -294,7 +293,7 @@ def create_split(
         leaves 64% for training rather than 60%.
     random_state:
         The seed. Fixed by default, because a split that changes between runs
-        makes every comparison meaningless.
+        makes comparisons harder to attribute to model changes alone.
     stratify:
         Preserve the target's class proportions. Classification only.
 
@@ -307,27 +306,39 @@ def create_split(
     ------
     ValidationError
         If the dataset has fewer than two rows, if stratification is requested
-        with no target role, or if the sizes are out of range.
+        with no target role.
+    ValueError
+        If scikit-learn rejects the requested sizes or class counts.
 
     Notes
     -----
-    **Random splitting assumes independent rows, and quietly gives a wrong
-    answer when they are not.** If the same patient, customer, or device appears
+    **Random splitting can overestimate performance when related rows cross
+    partitions.** If the same patient, customer, or device appears
     in several rows, use :func:`create_group_split`. If rows are ordered in
-    time, use :func:`create_time_split`. The inflated score a random split
-    produces in those cases looks entirely reasonable.
+    time, use :func:`create_time_split`. Choose the split to match the intended deployment setting.
 
-    **Stratification needs enough of every class.** Scikit-learn refuses when a
-    class has fewer members than partitions; the error names the class.
+    **Stratification needs enough members and partition capacity.**
+    Scikit-learn validates each split separately and can raise ``ValueError``
+    for classes or partition sizes that are too small.
 
     Examples
     --------
-    A stratified split with a validation partition::
+    .. code-block:: python
 
-        plan = create_split(
-            dataset, test_size=0.2, validation_size=0.2, stratify=True,
-        )
-        len(plan.train_indices), len(plan.test_indices)
+        import pandas as pd
+        from sklearn.datasets import make_classification
+        from sklearn.tree import DecisionTreeClassifier
+        from buildml import Session
+        X, y = make_classification(n_samples=80, n_features=4, n_informative=3, n_redundant=0, random_state=42)
+        frame = pd.DataFrame(X, columns=["age", "income", "spend", "visits"])
+        frame["target"] = y
+        session = Session.ingest(frame).set_roles({"target": "target"})
+        session.split(test_size=0.2, validation_size=0.2, stratify=True, random_state=42)
+        dataset, split_plan = session.dataset, session.split_plan
+        estimator = DecisionTreeClassifier(max_depth=3, random_state=42)
+        from buildml.data.splits import create_split
+        plan = create_split(dataset, test_size=0.2, validation_size=0.2, stratify=True, random_state=42)
+        print(len(plan.train_indices), len(plan.test_indices))
 
     See Also
     --------
@@ -440,11 +451,18 @@ def create_group_split(
 
     Examples
     --------
-    Hold out whole patients::
+    .. code-block:: python
 
-        plan = create_group_split(
-            dataset, test_size=0.2, group_column="patient_id",
-        )
+        import pandas as pd
+        from buildml.data.dataset import Dataset
+        frame = pd.DataFrame({"age": list(range(40)), "income": [float(i * 2) for i in range(40)], "region": ["north", "south"] * 20, "target": [0, 1] * 20})
+        dataset = Dataset.from_pandas(frame, attach_native=True)
+        from buildml.data.splits import create_group_split
+        frame["patient_id"] = [i // 4 for i in range(len(frame))]
+        dataset = Dataset.from_pandas(frame, attach_native=True)
+        dataset.set_roles({"target": "target", "patient_id": "group"})
+        plan = create_group_split(dataset, test_size=0.2, group_column="patient_id", random_state=42)
+        print(len(plan.train_indices), len(plan.test_indices))
 
     See Also
     --------
@@ -502,10 +520,10 @@ def create_time_split(
     Sorts by timestamp and cuts. The earliest rows train, the latest test, and
     a validation partition sits between them. Nothing is shuffled.
 
-    This mirrors how a deployed model actually works: it will only ever see
-    data from before the moment it predicts. A random split on time-ordered data
-    lets the model train on Thursday and predict Tuesday, which inflates the
-    score by an amount nobody can estimate afterwards.
+    For forecasting tasks, training observations should precede evaluation
+    observations. A random split of time-dependent data can expose the model
+    to information unavailable at prediction time and overestimate prospective
+    performance. A chronological evaluation helps assess that risk.
 
     Parameters
     ----------
@@ -551,11 +569,18 @@ def create_time_split(
 
     Examples
     --------
-    Hold out the most recent fifth::
+    .. code-block:: python
 
-        plan = create_time_split(
-            dataset, test_size=0.2, time_column="order_date",
-        )
+        import pandas as pd
+        from buildml.data.dataset import Dataset
+        frame = pd.DataFrame({"age": list(range(40)), "income": [float(i * 2) for i in range(40)], "region": ["north", "south"] * 20, "target": [0, 1] * 20})
+        dataset = Dataset.from_pandas(frame, attach_native=True)
+        from buildml.data.splits import create_time_split
+        frame["order_date"] = pd.date_range("2024-01-01", periods=len(frame))
+        dataset = Dataset.from_pandas(frame, attach_native=True)
+        dataset.set_roles({"target": "target", "order_date": "time"})
+        plan = create_time_split(dataset, test_size=0.2, time_column="order_date")
+        print(len(plan.train_indices), len(plan.test_indices))
 
     See Also
     --------
@@ -618,9 +643,8 @@ def inject_partitions(
     split, a partition your team agreed on, or a scheme none of the built-in
     strategies expresses.
 
-    The escape hatch is real but not unguarded. Indices are bounds-checked and
-    the result must still be disjoint, so an injected plan cannot smuggle in an
-    overlap the built-in strategies would have refused.
+    Supplied indices are checked against dataset bounds and must not overlap
+    across partitions, just as with a split created by BuildML.
 
     Parameters
     ----------
@@ -740,14 +764,13 @@ def frame_for_partition(
 def assert_fit_partition(plan: SplitPlan | None, partition: PartitionName = "train") -> None:
     """Refuse to fit on anything except a real training partition.
 
-    Called at the top of every operation that learns something: imputation
-    statistics, encoder vocabularies, scaler parameters, model weights. It
-    enforces two rules: a split must exist, and the fit must be on train.
+    Used by fitting operations to check the learning partition before estimating
+    statistics or model parameters. It enforces two rules: a split must exist,
+    and the requested fit partition must be train.
 
-    The first rule is the one that matters most. Fitting on full data before
-    splitting is the leak that produces the most convincing wrong number,
-    because nothing about it looks unusual: the code runs, the score is good,
-    and the model fails in production for reasons nobody can reconstruct.
+    Fitting preprocessing or models on the full dataset before splitting lets
+    holdout observations influence training. A successful run alone does not
+    detect that leakage; the split and fit partition must be checked explicitly.
 
     Parameters
     ----------

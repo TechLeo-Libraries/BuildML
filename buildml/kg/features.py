@@ -104,7 +104,7 @@ def resolve_triple_columns(
     Returns
     -------
     tuple[str, str, str, list[str]]
-        Resolved column names and honesty disclosures.
+        Resolved column names and implementation limitations.
 
     Raises
     ------

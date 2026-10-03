@@ -333,6 +333,7 @@ def dtype_family(dtype: Any) -> DtypeFamily:
 
     Examples
     --------
+    >>> from buildml.pipeline.contract import dtype_family
     >>> import numpy as np
     >>> dtype_family(np.dtype("int64"))
     'numeric'
@@ -414,6 +415,7 @@ def families_compatible(expected: DtypeFamily, actual: DtypeFamily) -> bool:
 
     Examples
     --------
+    >>> from buildml.pipeline.contract import families_compatible
     >>> families_compatible("numeric", "numeric")
     True
     >>> families_compatible("string", "categorical")
@@ -839,12 +841,24 @@ def validate_score_frame(
 
     Examples
     --------
-    Check before predicting, and act on the specifics::
+    .. code-block:: python
 
-        result = validate_score_frame(frame, bundle.schema_contract)
-        if not result.ok:
-            print(result.missing_columns, result.wrong_type_columns)
-            raise_for_contract(result)
+        import pandas as pd
+        from sklearn.datasets import make_classification
+        from sklearn.tree import DecisionTreeClassifier
+        from buildml import Session
+        X, y = make_classification(n_samples=80, n_features=4, n_informative=3, n_redundant=0, random_state=42)
+        frame = pd.DataFrame(X, columns=["age", "income", "spend", "visits"])
+        frame["target"] = y
+        session = Session.ingest(frame).set_roles({"target": "target"})
+        session.split(test_size=0.2, validation_size=0.2, stratify=True, random_state=42)
+        dataset, split_plan = session.dataset, session.split_plan
+        estimator = DecisionTreeClassifier(max_depth=3, random_state=42)
+        from buildml.pipeline.contract import build_schema_contract, validate_score_frame, coerce_score_frame, raise_for_contract
+        contract = build_schema_contract(schema=dataset.schema, roles=dataset.roles, feature_columns=["age", "income", "spend", "visits"], target_column="target")
+        incoming = frame.drop(columns="target").iloc[:3].copy()
+        result = validate_score_frame(incoming, contract)
+        raise_for_contract(result)
 
     See Also
     --------
@@ -995,9 +1009,23 @@ def coerce_score_frame(
 
     Examples
     --------
-    The usual score-time entry point::
+    .. code-block:: python
 
-        frame, result = coerce_score_frame(raw_frame, bundle.schema_contract)
+        import pandas as pd
+        from sklearn.datasets import make_classification
+        from sklearn.tree import DecisionTreeClassifier
+        from buildml import Session
+        X, y = make_classification(n_samples=80, n_features=4, n_informative=3, n_redundant=0, random_state=42)
+        frame = pd.DataFrame(X, columns=["age", "income", "spend", "visits"])
+        frame["target"] = y
+        session = Session.ingest(frame).set_roles({"target": "target"})
+        session.split(test_size=0.2, validation_size=0.2, stratify=True, random_state=42)
+        dataset, split_plan = session.dataset, session.split_plan
+        estimator = DecisionTreeClassifier(max_depth=3, random_state=42)
+        from buildml.pipeline.contract import build_schema_contract, validate_score_frame, coerce_score_frame, raise_for_contract
+        contract = build_schema_contract(schema=dataset.schema, roles=dataset.roles, feature_columns=["age", "income", "spend", "visits"], target_column="target")
+        incoming = frame.drop(columns="target").iloc[:3].copy()
+        converted, result = coerce_score_frame(incoming, contract)
         raise_for_contract(result)
 
     See Also

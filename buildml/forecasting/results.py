@@ -39,7 +39,7 @@ class ForecastPlan:
     def to_dict(self) -> dict[str, Any]:
         """Serialise the forecast plan for bundles and history logs.
 
-        Captures method, column contract, lag settings, and honesty disclosures
+        Captures method, column contract, lag settings, and implementation limitations
         without embedding fitted estimator objects.
 
         Returns
@@ -97,7 +97,7 @@ class ForecastFitResult:
         Returns
         -------
         dict[str, Any]
-            Fit metadata, horizon, lags, and honesty disclosures.
+            Fit metadata, horizon, lags, and implementation limitations.
         """
         return {
             "method": self.method,
@@ -201,7 +201,7 @@ class ForecastEvalResult:
         Returns
         -------
         dict[str, Any]
-            Eval metadata, metrics dict, and honesty disclosures.
+            Eval metadata, metrics dict, and implementation limitations.
         """
         return {
             "partition": self.partition,

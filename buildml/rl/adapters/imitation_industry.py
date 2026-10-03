@@ -382,7 +382,7 @@ def fit_tabular_gail_lite(
         train_score = float(np.mean(pred == y_codes))
 
         disclosures = [
-            "GAIL-lite runs a small-budget adversarial imitation loop (honest lite).",
+            "GAIL-lite runs a small-budget adversarial imitation loop with a limited training budget.",
             "Requires buildml[rl-industry] and env-compatible demonstration rows.",
             "Honesty: teaching-depth GAIL: not robotics / AV / multi-agent sims.",
             "Offline RL disclosures: imitation from demos, not batch offline RL.",

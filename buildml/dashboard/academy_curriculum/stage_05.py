@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from buildml.dashboard.academy_curriculum._factory import L, with_starter
 from buildml.dashboard.academy_curriculum._helpers import (
+    demo_example,
     first_feature,
     fmt_n,
     is_classification,
@@ -37,11 +38,11 @@ def lessons() -> list[LessonSpec]:
             session_evidence=lambda ctx: (
                 f"MI screen leaders (univariate, pre-model): {list_names(ctx.get('mi') or [])}."
             ),
-            example_code=lambda ctx: with_starter(
+            example_code=demo_example(lambda ctx: with_starter(
                 ctx,
                 "from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor",
                 "",
-                "session = session.impute().encode()",
+                "session = session.impute().encode(columns=[\"category\"])",
                 "est = RandomForestClassifier(random_state=0) if "
                 f"{is_classification(ctx)} else RandomForestRegressor(random_state=0)",
                 "session = session.fit(est)",
@@ -49,7 +50,7 @@ def lessons() -> list[LessonSpec]:
                 "print(imp)",
                 "# Optional: session.explain_shap(partition=\"test\")  # requires buildml[shap]",
                 'session.learn("feature-importance", level="beginner")',
-            ),
+            )),
             what_to_change=("Choose partition; do not treat importance as causality."),
             pitfalls=(
                 "Reading importance as causal effect size.",
@@ -69,10 +70,12 @@ def lessons() -> list[LessonSpec]:
             tags=("ALE", "PDP", "shape"),
             plain=(
                 "Effect shapes ask how predictions change as a feature moves - partial dependence / "
-                "ALE-style views. They are still model stories, not causal levers.",
+                "ALE-style views. These describe fitted model behavior, not intervention effects.",
             ),
             technical=(
-                "Use model plots / SHAP dependence after fit. Watch interactions: average shapes can lie.",
+                "The example computes partial dependence with scikit-learn and the fitted BuildML estimator. "
+                "It averages predictions over validation rows; correlated predictors and interactions can "
+                "make that average misleading. ALE is a different method and is not computed here.",
             ),
             why=("Direction and non-linearity matter for trust and debugging."),
             formula=None,
@@ -80,18 +83,27 @@ def lessons() -> list[LessonSpec]:
                 f"Candidate features for shape plots: {list_names(ctx.get('mi') or []) or first_feature(ctx)}."
             ),
             session_evidence=lambda ctx: f"MI leaders: {list_names(ctx.get('mi') or [])}.",
-            example_code=lambda ctx: with_starter(
+            example_code=demo_example(lambda ctx: with_starter(
                 ctx,
                 "from sklearn.ensemble import GradientBoostingClassifier, GradientBoostingRegressor",
                 "",
-                "session = session.impute().encode()",
+                "session = session.impute().encode(columns=[\"category\"])",
                 "est = GradientBoostingClassifier(random_state=0) if "
                 f"{is_classification(ctx)} else GradientBoostingRegressor(random_state=0)",
                 "session = session.fit(est)",
-                "board = session.eval_plots(partition=\"test\", include_importance=True)",
-                "print(board)",
+                "from sklearn.inspection import partial_dependence",
+                "fitted = session.fit_result",
+                "prepared = session.dataset.to_pandas()",
+                "validation = prepared.iloc[list(session.split_plan.validation_indices)]",
+                "features = validation.loc[:, list(fitted.feature_columns)]",
+                "shape = partial_dependence(",
+                "    fitted.estimator, features, features=[\"measurement\"], method=\"brute\",",
+                "    grid_resolution=10, kind=\"average\",",
+                ")",
+                "print(\"Measurement grid:\", shape[\"grid_values\"][0])",
+                "print(\"Mean prediction at each grid value:\", shape[\"average\"])",
                 'session.learn("feature-importance", level="intermediate")',
-            ),
+            )),
             what_to_change=("Plot shapes for top features stakeholders will challenge."),
             pitfalls=("Reading average effect shapes under strong interactions as universal laws."),
             decide="Pair global importance with at least one local/shape view for top features.",
@@ -113,17 +125,17 @@ def lessons() -> list[LessonSpec]:
                 f"n={fmt_n(ctx.get('rows'))}; if curves still rising at full n, more data may help."
             ),
             session_evidence=lambda ctx: f"rows={fmt_n(ctx.get('rows'))}; eligible={fmt_n(ctx.get('eligible'))}.",
-            example_code=lambda ctx: with_starter(
+            example_code=demo_example(lambda ctx: with_starter(
                 ctx,
                 "from sklearn.linear_model import LogisticRegression, Ridge",
                 "",
-                "session = session.impute().encode().scale()",
+                "session = session.impute().encode(columns=[\"category\"]).scale()",
                 "est = LogisticRegression(max_iter=200) if "
                 f"{is_classification(ctx)} else Ridge()",
                 "curve = session.learning_curve(est, cv=5)",
                 "print(curve)",
                 'session.learn("training-curves", level="beginner")',
-            ),
+            ), task='classification'),
             what_to_change=("Compare a weak and a strong model family's curves."),
             pitfalls=("Reading a single end-point score as capacity diagnosis."),
             decide="Use learning curves before large data-collection spends.",
@@ -152,13 +164,13 @@ def lessons() -> list[LessonSpec]:
             session_evidence=lambda ctx: (
                 "Causal readiness is human-gated; association screens are not identification."
             ),
-            example_code=lambda ctx: with_starter(
+            example_code=demo_example(lambda ctx: with_starter(
                 ctx,
                 'session.learn("causal-assumptions", level="beginner")',
                 'session.learn("causal-eda-boundary", level="intermediate")',
                 "# Only after a causal diagram + assumptions:",
                 "# session.fit_causal(...)",
-            ),
+            )),
             what_to_change=("Separate prediction KPIs from intervention KPIs in the project brief."),
             pitfalls=("Shipping feature importances as 'drivers' to executives without causal language."),
             decide="Label every stakeholder-facing claim as predictive or causal - never blur them.",
@@ -187,11 +199,11 @@ def lessons() -> list[LessonSpec]:
             session_evidence=lambda ctx: (
                 f"Engine={(ctx.get('ds') or {}).get('engine')}; record this in the handoff card."
             ),
-            example_code=lambda ctx: with_starter(
+            example_code=demo_example(lambda ctx: with_starter(
                 ctx,
                 "from sklearn.linear_model import LogisticRegression, Ridge",
                 "",
-                "session = session.impute().encode().scale()",
+                "session = session.impute().encode(columns=[\"category\"]).scale()",
                 "est = LogisticRegression(max_iter=200) if "
                 f"{is_classification(ctx)} else Ridge()",
                 "session = session.fit(est)",
@@ -199,7 +211,7 @@ def lessons() -> list[LessonSpec]:
                 "print(\"saved\", path)",
                 'session.learn("operation-history", level="beginner")',
                 "# Monitoring: re-run drift/slice checks on live windows vs this reference.",
-            ),
+            ), task='classification'),
             what_to_change=(
                 "Set artifact paths; define alert thresholds for drift and slice gaps.",
                 "Include threshold policy and primary metric in the model card.",

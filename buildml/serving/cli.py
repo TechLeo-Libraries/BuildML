@@ -9,11 +9,18 @@ via :class:`~buildml.serving.config.ServeConfig`.
 
 Always blocking, because that is what a container entrypoint or a systemd unit
 needs: the process must stay in the foreground so the supervisor can see it
-running and restart it when it stops::
+running and restart it when it stops.
+
+After creating a pipeline bundle at ``artifacts/churn`` (see
+:func:`~buildml.serving.launch.serve_bundle` for a complete training example),
+start it from a shell:
+
+.. code-block:: bash
 
     buildml-serve --bundle artifacts/churn --port 8080
-    buildml-serve --config serve.yaml
-    python -m buildml.serving --bundle artifacts/churn --api-key "$SERVE_KEY"
+
+Use ``--config`` to read a configuration file you have created. Public binds
+require authentication; supply ``--api-key`` or the corresponding configuration.
 
 See Also
 --------

@@ -744,7 +744,7 @@ def _build_rag_dl_tools() -> tuple[ToolSpec, ...]:
         ToolSpec(
             name="export_torch",
             description=(
-                "Export the last Torch trainer to TorchScript or ONNX (alpha escape hatch). "
+                "Export the last Torch training result to a TorchScript or ONNX model file. "
                 "Requires buildml[torch]."
             ),
             parameters={
@@ -2349,7 +2349,7 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
         ),
         ToolSpec(
             name="anomaly_capability_matrix",
-            description="Return honest anomaly backend/method capability matrix.",
+            description="List anomaly backends, supported methods, and dependency availability.",
             parameters={"type": "object", "properties": {}, "required": []},
             confirm_policy=ConfirmPolicy.AUTO,
             session_method="anomaly_capability_matrix",
@@ -2403,7 +2403,7 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
                     "backend": {
                         "type": "string",
                         "enum": ["sklearn", "industry", "torch", "hf"],
-                        "description": "Semi-supervised backend (honest default when omitted).",
+                        "description": "Semi-supervised backend; omit to use the default backend.",
                     },
                     "method": {
                         "type": "string",
@@ -5033,7 +5033,7 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
         ToolSpec(
             name="ranking_capability_matrix",
             description=(
-                "Return honest tabular LTR backend/method capability matrix "
+                "Return the tabular learning-to-rank backend and method capability matrix "
                 "(sklearn fallback, industry GBDT rankers, torch listwise-lite). "
                 "Distinguishes LTR from RAG and recommenders."
             ),
@@ -5701,9 +5701,16 @@ def build_default_registry() -> ToolRegistry:
 
     Examples
     --------
-    Read-only advisory agent::
+    Select two read-only tools::
 
-        registry = ToolRegistry(tools=build_default_registry().read_only_tools())
+        from buildml.ai.tools import ToolRegistry, build_default_registry
+
+        default = build_default_registry()
+        registry = ToolRegistry(tools=tuple(tool for tool in default.read_only_tools()
+                                            if tool.name in {'describe_dataset', 'suggest_roles'}))
+        print([tool.name for tool in registry.tools])
+
+
 
     See Also
     --------
@@ -5752,15 +5759,16 @@ class ToolRegistry:
 
     Examples
     --------
-    Limit an agent to two operations::
+    Select two read-only tools::
+
+        from buildml.ai.tools import ToolRegistry, build_default_registry
 
         default = build_default_registry()
-        registry = ToolRegistry(
-            tools=tuple(
-                t for t in default.tools
-                if t.name in {"describe_dataset", "suggest_roles"}
-            )
-        )
+        registry = ToolRegistry(tools=tuple(tool for tool in default.read_only_tools()
+                                            if tool.name in {'describe_dataset', 'suggest_roles'}))
+        print([tool.name for tool in registry.tools])
+
+
 
     See Also
     --------
@@ -6033,6 +6041,7 @@ def sanitize_tool_result(result: Any) -> str:
 
     Examples
     --------
+    >>> from buildml.ai.tools import sanitize_tool_result
     >>> print(sanitize_tool_result("rows: 42"))
     [TOOL RESULT - DATA ONLY]
     rows: 42
@@ -6083,6 +6092,7 @@ def mark_untrusted_data(data: str, source: str = "user") -> str:
 
     Examples
     --------
+    >>> from buildml.ai.tools import mark_untrusted_data
     >>> print(mark_untrusted_data("age, salary", source="dataset"))
     [UNTRUSTED DATA FROM DATASET]
     age, salary

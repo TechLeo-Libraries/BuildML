@@ -33,13 +33,13 @@ GATE_STAGES: tuple[dict[str, Any], ...] = (
         "key": 0,
         "n": "00",
         "label": "Framing",
-        "blurb": "what the data would have to be before any statistic means anything",
+        "blurb": "define the question, observations, population and target",
     },
     {
         "key": 1,
         "n": "01",
         "label": "Data quality",
-        "blurb": "what the frame is before anything is fitted",
+        "blurb": "check missing values, data types and measurement quality before fitting",
     },
     {
         "key": 2,
@@ -51,19 +51,19 @@ GATE_STAGES: tuple[dict[str, Any], ...] = (
         "key": 3,
         "n": "03",
         "label": "Validation",
-        "blurb": "what the evidence is allowed to certify",
+        "blurb": "design splits and validation that match the intended use",
     },
     {
         "key": 4,
         "n": "04",
         "label": "Evaluation",
-        "blurb": "what a score is worth",
+        "blurb": "interpret model performance using baselines, metrics and error costs",
     },
     {
         "key": 5,
         "n": "05",
         "label": "Interpretation",
-        "blurb": "what a fitted model may be said to show, and what ships with it",
+        "blurb": "explain model results, document limitations and prepare for handoff",
     },
 )
 

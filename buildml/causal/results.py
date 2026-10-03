@@ -5,6 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
+import numpy as np
+
 from buildml.causal.types import CausalAssumptions
 
 
@@ -67,7 +69,10 @@ class CausalPlan:
             "outcome_column": self.outcome_column,
             "confounder_columns": list(self.confounder_columns),
             "outcome_kind": self.outcome_kind,
-            "treatment_levels": list(self.treatment_levels),
+            "treatment_levels": [
+                level.item() if isinstance(level, np.generic) else level
+                for level in self.treatment_levels
+            ],
             "n_train_rows": self.n_train_rows,
             "n_treated": self.n_treated,
             "n_control": self.n_control,

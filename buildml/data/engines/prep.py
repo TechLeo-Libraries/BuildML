@@ -181,10 +181,22 @@ def prepare_design_frame(
 
     Examples
     --------
-    Prepare a design matrix for two features and a target::
+    .. code-block:: python
 
-        prep = prepare_design_frame(dataset, ["age", "region", "outcome"])
-        model.fit(prep.frame[["age", "region"]], prep.frame["outcome"])
+        import pandas as pd
+        from sklearn.datasets import make_classification
+        from sklearn.tree import DecisionTreeClassifier
+        from buildml import Session
+        X, y = make_classification(n_samples=80, n_features=4, n_informative=3, n_redundant=0, random_state=42)
+        frame = pd.DataFrame(X, columns=["age", "income", "spend", "visits"])
+        frame["target"] = y
+        session = Session.ingest(frame).set_roles({"target": "target"})
+        session.split(test_size=0.2, validation_size=0.2, stratify=True, random_state=42)
+        dataset, split_plan = session.dataset, session.split_plan
+        estimator = DecisionTreeClassifier(max_depth=3, random_state=42)
+        from buildml.data.engines.prep import prepare_design_frame
+        prep = prepare_design_frame(dataset, ["age", "income", "target"])
+        print(prep.frame.shape)
 
     See Also
     --------

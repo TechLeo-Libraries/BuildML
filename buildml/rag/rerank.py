@@ -1,24 +1,9 @@
-"""Re-order retrieved passages with a model that reads query and passage together.
+"""Rerank retrieved passages with a cross-encoder model.
 
-Retrieval is fast because the query and the passages never meet: each was
-embedded independently, and search is arithmetic on those vectors. That
-independence is the whole reason a corpus of a million chunks can be searched in
-milliseconds, and it is also the reason retrieval misses things. A vector
-committed to before the question was known cannot emphasise the part of the
-passage the question is about.
-
-A cross-encoder gives up the speed to recover the accuracy. It takes the query
-and one passage as a single input and produces a relevance score, which means it
-can attend to the query while reading: but it must run once per candidate, so
-it cannot search a corpus. It can only re-order a shortlist.
-
-The practical shape is: retrieve fifty cheaply, rerank them, keep five. Almost
-all of the quality gain and a bounded, predictable cost.
-
-See Also
---------
-buildml.rag.retrieve.retrieve : Where reranking is switched on.
-buildml.rag.embed : The bi-encoder side that produces the shortlist.
+A cross-encoder processes each query and candidate passage together and assigns
+a relevance score. Use it on a retrieved shortlist rather than the entire
+corpus. Increasing the candidate count increases computation; measure whether
+reranking improves retrieval quality on queries representative of your task.
 """
 
 from __future__ import annotations
@@ -94,8 +79,23 @@ class CrossEncoderReranker:
     --------
     Re-order a shortlist::
 
+        # Requires: pip install "buildml[rag]"; downloads cross-encoder weights on first use.
+        from buildml.rag.corpus import corpus_from_documents
+
+        corpus = corpus_from_documents([
+            {"doc_id": "refund", "text": "Refunds are available within 30 days of purchase.", "metadata": {"version": "2024"}},
+            {"doc_id": "cancel", "text": "Cancel a subscription from the account settings page.", "metadata": {"version": "2024"}},
+        ])
+        from buildml.rag.index import build_index
+        from buildml.rag.retrieve import retrieve
+
+        # Hashing runs locally without downloading an embedding model.
+        index = build_index(corpus, embedder="hashing", chunk_size=128, chunk_overlap=16)
+        from buildml.rag.rerank import CrossEncoderReranker
+        candidates = retrieve(index, "how do I cancel?", k=2).hits
         reranker = CrossEncoderReranker()
-        top = reranker.rerank("how do I cancel?", candidates, k=5)
+        top = reranker.rerank("how do I cancel?", candidates, k=2)
+        print([hit.doc_id for hit in top])
 
     See Also
     --------

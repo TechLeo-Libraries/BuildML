@@ -131,7 +131,7 @@ class CaseTrace:
         How much each neighbour counted. Equal under majority voting, inverse to
         distance under distance weighting.
     neighbor_solutions:
-        What each neighbour resolved to. Disagreement here is the honest signal
+        What each neighbour resolved to. Disagreement here is a signal
         that the prediction is uncertain.
     prediction:
         The combined answer.
@@ -392,6 +392,7 @@ def pairwise_distances(
     --------
     One query against three cases:
 
+    >>> from buildml.cbr.cases import pairwise_distances
     >>> import numpy as np
     >>> memory = np.array([[0.0, 0.0], [3.0, 4.0], [1.0, 0.0]])
     >>> pairwise_distances(np.array([0.0, 0.0]), memory, metric="euclidean")
@@ -514,6 +515,7 @@ def top_k_indices(distances: np.ndarray, k: int) -> np.ndarray:
 
     Examples
     --------
+    >>> from buildml.cbr.cases import top_k_indices
     >>> import numpy as np
     >>> top_k_indices(np.array([0.5, 0.1, 0.9, 0.3]), 2).tolist()
     [1, 3]
@@ -579,6 +581,7 @@ def distance_weights(
     --------
     A neighbour twice as far carries half the weight:
 
+    >>> from buildml.cbr.cases import distance_weights
     >>> distance_weights([0.5, 1.0, 2.0]).round(4).tolist()
     [2.0, 1.0, 0.5]
 
@@ -629,6 +632,7 @@ def encode_categoricals(
 
     Examples
     --------
+    >>> from buildml.cbr.cases import encode_categoricals
     >>> vocab = ["north", "south", "east"]
     >>> encode_categoricals(["south", "north", "west"], vocab).tolist()
     [1, 0, -1]

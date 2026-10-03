@@ -1,20 +1,12 @@
-"""Check for PyTorch without making it a hard requirement.
+"""Check optional PyTorch availability and import it when required.
 
-BuildML's deep learning path needs PyTorch; the rest of BuildML does not. This
-module is the boundary, so that installing BuildML does not drag in a
-multi-gigabyte dependency that most users of the classical path will never touch.
+Core classical workflows do not require PyTorch. Capability checks return a
+boolean, while ``require_torch`` returns the imported module or raises an error
+with installation guidance.
 
-Two shapes of check, used in different places. ``torch_available`` answers a
-question and returns a boolean: right for a capability matrix or a test skip.
-``require_torch`` returns the module or raises with an install hint: right at
-the point where the work genuinely cannot proceed.
-
-The checks are deliberately more careful than a plain import. Torch is
-unusually prone to being installed but broken: a CUDA wheel on a machine with
-mismatched drivers, or a Windows install whose DLL load fails. Both raise
-``OSError`` rather than ``ImportError``, and both are treated as unavailable :
-because from the caller's point of view an unusable install and a missing one
-are the same situation.
+An installed package may still fail to import because of incompatible native
+libraries. Windows probes run in a subprocess to contain native import crashes.
+Probe failures and timeouts are reported as unavailable.
 
 See Also
 --------
@@ -32,11 +24,15 @@ from buildml.core.errors import MissingExtraError
 
 _SUBPROCESS_IMPORT_CACHE: dict[str, bool] = {}
 
-# First import of these modules JIT-compiles or loads large graphs. A 12s
-# child-process cap then reports "unavailable" on a working extra (UMAP on
-# Windows is the known case). Torch stays on the short default: a hang there
-# is usually a broken DLL, not a slow compile.
+# These scientific stacks can exceed the default 12-second probe limit on
+# Windows even when they import successfully. Allow time for native libraries,
+# transitive imports, and JIT initialization while retaining a bounded probe.
 _SLOW_IMPORT_TIMEOUTS: dict[str, float] = {
+    "torch": 90.0,
+    "torch_geometric": 90.0,
+    "dowhy": 90.0,
+    "sdv": 90.0,
+    "sdmetrics": 90.0,
     "umap": 90.0,
     "hdbscan": 45.0,
     "sentence_transformers": 90.0,

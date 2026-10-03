@@ -75,13 +75,35 @@ class ServeHandle:
 
     Examples
     --------
-    Serve, use, and stop::
+    Start and stop a localhost server from a newly trained bundle::
 
-        handle = serve_bundle("artifacts/churn-pipeline", port=8123, trusted=True)
-        try:
-            requests.get(handle.url + "/health").json()
-        finally:
-            handle.stop()
+        # Install first: pip install "buildml[serve]"
+        import pandas as pd
+        from buildml import Session
+
+        frame = pd.DataFrame({'age': list(range(20, 60)), 'income': list(range(40, 80)),
+                              'approved': [0, 1] * 20})
+        session = Session.ingest(frame).set_roles({'age': 'feature', 'income': 'feature', 'approved': 'target'})
+        session.split(test_size=0.2, stratify=True, random_state=0)
+        from tempfile import TemporaryDirectory
+        from sklearn.linear_model import LogisticRegression
+
+        session.fit(LogisticRegression(max_iter=500), task='classification')
+        from buildml.serving.launch import serve_bundle
+        from urllib.request import urlopen
+
+        with TemporaryDirectory() as directory:
+            session.save_pipeline(directory + '/pipeline')
+            # Port 8123 must be available on this machine.
+            handle = serve_bundle(directory + '/pipeline', port=8123, trusted=True)
+            try:
+                with urlopen(handle.url + '/health') as response:
+                    print(response.status)
+            finally:
+                handle.stop()
+
+
+
 
     See Also
     --------
@@ -375,29 +397,35 @@ def serve_bundle(
 
     Examples
     --------
-    A development server on localhost::
+    Start and stop a localhost server from a newly trained bundle::
 
-        handle = serve_bundle("artifacts/churn-pipeline", port=8123, trusted=True)
-        try:
-            print(handle.url)
-        finally:
-            handle.stop()
+        # Install first: pip install "buildml[serve]"
+        import pandas as pd
+        from buildml import Session
 
-    Reachable from other hosts, and therefore authenticated::
+        frame = pd.DataFrame({'age': list(range(20, 60)), 'income': list(range(40, 80)),
+                              'approved': [0, 1] * 20})
+        session = Session.ingest(frame).set_roles({'age': 'feature', 'income': 'feature', 'approved': 'target'})
+        session.split(test_size=0.2, stratify=True, random_state=0)
+        from tempfile import TemporaryDirectory
+        from sklearn.linear_model import LogisticRegression
 
-        handle = serve_bundle(
-            "artifacts/churn-pipeline",
-            host="0.0.0.0",
-            port=8080,
-            api_keys=["rotate-me-2026-q1"],
-            trusted=True,
-        )
+        session.fit(LogisticRegression(max_iter=500), task='classification')
+        from buildml.serving.launch import serve_bundle
+        from urllib.request import urlopen
 
-    In a container, holding the process open::
+        with TemporaryDirectory() as directory:
+            session.save_pipeline(directory + '/pipeline')
+            # Port 8123 must be available on this machine.
+            handle = serve_bundle(directory + '/pipeline', port=8123, trusted=True)
+            try:
+                with urlopen(handle.url + '/health') as response:
+                    print(response.status)
+            finally:
+                handle.stop()
 
-        serve_bundle("/models/churn", host="0.0.0.0",
-                     api_keys=os.environ["SERVE_KEY"], blocking=True,
-                     trusted=True)
+
+
 
     See Also
     --------

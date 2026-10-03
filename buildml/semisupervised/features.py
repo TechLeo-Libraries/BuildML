@@ -22,6 +22,7 @@ def resolve_semisupervised_columns(
     reduce_plan: Any | None = None,
     prefer_reduce_components: bool = True,
     target_column: str,
+    allow_empty: bool = False,
 ) -> tuple[list[str], bool, list[str]]:
     """Resolve numeric feature columns for semi-supervised fit and predict.
 
@@ -42,6 +43,9 @@ def resolve_semisupervised_columns(
         Prefer reduced component columns when a reduce plan exists.
     target_column:
         Target column name excluded from feature selection.
+    allow_empty:
+        Allow automatic selection to return no numeric features. Used by
+        callers that can supply another representation, such as text embeddings.
 
     Returns
     -------
@@ -104,6 +108,8 @@ def resolve_semisupervised_columns(
         and pd.api.types.is_numeric_dtype(frame[c])
     ]
     if not names:
+        if allow_empty:
+            return [], False, disclosures
         raise ValidationError(
             "No numeric columns available for semi-supervised learning. "
             "Encode/scale first, or call reduce_dimensions."

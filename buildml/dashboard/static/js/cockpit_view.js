@@ -215,7 +215,7 @@ export function renderLedgerBody(ledger, purpose = {}, glossary = {}) {
       }
       ${callout(
         "warning",
-        "Jump chips scroll inside the readiness sheet. They are not domain boards; clicking never calls /api/domains/ledger-*.",
+        "Use the group links below to jump to a section of this readiness sheet.",
         { title: "Navigation" },
       )}
     </div>`;

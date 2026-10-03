@@ -8,8 +8,7 @@ discovery and is not imported from the package root.
 
 There is no automatic compatibility shim. Projects that depend on 1.x can keep
 their pinned environment, or migrate explicitly to :class:`buildml.Session`.
-Both choices are valid; the archive exists so you can compare behavior when
-porting, not to suggest the old release was unusable.
+The archive supports implementation comparisons during migration.
 
 What changed in 2.x
 -------------------

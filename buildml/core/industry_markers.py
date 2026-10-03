@@ -30,8 +30,8 @@ def _is_linux() -> bool:
 # package_import_name → marker predicate + human reason (mirrors pyproject.toml).
 _MARKER_SPECS: dict[str, tuple[bool, str]] = {
     "lightfm": (
-        _py_lt_313() and _not_windows(),
-        "python_version < '3.13' and sys_platform != 'win32'",
+        _py_lt_312() and _not_windows(),
+        "python_version < '3.12' and sys_platform != 'win32'",
     ),
     "giotto_tda": (
         _py_lt_313(),

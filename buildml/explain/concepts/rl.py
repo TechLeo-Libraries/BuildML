@@ -310,7 +310,7 @@ RL_NOTES: dict[str, ConceptNote] = {
                 "The epsilon schedule is part of the learned objective for on-policy control.",
             ),
             failure_modes=(
-                "Fixed high epsilon keeps the learned values pessimistic forever.",
+                "A fixed high epsilon continues exploratory actions, so the learned values describe that exploratory policy.",
                 "Comparing on-policy and off-policy returns without matching seeds.",
             ),
             anti_patterns=(
@@ -318,8 +318,10 @@ RL_NOTES: dict[str, ConceptNote] = {
                 "Assuming SARSA and Q-learning must converge to the same policy.",
             ),
             worked_example_pattern=(
-                "session.rl.fit(mode='tabular_q', algorithm='sarsa', "
-                "env_id='CliffWalking-v1', n_episodes=2000).",
+                "Fit a SARSA policy with mode='tabular_q', algorithm='sarsa', and "
+                "n_episodes=2000. Select the CliffWalking environment version registered "
+                "by your Gymnasium installation; session.learn('rl-sarsa-on-policy') "
+                "provides the complete example.",
             ),
             related_concepts=(
                 "rl-tabular-q-learning",
@@ -392,7 +394,7 @@ RL_NOTES: dict[str, ConceptNote] = {
             summary="PPO/DQN/A2C on small Gymnasium envs via SB3; defaults when rl-industry is installed.",
             definition=(
                 "session.rl.fit(backend='industry', mode='gym_sb3') trains Stable-Baselines3 "
-                "policies on honest small discrete-action envs. Requires "
+                "policies on small discrete-action environments. Requires "
                 "buildml[rl-industry] (SB3 + imitation + gymnasium + torch)."
             ),
             intuition=(

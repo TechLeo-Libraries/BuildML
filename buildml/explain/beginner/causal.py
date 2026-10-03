@@ -51,12 +51,24 @@ CAUSAL_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
+            "from pathlib import Path",
+            "import numpy as np",
+            "import pandas as pd",
+            "from buildml import Session",
+            "",
+            "rng = np.random.default_rng(42)",
+            'Path("artifacts").mkdir(exist_ok=True)',
+            "# Synthetic data with a known treatment effect; this is not a real policy study.",
+            "x = rng.normal(size=(240, 2))",
+            "p = 1 / (1 + np.exp(-(0.5 * x[:, 0] - 0.3 * x[:, 1])))",
+            "treatment = (rng.random(240) < p).astype(int)",
+            "outcome = 1.5 * treatment + x[:, 0] - 0.5 * x[:, 1] + rng.normal(size=240)",
+            'frame = pd.DataFrame({"x1": x[:, 0], "x2": x[:, 1], "treatment": treatment, "outcome": outcome})',
+            'session = Session.ingest(frame).set_roles({"x1": "feature", "x2": "feature", "treatment": "ignore", "outcome": "target"})',
+            "session.split(test_size=0.2, validation_size=0.2, random_state=42)",
             "session.causal.declare_assumptions(",
-            "    treatment='received_discount',",
-            "    outcome='renewed',",
-            "    confounders=['tenure_months', 'plan_tier', 'prior_usage'],",
-            "    estimand='ATE',",
-            "    acknowledge_unconfoundedness=True, acknowledge_positivity=True,",
+            '    treatment="treatment", outcome="outcome", confounders=["x1", "x2"],',
+            '    estimand="ATE", acknowledge_unconfoundedness=True, acknowledge_positivity=True,',
             ")",
         ),
         check=(
@@ -64,7 +76,14 @@ CAUSAL_BEGINNER: dict[str, BeginnerLayer] = _index(
             "Was any of your confounders recorded *after* the treatment?",
         ),
         tools=("declare_causal_assumptions", "fit_causal", "estimate_causal", "refute_causal"),
-        terms=("causal inference", "treatment", "confounder", "unconfoundedness", "positivity", "ATE"),
+        terms=(
+            "causal inference",
+            "treatment",
+            "confounder",
+            "unconfoundedness",
+            "positivity",
+            "ATE",
+        ),
         difficulty=FOUNDATION,
     ),
     _layer(
@@ -90,13 +109,13 @@ CAUSAL_BEGINNER: dict[str, BeginnerLayer] = _index(
             "When randomization was impossible or already happened and you are analyzing the results.",
         ),
         avoid=(
-            "Do not use it when the important confounders were not measured: the estimate will be confidently wrong.",
+            "Do not use it when the important confounders were not measured: the estimate may be biased even when its reported interval is narrow.",
             "Do not use it for instrumental-variable, front-door, or causal-discovery questions; this surface only does backdoor adjustment and says so.",
         ),
         myths=(
             (
                 "A causal estimate is more reliable than a predictive one because it is 'deeper'.",
-                "It rests on untestable assumptions. A predictive model's honesty can be checked on holdout data; a causal claim's central assumption cannot be checked at all.",
+                "It rests on untestable assumptions. Predictive accuracy can be checked on held-out data. The absence of unmeasured confounding cannot generally be established from observational data alone.",
             ),
             (
                 "A narrow confidence interval means the estimate is trustworthy.",
@@ -104,10 +123,28 @@ CAUSAL_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.causal.fit(method='aipw', random_state=0)",
+            "from pathlib import Path",
+            "import numpy as np",
+            "import pandas as pd",
+            "from buildml import Session",
+            "",
+            "rng = np.random.default_rng(42)",
+            'Path("artifacts").mkdir(exist_ok=True)',
+            "# Synthetic data with a known treatment effect; this is not a real policy study.",
+            "x = rng.normal(size=(240, 2))",
+            "p = 1 / (1 + np.exp(-(0.5 * x[:, 0] - 0.3 * x[:, 1])))",
+            "treatment = (rng.random(240) < p).astype(int)",
+            "outcome = 1.5 * treatment + x[:, 0] - 0.5 * x[:, 1] + rng.normal(size=240)",
+            'frame = pd.DataFrame({"x1": x[:, 0], "x2": x[:, 1], "treatment": treatment, "outcome": outcome})',
+            'session = Session.ingest(frame).set_roles({"x1": "feature", "x2": "feature", "treatment": "ignore", "outcome": "target"})',
+            "session.split(test_size=0.2, validation_size=0.2, random_state=42)",
+            "session.causal.declare_assumptions(",
+            '    treatment="treatment", outcome="outcome", confounders=["x1", "x2"],',
+            '    estimand="ATE", acknowledge_unconfoundedness=True, acknowledge_positivity=True,',
+            ")",
+            'session.causal.fit(backend="native", method="aipw", bootstrap_samples=20, random_state=42)',
             "estimate = session.causal.estimate()",
-            "print(estimate.ate, (estimate.ate_ci_low, estimate.ate_ci_high))",
-            "print(estimate.disclosures)",
+            "print(estimate.ate, estimate.ate_ci_low, estimate.ate_ci_high)",
         ),
         check=(
             "Which backdoor paths do your confounders close, and which stay open?",
@@ -120,9 +157,7 @@ CAUSAL_BEGINNER: dict[str, BeginnerLayer] = _index(
     _layer(
         "causal-t-learner",
         plain=(
-            "The T-learner is the most intuitive causal estimator. Train one ordinary model on the treated "
-            "rows and a second on the untreated rows. For every row, ask both models what they predict, and "
-            "the average gap between their answers is your estimated effect."
+            "The T-learner uses two outcome models. Train one ordinary model on the treated rows and a second on the untreated rows. For every row, ask both models what they predict, and the average gap between their answers is your estimated effect."
         ),
         analogy=(
             "Two forecasters, one who only studied sunny regions and one who only studied rainy ones. For "
@@ -147,7 +182,7 @@ CAUSAL_BEGINNER: dict[str, BeginnerLayer] = _index(
         myths=(
             (
                 "Two models are always better than one.",
-                "Splitting the data halves each model's training set, and any bias in either arm's model flows straight into the effect estimate.",
+                "Each model uses only its treatment arm, whose size depends on treatment prevalence. Bias in either outcome model can affect the estimated difference.",
             ),
             (
                 "A good predictive fit means a good causal estimate.",
@@ -155,9 +190,28 @@ CAUSAL_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.causal.fit(method='t_learner', random_state=0)",
+            "from pathlib import Path",
+            "import numpy as np",
+            "import pandas as pd",
+            "from buildml import Session",
+            "",
+            "rng = np.random.default_rng(42)",
+            'Path("artifacts").mkdir(exist_ok=True)',
+            "# Synthetic data with a known treatment effect; this is not a real policy study.",
+            "x = rng.normal(size=(240, 2))",
+            "p = 1 / (1 + np.exp(-(0.5 * x[:, 0] - 0.3 * x[:, 1])))",
+            "treatment = (rng.random(240) < p).astype(int)",
+            "outcome = 1.5 * treatment + x[:, 0] - 0.5 * x[:, 1] + rng.normal(size=240)",
+            'frame = pd.DataFrame({"x1": x[:, 0], "x2": x[:, 1], "treatment": treatment, "outcome": outcome})',
+            'session = Session.ingest(frame).set_roles({"x1": "feature", "x2": "feature", "treatment": "ignore", "outcome": "target"})',
+            "session.split(test_size=0.2, validation_size=0.2, random_state=42)",
+            "session.causal.declare_assumptions(",
+            '    treatment="treatment", outcome="outcome", confounders=["x1", "x2"],',
+            '    estimand="ATE", acknowledge_unconfoundedness=True, acknowledge_positivity=True,',
+            ")",
+            'session.causal.fit(backend="native", method="t_learner", bootstrap_samples=20, random_state=42)',
             "estimate = session.causal.estimate()",
-            "print(estimate.ate, (estimate.n_treated, estimate.n_control))",
+            "print(estimate.ate, estimate.n_treated, estimate.n_control)",
         ),
         check=(
             "How many rows are in your smaller treatment arm?",
@@ -190,8 +244,8 @@ CAUSAL_BEGINNER: dict[str, BeginnerLayer] = _index(
             "When you want an estimator whose assumptions are concentrated in one clearly inspectable model.",
         ),
         avoid=(
-            "Do not use it when propensities pile up near 0 or 1: that is a positivity violation and no amount of clipping fixes it honestly.",
-            "Do not use it alone when you can use a doubly robust method instead; AIPW gives you two chances to be right.",
+            "Propensities near 0 or 1 indicate limited overlap. Clipping weights can stabilize estimation but does not establish positivity.",
+            "Compare IPW with AIPW when both propensity and outcome models can be estimated adequately.",
         ),
         myths=(
             (
@@ -200,11 +254,30 @@ CAUSAL_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
             (
                 "A well-fitting propensity model means good balance.",
-                "A propensity model that predicts treatment perfectly is a disaster: it means the groups do not overlap at all.",
+                "Very accurate treatment prediction can indicate poor overlap, overfitting, or both. Inspect overlap and balance rather than optimizing predictive accuracy alone.",
             ),
         ),
         example=(
-            "session.causal.fit(method='ipw', clip_propensity=(0.01, 0.99), random_state=0)",
+            "from pathlib import Path",
+            "import numpy as np",
+            "import pandas as pd",
+            "from buildml import Session",
+            "",
+            "rng = np.random.default_rng(42)",
+            'Path("artifacts").mkdir(exist_ok=True)',
+            "# Synthetic data with a known treatment effect; this is not a real policy study.",
+            "x = rng.normal(size=(240, 2))",
+            "p = 1 / (1 + np.exp(-(0.5 * x[:, 0] - 0.3 * x[:, 1])))",
+            "treatment = (rng.random(240) < p).astype(int)",
+            "outcome = 1.5 * treatment + x[:, 0] - 0.5 * x[:, 1] + rng.normal(size=240)",
+            'frame = pd.DataFrame({"x1": x[:, 0], "x2": x[:, 1], "treatment": treatment, "outcome": outcome})',
+            'session = Session.ingest(frame).set_roles({"x1": "feature", "x2": "feature", "treatment": "ignore", "outcome": "target"})',
+            "session.split(test_size=0.2, validation_size=0.2, random_state=42)",
+            "session.causal.declare_assumptions(",
+            '    treatment="treatment", outcome="outcome", confounders=["x1", "x2"],',
+            '    estimand="ATE", acknowledge_unconfoundedness=True, acknowledge_positivity=True,',
+            ")",
+            'session.causal.fit(backend="native", method="ipw", clip_propensity=(0.01, 0.99), bootstrap_samples=20, random_state=42)',
             "estimate = session.causal.estimate()",
             "print(estimate.ate, estimate.disclosures)",
         ),
@@ -219,9 +292,7 @@ CAUSAL_BEGINNER: dict[str, BeginnerLayer] = _index(
     _layer(
         "causal-aipw",
         plain=(
-            "AIPW combines the two previous approaches: it models the outcome *and* the treatment, then "
-            "corrects each with the other. The payoff is called double robustness: if either of the two "
-            "models is right, the effect estimate stays honest even if the other is wrong."
+            "AIPW combines predicted outcomes with a correction based on the differences between observed and predicted outcomes, weighted by estimated treatment probabilities. Under the causal assumptions and regularity conditions, its estimate is consistent when either the propensity model or the outcome models are correctly specified. This property does not guarantee accuracy in a finite sample."
         ),
         analogy=(
             "Two independent safety checks on the same aircraft. You are not relying on both being perfect; "
@@ -236,7 +307,7 @@ CAUSAL_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         use=(
             "As the default choice when you are unsure which of the two nuisance models you trust more.",
-            "When the estimate will be scrutinized and you want the strongest defensible observational method available here.",
+            "When both outcome and propensity models are available and you want to compare a doubly robust estimate with simpler estimators.",
         ),
         avoid=(
             "Do not use it as a substitute for good confounder selection; if a common cause is missing, both models are wrong in the same direction and double robustness does nothing.",
@@ -249,13 +320,32 @@ CAUSAL_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
             (
                 "Double robustness protects against unmeasured confounding.",
-                "It does not. Nothing statistical does. That is what refutation checks and sensitivity analysis are for.",
+                "It does not remove bias from unmeasured confounding. Sensitivity analyses can examine how such bias would affect the conclusion; refutation checks can reveal some model failures.",
             ),
         ),
         example=(
-            "session.causal.fit(method='aipw', random_state=0)",
+            "from pathlib import Path",
+            "import numpy as np",
+            "import pandas as pd",
+            "from buildml import Session",
+            "",
+            "rng = np.random.default_rng(42)",
+            'Path("artifacts").mkdir(exist_ok=True)',
+            "# Synthetic data with a known treatment effect; this is not a real policy study.",
+            "x = rng.normal(size=(240, 2))",
+            "p = 1 / (1 + np.exp(-(0.5 * x[:, 0] - 0.3 * x[:, 1])))",
+            "treatment = (rng.random(240) < p).astype(int)",
+            "outcome = 1.5 * treatment + x[:, 0] - 0.5 * x[:, 1] + rng.normal(size=240)",
+            'frame = pd.DataFrame({"x1": x[:, 0], "x2": x[:, 1], "treatment": treatment, "outcome": outcome})',
+            'session = Session.ingest(frame).set_roles({"x1": "feature", "x2": "feature", "treatment": "ignore", "outcome": "target"})',
+            "session.split(test_size=0.2, validation_size=0.2, random_state=42)",
+            "session.causal.declare_assumptions(",
+            '    treatment="treatment", outcome="outcome", confounders=["x1", "x2"],',
+            '    estimand="ATE", acknowledge_unconfoundedness=True, acknowledge_positivity=True,',
+            ")",
+            'session.causal.fit(backend="native", method="aipw", bootstrap_samples=20, random_state=42)',
             "estimate = session.causal.estimate()",
-            "refutation = session.causal.refute(kind='placebo_treatment')",
+            'refutation = session.causal.refute(kind="placebo_treatment")',
             "print(estimate.ate, refutation.ate_shift)",
         ),
         check=(
@@ -269,9 +359,7 @@ CAUSAL_BEGINNER: dict[str, BeginnerLayer] = _index(
     _layer(
         "causal-eda-boundary",
         plain=(
-            "BuildML's exploratory tools: correlations, mutual information, feature importance, the "
-            "Teaching Studio: deliberately refuse to make causal claims. They describe association. "
-            "Causal statements only come from the declared-assumption path, and that separation is enforced."
+            "BuildML's exploratory tools describe associations and predictive relationships. They do not identify the effect of an intervention. The causal API estimates effects under explicitly declared assumptions, which still require domain justification."
         ),
         analogy=(
             "A thermometer tells you the room is warm. It does not tell you the heater caused it. Reading "
@@ -279,10 +367,10 @@ CAUSAL_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         steps=(
             "During exploration, read correlations and importances as prompts for questions.",
-            "Notice that the reports say 'associated with', never 'causes'. That wording is deliberate.",
+            "Interpret exploratory findings as associations rather than evidence that changing a feature will change the outcome.",
             "When someone asks a causal question, move to the causal path and declare assumptions.",
             "Keep the two clearly separated in your write-up so readers know which claim they are reading.",
-            "If assumptions cannot be defended, the honest answer is that the question cannot be answered from this data.",
+            "If the assumptions cannot be defended, report that these data do not support the proposed causal estimate.",
         ),
         use=(
             "EDA to generate hypotheses, spot data problems, and understand your dataset.",
@@ -295,7 +383,7 @@ CAUSAL_BEGINNER: dict[str, BeginnerLayer] = _index(
         myths=(
             (
                 "A very strong correlation is basically causal.",
-                "Strength is not evidence of direction or mechanism. A strong correlation with an unmeasured common cause is exactly as strong as a real effect.",
+                "Strength is not evidence of direction or mechanism. An unmeasured common cause can produce a strong correlation even when intervening on the measured feature would have no effect.",
             ),
             (
                 "Feature importance shows which levers to pull.",
@@ -303,10 +391,30 @@ CAUSAL_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "report = session.eda()             # association only, by design",
-            "# for a causal question, switch surfaces:",
-            "session.causal.declare_assumptions(treatment='...', outcome='...', confounders=[...])",
-            "session.causal.fit(method='aipw')",
+            "from pathlib import Path",
+            "import numpy as np",
+            "import pandas as pd",
+            "from buildml import Session",
+            "",
+            "rng = np.random.default_rng(42)",
+            'Path("artifacts").mkdir(exist_ok=True)',
+            "# Synthetic data with a known treatment effect; this is not a real policy study.",
+            "x = rng.normal(size=(240, 2))",
+            "p = 1 / (1 + np.exp(-(0.5 * x[:, 0] - 0.3 * x[:, 1])))",
+            "treatment = (rng.random(240) < p).astype(int)",
+            "outcome = 1.5 * treatment + x[:, 0] - 0.5 * x[:, 1] + rng.normal(size=240)",
+            'frame = pd.DataFrame({"x1": x[:, 0], "x2": x[:, 1], "treatment": treatment, "outcome": outcome})',
+            'session = Session.ingest(frame).set_roles({"x1": "feature", "x2": "feature", "treatment": "ignore", "outcome": "target"})',
+            "session.split(test_size=0.2, validation_size=0.2, random_state=42)",
+            'report = session.eda(partition="train", include_plots=False)',
+            "print(len(report.findings))",
+            "# The causal assumptions come from the data-generating design, not EDA.",
+            "session.causal.declare_assumptions(",
+            '    treatment="treatment", outcome="outcome", confounders=["x1", "x2"],',
+            '    estimand="ATE", acknowledge_unconfoundedness=True, acknowledge_positivity=True,',
+            ")",
+            'session.causal.fit(backend="native", method="aipw", bootstrap_samples=20, random_state=42)',
+            "print(session.causal.estimate().ate)",
         ),
         check=(
             "Is the question you are answering predictive or interventional?",
@@ -345,23 +453,48 @@ CAUSAL_BEGINNER: dict[str, BeginnerLayer] = _index(
         myths=(
             (
                 "The effect size is the deliverable.",
-                "The deliverable is the effect size *plus* the assumptions and refutations that make it credible. The number alone is unfalsifiable.",
+                "The deliverable is the effect size *plus* the assumptions and refutations that make it credible. Reviewers need the assumptions and analysis procedure to assess the estimate.",
             ),
             (
                 "Assumptions can be reconstructed from the code later.",
-                "Confounder choices reflect domain reasoning that lives in someone's head. Bundling them is how that reasoning survives.",
+                "The bundle records the declared confounder set. Document the domain reasoning for those choices separately; it cannot be reconstructed from column names alone.",
             ),
         ),
         example=(
-            "session.causal.save_bundle('artifacts/discount-effect')",
-            "review = Session.ingest(frame).causal.load_bundle('artifacts/discount-effect', trusted=True)",
-            "print(review.causal_plan.assumptions)",
+            "from pathlib import Path",
+            "import numpy as np",
+            "import pandas as pd",
+            "from buildml import Session",
+            "",
+            "rng = np.random.default_rng(42)",
+            'Path("artifacts").mkdir(exist_ok=True)',
+            "# Synthetic data with a known treatment effect; this is not a real policy study.",
+            "x = rng.normal(size=(240, 2))",
+            "p = 1 / (1 + np.exp(-(0.5 * x[:, 0] - 0.3 * x[:, 1])))",
+            "treatment = (rng.random(240) < p).astype(int)",
+            "outcome = 1.5 * treatment + x[:, 0] - 0.5 * x[:, 1] + rng.normal(size=240)",
+            'frame = pd.DataFrame({"x1": x[:, 0], "x2": x[:, 1], "treatment": treatment, "outcome": outcome})',
+            'session = Session.ingest(frame).set_roles({"x1": "feature", "x2": "feature", "treatment": "ignore", "outcome": "target"})',
+            "session.split(test_size=0.2, validation_size=0.2, random_state=42)",
+            "session.causal.declare_assumptions(",
+            '    treatment="treatment", outcome="outcome", confounders=["x1", "x2"],',
+            '    estimand="ATE", acknowledge_unconfoundedness=True, acknowledge_positivity=True,',
+            ")",
+            'session.causal.fit(backend="native", method="aipw", bootstrap_samples=20, random_state=42)',
+            'session.causal.save_bundle("artifacts/causal-model")',
+            'review = Session.ingest(frame).causal.load_bundle("artifacts/causal-model", trusted=True)',
+            "print(review.causal.plan.assumptions)",
         ),
         check=(
             "Could a reviewer reconstruct your confounder set from the artifact alone?",
             "Are your refutation results stored with the estimate?",
         ),
-        tools=("save_causal_bundle", "load_causal_bundle", "declare_causal_assumptions", "checkpoint_save"),
+        tools=(
+            "save_causal_bundle",
+            "load_causal_bundle",
+            "declare_causal_assumptions",
+            "checkpoint_save",
+        ),
         terms=("bundle", "checkpoint", "confounder", "causal inference"),
         difficulty=CORE,
     ),
@@ -389,7 +522,7 @@ CAUSAL_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         avoid=(
             "Do not use it as a shortcut past thinking about confounders; the graph is built from what you declared.",
-            "Do not install the extra for a one-off exploratory estimate.",
+            "Install this extra when you need the DoWhy backend; native estimators are available without it.",
         ),
         myths=(
             (
@@ -402,10 +535,29 @@ CAUSAL_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "# pip install \"buildml[causal-industry]\"",
-            "session.causal.fit(backend='dowhy', method='backdoor_propensity_score')",
-            "print(session.causal.refute(kind='random_common_cause'))",
-            "print(session.causal.refute(kind='placebo_treatment'))",
+            '# Requires: python -m pip install "buildml[causal-industry]"',
+            "from pathlib import Path",
+            "import numpy as np",
+            "import pandas as pd",
+            "from buildml import Session",
+            "",
+            "rng = np.random.default_rng(42)",
+            'Path("artifacts").mkdir(exist_ok=True)',
+            "# Synthetic data with a known treatment effect; this is not a real policy study.",
+            "x = rng.normal(size=(240, 2))",
+            "p = 1 / (1 + np.exp(-(0.5 * x[:, 0] - 0.3 * x[:, 1])))",
+            "treatment = (rng.random(240) < p).astype(int)",
+            "outcome = 1.5 * treatment + x[:, 0] - 0.5 * x[:, 1] + rng.normal(size=240)",
+            'frame = pd.DataFrame({"x1": x[:, 0], "x2": x[:, 1], "treatment": treatment, "outcome": outcome})',
+            'session = Session.ingest(frame).set_roles({"x1": "feature", "x2": "feature", "treatment": "ignore", "outcome": "target"})',
+            "session.split(test_size=0.2, validation_size=0.2, random_state=42)",
+            "session.causal.declare_assumptions(",
+            '    treatment="treatment", outcome="outcome", confounders=["x1", "x2"],',
+            '    estimand="ATE", acknowledge_unconfoundedness=True, acknowledge_positivity=True,',
+            ")",
+            'session.causal.fit(backend="dowhy", method="backdoor_propensity_score", bootstrap_samples=20, random_state=42)',
+            'print(session.causal.refute(kind="random_common_cause"))',
+            'print(session.causal.refute(kind="placebo_treatment"))',
         ),
         check=(
             "Did identification succeed, and under which adjustment set?",
@@ -444,7 +596,7 @@ CAUSAL_BEGINNER: dict[str, BeginnerLayer] = _index(
         myths=(
             (
                 "Heterogeneous effects are just subgroup analyses done properly.",
-                "They are estimated jointly with regularization, which controls the multiple-comparisons problem that makes naive subgroup hunting so unreliable.",
+                "Regularization can reduce overfitting, but estimated subgroup differences still need uncertainty assessment and independent validation. Searching many subgroups can introduce selection bias.",
             ),
             (
                 "A policy tree tells you the optimal policy.",
@@ -452,8 +604,27 @@ CAUSAL_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "# pip install \"buildml[causal-industry]\"",
-            "session.causal.fit(backend='econml', method='causal_forest', random_state=0)",
+            '# Requires: python -m pip install "buildml[causal-industry]"',
+            "from pathlib import Path",
+            "import numpy as np",
+            "import pandas as pd",
+            "from buildml import Session",
+            "",
+            "rng = np.random.default_rng(42)",
+            'Path("artifacts").mkdir(exist_ok=True)',
+            "# Synthetic data with a known treatment effect; this is not a real policy study.",
+            "x = rng.normal(size=(240, 2))",
+            "p = 1 / (1 + np.exp(-(0.5 * x[:, 0] - 0.3 * x[:, 1])))",
+            "treatment = (rng.random(240) < p).astype(int)",
+            "outcome = 1.5 * treatment + x[:, 0] - 0.5 * x[:, 1] + rng.normal(size=240)",
+            'frame = pd.DataFrame({"x1": x[:, 0], "x2": x[:, 1], "treatment": treatment, "outcome": outcome})',
+            'session = Session.ingest(frame).set_roles({"x1": "feature", "x2": "feature", "treatment": "ignore", "outcome": "target"})',
+            "session.split(test_size=0.2, validation_size=0.2, random_state=42)",
+            "session.causal.declare_assumptions(",
+            '    treatment="treatment", outcome="outcome", confounders=["x1", "x2"],',
+            '    estimand="ATE", acknowledge_unconfoundedness=True, acknowledge_positivity=True,',
+            ")",
+            'session.causal.fit(backend="econml", method="causal_forest", bootstrap_samples=20, random_state=42)',
             "estimate = session.causal.estimate()",
             "print(estimate.ate, estimate.disclosures)",
         ),

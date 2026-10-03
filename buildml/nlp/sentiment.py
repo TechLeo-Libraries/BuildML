@@ -114,6 +114,7 @@ def score_document(text: Any, *, threshold: float = 0.05) -> tuple[float, str, i
 
     Examples
     --------
+    >>> from buildml.nlp.sentiment import score_document
     >>> score, label, matched = score_document("The service was not very good.")
     >>> label
     'negative'
@@ -274,9 +275,15 @@ def analyze_sentiment(
 
     Examples
     --------
-    >>> result = analyze_sentiment(dataset, split_plan, partition="test")  # doctest: +SKIP
-    >>> result.distribution  # doctest: +SKIP
-    {'positive': 0.61, 'neutral': 0.22, 'negative': 0.17}
+    >>> import pandas as pd
+    >>> from buildml import Session
+    >>> texts = ["card payment declined", "invoice billing question", "payment refund requested", "billing invoice amount", "password login broken", "technical account access", "login password reset", "technical account error"] * 3
+    >>> frame = pd.DataFrame({"ticket_body": texts, "label": ["billing"] * 4 + ["technical"] * 4 + ["billing"] * 4 + ["technical"] * 4 + ["billing"] * 4 + ["technical"] * 4})
+    >>> session = Session.ingest(frame).set_roles({"ticket_body": "feature", "label": "target"})
+    >>> _ = session.split(test_size=0.25, stratify=True, random_state=42)
+    >>> dataset, split_plan = session.dataset, session.split_plan
+    >>> from buildml.nlp.sentiment import analyze_sentiment
+    >>> result = analyze_sentiment(dataset, split_plan, text_column="ticket_body", partition="test")
 
     See Also
     --------

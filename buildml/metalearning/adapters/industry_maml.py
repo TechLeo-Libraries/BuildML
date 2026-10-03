@@ -279,7 +279,7 @@ def meta_train_maml(
 
     notes = [
         "Industry MAML meta-train: first-order tabular MAML on episodic "
-        "support/query tasks (honest small-scale: not second-order MAML-at-scale)."
+        "support/query tasks using a small-scale first-order approximation."
     ]
     if learn2learn_available():
         import learn2learn as l2l

@@ -13,9 +13,9 @@ from buildml.data.splits import SplitPlan, assert_fit_partition, frame_for_parti
 
 
 def require_split(split_plan: SplitPlan | None) -> SplitPlan:
-    """Import optional dependency for split or raise MissingExtraError.
+    """Require an existing split before synthesizer fitting.
 
-Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+Returns the supplied split unchanged; missing splits raise ValidationError.
 
 Parameters
 ----------
@@ -25,7 +25,7 @@ split_plan:
 Returns
 -------
 SplitPlan
-    Fitted plan object (SplitPlan) with private estimators attached.
+    The supplied split plan.
 
 Raises
 ------
@@ -41,9 +41,9 @@ ValidationError
 
 
 def assert_train_only_fit(partition: str) -> None:
-    """Synthesizers always fit on Session train: never validation/test.
+    """Reject synthesizer fitting outside the training partition.
 
-Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+Validation and test rows must remain separate from generator fitting to avoid leaking holdout structure.
 
 Parameters
 ----------
@@ -52,8 +52,8 @@ partition:
 
 Raises
 ------
-ValidationError
-    When preconditions for this operation are not met.
+LeakageError
+    If the requested partition is not train.
     """
     if partition != "train":
         raise LeakageError(
@@ -68,9 +68,9 @@ def require_train_frame(
     dataset: Dataset,
     split_plan: SplitPlan,
 ) -> pd.DataFrame:
-    """Import optional dependency for train frame or raise MissingExtraError.
+    """Return a copy of the training rows for generator fitting.
 
-Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+Checks that the split permits fitting on train before selecting its row indices.
 
 Parameters
 ----------
@@ -82,7 +82,7 @@ split_plan:
 Returns
 -------
 pd.DataFrame
-    Return value (pd.DataFrame) produced by this operation.
+    Independent copy of the selected rows.
     """
     assert_fit_partition(split_plan, "train")
     return frame_for_partition(dataset, split_plan, "train").copy()
@@ -96,9 +96,9 @@ def resolve_columns(
     target_column: str | None = None,
     method: str = "gaussian_copula",
 ) -> list[str]:
-    """Choose columns to model; never silently drop the target for SMOTE.
+    """Select columns for a tabular synthesizer.
 
-Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+Explicit columns are checked against the training frame. Otherwise use feature roles and the target, excluding ID, ignore, and weight roles; SMOTE requires a target.
 
 Parameters
 ----------
@@ -107,7 +107,7 @@ dataset:
 train:
     train (pd.DataFrame).
 columns:
-    Optional explicit feature column list; ``None`` auto-selects numerics.
+    Explicit modeled columns; ``None`` selects columns from dataset roles.
 target_column:
     Name of the supervised target column.
 method:
@@ -116,7 +116,7 @@ method:
 Returns
 -------
 list[str]
-    List of string identifiers from the catalog.
+    Ordered column names to model.
 
 Raises
 ------
@@ -172,9 +172,9 @@ def partition_frame(
     split_plan: SplitPlan,
     partition: str,
 ) -> pd.DataFrame:
-    """Perform partition frame for the Session-facing workflow step.
+    """Return a copy of the requested dataset partition.
 
-Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+The special partition name ``all`` selects the full frame; other names are resolved through the supplied split.
 
 Parameters
 ----------
@@ -188,7 +188,7 @@ partition:
 Returns
 -------
 pd.DataFrame
-    Return value (pd.DataFrame) produced by this operation.
+    Independent copy of the selected rows.
     """
     if partition == "all":
         return dataset.frame.copy()

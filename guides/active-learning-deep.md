@@ -18,11 +18,11 @@ installed. Pass `strategy="core_set"` (or another industry name) with
 `backend="industry"` with the default `margin` strategy is refused:
 the strategy has to belong to that backend.
 
-The API refuses to query validation or test, invent an oracle, or score
-unlabeled holdout rows as truth. You decide who labels, when the budget
+The API rejects queries on validation or test and requires known labels
+for evaluation. Labels must come from a person or a separate labeling system. You decide who labels, when the budget
 stops, and whether each round refits.
 
-Short on-ramp: [active learning quickstart](quickstart-active-learning.md).
+Quickstart: [active learning quickstart](quickstart-active-learning.md).
 Proof: [active-labeling-budget](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/active-labeling-budget).
 This is not [semi-supervised](semisupervised-deep.md): that path
 propagates missing labels without a human loop.
@@ -47,8 +47,6 @@ import numpy as np
 import pandas as pd
 
 from buildml import Session
-from buildml.data.dataset import Dataset
-from buildml.ingest.detect import schema_from_dataframe
 
 rng = np.random.default_rng(0)
 x0 = rng.normal([-1.0, -1.0], 0.55, size=(140, 2))
@@ -69,12 +67,12 @@ full = session.to_pandas().copy()
 train_idx = list(session.split_plan.train_indices)
 blank = rng.choice(train_idx, size=int(0.85 * len(train_idx)), replace=False)
 full.loc[blank, "label"] = np.nan
-session._dataset = Dataset.from_transformed(
-    session.dataset,
-    full,
-    schema=schema_from_dataframe(full),
-    roles=dict(session.dataset.roles),
-)
+# Re-ingest the masked table while preserving the original row assignments.
+session = (Session.ingest(full)
+    .set_roles(dict(session.dataset.roles))
+    .inject_split(train_indices=session.split_plan.train_indices,
+                  validation_indices=session.split_plan.validation_indices,
+                  test_indices=session.split_plan.test_indices))
 
 fit = session.active_learning.fit(
     strategy="margin",
@@ -107,11 +105,9 @@ and a spent budget.
 ## Pool convention
 
 Do the split first, then blank **train** only. If you blank holdout
-targets and treat them as the pool, eval has nothing honest to score.
+targets and treat them as the pool, evaluation has no known labels to compare against.
 
-Production data may already arrive with missing train labels. Same
-contract: holdout should stay labeled if you want `evaluate` to mean
-anything.
+Production data may already arrive with missing train labels. Keep holdout labels available for evaluation.
 
 ## Backends and strategies
 
@@ -124,12 +120,64 @@ anything.
 Industry CoreSet and QBC scoring runs in-tree on numpy/sklearn. That
 backend is usable without the extra. The extra is an optional
 scikit-activeml host path. If that import is broken, query scoring
-falls back to the native scorer and says so. Seeing the package name
-on disk is not a promise that skactiveml imports cleanly.
+falls back to the native scorer and says so. The capability matrix reports whether the installed package imports successfully.
 
 To see what this machine actually has:
 
 ```python
+import numpy as np
+import pandas as pd
+
+from buildml import Session
+
+rng = np.random.default_rng(0)
+x0 = rng.normal([-1.0, -1.0], 0.55, size=(140, 2))
+x1 = rng.normal([1.2, 1.0], 0.55, size=(140, 2))
+frame = pd.DataFrame(np.vstack([x0, x1]), columns=["x", "y"])
+frame["label"] = [0] * 140 + [1] * 140
+# Hidden copy for this example's simulated oracle only. The library never sees it.
+truth = frame["label"].copy()
+
+session = (
+    Session.ingest(frame)
+    .set_roles({"x": "feature", "y": "feature", "label": "target"})
+    .split(test_size=0.25, stratify=True, random_state=0)
+    .scale(method="standard")
+)
+
+full = session.to_pandas().copy()
+train_idx = list(session.split_plan.train_indices)
+blank = rng.choice(train_idx, size=int(0.85 * len(train_idx)), replace=False)
+full.loc[blank, "label"] = np.nan
+# Re-ingest the masked table while preserving the original row assignments.
+session = (Session.ingest(full)
+    .set_roles(dict(session.dataset.roles))
+    .inject_split(train_indices=session.split_plan.train_indices,
+                  validation_indices=session.split_plan.validation_indices,
+                  test_indices=session.split_plan.test_indices))
+
+fit = session.active_learning.fit(
+    strategy="margin",
+    base_estimator="logistic_regression",
+    batch_size=8,
+    label_budget=24,
+)
+print(fit.n_labeled_train, fit.n_unlabeled_pool, fit.strategy)
+
+for round_i in range(3):
+    q = session.active_learning.suggest_query(batch_size=8)
+    if not q.indices:
+        break
+    human_labels = [int(truth.loc[i]) for i in q.indices]
+    labeled = session.active_learning.label_rows(
+        indices=q.indices, labels=human_labels
+    )
+    print(round_i, labeled.n_newly_labeled, labeled.budget_remaining)
+
+ev = session.active_learning.evaluate(partition="test")
+print(ev.n_labeled_eval, ev.metrics)
+session.active_learning.save_bundle("artifacts/activelearning_bundle")
+
 session.active_learning.capability_matrix()
 ```
 
@@ -179,11 +227,11 @@ Do not quote train accuracy after each query as holdout performance.
 estimator, encoder, labeled and pool indices, query history, budget,
 backend. A Session checkpoint does not embed the learner. Loaders that
 deserialize pickle default to `trusted=False`. Pass `trusted=True` only
-for a file you made.
+for a file you created or whose source and contents you trust.
 
 [Artifacts](artifacts-checkpoints-bundles.md)
 
-## When it refuses
+## Validation errors and prerequisites
 
 | What you see | What happened |
 | --- | --- |

@@ -9,7 +9,7 @@ BuildML supports Python 3.10 through 3.13.
    (Apache-2.0). The command selects the latest published stable release.
    This checkout contains version ``2.6.3``. Wheels ``2.4.0a3``–``2.6.0``
    omit ``operation_index.json`` and cannot ``import buildml``; install
-   ``buildml>=2.6.1``. You are done when this works::
+   ``buildml>=2.6.1``. Verify the installation with::
 
       python -c "from buildml import Session; print(Session)"
 
@@ -26,12 +26,13 @@ Install from PyPI
 That is the current stable Session line. Optional extras append the same
 way, for example ``pip install "buildml[torch]"``.
 
-GitHub tip of main, or an editable checkout:
+To install the current development version from GitHub:
 
 .. code-block:: console
 
    pip install "git+https://github.com/TechLeo-Libraries/BuildML.git"
-   pip install -e ".[dev]"
+
+For an editable installation, follow the source checkout instructions below.
 
 Extras by job
 -------------
@@ -64,7 +65,7 @@ only what the workflow uses.
    * - Excel input
      - ``buildml[excel]``
      - spreadsheet ingest
-   * - Time-series analysis depth
+   * - Time-series analysis
      - ``buildml[timeseries]``, ``[timeseries-prophet]``, ``[timeseries-ml]``
      - statsmodels / Prophet / neuralforecast when wheels resolve
    * - Torch / speech / vision
@@ -75,7 +76,7 @@ only what the workflow uses.
      - dense / rerank backends; LangChain hooks
    * - AI operator
      - ``buildml[ai]``
-     - LLM operator (bring your own key)
+     - LLM operator (requires provider credentials)
    * - Serve / ONNX
      - ``buildml[serve]``, ``[onnx]``
      - local FastAPI serve; ONNX checker
@@ -91,7 +92,7 @@ only what the workflow uses.
    * - Classical bundle
      - ``buildml[all-classical]``
      - engines + imbalanced + eda + excel + dashboard + optuna + automl
-   * - Industry meta
+   * - Optional backend collection
      - ``buildml[production]``
      - best-effort industry extras (markers skip known-broken wheels)
 
@@ -113,8 +114,8 @@ remains. Core sklearn paths still install. Check the domain
 capability matrix (``session.automl.capability_matrix()``, and the same
 pattern on other facades).
 
-Prefer **Python 3.11** for the full industry extra set; 3.12 still
-covers Torch and most extras except ``learn2learn``.
+Python **3.11** supports a wider selection of optional backends. Check the
+requirements of the specific backend before choosing a Python version.
 Always use a project virtual environment. The staged-install guide is
 ``guides/safe-install-and-runtime.md``.
 

@@ -473,6 +473,8 @@ def tokenize_document(
 
     Examples
     --------
+    >>> from buildml.nlp.normalize import build_normalize_plan
+    >>> from buildml.nlp.normalize import tokenize_document
     >>> plan = build_normalize_plan()
     >>> tokenize_document("Visit https://example.com -- it's GREAT!", plan)
     ['visit', "it's", 'great']
@@ -693,6 +695,7 @@ def split_sentences(text: Any, *, max_sentences: int | None = None) -> list[str]
 
     Examples
     --------
+    >>> from buildml.nlp.normalize import split_sentences
     >>> split_sentences("Dr. Smith arrived. The meeting started late.")
     ['Dr. Smith arrived.', 'The meeting started late.']
 

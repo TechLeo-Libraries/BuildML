@@ -790,16 +790,28 @@ def search_torch(
 
     Examples
     --------
-    Search, then evaluate honestly::
+    .. code-block:: python
 
-        result = search_torch(
-            dataset,
-            split_plan=split_plan,
-            param_grid={"learning_rate": [1e-3, 1e-4], "dropout": [0.0, 0.2]},
-            n_folds=3,
-        )
-        result.best_params      # use this
-        result.best_metrics     # do not report this
+        # Install PyTorch support first: pip install "buildml[torch]"
+        import pandas as pd
+        import torch
+        from sklearn.datasets import make_classification
+        from buildml import Session
+        X, y = make_classification(n_samples=40, n_features=4, n_informative=3, n_redundant=0, random_state=42)
+        frame = pd.DataFrame(X, columns=["a", "b", "c", "d"])
+        frame["target"] = y
+        session = Session.ingest(frame).set_roles({"target": "target"})
+        session.split(test_size=0.2, validation_size=0.2, stratify=True, random_state=42)
+        dataset, split_plan = session.dataset, session.split_plan
+        from buildml.dl.loaders import make_loaders
+        from buildml.dl.types import TrainConfig
+        from buildml.dl.train import train_supervised_module
+        bundle = make_loaders(dataset, split_plan, task="classification")
+        torch.manual_seed(42)
+        module = torch.nn.Linear(4, 2)
+        from buildml.dl.search import search_torch
+        result = search_torch(dataset, split_plan=split_plan, param_grid={"learning_rate": [0.001, 0.01]}, n_folds=2, epochs=1)
+        print(result.best_params)
 
     See Also
     --------
@@ -995,18 +1007,28 @@ def nested_cv_torch(
 
     Examples
     --------
-    Honest estimate with selection included::
+    .. code-block:: python
 
-        result = nested_cv_torch(
-            dataset,
-            split_plan=split_plan,
-            param_grid={"learning_rate": [1e-3, 1e-4]},
-            outer_cv=3,
-            inner_cv=2,
-            epochs=10,
-        )
-        result.mean_metrics        # honest
-        result.best_params_per_fold  # disagreement means the space is flat
+        # Install PyTorch support first: pip install "buildml[torch]"
+        import pandas as pd
+        import torch
+        from sklearn.datasets import make_classification
+        from buildml import Session
+        X, y = make_classification(n_samples=40, n_features=4, n_informative=3, n_redundant=0, random_state=42)
+        frame = pd.DataFrame(X, columns=["a", "b", "c", "d"])
+        frame["target"] = y
+        session = Session.ingest(frame).set_roles({"target": "target"})
+        session.split(test_size=0.2, validation_size=0.2, stratify=True, random_state=42)
+        dataset, split_plan = session.dataset, session.split_plan
+        from buildml.dl.loaders import make_loaders
+        from buildml.dl.types import TrainConfig
+        from buildml.dl.train import train_supervised_module
+        bundle = make_loaders(dataset, split_plan, task="classification")
+        torch.manual_seed(42)
+        module = torch.nn.Linear(4, 2)
+        from buildml.dl.search import nested_cv_torch
+        result = nested_cv_torch(dataset, split_plan=split_plan, param_grid={"learning_rate": [0.001, 0.01]}, outer_cv=2, inner_cv=2, epochs=1)
+        print(result.mean_metrics)
 
     See Also
     --------

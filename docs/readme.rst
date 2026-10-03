@@ -4,22 +4,19 @@ Overview
 BuildML is a Python machine-learning library. One object holds your
 data, the train / validation / test split, preprocessing, the model, and
 the history of what you ran. That object is :class:`buildml.Session`.
-A Session is a unified, stateful ML lifecycle. Enforced leakage
-safeguards, fold-local preprocessing, contextual teaching, workflow
-guidance, checkpointing, and auditable export live on that same object.
 
 You say which columns are features, which one is the target, and how to
-split. After that, preparation and fitting learn from the training rows
-only. Validation and test get the frozen version. Skip the split and the
-call fails instead of leaking statistics into the holdout.
+split. Preprocessing steps that estimate parameters and model fitting use
+training rows. The resulting plans are then applied to validation and test
+rows. These fitting operations require a split.
 
-A Session also keeps the story of the run: roles, membership, fitted
-plans, the optional estimator, and every operation you called. That is
+A Session also records the run's state: roles, membership, fitted
+plans, the optional estimator, and recorded Session operations. That is
 why you can ask it what a step means (``session.explain``), learn the
 idea behind a word (``session.learn``), see what is blocked
 (``session.workflow``), or write a local HTML walkthrough
-(``session.walkthrough``). Those surfaces teach the contract. They do
-not inspect your data or certify that a split matches the real world.
+(``session.walkthrough``). These methods describe recorded state and prerequisites; selecting a split suitable
+for the prediction task requires knowledge of the data.
 
 The same Session hosts forecasting, NLP, graph and knowledge graphs, RAG,
 Torch, and other domains. Some paths work with the core installation;

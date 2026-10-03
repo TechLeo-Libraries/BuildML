@@ -1,4 +1,4 @@
-"""Knowledge-graph backend catalog and honest capability matrix."""
+"""Knowledge-graph backend catalog and capability matrix."""
 
 from __future__ import annotations
 
@@ -14,7 +14,7 @@ KgBackendName = Literal["native", "pykeen"]
 
 
 def kg_capability_matrix() -> dict[str, Any]:
-    """Build the honest capability matrix for knowledge-graph backends.
+    """Build the capability matrix for knowledge-graph backends.
 
     Reports native vs PyKEEN methods, evaluation metrics, query modes, install
     hints, and explicit non-goals for teaching overlays and Session walkthroughs.
@@ -162,7 +162,7 @@ def resolve_backend_method(
     backend: KgBackendName | None,
     method: str,
 ) -> tuple[KgBackendName, str]:
-    """Validate backend/method pairing and apply honest defaults.
+    """Validate backend/method pairing and apply documented defaults.
 
     Infers backend from method when omitted, checks install status, and
     normalises method aliases before fit proceeds.

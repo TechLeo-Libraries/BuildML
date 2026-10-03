@@ -73,10 +73,16 @@ class ProviderConfig:
 
     Examples
     --------
-    Read the key from the environment::
+    Prepare configuration without making an API request::
 
-        config = ProviderConfig(model="gpt-4o-mini")
-        provider = OpenAIProvider(config)
+        import os
+        from buildml.ai.provider import ProviderConfig
+
+        # Set BUILDML_EXAMPLE_MODEL to the model identifier supported by your provider.
+        config = ProviderConfig(model=os.environ.get('BUILDML_EXAMPLE_MODEL', 'configured-model'))
+        print(config.model)
+
+
 
     See Also
     --------
@@ -294,11 +300,16 @@ class MockProvider:
 
     Examples
     --------
-    Script a two-step run::
+    Script a tool request and a response offline::
 
+        from buildml.ai.provider import MockProvider
+
+        # Scripted responses demonstrate the API without contacting an AI service.
         provider = MockProvider()
-        provider.queue_tool_calls([("describe_dataset", {})])
-        provider.queue_responses(["Numeric target; try regression."])
+        provider.queue_tool_calls([('describe_dataset', {})])
+        provider.queue_responses(['This is a scripted demonstration.'])
+
+
 
     See Also
     --------
@@ -380,13 +391,16 @@ class MockProvider:
 
         Examples
         --------
-        A three-step pipeline::
+        Queue a scripted sequence offline::
 
-            provider.queue_tool_calls([
-                ("describe_dataset", {}),
-                ("suggest_roles", {}),
-                ("split_data", {"test_size": 0.2}),
-            ])
+            from buildml.ai.provider import MockProvider
+
+            # Scripted responses demonstrate the API without contacting an AI service.
+            provider = MockProvider()
+            provider.queue_tool_calls([('describe_dataset', {}), ('suggest_roles', {}),
+                                       ('split', {'test_size': 0.2})])
+
+
 
         See Also
         --------
@@ -526,14 +540,16 @@ class OpenAIProvider:
 
     Examples
     --------
-    Point at a local compatible server::
+    Initialize a local compatible client without sending a request::
 
-        config = ProviderConfig(
-            model="local-model",
-            base_url="http://localhost:8000/v1",
-            api_key="not-used",
-        )
+        # Install first: pip install "buildml[ai]"
+        from buildml.ai.provider import OpenAIProvider, ProviderConfig
+
+        # Replace the model and address with your running compatible server's settings.
+        config = ProviderConfig(model='local-model', base_url='http://localhost:8000/v1', api_key='not-used')
         provider = OpenAIProvider(config)
+
+
 
     See Also
     --------

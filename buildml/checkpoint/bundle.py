@@ -209,8 +209,8 @@ def save_checkpoint(
     splits, history, and plans: not a model. Use a pipeline bundle for that,
     and save both when a run needs to be both resumable and deployable.
 
-    **The split is what makes a resume honest.** Everything else could be
-    recomputed; the exact partition membership could not.
+    **Saved splits preserve partition membership.** Restoring the stored row
+    assignments avoids depending on a new split reproducing the original one.
 
     **A query plan cannot be saved, only its result.** Canonical
     ``frame.parquet`` stays the interchange source of truth and keeps older
@@ -225,18 +225,25 @@ def save_checkpoint(
 
     Examples
     --------
-    Save mid-loop, resume later, and confirm the split survived::
+    .. code-block:: python
 
-        save_checkpoint(
-            "artifacts/run-01",
-            dataset=dataset,
-            split_plan=split_plan,
-            history=session.history(),
-            plans=session.plans(),
-        )
-
-        restored = load_checkpoint("artifacts/run-01")
-        assert restored.split_plan is not None
+        import pandas as pd
+        from sklearn.datasets import make_classification
+        from sklearn.tree import DecisionTreeClassifier
+        from buildml import Session
+        X, y = make_classification(n_samples=80, n_features=4, n_informative=3, n_redundant=0, random_state=42)
+        frame = pd.DataFrame(X, columns=["age", "income", "spend", "visits"])
+        frame["target"] = y
+        session = Session.ingest(frame).set_roles({"target": "target"})
+        session.split(test_size=0.2, validation_size=0.2, stratify=True, random_state=42)
+        dataset, split_plan = session.dataset, session.split_plan
+        estimator = DecisionTreeClassifier(max_depth=3, random_state=42)
+        from tempfile import TemporaryDirectory
+        from buildml.checkpoint.bundle import save_checkpoint, load_checkpoint
+        with TemporaryDirectory() as directory:
+            path = save_checkpoint(directory + "/checkpoint", dataset=dataset, split_plan=split_plan)
+            restored = load_checkpoint(path, trusted=True)
+            assert restored.split_plan is not None
 
     See Also
     --------

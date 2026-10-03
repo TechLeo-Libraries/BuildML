@@ -671,10 +671,24 @@ def build_multimodal_fusion(
 
     Examples
     --------
-    Build straight from the loaders' contract::
+    .. code-block:: python
 
-        bundle = make_multimodal_loaders(dataset, split_plan, image_column="photo")
+        # Install PyTorch support first: pip install "buildml[torch]"
+        import pandas as pd
+        import torch
+        from buildml import Session
+        from buildml.dl.text import make_text_loaders
+        from buildml.dl.models import build_text_classifier
+        frame = pd.DataFrame({"review": ["good service", "poor service", "excellent value", "bad value"] * 5, "target": [1, 0, 1, 0] * 5})
+        session = Session.ingest(frame).set_roles({"target": "target"})
+        session.split(test_size=0.2, stratify=True, random_state=42)
+        from buildml.dl.multimodal import make_multimodal_loaders, build_multimodal_fusion
+        frame["amount"] = range(len(frame))
+        session = Session.ingest(frame).set_roles({"target": "target"})
+        session.split(test_size=0.2, stratify=True, random_state=42)
+        bundle = make_multimodal_loaders(session.dataset, session.split_plan, text_column="review", numeric_columns=["amount"])
         module = build_multimodal_fusion(bundle.multimodal_contract, fusion="gated")
+        print(bundle.input_layout)
 
     See Also
     --------
@@ -952,19 +966,24 @@ def make_multimodal_loaders(
 
     Examples
     --------
-    Fuse tabular features with product photos::
+    .. code-block:: python
 
-        bundle = make_multimodal_loaders(
-            dataset, split_plan, image_column="photo_path",
-        )
-        bundle.input_layout  # ('numeric', 'image')
-
-    Rebuild loaders for a reloaded model::
-
-        bundle = make_multimodal_loaders(
-            dataset, split_plan,
-            preprocess=restored.multimodal_preprocess,
-        )
+        # Install PyTorch support first: pip install "buildml[torch]"
+        import pandas as pd
+        import torch
+        from buildml import Session
+        from buildml.dl.text import make_text_loaders
+        from buildml.dl.models import build_text_classifier
+        frame = pd.DataFrame({"review": ["good service", "poor service", "excellent value", "bad value"] * 5, "target": [1, 0, 1, 0] * 5})
+        session = Session.ingest(frame).set_roles({"target": "target"})
+        session.split(test_size=0.2, stratify=True, random_state=42)
+        from buildml.dl.multimodal import make_multimodal_loaders, build_multimodal_fusion
+        frame["amount"] = range(len(frame))
+        session = Session.ingest(frame).set_roles({"target": "target"})
+        session.split(test_size=0.2, stratify=True, random_state=42)
+        bundle = make_multimodal_loaders(session.dataset, session.split_plan, text_column="review", numeric_columns=["amount"])
+        module = build_multimodal_fusion(bundle.multimodal_contract, fusion="gated")
+        print(bundle.input_layout)
 
     See Also
     --------

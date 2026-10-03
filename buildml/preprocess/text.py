@@ -1,27 +1,27 @@
 """Turn free text into numeric columns a classical model can use.
 
-A review, a description, a support ticket: none of it means anything to a
-gradient booster. Vectorising converts each document into a row of numbers, one
-per term, so text can sit alongside your other features in the same frame.
+Vectorisation converts each document into numeric features that can be used
+alongside other columns in a model. This module supports count, TF-IDF, and
+hashing representations.
 
-All three methods here are "bag of words": they count what appears and discard
-the order it appeared in. "The film was good, not bad" and "the film was bad,
-not good" produce identical features. That is a real limitation, and it is the
-reason these methods lose to transformer models on tasks where nuance matters.
-What they offer instead is speed, transparency: you can read which word drove
-a prediction: and the fact that they work on a few thousand rows, where a
-fine-tuned transformer would not.
+With the default unigram settings, these methods discard word order.
+"The film was good, not bad" and "the film was bad, not good" produce identical
+features. Configuring n-grams captures local word sequences, but does not model
+full context. These representations provide useful baselines; compare them
+with contextual models on representative validation data. Count and TF-IDF
+retain term names, while hashing does not.
 
 **Count** records how many times each term occurs. Simple, and the raw numbers
 mean something, but common words dominate purely by being common.
 
 **TF-IDF** weighs each count down by how many documents the term appears in, so
-a word appearing in every document contributes almost nothing while a
-distinctive one stands out. It is the default and usually the best of the three.
+a widespread word receives less inverse-document-frequency weight than a
+rare one. Ubiquitous terms still have nonzero weight with the default settings.
+TF-IDF is the default; compare alternatives for the intended task.
 
 **Hashing** maps terms into a fixed number of buckets with a hash function
-instead of building a vocabulary. It uses constant memory regardless of corpus
-size and handles unseen words without any special case, but two different words
+instead of building a vocabulary. It avoids storing a vocabulary and fixes the feature width. Output memory
+still grows with the number of rows. It handles unseen words without a special case, but two different words
 can collide into the same bucket, and you cannot recover which word a feature
 came from.
 
@@ -209,11 +209,15 @@ def fit_text_features(
 
     Examples
     --------
-    >>> plan = fit_text_features(  # doctest: +SKIP
-    ...     dataset, split_plan, columns=["review"], max_features=500
-    ... )
-    >>> plan.n_features_per_column_["review"]  # doctest: +SKIP
-    500
+    >>> import pandas as pd
+    >>> from buildml import Session
+    >>> texts = ["card payment declined", "invoice billing question", "payment refund requested", "billing invoice amount", "password login broken", "technical account access", "login password reset", "technical account error"] * 3
+    >>> frame = pd.DataFrame({"ticket_body": texts, "label": ["billing"] * 4 + ["technical"] * 4 + ["billing"] * 4 + ["technical"] * 4 + ["billing"] * 4 + ["technical"] * 4})
+    >>> session = Session.ingest(frame).set_roles({"ticket_body": "feature", "label": "target"})
+    >>> _ = session.split(test_size=0.25, stratify=True, random_state=42)
+    >>> dataset, split_plan = session.dataset, session.split_plan
+    >>> from buildml.preprocess.text import fit_text_features
+    >>> plan = fit_text_features(dataset, split_plan, columns=["ticket_body"], max_features=20)
 
     See Also
     --------

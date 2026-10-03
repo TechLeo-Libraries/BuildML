@@ -64,8 +64,6 @@ def fit_clusterer(
 ) -> tuple[ClusterPlan, ClusterFitResult]:
     """Fit a clusterer on the train partition only.
 
-Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
-
 Parameters
 ----------
 dataset:
@@ -241,8 +239,6 @@ def assign_clusters(
     attach: bool = False,
 ) -> tuple[Dataset | None, ClusterAssignResult]:
     """Assign cluster labels using a train-fitted plan (no refit).
-
-Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
 
 Parameters
 ----------

@@ -10,7 +10,7 @@ PyMC / Stan / NumPyro. Classical `session.calibration()` stays on the
 classical fit path.
 
 [Probabilistic deep](probabilistic-deep.md) ·
-Paste: [`examples/probabilistic_bayesian_ridge.py`](../examples/probabilistic_bayesian_ridge.py) ·
+Runnable example: [`examples/probabilistic_bayesian_ridge.py`](../examples/probabilistic_bayesian_ridge.py) ·
 Evidence: [prob-interval-risk](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/prob-interval-risk)
 
 ```python
@@ -52,5 +52,3 @@ session.probabilistic.save_bundle("artifacts/probabilistic_bundle")
 | Predictive std / proba + NLL | Bayesian deep nets |
 | Train-only split conformal | Conformal calibration on Session test |
 | Distinct `buildml.probabilistic_bundle.v1` | Session checkpoint embedding the plan |
-
-Related next: [causal ML](quickstart-causal.md).

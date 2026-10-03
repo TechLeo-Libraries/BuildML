@@ -1,7 +1,7 @@
 # Safe install and runtime verification
 
-Install BuildML so optional native stacks cannot break a working classical
-setup, and verify which Session surfaces are safe in your environment before
+Use isolated environments to reduce conflicts between optional native
+packages and a working classical setup, and verify which workflows run in your environment before
 you rely on them.
 
 This guide pairs with `scripts/verify_runtime_stability.py` (subprocess
@@ -23,7 +23,7 @@ after each stage.
 | --- | --- | --- | --- |
 | Classical / most sklearn domains | **3.11 or 3.12** | Windows, Linux, macOS | Matches the Windows CI classical gate |
 | Torch / DL / heavy industry | **3.11 or 3.12** | **Linux preferred** | Linux CI is the release gate for Torch and industry extras |
-| Python 3.13 | 3.13 | any | Core works; many industry wheels are marker-skipped; Torch is often fragile on Windows |
+| Python 3.13 | 3.13 | any | Core works; many industry wheels are marker-skipped; check optional backend support for the selected platform |
 
 Always use a project virtual environment. On Windows, avoid mixing BuildML with
 packages from the user site-packages tree (`%APPDATA%\Python\...`).
@@ -66,7 +66,9 @@ python scripts/verify_runtime_stability.py \
 **Stage A pass criteria:** every probe with tier `gate` or `core` reports `ok`.
 Torch / industry ANN rows may report `skip` until you install those extras.
 
-When Stage A is green, these Session paths are safe to use:
+Inspect the probe results for each workflow below. A successful probe
+checks its executed example; validate additional APIs and your own data
+separately:
 
 - Classical fit / evaluate / pipeline / checkpoint
 - Fairness (`session.fairness.evaluate`)
@@ -76,7 +78,7 @@ When Stage A is green, these Session paths are safe to use:
 
 ## Stage B: optional native stacks (one family at a time)
 
-Only after Stage A is green. Install one extra group, re-run the probe, then
+After Stage A passes, Install one extra group, re-run the probe, then
 keep or remove that group based on the result.
 
 ### B1: Torch / DL
@@ -115,22 +117,24 @@ python scripts/probe_industry_extras.py \
   --markdown industry-probe.md
 ```
 
-Import `ok` is necessary but not sufficient. Before you ship a surface, exercise
-it with `verify_runtime_stability.py` or the matching alpha smoke / proof.
+Import `ok` is necessary but not sufficient. Before deployment, exercise
+it with `verify_runtime_stability.py` or the matching example or end-to-end check.
 
 ## How to read probe statuses
 
 | Status | Meaning | What to do |
 | --- | --- | --- |
 | `ok` | Use case completed in an isolated subprocess | Probe passed; validate your actual workload |
-| `skip` | Extra not installed | Install only if you need that surface |
+| `skip` | Extra not installed | Install only if you need that API |
 | `fail` | Python exception (often catchable) | Fix the dependency or avoid that API |
-| `crash` | Native hard-kill / access violation | Treat that surface as unsupported here |
+| `crash` | Native hard-kill / access violation | Treat that API as unsupported here |
 
 ## What CI checks
 
 - **Windows CI:** classical-only (`pip install -e ".[dev]"`), not full Torch/industry.
-- **Linux CI:** Torch / RAG / industry jobs and the coverage ratchet.
+- **Linux CI:** Torch, RAG, optional-backend tests, and full-suite coverage.
+- **Release acceptance:** core wheel installation and representative workflows
+  on Windows, Linux, and macOS with Python 3.10 through 3.13.
 - `buildml[production]` is **best-effort**; environment markers skip known-broken
   wheels (especially on Python 3.13 / Windows).
 
@@ -145,25 +149,31 @@ it with `verify_runtime_stability.py` or the matching alpha smoke / proof.
    surface.
 6. Prefer Linux for production Torch and heavy industry workloads.
 
-## Example: clean Windows 3.12 venv
+## Interpret results from your environment
 
-On a clean Windows 11 + Python 3.12.8 virtual environment with
-`PYTHONNOUSERSITE=1`, expect results in this shape:
+The probe reports the status of each use case and the versions installed
+in that environment. Treat `skip` as unverified and investigate every
+`fail` or `crash`. Installing an extra does not establish that all of its
+methods work; run the workflow you intend to use with representative data.
 
-| Stage | Install | Probe summary |
-| --- | --- | --- |
-| A | `pip install "buildml[dev,shap]"
-# Or from a source checkout: pip install -e ".[dev,shap]"` | gate/core **ok**; Torch/ANN **skip** |
-| B1 | `+[torch]` | `torch_import` + `dl_tiny_mlp_fit` **ok** (Torch 2.13 CPU) |
-| B2 | `+[cbr-industry]` | `cbr_industry_ann` + `hnswlib_build` **ok** |
+Mixing user-site packages with a project environment can introduce
+incompatible native libraries. Keep optional backends isolated and record
+their versions with the probe results.
 
-A system Python 3.13 install that also pulls user-site Torch often fails DLL
-load and industry ANN. Prefer the clean 3.12 venv path on Windows.
+## Redirecting teaching output on Windows
 
-## Related
+Teaching text includes Unicode symbols. If redirected output raises
+`UnicodeEncodeError` on Windows, enable Python's UTF-8 mode. For an example
+saved as `example.py`, run:
+
+```bash
+python -X utf8 example.py > explanation.txt
+```
+
+## Related links
 
 - [Installation (Sphinx)](../docs/installation.rst)
-- [Surface stability policy](../docs/stability.md)
+- [API stability policy](../docs/stability.md)
 - `scripts/verify_runtime_stability.py`
 - `scripts/probe_industry_extras.py`
 - `scripts/run_full_coverage.py` (full-suite coverage measure)

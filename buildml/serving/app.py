@@ -1,4 +1,4 @@
-"""Put a saved bundle behind an HTTP endpoint, honestly scoped.
+"""Put a saved bundle behind an HTTP endpoint.
 
 The gap between "the model works in my notebook" and "the model answers
 requests" is mostly plumbing: load the artifact once, accept JSON, rebuild a
@@ -367,24 +367,35 @@ def create_serving_app(
 
     Examples
     --------
-    Serve locally with a key, and check it end to end::
+    Create a bundle and test its authenticated API locally::
 
-        app = create_serving_app(
-            "artifacts/churn-pipeline",
-            title="Churn v3",
-            api_keys="local-dev-key",
-            trusted=True,
-        )
+        # Install first: pip install "buildml[serve]"
+        import pandas as pd
+        from buildml import Session
 
+        frame = pd.DataFrame({'age': list(range(20, 60)), 'income': list(range(40, 80)),
+                              'approved': [0, 1] * 20})
+        session = Session.ingest(frame).set_roles({'age': 'feature', 'income': 'feature', 'approved': 'target'})
+        session.split(test_size=0.2, stratify=True, random_state=0)
+        from tempfile import TemporaryDirectory
+        from sklearn.linear_model import LogisticRegression
+
+        session.fit(LogisticRegression(max_iter=500), task='classification')
+        from buildml.serving.app import create_serving_app
         from fastapi.testclient import TestClient
-        client = TestClient(app)
-        headers = {"Authorization": "Bearer local-dev-key"}
-        client.get("/health", headers=headers).json()["ok"]
-        client.post(
-            "/predict",
-            headers=headers,
-            json={"rows": [{"tenure": 12, "monthly_charges": 79.9}]},
-        ).json()["predictions"]
+
+        with TemporaryDirectory() as directory:
+            session.save_pipeline(directory + '/pipeline')
+            app = create_serving_app(directory + '/pipeline', api_keys='example-local-key', trusted=True)
+            with TestClient(app) as client:
+                headers = {'Authorization': 'Bearer example-local-key'}
+                response = client.post('/predict', headers=headers,
+                                       json={'rows': [{'age': 32, 'income': 52}]})
+                response.raise_for_status()
+                print(response.json()['predictions'])
+
+
+
 
     See Also
     --------

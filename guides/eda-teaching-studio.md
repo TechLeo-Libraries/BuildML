@@ -6,33 +6,36 @@ pip install buildml
 # local app: pip install "buildml[dashboard]"
 ```
 
-Look before you mutate. `session.eda()` returns findings and read-only
-recommendations. It does not run them. `explain`, `learn`, `workflow`,
-`walkthrough`, and `dry_run` expose the catalog. They do not certify that
-your split or model fits the domain.
+Use `session.eda()` to inspect your data before choosing preprocessing or
+modeling steps. The report contains findings and recommended operations;
+it leaves the dataset unchanged. Review each recommendation against your
+analysis goal before applying it.
 
-If the words are new, start with `session.learn()`. The default reading
-level is `beginner`.
+The teaching methods explain operations and their prerequisites. Start
+with `session.learn()` for introductory concepts, or use `session.explain()`
+for a particular operation. Explanations use the `beginner` reading level
+by default.
 
 Related: [classical end-to-end](classical-end-to-end.md),
 [usage](../docs/usage.rst), [glossary](glossary.md).
 
 ---
 
-## What you get before a write
+## Inspect data and plan your workflow
 
-Ask what `impute` assumes before you call it. Ask what imputation *is*
-without leaving the Session (`learn`). See which ops are `done` /
-`available` / `blocked` / `skipped`. Preview a chain without appending
-history (`dry_run`). Export an offline HTML for review.
+Use `explain("impute")` to review the assumptions behind filling missing
+values, and `learn("imputation")` to read the underlying concept. The workflow
+view shows operations marked `done`, `available`, `blocked`, or `skipped`.
+Use `dry_run` to preview a sequence without changing the Session or its
+history, and export HTML to share the report.
 
 The live dashboard (`session.eda_app`) is optional (`buildml[dashboard]`).
-It is a local FastAPI app with a command cockpit, readiness gates, a
-concept academy, and domain boards. Tokens and analytic coverage are
-shared with the static sheet (`html_format="research"`). It is not a
-replacement for domain judgment.
+It runs a local FastAPI server and displays findings, workflow checks,
+concept explanations, and analysis by topic. The static report
+(`html_format="research"`) presents the same underlying analysis in a
+printable layout.
 
-Gate marks stay in the open browser tab. Refreshing drops them. BuildML
+Selections on readiness cards remain in the open browser tab. Refreshing clears them. BuildML
 does not write those marks to the Session, history, disk, or a saved
 dataset copy.
 
@@ -56,7 +59,7 @@ frame = pd.DataFrame(
 session = (
     Session.ingest(frame)
     .set_roles({"age": "feature", "income": "feature", "approved": "target"})
-    .split(test_size=0.25, stratify=True, random_state=0)
+    .split(test_size=0.25, validation_size=0.25, stratify=True, random_state=0)
 )
 
 report = session.eda(partition="train", include_plots=False)
@@ -77,6 +80,25 @@ held-out rows when a split exists.
 ## Use case: offline HTML (studio vs research)
 
 ```python
+import pandas as pd
+
+from buildml import Session
+
+frame = pd.DataFrame(
+    {
+        "age": [21, None, 35, None, 29, 33, 52, 47],
+        "income": [40, 55, 60, 80, 50, 70, 90, 65],
+        "approved": [0, 1, 0, 1, 0, 1, 1, 0],
+    }
+)
+
+session = (
+    Session.ingest(frame)
+    .set_roles({"age": "feature", "income": "feature", "approved": "target"})
+    .split(test_size=0.25, validation_size=0.25, stratify=True, random_state=0)
+)
+
+# Requires: pip install "buildml[viz]"
 # Offline dashboard snapshot (SPA assets embedded when available)
 session.eda(export_html="artifacts/eda_studio.html", html_format="studio")
 
@@ -89,13 +111,13 @@ session.eda(
 )
 ```
 
-`html_format="research"` is the static product: KPI strip, findings
-register, assumptions, ledger, recommended Session calls, figures,
-methods, and degraded rows. It omits Gates, Academy, and human
-gate-status UX. HTML artifacts embed required styles so they open
-offline.
+`html_format="research"` produces a static report with summary metrics,
+findings, assumptions, recommended Session calls, figures, methods, and
+unavailable analyses. Interactive readiness cards and concept lessons are
+available in the studio layout. Exported HTML includes the styles needed
+for offline viewing.
 
-Local preview from a synthetic dirty frame:
+From a BuildML source checkout, generate a preview with synthetic data:
 
 ```bash
 python scripts/generate_static_eda_preview.py
@@ -106,15 +128,38 @@ python scripts/generate_static_eda_preview.py
 
 ## Use case: live local dashboard
 
+Open the printed URL in your browser. The server stays available until you
+press Enter in the terminal.
+
 ```python
-# pip install "buildml[dashboard]"
-handle = session.eda_app(port=8765, open_browser=True)
-# alias: session.open_eda_dashboard(port=8765)
+import pandas as pd
+
+from buildml import Session
+
+frame = pd.DataFrame(
+    {
+        "age": [21, None, 35, None, 29, 33, 52, 47],
+        "income": [40, 55, 60, 80, 50, 70, 90, 65],
+        "approved": [0, 1, 0, 1, 0, 1, 1, 0],
+    }
+)
+
+session = (
+    Session.ingest(frame)
+    .set_roles({"age": "feature", "income": "feature", "approved": "target"})
+    .split(test_size=0.25, validation_size=0.25, stratify=True, random_state=0)
+)
+
+# Requires: pip install "buildml[dashboard]"
+handle = session.eda_app(port=8765, open_browser=False)
 print(handle.url)
-handle.stop()
+try:
+    input("Press Enter to stop the dashboard. ")
+finally:
+    handle.stop()
 ```
 
-Or from a dirty synthetic extract:
+From a BuildML source checkout, launch a dashboard with synthetic data:
 
 ```bash
 python scripts/launch_synthetic_eda_studio.py
@@ -122,28 +167,46 @@ python scripts/launch_synthetic_eda_studio.py
 
 | Board | Role |
 | --- | --- |
-| Command cockpit | KPI strip and numbered spine: findings, assumptions, ledger, recommended sequence, domain briefs, figures, methods, skipped/degraded |
-| Readiness gates | Stage-grouped gate cards; click a gate for the learning sidebar. Session marks are UI-only |
-| Concept academy | Searchable lessons bound to this Session's numbers where they exist, otherwise an honest N/A |
+| Command cockpit | Summary metrics, findings, assumptions, recommended operations, figures, methods, and unavailable analyses |
+| Readiness gates | Workflow checks grouped by stage, with explanations; selections are stored only in the browser tab |
+| Concept academy | Searchable lessons with report values where available; unavailable values are marked N/A |
 | Domain boards | Quality, features, relationships, multivariate, target, outliers, visuals |
 
-Offline HTML is the primary export in the app header (same SPA surface,
-including Gates and Academy). CSV and PDF routes stay on the App API for
-automation; they are not header actions. The static sheet exposes Offline
-HTML only in its header.
+The app header exports an offline HTML report with the same layout,
+including the readiness checklist and concept lessons. CSV and PDF exports
+are available through the app API for automation. The static report header
+also provides an HTML export.
 
 If the port is busy, pass another port.
 
-Narrative binds to the live report, not a demo template. Cited versus
-reference chips follow findings on the report you actually ran.
+The dashboard descriptions use the findings in your report. Reference
+labels distinguish sources cited by a finding from additional reading.
 
 ---
 
-## Teaching surfaces: explain / learn / workflow / walkthrough
+## Teaching methods: explain, learn, workflow, and walkthrough
 
 ```python
+import pandas as pd
+
+from buildml import Session
+
+frame = pd.DataFrame(
+    {
+        "age": [21, None, 35, None, 29, 33, 52, 47],
+        "income": [40, 55, 60, 80, 50, 70, 90, 65],
+        "approved": [0, 1, 0, 1, 0, 1, 1, 0],
+    }
+)
+
+session = (
+    Session.ingest(frame)
+    .set_roles({"age": "feature", "income": "feature", "approved": "target"})
+    .split(test_size=0.25, validation_size=0.25, stratify=True, random_state=0)
+)
+
 before = session.explain("feature_importance", moment="before")
-print(before.prerequisites, before.risks)
+print(before.prerequisite_chain, before.risks)
 
 for step in session.workflow():
     if step.status == "blocked":
@@ -156,8 +219,8 @@ print(summary.unresolved_risks)
 walkthrough = session.walkthrough(export_html="artifacts/workflow.html")
 ```
 
-`available` means API prerequisites pass. It does not mean you should run
-this. `explain(..., moment="after")` joins catalog text to the latest
+`available` means the operation's API prerequisites are satisfied. Choose
+operations according to your data and analysis goal. `explain(..., moment="after")` joins catalog text to the latest
 recorded call. `dry_run` does not append history.
 
 ### Reading levels
@@ -166,40 +229,75 @@ Every explanation is written at three levels. `beginner` is the default
 and assumes no prior machine-learning vocabulary.
 
 ```python
+import pandas as pd
+
+from buildml import Session
+
+frame = pd.DataFrame(
+    {
+        "age": [21, None, 35, None, 29, 33, 52, 47],
+        "income": [40, 55, 60, 80, 50, 70, 90, 65],
+        "approved": [0, 1, 0, 1, 0, 1, 1, 0],
+    }
+)
+
+session = (
+    Session.ingest(frame)
+    .set_roles({"age": "feature", "income": "feature", "approved": "target"})
+    .split(test_size=0.25, validation_size=0.25, stratify=True, random_state=0)
+)
+
 primer = session.explain("feature_importance").beginner
 print(primer.plain_summary)          # what this is, in ordinary words
 print(primer.analogy)                # the intuition
 primer.steps                         # what happens, in order
 primer.prerequisites_in_plain_words  # what must be true first, and how to get there
-primer.key_parameters                # each knob: meaning, effect, typical choice
+primer.key_parameters                # parameter meanings, effects, and typical values
 primer.common_pitfalls               # how this goes wrong
 primer.glossary                      # the jargon this answer used, defined
-primer.mini_example                  # a runnable sketch
+primer.mini_example                  # an example of the operation
 
-session.explain("feature_importance", level="advanced")  # no scaffolding
+session.explain("feature_importance", level="advanced")  # a more detailed technical explanation
 ```
 
-The level changes how much is rendered, never what is true: assumptions,
+The reading level changes the explanation's detail: assumptions,
 leakage risks, and failure modes are present at every level. `advanced`
 drops the analogy and the in-line glossary and widens the parameter and
 pitfall lists.
 
 ### `learn`: the concept behind the call
 
-`explain` answers what this will do here, now. `learn` answers what this
-is, and what you should understand first. It accepts a concept key, an
-operation name, or the word you tripped over, and forgives spacing and
-hyphenation.
+`explain` describes an operation in the current Session. `learn` provides
+background concepts and recommended reading order. It accepts a concept key, an
+operation name, or a related term. Spacing and hyphenation are normalized.
 
 ```python
+import pandas as pd
+
+from buildml import Session
+
+frame = pd.DataFrame(
+    {
+        "age": [21, None, 35, None, 29, 33, 52, 47],
+        "income": [40, 55, 60, 80, 50, 70, 90, 65],
+        "approved": [0, 1, 0, 1, 0, 1, 1, 0],
+    }
+)
+
+session = (
+    Session.ingest(frame)
+    .set_roles({"age": "feature", "income": "feature", "approved": "target"})
+    .split(test_size=0.25, validation_size=0.25, stratify=True, random_state=0)
+)
+
 session.learn()                       # foundation concepts, in reading order
 brief = session.learn("leakage")      # a term resolves to the concept teaching it
 
 brief.concept.plain_summary           # the idea from scratch
 brief.concept.misconceptions          # what people wrongly believe, and the correction
-brief.concept.check_yourself          # questions to test whether it landed
+brief.concept.check_yourself          # questions to check understanding
 [note.key for note in brief.read_first]  # prerequisites, if any
-[note.key for note in brief.read_next]   # where to go once it lands
+[note.key for note in brief.read_next]   # suggested follow-up concepts
 brief.related_operations              # the BuildML calls that apply it
 
 session.learn("split")                # an operation name returns its primer
@@ -210,13 +308,32 @@ Concept notes, the glossary, and operation primers are the same objects
 the walkthrough, the local dashboard, and the AI operator's
 `explain_operation` / `learn_concept` tools read from. All of it is
 static teaching material: it describes ideas and BuildML's contract, and
-inspects none of your data.
+does not calculate new dataset statistics.
 
 ---
 
 ## Evaluation and diagnostic HTML
 
 ```python
+import pandas as pd
+
+from buildml import Session
+
+frame = pd.DataFrame(
+    {
+        "age": [21, None, 35, None, 29, 33, 52, 47],
+        "income": [40, 55, 60, 80, 50, 70, 90, 65],
+        "approved": [0, 1, 0, 1, 0, 1, 1, 0],
+    }
+)
+
+session = (
+    Session.ingest(frame)
+    .set_roles({"age": "feature", "income": "feature", "approved": "target"})
+    .split(test_size=0.25, validation_size=0.25, stratify=True, random_state=0)
+)
+
+# Requires: pip install "buildml[viz]"
 session.impute(strategy="median").scale(method="standard")
 from sklearn.linear_model import LogisticRegression
 
@@ -240,7 +357,7 @@ See [diagnostics & search](classical-diagnostics-search.md).
 | --- | --- |
 | `MissingExtraError: dashboard` | Install `buildml[dashboard]` |
 | `MissingExtraError: viz` | Install `buildml[viz]` for plots |
-| Acting on recommendations blindly | Still call Session methods yourself; verify domain fit |
+| Acting on recommendations blindly | Review the evidence and choose appropriate operations before applying them |
 | Confusing AI advisor with EDA | AI is optional (`buildml[ai]`); EDA/App work offline |
 
 ---

@@ -1394,13 +1394,13 @@ def preprocess_scope_status(
         disclosures.append(
             "Session.text_features fitted a Session-global text plan on the train "
             "partition. Prefer PreprocessRecipe(text=...) inside CV when selection "
-            "honesty requires fold-local vocabulary/IDF."
+            "use fold-local vocabulary and IDF fitting to avoid validation leakage."
         )
     if live_session["reduce_dimensions"] or session_ops["reduce_dimensions"]:
         disclosures.append(
             "Session.reduce_dimensions fitted a Session-global PCA plan on the train "
             "partition. Prefer PreprocessRecipe(reduce='pca') inside CV when selection "
-            "honesty requires fold-local components."
+            "fit components within each fold to avoid validation leakage."
         )
     if live_session["apply_custom_transform"] or session_ops["apply_custom_transform"]:
         disclosures.append(

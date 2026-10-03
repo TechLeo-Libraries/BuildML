@@ -188,11 +188,15 @@ def fit_imitation(
 
     Examples
     --------
-    >>> plan, result = fit_imitation(dataset, split_plan)  # doctest: +SKIP
-    >>> result.task, result.n_train_rows  # doctest: +SKIP
-    ('classification', 800)
-    >>> evaluate_imitation(dataset, plan, split_plan).metrics  # doctest: +SKIP
-    {'accuracy': 0.86, 'macro_f1': 0.71}
+    >>> import pandas as pd
+    >>> from buildml import Session
+    >>> frame = pd.DataFrame({"context": list(range(40)), "offer": [0, 1] * 20, "revenue": [1.0, 2.0, 3.0, 1.0] * 10})
+    >>> session = Session.ingest(frame).set_roles({"context": "feature", "offer": "target", "revenue": "ignore"})
+    >>> _ = session.split(test_size=0.25, stratify=True, random_state=42)
+    >>> dataset, split_plan = session.dataset, session.split_plan
+    >>> from buildml.rl.imitation import fit_imitation, evaluate_imitation
+    >>> plan, fitted = fit_imitation(dataset, split_plan, columns=["context"], action_column="offer")
+    >>> result = evaluate_imitation(dataset, plan, split_plan, partition="test")
 
     See Also
     --------
@@ -566,9 +570,15 @@ def evaluate_imitation(
 
     Examples
     --------
-    >>> result = evaluate_imitation(dataset, plan, split_plan)  # doctest: +SKIP
-    >>> result.metrics  # doctest: +SKIP
-    {'accuracy': 0.86, 'macro_f1': 0.71}
+    >>> import pandas as pd
+    >>> from buildml import Session
+    >>> frame = pd.DataFrame({"context": list(range(40)), "offer": [0, 1] * 20, "revenue": [1.0, 2.0, 3.0, 1.0] * 10})
+    >>> session = Session.ingest(frame).set_roles({"context": "feature", "offer": "target", "revenue": "ignore"})
+    >>> _ = session.split(test_size=0.25, stratify=True, random_state=42)
+    >>> dataset, split_plan = session.dataset, session.split_plan
+    >>> from buildml.rl.imitation import fit_imitation, evaluate_imitation
+    >>> plan, fitted = fit_imitation(dataset, split_plan, columns=["context"], action_column="offer")
+    >>> result = evaluate_imitation(dataset, plan, split_plan, partition="test")
 
     See Also
     --------

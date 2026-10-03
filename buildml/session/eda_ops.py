@@ -112,8 +112,17 @@ def eda(
 
     Examples
     --------
-    >>> report = session.eda(partition="train", export_html="reports/eda.html")  # doctest: +SKIP
-    >>> report.recommendations[:2]  # doctest: +SKIP
+    >>> import pandas as pd
+    >>> from sklearn.datasets import make_classification
+    >>> from sklearn.tree import DecisionTreeClassifier
+    >>> from buildml import Session
+    >>> X, y = make_classification(n_samples=120, n_features=4, n_informative=3, n_redundant=0, random_state=42)
+    >>> frame = pd.DataFrame(X, columns=["a", "b", "c", "d"])
+    >>> frame["target"] = y
+    >>> session = Session.ingest(frame).set_roles({"target": "target"})
+    >>> _ = session.split(test_size=0.2, validation_size=0.2, stratify=True, random_state=42)
+    >>> report = session.eda(partition="train")
+    >>> recommendations = report.recommendations
 
     See Also
     --------
@@ -255,10 +264,18 @@ def eda_app(
 
     Examples
     --------
-    >>> app = session.eda_app()  # doctest: +SKIP
-    >>> app.url  # doctest: +SKIP
-    'http://127.0.0.1:8765'
-    >>> app.stop()  # doctest: +SKIP
+    >>> import pandas as pd
+    >>> from sklearn.datasets import make_classification
+    >>> from sklearn.tree import DecisionTreeClassifier
+    >>> from buildml import Session
+    >>> X, y = make_classification(n_samples=120, n_features=4, n_informative=3, n_redundant=0, random_state=42)
+    >>> frame = pd.DataFrame(X, columns=["a", "b", "c", "d"])
+    >>> frame["target"] = y
+    >>> session = Session.ingest(frame).set_roles({"target": "target"})
+    >>> _ = session.split(test_size=0.2, validation_size=0.2, stratify=True, random_state=42)
+    >>> # Install the local app dependencies first: pip install "buildml[dashboard]"
+    >>> app = session.eda_app()
+    >>> app.stop()
 
     See Also
     --------

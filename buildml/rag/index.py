@@ -1,23 +1,12 @@
-"""Turn a corpus into something searchable, and keep it current.
+"""Build and update a searchable RAG index.
 
-Building an index is three steps: cut documents into chunks, embed the chunks,
-store the vectors. What makes it worth its own module is everything around
-those steps: the leakage refusal, the disclosures, and the incremental updates.
+Index construction chunks documents, embeds the chunks, and stores their
+vectors. Documents marked ``eval_only`` are rejected during construction and
+upserts to keep declared evaluation material out of the index. Applications
+remain responsible for assigning these roles correctly.
 
-The leakage refusal comes first. Indexing an ``eval_only`` document means every
-subsequent retrieval metric measures a system that was shown the answers, so
-:func:`build_index` raises rather than filtering, and the same guard runs on
-every upsert.
-
-Updates avoid rebuilds. A corpus that changes daily should not be re-embedded
-daily, so :meth:`RagIndex.upsert_chunks` re-encodes only what changed and
-:meth:`RagIndex.delete` drops rows without touching the rest.
-
-See Also
---------
-buildml.rag.chunk : The first step.
-buildml.rag.embed : The second.
-buildml.rag.store : The third.
+Upserts encode new or changed chunks. Deletions remove matching chunks without
+re-embedding the remaining documents.
 """
 
 from __future__ import annotations
@@ -40,9 +29,8 @@ class RagIndex:
     """A searchable index, plus the embedder and settings that built it.
 
     Holding the embedder alongside the vectors is what makes the rest work.
-    Queries have to be embedded the same way the passages were, and updates have
-    to encode new chunks into the same space: keeping the model here means
-    neither can be done with the wrong one by accident.
+    Queries and new chunks must use the same embedding space as stored passages.
+    The index retains the embedder and its configuration for those operations.
 
     Attributes
     ----------
@@ -250,7 +238,19 @@ class RagIndex:
         --------
         Remove a superseded document::
 
-            index.delete(doc_ids=["policy-v1"])
+            from buildml.rag.corpus import corpus_from_documents
+
+            corpus = corpus_from_documents([
+                {"doc_id": "refund", "text": "Refunds are available within 30 days of purchase.", "metadata": {"version": "2024"}},
+                {"doc_id": "cancel", "text": "Cancel a subscription from the account settings page.", "metadata": {"version": "2024"}},
+            ])
+            from buildml.rag.index import build_index
+            from buildml.rag.retrieve import retrieve
+
+            # Hashing runs locally without downloading an embedding model.
+            index = build_index(corpus, embedder="hashing", chunk_size=128, chunk_overlap=16)
+            index.delete(doc_ids=["refund"])
+            print([hit.doc_id for hit in retrieve(index, "subscription", k=2).hits])
 
         See Also
         --------
@@ -410,8 +410,20 @@ class RagIndex:
         --------
         Replace a document cleanly::
 
-            index.delete(doc_ids=["faq"])
-            index.upsert_documents([{"doc_id": "faq", "text": updated}])
+            from buildml.rag.corpus import corpus_from_documents
+
+            corpus = corpus_from_documents([
+                {"doc_id": "refund", "text": "Refunds are available within 30 days of purchase.", "metadata": {"version": "2024"}},
+                {"doc_id": "cancel", "text": "Cancel a subscription from the account settings page.", "metadata": {"version": "2024"}},
+            ])
+            from buildml.rag.index import build_index
+            from buildml.rag.retrieve import retrieve
+
+            # Hashing runs locally without downloading an embedding model.
+            index = build_index(corpus, embedder="hashing", chunk_size=128, chunk_overlap=16)
+            index.delete(doc_ids=["refund"])
+            index.upsert_documents([{"doc_id": "refund", "text": "The updated refund window is 45 days."}])
+            print([hit.text for hit in retrieve(index, "refund window", k=2).hits])
 
         See Also
         --------
@@ -508,7 +520,15 @@ def build_index(
     --------
     Build with a real embedding model::
 
-        index = build_index(corpus, embedder="minilm", chunk_size=1024)
+        # Requires: pip install "buildml[rag]"; downloads MiniLM weights on first use.
+        from buildml.rag.corpus import corpus_from_documents
+
+        corpus = corpus_from_documents([
+            {"doc_id": "refund", "text": "Refunds are available within 30 days of purchase.", "metadata": {"version": "2024"}},
+            {"doc_id": "cancel", "text": "Cancel a subscription from the account settings page.", "metadata": {"version": "2024"}},
+        ])
+        from buildml.rag.index import build_index
+        index = build_index(corpus, embedder="minilm", chunk_size=128, chunk_overlap=16)
         print(index.to_index_result().disclosures)
 
     See Also

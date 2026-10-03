@@ -96,7 +96,7 @@ def suggest_group_thresholds(
     Returns
     -------
     GroupThresholdSuggestion
-        Per-group thresholds plus achieved rates and honesty disclosures.
+        Per-group thresholds plus achieved rates and implementation limitations.
 
     Raises
     ------

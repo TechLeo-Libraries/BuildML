@@ -41,4 +41,6 @@ def test_giotto_batch_pads_per_homology_dimension() -> None:
 def test_giotto_batch_empty_diagrams_stay_rectangular() -> None:
     empty = [np.zeros((0, 2)), np.zeros((0, 2))]
     batch = _diagrams_to_giotto_batch([empty, empty], dims=(0, 1))
-    assert batch.shape == (2, 1, 3)
+    assert batch.shape == (2, 2, 3)
+    np.testing.assert_array_equal(batch[:, :, 2], [[0, 1], [0, 1]])
+    np.testing.assert_array_equal(batch[:, :, :2], 0)

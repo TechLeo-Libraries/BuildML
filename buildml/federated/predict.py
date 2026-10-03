@@ -45,7 +45,7 @@ def predict_federated(
     Returns
     -------
     FederatedPredictResult
-        Decoded predictions and honesty disclosures.
+        Decoded predictions and implementation limitations.
 
     Raises
     ------

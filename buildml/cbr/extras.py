@@ -283,9 +283,9 @@ def require_ann_library(*, feature: str = "CBR approximate nearest-neighbor retr
 
     Notes
     -----
-    **The two libraries build different index structures**, so neighbours may
-    differ slightly between them. Both approximate; neither guarantees the exact
-    nearest set.
+    **The adapters use different index structures.** The hnswlib graph performs
+    approximate search. The faiss adapter uses a flat index and searches exactly
+    under its configured metric; ordering of tied distances may differ.
     """
     if hnswlib_available():
         return "hnswlib"

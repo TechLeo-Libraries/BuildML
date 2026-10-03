@@ -238,7 +238,14 @@ def chunk_documents(
     --------
     Chunk with sentence-aware boundaries::
 
-        result = chunk_documents(corpus, size=1024, overlap=128, strategy="recursive")
+        from buildml.rag.corpus import corpus_from_documents
+
+        corpus = corpus_from_documents([
+            {"doc_id": "refund", "text": "Refunds are available within 30 days of purchase.", "metadata": {"version": "2024"}},
+            {"doc_id": "cancel", "text": "Cancel a subscription from the account settings page.", "metadata": {"version": "2024"}},
+        ])
+        from buildml.rag.chunk import chunk_documents
+        result = chunk_documents(corpus, size=128, overlap=16, strategy="recursive")
         print(result.n_chunks / result.n_documents)
 
     See Also

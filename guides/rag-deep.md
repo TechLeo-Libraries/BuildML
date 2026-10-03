@@ -26,7 +26,7 @@ Documents ingested with `role="eval_only"` raise `LeakageError` at
 choose k, mode, and whether to generate. The API refuses eval-only
 contamination and generate without a provider.
 
-Short on-ramp: [RAG quickstart](quickstart-rag.md). Proof:
+Quickstart: [RAG quickstart](quickstart-rag.md). Proof:
 [support-kb-rag](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/support-kb-rag).
 
 ## Ingest, chunk, index, retrieve
@@ -85,6 +85,47 @@ differently when only one has the extra.
 Hashing on purpose (CI / lexical-only):
 
 ```python
+from buildml import Session
+
+docs = [
+    {
+        "doc_id": "ml",
+        "text": (
+            "Supervised learning fits a model on labeled examples. "
+            "Hold out a test partition for final estimates."
+        ),
+    },
+    {
+        "doc_id": "rag",
+        "text": (
+            "Retrieval indexes a corpus, retrieves relevant chunks, "
+            "and optionally generates grounded answers later."
+        ),
+    },
+    {
+        "doc_id": "leak",
+        "text": (
+            "Evaluation contamination happens when labeled answers are "
+            "indexed into the retrieval corpus."
+        ),
+        "metadata": {"topic": "hygiene"},
+    },
+]
+
+session = Session()
+session.rag.ingest_corpus(docs)
+session.rag.chunk(size=160, overlap=32, strategy="recursive")
+session.rag.embed_and_index()  # hashing without extra; ST with buildml[rag]
+
+hybrid = session.rag.retrieve("corpus contamination indexed answers", k=3)
+dense = session.rag.retrieve(
+    "corpus contamination indexed answers", k=3, mode="dense"
+)
+bm25 = session.rag.retrieve(
+    "corpus contamination indexed answers", k=3, mode="bm25"
+)
+print(hybrid.mode, dense.hits[0].doc_id, bm25.hits[0].doc_id)
+
 session.rag.embed_and_index(embedder="hashing")
 ```
 
@@ -95,6 +136,47 @@ first-class. `EchoGroundedProvider` is an offline demo, not factual
 QA.
 
 ```python
+from buildml import Session
+
+docs = [
+    {
+        "doc_id": "ml",
+        "text": (
+            "Supervised learning fits a model on labeled examples. "
+            "Hold out a test partition for final estimates."
+        ),
+    },
+    {
+        "doc_id": "rag",
+        "text": (
+            "Retrieval indexes a corpus, retrieves relevant chunks, "
+            "and optionally generates grounded answers later."
+        ),
+    },
+    {
+        "doc_id": "leak",
+        "text": (
+            "Evaluation contamination happens when labeled answers are "
+            "indexed into the retrieval corpus."
+        ),
+        "metadata": {"topic": "hygiene"},
+    },
+]
+
+session = Session()
+session.rag.ingest_corpus(docs)
+session.rag.chunk(size=160, overlap=32, strategy="recursive")
+session.rag.embed_and_index()  # hashing without extra; ST with buildml[rag]
+
+hybrid = session.rag.retrieve("corpus contamination indexed answers", k=3)
+dense = session.rag.retrieve(
+    "corpus contamination indexed answers", k=3, mode="dense"
+)
+bm25 = session.rag.retrieve(
+    "corpus contamination indexed answers", k=3, mode="bm25"
+)
+print(hybrid.mode, dense.hits[0].doc_id, bm25.hits[0].doc_id)
+
 from buildml.rag.generate import EchoGroundedProvider, score_faithfulness
 
 answer = session.rag.generate(
@@ -110,7 +192,7 @@ report = score_faithfulness(answer.answer, answer.citations)
 print(report.to_dict())
 ```
 
-Faithfulness is a cheap heuristic: citation-marker coverage plus
+Faithfulness uses a lightweight heuristic: citation-marker coverage plus
 lexical overlap. High overlap does not prove the answer is true. It
 is not NLI and not LLM-as-judge. A production chat provider is
 `session.ai.configure(...)` then `session.rag.generate` without an
@@ -120,6 +202,47 @@ last retrieve instead of retrieving again.
 ## Evaluate with qrels
 
 ```python
+from buildml import Session
+
+docs = [
+    {
+        "doc_id": "ml",
+        "text": (
+            "Supervised learning fits a model on labeled examples. "
+            "Hold out a test partition for final estimates."
+        ),
+    },
+    {
+        "doc_id": "rag",
+        "text": (
+            "Retrieval indexes a corpus, retrieves relevant chunks, "
+            "and optionally generates grounded answers later."
+        ),
+    },
+    {
+        "doc_id": "leak",
+        "text": (
+            "Evaluation contamination happens when labeled answers are "
+            "indexed into the retrieval corpus."
+        ),
+        "metadata": {"topic": "hygiene"},
+    },
+]
+
+session = Session()
+session.rag.ingest_corpus(docs)
+session.rag.chunk(size=160, overlap=32, strategy="recursive")
+session.rag.embed_and_index()  # hashing without extra; ST with buildml[rag]
+
+hybrid = session.rag.retrieve("corpus contamination indexed answers", k=3)
+dense = session.rag.retrieve(
+    "corpus contamination indexed answers", k=3, mode="dense"
+)
+bm25 = session.rag.retrieve(
+    "corpus contamination indexed answers", k=3, mode="bm25"
+)
+print(hybrid.mode, dense.hits[0].doc_id, bm25.hits[0].doc_id)
+
 metrics = session.rag.evaluate(
     {
         "corpus contamination indexed answers": ["leak"],
@@ -137,6 +260,47 @@ retrieval against gold ids. They are not
 ## eval_only is refused at index
 
 ```python
+from buildml import Session
+
+docs = [
+    {
+        "doc_id": "ml",
+        "text": (
+            "Supervised learning fits a model on labeled examples. "
+            "Hold out a test partition for final estimates."
+        ),
+    },
+    {
+        "doc_id": "rag",
+        "text": (
+            "Retrieval indexes a corpus, retrieves relevant chunks, "
+            "and optionally generates grounded answers later."
+        ),
+    },
+    {
+        "doc_id": "leak",
+        "text": (
+            "Evaluation contamination happens when labeled answers are "
+            "indexed into the retrieval corpus."
+        ),
+        "metadata": {"topic": "hygiene"},
+    },
+]
+
+session = Session()
+session.rag.ingest_corpus(docs)
+session.rag.chunk(size=160, overlap=32, strategy="recursive")
+session.rag.embed_and_index()  # hashing without extra; ST with buildml[rag]
+
+hybrid = session.rag.retrieve("corpus contamination indexed answers", k=3)
+dense = session.rag.retrieve(
+    "corpus contamination indexed answers", k=3, mode="dense"
+)
+bm25 = session.rag.retrieve(
+    "corpus contamination indexed answers", k=3, mode="bm25"
+)
+print(hybrid.mode, dense.hits[0].doc_id, bm25.hits[0].doc_id)
+
 from buildml.core.errors import LeakageError
 
 eval_docs = [
@@ -160,6 +324,47 @@ Keep eval texts out of the index corpus. Ingest index docs with
 ## Upsert, delete, bundle
 
 ```python
+from buildml import Session
+
+docs = [
+    {
+        "doc_id": "ml",
+        "text": (
+            "Supervised learning fits a model on labeled examples. "
+            "Hold out a test partition for final estimates."
+        ),
+    },
+    {
+        "doc_id": "rag",
+        "text": (
+            "Retrieval indexes a corpus, retrieves relevant chunks, "
+            "and optionally generates grounded answers later."
+        ),
+    },
+    {
+        "doc_id": "leak",
+        "text": (
+            "Evaluation contamination happens when labeled answers are "
+            "indexed into the retrieval corpus."
+        ),
+        "metadata": {"topic": "hygiene"},
+    },
+]
+
+session = Session()
+session.rag.ingest_corpus(docs)
+session.rag.chunk(size=160, overlap=32, strategy="recursive")
+session.rag.embed_and_index()  # hashing without extra; ST with buildml[rag]
+
+hybrid = session.rag.retrieve("corpus contamination indexed answers", k=3)
+dense = session.rag.retrieve(
+    "corpus contamination indexed answers", k=3, mode="dense"
+)
+bm25 = session.rag.retrieve(
+    "corpus contamination indexed answers", k=3, mode="bm25"
+)
+print(hybrid.mode, dense.hits[0].doc_id, bm25.hits[0].doc_id)
+
 session.rag.upsert([{"doc_id": "new", "text": "Chunk update without a full rebuild."}])
 session.rag.delete(doc_ids=["new"])
 
@@ -191,18 +396,61 @@ Rerank needs the rag extra and is off by default (download plus a
 forward pass per candidate):
 
 ```python
+# Requires: pip install "buildml[rag]"; cross-encoder reranking downloads model weights.
+from buildml import Session
+
+docs = [
+    {
+        "doc_id": "ml",
+        "text": (
+            "Supervised learning fits a model on labeled examples. "
+            "Hold out a test partition for final estimates."
+        ),
+    },
+    {
+        "doc_id": "rag",
+        "text": (
+            "Retrieval indexes a corpus, retrieves relevant chunks, "
+            "and optionally generates grounded answers later."
+        ),
+    },
+    {
+        "doc_id": "leak",
+        "text": (
+            "Evaluation contamination happens when labeled answers are "
+            "indexed into the retrieval corpus."
+        ),
+        "metadata": {"topic": "hygiene"},
+    },
+]
+
+session = Session()
+session.rag.ingest_corpus(docs)
+session.rag.chunk(size=160, overlap=32, strategy="recursive")
+session.rag.embed_and_index()  # hashing without extra; ST with buildml[rag]
+
+hybrid = session.rag.retrieve("corpus contamination indexed answers", k=3)
+dense = session.rag.retrieve(
+    "corpus contamination indexed answers", k=3, mode="dense"
+)
+bm25 = session.rag.retrieve(
+    "corpus contamination indexed answers", k=3, mode="bm25"
+)
+print(hybrid.mode, dense.hits[0].doc_id, bm25.hits[0].doc_id)
+
+from buildml.rag.types import RetrieveConfig
+
 reranked = session.rag.retrieve(
     "corpus contamination indexed answers",
     k=3,
     mode="hybrid",
     rerank=True,
-    config={"rerank_candidates": 12},
+    config=RetrieveConfig(rerank_candidates=12),
 )
 ```
 
 Semantic models need download time and compatible wheels. Generate
-quality is entirely the provider plus retrieved context. This is
-not a managed RAG SaaS.
+quality is entirely the provider plus retrieved context. Hosting and service management must be configured separately.
 
 ## Benchmark
 

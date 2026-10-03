@@ -303,16 +303,20 @@ def train_supervised_module(
 
     Examples
     --------
-    >>> result = train_supervised_module(  # doctest: +SKIP
-    ...     module,
-    ...     bundle,
-    ...     config=TrainConfig(epochs=20, early_stopping_patience=3),
-    ... )
-    >>> result.early_stop.triggered, result.early_stop.best_epoch  # doctest: +SKIP
-    (True, 12)
-    >>> more = train_supervised_module(  # doctest: +SKIP
-    ...     result.module, bundle, config=TrainConfig(epochs=5), resume_from=result
-    ... )
+    >>> import pandas as pd
+    >>> from buildml import Session
+    >>> frame = pd.DataFrame({"amount": [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0], "target": [0, 1] * 4})
+    >>> session = Session.ingest(frame).set_roles({"target": "target"})
+    >>> _ = session.split(test_size=0.25, stratify=True, random_state=42)
+    >>> # Install PyTorch first: pip install "buildml[torch]"
+    >>> import torch
+    >>> from buildml.dl.loaders import make_loaders
+    >>> from buildml.dl.types import TrainConfig
+    >>> from buildml.dl.train import train_supervised_module
+    >>> bundle = make_loaders(session.dataset, session.split_plan, task="classification")
+    >>> module = torch.nn.Linear(1, 2)
+    >>> result = train_supervised_module(module, bundle, config=TrainConfig(epochs=1))
+    >>> more = train_supervised_module(result.module, bundle, config=TrainConfig(epochs=1), resume_from=result)
 
     See Also
     --------
@@ -349,7 +353,7 @@ def train_supervised_module(
     if prior is not None and prior.optimizer_state is not None:
         try:
             optimizer.load_state_dict(prior.optimizer_state)
-        except Exception as exc:  # noqa: BLE001: surface as ValidationError
+        except Exception as exc:  # noqa: BLE001 - surface as ValidationError
             raise ValidationError(
                 f"Could not restore optimizer state for resume: {exc}"
             ) from exc

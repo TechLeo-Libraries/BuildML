@@ -1,19 +1,17 @@
 """Embed text case fields so similarity can survive a change of wording.
 
-Treating a text column as categorical asks only whether two strings are
-identical, which for anything longer than a label means the answer is always no.
-"Laptop will not power on" and "machine won't turn on" are the same case
-described twice, and a categorical encoding sees two unrelated values.
+Categorical encoding treats different strings as distinct values, even when
+they express similar requests. For example, "Laptop will not power on" and
+"machine won't turn on" may describe similar problems despite different wording.
 
-Embedding fixes that by mapping text into a vector space where meaning drives
-position. The two descriptions land close together, distance registers them as
-similar, and case-based reasoning can work over free-text fields the way it
-works over numbers.
+An embedding model maps text into vectors that can capture some semantic
+similarity. Retrieval quality depends on the model and domain; similar meaning
+does not guarantee nearby vectors. Validate matches on representative cases.
 
 Numeric features can be concatenated onto the embedding to give a hybrid space
-where both contribute. Note that the numeric side is then a handful of
-dimensions against several hundred embedding dimensions, so it contributes far
-less to distance than a column count would suggest.
+where both contribute. Their relative influence depends on vector norms,
+scaling, and the distance metric, as well as dimensionality. Check that the
+combined representation retrieves appropriate neighbours.
 
 See Also
 --------

@@ -1,41 +1,23 @@
-"""Dataset-adaptive copy helpers for the Industry EDA App.
+"""Build dashboard descriptions from the supplied EDA report.
 
-Every surface that narrates a session (Cockpit sheet, Academy session lines,
-Readiness Gates evidence) must bind language to the live report: task type,
-declared target column, real column names, sampling disclosures, and skipped
-analyzers. Nothing in this module assumes a demo/churn schema.
+Helpers use the report's task, column names, sampling information, and analyzer
+status. They do not require the schema of a particular example dataset.
 
-Academy / Gates agents - extension contract
-------------------------------------------
-Python (payload builders)::
+Examples
+--------
+Describe a small dataset::
 
-    from buildml.dashboard.adapt import (
-        build_adapt_context,
-        list_names,
-        plural,
-        session_sentence,
-        target_phrase,
-        what_to_change,
-    )
+    import pandas as pd
+    from buildml import Session
+    from buildml.dashboard.adapt import build_adapt_context, session_sentence
 
-    ctx = build_adapt_context(report)
-    # ctx["target_column"], ctx["task"], ctx["columns"], ctx["skipped_analyzers"], …
-    line = session_sentence(report)
-    bullets = what_to_change(report)
+    frame = pd.DataFrame({'measurement': [1.0, 2.0, 3.0, 4.0]})
+    session = Session.ingest(frame).set_roles({'measurement': 'feature'})
+    report = session.eda().to_dict()
+    context = build_adapt_context(report)
+    print(session_sentence(report))
 
-Frontend (presentation)::
-
-    import {
-      callout, codeBlock, calcBlock, whatToChange, sectionScaffold,
-    } from "./learn_ui.js";
-
-Wire ``learn_ui.js`` before any ``academy_view.js`` / ``gates_view.js`` /
-``cockpit_view.js`` in ``templates/index.html``. Prefer these primitives over
-ad-hoc markup so beginner tips, evidence callouts, and copyable code stay
-Industry-consistent.
-
-Do **not** hardcode demo column names (e.g. ``target_churn``, ``tenure``,
-``monthly_charges``) in App payloads. Always resolve names from ``report``.
+The dashboard frontend uses ``learn_ui.js`` for shared presentation components.
 """
 
 from __future__ import annotations

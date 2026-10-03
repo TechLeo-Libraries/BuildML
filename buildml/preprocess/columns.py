@@ -1,16 +1,16 @@
 """Decide which columns a preprocessing step should touch, and reshape the frame.
 
 Every preprocessing step faces the same question: given a dataset and possibly
-an explicit list from the user, which columns do I actually operate on? Getting
-that wrong is quietly destructive: scaling a customer ID produces a
-meaningless float, imputing a target fabricates labels, and encoding a column
-you meant to ignore inflates the frame with useless width.
+an explicit list from the user, which columns should it operate on? Selecting
+inappropriate columns can alter their intended meaning: scaling an identifier
+changes its representation, imputing a target creates labels, and encoding an
+ignored column introduces unintended features.
 
 The rule this module implements is that column *roles* answer the question by
 default, and an explicit list overrides them. Columns marked ``target``,
 ``id``, ``group``, ``time``, ``weight``, or ``ignore`` are left alone unless you
 name them, because there is almost always a reason they carry that role. Naming
-a column explicitly is treated as informed consent: the role filter is skipped,
+a column explicitly bypasses the default role filter,
 though the dtype check still applies so you cannot scale a text column by
 accident.
 

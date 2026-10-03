@@ -67,8 +67,8 @@ class BinningPlan:
         ``'quantile'`` or ``'uniform'``: how the edges were chosen.
     n_bins:
         The bin count requested. The actual number can be lower for a column
-        with few distinct values or heavy ties, so read ``edges_`` for the
-        truth.
+        with few distinct values or heavy ties. Inspect ``edges_`` for the
+        fitted boundaries.
     edges_:
         The boundaries per column, ascending. The first is always negative
         infinity and the last positive infinity, which is what makes unseen
@@ -187,11 +187,15 @@ def fit_binning(
 
     Examples
     --------
-    >>> plan = fit_binning(  # doctest: +SKIP
-    ...     dataset, split_plan, columns=["age"], n_bins=5, encode_as="onehot"
-    ... )
-    >>> len(plan.edges_["age"]) - 1  # doctest: +SKIP
-    5
+    >>> import numpy as np
+    >>> import pandas as pd
+    >>> from buildml import Session
+    >>> frame = pd.DataFrame({"age": np.arange(40, dtype=float), "income": np.arange(40, dtype=float) ** 2, "target": [0, 1] * 20})
+    >>> session = Session.ingest(frame).set_roles({"target": "target"})
+    >>> _ = session.split(test_size=0.25, stratify=True, random_state=42)
+    >>> dataset, split_plan = session.dataset, session.split_plan
+    >>> from buildml.preprocess.binning import fit_binning
+    >>> plan = fit_binning(dataset, split_plan, columns=["age"], n_bins=4, encode_as="onehot")
 
     See Also
     --------

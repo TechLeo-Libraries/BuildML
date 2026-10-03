@@ -5,6 +5,7 @@ from __future__ import annotations
 from buildml.dashboard.academy_curriculum._factory import L, rows_blurb, with_starter
 from buildml.dashboard.academy_curriculum._helpers import (
     code_block,
+    demo_example,
     first_feature,
     first_numeric,
     fmt_n,
@@ -29,15 +30,15 @@ def _core() -> list[LessonSpec]:
             concept_key="data-splitting",
             tags=("split",),
             plain=(
-                "A split assigns each row a job: train a model, guide choices, or assess honestly. "
-                "A test set is valuable only because it stayed untouched.",
+                "Training data fits the model, validation data guides model choices, and test data "
+                "provides a final evaluation after those choices are fixed.",
             ),
             technical=(
                 "session.split(...) draws random partitions; inject_split adopts external indices. "
                 "Full-frame EDA describes observed rows - it is not train-fitted transform evidence.",
             ),
-            why=("Without a frozen test partition, metrics become marketing."),
-            formula="n_test ~ floor(n x test_size) for fractional test_size",
+            why=("Keeping test data out of model selection reduces optimism in the final performance estimate."),
+            formula="n_test = ceil(n x test_size) for fractional test_size in session.split",
             calculation=lambda ctx: (
                 f"{fmt_n(ctx.get('rows'))} of {fmt_n(ctx.get('rowsTotal'))} rows examined"
                 + (" (sampled). " if ctx.get("sampled") else ". ")
@@ -46,12 +47,12 @@ def _core() -> list[LessonSpec]:
             ),
             session_evidence=lambda ctx: rows_blurb(ctx)
             + ("; sampled profile" if ctx.get("sampled") else "; full extract profile"),
-            example_code=lambda ctx: code_block(
+            example_code=demo_example(lambda ctx: code_block(
                 "from buildml import Session",
                 "import pandas as pd",
                 "",
                 "session = (",
-                "    Session.ingest(pd.read_csv(\"your_data.csv\"))  # <-- change",
+                "    Session.ingest(frame.copy())  # <-- change",
                 "    .set_roles({",
                 f'        "{target_name(ctx)}": "target",',
                 f'        "{first_feature(ctx)}": "feature",',
@@ -65,7 +66,7 @@ def _core() -> list[LessonSpec]:
                 "    random_state=0,",
                 ")",
                 "session.assert_can_fit(\"train\")",
-            ),
+            )),
             what_to_change=(
                 "Adjust test/validation sizes; set stratify for classification.",
                 "Use inject_split for time/group splits computed outside BuildML.",
@@ -100,13 +101,13 @@ def _core() -> list[LessonSpec]:
             formula=None,
             calculation=lambda ctx: _strat_calc(ctx),
             session_evidence=lambda ctx: _strat_calc(ctx),
-            example_code=lambda ctx: with_starter(
+            example_code=demo_example(lambda ctx: with_starter(
                 ctx,
                 "# stratify=True is already set for classification in the starter above when applicable",
                 "print(session.split_plan)",
                 'session.learn("data-splitting", level="beginner")',
                 stratify=True,
-            ),
+            ), task='classification'),
             what_to_change=("Stratify on target; only add secondary strata if levels are thick enough."),
             pitfalls=("Stratifying on a rare category until the split becomes infeasible."),
             decide="For classification, default to stratified splits unless dependence structure forbids it.",
@@ -119,32 +120,32 @@ def _core() -> list[LessonSpec]:
             concept_key="cross-validation",
             tags=("CV",),
             plain=(
-                "Cross-validation rotates which fold is held out so you get several honest scores "
-                "instead of one lucky split.",
+                "Cross-validation evaluates the model on several held-out folds, "
+                "showing how performance varies across the chosen splits.",
             ),
             technical=(
-                "session.cv_score(...) and nested_cv_score(...) evaluate estimators with fold discipline. "
-                "Preprocessing must be inside the fold (BuildML train-fitted transforms respect the active split).",
+                "session.cv_score(...) and nested_cv_score(...) evaluate estimators across folds. "
+                "Pass a PreprocessRecipe so each fold fits preprocessing on its own training rows.",
             ),
             why=("Single holdouts are noisy; nested CV separates model selection from evaluation."),
             formula="CV score ~ mean_i metric(model_fit(train_(-i)), test_(i))",
             calculation=lambda ctx: (
-                f"With n={fmt_n(ctx.get('rows'))}, 5-fold test folds are ~"
-                f"{fmt_n(max(int((ctx.get('rows') or 0) / 5), 1))} rows each."
+                "In five-fold CV, each held-out fold contains roughly one-fifth "
+                "of the training partition. The EDA row count may describe a different sample."
             ),
             session_evidence=lambda ctx: rows_blurb(ctx) + f"; task={ctx.get('task')}.",
-            example_code=lambda ctx: with_starter(
+            example_code=demo_example(lambda ctx: with_starter(
                 ctx,
                 "from sklearn.linear_model import LogisticRegression, Ridge",
                 "",
-                "session = session.impute(strategy=\"median\").encode(method=\"onehot\").scale()",
+                "from buildml.preprocess import PreprocessRecipe",
+                "recipe = PreprocessRecipe(impute=\"median\", encode=\"onehot\", scale=\"standard\")",
                 "estimator = LogisticRegression(max_iter=200) if "
                 f"{is_classification(ctx)} else Ridge()",
-                "cv = session.cv_score(estimator, cv=5)  # <-- tune cv",
+                "cv = session.cv_score(estimator, cv=5, preprocess=recipe)",
                 "print(cv)",
-                "# For tuning + honest outer score:",
-                "# nested = session.nested_cv_score(estimator, param_grid={...})",
-            ),
+                "# For hyperparameter selection, use nested_cv_score with a param_grid and this recipe.",
+            ), task='classification'),
             what_to_change=("Set cv folds; use nested_cv_score when selecting models/hyperparameters."),
             pitfalls=("Preprocessing outside folds.", "Using test-set CV as if it were nested."),
             decide="Use CV (nested when tuning) instead of a single fragile holdout on small n.",
@@ -172,13 +173,13 @@ def _core() -> list[LessonSpec]:
                 f"Drift flags: {list_names(ctx.get('drifted') or []) or 'none'}; "
                 "absence of flags is not a warranty about future traffic."
             ),
-            example_code=lambda ctx: with_starter(
+            example_code=demo_example(lambda ctx: with_starter(
                 ctx,
                 "report = session.eda(include_plots=False, show=False)",
                 "print(report.to_dict().get(\"drift\"))",
                 'session.learn("dataset-drift", level="beginner")',
                 "# After deploy: compare live feature distributions to the training snapshot.",
-            ),
+            )),
             what_to_change=("Define reference vs analysis windows; set monitoring alerts on key features."),
             pitfalls=("Assuming IID forever because training CV looked fine."),
             decide="Name the reference distribution and the monitoring plan before shipping.",
@@ -208,11 +209,11 @@ def _core() -> list[LessonSpec]:
                 f"Id-like={list_names(ctx.get('idLike') or [])}; "
                 "treat full-frame fills/encodes as contaminated until proven train-folded."
             ),
-            example_code=lambda ctx: code_block(
+            example_code=demo_example(lambda ctx: code_block(
                 "from buildml import Session",
                 "import pandas as pd",
                 "",
-                "session = Session.ingest(pd.read_csv(\"your_data.csv\"))",
+                "session = Session.ingest(frame.copy())",
                 "session = session.set_roles({",
                 f'    "{target_name(ctx)}": "target",',
                 f'    "{first_feature(ctx)}": "feature",',
@@ -225,11 +226,11 @@ def _core() -> list[LessonSpec]:
                 "session = (",
                 "    session.split(test_size=0.2, stratify=True, random_state=0)",
                 "    .impute(strategy=\"median\")",
-                "    .encode(method=\"onehot\")",
+                "    .encode(method=\"onehot\", columns=[\"category\"])",
                 "    .scale(method=\"standard\")",
                 ")",
                 'session.learn("leakage-boundary", level="beginner")',
-            ),
+            ), task='classification'),
             what_to_change=("Remove post-outcome features; keep transform fit order after split."),
             pitfalls=(
                 "Cleaning the whole CSV then splitting last.",
@@ -250,20 +251,20 @@ def _core() -> list[LessonSpec]:
             plain=("When rows are ordered in time, random splits let the future train the past."),
             technical=(
                 "Prefer time-ordered holdouts via inject_split with indices sorted by timestamp. "
-                "Rolling/expanding CV is the usual honest design.",
+                "Use rolling or expanding folds when evaluation must reflect predictions of future observations.",
             ),
-            why=("Random CV on time series invents impossible foresight."),
+            why=("Random splits can place later observations in training and earlier observations in evaluation, which may not represent the intended forecasting task."),
             formula=None,
             calculation=lambda ctx: (
                 f"Time column: {(ctx.get('timeCol') or {}).get('name') if ctx.get('timeCol') else 'not detected - if your problem is temporal, declare it'}."
             ),
             session_evidence=lambda ctx: f"Temporal axis detected: {bool(ctx.get('timeCol'))}.",
-            example_code=lambda ctx: code_block(
+            example_code=demo_example(lambda ctx: code_block(
                 "import numpy as np",
                 "import pandas as pd",
                 "from buildml import Session",
                 "",
-                "frame = pd.read_csv(\"your_data.csv\")",
+                "frame = frame.copy()",
                 f"t = \"{(ctx.get('timeCol') or {}).get('name') or '<timestamp>'}\"",
                 "frame = frame.sort_values(t)",
                 "session = Session.ingest(frame).set_roles({",
@@ -276,7 +277,7 @@ def _core() -> list[LessonSpec]:
                 "    train_indices=idx[:cut].tolist(),",
                 "    test_indices=idx[cut:].tolist(),",
                 ")",
-            ),
+            )),
             what_to_change=("Set the time column and cutpoints; consider gap between train and test."),
             pitfalls=("Shuffling before a time split.", "Using future lags as features."),
             decide="If time matters, forbid random splits; use ordered holdouts.",
@@ -304,12 +305,12 @@ def _core() -> list[LessonSpec]:
             session_evidence=lambda ctx: (
                 f"Id-like columns (review as group keys): {list_names(ctx.get('idLike') or [])}."
             ),
-            example_code=lambda ctx: code_block(
+            example_code=demo_example(lambda ctx: code_block(
                 "import numpy as np",
                 "import pandas as pd",
                 "from buildml import Session",
                 "",
-                "frame = pd.read_csv(\"your_data.csv\")",
+                "frame = frame.copy()",
                 f"group = \"{(ctx.get('idLike') or ['<entity_id>'])[0]}\"  # <-- group key",
                 "session = Session.ingest(frame).set_roles({",
                 f'    group: "group", "{target_name(ctx)}": "target", "{first_feature(ctx)}": "feature",',
@@ -322,7 +323,7 @@ def _core() -> list[LessonSpec]:
                 "train_idx = frame.index[frame[group].isin(train_g)].tolist()",
                 "test_idx = frame.index[frame[group].isin(test_g)].tolist()",
                 "session = session.inject_split(train_indices=train_idx, test_indices=test_idx)",
-            ),
+            )),
             what_to_change=("Set the group key; ensure no entity appears in both train and test."),
             pitfalls=("Stratifying labels while still leaking groups across folds."),
             decide="If rows share entities, split and validate by entity, not by row.",
@@ -351,13 +352,13 @@ def _core() -> list[LessonSpec]:
             session_evidence=lambda ctx: (
                 f"Engine={(ctx.get('ds') or {}).get('engine')}; sampled={bool(ctx.get('sampled'))}."
             ),
-            example_code=lambda ctx: with_starter(
+            example_code=demo_example(lambda ctx: with_starter(
                 ctx,
                 "report = session.eda(include_plots=False, show=False)",
                 "for f in report.findings[:12]:",
                 "    print(f.severity, f.title)",
                 'session.learn("diagnostic-uncertainty", level="beginner")',
-            ),
+            )),
             what_to_change=("Record which findings you accept/reject and why."),
             pitfalls=("Equating 'no finding' with 'no risk'."),
             decide="Separate answerable numeric questions from human policy questions.",
@@ -381,7 +382,7 @@ def _core() -> list[LessonSpec]:
             formula="IQR rule: flag x < Q1-1.5·IQR or x > Q3+1.5·IQR",
             calculation=lambda ctx: _outlier_calc(ctx),
             session_evidence=lambda ctx: _outlier_calc(ctx),
-            example_code=lambda ctx: with_starter(
+            example_code=demo_example(lambda ctx: with_starter(
                 ctx,
                 "session = session.handle_outliers(",
                 f"    columns=[\"{first_numeric(ctx)}\"],  # <-- change",
@@ -390,7 +391,7 @@ def _core() -> list[LessonSpec]:
                 "    iqr_multiplier=1.5,",
                 ")",
                 'session.learn("outlier-handling", level="beginner")',
-            ),
+            )),
             what_to_change=("Choose detect vs cap vs drop per column with domain owners."),
             pitfalls=("Dropping outliers that are the positive class.", "Fitting bounds on full data."),
             decide="Classify each flagged extreme as error / rare valid / target-relevant before acting.",
@@ -420,17 +421,17 @@ def _additions() -> list[LessonSpec]:
                 f"numerics={fmt_n(len(ctx.get('numeric') or []))}."
             ),
             session_evidence=lambda ctx: rows_blurb(ctx),
-            example_code=lambda ctx: with_starter(
+            example_code=demo_example(lambda ctx: with_starter(
                 ctx,
                 "# Canonical classical order (adjust to your columns)",
                 "session = (",
                 "    session",
                 "    .impute(strategy=\"median\")",
-                "    .encode(method=\"onehot\")",
+                "    .encode(method=\"onehot\", columns=[\"category\"])",
                 "    .scale(method=\"standard\")",
                 ")",
                 'session.learn("encoding-imputation-scaling", level="beginner")',
-            ),
+            )),
             what_to_change=("Insert select_features / handle_outliers where your recipe needs them - still after split."),
             pitfalls=("Scaling before impute.", "Selecting features before encoding when screens need numeric X."),
             decide="Write the pipeline order once and refuse ad-hoc notebook rearrangements after seeing test scores.",
@@ -447,10 +448,10 @@ def _additions() -> list[LessonSpec]:
             why=("Tuning on the same CV you report optimistically biases the metric."),
             formula=None,
             calculation=lambda ctx: (
-                f"n={fmt_n(ctx.get('rows'))}: nested CV is expensive but honest when searching broadly."
+                f"n={fmt_n(ctx.get('rows'))}: nested CV separates tuning from evaluation and requires additional model fits."
             ),
             session_evidence=lambda ctx: rows_blurb(ctx),
-            example_code=lambda ctx: with_starter(
+            example_code=demo_example(lambda ctx: with_starter(
                 ctx,
                 "from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor",
                 "",
@@ -461,7 +462,7 @@ def _additions() -> list[LessonSpec]:
                 "    param_grid={\"n_estimators\": [50, 100], \"max_depth\": [3, 6]},  # <-- change",
                 ")",
                 "print(result)",
-            ),
+            )),
             what_to_change=("Set param grids narrowly; escalate compute only when needed."),
             pitfalls=("Reporting inner-CV best scores as final performance."),
             decide="If you tune, report outer nested scores (or a frozen final test once).",
@@ -479,11 +480,11 @@ def _additions() -> list[LessonSpec]:
             formula=None,
             calculation=lambda ctx: _power_calc(ctx),
             session_evidence=lambda ctx: _power_calc(ctx),
-            example_code=lambda ctx: with_starter(
+            example_code=demo_example(lambda ctx: with_starter(
                 ctx,
                 'session.learn("diagnostic-uncertainty", level="intermediate")',
                 "# Prefer simpler models + nested CV when minority counts are tiny.",
-            ),
+            )),
             what_to_change=("Compute minority class counts; set minimums before complex search."),
             pitfalls=("Claiming 0.01 AUC gains on 40 positives."),
             decide="State the effective sample size that justifies your model complexity.",
@@ -503,13 +504,13 @@ def _additions() -> list[LessonSpec]:
                 f"With {fmt_n(ctx.get('colCount'))} columns and many screens, expect spurious flags."
             ),
             session_evidence=lambda ctx: rows_blurb(ctx),
-            example_code=lambda ctx: with_starter(
+            example_code=demo_example(lambda ctx: with_starter(
                 ctx,
                 "# Pick ONE primary metric before fitting competitors",
                 "primary_metric = \"roc_auc\" if "
                 f"{is_classification(ctx)} else \"rmse\"  # <-- change",
                 "print(\"primary_metric=\", primary_metric)",
-            ),
+            )),
             what_to_change=("Pre-declare primary metric and primary segment."),
             pitfalls=("Mining all slices then reporting the best as confirmatory."),
             decide="Separate confirmatory vs exploratory analyses in writing.",
@@ -533,13 +534,13 @@ def _additions() -> list[LessonSpec]:
                 f"mode={(ctx.get('ds') or {}).get('version')} - record these in your run card."
             ),
             session_evidence=lambda ctx: f"ds={ctx.get('ds')}.",
-            example_code=lambda ctx: with_starter(
+            example_code=demo_example(lambda ctx: with_starter(
                 ctx,
                 "SEED = 0  # <-- change deliberately, not silently",
                 "session = session.split(test_size=0.2, stratify=True, random_state=SEED)",
                 "# Prefer checkpoint / save_pipeline when handing off",
                 'session.learn("reproducibility", level="beginner")',
-            ),
+            ), task='classification'),
             what_to_change=("Fix seeds; pin data snapshot ids; log package versions."),
             pitfalls=("Resetting seeds until the metric looks good."),
             decide="Ship a run card: data pin, seed, code version, primary metric.",
@@ -566,11 +567,11 @@ def _additions() -> list[LessonSpec]:
                 "Classify each as covariate / label / concept with domain context."
             ),
             session_evidence=lambda ctx: f"Drift columns: {list_names(ctx.get('drifted') or [])}.",
-            example_code=lambda ctx: with_starter(
+            example_code=demo_example(lambda ctx: with_starter(
                 ctx,
                 'session.learn("dataset-drift", level="intermediate")',
                 "# Document: what changed - X, y, or y|X - before choosing a remedy.",
-            ),
+            )),
             what_to_change=("Map monitoring signals to shift type and playbooks."),
             pitfalls=("Calling every change 'drift' without a type."),
             decide="For each alert, name the shift type and the response playbook.",

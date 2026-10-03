@@ -345,11 +345,14 @@ def resample_train(
 
     Examples
     --------
-    >>> data, split, plan = resample_train(  # doctest: +SKIP
-    ...     dataset, split_plan, sampler="smote", sampling_strategy=0.3
-    ... )
-    >>> plan.class_counts_after  # doctest: +SKIP
-    {'0': 9500, '1': 2850}
+    >>> # Install the sampler first: pip install "buildml[imbalanced]"
+    >>> import pandas as pd
+    >>> from buildml import Session
+    >>> frame = pd.DataFrame({"x": range(40), "target": [0] * 30 + [1] * 10})
+    >>> session = Session.ingest(frame).set_roles({"target": "target"})
+    >>> _ = session.split(test_size=0.25, stratify=True, random_state=42)
+    >>> from buildml.preprocess.imbalance import resample_train
+    >>> data, split, plan = resample_train(session.dataset, session.split_plan, sampler="random_oversample", sampling_strategy=1.0)
 
     See Also
     --------

@@ -4,9 +4,8 @@
 pip install "buildml[ai]"
 ```
 
-The operator never gets a Python REPL. Every side effect goes through
-the typed tool registry. This page is the allowlist and the chains that
-stay inside it.
+The operator invokes registered tools rather than executing arbitrary Python.
+This page describes the default tools and examples of how to combine them.
 
 Safety primitives: [ai-operator-safety](ai-operator-safety.md).
 Quickstart: [quickstart-ai](quickstart-ai.md).
@@ -20,9 +19,9 @@ Every side effect goes through `ToolSpec` entries in
 can ask for `os.system`, but the executor cannot run it.
 
 ```python
-from buildml.ai import registered_tool_names
+from buildml.ai import build_default_registry
 
-print(registered_tool_names())
+print([tool.name for tool in build_default_registry().tools])
 ```
 
 ---
@@ -121,13 +120,36 @@ print(session.ai.execute("evaluate", {"partition": "test"}, confirm=False))
 ```
 
 If a tool’s parameter schema rejects an estimator shorthand, fall back to
-direct Session APIs for that step: never invent kwargs.
+direct Session APIs for that step: check the documented parameter names.
 
 ---
 
 ## Pattern 2: RAG retrieve then grounded generate
 
 ```python
+from buildml import Session
+import pandas as pd
+
+session = Session.ingest(
+    pd.DataFrame({"a": [1, 2, 3, 4], "b": [4, 3, 2, 1], "y": [0, 1, 0, 1]})
+)
+session.ai.configure(provider="mock")
+
+for tool, params in [
+    ("set_roles", {"mapping": {"a": "feature", "b": "feature", "y": "target"}}),
+    ("split", {"test_size": 0.25, "stratify": True, "random_state": 0}),
+    ("impute", {"strategy": "median"}),
+    ("scale", {"method": "standard"}),
+]:
+    session.ai.execute(tool, params, confirm=True)
+
+session.ai.execute(
+    "fit",
+    {"estimator": "LogisticRegression", "task": "classification"},
+    confirm=True,
+)
+print(session.ai.execute("evaluate", {"partition": "test"}, confirm=False))
+
 session = Session()
 session.ai.configure(provider="mock")
 session.ai.execute(
@@ -152,6 +174,29 @@ Keep `eval_only` documents out of index tools
 ## Pattern 3: Torch loaders → fit → evaluate
 
 ```python
+from buildml import Session
+import pandas as pd
+
+session = Session.ingest(
+    pd.DataFrame({"a": [1, 2, 3, 4], "b": [4, 3, 2, 1], "y": [0, 1, 0, 1]})
+)
+session.ai.configure(provider="mock")
+
+for tool, params in [
+    ("set_roles", {"mapping": {"a": "feature", "b": "feature", "y": "target"}}),
+    ("split", {"test_size": 0.25, "stratify": True, "random_state": 0}),
+    ("impute", {"strategy": "median"}),
+    ("scale", {"method": "standard"}),
+]:
+    session.ai.execute(tool, params, confirm=True)
+
+session.ai.execute(
+    "fit",
+    {"estimator": "LogisticRegression", "task": "classification"},
+    confirm=True,
+)
+print(session.ai.execute("evaluate", {"partition": "test"}, confirm=False))
+
 # After roles + split on a numeric frame:
 session.ai.configure(provider="mock")
 session.ai.execute("make_torch_loaders", {"batch_size": 4, "normalize": True}, confirm=True)
@@ -167,6 +212,29 @@ tune on Session test.
 ## Pattern 4: Autonomy with a tight allowlist
 
 ```python
+from buildml import Session
+import pandas as pd
+
+session = Session.ingest(
+    pd.DataFrame({"a": [1, 2, 3, 4], "b": [4, 3, 2, 1], "y": [0, 1, 0, 1]})
+)
+session.ai.configure(provider="mock")
+
+for tool, params in [
+    ("set_roles", {"mapping": {"a": "feature", "b": "feature", "y": "target"}}),
+    ("split", {"test_size": 0.25, "stratify": True, "random_state": 0}),
+    ("impute", {"strategy": "median"}),
+    ("scale", {"method": "standard"}),
+]:
+    session.ai.execute(tool, params, confirm=True)
+
+session.ai.execute(
+    "fit",
+    {"estimator": "LogisticRegression", "task": "classification"},
+    confirm=True,
+)
+print(session.ai.execute("evaluate", {"partition": "test"}, confirm=False))
+
 session.ai.run_autonomous(
     "report workflow status after describing the dataset",
     confirm_autonomy=True,
@@ -184,6 +252,29 @@ increase residual risk even with caps.
 ## Pattern 5: Teaching-first before writes
 
 ```python
+from buildml import Session
+import pandas as pd
+
+session = Session.ingest(
+    pd.DataFrame({"a": [1, 2, 3, 4], "b": [4, 3, 2, 1], "y": [0, 1, 0, 1]})
+)
+session.ai.configure(provider="mock")
+
+for tool, params in [
+    ("set_roles", {"mapping": {"a": "feature", "b": "feature", "y": "target"}}),
+    ("split", {"test_size": 0.25, "stratify": True, "random_state": 0}),
+    ("impute", {"strategy": "median"}),
+    ("scale", {"method": "standard"}),
+]:
+    session.ai.execute(tool, params, confirm=True)
+
+session.ai.execute(
+    "fit",
+    {"estimator": "LogisticRegression", "task": "classification"},
+    confirm=True,
+)
+print(session.ai.execute("evaluate", {"partition": "test"}, confirm=False))
+
 session.ai.execute("learn_concept", {"topic": "missing-data"}, confirm=False)
 session.ai.execute(
     "explain_operation",
@@ -195,8 +286,8 @@ session.ai.execute("workflow_status", {}, confirm=False)
 ```
 
 `learn_concept` answers the conceptual question and `explain_operation` answers
-the state-aware one. Both are read-only and neither appends history, so an
-operator can teach freely before proposing a write.
+the state-aware one. Both are read-only and neither appends history; they can provide
+explanations before a state-changing operation.
 
 ---
 

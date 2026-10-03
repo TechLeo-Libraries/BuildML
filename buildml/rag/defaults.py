@@ -139,7 +139,9 @@ def default_retrieve_config(**overrides: object) -> RetrieveConfig:
     --------
     Ten results, reranked, everything else default::
 
+        from buildml.rag.defaults import default_retrieve_config
         cfg = default_retrieve_config(k=10, rerank=True)
+        print(cfg.k, cfg.rerank)
 
     See Also
     --------

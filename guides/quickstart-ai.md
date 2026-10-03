@@ -18,7 +18,7 @@ AI methods use `session.ai.*` and store results in `session.ai.result` /
 
 The operator defaults to **advisor → plan → confirmed execute**. Optional
 `session.ai.run_autonomous` is explicit operator automation under hard caps (allowlist,
-max steps, blocked sample egress, transcript audit): not unconstrained agency.
+max steps, blocked sample egress, transcript audit): with configured execution limits.
 
 ## Bring your own API key
 
@@ -32,14 +32,27 @@ export BUILDML_OPENAI_API_KEY="sk-your-key-here"
 Or in code:
 
 ```python
+import os
 from buildml import Session
 
-session = Session()
-session.ai.configure(api_key="sk-your-key-here")
+# Requires: pip install "buildml[ai]" and BUILDML_OPENAI_API_KEY in your environment.
+# This configures the client; it does not send a request.
+api_key = os.environ.get("BUILDML_OPENAI_API_KEY")
+if api_key:
+    session = Session()
+    session.ai.configure(provider="openai", api_key=api_key)
+else:
+    print("Set BUILDML_OPENAI_API_KEY to configure the OpenAI provider.")
 ```
 
 Keys are never logged, never persisted in transcripts or checkpoints, and
 never echoed in error messages.
+
+The following workflow examples use `provider="mock"` so they can run
+offline without credentials or API charges. Mock responses demonstrate the
+API structure; they are not model-generated analysis. To use OpenAI,
+install `buildml[ai]`, set `BUILDML_OPENAI_API_KEY`, and replace the provider
+with `"openai"` after reviewing the egress settings.
 
 ## Privacy defaults: STATS_ONLY
 
@@ -49,7 +62,6 @@ and column names, never raw row values.
 
 ```python
 import pandas as pd
-
 from buildml import Session
 
 frame = pd.DataFrame({
@@ -57,9 +69,8 @@ frame = pd.DataFrame({
     "income": [40, 55, 60, 80, 50, 70, 90, 65],
     "approved": [0, 1, 0, 1, 0, 1, 1, 0],
 })
-
 session = Session.ingest(frame)
-session.ai.configure(provider="openai")
+session.ai.configure(provider="mock")  # Deterministic offline responses; no API request.
 
 # Preview what will be sent before any API call
 manifest = session.ai.egress_preview()
@@ -80,6 +91,17 @@ Egress levels:
 Escalate egress only when needed:
 
 ```python
+import pandas as pd
+from buildml import Session
+
+frame = pd.DataFrame({
+    "age": [25, 30, 35, 40, 29, 33, 52, 47],
+    "income": [40, 55, 60, 80, 50, 70, 90, 65],
+    "approved": [0, 1, 0, 1, 0, 1, 1, 0],
+})
+session = Session.ingest(frame)
+session.ai.configure(provider="mock")  # Deterministic offline responses; no API request.
+
 result = session.ai.advisor(
     "What patterns do you see in the data?",
     level="redacted_sample",
@@ -93,6 +115,17 @@ result = session.ai.advisor(
 Inspect exactly what would be sent:
 
 ```python
+import pandas as pd
+from buildml import Session
+
+frame = pd.DataFrame({
+    "age": [25, 30, 35, 40, 29, 33, 52, 47],
+    "income": [40, 55, 60, 80, 50, 70, 90, 65],
+    "approved": [0, 1, 0, 1, 0, 1, 1, 0],
+})
+session = Session.ingest(frame)
+session.ai.configure(provider="mock")  # Deterministic offline responses; no API request.
+
 payload = session.ai.dry_run("Suggest next preprocessing steps")
 print(payload["messages"])       # system + user messages
 print(payload["tools"])          # available tool schemas
@@ -106,6 +139,17 @@ print(payload["egress_manifest"])  # egress details
 Session state. It uses the explain catalog and current Session context:
 
 ```python
+import pandas as pd
+from buildml import Session
+
+frame = pd.DataFrame({
+    "age": [25, 30, 35, 40, 29, 33, 52, 47],
+    "income": [40, 55, 60, 80, 50, 70, 90, 65],
+    "approved": [0, 1, 0, 1, 0, 1, 1, 0],
+})
+session = Session.ingest(frame)
+session.ai.configure(provider="mock")  # Deterministic offline responses; no API request.
+
 session.set_roles({"age": "feature", "income": "feature", "approved": "target"})
 
 result = session.ai.advisor("What preprocessing steps should I consider?")
@@ -121,6 +165,17 @@ The advisor cannot execute operations. It returns suggestions, not actions.
 Session state:
 
 ```python
+import pandas as pd
+from buildml import Session
+
+frame = pd.DataFrame({
+    "age": [25, 30, 35, 40, 29, 33, 52, 47],
+    "income": [40, 55, 60, 80, 50, 70, 90, 65],
+    "approved": [0, 1, 0, 1, 0, 1, 1, 0],
+})
+session = Session.ingest(frame)
+session.ai.configure(provider="mock")  # Deterministic offline responses; no API request.
+
 plan = session.ai.plan("Build a classification model with proper preprocessing")
 print(plan.goal)
 for step in plan.steps:
@@ -138,14 +193,25 @@ Plans are proposals. Nothing executes until you explicitly confirm.
 2. **Execute:** Only runs when you pass `confirm=True`
 
 ```python
+import pandas as pd
+from buildml import Session
+
+frame = pd.DataFrame({
+    "age": [25, 30, 35, 40, 29, 33, 52, 47],
+    "income": [40, 55, 60, 80, 50, 70, 90, 65],
+    "approved": [0, 1, 0, 1, 0, 1, 1, 0],
+})
+session = Session.ingest(frame)
+session.ai.configure(provider="mock")  # Deterministic offline responses; no API request.
+
 # Phase 1: proposal (no state change)
 proposal = session.ai.execute(
     "set_roles",
     {"mapping": {"age": "feature", "income": "feature", "approved": "target"}},
 )
 print(proposal.requires_confirmation)  # True
-print(proposal.tool_name)              # "set_roles"
-print(proposal.arguments)              # the mapping
+print(proposal.tool_call.tool_name)              # "set_roles"
+print(proposal.tool_call.arguments)              # the mapping
 
 # Phase 2: confirmed execution (state changes)
 result = session.ai.execute(
@@ -171,7 +237,7 @@ are rejected:
 from buildml.ai import build_default_registry
 
 registry = build_default_registry()
-print(list(registry.keys()))  # available tools
+print([tool.name for tool in registry.tools])  # available tools
 ```
 
 Available tools include:
@@ -191,8 +257,19 @@ confirmations. API keys and raw data (unless `FULL_SAMPLE` opt-in) are never
 persisted:
 
 ```python
+import pandas as pd
+from buildml import Session
+
+frame = pd.DataFrame({
+    "age": [25, 30, 35, 40, 29, 33, 52, 47],
+    "income": [40, 55, 60, 80, 50, 70, 90, 65],
+    "approved": [0, 1, 0, 1, 0, 1, 1, 0],
+})
+session = Session.ingest(frame)
+session.ai.configure(provider="mock")  # Deterministic offline responses; no API request.
+
 session.ai.advisor("Describe the data")
-session.ai.execute("set_roles", {"mapping": {...}}, confirm=True)
+session.ai.execute("set_roles", {"mapping": {"age": "feature", "income": "feature", "approved": "target"}}, confirm=True)
 
 # Save transcript (secrets redacted)
 session.ai.save_transcript("artifacts/transcript.json")
@@ -209,8 +286,19 @@ Transcripts are separate from Session checkpoints and DL/RAG bundles.
 Configure token and cost budgets to prevent runaway usage:
 
 ```python
+import pandas as pd
+from buildml import Session
+
+frame = pd.DataFrame({
+    "age": [25, 30, 35, 40, 29, 33, 52, 47],
+    "income": [40, 55, 60, 80, 50, 70, 90, 65],
+    "approved": [0, 1, 0, 1, 0, 1, 1, 0],
+})
+session = Session.ingest(frame)
+session.ai.configure(provider="mock")  # Deterministic offline responses; no API request.
+
 session.ai.configure(
-    provider="openai",
+    provider="mock",
     max_tokens=10000,
     max_cost_usd=5.0,
     max_iterations=10,  # default
@@ -225,6 +313,17 @@ print(status["budget"])  # tokens_used, cost_used_usd, limits
 Tests and offline workflows use `MockProvider`:
 
 ```python
+import pandas as pd
+from buildml import Session
+
+frame = pd.DataFrame({
+    "age": [25, 30, 35, 40, 29, 33, 52, 47],
+    "income": [40, 55, 60, 80, 50, 70, 90, 65],
+    "approved": [0, 1, 0, 1, 0, 1, 1, 0],
+})
+session = Session.ingest(frame)
+session.ai.configure(provider="mock")  # Deterministic offline responses; no API request.
+
 session.ai.configure(provider="mock")
 result = session.ai.advisor("Test question")
 # Works offline; returns canned responses
@@ -238,6 +337,17 @@ Default AI stays propose→confirm→execute. For allowlisted automation with ha
 caps (max steps, tool allowlist, blocked sample egress, transcript audit):
 
 ```python
+import pandas as pd
+from buildml import Session
+
+frame = pd.DataFrame({
+    "age": [25, 30, 35, 40, 29, 33, 52, 47],
+    "income": [40, 55, 60, 80, 50, 70, 90, 65],
+    "approved": [0, 1, 0, 1, 0, 1, 1, 0],
+})
+session = Session.ingest(frame)
+session.ai.configure(provider="mock")  # Deterministic offline responses; no API request.
+
 session.ai.configure(provider="mock", egress_level="stats_only")
 result = session.ai.run_autonomous(
     "split the data and report workflow status",
@@ -247,16 +357,27 @@ result = session.ai.run_autonomous(
 print(result.completed_steps, result.stop_reason, result.residual_risks)
 ```
 
-This is operator automation inside an allowlist: not unconstrained agency.
+Automated execution remains limited to the configured tools and budgets.
 
 ## Explain catalog
 
 AI operations are documented in the explain catalog:
 
 ```python
+import pandas as pd
+from buildml import Session
+
+frame = pd.DataFrame({
+    "age": [25, 30, 35, 40, 29, 33, 52, 47],
+    "income": [40, 55, 60, 80, 50, 70, 90, 65],
+    "approved": [0, 1, 0, 1, 0, 1, 1, 0],
+})
+session = Session.ingest(frame)
+session.ai.configure(provider="mock")  # Deterministic offline responses; no API request.
+
 before = session.explain("ai_advisor", moment="before")
-print(before.operation, before.prerequisites)
-print(before.leakage_risks)  # egress privacy warnings
+print(before.operation, before.prerequisite_chain)
+print(before.risks)  # egress privacy warnings
 ```
 
 ## Security warnings
@@ -283,7 +404,7 @@ them. The operator is not a substitute for domain expertise.
 | RAG bundle | `buildml.rag_bundle.v1` | embeddings, index, chunk config | AI transcript |
 | AI transcript | `buildml.ai.transcript.v1` | conversation, tool calls, egress manifests | API keys, raw data (default) |
 
-## Known limits (honest)
+## Limitations
 
 - **Bring-your-own API key.** BuildML never ships, proxies, or embeds keys.
 - **Default egress is STATS_ONLY.** Raw rows require explicit opt-in and

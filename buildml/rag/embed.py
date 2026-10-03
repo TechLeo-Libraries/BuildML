@@ -248,9 +248,8 @@ class CallableEmbedder:
     def encode(self, texts: Sequence[str]) -> np.ndarray:
         """Call the function and check that its output is usable.
 
-        Both the row count and the width are verified, because a mismatch in
-        either produces an index whose vectors do not correspond to its chunks
-       : and nothing downstream would notice.
+        Both the row count and vector width are checked to detect shape
+        mismatches before the embeddings are indexed.
 
         Parameters
         ----------
@@ -455,7 +454,10 @@ def resolve_embedder(
     --------
     Force the semantic path::
 
+        # Requires: pip install "buildml[rag]"; downloads MiniLM weights on first use.
+        from buildml.rag.embed import resolve_embedder
         embedder, config = resolve_embedder("minilm")
+        print(config.backend, config.model_name)
 
     See Also
     --------

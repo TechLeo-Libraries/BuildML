@@ -215,6 +215,7 @@ def detect_path_format(path: Path) -> str:
 
     Examples
     --------
+    >>> from buildml.ingest.detect import detect_path_format
     >>> from pathlib import Path
     >>> detect_path_format(Path("sales.csv"))
     'csv'
@@ -379,14 +380,22 @@ def check_materialization(
 
     Examples
     --------
-    ::
+    .. code-block:: python
 
-        telemetry = check_materialization(
-            train_frame,
-            context="estimator fit",
-            hard_limit_bytes=2 * 1024**3,
-        )
-        history.append(telemetry.to_dict())
+        import pandas as pd
+        from sklearn.datasets import make_classification
+        from sklearn.tree import DecisionTreeClassifier
+        from buildml import Session
+        X, y = make_classification(n_samples=80, n_features=4, n_informative=3, n_redundant=0, random_state=42)
+        frame = pd.DataFrame(X, columns=["age", "income", "spend", "visits"])
+        frame["target"] = y
+        session = Session.ingest(frame).set_roles({"target": "target"})
+        session.split(test_size=0.2, validation_size=0.2, stratify=True, random_state=42)
+        dataset, split_plan = session.dataset, session.split_plan
+        estimator = DecisionTreeClassifier(max_depth=3, random_state=42)
+        from buildml.ingest.detect import check_materialization
+        telemetry = check_materialization(session.partition("train"), context="estimator fit", hard_limit_bytes=2 * 1024**3)
+        print(telemetry)
 
     See Also
     --------
@@ -572,6 +581,7 @@ def recommend_mode(
 
     Examples
     --------
+    >>> from buildml.ingest.detect import recommend_mode
     >>> from buildml.core.types import DataMode
     >>> recommend_mode(byte_estimate=1024, row_estimate=None) is DataMode.MEMORY
     True
@@ -635,6 +645,7 @@ def recommend_engine(
 
     Examples
     --------
+    >>> from buildml.ingest.detect import recommend_engine
     >>> from buildml.core.types import DataMode, EngineName
     >>> engine, notes = recommend_engine(
     ...     mode=DataMode.MEMORY, installed=(EngineName.PANDAS,)

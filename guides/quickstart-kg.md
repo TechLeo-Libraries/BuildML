@@ -6,11 +6,10 @@ pip install buildml
 ```
 
 `(head, relation, tail)` columns are required; they are not inferred.
-Default is native TransE. Fit is train-only. This is not Neo4j and not
-`session.graph`.
+Default is native TransE. Fit is train-only. Node classification uses the separate `session.graph` API.
 
 [KG deep](kg-deep.md) ·
-Paste: [`examples/kg_transe_loop.py`](../examples/kg_transe_loop.py) ·
+Runnable example: [`examples/kg_transe_loop.py`](../examples/kg_transe_loop.py) ·
 Evidence: [kg-biomed-linkpred](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/kg-biomed-linkpred)
 
 ---
@@ -116,4 +115,3 @@ session.kg.save_bundle("artifacts/kg_demo_bundle")
 
 - Related: recommenders and LTR
 - Knowledge graphs (this guide) ship with industry extras when installed
-- Related next: probabilistic ML

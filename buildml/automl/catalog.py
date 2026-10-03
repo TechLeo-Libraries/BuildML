@@ -1,4 +1,4 @@
-"""AutoML method catalog and honest capability matrix."""
+"""AutoML method catalog and capability matrix."""
 
 from __future__ import annotations
 
@@ -22,7 +22,7 @@ NativeMethodName = Literal["grid", "randomized", "optuna", "evolutionary"]
 
 
 def automl_capability_matrix() -> dict[str, Any]:
-    """Build the honest capability matrix for AutoML backends and optional extras.
+    """Build the capability matrix for AutoML backends and optional extras.
 
     Reports native, Optuna, FLAML, and AutoGluon paths, fold-local recipe search
     support, install hints, and explicit non-goals for teaching overlays and
@@ -187,7 +187,7 @@ def automl_capability_matrix() -> dict[str, Any]:
 
 
 def _default_backend_when_installed() -> str:
-    """Suggest the richest installed backend (honest, not magic)."""
+    """Suggest the richest installed backend based on installed optional dependencies."""
     if flaml_available():
         return "flaml"
     if autogluon_available():

@@ -49,7 +49,7 @@ class FederatedPlan:
         Returns
         -------
         dict[str, Any]
-            Plan metadata, column contract, and honesty disclosures.
+            Plan metadata, column contract, and implementation limitations.
         """
         return {
             "backend": self.backend,
@@ -106,7 +106,7 @@ class FederatedFitResult:
         Returns
         -------
         dict[str, Any]
-            Fit metadata, round history summary, and honesty disclosures.
+            Fit metadata, round history summary, and implementation limitations.
         """
         return {
             "backend": self.backend,

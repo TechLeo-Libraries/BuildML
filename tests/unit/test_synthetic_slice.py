@@ -131,6 +131,30 @@ def test_merge_extend_train_provenance() -> None:
     assert test_after.equals(test_before)
 
 
+@pytest.mark.parametrize("storage", ["python", "pyarrow"])
+def test_copula_merge_preserves_string_dtype_and_both_holdouts(storage) -> None:
+    frame = pd.DataFrame({"x": range(80), "y": [0, 1] * 40})
+    frame["group"] = pd.Series(["A", "B"] * 40, dtype=pd.StringDtype(storage=storage))
+    session = Session.ingest(frame).set_roles(
+        {"x": "feature", "group": "feature", "y": "target"}
+    ).split(test_size=0.25, validation_size=0.25, random_state=0)
+    before = {
+        partition: session.dataset.frame.iloc[
+            list(getattr(session._split_plan, f"{partition}_indices"))
+        ].reset_index(drop=True).copy()
+        for partition in ("validation", "test")
+    }
+    session.synthetic.fit(method="gaussian_copula", random_state=0)
+    result = session.synthetic.sample(n=8, merge_mode="extend_train", random_state=1)
+    assert result.merged
+    assert session.dataset.frame["group"].dtype == frame["group"].dtype
+    for partition, expected in before.items():
+        actual = session.dataset.frame.iloc[
+            list(getattr(session._split_plan, f"{partition}_indices"))
+        ].drop(columns=["_synthetic"]).reset_index(drop=True)
+        pd.testing.assert_frame_equal(actual, expected)
+
+
 def test_bundle_roundtrip(tmp_path) -> None:
     session = _mixed_session()
     session.synthetic.fit(method="gaussian_copula", random_state=0)

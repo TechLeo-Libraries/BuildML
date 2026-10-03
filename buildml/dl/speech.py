@@ -490,6 +490,7 @@ def evaluate_asr(
 
     Examples
     --------
+    >>> from buildml.dl.speech import evaluate_asr
     >>> result = evaluate_asr(
     ...     hypotheses=["the cat sat", "hello world"],
     ...     references=["the cat sat", "hello there"],
@@ -871,12 +872,22 @@ def build_speech_classifier(
 
     Examples
     --------
-    Size from the loader bundle::
+    .. code-block:: python
 
-        bundle = make_speech_loaders(dataset, split_plan, audio_column="clip")
-        module = build_speech_classifier(
-            n_classes=len(bundle.contract.class_labels),
-        )
+        # Install audio support first: pip install "buildml[audio]"
+        import numpy as np
+        import pandas as pd
+        from buildml import Session
+        from buildml.dl.speech import make_speech_loaders, build_speech_classifier, SpeechLoaderConfig
+        # Synthetic tones demonstrate loader shapes; they are not spoken sentences.
+        t = np.arange(1600, dtype=np.float32) / 16000
+        clips = [np.sin(2 * np.pi * frequency * t).astype(np.float32) for frequency in [220, 440] * 10]
+        frame = pd.DataFrame({"clip": clips, "target": [0, 1] * 10})
+        session = Session.ingest(frame).set_roles({"target": "target"})
+        session.split(test_size=0.2, stratify=True, random_state=42)
+        bundle = make_speech_loaders(session.dataset, session.split_plan, audio_column="clip", config=SpeechLoaderConfig(max_samples=1600, sample_rate=16000))
+        module = build_speech_classifier(n_classes=2)
+        print(bundle.report)
 
     See Also
     --------
@@ -960,12 +971,22 @@ def make_speech_loaders(
 
     Examples
     --------
-    Three-second clips::
+    .. code-block:: python
 
-        cfg = SpeechLoaderConfig(max_samples=48_000, sample_rate=16_000)
-        bundle = make_speech_loaders(
-            dataset, split_plan, audio_column="clip", config=cfg,
-        )
+        # Install audio support first: pip install "buildml[audio]"
+        import numpy as np
+        import pandas as pd
+        from buildml import Session
+        from buildml.dl.speech import make_speech_loaders, build_speech_classifier, SpeechLoaderConfig
+        # Synthetic tones demonstrate loader shapes; they are not spoken sentences.
+        t = np.arange(1600, dtype=np.float32) / 16000
+        clips = [np.sin(2 * np.pi * frequency * t).astype(np.float32) for frequency in [220, 440] * 10]
+        frame = pd.DataFrame({"clip": clips, "target": [0, 1] * 10})
+        session = Session.ingest(frame).set_roles({"target": "target"})
+        session.split(test_size=0.2, stratify=True, random_state=42)
+        bundle = make_speech_loaders(session.dataset, session.split_plan, audio_column="clip", config=SpeechLoaderConfig(max_samples=1600, sample_rate=16000))
+        module = build_speech_classifier(n_classes=2)
+        print(bundle.report)
 
     See Also
     --------
@@ -1196,15 +1217,27 @@ def transcribe_audio_values(
 
     Examples
     --------
-    Real transcription with a named model::
+    .. code-block:: python
 
-        result = transcribe_audio_values(
-            ["clip1.wav", "clip2.wav"],
-            backend="transformers",
-            model_id="openai/whisper-base",
-            max_samples=16_000 * 30,
-        )
-        result.texts
+        # Install audio support first: pip install "buildml[audio]"
+        import numpy as np
+        import pandas as pd
+        from buildml import Session
+        from buildml.dl.speech import make_speech_loaders, build_speech_classifier, SpeechLoaderConfig
+        # Synthetic tones demonstrate loader shapes; they are not spoken sentences.
+        t = np.arange(1600, dtype=np.float32) / 16000
+        clips = [np.sin(2 * np.pi * frequency * t).astype(np.float32) for frequency in [220, 440] * 10]
+        frame = pd.DataFrame({"clip": clips, "target": [0, 1] * 10})
+        session = Session.ingest(frame).set_roles({"target": "target"})
+        session.split(test_size=0.2, stratify=True, random_state=42)
+        bundle = make_speech_loaders(session.dataset, session.split_plan, audio_column="clip", config=SpeechLoaderConfig(max_samples=1600, sample_rate=16000))
+        module = build_speech_classifier(n_classes=2)
+        print(bundle.report)
+        from buildml.dl.speech import transcribe_audio_values
+        # Install buildml[speech]; the first call downloads Whisper weights.
+        # This tone only checks the call and result format, not transcription accuracy.
+        result = transcribe_audio_values(clips[:1], backend="transformers", model_id="openai/whisper-tiny", max_samples=1600)
+        print(result.texts)
 
     See Also
     --------
@@ -1366,14 +1399,27 @@ def transcribe_from_dataset(
 
     Examples
     --------
-    Transcribe the test split::
+    .. code-block:: python
 
-        result = transcribe_from_dataset(
-            dataset,
-            audio_column="clip",
-            partition="test",
-            split_plan=split_plan,
-        )
+        # Install audio support first: pip install "buildml[audio]"
+        import numpy as np
+        import pandas as pd
+        from buildml import Session
+        from buildml.dl.speech import make_speech_loaders, build_speech_classifier, SpeechLoaderConfig
+        # Synthetic tones demonstrate loader shapes; they are not spoken sentences.
+        t = np.arange(1600, dtype=np.float32) / 16000
+        clips = [np.sin(2 * np.pi * frequency * t).astype(np.float32) for frequency in [220, 440] * 10]
+        frame = pd.DataFrame({"clip": clips, "target": [0, 1] * 10})
+        session = Session.ingest(frame).set_roles({"target": "target"})
+        session.split(test_size=0.2, stratify=True, random_state=42)
+        bundle = make_speech_loaders(session.dataset, session.split_plan, audio_column="clip", config=SpeechLoaderConfig(max_samples=1600, sample_rate=16000))
+        module = build_speech_classifier(n_classes=2)
+        print(bundle.report)
+        from buildml.dl.speech import transcribe_from_dataset
+        # Install buildml[speech]; the first call downloads Whisper weights.
+        # This tone only checks the call and result format, not transcription accuracy.
+        result = transcribe_from_dataset(session.dataset, audio_column="clip", split_plan=session.split_plan, partition="test", backend="transformers", model_id="openai/whisper-tiny", max_samples=1600)
+        print(result.texts)
 
     See Also
     --------
@@ -1428,6 +1474,7 @@ def resolve_audio_paths(values: list[Any]) -> list[str]:
 
     Examples
     --------
+    >>> from buildml.dl.speech import resolve_audio_paths
     >>> import numpy as np
     >>> resolve_audio_paths(["clip.wav", np.zeros((16000,), dtype=np.float32)])
     ['clip.wav', '<waveform shape=(16000,)>']

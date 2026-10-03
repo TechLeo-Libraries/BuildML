@@ -28,9 +28,9 @@ def sample_synthetic(
     random_state: int | None = None,
     condition: dict[str, Any] | None = None,
 ) -> SyntheticSampleResult:
-    """Draw ``n`` rows from a fitted synthesizer (does not mutate Session).
+    """Draw rows from a fitted synthesizer without changing the Session.
 
-Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+Dispatches to the fitted generator and packages the frame with provenance disclosures. Only the native Gaussian copula accepts equality conditions.
 
 Parameters
 ----------
@@ -234,9 +234,9 @@ def sample_and_maybe_merge(
     merge_mode: MergeMode = "none",
     provenance_column: str = "_synthetic",
 ) -> tuple[SyntheticSampleResult, Dataset | None, SplitPlan | None]:
-    """Sample, optionally merge into train; return updated dataset/split when merged.
+    """Sample rows and optionally append them to the training partition.
 
-Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+With ``merge_mode="none"``, dataset and split outputs are None. Extending train rebuilds row indices and adds an ignored provenance column while preserving holdout values.
 
 Parameters
 ----------

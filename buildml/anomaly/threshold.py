@@ -134,8 +134,6 @@ ValidationError
 def apply_threshold_tune(plan: AnomalyPlan, tuned: AnomalyThresholdTuneResult) -> None:
     """Mutate a plan's threshold after validation tuning (in-place).
 
-Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
-
 Parameters
 ----------
 plan:

@@ -347,11 +347,27 @@ def cross_validate_torch(
 
     Examples
     --------
-    Check both the level and the stability::
+    Cross-validate only the training partition::
 
-        cv = cross_validate_torch(dataset, n_folds=5, epochs=10)
-        cv.mean_metrics["accuracy"]
-        cv.std_metrics["accuracy"]  # large means the split matters more than the model
+        # Install first: pip install "buildml[torch]"
+        import pandas as pd
+        from sklearn.datasets import make_classification
+        from buildml import Session
+
+        x, y = make_classification(n_samples=40, n_features=4, n_informative=3, n_redundant=0, random_state=0)
+        frame = pd.DataFrame(x, columns=['a', 'b', 'c', 'd'])
+        frame['target'] = y
+        session = Session.ingest(frame).set_roles({'target': 'target'})
+        session.split(test_size=0.2, stratify=True, random_state=0)
+        from buildml.dl.cv import cross_validate_torch
+
+        # The lower-level CV function scores folds of every row supplied to it.
+        # Give it only training rows to keep the Session test partition reserved.
+        training_frame = session.to_pandas().loc[list(session.split_plan.train_indices)]
+        training_data = Session.ingest(training_frame).set_roles(session.dataset.roles).dataset
+        result = cross_validate_torch(training_data, n_folds=2, epochs=1, device='cpu')
+        print(result.mean_metrics, result.std_metrics)
+
 
     See Also
     --------

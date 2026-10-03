@@ -9,10 +9,11 @@ from __future__ import annotations
 import pytest
 
 
-def test_umap_subprocess_probe_uses_slow_timeout() -> None:
+@pytest.mark.parametrize("module", ["umap", "torch", "torch_geometric", "dowhy", "sdv", "sdmetrics"])
+def test_heavy_subprocess_probe_uses_slow_timeout(module: str) -> None:
     from buildml.dl.extras import _SLOW_IMPORT_TIMEOUTS
 
-    assert _SLOW_IMPORT_TIMEOUTS["umap"] >= 60.0
+    assert _SLOW_IMPORT_TIMEOUTS[module] >= 60.0
 
 
 @pytest.fixture(autouse=True)

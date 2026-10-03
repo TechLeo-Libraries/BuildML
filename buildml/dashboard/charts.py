@@ -114,6 +114,7 @@ def charts_for_domain(domain_key: str) -> list[str]:
 
     Examples
     --------
+    >>> from buildml.dashboard.charts import charts_for_domain
     >>> isinstance(charts_for_domain("quality"), list)
     True
     >>> charts_for_domain("no-such-board")
@@ -217,10 +218,25 @@ def theme_palette(theme: ThemeName | str = "light") -> Iterator[dict[str, Any]]:
 
     Examples
     --------
-    ::
+    Build charts from a complete EDA example::
 
-        with theme_palette("dark"):
-            figures = build_chart_figures(report)
+        # Install first: pip install "buildml[dashboard]"
+        import pandas as pd
+        from buildml import Session
+
+        frame = pd.DataFrame({'age': list(range(20, 60)), 'income': list(range(40, 80)),
+                              'approved': [0, 1] * 20})
+        session = Session.ingest(frame).set_roles({'age': 'feature', 'income': 'feature', 'approved': 'target'})
+        session.split(test_size=0.2, stratify=True, random_state=0)
+        from buildml.dashboard.charts import theme_palette, build_chart_figures
+
+        report = session.eda()
+        with theme_palette('dark'):
+            figures = build_chart_figures(report.to_dict())
+        print(len(figures))
+
+
+
 
     See Also
     --------
@@ -1444,6 +1460,9 @@ def _fig_roles(go: Any, report: dict[str, Any]) -> dict[str, Any]:
             for role_name in roles.values():
                 key = str(role_name)
                 tallies[key] = tallies.get(key, 0.0) + 1.0
+            undeclared = max(int(overview.get("n_columns") or len(roles)) - len(roles), 0)
+            if undeclared:
+                tallies["undeclared role"] = float(undeclared)
             labels = list(tallies)
             values = [tallies[key] for key in labels]
     else:

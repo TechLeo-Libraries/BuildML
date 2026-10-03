@@ -13,7 +13,7 @@ Apache-2.0 · [TechLeo-Libraries/BuildML](https://github.com/TechLeo-Libraries/B
 
 ## Start here
 
-Do this much before you pick a domain.
+Start with installation and a basic Session workflow.
 
 | | Read | What you should be able to do |
 | --- | --- | --- |
@@ -23,26 +23,25 @@ Do this much before you pick a domain.
 
 If machine-learning vocabulary is new, start a Session and run
 `session.learn()`, then `session.explain("split")`. The
-[EDA / Teaching Studio](eda-teaching-studio.md#teaching-surfaces-explain--learn--workflow--walkthrough)
+[EDA / Teaching Studio](eda-teaching-studio.md#teaching-methods-explain-learn-workflow-and-walkthrough)
 page is the long form of that. Domain work lives on `session.<domain>.*`.
 
-After that, pick a domain from the map below. Quickstarts are short
-on-ramps. Deep guides carry use cases, failure modes, and cross-links.
-Paste the loop from [`examples/`](https://github.com/TechLeo-Libraries/BuildML/tree/main/examples). Then run one proof from
+After that, pick a domain from the map below. Quickstarts introduce a complete example. Detailed guides cover additional
+use cases, error handling, and related methods.
+Run a script from [`examples/`](https://github.com/TechLeo-Libraries/BuildML/tree/main/examples). Then run one proof from
 the [evidence index](https://github.com/TechLeo-Libraries/BuildML/blob/main/proofs/README.md).
 
 ---
 
 ## Session domain → guide map
 
-Pick a domain from the quickstart table below. Each row is a job, not an
-API dump. The deep page is there when you need failure modes and
-refuses. Method lists live on `session.explain("<name>")` and the
+Pick a domain from the quickstart table below. Each row describes a supported task. The detailed guide explains
+additional workflows, validation checks, and limitations. Method lists live on `session.explain("<name>")` and the
 [package reference](../docs/package.rst).
 
 ---
 
-## Quickstarts (on-ramps)
+## Quickstarts
 
 | Guide | Extra | Summary |
 | --- | --- | --- |
@@ -51,10 +50,10 @@ refuses. Method lists live on `session.explain("<name>")` and the
 | [Ensembles](quickstart-ensemble.md) | core | Voting, stacking, holdout blending, ensemble bundle |
 | [AutoML](quickstart-automl.md) | core (`buildml[optuna]` for Optuna method) | Family + recipe search beyond HPO, automl bundle |
 | [Forecasting](quickstart-forecasting.md) | core | time_split lag/baseline forecasts, eval, forecast bundle |
-| [Time-series analysis](quickstart-timeseries-analysis.md) | core; depth via `timeseries` / `timeseries-prophet` / `timeseries-ml` | `session.timeseries.analyze` / decompose / diagnostics (no forecast fit) |
+| [Time-series analysis](quickstart-timeseries-analysis.md) | core; additional analysis via `timeseries` | `session.timeseries.analyze` / decompose / diagnostics (no forecast fit) |
 | [Anomaly / fraud](quickstart-anomaly.md) | core + `anomaly-industry` + `torch` | sklearn/PyOD/torch AE + supervised HGB/XGB/LGBM; validation threshold tuning |
 | [Semi-supervised](quickstart-semisupervised.md) | core | Label propagation / spreading / self-training; scarce labels |
-| [Self-supervised](quickstart-selfsupervised.md) | core (torch optional for backbone transfer) | Masked tabular pretext → head; backbone freezing/fine-tuning separate |
+| [Self-supervised](quickstart-selfsupervised.md) | `buildml[torch]` for current tabular methods; core legacy method deprecated | Masked tabular pretext → head; backbone freezing/fine-tuning separate |
 | [Active learning](quickstart-active-learning.md) | core | Train-pool uncertainty query → human labels → refit / bundle |
 | [Online / continual](quickstart-online-learning.md) | core | Train-chunk `partial_fit` → holdout eval → online bundle |
 | [Multi-task / multi-output](quickstart-multi-task.md) | core + `multitask-industry` / `torch` | sklearn / GBDT / torch shared-trunk → per-task + aggregate eval → multitask bundle |
@@ -80,22 +79,22 @@ refuses. Method lists live on `session.explain("<name>")` and the
 
 ---
 
-## Deep guides (encyclopedic)
+## Detailed guides
 
 | Guide | Focus |
 | --- | --- |
-| [Classical end-to-end](classical-end-to-end.md) | Dirty data → pipeline bundle with many use cases |
-| [Leakage, recipes, weights, hard-refuse CV](leakage-cv-recipes.md) | Good/bad examples; fold-local honesty; weight role |
+| [Classical end-to-end](classical-end-to-end.md) | Missing and categorical data, evaluation, and pipeline bundles |
+| [Leakage, preprocessing recipes, weights, and CV checks](leakage-cv-recipes.md) | Good/bad examples; preprocessing fitted separately in each fold; weight role |
 | [Preprocess depth](preprocess-depth.md) | Encode variants, dates, text features, custom transforms, resample |
-| [Engines (Polars / DuckDB)](engines-polars-duckdb.md) | Prep then sklearn; lifecycle; honesty on out-of-core |
+| [Engines (Polars / DuckDB)](engines-polars-duckdb.md) | Prep then sklearn; lifecycle; memory limits for large datasets |
 | [EDA / Teaching Studio](eda-teaching-studio.md) | Findings, Static Offline HTML, Industry App (Cockpit/Gates/Academy), explain/workflow |
 | [Diagnostics & model search](classical-diagnostics-search.md) | Calibration, thresholds, compare_models, grid/random/Optuna/nested |
 | [Artifacts: checkpoints vs bundles](artifacts-checkpoints-bundles.md) | What each artifact contains and does not |
-| [Unsupervised deep](unsupervised-deep.md) | Clustering methods, PCA integration, validity honesty, unsupervised bundles |
+| [Unsupervised deep](unsupervised-deep.md) | Clustering methods, PCA integration, interpretation of cluster validity metrics, unsupervised bundles |
 | [Ensemble deep](ensemble-deep.md) | Voting / stacking / blending, train-only meta fit, ensemble bundles |
 | [AutoML deep](automl-deep.md) | Family + recipe strategy search, nested/validation selection, automl bundles |
-| [Forecasting deep](forecasting-deep.md) | time_split lag/baselines, generate vs eval protocols, exog honesty, forecast bundles |
-| [Time-series analysis deep](timeseries-analysis-deep.md) | Analysis-only floor: stationarity, seasonality, change points, decompose; distinct from forecasting |
+| [Forecasting deep](forecasting-deep.md) | time_split lag/baselines, generate vs eval protocols, availability of external predictors, forecast bundles |
+| [Time-series analysis deep](timeseries-analysis-deep.md) | Time-series diagnostics: stationarity, seasonality, change points, decompose; distinct from forecasting |
 | [Anomaly deep](anomaly-deep.md) | unsupervised/novelty/supervised modes, thresholds/alert rates, imbalance metrics, anomaly bundles |
 | [Semi-supervised deep](semisupervised-deep.md) | Scarce labels, propagation / self-training, labeled-only eval, semisupervised bundles |
 | [Self-supervised deep](selfsupervised-deep.md) | Masked tabular pretext, embeddings, head finetune, ssl bundles |
@@ -119,7 +118,7 @@ refuses. Method lists live on `session.explain("<name>")` and the
 | [Synthetic deep](synthetic-deep.md) | Train-only native + SDV backends, capability matrix, fidelity/TSTR/SDMetrics, validate_synthetic, merge provenance, privacy limits |
 | [NLP deep](nlp-deep.md) | Deterministic normalization vs train-only vocabulary, contamination screening, exact token attribution and when it is refused, NPMI topics, unsupervised description limits, NLP≠RAG, NLP bundles |
 | [Torch deep](torch-deep.md) | Tabular, text, multimodal (gated fusion + preprocess restore), CV/search/nested, AMP/DDP, export |
-| [Speech ASR + classify](speech-asr-finetune.md) | Stub/transformers ASR, WER/CER, SpeechContract, finetune-lite, FM refuse |
+| [Speech ASR + classify](speech-asr-finetune.md) | Stub/transformers ASR, WER/CER, SpeechContract, finetune-lite, unsupported pretraining requests |
 | [Pretrained backbones](pretrained-backbones.md) | Expanded catalog, `session.dl.attach_head`, mock vs pretrained |
 | [RAG deep](rag-deep.md) | Hybrid retrieve, grounded generate + faithfulness, eval_only hygiene, upsert |
 | [AI operator safety](ai-operator-safety.md) | Egress, confirm gates, autonomy residual risk |
@@ -133,28 +132,26 @@ refuses. Method lists live on `session.explain("<name>")` and the
 - [Glossary](glossary.md)
 - [Features / boundaries](../docs/features.rst)
 - [Sphinx package API](../docs/package.rst)
-- Paste scripts (the guide contract): [`examples/`](https://github.com/TechLeo-Libraries/BuildML/tree/main/examples)
+- Runnable example scripts: [`examples/`](https://github.com/TechLeo-Libraries/BuildML/tree/main/examples)
 
 ## What these pages do not cover
 
-If a surface is not in the map above, it is not a Session product. That
-includes legal fairness certification, causality from EDA, PyMC/Stan,
-the full Hugging Face model catalog, managed cloud IAM, and Whisper-scale pretrain.
-Each domain guide states its own refuse next to the example.
-`session.explain` and `session.learn` cover knob-level detail that would
-drown a tutorial.
+Each domain guide lists supported methods, prerequisites, and limitations.
+Consult the API reference or `session.explain` for parameter details.
+The library does not assess legal compliance or infer causal identification
+from exploratory associations. Hosting infrastructure and foundation-model
+pretraining require separate systems.
 
-When an API is alpha, the page says so.
+Check the stability policy and release notes when using experimental methods.
 
 ---
 
-## Paste, then evidence
+## Example scripts and end-to-end checks
 
 [`examples/`](https://github.com/TechLeo-Libraries/BuildML/tree/main/examples) contains runnable starting points. [`proofs/`](https://github.com/TechLeo-Libraries/BuildML/blob/main/proofs/README.md)
-is one end-to-end run per job. Composition slugs in the harness are not
-extra products.
+is one end-to-end run per job. Some harness entries combine several domains in one workflow.
 
-| Domain | Paste | Evidence |
+| Domain | Example script | Evidence |
 | --- | --- | --- |
 | Classical | [classical_loan_loop.py](../examples/classical_loan_loop.py) | [loan-approval-classical](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/loan-approval-classical), [breast-cancer-classical](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/breast-cancer-classical) |
 | Leakage / CV | [leakage_cv_recipe.py](../examples/leakage_cv_recipe.py) | [loan-approval-classical](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/loan-approval-classical) |

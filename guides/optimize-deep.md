@@ -6,10 +6,10 @@ pip install buildml
 # pip install "buildml[optimize-industry]"
 ```
 
-The classifier is already fitted. You still have to act: approve, chase,
-spend a budget, pick a top-K. `session.decision.*` turns scores into a
-frozen policy. It is not a general MIP suite, not a fleet scheduler, and
-not a replacement for Optuna or `session.fit`.
+After fitting a classifier, you may need to select actions under costs
+or capacity constraints. `session.decision.*` turns scores into a
+frozen policy. Supported policies include thresholds, cost matrices, and bounded
+allocation problems.
 
 Default method is `threshold`. Default tuning partition is
 `validation`. Default `score_source` is `model_proba`. Threshold and
@@ -25,11 +25,11 @@ Resolver when `backend=None`:
 - `knapsack` → `pulp`, then `ortools`, then `native`
 - `lp_allocate` → `native` (scipy HiGHS). Pass `backend="cvxpy"` yourself.
 
-You choose costs, capacity, and whether a test-tuned number is worth
-the leak. The API refuses a missing split, threshold/cost-matrix without
+You choose costs, capacity, and the partition used for tuning. Test results used for tuning are no longer
+an independent assessment. The API refuses a missing split, threshold/cost-matrix without
 `session.fit`, and test tuning without the flag.
 
-Short on-ramp: [decisions quickstart](quickstart-optimize.md). Proof:
+Quickstart: [decisions quickstart](quickstart-optimize.md). Proof:
 [cost-sensitive-collections](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/cost-sensitive-collections).
 
 ## Threshold after a classical fit
@@ -121,6 +121,46 @@ using `predict_proba`. The matrix is not estimated from test labels.
 Also requires `session.fit`.
 
 ```python
+import numpy as np
+import pandas as pd
+from sklearn.datasets import make_classification
+from sklearn.linear_model import LogisticRegression
+
+from buildml import Session
+
+x, y = make_classification(
+    n_samples=400,
+    n_features=8,
+    n_informative=5,
+    weights=[0.7, 0.3],
+    random_state=0,
+)
+frame = pd.DataFrame(x, columns=[f"f{i}" for i in range(x.shape[1])])
+frame["y"] = y
+frame["cost"] = np.where(y == 1, 2.0, 1.0)
+
+session = (
+    Session.ingest(frame)
+    .set_roles(
+        {**{c: "feature" for c in frame.columns if c.startswith("f")}, "y": "target"}
+    )
+    .split(test_size=0.25, validation_size=0.25, random_state=0)
+    .fit(LogisticRegression(max_iter=500), task="classification")
+)
+
+fit = session.decision.fit(
+    method="threshold",
+    partition="validation",
+    fp_cost=1.0,
+    fn_cost=5.0,
+    backend="native",
+)
+print(fit.threshold, fit.recommendation_basis)
+
+applied = session.decision.apply(partition="test")
+eval_result = session.decision.evaluate(partition="test")
+print(eval_result.metrics)
+
 session.decision.fit(
     method="cost_matrix",
     partition="validation",
@@ -143,6 +183,46 @@ disclosed. Industry: exact 0-1 MIP via PuLP or OR-Tools. Native
 `knapsack_solver` is `"dp"` (or `"greedy"`).
 
 ```python
+import numpy as np
+import pandas as pd
+from sklearn.datasets import make_classification
+from sklearn.linear_model import LogisticRegression
+
+from buildml import Session
+
+x, y = make_classification(
+    n_samples=400,
+    n_features=8,
+    n_informative=5,
+    weights=[0.7, 0.3],
+    random_state=0,
+)
+frame = pd.DataFrame(x, columns=[f"f{i}" for i in range(x.shape[1])])
+frame["y"] = y
+frame["cost"] = np.where(y == 1, 2.0, 1.0)
+
+session = (
+    Session.ingest(frame)
+    .set_roles(
+        {**{c: "feature" for c in frame.columns if c.startswith("f")}, "y": "target"}
+    )
+    .split(test_size=0.25, validation_size=0.25, random_state=0)
+    .fit(LogisticRegression(max_iter=500), task="classification")
+)
+
+fit = session.decision.fit(
+    method="threshold",
+    partition="validation",
+    fp_cost=1.0,
+    fn_cost=5.0,
+    backend="native",
+)
+print(fit.threshold, fit.recommendation_basis)
+
+applied = session.decision.apply(partition="test")
+eval_result = session.decision.evaluate(partition="test")
+print(eval_result.metrics)
+
 session.decision.fit(
     method="knapsack",
     partition="validation",
@@ -175,6 +255,46 @@ a dangerous-opt-in warning. Confirm a frozen plan once with
 partition you tuned on also warns.
 
 ```python
+import numpy as np
+import pandas as pd
+from sklearn.datasets import make_classification
+from sklearn.linear_model import LogisticRegression
+
+from buildml import Session
+
+x, y = make_classification(
+    n_samples=400,
+    n_features=8,
+    n_informative=5,
+    weights=[0.7, 0.3],
+    random_state=0,
+)
+frame = pd.DataFrame(x, columns=[f"f{i}" for i in range(x.shape[1])])
+frame["y"] = y
+frame["cost"] = np.where(y == 1, 2.0, 1.0)
+
+session = (
+    Session.ingest(frame)
+    .set_roles(
+        {**{c: "feature" for c in frame.columns if c.startswith("f")}, "y": "target"}
+    )
+    .split(test_size=0.25, validation_size=0.25, random_state=0)
+    .fit(LogisticRegression(max_iter=500), task="classification")
+)
+
+fit = session.decision.fit(
+    method="threshold",
+    partition="validation",
+    fp_cost=1.0,
+    fn_cost=5.0,
+    backend="native",
+)
+print(fit.threshold, fit.recommendation_basis)
+
+applied = session.decision.apply(partition="test")
+eval_result = session.decision.evaluate(partition="test")
+print(eval_result.metrics)
+
 try:
     session.decision.fit(
         method="threshold",
@@ -195,6 +315,46 @@ from model scores still needs a compatible `session.fit` unless the
 plan carries that auxiliary estimator.
 
 ```python
+import numpy as np
+import pandas as pd
+from sklearn.datasets import make_classification
+from sklearn.linear_model import LogisticRegression
+
+from buildml import Session
+
+x, y = make_classification(
+    n_samples=400,
+    n_features=8,
+    n_informative=5,
+    weights=[0.7, 0.3],
+    random_state=0,
+)
+frame = pd.DataFrame(x, columns=[f"f{i}" for i in range(x.shape[1])])
+frame["y"] = y
+frame["cost"] = np.where(y == 1, 2.0, 1.0)
+
+session = (
+    Session.ingest(frame)
+    .set_roles(
+        {**{c: "feature" for c in frame.columns if c.startswith("f")}, "y": "target"}
+    )
+    .split(test_size=0.25, validation_size=0.25, random_state=0)
+    .fit(LogisticRegression(max_iter=500), task="classification")
+)
+
+fit = session.decision.fit(
+    method="threshold",
+    partition="validation",
+    fp_cost=1.0,
+    fn_cost=5.0,
+    backend="native",
+)
+print(fit.threshold, fit.recommendation_basis)
+
+applied = session.decision.apply(partition="test")
+eval_result = session.decision.evaluate(partition="test")
+print(eval_result.metrics)
+
 session.decision.save_bundle("artifacts/decision_bundle")
 ```
 

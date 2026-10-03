@@ -12,10 +12,9 @@ tuning, and labeled eval. `method="isolation_forest"` stays sklearn even
 if PyOD is installed. Tuning on test is refused unless
 `allow_test_tuning=True`.
 
-Higher `anomaly_score` means more anomalous. This is not clustering and
-not a streaming fraud platform.
+Higher `anomaly_score` means more anomalous. Clustering and stream processing use separate workflows.
 
-Short on-ramp: [anomaly quickstart](quickstart-anomaly.md).
+Quickstart: [anomaly quickstart](quickstart-anomaly.md).
 
 ## Backends
 
@@ -32,6 +31,25 @@ MSE reconstruction error; supervised scorers emit positive-class
 probability (not guaranteed calibrated under extreme imbalance).
 
 ```python
+import numpy as np
+import pandas as pd
+
+from buildml import Session
+
+rng = np.random.default_rng(0)
+n_normal, n_fraud = 200, 20
+normal = rng.normal(0.0, 1.0, size=(n_normal, 2))
+fraud = rng.normal(4.0, 0.6, size=(n_fraud, 2))
+frame = pd.DataFrame(np.vstack([normal, fraud]), columns=["x", "y"])
+frame["is_fraud"] = [0] * n_normal + [1] * n_fraud
+
+session = (
+    Session.ingest(frame)
+    .set_roles({"x": "feature", "y": "feature", "is_fraud": "target"})
+    .split(test_size=0.25, validation_size=0.15, stratify=True, random_state=0)
+    .scale(method="standard")
+)
+
 matrix = session.anomaly.capability_matrix()
 print(matrix["backends"]["sklearn"]["methods"])
 print(matrix["backends"]["pyod"]["available"])
@@ -64,6 +82,25 @@ print(matrix["backends"]["pyod"]["available"])
 | `validation_tuned` | Set by `tune_threshold` after fit |
 
 ```python
+import numpy as np
+import pandas as pd
+
+from buildml import Session
+
+rng = np.random.default_rng(0)
+n_normal, n_fraud = 200, 20
+normal = rng.normal(0.0, 1.0, size=(n_normal, 2))
+fraud = rng.normal(4.0, 0.6, size=(n_fraud, 2))
+frame = pd.DataFrame(np.vstack([normal, fraud]), columns=["x", "y"])
+frame["is_fraud"] = [0] * n_normal + [1] * n_fraud
+
+session = (
+    Session.ingest(frame)
+    .set_roles({"x": "feature", "y": "feature", "is_fraud": "target"})
+    .split(test_size=0.25, validation_size=0.15, stratify=True, random_state=0)
+    .scale(method="standard")
+)
+
 session.anomaly.fit(backend="pyod", method="copod", contamination=0.08)
 session.anomaly.tune_threshold(partition="validation", metric="fbeta", fbeta=2.0)
 ev = session.anomaly.evaluate(partition="test")
@@ -74,7 +111,7 @@ ev = session.anomaly.evaluate(partition="test")
 Always: `threshold`, `alert_rate`, score summary. When labels exist:
 `average_precision` (PR-AUC), `roc_auc`, thresholded precision / recall /
 f1, and precision/recall at k. Under rare positives, prefer PR-AUC and
-@k over accuracy. None of this is a causal fraud claim.
+@k over accuracy. These scores do not establish whether fraud occurred or identify its cause.
 
 ## What usually goes wrong
 
@@ -82,6 +119,6 @@ f1, and precision/recall at k. Under rare positives, prefer PR-AUC and
 - Supervised mode without a target: `ValidationError`.
 - Tuning on test without `allow_test_tuning=True`: refused.
 - Treating this as `session.unsupervised.fit`.
-- Graph / streaming fraud: not this surface.
+- Graph analysis and stream processing require their respective workflows.
 
 [Unsupervised](unsupervised-deep.md) · [Leakage](leakage-cv-recipes.md)

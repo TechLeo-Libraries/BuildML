@@ -1,6 +1,6 @@
-"""Add your own preprocessing step without giving up the leakage guarantees.
+"""Register custom preprocessing with train-only fitting and replayable state.
 
-The built-in steps cover the common ground, but domain work always needs
+The built-in steps cover common operations, but some applications need
 something specific: a currency conversion using rates from your training
 period, a geographic clustering, a bespoke text cleaner. This is where those
 go: registered once, then usable anywhere the built-in steps are, and subject
@@ -14,16 +14,17 @@ object holding everything the step learned. Whatever your step needs to know
 must end up in there.
 
 Second, your ``transform`` function receives a frame and that artifact, and
-must be deterministic given the pair. It must not compute anything new from the
-data it is transforming: reading the incoming batch's mean, or its labels, is
-precisely the leak this arrangement exists to prevent. If the batch could
-change the answer, the step is not reproducible at inference time either.
+should be deterministic given the pair. Compute learned quantities, such as
+normalisation statistics, during fitting rather than recomputing them from a
+scoring batch. Row-wise feature calculations may use the incoming values.
+BuildML checks the returned frame, but cannot enforce these properties inside
+an arbitrary user callback.
 
 Third, the fitted plan records the transform's name alongside the artifact, so
 replaying it later requires that name to still be registered. Make the artifact
 picklable and the whole thing round-trips through a saved pipeline; leave it
 unpicklable and you are limited to the current process, which the registration
-records honestly via its ``serializable`` flag.
+records via its declared ``serializable`` flag.
 """
 
 from __future__ import annotations
@@ -234,7 +235,7 @@ def register_transform(
         Whether the artifact will survive joblib pickling. Leave it ``True`` for
         ordinary data and fitted estimators. Set it ``False`` when the artifact
         closes over a function, a file handle, or a network client, so plans
-        report honestly that they cannot be saved.
+        report that persistence is disabled for that registration.
     overwrite:
         Allow replacing an existing registration. Off by default, so a name
         collision is an error rather than a silent substitution that would
@@ -265,12 +266,13 @@ def register_transform(
 
     Examples
     --------
-    >>> def fit_log_offset(frame, params):  # doctest: +SKIP
+    >>> from buildml.preprocess.custom import register_transform
+    >>> def fit_log_offset(frame, params):
     ...     return {"offset": float(frame.min().min())}
-    >>> def apply_log(frame, artifact):  # doctest: +SKIP
+    >>> def apply_log(frame, artifact):
     ...     import numpy as np
     ...     return np.log1p(frame - artifact["offset"])
-    >>> register_transform(  # doctest: +SKIP
+    >>> register_transform(
     ...     "log_shift",
     ...     fit=fit_log_offset,
     ...     transform=apply_log,

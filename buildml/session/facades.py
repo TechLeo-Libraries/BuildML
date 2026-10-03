@@ -365,10 +365,10 @@ def list_facades() -> dict[str, Any]:
         ],
         "disclosures": (
             "Facades are additive; flat Session methods remain until BuildML 3.0. "
-            "Surface size is organized via namespaces, not reduced; flat removal "
-            "is a 3.0 policy decision, not unfinished 2.4 work.",
-            "Classical core (data/preprocess/classical/explore/audit) is dual "
-            "first-class without DeprecationWarning.",
+            "Use namespaces to group related operations. "
+            "",
+            "Classical core methods are supported through both direct Session calls and "
+            "the data, preprocess, classical, explore and audit namespaces without deprecation warnings.",
             "Domain flat actions emit DeprecationWarning pointing at preferred paths.",
             "EDA facade is session.explore (session.eda remains the flat method). "
             "Workflow/teaching facade is session.audit (session.workflow remains).",

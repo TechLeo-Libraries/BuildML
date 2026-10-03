@@ -49,7 +49,7 @@ def evaluate_decisions(
     -------
     DecisionEvalResult
         Partition metrics, optional realized cost, selection counts, and
-        honesty disclosures/warnings.
+        implementation limitations/warnings.
 
     Raises
     ------

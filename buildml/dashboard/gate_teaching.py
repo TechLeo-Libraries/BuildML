@@ -178,7 +178,7 @@ _CURRICULUM: dict[str, dict[str, Any]] = {
     },
     "00.2": {
         "beginner": "Say what one row is (a customer, an order, a day…) and prove uniqueness with a key.",
-        "why": "Wrong grain silently duplicates entities and inflates performance after a random split.",
+        "why": "If multiple rows describe the same entity, a random split can place related observations in both training and evaluation data.",
         "levels": _levels(
             "Write “one row = …” and name the candidate key column.",
             "Run a uniqueness check on that key before any split.",
@@ -268,8 +268,8 @@ _CURRICULUM: dict[str, dict[str, Any]] = {
         ],
     },
     "01.3": {
-        "beginner": "Decide whether gaps are random or systematic (MCAR / MAR / MNAR).",
-        "why": "Systematic missingness changes which imputer is honest and when deletion biases the population.",
+        "beginner": "Investigate patterns of missing data and consider possible causes (MCAR / MAR / MNAR).",
+        "why": "Missingness affects whether imputation or row removal is appropriate. Observed patterns alone cannot establish why values are missing.",
         "levels": _levels(
             "Compare missing rates across groups.",
             "Relate missingness to other observed columns.",
@@ -472,7 +472,7 @@ _CURRICULUM: dict[str, dict[str, Any]] = {
         ),
         "next": [
             "Slice key metrics by major categorical columns.",
-            "Do not treat pooled association as policy truth.",
+            "Check subgroup differences and confounding before using a pooled association to inform policy.",
         ],
     },
     "02.7": {
@@ -529,9 +529,9 @@ _CURRICULUM: dict[str, dict[str, Any]] = {
     },
     "03.3": {
         "beginner": "Fit imputers, encoders, and scalers after the split - never on the full frame first.",
-        "why": "Full-frame fits peek at holdout rows and inflate reported scores.",
+        "why": "Fitting on the full frame lets holdout observations influence preprocessing and can inflate reported scores.",
         "levels": _levels(
-            "Call mutate steps only on the Session after split.",
+            "Create the split before fitting imputers, encoders, scalers, or other data-dependent preprocessing.",
             "Inside CV, use PreprocessRecipe so each fold refits.",
             "Treat descriptive EDA on all analysis rows as triage, not as fitted prep.",
         ),
@@ -575,7 +575,7 @@ _CURRICULUM: dict[str, dict[str, Any]] = {
             "Or record a justified independence assumption.",
         ),
         "next": [
-            "session.split(..., groups=...) when a group role exists.",
+            "session.group_split(group_column=...) when rows share an entity.",
             "Audit near-unique id columns that should not be features.",
         ],
     },
@@ -645,7 +645,7 @@ _CURRICULUM: dict[str, dict[str, Any]] = {
         ],
     },
     "03.12": {
-        "beginner": "Explain each outlier as error, rare truth, subgroup, or sentinel - not “delete all”.",
+        "beginner": "Check whether an outlier is an error, a valid rare observation, a subgroup pattern, or a missing-value code before changing it.",
         "why": "Deleting without review can remove rare but valid cases; treating sentinels as measurements can distort fits.",
         "levels": _levels(
             "Review univariate fence rates and multivariate flags.",
@@ -776,7 +776,7 @@ _CURRICULUM: dict[str, dict[str, Any]] = {
     },
     "05.3": {
         "beginner": "Learn whether more data or better features is the lever before spending.",
-        "why": "Hyper-parameter search cannot fix a variance-dominated regime.",
+        "why": "Regularisation and model choice can reduce variance; learning curves help assess whether more data is also needed.",
         "levels": _levels(
             "Draw a learning curve with fold error bars.",
             "Read high variance vs high bias patterns.",
@@ -802,7 +802,7 @@ _CURRICULUM: dict[str, dict[str, Any]] = {
     },
     "05.5": {
         "beginner": "Ship a written handoff: assumptions, thresholds, owners, monitoring.",
-        "why": "Models without owners and review dates quietly rot in production.",
+        "why": "Without assigned monitoring and review, changes in data or performance may go unnoticed after deployment.",
         "levels": _levels(
             "Write assumptions and chosen thresholds.",
             "Name monitoring owners and review dates.",
@@ -1228,7 +1228,7 @@ def _worked_example_for(
             code=code,
             change_these=common_change + ["Use subset=[key] in drop_duplicates for entity grain."],
             flexible=common_flex,
-            reading="Deduplicate before split so entities cannot straddle partitions.",
+            reading="Remove unintended duplicates before splitting; use group_split to keep related rows from the same entity together.",
         )
 
     if gate_id == "01.5":
@@ -1248,7 +1248,7 @@ def _worked_example_for(
             code=code,
             change_these=common_change + [f"Edit drop list; current sample uses {_quote_list(drop_list)}."],
             flexible=common_flex + ["Keep a near-constant only with a written reason."],
-            reading="Constants never help supervised learners; near-constants are a domain call.",
+            reading="A feature constant across training rows provides no variation to learn from. Check whether it can vary in deployment before dropping it; review near-constant features separately.",
         )
 
     if gate_id == "01.6":
@@ -1440,7 +1440,7 @@ def _worked_example_for(
 
     if gate_id in {"03.1", "03.2", "03.5", "03.6"}:
         stratify = task == "classification"
-        group_hint = "# session.split(..., groups='entity_id')  # when a group role exists\n"
+        group_hint = "# session.group_split(group_column='entity_id')  # use instead of random split\n"
         time_hint = (
             f"# time column detected: {time_col} - prefer chronological split helpers\n"
             if time_col
@@ -1460,7 +1460,7 @@ def _worked_example_for(
             summary="Choose a split that matches structure present (or absent) in this extract.",
             code=code,
             change_these=common_change
-            + ["Enable groups= or time-aware splits when those roles exist.", f"stratify={stratify} follows this target task."],
+            + ["Use session.group_split or session.time_split when the prediction task requires them.", f"stratify={stratify} follows this target task."],
             flexible=common_flex,
             reading="Wrong split structure is leakage; fix it before prep and fit.",
         )

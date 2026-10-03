@@ -84,12 +84,15 @@ class EgressConfig:
 
     Examples
     --------
-    Allow three columns, at statistics only::
+    Allow named columns at statistics-only level::
 
-        config = EgressConfig(
-            level=EgressLevel.STATS_ONLY,
-            allow_columns=("age", "region", "outcome"),
-        )
+        from buildml.ai.privacy import EgressConfig
+        from buildml.ai.types import EgressLevel
+
+        config = EgressConfig(level=EgressLevel.STATS_ONLY, allow_columns=('age', 'region', 'outcome'))
+        print(config.level)
+
+
 
     See Also
     --------
@@ -243,6 +246,7 @@ def detect_pii_columns(columns: list[str]) -> list[str]:
 
     Examples
     --------
+    >>> from buildml.ai.privacy import detect_pii_columns
     >>> detect_pii_columns(["user_email", "signup_date", "phone_number"])
     ['user_email', 'phone_number']
 
@@ -298,6 +302,7 @@ def filter_columns(
 
     Examples
     --------
+    >>> from buildml.ai.privacy import filter_columns
     >>> filter_columns(["a", "b", "c"], deny=("b",))
     (['a', 'c'], ['b'])
     >>> filter_columns(["a", "b", "c"], allow=("a",))
@@ -352,6 +357,7 @@ def rename_columns(
 
     Examples
     --------
+    >>> from buildml.ai.privacy import rename_columns
     >>> rename_columns(["patient_id", "age"], {"patient_id": "id"})
     (['id', 'age'], {'patient_id': 'id'})
 
@@ -396,6 +402,7 @@ def scrub_headers(columns: list[str]) -> list[str]:
 
     Examples
     --------
+    >>> from buildml.ai.privacy import scrub_headers
     >>> scrub_headers(["patient_name", "diagnosis"])
     ['col_0', 'col_1']
 
@@ -437,6 +444,7 @@ def redact_value(value: Any, patterns: tuple[str, ...] = ()) -> Any:
 
     Examples
     --------
+    >>> from buildml.ai.privacy import redact_value
     >>> redact_value("contact bob@example.com", (r"[\\w.]+@[\\w.]+",))
     'contact [REDACTED]'
     >>> redact_value(42, (r"\\d+",))
@@ -655,8 +663,8 @@ def build_redacted_sample_payload(
     Returns
     -------
     tuple of (dict, EgressManifest)
-        The payload: row count, sample size, columns, and the sample records
-       : and the manifest with the true ``rows_sent``.
+        The payload containing row count, sample size, columns, and sample
+        records, plus a manifest recording ``rows_sent``.
 
     Notes
     -----
@@ -837,8 +845,7 @@ def build_egress_payload(
     -------
     tuple of (dict or None, EgressManifest)
         The payload and its manifest. The payload is ``None`` when there is no
-        data, and the manifest is still returned: an empty one, with a warning
-       : so callers never have to branch on whether a record exists.
+        data. An empty manifest with a warning is still returned in that case.
 
     Notes
     -----
@@ -854,11 +861,20 @@ def build_egress_payload(
 
     Examples
     --------
-    Build a schema-only payload::
+    Build a schema-only payload from toy data::
 
-        config = EgressConfig(level=EgressLevel.SCHEMA_ONLY)
-        payload, manifest = build_egress_payload(frame, config)
-        manifest.columns_denied
+        import pandas as pd
+        from buildml import Session
+
+        frame = pd.DataFrame({'age': list(range(20, 40)), 'outcome': [0, 1] * 10})
+        session = Session.ingest(frame).set_roles({'age': 'feature', 'outcome': 'target'})
+        from buildml.ai.privacy import EgressConfig, build_egress_payload
+        from buildml.ai.types import EgressLevel
+
+        payload, manifest = build_egress_payload(frame, EgressConfig(level=EgressLevel.SCHEMA_ONLY))
+        print(payload)
+
+
 
     See Also
     --------

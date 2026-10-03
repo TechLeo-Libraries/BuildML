@@ -140,9 +140,16 @@ def evaluate_rl(
 
     Examples
     --------
-    >>> result = evaluate_rl(dataset, plan, split_plan)  # doctest: +SKIP
-    >>> result.offline, result.metrics["action_match_rate"]  # doctest: +SKIP
-    (True, 0.34)
+    >>> import pandas as pd
+    >>> from buildml import Session
+    >>> frame = pd.DataFrame({"context": list(range(40)), "offer": [0, 1] * 20, "revenue": [1.0, 2.0, 3.0, 1.0] * 10})
+    >>> session = Session.ingest(frame).set_roles({"context": "feature", "offer": "target", "revenue": "ignore"})
+    >>> _ = session.split(test_size=0.25, stratify=True, random_state=42)
+    >>> dataset, split_plan = session.dataset, session.split_plan
+    >>> from buildml.rl.fit import fit_rl
+    >>> plan, fitted = fit_rl(dataset, split_plan, columns=["context"], action_column="offer", reward_column="revenue")
+    >>> from buildml.rl.evaluate import evaluate_rl
+    >>> result = evaluate_rl(dataset, plan, split_plan, partition="test")
 
     See Also
     --------

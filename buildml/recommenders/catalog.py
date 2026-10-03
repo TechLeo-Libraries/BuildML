@@ -1,4 +1,4 @@
-"""Recommender backend catalog and honest capability matrix."""
+"""Recommender backend catalog and capability matrix."""
 
 from __future__ import annotations
 
@@ -22,7 +22,7 @@ _LIGHTFM_METHODS = ("lightfm",)
 
 
 def recommender_capability_matrix() -> dict[str, Any]:
-    """Return an honest capability matrix for recommender backends.
+    """Return an capability matrix for recommender backends.
 
     Summarises which sklearn, implicit, and LightFM methods are available,
     default routing per feedback mode, install hints, and non-goals. Used by
@@ -85,7 +85,7 @@ def recommender_capability_matrix() -> dict[str, Any]:
             ),
             "recommenders-lightfm": (
                 "pip install 'buildml[recommenders-lightfm]'  "
-                "# LightFM hybrid (skipped on Win/Py3.13: no reliable wheels)"
+                "# LightFM hybrid; requires a compatible source build (Python 3.10/3.11, non-Windows)"
             ),
         },
         "non_goals": [
@@ -208,7 +208,7 @@ def resolve_backend_method(
     method: RecommenderMethod | None,
     feedback: FeedbackMode,
 ) -> tuple[RecommenderBackendName, RecommenderMethod]:
-    """Validate backend/method pairing and apply honest defaults.
+    """Validate backend/method pairing and apply documented defaults.
 
     Fills in ``None`` backend or method from feedback-aware defaults, checks
     that the method is allowed for the backend, and verifies optional extras

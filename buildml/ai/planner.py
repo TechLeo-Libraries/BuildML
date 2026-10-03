@@ -171,14 +171,34 @@ class PlanExecutionResult:
 
     Examples
     --------
-    Confirm the blocking step and continue::
+    Inspect confirmation requirements for a single split step::
 
-        result = run_plan(session, plan, registry)
-        if result.requires_confirmation_at is not None:
-            result = run_plan(
-                session, plan, registry,
-                confirmations={result.requires_confirmation_at: True},
-            )
+        import pandas as pd
+        from buildml import Session
+
+        frame = pd.DataFrame({'age': list(range(20, 40)), 'outcome': [0, 1] * 10})
+        session = Session.ingest(frame).set_roles({'age': 'feature', 'outcome': 'target'})
+        from buildml.ai.results import PlanResult, PlanStep
+        from buildml.ai.tools import build_default_registry
+
+        registry = build_default_registry()
+        plan = PlanResult(
+            goal='Create a holdout split', current_state_summary='Data and roles are set.',
+            assumptions=('Rows are independent for this toy example.',),
+            steps=(PlanStep(operation='split', description='Split the rows.',
+                            rationale='Reserve rows for evaluation.', prerequisites=('data',),
+                            expected_changes=('A split is created.',), parameters={'test_size': 0.2}),),
+        )
+        from buildml.ai.planner import run_plan
+
+        preview = run_plan(session, plan, registry)
+        print(preview.requires_confirmation_at)
+        # Approve this specific toy-data split after inspecting it.
+        result = run_plan(session, plan, registry, confirmations={0: True})
+        print(result.step_executions[0].executed)
+        assert result.step_executions[0].executed
+
+
 
     See Also
     --------
@@ -557,25 +577,44 @@ def run_plan(
     resume: steps that already executed will execute again. For anything not
     idempotent, confirm the remaining steps in one pass rather than iterating.
 
-    **``stop_on_unconfirmed=False`` is the way to preview a plan.** Every step
-    reports what it would need, and nothing unapproved runs.
+    **``stop_on_unconfirmed=False`` continues past unconfirmed steps.** This
+    is not a dry run: read-only steps may execute automatically, and steps with
+    supplied confirmations can change the Session. Inspect proposals before
+    supplying confirmations.
 
     **Failures are per-step, not exceptions.** Even with ``stop_on_error``, the
     error is in the outcome rather than raised.
 
     Examples
     --------
-    Preview, then approve the whole plan::
+    Inspect confirmation requirements for a single split step::
 
-        preview = run_plan(
-            session, plan, registry, stop_on_unconfirmed=False,
+        import pandas as pd
+        from buildml import Session
+
+        frame = pd.DataFrame({'age': list(range(20, 40)), 'outcome': [0, 1] * 10})
+        session = Session.ingest(frame).set_roles({'age': 'feature', 'outcome': 'target'})
+        from buildml.ai.results import PlanResult, PlanStep
+        from buildml.ai.tools import build_default_registry
+
+        registry = build_default_registry()
+        plan = PlanResult(
+            goal='Create a holdout split', current_state_summary='Data and roles are set.',
+            assumptions=('Rows are independent for this toy example.',),
+            steps=(PlanStep(operation='split', description='Split the rows.',
+                            rationale='Reserve rows for evaluation.', prerequisites=('data',),
+                            expected_changes=('A split is created.',), parameters={'test_size': 0.2}),),
         )
-        needed = {
-            e.step_index: True
-            for e in preview.step_executions
-            if e.requires_confirmation
-        }
-        result = run_plan(session, plan, registry, confirmations=needed)
+        from buildml.ai.planner import run_plan
+
+        preview = run_plan(session, plan, registry)
+        print(preview.requires_confirmation_at)
+        # Approve this specific toy-data split after inspecting it.
+        result = run_plan(session, plan, registry, confirmations={0: True})
+        print(result.step_executions[0].executed)
+        assert result.step_executions[0].executed
+
+
 
     See Also
     --------
@@ -767,14 +806,17 @@ class BudgetTracker:
 
     Examples
     --------
-    Cap a session and check before each call::
+    Check and record a simulated token budget::
 
-        budget = BudgetTracker(max_tokens=50_000, max_cost_usd=1.0)
-        if budget.can_proceed(estimated_tokens=2_000):
-            response = provider.chat(messages)
-            budget.record_usage(
-                response.usage["total_tokens"], operation="plan",
-            )
+        from buildml.ai.planner import BudgetTracker
+
+        budget = BudgetTracker(max_tokens=50000, max_cost_usd=1.0)
+        if budget.can_proceed(estimated_tokens=2000):
+            # Use the provider's actual usage and cost after a real request.
+            budget.record_usage(2000, operation='demonstration')
+        print(budget.can_proceed(estimated_tokens=49000))
+
+
 
     See Also
     --------

@@ -100,7 +100,7 @@ def fit_mapie(
     Returns
     -------
     tuple[MapieWrapper, list[str]]
-        Fitted wrapper and honesty disclosures for the plan.
+        Fitted wrapper and implementation limitations for the plan.
 
     Raises
     ------

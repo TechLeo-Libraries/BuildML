@@ -5,7 +5,7 @@ pip install buildml
 pip install "buildml[engines]"
 ```
 
-Pandas is what sklearn sees. Polars and DuckDB are for ingest, filter,
+The sklearn-facing data representation is Pandas. Polars and DuckDB are for ingest, filter,
 project, and aggregate before that materialization. Engine choice does not
 make sklearn train out of core. Lazy Polars collects at the sklearn
 boundary.
@@ -56,7 +56,8 @@ with Session.ingest(str(path), engine="duckdb") as session:
     # Context manager calls close_native(): release owned DuckDB connections.
     pred = portable_filter_expr("amount", ">", 20)
     narrowed = session.dataset.filter_expr(pred)
-    # Continue on the Session after syncing / working with the frame:
+    # Train on the filtered rows, materialized for sklearn.
+    session = Session.ingest(narrowed.to_pandas())
     session.set_roles(
         {"amount": "feature", "velocity": "feature", "fraud": "target"}
     )
@@ -76,6 +77,24 @@ DuckDB. Complex SQL stays engine-specific.
 ## Use case: Polars lazy ingest and projection
 
 ```python
+from pathlib import Path
+
+import pandas as pd
+
+from buildml import Session
+from buildml.data import portable_filter_expr
+
+# Write a small CSV for the demo
+path = Path("artifacts/txns.csv")
+path.parent.mkdir(parents=True, exist_ok=True)
+pd.DataFrame(
+    {
+        "amount": [10, 120, 30, 200, 15, 90, 110, 40],
+        "velocity": [1, 4, 1, 5, 2, 3, 4, 2],
+        "fraud": [0, 1, 0, 1, 0, 0, 1, 0],
+    }
+).to_csv(path, index=False)
+
 # pip install "buildml[polars]"
 from buildml import Session
 
@@ -98,6 +117,40 @@ boundaries. That is not zero-copy Torch loading and not out-of-core
 ## Use case: prepare_design_matrix before sklearn
 
 ```python
+from pathlib import Path
+
+import pandas as pd
+
+from buildml import Session
+from buildml.data import portable_filter_expr
+
+# Write a small CSV for the demo
+path = Path("artifacts/txns.csv")
+path.parent.mkdir(parents=True, exist_ok=True)
+pd.DataFrame(
+    {
+        "amount": [10, 120, 30, 200, 15, 90, 110, 40],
+        "velocity": [1, 4, 1, 5, 2, 3, 4, 2],
+        "fraud": [0, 1, 0, 1, 0, 0, 1, 0],
+    }
+).to_csv(path, index=False)
+
+with Session.ingest(str(path), engine="duckdb") as session:
+    # Context manager calls close_native(): release owned DuckDB connections.
+    pred = portable_filter_expr("amount", ">", 20)
+    narrowed = session.dataset.filter_expr(pred)
+    # Train on the filtered rows, materialized for sklearn.
+    session = Session.ingest(narrowed.to_pandas())
+    session.set_roles(
+        {"amount": "feature", "velocity": "feature", "fraud": "target"}
+    )
+    session.split(test_size=0.25, stratify=True, random_state=0)
+    session.scale(method="standard")
+    from sklearn.linear_model import LogisticRegression
+
+    session.fit(LogisticRegression(max_iter=500), task="classification")
+    print(session.evaluate(partition="test").metrics)
+
 from buildml import Session
 from sklearn.linear_model import Ridge
 
@@ -117,6 +170,40 @@ session.fit(Ridge(), task="regression")
 ## Switching engines mid-session
 
 ```python
+from pathlib import Path
+
+import pandas as pd
+
+from buildml import Session
+from buildml.data import portable_filter_expr
+
+# Write a small CSV for the demo
+path = Path("artifacts/txns.csv")
+path.parent.mkdir(parents=True, exist_ok=True)
+pd.DataFrame(
+    {
+        "amount": [10, 120, 30, 200, 15, 90, 110, 40],
+        "velocity": [1, 4, 1, 5, 2, 3, 4, 2],
+        "fraud": [0, 1, 0, 1, 0, 0, 1, 0],
+    }
+).to_csv(path, index=False)
+
+with Session.ingest(str(path), engine="duckdb") as session:
+    # Context manager calls close_native(): release owned DuckDB connections.
+    pred = portable_filter_expr("amount", ">", 20)
+    narrowed = session.dataset.filter_expr(pred)
+    # Train on the filtered rows, materialized for sklearn.
+    session = Session.ingest(narrowed.to_pandas())
+    session.set_roles(
+        {"amount": "feature", "velocity": "feature", "fraud": "target"}
+    )
+    session.split(test_size=0.25, stratify=True, random_state=0)
+    session.scale(method="standard")
+    from sklearn.linear_model import LogisticRegression
+
+    session.fit(LogisticRegression(max_iter=500), task="classification")
+    print(session.evaluate(partition="test").metrics)
+
 session.with_engine("pandas")
 session.with_mode("memory")  # or "lazy" where supported
 print(session.metadata())
@@ -128,16 +215,50 @@ Missing extras raise `MissingExtraError` naming `polars` or `duckdb`.
 
 ---
 
-## Large-path ingest honesty
+## Memory use when ingesting large files
 
-For large file paths, BuildML may refuse blind full Pandas loads. Use:
+For large file paths, BuildML may refuse full Pandas loads that exceed the configured size policy. Use:
 
 - `dry_run=True` on ingest to inspect recommendations
 - `read_nrows=...` for samples
 - Engine extras for native IO
 
 ```python
-report_session = Session.ingest("huge.parquet", dry_run=True)
+from pathlib import Path
+
+import pandas as pd
+
+from buildml import Session
+from buildml.data import portable_filter_expr
+
+# Write a small CSV for the demo
+path = Path("artifacts/txns.csv")
+path.parent.mkdir(parents=True, exist_ok=True)
+pd.DataFrame(
+    {
+        "amount": [10, 120, 30, 200, 15, 90, 110, 40],
+        "velocity": [1, 4, 1, 5, 2, 3, 4, 2],
+        "fraud": [0, 1, 0, 1, 0, 0, 1, 0],
+    }
+).to_csv(path, index=False)
+
+with Session.ingest(str(path), engine="duckdb") as session:
+    # Context manager calls close_native(): release owned DuckDB connections.
+    pred = portable_filter_expr("amount", ">", 20)
+    narrowed = session.dataset.filter_expr(pred)
+    # Train on the filtered rows, materialized for sklearn.
+    session = Session.ingest(narrowed.to_pandas())
+    session.set_roles(
+        {"amount": "feature", "velocity": "feature", "fraud": "target"}
+    )
+    session.split(test_size=0.25, stratify=True, random_state=0)
+    session.scale(method="standard")
+    from sklearn.linear_model import LogisticRegression
+
+    session.fit(LogisticRegression(max_iter=500), task="classification")
+    print(session.evaluate(partition="test").metrics)
+
+report_session = Session.ingest(str(path), dry_run=True)
 print(report_session.ingest_report)
 ```
 
@@ -145,7 +266,7 @@ print(report_session.ingest_report)
 
 ## Failure modes / limits
 
-| Limit | Honest statement |
+| Limit | Behavior |
 | --- | --- |
 | Out-of-core sklearn | Not supported: engines help prep, not lazy `fit` |
 | Torch loaders | Materialize via Pandas/NumPy bridge: no Polars zero-copy into DataLoaders |

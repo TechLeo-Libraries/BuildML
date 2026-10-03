@@ -74,8 +74,6 @@ class DECModel:
     def predict_latent(self, x: np.ndarray) -> np.ndarray:
         """Perform predict latent for the Session-facing workflow step.
 
-Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
-
 Parameters
 ----------
 x:
@@ -95,8 +93,6 @@ np.ndarray
 
     def predict(self, x: np.ndarray) -> np.ndarray:
         """Run predict on input data using the fitted internal state.
-
-Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
 
 Parameters
 ----------
@@ -130,8 +126,6 @@ def fit_dec_idec(
     random_state: int | None,
 ) -> FitOutcome:
     """Fit dec idec on the train partition using the recorded contract.
-
-Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
 
 Parameters
 ----------
@@ -249,8 +243,6 @@ FitOutcome
 
 def predict_dec_idec(estimator: DECModel, x: np.ndarray) -> np.ndarray:
     """Perform predict dec idec for the Session-facing workflow step.
-
-Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
 
 Parameters
 ----------

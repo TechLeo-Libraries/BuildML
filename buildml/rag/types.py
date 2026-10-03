@@ -1,37 +1,13 @@
-"""The knobs that decide what a RAG system can and cannot find.
+"""Configuration objects for chunking, embedding, retrieval, and generation.
 
-Retrieval-augmented generation answers a question by first finding relevant
-passages and then asking a language model to answer *from those passages*. The
-model's fluency is rarely the bottleneck. What limits the answer is whether the
-right passage was retrieved at all: and that is settled entirely by the
-configuration in this module.
+``ChunkConfig`` sets passage size and overlap. ``EmbedConfig`` identifies the
+embedding backend and vector dimension. ``RetrieveConfig`` chooses dense,
+keyword, or hybrid retrieval and optional reranking. ``GenerateConfig`` limits
+the passages and characters sent to a generation provider.
 
-The four decisions that matter most, in the order they bite:
-
-**Chunk size** (:class:`ChunkConfig`) sets what a retrievable unit is. Too large
-and a passage matches everything without answering anything; too small and the
-sentence that answers the question is separated from the context that makes it
-interpretable.
-
-**Embedding model** (:class:`EmbedConfig`) sets what "similar" means. It also
-fixes the vector dimension, which cannot change without rebuilding the index.
-
-**Retrieval mode** (:class:`RetrieveConfig`) chooses between keyword matching,
-semantic similarity, or both. The two fail on opposite queries, which is why
-hybrid is the default where the dependencies allow it.
-
-**Context budget** (:class:`GenerateConfig`) sets how many retrieved passages
-actually reach the model. Passages beyond the budget were retrieved and then
-discarded.
-
-Every config is JSON round-trippable, so the settings that produced an index
-travel with it and a stored index can never be queried under settings it was not
-built for.
-
-See Also
---------
-buildml.rag.defaults : How defaults adapt to what is installed.
-buildml.rag.results : The objects these configs produce.
+These settings affect retrieval quality and computation cost. Serialized
+configuration records how an index or query was prepared; evaluate changes on
+representative queries instead of assuming one configuration is best.
 """
 
 from __future__ import annotations
@@ -112,7 +88,9 @@ class ChunkConfig:
     --------
     Larger chunks with sentence-aware boundaries::
 
+        from buildml.rag.types import ChunkConfig
         config = ChunkConfig(size=1024, overlap=128, strategy="recursive")
+        print(config)
 
     See Also
     --------
@@ -216,11 +194,10 @@ class EmbedConfig:
     --------
     Use a real embedding model::
 
-        config = EmbedConfig(
-            backend="sentence-transformers",
-            model_name="all-MiniLM-L6-v2",
-            dim=384,
-        )
+        from buildml.rag.types import EmbedConfig
+        # Creating configuration does not download or load the model.
+        config = EmbedConfig(backend="sentence-transformers", model_name="all-MiniLM-L6-v2", dim=384)
+        print(config)
 
     See Also
     --------
@@ -403,9 +380,9 @@ class RetrieveConfig:
     --------
     Hybrid with reranking::
 
-        config = RetrieveConfig(
-            k=5, mode="hybrid", rerank=True, rerank_candidates=50,
-        )
+        from buildml.rag.types import RetrieveConfig
+        config = RetrieveConfig(k=5, mode="hybrid", rerank=True, rerank_candidates=50)
+        print(config)
 
     See Also
     --------
@@ -505,7 +482,7 @@ class EvalConfig:
 
     Notes
     -----
-    **Document mode is more forgiving and usually more honest.** Any chunk of
+    **Document mode accepts any relevant chunk from the labeled document.** Any chunk of
     the right document often contains the answer, and chunk-level labels are
     expensive and brittle to produce. Chunk mode is the stricter measure of
     whether chunking itself is working.
@@ -617,7 +594,9 @@ class GenerateConfig:
     --------
     Deterministic, tightly budgeted generation::
 
+        from buildml.rag.types import GenerateConfig
         config = GenerateConfig(k=5, temperature=0.0, max_context_chars=4000)
+        print(config)
 
     See Also
     --------

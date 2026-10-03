@@ -11,7 +11,7 @@ Train-fitted generators. Default is native Gaussian copula. This is not
 clears a classical `FitResult`.
 
 [Synthetic deep](synthetic-deep.md) ·
-Paste: [`examples/synthetic_copula_loop.py`](../examples/synthetic_copula_loop.py) ·
+Runnable example: [`examples/synthetic_copula_loop.py`](../examples/synthetic_copula_loop.py) ·
 Evidence: [synthetic-privacy-utility](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/synthetic-privacy-utility)
 
 ---
@@ -19,6 +19,7 @@ Evidence: [synthetic-privacy-utility](https://github.com/TechLeo-Libraries/Build
 ## Capability matrix
 
 ```python
+import numpy as np
 import pandas as pd
 
 from buildml import Session
@@ -34,6 +35,7 @@ print(session.synthetic.capability_matrix())
 ## Fit → sample / evaluate → bundle (native)
 
 ```python
+import numpy as np
 import pandas as pd
 from sklearn.datasets import make_classification
 
@@ -48,7 +50,7 @@ x, y = make_classification(
 )
 frame = pd.DataFrame(x, columns=[f"f{i}" for i in range(x.shape[1])])
 frame["y"] = y
-frame["grp"] = pd.Series(y).map({0: "A", 1: "B"})
+frame["grp"] = np.random.default_rng(17).choice(["A", "B"], size=len(frame))
 
 session = (
     Session.ingest(frame)
@@ -72,10 +74,39 @@ session.synthetic.save_bundle("artifacts/synthetic_demo_bundle")
 ## SDV industry path (when installed)
 
 ```python
-# pip install "buildml[synthetic-industry]"
-session.synthetic.fit(backend="sdv", method="ctgan", epochs=100, batch_size=256)
+import numpy as np
+import pandas as pd
+from sklearn.datasets import make_classification
+
+from buildml import Session
+
+x, y = make_classification(
+    n_samples=400,
+    n_features=6,
+    n_informative=4,
+    weights=[0.7, 0.3],
+    random_state=0,
+)
+frame = pd.DataFrame(x, columns=[f"f{i}" for i in range(x.shape[1])])
+frame["y"] = y
+frame["grp"] = np.random.default_rng(17).choice(["A", "B"], size=len(frame))
+
+session = (
+    Session.ingest(frame)
+    .set_roles(
+        {
+            **{c: "feature" for c in frame.columns if c.startswith("f")},
+            "grp": "feature",
+            "y": "target",
+        }
+    )
+    .split(test_size=0.25, validation_size=0.25, random_state=0)
+)
+
+# Requires: pip install "buildml[synthetic-industry]"
+session.synthetic.fit(backend="sdv", method="ctgan", epochs=2, batch_size=200)
 session.synthetic.sample(n=300)
-session.synthetic.evaluate(mode="fidelity", eval_backend="auto")  # + SDMetrics when installed
+print(session.synthetic.evaluate(mode="fidelity", eval_backend="auto"))
 ```
 
 ### Cross-link: `resample`
@@ -85,7 +116,7 @@ reusable sampling, fidelity/TSTR, and controlled augmentation with provenance.
 
 ---
 
-## Honesty
+## Guarantees and limitations
 
 | Claim | Reality |
 | --- | --- |
@@ -94,4 +125,4 @@ reusable sampling, fidelity/TSTR, and controlled augmentation with provenance.
 | Merge | Explicit `merge_mode`; default returns Frame only |
 | Industry | SDV optional: native copula always available |
 
-Industry depth is shipped. Benchmark: `benchmarks/synthetic/tstr_quality.py`.
+Optional backends are available. Benchmark: `benchmarks/synthetic/tstr_quality.py`.

@@ -165,7 +165,6 @@ dict[str, Any]
     def show(self) -> None:
         """Perform show for the Session-facing workflow step.
 
-Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
         """
         print(
             f"AnomalyFit · {self.backend}/{self.method} · mode={self.mode} · "
@@ -271,7 +270,6 @@ dict[str, Any]
     def show(self) -> None:
         """Perform show for the Session-facing workflow step.
 
-Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
         """
         print(
             f"AnomalyEval · {self.method} · mode={self.mode} · "

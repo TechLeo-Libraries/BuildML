@@ -19,8 +19,6 @@ def build_supervised_estimator(
 ) -> Any:
     """Construct a supervised estimator ready for fit or scoring.
 
-Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
-
 Parameters
 ----------
 method:
@@ -71,8 +69,6 @@ def supervised_anomaly_scores(
     x: np.ndarray,
 ) -> np.ndarray:
     """Perform supervised anomaly scores for the Session-facing workflow step.
-
-Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
 
 Parameters
 ----------

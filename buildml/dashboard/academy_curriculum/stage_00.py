@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from buildml.dashboard.academy_curriculum._helpers import (
     code_block,
+    demo_example,
     first_feature,
     fmt_n,
     is_classification,
@@ -60,12 +61,12 @@ def lessons() -> list[LessonSpec]:
                     else "Declare a target (or explicitly choose unsupervised work) before trusting readiness gates."
                 )
             ),
-            example_code=lambda ctx: code_block(
+            example_code=demo_example(lambda ctx: code_block(
                 "from buildml import Session",
                 "import pandas as pd",
                 "",
-                "# 1) Load YOUR table (change path / columns).",
-                "frame = pd.read_csv(\"your_data.csv\")  # <-- change",
+                "# 1) Use the synthetic table constructed above.",
+                "frame = frame.copy()  # <-- change",
                 "session = Session.ingest(frame)",
                 "",
                 "# 2) Name the decision in comments, then encode it as roles.",
@@ -79,9 +80,9 @@ def lessons() -> list[LessonSpec]:
                 "# 3) Ask BuildML to teach the framing vocabulary for this session.",
                 'brief = session.learn("diagnostic-uncertainty", level="beginner")',
                 "print(brief.concept.summary if brief.concept else brief.suggested)",
-            ),
+            )),
             what_to_change=(
-                "Replace the CSV path and column names with your dataset.",
+                "After running the demonstration, replace the synthetic frame with your dataset and update the roles.",
                 "Rewrite the decision comment: user, action, horizon, and cost of mistakes.",
                 "If unsupervised, omit target and use session.learn('cluster-validity-not-truth') instead.",
             ),
@@ -132,11 +133,11 @@ def lessons() -> list[LessonSpec]:
                 f"{fmt_n((ctx.get('duplicates') or {}).get('rows') or 0)} exact duplicate rows; "
                 f"id-like columns: {list_names(ctx.get('idLike') or [])}."
             ),
-            example_code=lambda ctx: code_block(
+            example_code=demo_example(lambda ctx: code_block(
                 "from buildml import Session",
                 "import pandas as pd",
                 "",
-                "session = Session.ingest(pd.read_csv(\"your_data.csv\"))  # <-- change",
+                "session = Session.ingest(frame.copy())  # <-- change",
                 "",
                 "# Inspect whether near-unique columns are identities or measurements.",
                 "report = session.eda(include_plots=False, show=False)",
@@ -152,7 +153,7 @@ def lessons() -> list[LessonSpec]:
                 ),
                 f'    "{target_name(ctx)}": "target",  # if supervised',
                 "})",
-            ),
+            )),
             what_to_change=(
                 "Set the entity key that defines your grain.",
                 "If the table is event-level but you need customer-level predictions, aggregate first.",
@@ -207,11 +208,11 @@ def lessons() -> list[LessonSpec]:
                 f"Rows analysed: {fmt_n(ctx.get('rows'))}; rows reported total: {fmt_n(ctx.get('rowsTotal'))}; "
                 f"sampled flag: {bool(ctx.get('sampled'))}."
             ),
-            example_code=lambda ctx: code_block(
+            example_code=demo_example(lambda ctx: code_block(
                 "from buildml import Session",
                 "import pandas as pd",
                 "",
-                "session = Session.ingest(pd.read_csv(\"your_data.csv\"))  # <-- change",
+                "session = Session.ingest(frame.copy())  # <-- change",
                 "report = session.eda(include_plots=False, show=False)",
                 "overview = report.to_dict()[\"overview\"]",
                 "print(overview.get(\"n_rows\"), overview.get(\"analysis_rows\"))",
@@ -221,7 +222,7 @@ def lessons() -> list[LessonSpec]:
                 "# sampling_frame = <who appears in this extract>",
                 "# exclusion_rules = <filters applied upstream>",
                 'session.learn("diagnostic-uncertainty", level="beginner")',
-            ),
+            )),
             what_to_change=(
                 "Write the intended population and the extract's inclusion rules.",
                 "If you sample for EDA, keep full-data checks for rare segments.",
@@ -260,11 +261,11 @@ def lessons() -> list[LessonSpec]:
             formula=None,
             calculation=lambda ctx: _target_calc(ctx),
             session_evidence=lambda ctx: _target_session(ctx),
-            example_code=lambda ctx: code_block(
+            example_code=demo_example(lambda ctx: code_block(
                 "from buildml import Session",
                 "import pandas as pd",
                 "",
-                "frame = pd.read_csv(\"your_data.csv\")  # <-- change",
+                "frame = frame.copy()  # <-- change",
                 "# Define the label explicitly BEFORE ingest when possible:",
                 "# frame[\"y\"] = (frame[\"cancelled_at\"] - frame[\"asof_date\"]).dt.days.between(1, 30)",
                 "session = (",
@@ -276,7 +277,7 @@ def lessons() -> list[LessonSpec]:
                 ")",
                 "report = session.eda(include_plots=False, show=False)",
                 "print(report.to_dict().get(\"target\"))",
-            ),
+            )),
             what_to_change=(
                 "Change the label rule and column name to match your outcome definition.",
                 "For classification, document the positive class and horizon.",
@@ -324,11 +325,11 @@ def lessons() -> list[LessonSpec]:
                 f"{fmt_n(ctx.get('colCount'))} columns profiled; dtypes present for "
                 f"{sum(1 for c in (ctx.get('cols') or []) if (c.get('dtype') if isinstance(c, dict) else None))} columns."
             ),
-            example_code=lambda ctx: code_block(
+            example_code=demo_example(lambda ctx: code_block(
                 "from buildml import Session",
                 "import pandas as pd",
                 "",
-                "session = Session.ingest(pd.read_csv(\"your_data.csv\"))  # <-- change",
+                "session = Session.ingest(frame.copy())  # <-- change",
                 "report = session.eda(include_plots=False, show=False)",
                 "overview = report.to_dict()[\"overview\"]",
                 "print(\"columns:\", overview.get(\"columns\"))",
@@ -337,7 +338,7 @@ def lessons() -> list[LessonSpec]:
                 "# Teach + document schema expectations",
                 'session.learn("feature-schema", level="beginner")',
                 "# Keep a side table: column -> source_system -> asof_rule -> owner",
-            ),
+            )),
             what_to_change=(
                 "Fill the lineage side table for your warehouse / feature store.",
                 "Record as-of rules for any joined attributes.",
@@ -382,11 +383,11 @@ def lessons() -> list[LessonSpec]:
                 "This sheet does not auto-label protected attributes - that is a policy decision. "
                 f"Candidate review set includes categoricals: {list_names(ctx.get('categorical') or [])}."
             ),
-            example_code=lambda ctx: code_block(
+            example_code=demo_example(lambda ctx: code_block(
                 "from buildml import Session",
                 "import pandas as pd",
                 "",
-                "session = Session.ingest(pd.read_csv(\"your_data.csv\"))  # <-- change",
+                "session = Session.ingest(frame.copy())  # <-- change",
                 "session = session.set_roles({",
                 "    # Keep group columns out of training features when policy requires it:",
                 '    # "gender": "ignore",   # <-- change to your policy',
@@ -397,7 +398,7 @@ def lessons() -> list[LessonSpec]:
                 "",
                 "# Later: evaluate slices with error_slices after fit (group column retained outside X).",
                 'session.learn("feature-schema", level="intermediate")',
-            ),
+            )),
             what_to_change=(
                 "Apply your organisation's sensitive-attribute policy.",
                 "Decide monitor-only vs exclude vs legally required inclusion.",

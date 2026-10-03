@@ -12,17 +12,17 @@ they know about your target.
 **Variance** drops columns that barely change. A column that is the same value
 for 99% of rows cannot help distinguish those rows, whatever the target is.
 This is the cheapest check and the only one that does not look at the target at
-all, so it is a safe first pass.
+all. Low variance does not imply low predictive value; a rare indicator may
+still matter.
 
 **Univariate** scores each column against the target independently and keeps
 the top *k*. Fast and often effective, but it judges each column alone: it will
 discard a feature that is useless by itself and decisive in combination with
 another, and it will keep several columns that all say the same thing.
 
-**Model-based** fits an estimator and keeps the features it relied on. This one
-sees interactions and redundancy, which is what makes it the most accurate: at
-the cost of fitting a model, and of inheriting that model's biases about what
-matters.
+**Model-based** fits an estimator and keeps the features it relied on. Its ability
+to capture interactions and redundancy depends on the estimator. Selection
+requires fitting that estimator and inherits its assumptions about what matters.
 
 All three learn from training rows only. Choosing which columns to keep by
 looking at test performance is leakage of exactly the kind that produces a
@@ -221,11 +221,15 @@ def fit_feature_selector(
 
     Examples
     --------
-    >>> plan = fit_feature_selector(  # doctest: +SKIP
-    ...     dataset, split_plan, strategy="univariate", k=20
-    ... )
-    >>> len(plan.selected_features_)  # doctest: +SKIP
-    20
+    >>> import numpy as np
+    >>> import pandas as pd
+    >>> from buildml import Session
+    >>> frame = pd.DataFrame({"age": np.arange(40, dtype=float), "income": np.arange(40, dtype=float) ** 2, "target": [0, 1] * 20})
+    >>> session = Session.ingest(frame).set_roles({"target": "target"})
+    >>> _ = session.split(test_size=0.25, stratify=True, random_state=42)
+    >>> dataset, split_plan = session.dataset, session.split_plan
+    >>> from buildml.preprocess.select import fit_feature_selector
+    >>> plan = fit_feature_selector(dataset, split_plan, strategy="univariate", k=1)
 
     See Also
     --------

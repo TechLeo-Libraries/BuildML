@@ -41,9 +41,9 @@ DEFAULT_REDUCE_VIZ = "umap" if umap_available() else "pca"
 
 
 def method_assign_strategy(method: str) -> AssignStrategy:
-    """Perform method assign strategy for the Session-facing workflow step.
+    """Choose how a clustering method assigns additional rows.
 
-Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+Native predictors are used where supported; density methods use nearest-core assignment, and other transductive methods use nearest centroids.
 
 Parameters
 ----------
@@ -65,9 +65,9 @@ AssignStrategy
 
 
 def method_requires_extra(method: str) -> str | None:
-    """Perform method requires extra for the Session-facing workflow step.
+    """Return the installation extra required by a clustering method.
 
-Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+HDBSCAN uses the unsupervised extra and deep clustering uses Torch; core sklearn methods need no additional extra.
 
 Parameters
 ----------
@@ -87,9 +87,9 @@ str | None
 
 
 def method_backend(method: str) -> str:
-    """Perform method backend for the Session-facing workflow step.
+    """Map a clustering method to its implementation backend.
 
-Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+Deep clustering maps to Torch, HDBSCAN to its own package, and other methods to sklearn.
 
 Parameters
 ----------
@@ -109,9 +109,9 @@ str
 
 
 def resolve_density_method(requested: str | None = None) -> str:
-    """Pick HDBSCAN when installed unless caller explicitly requests dbscan.
+    """Resolve an explicit or default density-clustering method.
 
-Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+An explicit request is returned unchanged. The default was selected at module import from HDBSCAN runtime availability, falling back to DBSCAN.
 
 Parameters
 ----------
@@ -129,9 +129,9 @@ str
 
 
 def list_cluster_methods(*, include_torch: bool = True) -> tuple[dict[str, Any], ...]:
-    """List catalog entries for cluster methods.
+    """List clustering methods and their assignment contracts.
 
-Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+Entries identify the backend, installation extra, and strategy used to assign rows after fitting; deep methods may be excluded.
 
 Parameters
 ----------
@@ -228,9 +228,9 @@ dict[str, Any]
 
 
 def list_reduce_methods() -> tuple[dict[str, Any], ...]:
-    """List catalog entries for reduce methods.
+    """List dimensionality-reduction methods and backend details.
 
-Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+The catalog describes both core and optional methods so callers can present installation requirements alongside available choices.
 
 Returns
 -------

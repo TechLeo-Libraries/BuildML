@@ -1,4 +1,4 @@
-"""Symbolic / neuro-symbolic catalog and honest capability matrix."""
+"""Symbolic / neuro-symbolic catalog and capability matrix."""
 
 from __future__ import annotations
 
@@ -282,7 +282,7 @@ def resolve_symbolic_backend_method(
     source: str | None,
     method: str | None,
 ) -> tuple[SymbolicBackendName, str, str]:
-    """Validate backend/source/method and apply honest defaults.
+    """Validate backend/source/method and apply documented defaults.
 
     Maps declared rules, sklearn induction sources, and industry methods to a
     consistent triple used by :func:`fit_symbolic`.

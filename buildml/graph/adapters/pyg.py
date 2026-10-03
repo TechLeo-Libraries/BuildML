@@ -7,6 +7,7 @@ from typing import Any
 import numpy as np
 
 from buildml.core.errors import ValidationError
+from buildml.dl.extras import require_torch
 from buildml.graph.data import edge_index_from_pairs
 from buildml.graph.extras import require_pyg
 from buildml.graph.types import PyGModel
@@ -128,7 +129,8 @@ class PyGNodeClassifier:
         ValidationError
             When fewer than two train nodes are labeled.
         """
-        torch = require_pyg(feature="Graph PyG node classification")
+        require_pyg(feature="Graph PyG node classification")
+        torch = require_torch(feature="Graph PyG node classification")
         self._torch = torch
         if self.random_state is not None:
             torch.manual_seed(int(self.random_state))
@@ -207,7 +209,7 @@ class PyGNodeClassifier:
         ValidationError
             When the classifier has not been fitted.
         """
-        torch = self._torch or require_pyg(feature="Graph PyG node classification")
+        torch = self._torch or require_torch(feature="Graph PyG node classification")
         if self._module is None:
             raise ValidationError("PyGNodeClassifier is not fitted.")
         device = next(self._module.parameters()).device
@@ -270,7 +272,7 @@ class PyGNodeClassifier:
         ValidationError
             When the classifier has not been fitted.
         """
-        torch = self._torch or require_pyg(feature="Graph PyG node classification")
+        torch = self._torch or require_torch(feature="Graph PyG node classification")
         if self._module is None:
             raise ValidationError("PyGNodeClassifier is not fitted.")
         return {

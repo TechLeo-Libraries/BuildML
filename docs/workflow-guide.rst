@@ -1,19 +1,19 @@
 Workflow guide
 ==============
 
-This is the order I use when the job is a table and a holdout I need to
-trust. It is a decision path, not a requirement to call every method. At
-each boundary, stop when the assumptions do not match the project.
+This guide describes a workflow for tabular machine learning. Choose the
+steps that match your data, estimator, and evaluation requirements. Each
+Python example is independent and includes its own setup.
 
-The order exists because each stage changes what the next stage is
-allowed to see. Ingest does not learn. Roles decide what may be used.
-The split locks the holdout. Preparation and fitting learn from train.
-Evaluation reads a partition you name. If you invert that, BuildML
-refuses. If you follow it on the wrong split (random rows when the unit
-is a customer), the library cannot save you. That judgment is yours.
+Column roles determine which data can be used as features and targets.
+Splitting defines the training and holdout rows before preprocessing or
+fitting learns parameters from the training partition.
+Evaluation uses the partition you specify. BuildML checks operation
+prerequisites, while the evaluation design must account for relationships
+between rows, such as repeated observations from the same customer.
 
-1. Ingest without forcing scale
--------------------------------
+1. Load and inspect the data
+----------------------------
 
 Use ``Session.ingest`` with a DataFrame or a supported path. Read
 ``session.ingest_report`` for detected format, estimated size,
@@ -24,8 +24,8 @@ Do not force memory mode merely to silence a warning. Changing mode
 after ingestion records policy metadata. It does not move an already
 materialized frame out of memory.
 
-2. Assign and review roles
---------------------------
+2. Assign and review column roles
+---------------------------------
 
 Call ``set_roles`` from what you know about the columns. Confirm one
 intended target. Keep identifiers, post-outcome fields, and fields that
@@ -33,14 +33,17 @@ will not exist at scoring time out of features.
 
 .. code-block:: python
 
-   session.set_roles(
-       {
-           "customer_id": "id",
-           "event_time": "time",
-           "amount": "feature",
-           "outcome": "target",
-       }
-   )
+   import pandas as pd
+   from buildml import Session
+
+   frame = pd.DataFrame({
+       "customer_id": [1, 2, 3, 4],
+       "event_time": pd.date_range("2026-01-01", periods=4),
+       "amount": [20., 30., 40., 50.],
+       "outcome": [0, 1, 0, 1],
+   })
+   session = Session.ingest(frame)
+   session.set_roles({"customer_id": "id", "event_time": "time", "amount": "feature", "outcome": "target"})
 
 Stop if the prediction time, observation unit, or target definition is
 still ambiguous.
@@ -58,8 +61,10 @@ duplicates. BuildML enforces disjoint memberships and train-only fit
 scope. It cannot detect related entities or future leakage from values
 alone.
 
-4. Explore without mining test
-------------------------------
+4. Explore the training data
+----------------------------
+
+The plotting examples require ``pip install "buildml[viz]"``.
 
 Run EDA after roles are assigned. Prefer training or development
 evidence for choices. Reserve final test interpretation. A full-dataset
@@ -68,24 +73,49 @@ evidence.
 
 .. code-block:: python
 
+   from pathlib import Path
+   from sklearn.datasets import load_breast_cancer
+   from buildml import Session
+
+   frame = load_breast_cancer(as_frame=True).frame[["mean radius", "mean texture", "target"]]
+   session = Session.ingest(frame)
+   session.set_roles({**{c: "feature" for c in frame if c != "target"}, "target": "target"})
+   session.split(test_size=0.2, validation_size=0.2, stratify=True, random_state=42)
+   Path("artifacts").mkdir(exist_ok=True)
    report = session.eda(
+       partition="train",
        include_plots=True,
+       max_plots=12,
        export_html="artifacts/eda_research.html",
        html_format="research",
    )
    # Live app: session.eda_app(port=8765)  # needs buildml[dashboard]
 
+The descriptive findings use the training partition. The drift section
+still compares training and test distributions and reports that scope.
+
 Read each finding's evidence, partition, denominator, severity, and
 limit. Investigate collection errors before you treat a statistical
 association as a feature opportunity.
 
-5. Prepare in train-fitted order
---------------------------------
+5. Fit preprocessing on training data
+-------------------------------------
 
 Choose only the operations the estimator and the data need:
 
 .. code-block:: python
 
+   from pathlib import Path
+   from sklearn.datasets import load_breast_cancer
+   from buildml import Session
+
+   frame = load_breast_cancer(as_frame=True).frame
+   # A synthetic categorical column demonstrates one-hot encoding.
+   frame["batch"] = ["A" if i % 2 else "B" for i in range(len(frame))]
+   session = Session.ingest(frame)
+   session.set_roles({**{c: "feature" for c in frame if c != "target"}, "target": "target"})
+   session.split(test_size=0.2, validation_size=0.2, stratify=True, random_state=42)
+   Path("artifacts").mkdir(exist_ok=True)
    session.impute(strategy="median")
    session.encode(method="onehot")
    session.scale(method="standard")
@@ -106,11 +136,11 @@ pass a recipe. Recipes do not rebuild from raw rows. Opt in only with
 data without Session-global fitted preprocessing. Resample and ``apply_custom_transform`` stay
 Session-global only.
 
-The full recipe, weight, and refuse patterns live in
+Examples of recipes, sample weights, and preprocessing restrictions are in
 :doc:`leakage-cv-recipes`. Engine ingest and materialization live in
 :doc:`engines-polars-duckdb`.
 
-When you tune hyperparameters or recipe knobs such as ``select_k`` /
+When you tune hyperparameters or recipe parameters such as ``select_k`` /
 ``n_bins``, pass ``recipe_grid`` / ``recipe_distributions`` /
 ``recipe_space`` into search or ``nested_cv_score``. Outer folds record
 ``best_params`` / ``best_recipe_knobs`` without using Session test rows.
@@ -126,6 +156,16 @@ controlled workflows.
 
 .. code-block:: python
 
+   from pathlib import Path
+   from sklearn.datasets import load_breast_cancer
+   from buildml import Session
+
+   frame = load_breast_cancer(as_frame=True).frame
+   session = Session.ingest(frame)
+   session.set_roles({**{c: "feature" for c in frame if c != "target"}, "target": "target"})
+   session.split(test_size=0.2, validation_size=0.2, stratify=True, random_state=42)
+   Path("artifacts").mkdir(exist_ok=True)
+   session.scale(method="standard")
    from sklearn.dummy import DummyClassifier
    from sklearn.linear_model import LogisticRegression
 
@@ -136,14 +176,14 @@ controlled workflows.
        },
        task="classification",
        partition="validation",
-       ranking_metric="f1",
+       ranking_metric="f1_macro",
    )
 
 The ranking metric must reflect error costs. Stop when the partition is
 too small, a candidate has incompatible inputs, or the score difference
 is within observed variation.
 
-When hyperparameters or selection knobs are tuned with CV, use
+When hyperparameters or selection parameters are tuned with CV, use
 ``nested_cv_score`` for the post-selection estimate. Do not treat
 ``grid_search`` inner means as untouched generalization claims.
 
@@ -151,10 +191,23 @@ When hyperparameters or selection knobs are tuned with CV, use
 ----------------------------
 
 Use validation during iteration and test after model and feature
-choices are fixed.
+choices are fixed. Install ``buildml[viz]`` to include the plots below.
 
 .. code-block:: python
 
+   from pathlib import Path
+   from sklearn.datasets import load_breast_cancer
+   from buildml import Session
+
+   frame = load_breast_cancer(as_frame=True).frame
+   session = Session.ingest(frame)
+   session.set_roles({**{c: "feature" for c in frame if c != "target"}, "target": "target"})
+   session.split(test_size=0.2, validation_size=0.2, stratify=True, random_state=42)
+   Path("artifacts").mkdir(exist_ok=True)
+   from sklearn.linear_model import LogisticRegression
+   session.impute(strategy="median")
+   session.scale(method="standard")
+   session.fit(LogisticRegression(max_iter=500), task="classification")
    result = session.evaluate(
        partition="test",
        include_plots=True,
@@ -175,11 +228,20 @@ on test. Use permutation importance as a model-reliance audit, not as a
 causal or automatic feature-selection rule. Use learning curves only
 when their cross-validation folds respect row dependencies.
 
-9. Explain and hand off
------------------------
+9. Review and export the workflow
+---------------------------------
 
 .. code-block:: python
 
+   from pathlib import Path
+   from sklearn.datasets import load_breast_cancer
+   from buildml import Session
+
+   frame = load_breast_cancer(as_frame=True).frame
+   session = Session.ingest(frame)
+   session.set_roles({**{c: "feature" for c in frame if c != "target"}, "target": "target"})
+   session.split(test_size=0.2, validation_size=0.2, stratify=True, random_state=42)
+   Path("artifacts").mkdir(exist_ok=True)
    status = session.workflow()
    before = session.explain("checkpoint_save", moment="before")
    preview = session.dry_run(["checkpoint_save"])
@@ -187,8 +249,8 @@ when their cross-validation folds respect row dependencies.
    walkthrough = session.walkthrough(export_html="artifacts/workflow.html")
 
 ``workflow`` shows every cataloged operation as done, available,
-blocked, or skipped. ``explain`` is this Session, right now. ``learn``
-is the idea behind a call, or any term you did not recognise.
+blocked, or skipped. ``explain`` describes an operation in the current Session. ``learn``
+provides background on operations and machine-learning terms.
 ``dry_run`` previews without mutating state. ``walkthrough`` joins
 status, history, and unresolved catalog risks into offline HTML.
 Available operations are possibilities, not recommendations.

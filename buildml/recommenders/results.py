@@ -13,7 +13,7 @@ class RecommenderPlan:
     """Store train-fitted recommender state for top-K scoring.
 
     Holds the train interaction matrix, method-specific fitted artifacts,
-    catalog indexes, and honesty disclosures. Persist via
+    catalog indexes, and implementation limitations. Persist via
     ``buildml.recommender_bundle.v1``. Distinct from Session checkpoints and
     from RAG / diagnostic EDA Recommendation objects.
     """
@@ -70,7 +70,7 @@ class RecommenderPlan:
         Returns
         -------
         dict[str, Any]
-            Plan metadata, feature columns, and honesty disclosures.
+            Plan metadata, feature columns, and implementation limitations.
         """
         return {
             "method": self.method,

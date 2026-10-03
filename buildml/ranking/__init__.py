@@ -13,7 +13,7 @@ Behavior and limitations:
     **not** recommender user–item CF.
 
 Dependency policy: core stays numpy/pandas/sklearn. Industry rankers and torch
-listwise are optional extras with honest capability matrix disclosure.
+listwise are optional extras with capability matrix disclosure.
 
 Optional dependencies are imported only when their backends are used.
 """

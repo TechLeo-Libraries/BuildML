@@ -112,6 +112,8 @@ def coerce_data_mode(mode: DataMode | str) -> DataMode:
 
     Examples
     --------
+    >>> from buildml.core.types import DataMode
+    >>> from buildml.core.types import coerce_data_mode
     >>> coerce_data_mode("lazy")
     <DataMode.LAZY: 'lazy'>
     >>> coerce_data_mode("out_of_core")
@@ -191,9 +193,8 @@ class TableSchema:
     Notes
     -----
     **Dtypes are strings rather than parsed types.** A schema has to survive
-    JSON and three engines with different type systems, and comparing the
-    engine's own spelling is more honest than mapping everything onto a lowest
-    common denominator.
+    JSON and three engines with different type systems. The schema records
+    each engine's dtype spelling rather than converting it to a shared type.
 
     See Also
     --------
@@ -268,6 +269,7 @@ class TableSchema:
 
         Examples
         --------
+        >>> from buildml.core.types import TableSchema
         >>> schema = TableSchema.from_dict(
         ...     {"fields": [{"name": "age", "dtype": "int64"}]}
         ... )

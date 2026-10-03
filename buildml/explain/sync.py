@@ -531,7 +531,9 @@ def write_operation_index(
 
     Examples
     --------
-    From the repository root::
+    From a BuildML source checkout, run this shell command:
+
+    .. code-block:: console
 
         python scripts/sync_teaching_surface.py --write
 
@@ -1005,10 +1007,11 @@ def check_teaching_surface(
 
     Examples
     --------
-    As a test::
+    .. code-block:: python
 
-        def test_teaching_surface_in_sync():
-            check_teaching_surface().raise_if_failed()
+        from buildml.explain.sync import check_teaching_surface
+        report = check_teaching_surface()
+        print(report)
 
     See Also
     --------

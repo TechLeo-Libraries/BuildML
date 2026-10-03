@@ -9,8 +9,7 @@ pip install "buildml[pretrained]"
 encoder hooks with `weights=none|mock|pretrained`, plus
 `session.dl.attach_head` for a linear classify/probe head. Discover the
 shipped list with `list_pretrained_backbones()`. This is not a full
-Hugging Face / TorchVision model catalog. Default `weights="mock"` keeps CI graphs
-deterministic. `pretrained` downloads when you opt in. Multimodal fusion
+Hugging Face / TorchVision model catalog. Default `weights="mock"` supports deterministic examples without downloads. `pretrained` downloads when you opt in. Multimodal fusion
 and speech finetune-lite are separate paths.
 
 Related: [torch-deep](torch-deep.md), [speech](speech-asr-finetune.md),
@@ -36,13 +35,14 @@ Curated architectures:
 | speech | `whisper_tiny_encoder`, `whisper_base_encoder` | transformers |
 
 Prefer `list_pretrained_backbones()` / `session.explain("load_pretrained_backbone")`
-over memorizing a stale table when the installed version may differ.
+to inspect the architectures supported by the installed version.
 
 ---
 
 ## Use case: Vision backbone + attach head (mock)
 
 ```python
+# Requires: pip install "buildml[vision]". Mock weights do not download a model.
 from buildml import Session
 
 session = Session()
@@ -68,27 +68,15 @@ head (linear-probe style).
 
 ## Use case: Audio / speech encoders
 
-```python
-# audio modality
-# audio_bb = session.dl.load_backbone(
-#     "audio", "hubert_base", weights="mock", freeze=True
-# )
-# # also: "wav2vec2_base"
+For audio, `session.dl.load_backbone` accepts modality `"audio"` with
+`"hubert_base"` or `"wav2vec2_base"`. For speech, use `"speech"` with
+`"whisper_base_encoder"` or `"whisper_tiny_encoder"`. The loading and
+head-attachment sequence is the same as the complete vision example above.
 
-# speech encoder hook (not FM pretrain)
-# speech_bb = session.dl.load_backbone(
-#     "speech", "whisper_base_encoder", weights="mock", freeze=True
-# )
-# # also: "whisper_tiny_encoder"
-
-# Real weights (may download; operator-owned cache/license):
-# speech_bb = session.dl.load_backbone(
-#     "speech",
-#     "whisper_tiny_encoder",
-#     weights="pretrained",
-#     model_id="openai/whisper-tiny",
-# )
-```
+Use `weights="mock"` for deterministic test weights. Set
+`weights="pretrained"` and a compatible `model_id`, such as
+`"openai/whisper-tiny"`, to download actual pretrained weights. Install the
+speech extra first and check the model's license and storage requirements.
 
 ---
 

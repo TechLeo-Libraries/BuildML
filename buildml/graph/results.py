@@ -94,7 +94,7 @@ class GraphFitResult:
         Returns
         -------
         dict[str, Any]
-            Fit metadata, class counts, and honesty disclosures.
+            Fit metadata, class counts, and implementation limitations.
         """
         return {
             "method": self.method,
@@ -133,7 +133,7 @@ class GraphPredictResult:
         Returns
         -------
         dict[str, Any]
-            Prediction metadata, class list, and honesty disclosures.
+            Prediction metadata, class list, and implementation limitations.
         """
         return {
             "partition": self.partition,
@@ -171,7 +171,7 @@ class GraphEvalResult:
         Returns
         -------
         dict[str, Any]
-            Partition, accuracy/F1/ROC-AUC metrics, and honesty disclosures.
+            Partition, accuracy/F1/ROC-AUC metrics, and implementation limitations.
         """
         return {
             "partition": self.partition,

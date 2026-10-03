@@ -252,11 +252,10 @@ class CbrFitResult:
 
 @dataclass(slots=True)
 class CbrEvalResult:
-    """How well the reasoner did on rows that are not in its memory.
+    """Prediction metrics and neighbour diagnostics for an evaluation partition.
 
-    The score that counts. Because every training row is its own nearest
-    neighbour, only a partition held out of the case base gives an honest
-    reading.
+    Training rows can retrieve themselves as neighbours. Use a partition held
+    out of the case base when estimating performance on unseen cases.
 
     Attributes
     ----------
@@ -347,7 +346,7 @@ class CbrPredictResult:
 
     Notes
     -----
-    **A prediction is always produced, however unlike memory the query is.**
+    **Prediction does not automatically reject distant queries.**
     Neighbours are the nearest available, not the nearest *close* ones. Check
     the trace distances before acting on a prediction for an unusual input.
 
@@ -496,9 +495,9 @@ class CbrRetainResult:
     historical fact rather than a current one. Re-evaluate periodically.
 
     **Distance transforms are not refitted on retained cases.** The
-    standardisation and vocabularies stay as they were fitted on train, which
-    keeps evaluation honest but means a substantial distribution shift in
-    retained data is scaled by increasingly stale statistics.
+    standardisation and vocabularies retain their training values. If retained
+    data differs substantially from the training distribution, reassess whether
+    those fitted transforms are still appropriate.
 
     See Also
     --------

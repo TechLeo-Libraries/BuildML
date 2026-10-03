@@ -80,10 +80,9 @@ def list_csv_sections(report: dict[str, Any]) -> list[dict[str, str]]:
 def export_csv(report: dict[str, Any], section: str) -> tuple[str, str]:
     """Render one section as CSV text, with a filename to offer it under.
 
-    The escape hatch from the studio. Every table shown on a board can be pulled
-    out as CSV, because at some point everyone wants the numbers in a
-    spreadsheet, and a dashboard that traps its data is a dashboard people work
-    around.
+    Export a supported report section for use in a spreadsheet or another
+    analysis tool. Call :func:`list_csv_sections` to find the sections available
+    in the current report.
 
     Parameters
     ----------
@@ -702,6 +701,7 @@ def escape_xml(text: Any) -> str:
 
     Examples
     --------
+    >>> from buildml.dashboard.exports import escape_xml
     >>> escape_xml("a < b & c")
     'a &lt; b &amp; c'
     >>> escape_xml(None)

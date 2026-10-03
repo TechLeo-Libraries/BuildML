@@ -36,7 +36,7 @@ MULTITASK_NOTES: dict[str, ConceptNote] = {
             ),
             how_buildml_uses=(
                 "session.multitask.fit(backend=..., method=...) → predict/evaluate.",
-                "See session.multitask.capability_matrix() for honest defaults.",
+                "See session.multitask.capability_matrix() for documented defaults.",
             ),
             interpretation_rules=(
                 "Read n_tasks, target_columns, method, task, and disclosures.",

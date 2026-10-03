@@ -47,6 +47,8 @@ def validate_role_name(role: str | ColumnRole) -> ColumnRole:
 
     Examples
     --------
+    >>> from buildml.core.types import ColumnRole
+    >>> from buildml.core.validation import validate_role_name
     >>> validate_role_name("Target")
     <ColumnRole.TARGET: 'target'>
     >>> validate_role_name(ColumnRole.GROUP)
@@ -105,6 +107,7 @@ def validate_column_names(columns: Iterable[str], known: Iterable[str]) -> list[
 
     Examples
     --------
+    >>> from buildml.core.validation import validate_column_names
     >>> validate_column_names(["age", "income"], ["age", "income", "city"])
     ['age', 'income']
     >>> from buildml.core.errors import ValidationError

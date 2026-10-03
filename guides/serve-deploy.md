@@ -7,8 +7,7 @@ pip install "buildml[serve]"
 
 Local managed serving for classical pipeline bundles and TorchScript
 artifacts, plus operator-owned recipes for TorchServe, TensorRT
-(`trtexec`), and Kubernetes torchrun Jobs / serve Deployments. This is
-not a managed cloud IAM / multi-cluster product.
+(`trtexec`), and Kubernetes torchrun Jobs / serve Deployments. Identity management and cluster operation must be configured separately.
 
 Related: [artifacts](artifacts-checkpoints-bundles.md), [torch-deep](torch-deep.md),
 [features](../docs/features.rst).
@@ -92,9 +91,14 @@ handle = session.dl.serve(
     port=8080,
     api_keys=["dev-key"],
     blocking=False,
+    trusted=True,  # This example created the bundle above.
 )
-print(handle)
-# handle.stop() when finished
+from urllib.request import urlopen
+try:
+    with urlopen("http://127.0.0.1:8080/health", timeout=10) as response:
+        print(response.read().decode())
+finally:
+    handle.stop()
 ```
 
 CLI equivalents:
@@ -107,7 +111,7 @@ buildml-serve --bundle artifacts/pipeline --kind pipeline --api-key dev-key
 # buildml-serve --bundle artifacts/pipeline --ssl-certfile cert.pem --ssl-keyfile key.pem
 ```
 
-### HTTP surface
+### HTTP endpoints
 
 Managed serve exposes (OpenAPI at `/docs` / `/openapi.json`):
 
@@ -131,14 +135,10 @@ curl -s -X POST http://127.0.0.1:8080/predict/batch \
 
 ## Use case B: Serve TorchScript
 
-```python
-# After session.dl.fit + session.dl.export("artifacts/model.ts.pt", format="torchscript"):
-# session.dl.serve(
-#     "artifacts/model.ts.pt",
-#     kind="torchscript",
-#     api_keys=["dev-key"],
-# )
-```
+For a trained Torch model, export TorchScript with `session.dl.export` and
+pass that file to `session.dl.serve` with `kind="torchscript"`. The
+[Torch guide](torch-deep.md) provides the training and export example.
+Use the server lifecycle shown above to inspect and stop the service.
 
 Scoring contracts differ by `kind`: do not assume pipeline JSON equals
 TorchScript tensor payloads. Inspect `/metadata` and OpenAPI locally.
@@ -147,37 +147,10 @@ TorchScript tensor payloads. Inspect `/metadata` and OpenAPI locally.
 
 ## Use case C: Auth, public bind, optional local HTTPS
 
-```python
-# Refused without auth on non-loopback (unless allow_insecure_public_bind):
-# session.dl.serve(
-#     "artifacts/pipeline",
-#     host="0.0.0.0",
-#     api_keys=["rotate-me"],
-#     # or basic_auth=("ops", "change-me"),
-# )
-
-# Docs stay closed when auth is on; opt in explicitly:
-# session.dl.serve(
-#     "artifacts/pipeline",
-#     api_keys=["rotate-me"],
-#     docs_enabled=True,
-# )
-
-# Emergency lab-only override (do not use in production):
-# session.dl.serve(
-#     "artifacts/pipeline",
-#     host="0.0.0.0",
-#     allow_insecure_public_bind=True,
-# )
-
-# Optional local HTTPS: both cert and key required (ValidationError otherwise):
-# session.dl.serve(
-#     "artifacts/pipeline",
-#     ssl_certfile="cert.pem",
-#     ssl_keyfile="key.pem",
-#     api_keys=["dev-key"],
-# )
-```
+Binding to a non-loopback address requires authentication. Supply
+`api_keys` or `basic_auth` when setting `host="0.0.0.0"`; use credentials
+from your deployment's secret store. The insecure-public-bind override
+should only be used in a separately protected test environment.
 
 API keys / Basic auth are **not** cloud IAM. Local SSL is **not** a managed cert
 product. Rotate secrets; prefer a reverse proxy for production TLS.
@@ -204,15 +177,10 @@ the insecure public-bind override (API key / Basic auth required for `0.0.0.0`).
 
 ## Use case D: TorchServe directory pack + compose example
 
-```python
-# session.dl.export("artifacts/model.ts.pt", format="torchscript")
-# result = session.dl.pack_torchserve(
-#     "artifacts/torchserve_dir",
-#     torchscript_path="artifacts/model.ts.pt",
-#     model_name="buildml_model",
-# )
-# Operator runs TorchServe against the directory: BuildML does not start it.
-```
+After exporting a TorchScript model, `session.dl.pack_torchserve` writes
+TorchServe packaging inputs to an output directory. Supply the export via
+`torchscript_path` and choose a `model_name`. Review the generated files
+and run TorchServe separately; this helper does not deploy a service.
 
 Repo recipe for a local compose loop (operator-run; not a managed cloud):
 
@@ -227,22 +195,56 @@ Repo recipe for a local compose loop (operator-run; not a managed cloud):
 
 ## Use case E: TensorRT trtexec plan (recipe)
 
-```python
-# session.dl.export("artifacts/model.onnx", format="onnx")
-# plan = session.dl.prepare_tensorrt(
-#     "artifacts/trt_plan",
-#     onnx_path="artifacts/model.onnx",
-#     engine_name="model.engine",
-#     fp16=True,
-# )
-# Operator runs trtexec: BuildML does not build .engine files.
-```
+After exporting ONNX, `session.dl.prepare_tensorrt` creates a build plan
+using `onnx_path`, an output directory, and an `engine_name`. The helper
+does not run TensorRT. Building the engine requires a compatible TensorRT
+installation and GPU; inspect the generated command before running it.
 
 ---
 
 ## Use case F: Kubernetes torchrun Job (ConfigMap + GPU)
 
 ```python
+import pandas as pd
+from sklearn.linear_model import LogisticRegression
+
+from buildml import Session
+
+frame = pd.DataFrame(
+    {
+        "age": [21, None, 35, 40, 29, 33, 52, 47],
+        "income": [40, 55, 60, 80, 50, 70, 90, 65],
+        "approved": [0, 1, 0, 1, 0, 1, 1, 0],
+    }
+)
+
+session = (
+    Session.ingest(frame)
+    .set_roles({"age": "feature", "income": "feature", "approved": "target"})
+    .split(test_size=0.25, stratify=True, random_state=0)
+    .impute(strategy="median")
+    .scale(method="standard")
+    .fit(LogisticRegression(max_iter=500), task="classification")
+)
+session.save_pipeline("artifacts/pipeline", evaluate_partition="test")
+
+# pip install "buildml[serve]"
+handle = session.dl.serve(
+    "artifacts/pipeline",
+    kind="pipeline",
+    host="127.0.0.1",
+    port=8080,
+    api_keys=["dev-key"],
+    blocking=False,
+    trusted=True,  # This example created the bundle above.
+)
+from urllib.request import urlopen
+try:
+    with urlopen("http://127.0.0.1:8080/health", timeout=10) as response:
+        print(response.read().decode())
+finally:
+    handle.stop()
+
 session = Session()
 session.dl.emit_k8s_ddp(
     "artifacts/ddp-job.yaml",
@@ -265,6 +267,46 @@ Static multi-node example: `deploy/k8s/torchrun-ddp-multinode.example.yaml`.
 ## Use case G: Kubernetes serve Deployment (template)
 
 ```python
+import pandas as pd
+from sklearn.linear_model import LogisticRegression
+
+from buildml import Session
+
+frame = pd.DataFrame(
+    {
+        "age": [21, None, 35, 40, 29, 33, 52, 47],
+        "income": [40, 55, 60, 80, 50, 70, 90, 65],
+        "approved": [0, 1, 0, 1, 0, 1, 1, 0],
+    }
+)
+
+session = (
+    Session.ingest(frame)
+    .set_roles({"age": "feature", "income": "feature", "approved": "target"})
+    .split(test_size=0.25, stratify=True, random_state=0)
+    .impute(strategy="median")
+    .scale(method="standard")
+    .fit(LogisticRegression(max_iter=500), task="classification")
+)
+session.save_pipeline("artifacts/pipeline", evaluate_partition="test")
+
+# pip install "buildml[serve]"
+handle = session.dl.serve(
+    "artifacts/pipeline",
+    kind="pipeline",
+    host="127.0.0.1",
+    port=8080,
+    api_keys=["dev-key"],
+    blocking=False,
+    trusted=True,  # This example created the bundle above.
+)
+from urllib.request import urlopen
+try:
+    with urlopen("http://127.0.0.1:8080/health", timeout=10) as response:
+        print(response.read().decode())
+finally:
+    handle.stop()
+
 session = Session()
 session.dl.emit_k8s_serve(
     "artifacts/serve-deploy.yaml",
@@ -295,7 +337,7 @@ control ([ai-tools](ai-tools-operator-patterns.md)).
 
 ## Failure modes / limits
 
-| Limit | Honesty |
+| Limit | Behavior |
 | --- | --- |
 | Managed cloud | Not provided |
 | TLS termination | Local SSL pair optional; prefer your proxy for production |

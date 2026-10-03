@@ -19,11 +19,10 @@ cosine, and a Gower-style mixed distance for data with categorical columns.
 weighting, averaging, and fitting a small local model.
 
 *How many neighbours.* ``k`` trades variance for bias: one neighbour is noisy,
-fifty averages away the local structure the method exists to exploit.
+larger values can smooth over local differences.
 
-Scaling deserves its own note because it is the most common way this goes
-quietly wrong. Distance is dominated by whichever feature has the largest
-numeric spread, so an unscaled salary column makes an age column irrelevant.
+Scaling affects distance calculations. Features with large numeric ranges can
+dominate those with smaller ranges; for example, salary may outweigh age.
 ``standardize`` is on by default and is fitted on training rows alone.
 
 See Also
@@ -40,7 +39,7 @@ from typing import Any, Literal
 
 CbrTask = Literal["classification", "regression"]
 
-# Retrieval backend for case memory (honest defaults when extras installed).
+# Retrieval backend for case memory (documented defaults when extras installed).
 CbrBackend = Literal["sklearn", "industry", "embedding", "torch"]
 
 # Distance / similarity metrics over the case-memory feature space.
@@ -97,7 +96,7 @@ class CbrConfig:
         Feature columns, or ``None`` to infer. Every one included affects
         distance.
     categorical_columns:
-        Columns treated as categorical, or ``None`` to infer from dtype.
+        Columns explicitly treated as categorical; ``None`` selects none.
     text_columns:
         Columns embedded as text rather than treated as categories.
     text_model_name:
@@ -112,22 +111,21 @@ class CbrConfig:
         Seed for the components that sample, keeping runs reproducible.
     prefer_reduce_components:
         Use dimensionality-reduced components when a reduce plan is present.
-        Distance degrades in high dimensions: everything becomes roughly
-        equidistant: so reducing first often improves neighbours.
+        In high dimensions, distances can become less discriminative. Validate
+        whether reduction improves retrieval for the intended task.
     disclosures:
         Statements about how the configuration was resolved, including any
         fallback from a requested backend.
 
     Notes
     -----
-    **Unscaled features make one column decide everything.** A feature ranging
-    over hundreds of thousands dominates one ranging over tens, whatever their
-    relative importance. This is why ``standardize`` defaults to true.
+    **Large numeric ranges can dominate distance.** A feature ranging over
+    hundreds of thousands can outweigh one ranging over tens, regardless of
+    predictive relevance. This is why ``standardize`` defaults to true.
 
     **``k`` interacts with class balance.** With a rare class and a large ``k``,
-    majority voting can never predict it: the rare class is outnumbered in
-    every neighbourhood. Distance weighting helps; matching ``k`` to the rarity
-    helps more.
+    majority voting may miss it when it is outnumbered in local neighbourhoods.
+    Compare neighbourhood sizes and distance weighting using validation data.
 
     See Also
     --------

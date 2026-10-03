@@ -1,4 +1,4 @@
-"""Semi-supervised catalog and honest capability matrix."""
+"""Semi-supervised catalog and capability matrix."""
 
 from __future__ import annotations
 
@@ -144,8 +144,6 @@ def list_semisupervised_methods(
 ) -> list[str]:
     """List semi-supervised methods for a backend (or all when backend is None).
 
-Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
-
 Parameters
 ----------
 backend:
@@ -177,8 +175,6 @@ list[str]
 def backend_available(name: SemiSupervisedBackendName) -> bool:
     """Return whether backend optional dependencies are installed and usable.
 
-Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
-
 Parameters
 ----------
 name:
@@ -201,9 +197,7 @@ def resolve_backend_method(
     backend: SemiSupervisedBackendName | None,
     method: str,
 ) -> tuple[SemiSupervisedBackendName, str]:
-    """Validate backend/method pairing and apply honest defaults.
-
-Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+    """Validate backend/method pairing and apply documented defaults.
 
 Parameters
 ----------

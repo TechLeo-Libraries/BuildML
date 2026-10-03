@@ -1,20 +1,8 @@
-"""Report what this installation of the RAG stack can actually do.
+"""Inspect the RAG capabilities available in the current environment.
 
-Because RAG behaviour depends on optional dependencies, the same code retrieves
-differently on a laptop with the full stack and a CI container without it. That
-is a support burden unless the difference is inspectable, which is what this
-module is for: one call that says which backends are present, which retrieval
-modes are available, what the defaults resolve to here, and how to install what
-is missing.
-
-The matrix is honest in both directions. It reports absence plainly rather than
-implying a degraded path is equivalent, and it states non-goals so nobody waits
-for a hosted vector database that is not coming.
-
-See Also
---------
-buildml.rag.extras : The probes behind the availability flags.
-buildml.rag.defaults : The defaults this reports.
+The capability matrix reports installed embedding backends, retrieval modes,
+resolved defaults, and installation commands for optional features. Use it to
+record which backend an example or application can use.
 """
 
 from __future__ import annotations
@@ -70,9 +58,11 @@ def rag_capability_matrix() -> dict[str, Any]:
     --------
     Check before relying on reranking::
 
+        from buildml.rag.catalog import rag_capability_matrix
         matrix = rag_capability_matrix()
         if not matrix["retrieve"]["rerank"]:
             print(matrix["install_hints"]["rag"])
+
     """
     semantic = rag_available()
     advanced = rag_advanced_available()

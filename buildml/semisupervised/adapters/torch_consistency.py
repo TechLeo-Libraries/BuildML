@@ -34,8 +34,6 @@ class TabularConsistencyClassifier:
     def fit(self, x: np.ndarray, y: np.ndarray) -> TabularConsistencyClassifier:
         """Run fit on input data using the fitted internal state.
 
-Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
-
 Parameters
 ----------
 x:
@@ -164,8 +162,6 @@ ValidationError
     def predict(self, x: np.ndarray) -> np.ndarray:
         """Run predict on input data using the fitted internal state.
 
-Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
-
 Parameters
 ----------
 x:
@@ -193,8 +189,6 @@ ValidationError
 
     def predict_proba(self, x: np.ndarray) -> np.ndarray:
         """Perform predict proba for the Session-facing workflow step.
-
-Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
 
 Parameters
 ----------
@@ -266,8 +260,6 @@ def build_torch_estimator(
     device: str = "cpu",
 ) -> TabularConsistencyClassifier:
     """Construct a torch estimator ready for fit or scoring.
-
-Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
 
 Parameters
 ----------

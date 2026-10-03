@@ -10,46 +10,40 @@ After a split and a fit, these calls inspect the model and choose among
 estimators without putting Session test inside an inner loop.
 
 `compare_models` ranks on **test** unless you pass `partition="validation"`.
-The winner becomes the Session's fitted model. `cv_score` and search cut
+The highest-ranked candidate becomes the Session's fitted model. `cv_score` and search cut
 folds from train only. Session-global prep before those calls is refused
 ([leakage and recipes](leakage-cv-recipes.md)).
 
-Validation is for thresholds, features, and families. Test is for the
-frozen policy, once. BuildML cannot stop you from peeking at test in your
+Use validation to select thresholds, features, and model families.
+Use test to assess the final choice. BuildML cannot stop you from using test results to select a model in your
 own notebook. It can refuse CV after Session-global fitted preprocessing.
 
 [Classical end-to-end](classical-end-to-end.md) ·
-Paste: [`examples/evolutionary_search_loop.py`](../examples/evolutionary_search_loop.py)
+Runnable script: [`examples/evolutionary_search_loop.py`](../examples/evolutionary_search_loop.py)
 
 ---
 
-## Setup shared by examples
+## Baseline model example
 
 ```python
 import pandas as pd
+from sklearn.datasets import make_classification
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeClassifier
-
 from buildml import Session
 from buildml.preprocess import PreprocessRecipe
 
-frame = pd.DataFrame(
-    {
-        "a": [0.1, 0.4, 0.2, 0.8, 0.3, 0.7, 0.5, 0.9, 0.15, 0.65, 0.55, 0.35],
-        "b": [1.0, 0.2, 0.9, 0.1, 0.8, 0.3, 0.6, 0.4, 0.75, 0.25, 0.55, 0.45],
-        "seg": list("AABBAABBAABB"),
-        "y": [0, 1, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0],
-    }
-)
-
-session = (
-    Session.ingest(frame)
-    .set_roles({"a": "feature", "b": "feature", "seg": "feature", "y": "target"})
-    .split(test_size=0.25, validation_size=0.25, stratify=True, random_state=0)
-)
-
+X, y = make_classification(n_samples=120, n_features=4, n_informative=3,
+                           n_redundant=0, random_state=0)
+frame = pd.DataFrame(X, columns=["a", "b", "c", "d"])
+frame["seg"] = ["A" if i % 2 else "B" for i in range(len(frame))]
+frame["y"] = y
+session = (Session.ingest(frame)
+    .set_roles({**{c: "feature" for c in frame if c != "y"}, "y": "target"})
+    .split(test_size=0.25, validation_size=0.25, stratify=True, random_state=0))
 recipe = PreprocessRecipe(encode="onehot", scale="standard")
+
 ```
 
 ---
@@ -57,6 +51,25 @@ recipe = PreprocessRecipe(encode="onehot", scale="standard")
 ## Use case: compare_models on validation
 
 ```python
+import pandas as pd
+from sklearn.datasets import make_classification
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.tree import DecisionTreeClassifier
+from buildml import Session
+from buildml.preprocess import PreprocessRecipe
+
+X, y = make_classification(n_samples=120, n_features=4, n_informative=3,
+                           n_redundant=0, random_state=0)
+frame = pd.DataFrame(X, columns=["a", "b", "c", "d"])
+frame["seg"] = ["A" if i % 2 else "B" for i in range(len(frame))]
+frame["y"] = y
+session = (Session.ingest(frame)
+    .set_roles({**{c: "feature" for c in frame if c != "y"}, "y": "target"})
+    .split(test_size=0.25, validation_size=0.25, stratify=True, random_state=0))
+recipe = PreprocessRecipe(encode="onehot", scale="standard")
+
+session.encode(method="onehot").scale(method="standard")
 comparison = session.compare_models(
     {
         "logreg": LogisticRegression(max_iter=500),
@@ -64,31 +77,49 @@ comparison = session.compare_models(
         "rf": RandomForestClassifier(n_estimators=50, random_state=0),
     },
     partition="validation",  # override default "test" during selection
-    ranking_metric="f1",
+    ranking_metric="f1_macro",
 )
 print(comparison)
 # Winner becomes session.fit_result
 ```
 
-Default `partition="test"` is convenient for a final card. It is the wrong
-default during iterative selection. Prefer validation until the recipe is
-frozen.
+Set `partition="validation"` explicitly while comparing candidates.
+Evaluate the chosen model on test after model and preprocessing choices
+are fixed.
 
 ---
 
 ## Use case: grid, randomized, Optuna, and evolutionary search
 
 Folds stay inside train. Pass the recipe so impute, encode, and scale
-refit per fold. Do not Session-impute first.
+refit per fold. Keep the Session data unprocessed so each fold fits its own imputer.
 
 ```python
+import pandas as pd
+from sklearn.datasets import make_classification
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.tree import DecisionTreeClassifier
+from buildml import Session
+from buildml.preprocess import PreprocessRecipe
+
+X, y = make_classification(n_samples=120, n_features=4, n_informative=3,
+                           n_redundant=0, random_state=0)
+frame = pd.DataFrame(X, columns=["a", "b", "c", "d"])
+frame["seg"] = ["A" if i % 2 else "B" for i in range(len(frame))]
+frame["y"] = y
+session = (Session.ingest(frame)
+    .set_roles({**{c: "feature" for c in frame if c != "y"}, "y": "target"})
+    .split(test_size=0.25, validation_size=0.25, stratify=True, random_state=0))
+recipe = PreprocessRecipe(encode="onehot", scale="standard")
+
 # Fold-local prep: do not Session-impute first
 grid = session.grid_search(
     DecisionTreeClassifier(random_state=0),
     param_grid={"max_depth": [2, 4, 6], "min_samples_leaf": [1, 3, 5]},
     cv=4,
     preprocess=recipe,
-    ranking_metric="f1",
+    ranking_metric="f1_macro",
 )
 print(grid.best_params, grid.best_score)
 
@@ -132,6 +163,24 @@ print(evo.best_params, evo.best_score)
 ## Use case: nested CV for post-selection estimate
 
 ```python
+import pandas as pd
+from sklearn.datasets import make_classification
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.tree import DecisionTreeClassifier
+from buildml import Session
+from buildml.preprocess import PreprocessRecipe
+
+X, y = make_classification(n_samples=120, n_features=4, n_informative=3,
+                           n_redundant=0, random_state=0)
+frame = pd.DataFrame(X, columns=["a", "b", "c", "d"])
+frame["seg"] = ["A" if i % 2 else "B" for i in range(len(frame))]
+frame["y"] = y
+session = (Session.ingest(frame)
+    .set_roles({**{c: "feature" for c in frame if c != "y"}, "y": "target"})
+    .split(test_size=0.25, validation_size=0.25, stratify=True, random_state=0))
+recipe = PreprocessRecipe(encode="onehot", scale="standard")
+
 nested = session.nested_cv_score(
     DecisionTreeClassifier(random_state=0),
     param_grid={"max_depth": [2, 4], "min_samples_leaf": [1, 5]},
@@ -151,6 +200,24 @@ print(
 ## Use case: calibration, thresholds, importance, slices
 
 ```python
+import pandas as pd
+from sklearn.datasets import make_classification
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.tree import DecisionTreeClassifier
+from buildml import Session
+from buildml.preprocess import PreprocessRecipe
+
+X, y = make_classification(n_samples=120, n_features=4, n_informative=3,
+                           n_redundant=0, random_state=0)
+frame = pd.DataFrame(X, columns=["a", "b", "c", "d"])
+frame["seg"] = ["A" if i % 2 else "B" for i in range(len(frame))]
+frame["y"] = y
+session = (Session.ingest(frame)
+    .set_roles({**{c: "feature" for c in frame if c != "y"}, "y": "target"})
+    .split(test_size=0.25, validation_size=0.25, stratify=True, random_state=0))
+recipe = PreprocessRecipe(encode="onehot", scale="standard")
+
 # Final fit after selection (Session-global prep OK here)
 session.encode(method="onehot").scale(method="standard")
 session.fit(LogisticRegression(max_iter=500), task="classification")
@@ -174,9 +241,8 @@ session.learning_curve(
 Permutation importance measures model reliance, not causal effect. Select
 thresholds on validation. Confirm the fixed policy on test.
 
-`evaluate(...)` is the metric card plus diagnostics. `eval_plots(...)`
-needs `[viz]` and draws an adaptive PlotBoard. Use both when you want
-numbers and a board.
+`evaluate(...)` returns metrics and diagnostics. `eval_plots(...)`
+requires `buildml[viz]` and produces task-specific plots.
 
 ---
 

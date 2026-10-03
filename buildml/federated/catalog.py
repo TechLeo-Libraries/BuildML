@@ -1,4 +1,4 @@
-"""Federated backend catalog and honest capability matrix."""
+"""Federated backend catalog and capability matrix."""
 
 from __future__ import annotations
 
@@ -18,7 +18,7 @@ _FLOWER_METHODS = ("fedavg", "fedprox")
 
 
 def federated_capability_matrix() -> dict[str, Any]:
-    """Build the honest capability matrix for federated backends and methods.
+    """Build the capability matrix for federated backends and methods.
 
     Reports native and Flower paths, aggregation semantics, install hints,
     and explicit non-goals for teaching overlays and Session walkthroughs.
@@ -188,7 +188,7 @@ def resolve_backend(
     *,
     method: str | None = None,
 ) -> FederatedBackendName:
-    """Validate backend availability and apply honest defaults.
+    """Validate backend availability and apply documented defaults.
 
     Normalizes method aliases, selects the default backend when omitted, and
     raises when the requested backend requires a missing optional extra.

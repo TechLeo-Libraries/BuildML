@@ -95,6 +95,7 @@ def json_safe(value: Any) -> Any:
 
     Examples
     --------
+    >>> from buildml.explain.history import json_safe
     >>> from pathlib import Path
     >>> json_safe({"path": Path("x.csv"), "n": 5})
     {'path': 'x.csv', 'n': 5}
@@ -223,6 +224,7 @@ def state_changes(before: Mapping[str, Any], after: Mapping[str, Any]) -> list[s
 
     Examples
     --------
+    >>> from buildml.explain.history import state_changes
     >>> state_changes({"has_split": False}, {"has_split": True})
     ['has_split: False -> True']
     >>> state_changes({"has_fit": True}, {"has_fit": True})

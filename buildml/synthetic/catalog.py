@@ -1,4 +1,4 @@
-"""Synthetic-data catalog and honest capability matrix."""
+"""Synthetic-data catalog and capability matrix."""
 
 from __future__ import annotations
 
@@ -151,9 +151,9 @@ def list_synthetic_methods(
     *,
     backend: SyntheticBackendName | None = None,
 ) -> list[str]:
-    """List synthesizer methods for a backend (or all when backend is None).
+    """List supported synthetic method identifiers.
 
-Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+Returns catalog method identifiers, optionally restricted to one backend. Unavailable backends can still have catalog entries.
 
 Parameters
 ----------
@@ -180,9 +180,9 @@ list[str]
 
 
 def backend_available(name: SyntheticBackendName) -> bool:
-    """Return whether backend optional dependencies are installed and usable.
+    """Check whether the named backend is usable.
 
-Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+Reads the runtime capability matrix; unknown backend names return false.
 
 Parameters
 ----------
@@ -205,9 +205,9 @@ def resolve_backend_method(
     backend: SyntheticBackendName | None,
     method: str,
 ) -> tuple[SyntheticBackendName, str]:
-    """Validate backend/method pairing and apply honest defaults.
+    """Resolve and validate the backend and method pairing.
 
-Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+Checks the catalog and dependency availability before fitting, raising for unsupported combinations or missing optional dependencies.
 
 Parameters
 ----------

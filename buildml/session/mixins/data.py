@@ -121,7 +121,7 @@ class DataSessionMixin:
         random_state: int | None = 42,
         stratify: bool = False,
     ) -> Session:
-        """Randomly hold back rows so you can measure honest performance.
+        """Randomly hold back rows so you can measure performance on held-out data.
 
         Session facade over :func:`buildml.session.data_ops.split`. See that function for parameter descriptions, exceptions, usage notes, and examples.
 

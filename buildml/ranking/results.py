@@ -61,7 +61,7 @@ class RankerPlan:
         Returns
         -------
         dict[str, Any]
-            Plan metadata, feature contract, and honesty disclosures.
+            Plan metadata, feature contract, and implementation limitations.
         """
         return {
             "method": self.method,
@@ -121,7 +121,7 @@ class RankerFitResult:
         Returns
         -------
         dict[str, Any]
-            Fit metadata, column contract, and honesty disclosures.
+            Fit metadata, column contract, and implementation limitations.
         """
         return {
             "method": self.method,
@@ -173,7 +173,7 @@ class RankResult:
         Returns
         -------
         dict[str, Any]
-            Rank metadata and honesty disclosures.
+            Rank metadata and implementation limitations.
         """
         return {
             "k": self.k,

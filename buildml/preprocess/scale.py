@@ -8,10 +8,10 @@ models have the same problem: the penalty applies to coefficients, and a feature
 measured in small units needs a large coefficient to have any effect, so it gets
 penalised for its units.
 
-Scaling removes the unit from the comparison. Tree-based models are immune :
-they split on ordering, which scaling preserves: so this is optional for random
-forests and gradient boosting, and close to mandatory for linear models, SVMs,
-k-nearest neighbours, and neural networks.
+Scaling makes numeric ranges more comparable. Axis-aligned tree models
+usually do not require it because their thresholds depend on ordering.
+Scaling often matters for regularised linear models, SVMs, nearest-neighbour
+methods and neural networks; validate the choice for the estimator.
 
 The fit/transform split matters here. The mean and standard deviation are
 learned from training rows only and then applied everywhere, because computing

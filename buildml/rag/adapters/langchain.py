@@ -1,25 +1,13 @@
-"""Use BuildML retrieval with a LangChain LLM you have already set up.
+"""Use BuildML retrieval results with a configured LangChain LLM.
 
-For teams with an existing LangChain investment: configured models, callbacks,
-tracing: who want BuildML's retrieval and citation handling without rewriting
-that half. The adapter takes BuildML hits, hands them to a LangChain QA chain,
-and wraps the reply in a
-:class:`~buildml.rag.results.GenerateResult` so the rest of BuildML sees a
-familiar shape.
+The adapter converts BuildML hits to LangChain documents, runs a QA chain, and
+returns a BuildML ``GenerateResult`` with the retrieved citations attached.
+LangChain controls its own prompts and does not enforce BuildML's
+``[source:N]`` convention. The adapter therefore leaves faithfulness scoring
+unset; attached citations do not prove that the answer used those passages.
 
-The seam is real and worth knowing about. LangChain's chains build their own
-prompts, so BuildML's grounding instructions and ``[source:N]`` convention do not
-apply. Citations are still attached, because they come from the retrieval side,
-but nothing enforces that the answer references them: which is why faithfulness
-scoring is left unset rather than reported as a passing score it did not earn.
-
-Prefer :func:`~buildml.rag.generate.generate_grounded` for new work. Its prompt
-is built for grounding and its results are verifiable end to end.
-
-See Also
---------
-buildml.rag.generate.generate_grounded : The native path.
-buildml.rag.extras.require_langchain_community : The dependency gate.
+Use ``generate_grounded`` for BuildML's native prompting and lexical grounding
+diagnostics.
 """
 
 from __future__ import annotations
@@ -53,7 +41,7 @@ class LangChainGroundedAdapter:
     **Faithfulness is not scored on results from this adapter.** LangChain
     prompts do not request ``[source:N]`` markers, so the citation half of the
     heuristic would report zero coverage for an answer that may be perfectly
-    grounded. Reporting nothing is more honest than reporting a misleading zero.
+    grounded. Leaving this score unset avoids interpreting missing citation markers as evidence of an incorrect answer.
 
     **Requires ``buildml[rag-advanced]``**, checked at construction rather than
     at first use.
@@ -62,13 +50,29 @@ class LangChainGroundedAdapter:
     --------
     Retrieve with BuildML, answer with LangChain::
 
-        adapter = LangChainGroundedAdapter(my_llm)
-        hits = retrieve(index, "how do I cancel?", k=5).hits
+        # Requires: pip install "buildml[rag-advanced]".
+        # FakeListLLM is an offline LangChain interface demonstration, not a real model.
+        from langchain_core.language_models.fake import FakeListLLM
+        from buildml.rag.adapters.langchain import LangChainGroundedAdapter
+        from buildml.rag.corpus import corpus_from_documents
+
+        corpus = corpus_from_documents([
+            {"doc_id": "refund", "text": "Refunds are available within 30 days of purchase.", "metadata": {"version": "2024"}},
+            {"doc_id": "cancel", "text": "Cancel a subscription from the account settings page.", "metadata": {"version": "2024"}},
+        ])
+        from buildml.rag.index import build_index
+        from buildml.rag.retrieve import retrieve
+
+        # Hashing runs locally without downloading an embedding model.
+        index = build_index(corpus, embedder="hashing", chunk_size=128, chunk_overlap=16)
+        adapter = LangChainGroundedAdapter(FakeListLLM(responses=["Cancel from account settings."]))
+        hits = retrieve(index, "how do I cancel?", k=2).hits
         result = adapter.generate_from_hits("how do I cancel?", hits)
+        print(result.answer)
 
     See Also
     --------
-    buildml.rag.generate.generate_grounded : The native, fully-verifiable path.
+    buildml.rag.generate.generate_grounded : The native prompting and grounding-diagnostics path.
     """
 
     def __init__(
@@ -149,7 +153,7 @@ class LangChainGroundedAdapter:
         cfg = config or GenerateConfig()
         citations = hits_to_citations(hits)
         try:
-            from langchain.chains.question_answering import load_qa_chain
+            from langchain_classic.chains.question_answering import load_qa_chain
             from langchain_core.documents import Document
         except ImportError as exc:
             raise ValidationError(
@@ -164,7 +168,7 @@ class LangChainGroundedAdapter:
             for h in hits
         ]
         chain = load_qa_chain(self._llm, chain_type=self.chain_type)
-        raw = chain.run(input_documents=docs, question=query)
+        raw = chain.invoke({"input_documents": docs, "question": query}).get("output_text")
         answer = str(raw or "").strip()
         if not answer:
             raise ValidationError("LangChain QA chain returned an empty answer.")
@@ -250,7 +254,7 @@ class LangChainGroundedAdapter:
                     ),
                     "",
                 )
-                from langchain.chains.question_answering import load_qa_chain
+                from langchain_classic.chains.question_answering import load_qa_chain
                 from langchain_core.documents import Document
 
                 docs = [Document(page_content=system)]

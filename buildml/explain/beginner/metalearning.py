@@ -35,7 +35,7 @@ METALEARNING_BEGINNER: dict[str, BeginnerLayer] = _index(
         myths=(
             (
                 "Meta-learning here means large-scale MAML on foundation models.",
-                "This is small-scale tabular few-shot learning. It is honest and useful, and it is not the same as the research systems the name evokes.",
+                "This is small-scale tabular few-shot learning. The available adapters use tabular features; they do not provide foundation-model meta-training.",
             ),
             (
                 "Evaluating on the same task IDs as training is fine as long as the rows differ.",
@@ -43,9 +43,24 @@ METALEARNING_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.set_roles({'store_id': 'group', 'converted': 'target'})",
-            "session.metalearning.fit(method='prototypical', k_shot=5, n_episodes=50)",
-            "report = session.metalearning.evaluate(partition='validation')",
+            "from pathlib import Path",
+            "import numpy as np",
+            "import pandas as pd",
+            "from buildml import Session",
+            "",
+            "rng = np.random.default_rng(42)",
+            'Path("artifacts").mkdir(exist_ok=True)',
+            "rows = []",
+            "for task in range(8):",
+            "    for i in range(40):",
+            "        label = i % 2",
+            "        features = rng.normal(2 * label - 1, 0.5, size=2)",
+            '        rows.append({"x1": features[0], "x2": features[1], "store_id": f"store_{task}", "converted": label})',
+            "frame = pd.DataFrame(rows)",
+            'session = Session.ingest(frame).set_roles({"x1": "feature", "x2": "feature", "store_id": "group", "converted": "target"})',
+            "session.group_split(test_size=0.25, validation_size=0.25, random_state=42)",
+            'session.metalearning.fit(backend="sklearn", method="prototypical", k_shot=3, n_query=4, n_episodes=5, random_state=42)',
+            'report = session.metalearning.evaluate(partition="validation", k_shot=3, n_query=4)',
             "print(report.novel_task_ids, report.metrics)",
         ),
         check=(
@@ -59,9 +74,7 @@ METALEARNING_BEGINNER: dict[str, BeginnerLayer] = _index(
     _layer(
         "metalearning-prototypical",
         plain=(
-            "The prototypical method is the simplest thing that works. For each class, average the few "
-            "labelled examples you have into one representative point: the prototype. Classify a new row "
-            "by whichever prototype it sits closest to."
+            "The native prototypical method classifies rows by their nearest class prototype. For each class, average the few labelled examples you have into one representative point: the prototype. Classify a new row by whichever prototype it sits closest to."
         ),
         analogy=(
             "Sketching the average face of each family from three photos, then deciding which family a new "
@@ -75,7 +88,7 @@ METALEARNING_BEGINNER: dict[str, BeginnerLayer] = _index(
             "That is the whole method: no weights are trained inside the episode.",
         ),
         use=(
-            "As your first few-shot attempt; it is fast, has almost no knobs, and is a genuine baseline.",
+            "As a few-shot baseline with a small number of parameters to tune.",
             "When you have very few examples per class and a trained model would simply overfit.",
         ),
         avoid=(
@@ -93,9 +106,25 @@ METALEARNING_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.metalearning.fit(method='prototypical', k_shot=3, n_episodes=30)",
-            "adapted = session.metalearning.adapt(task_id='store_42')",
-            "print(adapted.n_support, adapted.classes_)",
+            "from pathlib import Path",
+            "import numpy as np",
+            "import pandas as pd",
+            "from buildml import Session",
+            "",
+            "rng = np.random.default_rng(42)",
+            'Path("artifacts").mkdir(exist_ok=True)',
+            "rows = []",
+            "for task in range(8):",
+            "    for i in range(40):",
+            "        label = i % 2",
+            "        features = rng.normal(2 * label - 1, 0.5, size=2)",
+            '        rows.append({"x1": features[0], "x2": features[1], "store_id": f"store_{task}", "converted": label})',
+            "frame = pd.DataFrame(rows)",
+            'session = Session.ingest(frame).set_roles({"x1": "feature", "x2": "feature", "store_id": "group", "converted": "target"})',
+            "session.group_split(test_size=0.25, validation_size=0.25, random_state=42)",
+            'session.metalearning.fit(backend="sklearn", method="prototypical", k_shot=3, n_query=4, n_episodes=5, random_state=42)',
+            'adapted = session.metalearning.adapt(task_id=session.metalearning.plan.train_task_ids[0], partition="train", max_support_per_class=3)',
+            "print(adapted.n_support, adapted.n_classes_adapted)",
         ),
         check=(
             "Are your features on comparable scales?",
@@ -108,9 +137,7 @@ METALEARNING_BEGINNER: dict[str, BeginnerLayer] = _index(
     _layer(
         "metalearning-warm-start",
         plain=(
-            "Warm start trains one ordinary model on all your tasks pooled together, then uses it as a "
-            "starting point. For a new task, it copies that model and refits it on the handful of examples "
-            "you have: quicker and better than starting from nothing."
+            "Warm start trains one ordinary model on all your tasks pooled together, then uses it as a starting point. For a new task, it copies that model and refits it on the handful of examples you have: compare its speed and held-out performance with a model fitted from scratch on the same support set."
         ),
         analogy=(
             "Hiring someone with ten years in the industry rather than a new graduate. They still need a "
@@ -134,7 +161,7 @@ METALEARNING_BEGINNER: dict[str, BeginnerLayer] = _index(
         myths=(
             (
                 "Warm start is MAML.",
-                "MAML explicitly optimizes the initialization so that adaptation works well. Warm start just uses a pooled fit as the starting point. Similar shape, different guarantee.",
+                "MAML explicitly optimizes the initialization so that adaptation works well. Warm start just uses a pooled fit as the starting point. They use different training objectives.",
             ),
             (
                 "Pooled pretraining always beats per-task training.",
@@ -142,11 +169,25 @@ METALEARNING_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.metalearning.fit(",
-            "    method='warm_start',",
-            "    base_estimator=LogisticRegression(max_iter=1000),",
-            ")",
-            "session.metalearning.adapt(task_id='client_new')",
+            "from pathlib import Path",
+            "import numpy as np",
+            "import pandas as pd",
+            "from buildml import Session",
+            "",
+            "rng = np.random.default_rng(42)",
+            'Path("artifacts").mkdir(exist_ok=True)',
+            "rows = []",
+            "for task in range(8):",
+            "    for i in range(40):",
+            "        label = i % 2",
+            "        features = rng.normal(2 * label - 1, 0.5, size=2)",
+            '        rows.append({"x1": features[0], "x2": features[1], "store_id": f"store_{task}", "converted": label})',
+            "frame = pd.DataFrame(rows)",
+            'session = Session.ingest(frame).set_roles({"x1": "feature", "x2": "feature", "store_id": "group", "converted": "target"})',
+            "session.group_split(test_size=0.25, validation_size=0.25, random_state=42)",
+            'session.metalearning.fit(backend="sklearn", method="warm_start", base_estimator="logistic_regression", k_shot=3, n_query=4, n_episodes=5, random_state=42)',
+            'adapted = session.metalearning.adapt(task_id=session.metalearning.plan.train_task_ids[0], partition="train", max_support_per_class=3)',
+            "print(adapted.n_support, adapted.n_classes_adapted)",
         ),
         check=(
             "Does class 3 mean the same thing in every task?",
@@ -189,15 +230,29 @@ METALEARNING_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
             (
                 "This is the image prototypical network from the literature.",
-                "Same idea, tabular encoder, much smaller scale. BuildML is explicit about this so nobody quotes vision-benchmark expectations.",
+                "This implementation uses a tabular encoder. Results from image benchmarks do not establish its performance on your dataset.",
             ),
         ),
         example=(
-            "# pip install \"buildml[torch]\"",
-            "session.metalearning.fit(",
-            "    backend='torch', method='prototypical_torch',",
-            "    k_shot=5, n_episodes=200, random_state=0,",
-            ")",
+            '# Requires: python -m pip install "buildml[torch]"',
+            "from pathlib import Path",
+            "import numpy as np",
+            "import pandas as pd",
+            "from buildml import Session",
+            "",
+            "rng = np.random.default_rng(42)",
+            'Path("artifacts").mkdir(exist_ok=True)',
+            "rows = []",
+            "for task in range(8):",
+            "    for i in range(40):",
+            "        label = i % 2",
+            "        features = rng.normal(2 * label - 1, 0.5, size=2)",
+            '        rows.append({"x1": features[0], "x2": features[1], "store_id": f"store_{task}", "converted": label})',
+            "frame = pd.DataFrame(rows)",
+            'session = Session.ingest(frame).set_roles({"x1": "feature", "x2": "feature", "store_id": "group", "converted": "target"})',
+            "session.group_split(test_size=0.25, validation_size=0.25, random_state=42)",
+            'session.metalearning.fit(backend="torch", method="prototypical_torch", k_shot=3, n_query=4, n_episodes=3, meta_epochs=2, random_state=42)',
+            'print(session.metalearning.evaluate(partition="validation", k_shot=3, n_query=4).metrics)',
         ),
         check=(
             "Does it beat plain prototypical on your holdout tasks?",
@@ -236,7 +291,7 @@ METALEARNING_BEGINNER: dict[str, BeginnerLayer] = _index(
         myths=(
             (
                 "This is full second-order MAML.",
-                "BuildML runs the first-order approximation. It is far cheaper, usually close in practice, and labelled honestly.",
+                "BuildML runs the first-order approximation. It omits second-order derivatives; evaluate the resulting accuracy and training cost for your tasks.",
             ),
             (
                 "Meta-learners here relate to the causal meta-learners in the causal module.",
@@ -244,11 +299,26 @@ METALEARNING_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.metalearning.fit(",
-            "    backend='industry', method='maml',",
-            "    inner_steps=5, k_shot=5, random_state=0,",
-            ")",
-            "session.metalearning.evaluate(partition='test')",
+            '# Requires: python -m pip install "buildml[torch]"',
+            "# The native first-order implementation uses Torch; learn2learn is optional.",
+            "from pathlib import Path",
+            "import numpy as np",
+            "import pandas as pd",
+            "from buildml import Session",
+            "",
+            "rng = np.random.default_rng(42)",
+            'Path("artifacts").mkdir(exist_ok=True)',
+            "rows = []",
+            "for task in range(8):",
+            "    for i in range(40):",
+            "        label = i % 2",
+            "        features = rng.normal(2 * label - 1, 0.5, size=2)",
+            '        rows.append({"x1": features[0], "x2": features[1], "store_id": f"store_{task}", "converted": label})',
+            "frame = pd.DataFrame(rows)",
+            'session = Session.ingest(frame).set_roles({"x1": "feature", "x2": "feature", "store_id": "group", "converted": "target"})',
+            "session.group_split(test_size=0.25, validation_size=0.25, random_state=42)",
+            'session.metalearning.fit(backend="industry", method="maml", inner_steps=2, k_shot=3, n_query=4, n_episodes=3, meta_epochs=2, random_state=42)',
+            'print(session.metalearning.evaluate(partition="test", k_shot=3, n_query=4).metrics)',
         ),
         check=(
             "How many inner steps can your support set actually support?",
@@ -295,15 +365,41 @@ METALEARNING_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.metalearning.save_bundle('artifacts/store-fewshot')",
-            "svc = Session.ingest(new_store_rows).metalearning.load_bundle('artifacts/store-fewshot', trusted=True)",
-            "svc.metalearning.adapt(task_id='store_new', support_frame=new_store_rows)",
+            "from pathlib import Path",
+            "import numpy as np",
+            "import pandas as pd",
+            "from buildml import Session",
+            "",
+            "rng = np.random.default_rng(42)",
+            'Path("artifacts").mkdir(exist_ok=True)',
+            "rows = []",
+            "for task in range(8):",
+            "    for i in range(40):",
+            "        label = i % 2",
+            "        features = rng.normal(2 * label - 1, 0.5, size=2)",
+            '        rows.append({"x1": features[0], "x2": features[1], "store_id": f"store_{task}", "converted": label})',
+            "frame = pd.DataFrame(rows)",
+            'session = Session.ingest(frame).set_roles({"x1": "feature", "x2": "feature", "store_id": "group", "converted": "target"})',
+            "session.group_split(test_size=0.25, validation_size=0.25, random_state=42)",
+            'session.metalearning.fit(backend="sklearn", method="prototypical", k_shot=3, n_query=4, n_episodes=5, random_state=42)',
+            'session.metalearning.save_bundle("artifacts/few-shot")',
+            'new_store_rows = frame.loc[frame.store_id == "store_0"].copy()',
+            'new_store_rows["store_id"] = "store_new"',
+            "svc = Session.ingest(new_store_rows).set_roles(dict(session.dataset.roles))",
+            'svc.metalearning.load_bundle("artifacts/few-shot", trusted=True)',
+            'adapted = svc.metalearning.adapt(task_id="store_new", support_frame=new_store_rows, max_support_per_class=3)',
+            "print(adapted.n_support, adapted.n_classes_adapted)",
         ),
         check=(
             "Do the new rows carry the same feature and task columns the bundle expects?",
             "Where does the support set for a brand-new task come from in production?",
         ),
-        tools=("save_metalearning_bundle", "load_metalearning_bundle", "adapt_to_task", "checkpoint_save"),
+        tools=(
+            "save_metalearning_bundle",
+            "load_metalearning_bundle",
+            "adapt_to_task",
+            "checkpoint_save",
+        ),
         terms=("bundle", "checkpoint", "meta-learning", "few-shot"),
         difficulty=CORE,
     ),

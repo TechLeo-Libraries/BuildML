@@ -99,18 +99,18 @@ def test_unknown_method_raises() -> None:
 @pytest.mark.skipif(not sdv_available(), reason="SDV not installed")
 def test_sdv_ctgan_session_path() -> None:
     session = _session_tabular()
-    fit = session.fit_synthesizer(
+    fit = session.synthetic.fit(
         backend="sdv",
         method="ctgan",
         epochs=5,
-        batch_size=64,
+        batch_size=60,
         random_state=0,
     )
     assert fit.backend == "sdv"
     assert fit.method == "ctgan"
-    sample = session.sample_synthetic(n=40, random_state=1)
+    sample = session.synthetic.sample(n=40, random_state=1)
     assert sample.n_rows == 40
-    ev = session.evaluate_synthetic(mode="fidelity", eval_backend="auto", partition="test")
+    ev = session.synthetic.evaluate(mode="fidelity", eval_backend="auto", partition="test")
     assert "mean_ks" in ev.metrics
 
 
