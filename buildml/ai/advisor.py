@@ -419,15 +419,27 @@ def run_advisor(
 
     Examples
     --------
-    Ask, disclosing only the schema::
+    Demonstrate a schema-only request with a scripted provider::
 
-        result = run_advisor(
-            session,
-            "which columns look like identifiers?",
-            provider,
-            egress_config=EgressConfig(level=EgressLevel.SCHEMA_ONLY),
-        )
-        result.answer
+        import pandas as pd
+        from buildml import Session
+
+        frame = pd.DataFrame({'age': list(range(20, 40)), 'outcome': [0, 1] * 10})
+        session = Session.ingest(frame).set_roles({'age': 'feature', 'outcome': 'target'})
+        from buildml.ai.provider import MockProvider
+
+        # Scripted responses demonstrate the API without contacting an AI service.
+        provider = MockProvider()
+        from buildml.ai.advisor import run_advisor
+        from buildml.ai.privacy import EgressConfig
+        from buildml.ai.types import EgressLevel
+
+        provider.queue_responses(['The columns are age and outcome.'])
+        result = run_advisor(session, 'What are the column names?', provider,
+                             egress_config=EgressConfig(level=EgressLevel.SCHEMA_ONLY))
+        print(result.answer)
+
+
 
     See Also
     --------
@@ -551,10 +563,26 @@ def run_plan(
 
     Examples
     --------
-    Plan, then execute under confirmation::
+    Parse a scripted plan without executing it::
 
-        plan = run_plan(session, "predict churn from these columns", provider)
-        outcome = planner.run_plan(session, plan, build_default_registry())
+        import pandas as pd
+        from buildml import Session
+
+        frame = pd.DataFrame({'age': list(range(20, 40)), 'outcome': [0, 1] * 10})
+        session = Session.ingest(frame).set_roles({'age': 'feature', 'outcome': 'target'})
+        from buildml.ai.provider import MockProvider
+
+        # Scripted responses demonstrate the API without contacting an AI service.
+        provider = MockProvider()
+        import json
+        from buildml.ai.advisor import run_plan
+
+        provider.queue_responses([json.dumps({'steps': [], 'current_state_summary': 'Data loaded.',
+                                             'assumptions': [], 'limitations': ['Scripted demonstration.']})])
+        result = run_plan(session, 'Inspect the data', provider)
+        print(result.current_state_summary)
+
+
 
     See Also
     --------

@@ -105,7 +105,6 @@ dict[str, Any]
     def show(self) -> None:
         """Perform show for the Session-facing workflow step.
 
-Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
         """
         print(
             f"ClusterFit · {self.method} · n_clusters={self.n_clusters} · "
@@ -195,7 +194,6 @@ dict[str, Any]
     def show(self) -> None:
         """Perform show for the Session-facing workflow step.
 
-Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
         """
         print(
             f"ClusterEval · {self.method} · partition={self.partition} · "

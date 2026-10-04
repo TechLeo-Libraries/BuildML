@@ -1,4 +1,4 @@
-"""Deep-learning capability matrix: honest defaults and modality boundaries."""
+"""Deep-learning capability matrix: documented defaults and modality boundaries."""
 
 from __future__ import annotations
 

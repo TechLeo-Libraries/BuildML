@@ -25,7 +25,7 @@ The API refuses loaders without a split, mixing loader kinds after a
 text/multimodal/speech fit, DDP on one GPU unless
 `allow_cpu_ddp=True`, and FM-from-scratch speech pretrain.
 
-Short on-ramp: [Torch quickstart](quickstart-torch.md). Speech:
+Quickstart: [Torch quickstart](quickstart-torch.md). Speech:
 [speech-asr-finetune](speech-asr-finetune.md). Backbones:
 [pretrained-backbones](pretrained-backbones.md). Serve:
 [serve-deploy](serve-deploy.md).
@@ -39,13 +39,11 @@ from torch import nn
 
 from buildml import Session
 
-frame = pd.DataFrame(
-    {
-        "a": [0.1, 0.4, 0.2, 0.8, 0.3, 0.7, 0.5, 0.9, 0.15, 0.65],
-        "b": [1.0, 0.2, 0.9, 0.1, 0.8, 0.3, 0.6, 0.4, 0.75, 0.25],
-        "label": [0, 1, 0, 1, 0, 1, 1, 0, 0, 1],
-    }
-)
+from sklearn.datasets import make_classification
+X, y = make_classification(n_samples=80, n_features=2, n_informative=2,
+                           n_redundant=0, random_state=42)
+frame = pd.DataFrame(X, columns=["a", "b"])
+frame["label"] = y
 
 
 class TinyMLP(nn.Module):
@@ -86,6 +84,53 @@ bundle = session.dl.save_bundle("artifacts/torch_bundle")
 Built-in MLP (omit the module):
 
 ```python
+import pandas as pd
+import torch
+from torch import nn
+
+from buildml import Session
+
+from sklearn.datasets import make_classification
+X, y = make_classification(n_samples=80, n_features=2, n_informative=2,
+                           n_redundant=0, random_state=42)
+frame = pd.DataFrame(X, columns=["a", "b"])
+frame["label"] = y
+
+
+class TinyMLP(nn.Module):
+    def __init__(self) -> None:
+        super().__init__()
+        self.net = nn.Sequential(nn.Linear(2, 16), nn.ReLU(), nn.Linear(16, 2))
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return self.net(x)
+
+
+session = (
+    Session.ingest(frame)
+    .set_roles({"a": "feature", "b": "feature", "label": "target"})
+    .split(test_size=0.25, validation_size=0.25, stratify=True, random_state=42)
+)
+
+# Optional classical prep first (mutates the frame; disclosed on loaders).
+# session.impute(strategy="median").scale(method="standard")
+
+session.dl.make_loaders(batch_size=4, normalize=True, seed=42)
+session.dl.fit(
+    TinyMLP(),
+    epochs=8,
+    learning_rate=5e-3,
+    device="cpu",
+    early_stopping_patience=3,
+    mixed_precision=False,  # AMP is CUDA-only
+)
+
+print(session.dl.evaluate(partition="validation").metrics)
+print(session.dl.evaluate(partition="test").metrics)
+print(session.dl.training_curve().disclosures)
+
+bundle = session.dl.save_bundle("artifacts/torch_bundle")
+
 session.dl.make_loaders()
 session.dl.fit(epochs=5, device="auto", hidden=(64, 32), dropout=0.1)
 ```
@@ -102,6 +147,53 @@ tabular loaders and calling `session.dl.evaluate` is refused: keep
 loader kind consistent.
 
 ```python
+import pandas as pd
+import torch
+from torch import nn
+
+from buildml import Session
+
+from sklearn.datasets import make_classification
+X, y = make_classification(n_samples=80, n_features=2, n_informative=2,
+                           n_redundant=0, random_state=42)
+frame = pd.DataFrame(X, columns=["a", "b"])
+frame["label"] = y
+
+
+class TinyMLP(nn.Module):
+    def __init__(self) -> None:
+        super().__init__()
+        self.net = nn.Sequential(nn.Linear(2, 16), nn.ReLU(), nn.Linear(16, 2))
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return self.net(x)
+
+
+session = (
+    Session.ingest(frame)
+    .set_roles({"a": "feature", "b": "feature", "label": "target"})
+    .split(test_size=0.25, validation_size=0.25, stratify=True, random_state=42)
+)
+
+# Optional classical prep first (mutates the frame; disclosed on loaders).
+# session.impute(strategy="median").scale(method="standard")
+
+session.dl.make_loaders(batch_size=4, normalize=True, seed=42)
+session.dl.fit(
+    TinyMLP(),
+    epochs=8,
+    learning_rate=5e-3,
+    device="cpu",
+    early_stopping_patience=3,
+    mixed_precision=False,  # AMP is CUDA-only
+)
+
+print(session.dl.evaluate(partition="validation").metrics)
+print(session.dl.evaluate(partition="test").metrics)
+print(session.dl.training_curve().disclosures)
+
+bundle = session.dl.save_bundle("artifacts/torch_bundle")
+
 text_df = pd.DataFrame(
     {
         "text": [
@@ -139,6 +231,53 @@ built-in fusion is **concat**. Gated late fusion is available via
 `build_multimodal_fusion(..., fusion="gated")`.
 
 ```python
+import pandas as pd
+import torch
+from torch import nn
+
+from buildml import Session
+
+from sklearn.datasets import make_classification
+X, y = make_classification(n_samples=80, n_features=2, n_informative=2,
+                           n_redundant=0, random_state=42)
+frame = pd.DataFrame(X, columns=["a", "b"])
+frame["label"] = y
+
+
+class TinyMLP(nn.Module):
+    def __init__(self) -> None:
+        super().__init__()
+        self.net = nn.Sequential(nn.Linear(2, 16), nn.ReLU(), nn.Linear(16, 2))
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return self.net(x)
+
+
+session = (
+    Session.ingest(frame)
+    .set_roles({"a": "feature", "b": "feature", "label": "target"})
+    .split(test_size=0.25, validation_size=0.25, stratify=True, random_state=42)
+)
+
+# Optional classical prep first (mutates the frame; disclosed on loaders).
+# session.impute(strategy="median").scale(method="standard")
+
+session.dl.make_loaders(batch_size=4, normalize=True, seed=42)
+session.dl.fit(
+    TinyMLP(),
+    epochs=8,
+    learning_rate=5e-3,
+    device="cpu",
+    early_stopping_patience=3,
+    mixed_precision=False,  # AMP is CUDA-only
+)
+
+print(session.dl.evaluate(partition="validation").metrics)
+print(session.dl.evaluate(partition="test").metrics)
+print(session.dl.training_curve().disclosures)
+
+bundle = session.dl.save_bundle("artifacts/torch_bundle")
+
 from buildml.dl.multimodal import build_multimodal_fusion
 
 mm_df = pd.DataFrame(
@@ -175,6 +314,84 @@ for inspection but does not rebuild DataLoaders. Rebuild with frozen
 stats:
 
 ```python
+import pandas as pd
+import torch
+from torch import nn
+
+from buildml import Session
+
+from sklearn.datasets import make_classification
+X, y = make_classification(n_samples=80, n_features=2, n_informative=2,
+                           n_redundant=0, random_state=42)
+frame = pd.DataFrame(X, columns=["a", "b"])
+frame["label"] = y
+
+
+class TinyMLP(nn.Module):
+    def __init__(self) -> None:
+        super().__init__()
+        self.net = nn.Sequential(nn.Linear(2, 16), nn.ReLU(), nn.Linear(16, 2))
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return self.net(x)
+
+
+session = (
+    Session.ingest(frame)
+    .set_roles({"a": "feature", "b": "feature", "label": "target"})
+    .split(test_size=0.25, validation_size=0.25, stratify=True, random_state=42)
+)
+
+# Optional classical prep first (mutates the frame; disclosed on loaders).
+# session.impute(strategy="median").scale(method="standard")
+
+session.dl.make_loaders(batch_size=4, normalize=True, seed=42)
+session.dl.fit(
+    TinyMLP(),
+    epochs=8,
+    learning_rate=5e-3,
+    device="cpu",
+    early_stopping_patience=3,
+    mixed_precision=False,  # AMP is CUDA-only
+)
+
+print(session.dl.evaluate(partition="validation").metrics)
+print(session.dl.evaluate(partition="test").metrics)
+print(session.dl.training_curve().disclosures)
+
+bundle = session.dl.save_bundle("artifacts/torch_bundle")
+
+from buildml.dl.multimodal import build_multimodal_fusion
+
+mm_df = pd.DataFrame(
+    {
+        "x1": [0.1, 0.5, 0.2, 0.9, 0.3, 0.7, 0.4, 0.8],
+        "text": [
+            "low risk",
+            "high risk",
+            "low risk",
+            "high risk",
+            "medium",
+            "high risk",
+            "low risk",
+            "medium",
+        ],
+        "y": [0, 1, 0, 1, 0, 1, 0, 1],
+    }
+)
+
+mm = (
+    Session.ingest(mm_df)
+    .set_roles({"x1": "feature", "text": "feature", "y": "target"})
+    .split(test_size=0.25, validation_size=0.25, stratify=True, random_state=0)
+)
+bundle = mm.dl.make_multimodal_loaders(text_column="text")
+gated = build_multimodal_fusion(bundle.multimodal_contract, fusion="gated")
+mm.dl.fit(gated, epochs=5, device="cpu", mixed_precision=False)
+mm.dl.export("artifacts/mm.ts.pt", format="torchscript")
+
+import pandas as pd
+from buildml import Session
 mm.dl.make_multimodal_loaders(
     text_column="text",
     use_saved_preprocess=True,
@@ -198,6 +415,53 @@ plans are **not** automatically refit inside
 `session.dl.cross_validate`.
 
 ```python
+import pandas as pd
+import torch
+from torch import nn
+
+from buildml import Session
+
+from sklearn.datasets import make_classification
+X, y = make_classification(n_samples=80, n_features=2, n_informative=2,
+                           n_redundant=0, random_state=42)
+frame = pd.DataFrame(X, columns=["a", "b"])
+frame["label"] = y
+
+
+class TinyMLP(nn.Module):
+    def __init__(self) -> None:
+        super().__init__()
+        self.net = nn.Sequential(nn.Linear(2, 16), nn.ReLU(), nn.Linear(16, 2))
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return self.net(x)
+
+
+session = (
+    Session.ingest(frame)
+    .set_roles({"a": "feature", "b": "feature", "label": "target"})
+    .split(test_size=0.25, validation_size=0.25, stratify=True, random_state=42)
+)
+
+# Optional classical prep first (mutates the frame; disclosed on loaders).
+# session.impute(strategy="median").scale(method="standard")
+
+session.dl.make_loaders(batch_size=4, normalize=True, seed=42)
+session.dl.fit(
+    TinyMLP(),
+    epochs=8,
+    learning_rate=5e-3,
+    device="cpu",
+    early_stopping_patience=3,
+    mixed_precision=False,  # AMP is CUDA-only
+)
+
+print(session.dl.evaluate(partition="validation").metrics)
+print(session.dl.evaluate(partition="test").metrics)
+print(session.dl.training_curve().disclosures)
+
+bundle = session.dl.save_bundle("artifacts/torch_bundle")
+
 cv = session.dl.cross_validate(n_folds=3, epochs=2)
 print(cv)
 
@@ -227,6 +491,64 @@ AMP is CUDA-only. DDP with one GPU is refused unless
 Load does not rebuild loaders.
 
 ```python
+import pandas as pd
+import torch
+from torch import nn
+
+from buildml import Session
+
+from sklearn.datasets import make_classification
+
+X, y = make_classification(n_samples=80, n_features=2, n_informative=2,
+                           n_redundant=0, random_state=42)
+frame = pd.DataFrame(X, columns=["a", "b"])
+frame["label"] = y
+
+
+
+class TinyMLP(nn.Module):
+    def __init__(self) -> None:
+        super().__init__()
+        self.net = nn.Sequential(nn.Linear(2, 16), nn.ReLU(), nn.Linear(16, 2))
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return self.net(x)
+
+
+session = (
+    Session.ingest(frame)
+    .set_roles({"a": "feature", "b": "feature", "label": "target"})
+    .split(
+        test_size=0.25,
+        validation_size=0.25,
+        stratify=True,
+        random_state=42,
+    )
+)
+
+# Optional classical prep first (not auto-applied before loaders).
+# session.impute(strategy="median").scale(method="standard")
+
+session.dl.make_loaders(batch_size=4, normalize=True, seed=42)
+session.dl.fit(
+    TinyMLP(),
+    epochs=6,
+    learning_rate=5e-3,
+    device="cpu",
+    early_stopping_patience=3,
+    scheduler="none",
+)
+
+# Prefer validation while iterating; reserve test for a fixed recipe.
+validation = session.dl.evaluate(partition="validation")
+test = session.dl.evaluate(partition="test")
+print(test.metrics)
+
+curve = session.dl.training_curve()
+print(curve.disclosures)
+
+bundle = session.dl.save_bundle("artifacts/torch_bundle")
+
 # session.dl.fit(TinyMLP(), epochs=5, device="cuda", mixed_precision=True)
 # session.dl.fit_ddp(lambda: TinyMLP(), epochs=5, world_size=2, allow_cpu_ddp=True)
 
@@ -255,6 +577,53 @@ random init for CI. Pass `weights="pretrained"` when you want real
 transfer weights (downloads). Then `session.dl.attach_head(n_classes)`.
 
 ```python
+import pandas as pd
+import torch
+from torch import nn
+
+from buildml import Session
+
+from sklearn.datasets import make_classification
+X, y = make_classification(n_samples=80, n_features=2, n_informative=2,
+                           n_redundant=0, random_state=42)
+frame = pd.DataFrame(X, columns=["a", "b"])
+frame["label"] = y
+
+
+class TinyMLP(nn.Module):
+    def __init__(self) -> None:
+        super().__init__()
+        self.net = nn.Sequential(nn.Linear(2, 16), nn.ReLU(), nn.Linear(16, 2))
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return self.net(x)
+
+
+session = (
+    Session.ingest(frame)
+    .set_roles({"a": "feature", "b": "feature", "label": "target"})
+    .split(test_size=0.25, validation_size=0.25, stratify=True, random_state=42)
+)
+
+# Optional classical prep first (mutates the frame; disclosed on loaders).
+# session.impute(strategy="median").scale(method="standard")
+
+session.dl.make_loaders(batch_size=4, normalize=True, seed=42)
+session.dl.fit(
+    TinyMLP(),
+    epochs=8,
+    learning_rate=5e-3,
+    device="cpu",
+    early_stopping_patience=3,
+    mixed_precision=False,  # AMP is CUDA-only
+)
+
+print(session.dl.evaluate(partition="validation").metrics)
+print(session.dl.evaluate(partition="test").metrics)
+print(session.dl.training_curve().disclosures)
+
+bundle = session.dl.save_bundle("artifacts/torch_bundle")
+
 # session.dl.load_backbone("vision", "resnet18", weights="mock", freeze=True)
 # session.dl.attach_head(n_classes=2)
 ```
@@ -272,6 +641,53 @@ scores WER/CER against references (reuses last transcripts if you
 omit hypotheses).
 
 ```python
+import pandas as pd
+import torch
+from torch import nn
+
+from buildml import Session
+
+from sklearn.datasets import make_classification
+X, y = make_classification(n_samples=80, n_features=2, n_informative=2,
+                           n_redundant=0, random_state=42)
+frame = pd.DataFrame(X, columns=["a", "b"])
+frame["label"] = y
+
+
+class TinyMLP(nn.Module):
+    def __init__(self) -> None:
+        super().__init__()
+        self.net = nn.Sequential(nn.Linear(2, 16), nn.ReLU(), nn.Linear(16, 2))
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return self.net(x)
+
+
+session = (
+    Session.ingest(frame)
+    .set_roles({"a": "feature", "b": "feature", "label": "target"})
+    .split(test_size=0.25, validation_size=0.25, stratify=True, random_state=42)
+)
+
+# Optional classical prep first (mutates the frame; disclosed on loaders).
+# session.impute(strategy="median").scale(method="standard")
+
+session.dl.make_loaders(batch_size=4, normalize=True, seed=42)
+session.dl.fit(
+    TinyMLP(),
+    epochs=8,
+    learning_rate=5e-3,
+    device="cpu",
+    early_stopping_patience=3,
+    mixed_precision=False,  # AMP is CUDA-only
+)
+
+print(session.dl.evaluate(partition="validation").metrics)
+print(session.dl.evaluate(partition="test").metrics)
+print(session.dl.training_curve().disclosures)
+
+bundle = session.dl.save_bundle("artifacts/torch_bundle")
+
 # session.dl.transcribe(audio_column="wav", backend="stub")
 # session.dl.evaluate_asr(references=["hello world", "yes"])
 try:

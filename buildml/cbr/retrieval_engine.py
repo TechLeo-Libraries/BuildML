@@ -9,8 +9,8 @@ backend searches an approximate index rather than scanning.
 Two invariants hold across all of them. A query is always transformed the same
 way the cases were, since neighbours in mismatched spaces are meaningless. And
 where an approximate index is unavailable, the same search matrix is scanned
-exactly: the result is identical, just slower, so an unavailable index never
-changes the answer.
+exactly. Exact and approximate searches can return different neighbours,
+so this fallback can affect predictions as well as runtime.
 
 See Also
 --------
@@ -75,8 +75,8 @@ def retrieve_neighbor_batches(
 
     Notes
     -----
-    **Falling back to an exact scan changes speed, not results.** The same
-    matrix is searched with the same metric; only the shortcut is missing.
+    **An exact fallback uses the same matrix and metric.** It can return
+    different neighbours from an approximate index and therefore change predictions.
 
     **Approximate index results are approximate.** The industry backend may miss
     a true nearest neighbour, which is the trade being made for speed over a

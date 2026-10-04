@@ -428,8 +428,8 @@ class PolarsEngine:
         Notes
         -----
         **This breaks laziness**, and it is the main reason to prefer
-        :meth:`filter_expr`, where the predicate is pushed into the scan and
-        non-matching rows are never read.
+        :meth:`filter_expr`, where eligible predicates can be pushed into the scan to reduce
+        materialisation and, where supported, file reads.
         """
         eager = self._collect(table)
         if len(mask) != int(eager.height):

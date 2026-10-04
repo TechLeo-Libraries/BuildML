@@ -14,7 +14,7 @@ both pretext and head.
 This is not semi-supervised pseudo-labelling and not
 `session.dl.load_backbone` (that path is published-weight probes).
 
-Short on-ramp: [self-supervised quickstart](quickstart-selfsupervised.md).
+Quickstart: [self-supervised quickstart](quickstart-selfsupervised.md).
 
 ## The order
 
@@ -42,6 +42,19 @@ session.ssl.evaluate      (labeled holdout)
 | `masked_tabular` | tabular | sklearn | Deprecated; use Torch methods |
 
 ```python
+import pandas as pd
+from sklearn.datasets import make_classification
+from buildml import Session
+
+X, y = make_classification(n_samples=160, n_features=2, n_informative=2,
+                           n_redundant=0, random_state=0)
+frame = pd.DataFrame(X, columns=["x1", "x2"])
+frame["y"] = y
+session = (Session.ingest(frame)
+    .set_roles({"x1": "feature", "x2": "feature", "y": "target"})
+    .split(test_size=0.2, validation_size=0.2, stratify=True, random_state=0))
+
+session.scale(method="standard")
 session.ssl.fit_pretext(method="simclr_tabular", latent_dim=16, epochs=40)
 ```
 

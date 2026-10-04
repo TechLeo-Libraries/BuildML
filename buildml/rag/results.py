@@ -1,17 +1,12 @@
-"""What each stage of the RAG pipeline hands to the next, and what it admits to.
+"""Typed documents, chunks, retrieval results, citations, and generated answers.
 
-Documents become chunks, chunks become an index, an index answers queries with
-hits, hits become citations, and citations accompany an answer. Each of those
-transitions has a type here, and the chain of identifiers running through them
-means any sentence in a generated answer can be traced back to the characters in
-the file it came from.
+Chunk identifiers and source offsets connect retrieved passages to their source
+documents. Answer citations identify the passages supplied as evidence; they do
+not establish that every generated statement is supported by those passages.
 
-Every result also carries ``disclosures`` and, where relevant, ``warnings``.
-That is deliberate: RAG has more ways to be quietly wrong than most pipelines :
-an index built with a placeholder embedder, a hybrid query that silently fell
-back to dense, passages retrieved and then dropped for space: and none of them
-raise. They are recorded instead, so the reason a system underperforms is
-readable rather than deduced.
+Results include disclosures and warnings where applicable, including retrieval
+fallbacks and context truncation. Review these alongside the returned passages
+when assessing an answer.
 
 See Also
 --------
@@ -632,7 +627,7 @@ class RagEvalResult:
     k:
         The cutoff used.
     recall_at_k:
-        Share of relevant passages retrieved. **The ceiling on answer quality.**
+        Share of relevant passages retrieved.
     mrr:
         Mean reciprocal rank of the first relevant hit.
     ndcg_at_k:
@@ -710,9 +705,9 @@ class RagEvalResult:
 
 @dataclass(slots=True)
 class RagGenerateEvalResult:
-    """Rough, cheap signals about generated answers: not quality judgements.
+    """Lexical diagnostics for generated answers, rather than model-quality judgments.
 
-    **These are heuristics, and the distinction matters.** Faithfulness here is
+    **These scores are lexical heuristics.** Faithfulness here is
     token overlap between the answer and the context, which an answer can score
     highly on by copying text it has misunderstood, and score poorly on by
     correctly paraphrasing. They are useful as a regression signal: a sudden
@@ -793,10 +788,10 @@ class RagGenerateEvalResult:
 class ConfigCompareResult:
     """Several retrieval configurations, measured the same way.
 
-    The honest way to choose settings. Chunk size, retrieval mode, and reranking
+    Compare settings on the same query set. Chunk size, retrieval mode, and reranking
     all interact: larger chunks change what BM25 matches, reranking recovers
     from a weak first stage: so reasoning about them separately is unreliable
-    and measuring them together is not.
+    while a joint evaluation measures their combined effect.
 
     Attributes
     ----------
@@ -1068,7 +1063,7 @@ class GenerateResult:
     **Fewer citations than ``k`` means passages were dropped**, cut by the
     context budget after being retrieved. The disclosures say so.
 
-    **``prompt_context`` is the ground truth for debugging.** When an answer is
+    **``prompt_context`` records the context supplied to the generator.** When an answer is
     wrong, it settles whether the passage was missing from the prompt or
     present and ignored: which are different problems with different fixes.
 

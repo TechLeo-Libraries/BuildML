@@ -32,6 +32,7 @@ const state = {
   charts: null,
   chartsTheme: null,
   route: "cockpit",
+  navigationId: 0,
   sort: { key: null, dir: "asc" },
   // Ephemeral only: cleared on refresh. Never written to the server or disk.
   gateSessionMarks: Object.create(null),
@@ -305,6 +306,7 @@ async function renderChart(host, chartId) {
   host.innerHTML = `<div class="empty" style="margin:0;padding:var(--space-4)">Loading chart…</div>`;
   try {
     const charts = await ensureCharts();
+    if (!host.isConnected || !host.getClientRects().length) return;
     const fig = charts[chartId];
     if (!fig) {
       host.innerHTML = `<div class="empty" style="margin:0">Chart unavailable.</div>`;
@@ -321,8 +323,11 @@ async function renderChart(host, chartId) {
       themedLayout(fig.layout),
       { displayModeBar: false, responsive: true },
     );
-    window.Plotly.Plots.resize(host);
+    if (host.isConnected && host.getClientRects().length) {
+      await window.Plotly.Plots.resize(host);
+    }
   } catch (error) {
+    if (!host.isConnected || !host.getClientRects().length) return;
     host.innerHTML = `<div class="error-state">${escapeHtml(error.message)}</div>`;
   }
 }
@@ -438,7 +443,9 @@ function figureCards(ids) {
 /* ── Cockpit (EDA Sheet - Cockpit) ─────────────────────────────── */
 
 async function renderCockpit() {
+  const navigationId = state.navigationId;
   const data = await api("/api/cockpit");
+  if (navigationId !== state.navigationId) return;
   const sheet = data.sheet || {};
   const kpis = sheet.kpis || {};
   const register = sheet.register || [];
@@ -781,6 +788,7 @@ async function renderCockpit() {
     ${sectionScaffold({ n: "08", title: "Skipped and degraded analyses", meta: meta.degraded, bodyHtml: degradedBody })}
   `;
   await mountCharts(main());
+  if (navigationId !== state.navigationId) return;
   wireConceptChips(main());
   wireLearnUi(main());
   wireCockpitSheet(main(), sheet, {
@@ -794,7 +802,9 @@ async function renderCockpit() {
 /* ── Gates (EDA Sheet - Readiness Gates) ───────────────────────── */
 
 async function renderGates() {
+  const navigationId = state.navigationId;
   const data = await api("/api/gates");
+  if (navigationId !== state.navigationId) return;
   const version = state.meta?.session?.version || "";
   const engine = state.meta?.overview?.engine || "pandas";
 
@@ -834,6 +844,7 @@ async function renderGates() {
 /* ── Academy (EDA Sheet - Academy) ─────────────────────────────── */
 
 async function renderAcademy(query) {
+  const navigationId = state.navigationId;
   if (typeof query === "string") state.academyQuery = query;
   await renderAcademyView({
     main,
@@ -843,6 +854,7 @@ async function renderAcademy(query) {
     wireConceptChips,
     toast,
     state,
+    isCurrent: () => navigationId === state.navigationId,
   });
 }
 
@@ -850,7 +862,7 @@ async function renderAcademy(query) {
 
 function tableFromRows(rows, tableId) {
   if (!rows?.length) return `<div class="empty" style="margin:0">No tabular evidence in this section.</div>`;
-  const keys = Object.keys(rows[0]);
+  const keys = [...new Set(rows.flatMap((row) => Object.keys(row)))];
   let sorted = [...rows];
   if (state.sort.key && keys.includes(state.sort.key)) {
     sorted.sort((a, b) => {
@@ -873,7 +885,7 @@ function tableFromRows(rows, tableId) {
         <thead><tr>${keys
           .map(
             (key) =>
-              `<th scope="col" data-sort-key="${escapeHtml(key)}">${escapeHtml(key)}</th>`,
+              `<th scope="col" data-sort-key="${escapeHtml(key)}">${escapeHtml(key.replaceAll("_", " "))}${key.endsWith("_rate") ? " (fraction)" : ""}</th>`,
           )
           .join("")}</tr></thead>
         <tbody>${sorted
@@ -905,6 +917,12 @@ function rowsFromSection(section) {
   if (!section) return [];
   if (Array.isArray(section)) return section.filter((item) => item && typeof item === "object");
   if (typeof section !== "object") return [];
+  if (section.missing_rate_by_column) {
+    return Object.entries(section.missing_rate_by_column).map(([column, rate]) => ({
+      column, "Missing (%)": rate == null ? null : rate * 100,
+    }));
+  }
+  if (section.summary) return rowsFromSection(section.summary);
   if (section.per_column && typeof section.per_column === "object" && !Array.isArray(section.per_column)) {
     return Object.entries(section.per_column).map(([column, stats]) => {
       if (stats && typeof stats === "object" && !Array.isArray(stats)) {
@@ -935,18 +953,22 @@ function rowsFromSection(section) {
       if (Array.isArray(value)) return value.filter((item) => typeof item === "object");
       if (value && typeof value === "object") {
         return Object.entries(value).map(([k, v]) =>
-          typeof v === "object" && v && !Array.isArray(v) ? { key: k, ...v } : { key: k, value: v },
+          typeof v === "object" && v && !Array.isArray(v) ? { column: k, ...v }
+            : key === "mutual_information_vs_target" ? { feature: k, "Mutual information (nats)": v }
+              : { metric: k, value: v },
         );
       }
     }
   }
   return Object.entries(section)
     .filter(([, v]) => typeof v !== "object" || v === null)
-    .map(([key, value]) => ({ key, value }));
+    .map(([key, value]) => ({ metric: key.replaceAll("_", " "), value }));
 }
 
 async function renderDomain(domainKey) {
+  const navigationId = state.navigationId;
   const data = await api(`/api/domains/${domainKey}`);
+  if (navigationId !== state.navigationId) return;
   const domain = data.domain || {};
   updateChrome({
     kicker: `BuildML · domain board · ${domain.key || domainKey}`,
@@ -963,7 +985,7 @@ async function renderDomain(domainKey) {
         <div class="spine">
           <div class="spine__n">${n}</div>
           <section>
-            <div class="spine__head"><h4>${escapeHtml(name)}</h4></div>
+            <div class="spine__head"><h4>${escapeHtml(payload?.missing_rate_by_column ? "Missing values by column" : name.replaceAll("_", " "))}</h4></div>
             ${tableFromRows(rows, `table-${name}`)}
           </section>
         </div>`;
@@ -976,6 +998,7 @@ async function renderDomain(domainKey) {
     ${tables || `<div class="empty">No domain tables.</div>`}
   `;
   await mountCharts(main());
+  if (navigationId !== state.navigationId) return;
   wireConceptChips(main());
   wireTableSort(main());
 }
@@ -1101,6 +1124,7 @@ function wireTableSort(root) {
 /* ── Navigation / boot ─────────────────────────────────────────── */
 
 async function navigate(route) {
+  const navigationId = ++state.navigationId;
   state.route = route || "cockpit";
   renderBoardNav();
   try {
@@ -1114,6 +1138,7 @@ async function navigate(route) {
       await renderDomain(state.route);
     }
   } catch (error) {
+    if (navigationId !== state.navigationId) return;
     main().innerHTML = `<div class="error-state">${escapeHtml(error.message)}</div>`;
   }
   hydrateIcons(document);
@@ -1123,7 +1148,7 @@ function currentRoute() {
   const raw = window.location.hash.replace(/^#\/?/, "");
   // Legacy / accidental in-sheet anchors must never become domain routes.
   // (Previously bare ledger-* hashes were parsed as unknown domain boards.)
-  if (!raw || raw === "cockpit") return "cockpit";
+  if (!raw || raw === "cockpit" || raw === "main") return "cockpit";
   if (
     raw.startsWith("ledger-") ||
     raw.startsWith("cockpit-ledger-") ||
@@ -1150,7 +1175,12 @@ async function boot() {
   document.getElementById("drawer-backdrop")?.addEventListener("click", closeConcept);
   wireGateDrawerChrome();
   wireCockpitDrawerChrome();
-  window.addEventListener("hashchange", () => navigate(currentRoute()));
+  window.addEventListener("hashchange", () => {
+    // The keyboard skip link focuses the existing main element. It is an
+    // in-page anchor, so keep the current board and its content in place.
+    if (window.location.hash === "#main") return;
+    navigate(currentRoute());
+  });
   document.addEventListener("keydown", (event) => {
     if (event.key !== "Escape") return;
     const cockpitDrawer = document.getElementById("cockpit-drawer");

@@ -48,6 +48,7 @@ def fit_result_summary(fit_result: Any) -> dict[str, Any]:
 
     Examples
     --------
+    >>> from buildml.ensemble.explain_hooks import fit_result_summary
     >>> fit_result_summary(None)
     {}
     >>> summary = fit_result_summary({"strategy": "voting", "task": "classification"})
@@ -118,6 +119,7 @@ def ensemble_status(
 
     Examples
     --------
+    >>> from buildml.ensemble.explain_hooks import ensemble_status
     >>> status = ensemble_status(None)
     >>> status["enabled"], status["present"]
     (False, False)

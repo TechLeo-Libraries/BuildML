@@ -141,7 +141,7 @@ def rank_queries(
     Returns
     -------
     RankResult
-        Per-query ranked item lists, scores, and honesty disclosures.
+        Per-query ranked item lists, scores, and implementation limitations.
 
     Raises
     ------
@@ -250,7 +250,7 @@ def rank(
     Returns
     -------
     RankResult
-        Per-query ranked item lists, scores, and honesty disclosures.
+        Per-query ranked item lists, scores, and implementation limitations.
     """
     if query_ids is None and partition is None:
         partition = "test"

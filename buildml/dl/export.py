@@ -248,10 +248,21 @@ def export_torchscript(
 
     Examples
     --------
-    Trace, then confirm it reloads::
+    Export and reload an untrained module to check the file interface::
 
-        result = export_torchscript(module, "artifacts/model.pt", example_input=batch)
-        loaded = load_torchscript(result.path, trusted=True)
+        # Install first: pip install "buildml[torch]"
+        import torch
+        from tempfile import TemporaryDirectory
+
+        module = torch.nn.Linear(4, 2).eval()
+        batch = torch.zeros(2, 4)
+        from buildml.dl.export import export_torchscript, load_torchscript
+
+        with TemporaryDirectory() as directory:
+            result = export_torchscript(module, directory + '/model.pt', example_input=batch)
+            loaded = load_torchscript(result.path, trusted=True)
+            print(loaded(batch).shape)
+
 
     See Also
     --------
@@ -288,7 +299,7 @@ def export_torchscript(
             "Reload with torch.jit.load in a matching Torch major version.",
         ),
         limitations=(
-            "TorchScript is an alpha escape hatch: not a full serving product.",
+            "TorchScript export is experimental and produces a model file; it does not start a prediction server.",
             "Dynamic Python control flow and data-dependent shapes may not transfer.",
         ),
         warnings=tuple(warnings),
@@ -367,12 +378,21 @@ def export_onnx(
 
     Examples
     --------
-    Export with a variable batch dimension::
+    Export an untrained module with a variable batch dimension::
 
-        result = export_onnx(
-            module, "artifacts/model.onnx", example_input=batch, opset=17,
-        )
-        result.warnings  # empty when the checker was satisfied
+        # Also install: pip install "buildml[onnx]"
+        # Install first: pip install "buildml[torch]"
+        import torch
+        from tempfile import TemporaryDirectory
+
+        module = torch.nn.Linear(4, 2).eval()
+        batch = torch.zeros(2, 4)
+        from buildml.dl.export import export_onnx
+
+        with TemporaryDirectory() as directory:
+            result = export_onnx(module, directory + '/model.onnx', example_input=batch, opset=17)
+            print(result.warnings)
+
 
     See Also
     --------
@@ -426,7 +446,7 @@ def export_onnx(
             export_kwargs["dynamo"] = False
             warnings.append(
                 "ONNX export used dynamo=False (legacy TorchScript exporter) "
-                "for BuildML alpha compatibility."
+                "to avoid requiring the optional onnxscript dependency."
             )
     except (TypeError, ValueError):  # pragma: no cover - extremely defensive
         pass
@@ -627,13 +647,30 @@ def export_train_result(
 
     Examples
     --------
-    Export the trained model with its loaders::
+    Train a small model and export it with its loader contract::
 
-        result = export_train_result(
-            train_result, "artifacts/model.onnx",
-            format="onnx", loader_bundle=bundle,
-        )
-        result.meta["contract"]["feature_columns"]
+        # Install first: pip install "buildml[torch]"
+        import pandas as pd
+        import torch
+        from tempfile import TemporaryDirectory
+        from sklearn.datasets import make_classification
+        from buildml import Session
+        from buildml.dl.loaders import make_loaders
+        from buildml.dl.train import train_supervised_module
+        from buildml.dl.types import TrainConfig
+        from buildml.dl.export import export_train_result
+
+        x, y = make_classification(n_samples=40, n_features=4, n_informative=3, n_redundant=0, random_state=0)
+        frame = pd.DataFrame(x, columns=['a', 'b', 'c', 'd'])
+        frame['target'] = y
+        session = Session.ingest(frame).set_roles({'target': 'target'})
+        session.split(test_size=0.2, validation_size=0.2, stratify=True, random_state=0)
+        bundle = make_loaders(session.dataset, session.split_plan, task='classification')
+        trained = train_supervised_module(torch.nn.Linear(4, 2), bundle, config=TrainConfig(epochs=1, device='cpu'))
+        with TemporaryDirectory() as directory:
+            result = export_train_result(trained, directory + '/model.pt', format='torchscript', loader_bundle=bundle)
+            print(result.meta)
+
 
     See Also
     --------
@@ -775,10 +812,24 @@ def smoke_load_onnx(path: str | Path) -> dict[str, Any]:
 
     Examples
     --------
-    Confirm the interface before writing a client::
+    Create an ONNX file and inspect its input and output descriptions::
 
-        info = smoke_load_onnx("artifacts/model.onnx")
-        info["inputs"], info["outputs"]
+        # Also install: pip install "buildml[onnx]"
+        # Install first: pip install "buildml[torch]"
+        import torch
+        from tempfile import TemporaryDirectory
+
+        module = torch.nn.Linear(4, 2).eval()
+        batch = torch.zeros(2, 4)
+        from buildml.dl.export import export_onnx
+
+        from buildml.dl.export import smoke_load_onnx
+
+        with TemporaryDirectory() as directory:
+            result = export_onnx(module, directory + '/model.onnx', example_input=batch)
+            info = smoke_load_onnx(result.path)
+            print(info)
+
 
     See Also
     --------

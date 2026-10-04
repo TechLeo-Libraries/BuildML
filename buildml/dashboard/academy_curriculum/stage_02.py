@@ -5,6 +5,7 @@ from __future__ import annotations
 from buildml.dashboard.academy_curriculum._factory import L, rows_blurb, with_starter
 from buildml.dashboard.academy_curriculum._helpers import (
     code_block,
+    demo_example,
     first_feature,
     first_numeric,
     fmt_compact,
@@ -45,13 +46,13 @@ def _core() -> list[LessonSpec]:
             formula="IQR = Q3 - Q1; compare median vs mean for skew cues",
             calculation=lambda ctx: _uni_calc(ctx),
             session_evidence=lambda ctx: _uni_calc(ctx),
-            example_code=lambda ctx: with_starter(
+            example_code=demo_example(lambda ctx: with_starter(
                 ctx,
                 "report = session.eda(include_plots=False, show=False)",
                 "uni = report.to_dict().get(\"univariate\", {}).get(\"per_column\", {})",
                 f"print(uni.get(\"{first_numeric(ctx)}\"))  # quartiles / skew for one column",
                 'session.learn("normality-screens", level="beginner")',
-            ),
+            )),
             what_to_change=("Swap the column you inspect; compare several features before modeling."),
             pitfalls=(
                 "Reading the mean of a skewed column as typical.",
@@ -93,12 +94,12 @@ def _core() -> list[LessonSpec]:
             session_evidence=lambda ctx: (
                 f"Skew flags: {list_names(ctx.get('skewed') or []) or 'none above |1|'}."
             ),
-            example_code=lambda ctx: code_block(
+            example_code=demo_example(lambda ctx: code_block(
                 "import numpy as np",
                 "import pandas as pd",
                 "from buildml import Session",
                 "",
-                "frame = pd.read_csv(\"your_data.csv\")  # <-- change",
+                "frame = frame.copy()  # <-- change",
                 f"col = \"{_skew_col(ctx)}\"",
                 "frame[f\"{col}_log1p\"] = np.log1p(frame[col].clip(lower=0))",
                 "session = Session.ingest(frame)",
@@ -109,7 +110,7 @@ def _core() -> list[LessonSpec]:
                 "})",
                 "session = session.split(test_size=0.2, random_state=0)",
                 "# Report errors in original units after modeling.",
-            ),
+            )),
             what_to_change=("Pick skewed columns; prefer monotone transforms; validate on train folds."),
             pitfalls=(
                 "Log-transforming zeros/negatives without an offset.",
@@ -138,20 +139,20 @@ def _core() -> list[LessonSpec]:
             formula="r = cov(x,y) / (sigma_x sigma_y)",
             calculation=lambda ctx: _corr_calc(ctx),
             session_evidence=lambda ctx: _corr_calc(ctx),
-            example_code=lambda ctx: with_starter(
+            example_code=demo_example(lambda ctx: with_starter(
                 ctx,
                 "report = session.eda(include_plots=False, show=False)",
                 "pairs = report.to_dict().get(\"bivariate\", {}).get(\"top_abs_pearson_pairs\", [])",
                 "print(pairs[:5])",
                 'session.learn("feature-selection", level="beginner")',
                 "# Compare mentally with Spearman heatmaps on the Relationships board.",
-            ),
-            what_to_change=("Set review threshold (e.g. |r|≥0.8); choose which of a pair to keep."),
+            )),
+            what_to_change=("Use a correlation threshold to identify pairs for review, then compare feature choices on validation data."),
             pitfalls=(
                 "Reading near-zero Pearson as 'no relationship'.",
                 "Dropping pairs mechanically without measurement-quality judgement.",
             ),
-            decide="For each |r|≥0.8 pair, keep the more reliable measurement or combine deliberately.",
+            decide="Assess highly correlated pairs for measurement quality and redundancy; retain, remove, or combine features based on domain knowledge and validation results.",
             read_steps=("List strongest pairs.", "Ask if one column is a re-expression of the other."),
         ),
         L(
@@ -172,11 +173,11 @@ def _core() -> list[LessonSpec]:
             formula="I(X;Y) = H(Y) - H(Y|X) ≥ 0",
             calculation=lambda ctx: _mi_calc(ctx),
             session_evidence=lambda ctx: _mi_calc(ctx),
-            example_code=lambda ctx: with_starter(
+            example_code=demo_example(lambda ctx: with_starter(
                 ctx,
                 "report = session.eda(include_plots=False, show=False)",
                 "mi = report.to_dict().get(\"bivariate\", {}).get(\"mutual_information_vs_target\", [])",
-                "print(mi[:8])  # screening aid, not a final ranking",
+                "print(list(mi.items())[:8])  # screening aid, not a final ranking",
                 "",
                 "# If you select features, do it train-only:",
                 "session = session.select_features(",
@@ -185,7 +186,7 @@ def _core() -> list[LessonSpec]:
                 "    k=20,  # <-- tune",
                 ")",
                 'session.explain("select_features", moment="before")',
-            ),
+            )),
             what_to_change=("Tune k / method; always select inside training folds."),
             pitfalls=(
                 "Reading MI rank as importance or causality.",
@@ -215,7 +216,7 @@ def _core() -> list[LessonSpec]:
             formula="VIF_j = 1 / (1 - R²_j) where R²_j is from regressing x_j on other features",
             calculation=lambda ctx: _vif_calc(ctx),
             session_evidence=lambda ctx: _vif_calc(ctx),
-            example_code=lambda ctx: with_starter(
+            example_code=demo_example(lambda ctx: with_starter(
                 ctx,
                 "report = session.eda(include_plots=False, show=False)",
                 "vif = report.to_dict().get(\"multivariate\", {}).get(\"vif\", [])",
@@ -225,7 +226,7 @@ def _core() -> list[LessonSpec]:
                 f"drop = \"{_vif_drop(ctx)}\"  # <-- choose from VIF list",
                 "session = session.set_roles({drop: \"ignore\"})",
                 'session.learn("variance-inflation", level="intermediate")',
-            ),
+            )),
             what_to_change=("Pick threshold; drop/ignore one column at a time; recompute VIF."),
             pitfalls=(
                 "Dropping every high-VIF column at once.",
@@ -261,19 +262,19 @@ def _core() -> list[LessonSpec]:
             session_evidence=lambda ctx: (
                 f"Top MI features: {list_names(ctx.get('mi') or [])}. Combinations are still unchecked."
             ),
-            example_code=lambda ctx: code_block(
+            example_code=demo_example(lambda ctx: code_block(
                 "import pandas as pd",
                 "from buildml import Session",
                 "",
-                "frame = pd.read_csv(\"your_data.csv\")",
-                f"a, b = \"{_mi_name(ctx, 0)}\", \"{_mi_name(ctx, 1)}\"  # <-- candidate pair",
+                "frame = frame.copy()",
+                "a, b = \"measurement\", \"amount\"  # distinct demonstration features",
                 "frame[\"interaction_ab\"] = frame[a] * frame[b]",
                 "session = Session.ingest(frame).set_roles({",
                 f'    "{target_name(ctx)}": "target",',
                 "    a: \"feature\", b: \"feature\", \"interaction_ab\": \"feature\",",
                 "}).split(test_size=0.2, random_state=0)",
                 "session = session.scale(method=\"standard\")  # often wise for linear models",
-            ),
+            )),
             what_to_change=("Choose candidate pairs from domain knowledge; validate in CV."),
             pitfalls=("Adding all pairwise products.", "Reading tree importances as main-effect evidence."),
             decide="List a short interaction candidate set; test in-fold, do not explode the matrix.",
@@ -301,13 +302,13 @@ def _core() -> list[LessonSpec]:
                 f"High-VIF candidates: {fmt_n(len([v for v in (ctx.get('vif') or []) if float(v.get('vif') or 0) >= float(ctx.get('vifThreshold') or 5)]))}."
             ),
             session_evidence=lambda ctx: rows_blurb(ctx) + f"; eligible={fmt_n(ctx.get('eligible'))}.",
-            example_code=lambda ctx: with_starter(
+            example_code=demo_example(lambda ctx: with_starter(
                 ctx,
                 "session = session.impute(strategy=\"median\")",
                 "session = session.scale(method=\"standard\")  # PCA expects comparable scales",
                 "session = session.reduce_dimensions(method=\"pca\", n_components=0.95)  # <-- tune",
                 'session.explain("reduce_dimensions", moment="before")',
-            ),
+            )),
             what_to_change=("Tune n_components / method; decide whether to drop input columns."),
             pitfalls=(
                 "Fitting PCA on the full frame before split.",
@@ -334,13 +335,13 @@ def _core() -> list[LessonSpec]:
             formula="z = (x - mu_train) / sigma_train",
             calculation=lambda ctx: _scale_calc(ctx),
             session_evidence=lambda ctx: _scale_calc(ctx),
-            example_code=lambda ctx: with_starter(
+            example_code=demo_example(lambda ctx: with_starter(
                 ctx,
                 "session = session.impute(strategy=\"median\")",
                 "session = session.scale(method=\"standard\")  # <-- or minmax",
                 "# Fitted on train automatically after split",
                 'session.learn("feature-scaling", level="beginner")',
-            ),
+            )),
             what_to_change=("Choose standard vs minmax; exclude one-hots if you do not want them scaled."),
             pitfalls=("Scaling before split.", "Standardising heavily skewed columns expecting symmetry."),
             decide="Scale inside the training fold for any distance/regularised model path.",
@@ -366,12 +367,12 @@ def _additions() -> list[LessonSpec]:
                 f"MI rows available: {fmt_n(len(ctx.get('mi') or []))}."
             ),
             session_evidence=lambda ctx: f"Task={ctx.get('task')}; categoricals={list_names(ctx.get('categorical') or [])}.",
-            example_code=lambda ctx: with_starter(
+            example_code=demo_example(lambda ctx: with_starter(
                 ctx,
                 "report = session.eda(include_plots=False, show=False)",
-                "print(report.to_dict().get(\"bivariate\", {}).get(\"mutual_information_vs_target\", [])[:10])",
-                f"session = session.encode(method=\"onehot\", columns=[\"{first_feature(ctx)}\"])  # if categorical",
-            ),
+                "print(list(report.to_dict().get(\"bivariate\", {}).get(\"mutual_information_vs_target\", {}).items())[:10])",
+                "session = session.encode(method=\"onehot\", columns=[\"category\"])",
+            )),
             what_to_change=("Encode categoricals properly before linear models."),
             pitfalls=("Pearson on arbitrary category codes."),
             decide="Score categorical association with MI / model tools, not fake numeric correlation.",
@@ -391,11 +392,11 @@ def _additions() -> list[LessonSpec]:
                 f"Consider binning for skewed numerics: {list_names(ctx.get('skewed') or []) or first_numeric(ctx)}."
             ),
             session_evidence=lambda ctx: f"Skewed numerics: {list_names(ctx.get('skewed') or [])}.",
-            example_code=lambda ctx: with_starter(
+            example_code=demo_example(lambda ctx: with_starter(
                 ctx,
                 f"session = session.bin(columns=[\"{first_numeric(ctx)}\"], n_bins=5)  # <-- tune",
                 'session.learn("feature-binning", level="beginner")',
-            ),
+            )),
             what_to_change=("Tune n_bins / strategy; prefer model non-linearity when possible."),
             pitfalls=("Binning using target-aware edges on the full frame."),
             decide="Choose binning vs a non-linear model deliberately; fit edges on train only.",
@@ -416,12 +417,12 @@ def _additions() -> list[LessonSpec]:
                 "Ask which could be confounders for your decision."
             ),
             session_evidence=lambda ctx: "Causal claims need assumptions beyond this readiness sheet.",
-            example_code=lambda ctx: with_starter(
+            example_code=demo_example(lambda ctx: with_starter(
                 ctx,
                 'session.learn("causal-assumptions", level="beginner")',
                 'session.learn("causal-eda-boundary", level="intermediate")',
                 "# Use session.fit_causal(...) only when identification assumptions are explicit.",
-            ),
+            )),
             what_to_change=("Name confounders; separate prediction from intervention questions."),
             pitfalls=("Reading feature importance as causal effect."),
             decide="Label each key association predictive vs potentially causal; do not conflate them.",
@@ -439,12 +440,12 @@ def _additions() -> list[LessonSpec]:
             formula=None,
             calculation=lambda ctx: _corr_calc(ctx),
             session_evidence=lambda ctx: _corr_calc(ctx),
-            example_code=lambda ctx: with_starter(
+            example_code=demo_example(lambda ctx: with_starter(
                 ctx,
                 "report = session.eda(include_plots=False, show=False)",
                 "print(report.to_dict().get(\"bivariate\", {}).get(\"top_abs_pearson_pairs\", [])[:10])",
                 "session = session.select_features(strategy=\"variance\", threshold=0.0)  # drop constants",
-            ),
+            )),
             what_to_change=("Ignore or drop redundant re-expressions; keep the best-measured version."),
             pitfalls=("Keeping both raw and fully determined derived totals."),
             decide="For each redundant pair, keep one column and document why.",
@@ -466,18 +467,18 @@ def _additions() -> list[LessonSpec]:
             session_evidence=lambda ctx: (
                 f"Temporal axis present: {bool(ctx.get('timeCol'))}."
             ),
-            example_code=lambda ctx: code_block(
+            example_code=demo_example(lambda ctx: code_block(
                 "import pandas as pd",
                 "from buildml import Session",
                 "",
-                "frame = pd.read_csv(\"your_data.csv\")",
+                "frame = frame.copy()",
                 f"t = \"{(ctx.get('timeCol') or {}).get('name') or '<timestamp>'}\"",
                 "frame[t] = pd.to_datetime(frame[t], utc=True, errors=\"coerce\")",
                 "session = Session.ingest(frame).set_roles({",
                 f'    t: "time", "{target_name(ctx)}": "target", "{first_feature(ctx)}": "feature",',
                 "})",
                 "session = session.extract_dates(columns=[t])",
-            ),
+            )),
             what_to_change=("Only extract parts known at score time; build lags with as-of discipline."),
             pitfalls=("Using label-time calendar fields as predictors."),
             decide="Freeze which calendar/lag features exist at prediction time.",
@@ -498,16 +499,16 @@ def _additions() -> list[LessonSpec]:
                 f"with eligible={fmt_n(ctx.get('eligible'))}."
             ),
             session_evidence=lambda ctx: rows_blurb(ctx) + f"; eligible={fmt_n(ctx.get('eligible'))}.",
-            example_code=lambda ctx: with_starter(
+            example_code=demo_example(lambda ctx: with_starter(
                 ctx,
-                "session = session.encode(method=\"infrequent\", min_frequency=0.05)",
+                "session = session.encode(method=\"infrequent\", columns=[\"category\"], min_frequency=0.05)",
                 "session = session.select_features(",
                 "    strategy=\"univariate\",",
                 "    score_func=\"mutual_info\",",
                 f"    k=min(50, {max(int(ctx.get('eligible') or 10), 1)}),  # <-- tune",
                 ")",
                 'session.learn("overfitting", level="beginner")',
-            ),
+            )),
             what_to_change=("Cap one-hot width; select/regularise; prefer simpler models when n is small."),
             pitfalls=("One-hotting high-card columns on small n."),
             decide="Set a maximum feature budget after encoding and enforce it with selection/regularisation.",

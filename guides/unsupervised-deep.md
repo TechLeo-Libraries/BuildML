@@ -11,10 +11,10 @@ is train-only. `assign` and `evaluate` need a plan first. Default is
 sklearn KMeans (`n_clusters=8`). PCA stays on `session.reduce_dimensions`;
 you can cluster those train-fitted components.
 
-This is not the EDA IsolationForest screen. That stays descriptive. It is
-not `session.anomaly` and not a ground-truth taxonomy.
+EDA outlier screens and reusable anomaly detectors have separate APIs.
+Cluster labels describe the fitted grouping; they are not verified classes.
 
-Short on-ramp: [unsupervised quickstart](quickstart-unsupervised.md).
+Quickstart: [unsupervised quickstart](quickstart-unsupervised.md).
 
 ## A first loop
 
@@ -65,6 +65,32 @@ partitions outside Session and then claim holdout validity.
 | `dec` / `idec` | Torch | Native encoder assign | Needs `[torch]` |
 
 ```python
+import numpy as np
+import pandas as pd
+from buildml import Session
+
+rng = np.random.default_rng(1)
+a = rng.normal([0, 0], 0.35, size=(60, 2))
+b = rng.normal([2.5, 2.5], 0.35, size=(60, 2))
+frame = pd.DataFrame(np.vstack([a, b]), columns=["f1", "f2"])
+frame["group_id"] = [0] * 60 + [1] * 60
+
+session = (
+    Session.ingest(frame)
+    .set_roles({"f1": "feature", "f2": "feature", "group_id": "ignore"})
+    .split(test_size=0.2, validation_size=0.2, random_state=0)
+    .scale(method="standard")
+)
+
+fit = session.unsupervised.fit(method="kmeans", n_clusters=2, random_state=0)
+val = session.unsupervised.evaluate(partition="validation")
+test = session.unsupervised.evaluate(
+    partition="test",
+    external_label_column="group_id",
+)
+print(fit.to_dict())
+print(val.metrics, test.external_metrics)
+
 session.unsupervised.fit(method="agglomerative", n_clusters=2, linkage="ward")
 print(session.unsupervised.plan.assign_strategy)  # nearest_centroid
 
@@ -74,9 +100,35 @@ print(session.unsupervised.plan.n_clusters, session.unsupervised.fit_result.warn
 
 ## PCA stays on `reduce_dimensions`
 
-Do not fork a second PCA. Cluster the train-fitted components:
+Reuse the train-fitted PCA components for clustering:
 
 ```python
+import numpy as np
+import pandas as pd
+from buildml import Session
+
+rng = np.random.default_rng(1)
+a = rng.normal([0, 0], 0.35, size=(60, 2))
+b = rng.normal([2.5, 2.5], 0.35, size=(60, 2))
+frame = pd.DataFrame(np.vstack([a, b]), columns=["f1", "f2"])
+frame["group_id"] = [0] * 60 + [1] * 60
+
+session = (
+    Session.ingest(frame)
+    .set_roles({"f1": "feature", "f2": "feature", "group_id": "ignore"})
+    .split(test_size=0.2, validation_size=0.2, random_state=0)
+    .scale(method="standard")
+)
+
+fit = session.unsupervised.fit(method="kmeans", n_clusters=2, random_state=0)
+val = session.unsupervised.evaluate(partition="validation")
+test = session.unsupervised.evaluate(
+    partition="test",
+    external_label_column="group_id",
+)
+print(fit.to_dict())
+print(val.metrics, test.external_metrics)
+
 session = (
     Session.ingest(frame)
     .set_roles({"f1": "feature", "f2": "feature", "group_id": "ignore"})
@@ -102,6 +154,32 @@ itself is a Session-global plan.
 ## Assign
 
 ```python
+import numpy as np
+import pandas as pd
+from buildml import Session
+
+rng = np.random.default_rng(1)
+a = rng.normal([0, 0], 0.35, size=(60, 2))
+b = rng.normal([2.5, 2.5], 0.35, size=(60, 2))
+frame = pd.DataFrame(np.vstack([a, b]), columns=["f1", "f2"])
+frame["group_id"] = [0] * 60 + [1] * 60
+
+session = (
+    Session.ingest(frame)
+    .set_roles({"f1": "feature", "f2": "feature", "group_id": "ignore"})
+    .split(test_size=0.2, validation_size=0.2, random_state=0)
+    .scale(method="standard")
+)
+
+fit = session.unsupervised.fit(method="kmeans", n_clusters=2, random_state=0)
+val = session.unsupervised.evaluate(partition="validation")
+test = session.unsupervised.evaluate(
+    partition="test",
+    external_label_column="group_id",
+)
+print(fit.to_dict())
+print(val.metrics, test.external_metrics)
+
 holdout = session.unsupervised.assign(partition="test")
 print(holdout.labels[:10], holdout.n_noise)
 
@@ -120,7 +198,7 @@ DBSCAN produces `-1`. Optional bootstrap stability
 stay on train.
 
 `external_label_column` adds ARI / NMI **after** fit. Those labels never
-train the clusterer. Agreement is not a causal structure and not ROI.
+train the clusterer. Agreement measures label similarity; it does not establish causality or business value.
 
 Default `evaluate(partition="validation")` falls back to `test` when no
 validation partition was carved.
@@ -132,9 +210,38 @@ It does not store the dataset, the split, or a classical estimator.
 `checkpoint_load` will not restore `session.unsupervised.plan`.
 
 ```python
+import numpy as np
+import pandas as pd
+from buildml import Session
+
+rng = np.random.default_rng(1)
+a = rng.normal([0, 0], 0.35, size=(60, 2))
+b = rng.normal([2.5, 2.5], 0.35, size=(60, 2))
+frame = pd.DataFrame(np.vstack([a, b]), columns=["f1", "f2"])
+frame["group_id"] = [0] * 60 + [1] * 60
+
+session = (
+    Session.ingest(frame)
+    .set_roles({"f1": "feature", "f2": "feature", "group_id": "ignore"})
+    .split(test_size=0.2, validation_size=0.2, random_state=0)
+    .scale(method="standard")
+)
+
+fit = session.unsupervised.fit(method="kmeans", n_clusters=2, random_state=0)
+val = session.unsupervised.evaluate(partition="validation")
+test = session.unsupervised.evaluate(
+    partition="test",
+    external_label_column="group_id",
+)
+print(fit.to_dict())
+print(val.metrics, test.external_metrics)
+
 path = session.unsupervised.save_bundle("artifacts/clusters")
-other = Session.ingest(...).set_roles(...).split(...).scale(...)
-other.unsupervised.load_bundle(path)
+other = (Session.ingest(frame)
+    .set_roles({"f1": "feature", "f2": "feature", "group_id": "ignore"})
+    .split(test_size=0.2, validation_size=0.2, random_state=0)
+    .scale(method="standard"))
+other.unsupervised.load_bundle(path, trusted=True)
 other.unsupervised.assign(partition="test")
 ```
 

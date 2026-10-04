@@ -196,21 +196,23 @@ def compare_estimators(
 
     Examples
     --------
-    Screen three families on validation::
+    .. code-block:: python
 
-        from sklearn.ensemble import HistGradientBoostingClassifier, RandomForestClassifier
-        from sklearn.linear_model import LogisticRegression
-
-        comparison = compare_estimators(
-            dataset, split_plan,
-            {
-                "logreg": LogisticRegression(max_iter=1000),
-                "forest": RandomForestClassifier(random_state=0),
-                "boosting": HistGradientBoostingClassifier(random_state=0),
-            },
-            partition="validation",
-        )
-        comparison.show()
+        import pandas as pd
+        from sklearn.datasets import make_classification
+        from sklearn.tree import DecisionTreeClassifier
+        from buildml import Session
+        X, y = make_classification(n_samples=80, n_features=4, n_informative=3, n_redundant=0, random_state=42)
+        frame = pd.DataFrame(X, columns=["age", "income", "spend", "visits"])
+        frame["target"] = y
+        session = Session.ingest(frame).set_roles({"target": "target"})
+        session.split(test_size=0.2, validation_size=0.2, stratify=True, random_state=42)
+        dataset, split_plan = session.dataset, session.split_plan
+        estimator = DecisionTreeClassifier(max_depth=3, random_state=42)
+        from buildml.model.compare import compare_estimators
+        from sklearn.dummy import DummyClassifier
+        comparison = compare_estimators(dataset, split_plan, {"tree": estimator, "baseline": DummyClassifier()}, partition="validation")
+        print(comparison.to_frame())
 
     See Also
     --------

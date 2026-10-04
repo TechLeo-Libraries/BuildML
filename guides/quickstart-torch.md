@@ -11,14 +11,14 @@ a module. Backbone weights default to `mock`. Speech ASR without
 refused.
 
 [Torch deep](torch-deep.md) ·
-Paste: [`examples/torch_tabular_mlp_loop.py`](../examples/torch_tabular_mlp_loop.py) ·
+Runnable example: [`examples/torch_tabular_mlp_loop.py`](../examples/torch_tabular_mlp_loop.py) ·
 Evidence: [torch-tabular-underwrite](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/torch-tabular-underwrite) ·
 [Speech](speech-asr-finetune.md) ·
 [Serve](serve-deploy.md)
 
 
 Classical `Session.fit` stays the default sklearn path. Torch methods use the
-`*_torch` prefix and store results in `session.dl.train_result`.
+`session.dl` namespace and store results in `session.dl.train_result`.
 
 ```python
 import pandas as pd
@@ -27,13 +27,13 @@ from torch import nn
 
 from buildml import Session
 
-frame = pd.DataFrame(
-    {
-        "a": [0.1, 0.4, 0.2, 0.8, 0.3, 0.7, 0.5, 0.9, 0.15, 0.65],
-        "b": [1.0, 0.2, 0.9, 0.1, 0.8, 0.3, 0.6, 0.4, 0.75, 0.25],
-        "label": [0, 1, 0, 1, 0, 1, 1, 0, 0, 1],
-    }
-)
+from sklearn.datasets import make_classification
+
+X, y = make_classification(n_samples=80, n_features=2, n_informative=2,
+                           n_redundant=0, random_state=42)
+frame = pd.DataFrame(X, columns=["a", "b"])
+frame["label"] = y
+
 
 
 class TinyMLP(nn.Module):
@@ -83,6 +83,64 @@ bundle = session.dl.save_bundle("artifacts/torch_bundle")
 Reload and optionally resume:
 
 ```python
+import pandas as pd
+import torch
+from torch import nn
+
+from buildml import Session
+
+from sklearn.datasets import make_classification
+
+X, y = make_classification(n_samples=80, n_features=2, n_informative=2,
+                           n_redundant=0, random_state=42)
+frame = pd.DataFrame(X, columns=["a", "b"])
+frame["label"] = y
+
+
+
+class TinyMLP(nn.Module):
+    def __init__(self) -> None:
+        super().__init__()
+        self.net = nn.Sequential(nn.Linear(2, 16), nn.ReLU(), nn.Linear(16, 2))
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return self.net(x)
+
+
+session = (
+    Session.ingest(frame)
+    .set_roles({"a": "feature", "b": "feature", "label": "target"})
+    .split(
+        test_size=0.25,
+        validation_size=0.25,
+        stratify=True,
+        random_state=42,
+    )
+)
+
+# Optional classical prep first (not auto-applied before loaders).
+# session.impute(strategy="median").scale(method="standard")
+
+session.dl.make_loaders(batch_size=4, normalize=True, seed=42)
+session.dl.fit(
+    TinyMLP(),
+    epochs=6,
+    learning_rate=5e-3,
+    device="cpu",
+    early_stopping_patience=3,
+    scheduler="none",
+)
+
+# Prefer validation while iterating; reserve test for a fixed recipe.
+validation = session.dl.evaluate(partition="validation")
+test = session.dl.evaluate(partition="test")
+print(test.metrics)
+
+curve = session.dl.training_curve()
+print(curve.disclosures)
+
+bundle = session.dl.save_bundle("artifacts/torch_bundle")
+
 restored = (
     Session.ingest(frame)
     .set_roles({"a": "feature", "b": "feature", "label": "target"})
@@ -93,7 +151,7 @@ restored = (
         random_state=42,
     )
 )
-restored.dl.load_bundle(bundle, TinyMLP(), map_location="cpu")
+restored.dl.load_bundle(bundle, TinyMLP(), map_location="cpu", trusted=True)
 restored.dl.make_loaders(batch_size=4, normalize=True, seed=42)
 restored.dl.evaluate(partition="test")
 # Additional epochs; optimizer/scheduler state restored when compatible.
@@ -103,8 +161,46 @@ restored.dl.fit(TinyMLP(), epochs=2, resume=True, device="cpu")
 Explain catalog coverage:
 
 ```python
+import pandas as pd
+import torch
+from torch import nn
+
+from buildml import Session
+
+from sklearn.datasets import make_classification
+
+X, y = make_classification(n_samples=80, n_features=2, n_informative=2,
+                           n_redundant=0, random_state=42)
+frame = pd.DataFrame(X, columns=["a", "b"])
+frame["label"] = y
+
+
+
+class TinyMLP(nn.Module):
+    def __init__(self) -> None:
+        super().__init__()
+        self.net = nn.Sequential(nn.Linear(2, 16), nn.ReLU(), nn.Linear(16, 2))
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return self.net(x)
+
+
+session = (
+    Session.ingest(frame)
+    .set_roles({"a": "feature", "b": "feature", "label": "target"})
+    .split(
+        test_size=0.25,
+        validation_size=0.25,
+        stratify=True,
+        random_state=42,
+    )
+)
+
+# Optional classical prep first (not auto-applied before loaders).
+# session.impute(strategy="median").scale(method="standard")
+
 before = session.explain("session.dl.fit", moment="before")
-print(before.operation, before.prerequisites)
+print(before.operation, before.prerequisite_chain)
 ```
 
 ## Artifacts
@@ -119,6 +215,52 @@ Layout: `<path>/meta.json` + `<path>/trainer.pt`.
 ## Built-in models and text path
 
 ```python
+import pandas as pd
+import torch
+from torch import nn
+
+from buildml import Session
+
+from sklearn.datasets import make_classification
+
+X, y = make_classification(n_samples=80, n_features=2, n_informative=2,
+                           n_redundant=0, random_state=42)
+frame = pd.DataFrame(X, columns=["a", "b"])
+frame["label"] = y
+
+
+
+class TinyMLP(nn.Module):
+    def __init__(self) -> None:
+        super().__init__()
+        self.net = nn.Sequential(nn.Linear(2, 16), nn.ReLU(), nn.Linear(16, 2))
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return self.net(x)
+
+
+session = (
+    Session.ingest(frame)
+    .set_roles({"a": "feature", "b": "feature", "label": "target"})
+    .split(
+        test_size=0.25,
+        validation_size=0.25,
+        stratify=True,
+        random_state=42,
+    )
+)
+
+# Optional classical prep first (not auto-applied before loaders).
+# session.impute(strategy="median").scale(method="standard")
+
+text_frame = pd.DataFrame({
+    "text": [f"help with invoice payment {i}" if i % 2 else f"track parcel delivery {i}" for i in range(40)],
+    "label": [i % 2 for i in range(40)],
+})
+text_session = (Session.ingest(text_frame)
+    .set_roles({"text": "feature", "label": "target"})
+    .split(test_size=0.2, validation_size=0.2, stratify=True, random_state=0))
+
 # Tabular happy path: omit module to use the built-in MLP
 session.dl.make_loaders()
 session.dl.fit(epochs=5, device="auto")  # builds TabularMLP from the contract
@@ -134,6 +276,56 @@ text_session.dl.fit(epochs=3)  # builds embedding text classifier
 ## Nested search and multimodal
 
 ```python
+import pandas as pd
+import torch
+from torch import nn
+
+from buildml import Session
+
+from sklearn.datasets import make_classification
+
+X, y = make_classification(n_samples=80, n_features=2, n_informative=2,
+                           n_redundant=0, random_state=42)
+frame = pd.DataFrame(X, columns=["a", "b"])
+frame["label"] = y
+
+
+
+class TinyMLP(nn.Module):
+    def __init__(self) -> None:
+        super().__init__()
+        self.net = nn.Sequential(nn.Linear(2, 16), nn.ReLU(), nn.Linear(16, 2))
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return self.net(x)
+
+
+session = (
+    Session.ingest(frame)
+    .set_roles({"a": "feature", "b": "feature", "label": "target"})
+    .split(
+        test_size=0.25,
+        validation_size=0.25,
+        stratify=True,
+        random_state=42,
+    )
+)
+
+# Optional classical prep first (not auto-applied before loaders).
+# session.impute(strategy="median").scale(method="standard")
+
+import numpy as np
+rng = np.random.default_rng(0)
+df = pd.DataFrame({"x1": rng.normal(size=40),
+                   "text": ["payment issue" if i % 2 else "delivery issue" for i in range(40)],
+                   "y": [i % 2 for i in range(40)]})
+df_with_images = pd.DataFrame({"x1": rng.normal(size=40),
+    "image": [rng.integers(0, 256, size=(32, 32, 3), dtype=np.uint8) for _ in range(40)],
+    "y": [i % 2 for i in range(40)]})
+df_with_audio = pd.DataFrame({"x1": rng.normal(size=40),
+    "audio": [rng.normal(size=16000).astype("float32") for _ in range(40)],
+    "y": [i % 2 for i in range(40)]})
+
 # Nested Torch HPO (outer estimate after inner search; fold-local normalize)
 nested = session.dl.nested_cv(
     param_grid={"learning_rate": [1e-3, 1e-2], "hidden": [(32,), (64, 32)]},
@@ -197,7 +389,7 @@ speech = (
 asr = speech.dl.transcribe(audio_column="audio", backend="stub")
 # speech.dl.evaluate_asr(references=[...])  # WER/CER; reuses last ASR texts if hypotheses omitted
 speech.dl.domain_adapt_speech(epochs=5, device="cpu", audio_column="audio")
-# speech.dl.refuse_speech_pretrain()  # honest refuse for FM-from-scratch asks
+# speech.dl.refuse_speech_pretrain()  # raises an error: training speech foundation models is unsupported
 
 # Pretrained backbone hooks (mock weights = CI-safe; only the documented architectures are supported)
 # pip install "buildml[pretrained]"  # vision+speech extras
@@ -223,15 +415,15 @@ speech.dl.domain_adapt_speech(epochs=5, device="cpu", audio_column="audio")
 # compose example: deploy/torchserve/docker-compose.example.yml
 ```
 
-## Known limits (honest)
+## Limitations
 
-- **CPU-first merge gate.** CI runs Torch on CPU (Python 3.11–3.12). CUDA/MPS
+- **CPU validation.** CI runs Torch on CPU (Python 3.11–3.12). CUDA/MPS
   are supported when available with explicit fallback warnings; GPU CI is not a
   PR blocker.
 - **Tabular + text + image + audio multimodal in scope.** Built-in MLP, text
   classifier, and fusion (small CNN image branch + small 1D-CNN audio branch)
-  cover the happy path; custom `nn.Module` still works. Audio multimodal fusion
-  is honest alpha: not a speech FM. For ASR / speech classify finetune-lite see
+  support the documented loader types; custom `nn.Module` still works. Audio multimodal fusion
+  uses small feature-extraction branches; it is not a speech foundation model. For ASR / speech classify finetune-lite see
   `session.dl.transcribe` / `session.dl.fit_speech` (`buildml[speech]`). Short clips are
   repeat-padded to `audio_max_samples` so global pooling stays informative
   without a lengths tensor in forward/export. Trainer bundles may store frozen
@@ -251,8 +443,8 @@ speech.dl.domain_adapt_speech(epochs=5, device="cpu", audio_column="audio")
   torchrun multi-node (`multi_node=True`). `session.dl.emit_k8s_ddp` /
   `session.dl.emit_k8s_serve` write Job/Deployment YAML templates only (not live
   multi-cluster orchestration). `session.dl.export` is an alpha TorchScript/ONNX
-  escape hatch; `session.dl.pack_torchserve` / `session.dl.prepare_tensorrt` write
-  operator-owned recipes (not a cloud). Managed local serving is
+  export interface; `session.dl.pack_torchserve` / `session.dl.prepare_tensorrt` write
+  deployment recipes. Managed local serving is
   `buildml[serve]` / `session.dl.serve` / `buildml-serve` (localhost;
   `/metadata` + `/predict/batch`; optional API-key + local SSL: still not
   managed IAM).

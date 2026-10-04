@@ -75,7 +75,7 @@ class KgPlan:
         Returns
         -------
         dict[str, Any]
-            Plan metadata, column contract, and honesty disclosures.
+            Plan metadata, column contract, and implementation limitations.
         """
         return {
             "method": self.method,
@@ -129,7 +129,7 @@ class KgFitResult:
         Returns
         -------
         dict[str, Any]
-            Fit metadata, triple counts, and honesty disclosures.
+            Fit metadata, triple counts, and implementation limitations.
         """
         return {
             "method": self.method,

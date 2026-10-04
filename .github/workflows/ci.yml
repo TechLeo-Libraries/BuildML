@@ -67,6 +67,9 @@ jobs:
       - name: Teaching example contracts
         run: python scripts/check_teaching_examples.py
 
+      - name: Documentation example syntax and standalone imports
+        run: python scripts/check_documentation_examples.py --output artifacts/documentation-examples.json
+
       - name: Release claim references
         run: python scripts/check_release_claims.py
 

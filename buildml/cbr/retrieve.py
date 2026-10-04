@@ -96,11 +96,24 @@ def retrieve_cases(
 
     Examples
     --------
-    Inspect what the reasoner thinks is similar::
+    .. code-block:: python
 
-        result = retrieve_cases(dataset, plan, split_plan, partition="test", k=5)
-        for trace in result.traces[:3]:
-            print(trace.query_index, trace.distances, trace.neighbor_solutions)
+        import pandas as pd
+        from sklearn.datasets import make_classification
+        from sklearn.tree import DecisionTreeClassifier
+        from buildml import Session
+        X, y = make_classification(n_samples=80, n_features=4, n_informative=3, n_redundant=0, random_state=42)
+        frame = pd.DataFrame(X, columns=["age", "income", "spend", "visits"])
+        frame["target"] = y
+        session = Session.ingest(frame).set_roles({"target": "target"})
+        session.split(test_size=0.2, validation_size=0.2, stratify=True, random_state=42)
+        dataset, split_plan = session.dataset, session.split_plan
+        estimator = DecisionTreeClassifier(max_depth=3, random_state=42)
+        from buildml.cbr.retrieve import retrieve_cases
+        from buildml.cbr.fit import fit_cbr
+        plan, fitted = fit_cbr(dataset, split_plan, k=3)
+        result = retrieve_cases(dataset, plan, split_plan, partition="test", k=3)
+        print(result.traces[0].distances)
 
     See Also
     --------

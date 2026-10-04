@@ -1,17 +1,18 @@
 A first Session
 ===============
 
-You have a table. You want a holdout number you can trust. BuildML
-enforces a deliberate order: ingest, assign roles, split, prepare on
-training rows only, fit, then evaluate on a partition you name. Skip a
-step or call ``fit`` before ``split`` and you get a clear error instead
-of a leaked score.
+For tabular classification and regression, BuildML uses this order:
+ingest, assign roles, split, prepare on training rows, fit, then evaluate
+on a named partition. Train-fitted preprocessing and fitting raise an
+error when no split exists.
 
-This page is a few realistic loops. For a chapter-style walkthrough see
-:doc:`quickstart-classical`. For the long classical path (many cases,
-failure modes, persistence) see :doc:`classical-end-to-end`. The full
-map is :doc:`guide-index`. Paste the loops from the repository
-``examples/`` directory. End-to-end evidence is ``proofs/``.
+Each Python example on this page includes its own imports and data.
+The small datasets demonstrate API usage rather than provide evidence
+about real lending, fraud, or property markets. For a complete tutorial,
+see :doc:`quickstart-classical`; for additional cases and persistence,
+see :doc:`classical-end-to-end`. The :doc:`guide-index` lists all domains.
+Runnable scripts are also available in the repository's ``examples/``
+directory.
 
 Loan approval
 -------------
@@ -52,12 +53,16 @@ calibration, or threshold choices:
 
 .. code-block:: python
 
-   session.split(
-       test_size=0.2,
-       validation_size=0.2,
-       stratify=True,
-       random_state=42,
-   )
+   from pathlib import Path
+   from sklearn.datasets import load_breast_cancer
+   from buildml import Session
+
+   frame = load_breast_cancer(as_frame=True).frame
+   session = Session.ingest(frame)
+   session.set_roles({**{c: "feature" for c in frame if c != "target"}, "target": "target"})
+   session.split(test_size=0.2, validation_size=0.2, stratify=True, random_state=42)
+   Path("artifacts").mkdir(exist_ok=True)
+   print({name: len(session.partition(name)) for name in ("train", "validation", "test")})
 
 Imbalanced fraud detection
 --------------------------
@@ -96,8 +101,8 @@ split:
 
    val = session.evaluate(partition="validation")
    test = session.evaluate(partition="test")
-   print("validation f1:", val.metrics.get("f1"))
-   print("test f1:", test.metrics.get("f1"))
+   print("validation macro F1:", val.metrics["f1_macro"])
+   print("test macro F1:", test.metrics["f1_macro"])
 
 Resampling changes training prevalence. Validation and test rows are
 never altered. Compare against a baseline that does not resample before
@@ -106,7 +111,7 @@ you claim an improvement.
 House price regression
 ----------------------
 
-Same spine, different task and metrics:
+This example fits a regression model and prints its test metrics:
 
 .. code-block:: python
 
@@ -194,25 +199,34 @@ Typical failures:
   engine adapters name the install group when a dependency is absent.
 
 ``session.explain("impute", moment="before")`` lists prerequisites,
-leakage risks, and alternatives before you mutate state.
+leakage risks, and alternatives before changing the Session.
 
 Ask the Session
 ---------------
 
-Every public method has a catalog entry. These APIs tell you what the
-library knows. They do not certify that your split or model suits the
-domain.
+The teaching APIs explain method requirements and show workflow status.
+Choosing a suitable model and evaluation design still requires knowledge
+of the data and prediction task.
 
 .. code-block:: python
 
+   from pathlib import Path
+   from sklearn.datasets import load_breast_cancer
+   from buildml import Session
+
+   frame = load_breast_cancer(as_frame=True).frame
+   session = Session.ingest(frame)
+   session.set_roles({**{c: "feature" for c in frame if c != "target"}, "target": "target"})
+   session.split(test_size=0.2, validation_size=0.2, stratify=True, random_state=42)
+   Path("artifacts").mkdir(exist_ok=True)
    session.explain("split")
    session.learn("leakage")
    steps = session.workflow()
    preview = session.dry_run(["impute", "scale", "fit"])
    walkthrough = session.walkthrough(export_html="artifacts/workflow.html")
 
-``explain`` is about this Session right now. ``learn`` is the idea, in
-reading order. ``workflow`` marks operations done, available, blocked, or
+``explain`` describes an operation in the current Session. ``learn``
+provides background concepts and suggested reading order. ``workflow`` marks operations done, available, blocked, or
 skipped from API prerequisites; available is not a recommendation.
 ``dry_run`` does not append history.
 
@@ -228,11 +242,24 @@ Save and reload
 
 .. code-block:: python
 
-   session.checkpoint_save("artifacts/checkpoint")
-   restored = Session.checkpoint_load("artifacts/checkpoint")
+   from pathlib import Path
+   from sklearn.datasets import load_breast_cancer
+   from buildml import Session
 
+   frame = load_breast_cancer(as_frame=True).frame
+   session = Session.ingest(frame)
+   session.set_roles({**{c: "feature" for c in frame if c != "target"}, "target": "target"})
+   session.split(test_size=0.2, validation_size=0.2, stratify=True, random_state=42)
+   Path("artifacts").mkdir(exist_ok=True)
+   from sklearn.linear_model import LogisticRegression
+   session.impute(strategy="median")
+   session.scale(method="standard")
+   session.fit(LogisticRegression(max_iter=500), task="classification")
+   session.checkpoint_save("artifacts/checkpoint")
+   # These files were created by this example.
+   restored = Session.checkpoint_load("artifacts/checkpoint", trusted=True)
    session.save_pipeline("artifacts/pipeline", evaluate_partition="test")
-   loaded = Session.ingest(frame).load_pipeline("artifacts/pipeline")
+   loaded = Session.ingest(frame).load_pipeline("artifacts/pipeline", trusted=True)
    loaded.apply_preprocess_plans()
 
 A checkpoint restores data, roles, partitions, history, and optional

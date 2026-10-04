@@ -5,11 +5,10 @@ pip install buildml
 ```
 
 Tabular if-then rules, declared or induced from train. Default source is
-a decision tree. `fit_neuro` is the sklearn hybrid overlay. Not Prolog,
-not a Z3 product. `verify_constraints=True` is a lite check only.
+a decision tree. `fit_neuro` is the sklearn hybrid overlay. General-purpose logic programming is outside this API. `verify_constraints=True` is a lite check only.
 
 [Symbolic deep](symbolic-deep.md) ·
-Paste: [`examples/symbolic_rules_loop.py`](../examples/symbolic_rules_loop.py) ·
+Runnable example: [`examples/symbolic_rules_loop.py`](../examples/symbolic_rules_loop.py) ·
 Evidence: [policy-rules-neuro-symbolic](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/policy-rules-neuro-symbolic)
 
 ```python
@@ -29,7 +28,7 @@ session = (
     .scale(method="standard")
 )
 
-# Inspect honest defaults (industry when installed, else sklearn)
+# Inspect backend selection (optional backend when installed, otherwise sklearn)
 print(session.symbolic.capability_matrix()["default_symbolic_backend_when_installed"])
 
 # Symbolic: sklearn decision-tree rules (always available)
@@ -75,14 +74,11 @@ print(session.symbolic.evaluate_neuro(partition="test").metrics)
 
 | In scope | Out of scope |
 | --- | --- |
-| sklearn + industry rule induction | Prolog / full Z3 product / AGI reasoners |
-| Rule-firing traces | Full expert-system product |
-| Neuro-symbolic overlay / features / repair | Fuzzy logic product; LTN research stack |
-| Optional Z3 lite constraint check | Complete SMT verification product |
+| sklearn + industry rule induction | General-purpose logic programming |
+| Rule-firing traces | Knowledge-base management |
+| Neuro-symbolic overlay / features / repair | General fuzzy-logic inference |
+| Optional Z3 lite constraint check | Complete SMT verification |
 | `buildml.symbolic_bundle.v1` | Session checkpoint embedding the plan |
 
 Benchmark: `python benchmarks/symbolic/rule_fidelity.py` (rule accuracy vs
 black-box RandomForest on tabular reference data).
-
-Related next: case-based reasoning
-([quickstart-cbr](quickstart-cbr.md)).

@@ -65,8 +65,8 @@ def resolve_feature_target(
     Raises
     ------
     ValidationError
-        If no target is set, or if nothing usable remains after the exclusions
-       : which normally means every column carries a non-feature role.
+        If no target is set, or if no usable feature columns remain after
+        excluding columns with other roles.
 
     Notes
     -----

@@ -4,8 +4,8 @@
 pip install buildml
 ```
 
-You fitted a binary classifier and you want group rates on a holdout
-you trust. `session.fairness.evaluate` reports selection rate,
+You fitted a binary classifier and you want group rates on a specified holdout
+partition. `session.fairness.evaluate` reports selection rate,
 demographic parity, disparate impact, equalized odds, and per-group
 classical metrics. That is an observational audit on one split. It
 does not certify legal compliance, prove causal discrimination, or
@@ -14,7 +14,7 @@ change the model.
 You name `sensitive_column`. BuildML will not infer protected class
 from the rest of the table. Default evaluate partition is `test`.
 Default `positive_label` is `1`; string labels need an explicit
-value or the call raises instead of inventing zero rates. Stability
+value or the call raises when the requested positive label is absent. Stability
 bands are off until `bootstrap_samples > 1`.
 `session.fairness.suggest_thresholds` and
 `session.fairness.suggest_reweighing` return suggestions only. They
@@ -25,7 +25,7 @@ column, an empty partition, and a `positive_label` that never appears
 in `y_true`. You still decide which column is sensitive, which
 partition to quote, and whether to act on a suggestion.
 
-Short on-ramp: [fairness quickstart](quickstart-fairness.md). Proof:
+Quickstart: [fairness quickstart](quickstart-fairness.md). Proof:
 [loan-fairness-observational](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/loan-fairness-observational).
 
 ## Report after fit
@@ -66,12 +66,43 @@ print(report.to_markdown().splitlines()[0])
 Give the sensitive column role `ignore` (or leave it out of the
 design matrix) so the classifier is not trained on the group id you
 later audit. Read `report.warnings` and `report.scope` before you
-quote a gap. Gaps describe one split. They do not prove
-discrimination and they do not excuse the model.
+quote a gap. Gaps describe one split. They do not establish causal discrimination or determine whether the
+model is suitable for deployment.
 
-Bridge from classical evaluate without shrinking that API:
+Attach a fairness report to the latest classical evaluation:
 
 ```python
+import numpy as np
+import pandas as pd
+from sklearn.linear_model import LogisticRegression
+
+from buildml import Session
+
+rng = np.random.default_rng(0)
+n = 400
+group = np.array(["A"] * (n // 2) + ["B"] * (n // 2))
+x = rng.normal(size=n)
+logits = x + np.where(group == "B", -0.7, 0.0)
+y = np.where(logits > 0, "approved", "denied")
+frame = pd.DataFrame({"x": x, "group": group, "decision": y})
+
+session = (
+    Session.ingest(frame)
+    .set_roles({"x": "feature", "group": "ignore", "decision": "target"})
+    .split(test_size=0.25, validation_size=0.2, stratify=True, random_state=0)
+    .fit(LogisticRegression(max_iter=500), task="classification")
+)
+
+report = session.fairness.evaluate(
+    sensitive_column="group",
+    partition="test",
+    positive_label="approved",
+)
+print(report.demographic_parity_difference)
+print(report.selection_rate_by_group)
+print(report.classical_metrics_by_group["A"]["f1"])
+print(report.to_markdown().splitlines()[0])
+
 session.evaluate(partition="test")
 report = session.fairness.attach_to_last_eval(
     sensitive_column="group",
@@ -110,6 +141,42 @@ attribution, not a group disparity metric.
 Pass a list of columns. Keys are joined as `group|region`:
 
 ```python
+import numpy as np
+import pandas as pd
+from sklearn.linear_model import LogisticRegression
+
+from buildml import Session
+
+rng = np.random.default_rng(0)
+n = 400
+group = np.array(["A"] * (n // 2) + ["B"] * (n // 2))
+x = rng.normal(size=n)
+logits = x + np.where(group == "B", -0.7, 0.0)
+y = np.where(logits > 0, "approved", "denied")
+frame = pd.DataFrame({"x": x, "group": group, "decision": y})
+
+session = (
+    Session.ingest(frame)
+    .set_roles({"x": "feature", "group": "ignore", "decision": "target"})
+    .split(test_size=0.25, validation_size=0.2, stratify=True, random_state=0)
+    .fit(LogisticRegression(max_iter=500), task="classification")
+)
+
+report = session.fairness.evaluate(
+    sensitive_column="group",
+    partition="test",
+    positive_label="approved",
+)
+print(report.demographic_parity_difference)
+print(report.selection_rate_by_group)
+print(report.classical_metrics_by_group["A"]["f1"])
+print(report.to_markdown().splitlines()[0])
+
+frame["region"] = np.where(np.arange(n) % 2, "north", "south")
+session = (Session.ingest(frame)
+    .set_roles({"x": "feature", "group": "ignore", "region": "ignore", "decision": "target"})
+    .split(test_size=0.25, validation_size=0.2, stratify=True, random_state=0)
+    .fit(LogisticRegression(max_iter=500), task="classification"))
 report = session.fairness.evaluate(
     sensitive_column=["group", "region"],
     partition="test",
@@ -129,6 +196,37 @@ Set `bootstrap_samples > 1`. Methods: `bootstrap` (default) or
 observational gaps on one partition. They are not causal uncertainty.
 
 ```python
+import numpy as np
+import pandas as pd
+from sklearn.linear_model import LogisticRegression
+
+from buildml import Session
+
+rng = np.random.default_rng(0)
+n = 400
+group = np.array(["A"] * (n // 2) + ["B"] * (n // 2))
+x = rng.normal(size=n)
+logits = x + np.where(group == "B", -0.7, 0.0)
+y = np.where(logits > 0, "approved", "denied")
+frame = pd.DataFrame({"x": x, "group": group, "decision": y})
+
+session = (
+    Session.ingest(frame)
+    .set_roles({"x": "feature", "group": "ignore", "decision": "target"})
+    .split(test_size=0.25, validation_size=0.2, stratify=True, random_state=0)
+    .fit(LogisticRegression(max_iter=500), task="classification")
+)
+
+report = session.fairness.evaluate(
+    sensitive_column="group",
+    partition="test",
+    positive_label="approved",
+)
+print(report.demographic_parity_difference)
+print(report.selection_rate_by_group)
+print(report.classical_metrics_by_group["A"]["f1"])
+print(report.to_markdown().splitlines()[0])
+
 report = session.fairness.evaluate(
     sensitive_column="group",
     positive_label="approved",
@@ -143,11 +241,41 @@ print(band["point"], band["ci_low"], band["ci_high"])
 
 ## Suggestions that stay suggestions
 
-Threshold equalization defaults to `partition="validation"` so you
-are not fishing on test. Reweighing defaults to `train`. Neither
+Threshold equalization defaults to `partition="validation"` to keep threshold selection separate from the test assessment. Reweighing defaults to `train`. Neither
 call rewrites predictions or refits.
 
 ```python
+import numpy as np
+import pandas as pd
+from sklearn.linear_model import LogisticRegression
+
+from buildml import Session
+
+rng = np.random.default_rng(0)
+n = 400
+group = np.array(["A"] * (n // 2) + ["B"] * (n // 2))
+x = rng.normal(size=n)
+logits = x + np.where(group == "B", -0.7, 0.0)
+y = np.where(logits > 0, "approved", "denied")
+frame = pd.DataFrame({"x": x, "group": group, "decision": y})
+
+session = (
+    Session.ingest(frame)
+    .set_roles({"x": "feature", "group": "ignore", "decision": "target"})
+    .split(test_size=0.25, validation_size=0.2, stratify=True, random_state=0)
+    .fit(LogisticRegression(max_iter=500), task="classification")
+)
+
+report = session.fairness.evaluate(
+    sensitive_column="group",
+    partition="test",
+    positive_label="approved",
+)
+print(report.demographic_parity_difference)
+print(report.selection_rate_by_group)
+print(report.classical_metrics_by_group["A"]["f1"])
+print(report.to_markdown().splitlines()[0])
+
 thr = session.fairness.suggest_thresholds(
     sensitive_column="group",
     partition="validation",
@@ -161,8 +289,8 @@ weights = session.fairness.suggest_reweighing(
 )
 ```
 
-Applying those thresholds on the same test rows you headline is
-optimistic. Reweighing is a statistical adjustment, not a
+Assessing thresholds on the same rows used to select them produces an
+optimistic estimate. Reweighing is a statistical adjustment, not a
 certificate. If you use the weights, pass them into a future
 `session.fit` yourself.
 
@@ -171,8 +299,7 @@ certificate. If you use the weights, pass them into a future
 Prefer validation for threshold selection and test for one-shot
 reporting. Do not retune thresholds, reweigh, and re-fit against
 the same test rows, then claim an unbiased fairness number.
-Intersectional sparsity is a statistics problem: keep support
-visible.
+Report sample counts for each intersectional group.
 
 `error_slices` is a segment error table, not this report. Causal
 ML estimates under declared assumptions are a different product.

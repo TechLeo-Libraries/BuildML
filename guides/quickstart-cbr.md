@@ -13,7 +13,7 @@ unless `BUILDML_ALLOW_CBR_INDUSTRY_WINDOWS=1`.
 `retain` refuses validation and test rows. This is not RAG.
 
 [CBR deep](cbr-deep.md) ·
-Paste: [`examples/cbr_knn_loop.py`](../examples/cbr_knn_loop.py) ·
+Runnable example: [`examples/cbr_knn_loop.py`](../examples/cbr_knn_loop.py) ·
 Evidence: [case-memory-claims](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/case-memory-claims)
 
 ```python
@@ -62,15 +62,13 @@ session.cbr.save_bundle("artifacts/cbr_bundle")
 | Train-only case memory | Building memory from Session test |
 | sklearn exact kNN + industry ANN | Vector DB / Pinecone products |
 | Text embedding cases (`backend='embedding'`) | RAG `session.rag.generate` / citations |
-| Majority / distance-weighted / local Ridge | Full revise cognitive suite |
+| Majority / distance-weighted / local Ridge | Automatic case revision |
 | CaseTrace explanations (all backends) | Session checkpoint embedding the plan |
-| `buildml.cbr_bundle.v1` | Calling CBR “tabular RAG” |
+| `buildml.cbr_bundle.v1` | Text generation from retrieved documents |
 
 Optional extras: `buildml[cbr-industry]` (hnswlib ANN),
-`buildml[cbr-faiss]` (faiss-cpu peer), `buildml[rag|ssl]`
+`buildml[cbr-faiss]` (faiss-cpu peer), `buildml[rag]` or `buildml[ssl]`
 (text embeddings), `buildml[torch]` (learned metric encoder). On
 Windows, `backend="torch"` also raises unless
 `BUILDML_ALLOW_CBR_TORCH_WINDOWS=1`. Included in
 `buildml[production]`.
-
-Related next: learning to rank (LTR).

@@ -38,8 +38,6 @@ def build_sklearn_estimator(
 ) -> Any:
     """Construct a sklearn estimator ready for fit or scoring.
 
-Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
-
 Parameters
 ----------
 method:

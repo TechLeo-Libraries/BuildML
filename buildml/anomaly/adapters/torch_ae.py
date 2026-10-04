@@ -52,8 +52,6 @@ class TorchAnomalyAutoencoder:
     def reconstruction_error(self, x: np.ndarray) -> np.ndarray:
         """Perform reconstruction error for the Session-facing workflow step.
 
-Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
-
 Parameters
 ----------
 x:
@@ -82,8 +80,6 @@ def build_torch_autoencoder(
     random_state: int | None = 0,
 ) -> TorchAnomalyAutoencoder:
     """Fit a train-only autoencoder; scores are per-row MSE reconstruction error.
-
-Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
 
 Parameters
 ----------
@@ -148,8 +144,6 @@ ValidationError
 def build_torch_autoencoder_score_helper(model: Any, x: np.ndarray) -> np.ndarray:
     """Construct a torch autoencoder score helper ready for fit or scoring.
 
-Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
-
 Parameters
 ----------
 model:
@@ -173,8 +167,6 @@ np.ndarray
 
 def torch_ae_anomaly_scores(estimator: TorchAnomalyAutoencoder, *, x: np.ndarray) -> np.ndarray:
     """Perform torch ae anomaly scores for the Session-facing workflow step.
-
-Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
 
 Parameters
 ----------

@@ -186,8 +186,20 @@ def load_nlp_bundle(path: str | Path, *, trusted: bool = False) -> tuple[NlpText
 
     Examples
     --------
-    >>> text_plan, topic_plan = load_nlp_bundle("artifacts/ticket-model")  # doctest: +SKIP
-    >>> predict_documents(text_plan, ["my card was declined"])  # doctest: +SKIP
+    >>> import pandas as pd
+    >>> from buildml import Session
+    >>> texts = ["card payment declined", "invoice billing question", "payment refund requested", "billing invoice amount", "password login broken", "technical account access", "login password reset", "technical account error"] * 3
+    >>> frame = pd.DataFrame({"ticket_body": texts, "label": ["billing"] * 4 + ["technical"] * 4 + ["billing"] * 4 + ["technical"] * 4 + ["billing"] * 4 + ["technical"] * 4})
+    >>> session = Session.ingest(frame).set_roles({"ticket_body": "feature", "label": "target"})
+    >>> _ = session.split(test_size=0.25, stratify=True, random_state=42)
+    >>> dataset, split_plan = session.dataset, session.split_plan
+    >>> from buildml.nlp.fit import fit_text_classifier
+    >>> plan, fitted = fit_text_classifier(dataset, split_plan, text_column="ticket_body", min_df=1)
+    >>> from buildml.nlp.checkpoint import save_nlp_bundle, load_nlp_bundle
+    >>> from tempfile import TemporaryDirectory
+    >>> with TemporaryDirectory() as directory:
+    ...     _ = save_nlp_bundle(directory + "/text-model", plan)
+    ...     text_plan, topic_plan = load_nlp_bundle(directory + "/text-model", trusted=True)
 
     See Also
     --------

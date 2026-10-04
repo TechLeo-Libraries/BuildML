@@ -4,13 +4,12 @@
 pip install buildml
 ```
 
-This is the main path: a table, a target, a holdout you can trust. The
-Session holds the rows, the roles, the split, the preparation that learned
-from train only, and the model. If you try to prepare or fit before a
-split, it stops you.
+This guide introduces tabular classification and regression. A Session
+holds the data, column roles, split, fitted preprocessing plans, and model.
+Train-fitted preprocessing and fitting require a split.
 
-A longer walk with dirtier data is
-[classical end-to-end](classical-end-to-end.md). Paste
+Additional examples with missing and categorical data are in
+[classical end-to-end](classical-end-to-end.md). Run
 [`examples/classical_loan_loop.py`](../examples/classical_loan_loop.py)
 (120 rows, calibration and threshold on validation). The snippet below
 is a short table so you can read every cell. The proof on German Credit (OpenML `credit-g` when cached) is
@@ -22,7 +21,9 @@ breast cancer is
 ## A first loop
 
 You have ages, incomes, and an approval label. Some ages are missing.
-You want a test number that did not help fit the scaler.
+The example learns imputation and scaling parameters from training rows,
+then evaluates the model on separate rows. The small synthetic dataset
+demonstrates the API; its metrics do not establish real lending performance.
 
 ```python
 import pandas as pd
@@ -74,7 +75,7 @@ What the Session actually did:
   classification or regression from the target; say it yourself when an
   integer label would look like a quantity.
 - `evaluate` defaults to `test`. Use validation while you are still
-  choosing. Every extra look at test spends a little of its independence.
+  choosing. Using test results to choose a model makes those rows part of model selection.
   `calibration` and `tune_threshold` default to validation. A split
   without a validation partition raises; pass `partition="test"` only to
   measure a frozen model.
@@ -86,10 +87,20 @@ leaves the protected roles alone.
 
 ## When the positive class is rare
 
-Accuracy will look fine while the rare class is ignored. Read prevalence
-on train. Resample **train only** after the split (`buildml[imbalanced]`).
+Accuracy can be high even when the model misses the rare class. Inspect
+class frequencies on the training partition. Resample **train only** after the split (`buildml[imbalanced]`).
 
 ```python
+from sklearn.datasets import load_breast_cancer
+from sklearn.linear_model import LogisticRegression
+from buildml import Session
+
+frame = load_breast_cancer(as_frame=True).frame
+session = (Session.ingest(frame)
+    .set_roles({**{c: "feature" for c in frame if c != "target"}, "target": "target"})
+    .split(test_size=0.2, validation_size=0.2, stratify=True, random_state=42))
+
+session.scale(method="standard")
 from sklearn.ensemble import RandomForestClassifier
 
 # Requires: pip install "buildml[imbalanced]"
@@ -98,12 +109,12 @@ session.fit(RandomForestClassifier(n_estimators=100, random_state=0))
 ```
 
 Validation and test rows are never altered. Compare against the same
-split without resample before you trust an F1 gain. Thresholds still
+split without resample before attributing an F1 improvement to resampling. Thresholds still
 belong on validation.
 
 ## Regression
 
-Same spine. Metrics come back in the target's units (MAE, RMSE) plus R².
+The regression workflow uses the same sequence. MAE and RMSE use the target's units; R² reports the proportion of variance explained.
 
 ```python
 import pandas as pd
@@ -130,9 +141,9 @@ session = (
 print(session.evaluate(partition="test").metrics)
 ```
 
-Trees do not need scaling. Linear and distance methods do. Scale last,
-after impute, encode, and any outlier fences, so the scaler sees the
-distribution the model will see.
+Scaling is usually unnecessary for decision trees and often useful for
+regularized linear models and distance-based methods. Apply it after
+imputation and encoding so its parameters describe the final features.
 
 ## Groups and time
 
@@ -176,7 +187,7 @@ If another system already decided membership, pass positional indices
 (0 .. n-1, not DataFrame labels) to `inject_split`. Overlap is refused.
 BuildML cannot prove your boundary matches deployment.
 
-## Choosing a model without burning test
+## Choose a model using validation data
 
 `compare_models` fits each candidate on train and ranks them on one
 partition. The default partition is **test**. The winner becomes the
@@ -184,6 +195,16 @@ Session's fitted model. While you are still choosing, pass
 `partition="validation"`.
 
 ```python
+from sklearn.datasets import load_breast_cancer
+from sklearn.linear_model import LogisticRegression
+from buildml import Session
+
+frame = load_breast_cancer(as_frame=True).frame
+session = (Session.ingest(frame)
+    .set_roles({**{c: "feature" for c in frame if c != "target"}, "target": "target"})
+    .split(test_size=0.2, validation_size=0.2, stratify=True, random_state=42))
+
+session.scale(method="standard")
 from sklearn.dummy import DummyClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
@@ -207,6 +228,15 @@ frame. Re-ingest (or load a checkpoint saved before fitted preprocessing), then 
 inside the CV call.
 
 ```python
+from sklearn.datasets import load_breast_cancer
+from sklearn.linear_model import LogisticRegression
+from buildml import Session
+
+frame = load_breast_cancer(as_frame=True).frame
+session = (Session.ingest(frame)
+    .set_roles({**{c: "feature" for c in frame if c != "target"}, "target": "target"})
+    .split(test_size=0.2, validation_size=0.2, stratify=True, random_state=42))
+
 from buildml.preprocess import PreprocessRecipe
 
 cv = session.cv_score(
@@ -231,18 +261,28 @@ preprocess plans. It does not store the fitted estimator. A pipeline
 bundle stores the plans plus the estimator. Neither embeds the other.
 
 ```python
+from sklearn.datasets import load_breast_cancer
+from sklearn.linear_model import LogisticRegression
+from buildml import Session
+
+frame = load_breast_cancer(as_frame=True).frame
+session = (Session.ingest(frame)
+    .set_roles({**{c: "feature" for c in frame if c != "target"}, "target": "target"})
+    .split(test_size=0.2, validation_size=0.2, stratify=True, random_state=42))
+
+session.scale(method="standard").fit(LogisticRegression(max_iter=500))
 session.checkpoint_save("artifacts/checkpoint")
-restored = Session.checkpoint_load("artifacts/checkpoint")
+restored = Session.checkpoint_load("artifacts/checkpoint", trusted=True)
 
 session.save_pipeline("artifacts/pipeline", evaluate_partition="test")
 ```
 
 Loaders that deserialize pickle default to `trusted=False`. Pass
-`trusted=True` only for a file you made. `data_only=True` skips plans
+`trusted=True` only for a file you created or whose source and contents you trust. `data_only=True` skips plans
 without needing that flag. Inspect `reattach_result` after a checkpoint
 load.
 
-## When it refuses
+## Validation errors and prerequisites
 
 | What you see | What happened |
 | --- | --- |
@@ -252,14 +292,14 @@ load.
 | `MissingExtraError` | The named extra is not installed (`imbalanced`, `optuna`, `viz`) |
 | Empty partition / stratify error | Sizes left a side empty, or a class is too rare to appear in every partition |
 
-`session.explain("impute", moment="before")` lists prerequisites before
-you mutate state. The teaching studio is
-[EDA / Teaching Studio](eda-teaching-studio.md), not this page.
+`session.explain("impute", moment="before")` lists the requirements for
+imputation. See [EDA and Teaching Studio](eda-teaching-studio.md) for
+examples of the explanation and workflow tools.
 
 ## Next
 
 - [Classical end-to-end](classical-end-to-end.md) for messier tables
-- [Leakage and recipes](leakage-cv-recipes.md) for fold-local honesty
+- [Leakage and recipes](leakage-cv-recipes.md) for preprocessing fitted separately in each fold
 - [Preprocess depth](preprocess-depth.md) for encode, dates, text, custom transforms
 - [Artifacts](artifacts-checkpoints-bundles.md) for checkpoint vs pipeline
-- [loan-approval-classical](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/loan-approval-classical) for the same spine on German Credit (`credit-g` when cached)
+- [loan-approval-classical](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/loan-approval-classical) for the same workflow on German Credit (`credit-g` when cached)

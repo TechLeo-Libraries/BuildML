@@ -9,11 +9,10 @@ pip install buildml
 is train-only. `feedback="explicit"` with `method=None` is item kNN on
 sklearn, even when `implicit` is installed. `feedback="implicit"` with
 `method=None` picks ALS when `buildml[recommenders-industry]` imported,
-otherwise sklearn NMF. This is not RAG, not LTR, and not an EDA
-recommendation finding.
+otherwise sklearn NMF. Text retrieval, learning to rank, and EDA recommendations have separate APIs.
 
 [Recommenders deep](recommenders-deep.md) ·
-Paste: [`examples/recommender_item_knn_loop.py`](../examples/recommender_item_knn_loop.py) ·
+Runnable example: [`examples/recommender_item_knn_loop.py`](../examples/recommender_item_knn_loop.py) ·
 Evidence: [movie-recs-collaborative](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/movie-recs-collaborative)
 
 ---
@@ -94,11 +93,11 @@ session.recommender.save_bundle("artifacts/recommender_demo_bundle")
 | User id | `user_column=` (required) | `id` or `ignore` |
 | Item id | `item_column=` (required) | `id` or `ignore` |
 | Rating | `rating_column=` or Session `target` | `target` |
-| Implicit | `feedback='implicit'` (presence = positive) |: |
+| Implicit feedback | `feedback='implicit'` (presence = positive) | User and item roles as above |
 
 ---
 
-## Leakage / honesty
+## Data leakage precautions
 
 | Rule | Behavior |
 |------|----------|
@@ -106,7 +105,7 @@ session.recommender.save_bundle("artifacts/recommender_demo_bundle")
 | Candidates | Train item catalog (known-item protocol) |
 | Cold users | `cold_start='popularity'` or `'skip'` (disclosed) |
 | Eval | Holdout ranking metrics; no refit |
-| Scope | Session CF/content: not Netflix-scale; ≠ RAG; ≠ EDA Findings |
+| Scope | Collaborative filtering and content-based ranking on a Session dataset |
 
 ---
 

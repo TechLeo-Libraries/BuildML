@@ -379,11 +379,15 @@ def fit_text_classifier(
 
     Examples
     --------
-    >>> plan, result = fit_text_classifier(  # doctest: +SKIP
-    ...     dataset, split_plan, text_column="ticket_body", min_df=2
-    ... )
-    >>> result.vocabulary_size, result.classes  # doctest: +SKIP
-    (8412, ('billing', 'technical'))
+    >>> import pandas as pd
+    >>> from buildml import Session
+    >>> texts = ["card payment declined", "invoice billing question", "payment refund requested", "billing invoice amount", "password login broken", "technical account access", "login password reset", "technical account error"] * 3
+    >>> frame = pd.DataFrame({"ticket_body": texts, "label": ["billing"] * 4 + ["technical"] * 4 + ["billing"] * 4 + ["technical"] * 4 + ["billing"] * 4 + ["technical"] * 4})
+    >>> session = Session.ingest(frame).set_roles({"ticket_body": "feature", "label": "target"})
+    >>> _ = session.split(test_size=0.25, stratify=True, random_state=42)
+    >>> dataset, split_plan = session.dataset, session.split_plan
+    >>> from buildml.nlp.fit import fit_text_classifier
+    >>> plan, result = fit_text_classifier(dataset, split_plan, text_column="ticket_body", min_df=1)
 
     See Also
     --------

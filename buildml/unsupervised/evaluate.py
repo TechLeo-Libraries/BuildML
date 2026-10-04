@@ -43,8 +43,6 @@ def evaluate_clustering(
 ) -> ClusterEvalResult:
     """Score a train-fitted cluster plan on a partition without refitting.
 
-Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
-
 Parameters
 ----------
 dataset:

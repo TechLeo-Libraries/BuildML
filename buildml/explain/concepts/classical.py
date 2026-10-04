@@ -1146,7 +1146,7 @@ CLASSICAL_NOTES: dict[str, ConceptNote] = {
                 "identification assumptions this diagnostic does not provide."
             ),
             why_it_matters=(
-                "Guides audit questions and error analysis without pretending to be causal discovery.",
+                "Guides audit questions and error analysis; these associations do not establish causation.",
                 "Unstable ranks on small holdouts mislead feature deletion sprees.",
                 "Stakeholders often misread importance as 'drivers':teaching must correct that.",
             ),

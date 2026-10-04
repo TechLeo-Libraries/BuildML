@@ -6,10 +6,10 @@ pip install buildml
 
 Episodic few-shot on a task/group column. You need at least two distinct
 train task ids. Default is tabular prototypical. Holdout is never used
-for meta-train. This is not MAML-at-scale.
+for meta-train. The examples focus on small tabular tasks.
 
 [Meta-learning deep](meta-learning-deep.md) ·
-Paste: [`examples/metalearning_prototypical_loop.py`](../examples/metalearning_prototypical_loop.py) ·
+Runnable example: [`examples/metalearning_prototypical_loop.py`](../examples/metalearning_prototypical_loop.py) ·
 Evidence: [few-shot-domain-adapt](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/few-shot-domain-adapt)
 
 ```python
@@ -60,7 +60,7 @@ print(ev.novel_task_ids, ev.overlapping_task_ids)
 session.metalearning.save_bundle("artifacts/metalearning_bundle")
 ```
 
-## Honest boundaries
+## Supported workflows and limitations
 
 | In scope | Out of scope |
 | --- | --- |
@@ -69,6 +69,3 @@ session.metalearning.save_bundle("artifacts/metalearning_bundle")
 | `warm_start` pooled sklearn init + support adapt | Full MAML / Reptile second-order meta-gradients |
 | Train-only meta-train | Meta-training on validation/test |
 | Distinct `buildml.metalearning_bundle.v1` | Session checkpoint embedding the plan |
-
-Related next: federated learning
-(see [Federated quickstart](quickstart-federated.md)).

@@ -54,7 +54,7 @@ def evaluate_forecast(
     """Score a train-fitted ForecastPlan on a holdout partition.
 
     Applies leakage-safe rolling one-step, fixed-origin, or rolling-origin
-    strategies and reports MAE, RMSE, and MAPE with honesty disclosures.
+    strategies and reports MAE, RMSE, and MAPE with implementation limitations.
 
     Parameters
     ----------

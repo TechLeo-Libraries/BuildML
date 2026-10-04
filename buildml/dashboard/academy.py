@@ -4,7 +4,6 @@ Builds a staged, dataset-adaptive curriculum covering every BuildML
 ``CONCEPT_NOTES`` entry (~204) plus readiness-path curriculum slugs that are
 not themselves catalog keys. Each lesson has plain-language teaching,
 calculations, real BuildML Session examples, and live-report evidence.
-There is no thin "extended" dump.
 """
 
 from __future__ import annotations
@@ -320,11 +319,11 @@ def build_academy_payload(report: dict[str, Any]) -> dict[str, Any]:
         "readiness_count": readiness_n,
         "extended_count": 0,
         "curriculum_note": (
-            f"All {len(concepts)} lessons are first-class teaching "
-            f"({catalog_n} BuildML CONCEPT_NOTES + readiness-path slugs). "
+            f"Browse {len(concepts)} lessons covering BuildML concepts and "
+            "data preparation and evaluation topics. "
             "Filled chips are cited by a finding on this session's report; "
-            "outlined chips are reference teaching. Stages 00-05 are the ML "
-            "readiness spine; 06 is domain depth with the same pedagogical bar."
+            "outlined chips link to other lessons. Stages 00-05 cover data preparation "
+            "and evaluation; stage 06 covers specialized modeling domains."
         ),
         "adaptivity": {
             "task": ctx.get("task"),

@@ -14,9 +14,9 @@ from buildml.synthetic.types import ColumnKind, ColumnSchemaSpec
 
 
 def infer_column_kind(series: pd.Series) -> ColumnKind:
-    """Heuristic column kind for mixed-type tabular synthesis.
+    """Classify a column for tabular synthesis.
 
-Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+Booleans and low-cardinality integers are treated as categorical; other numeric columns are integer or continuous.
 
 Parameters
 ----------
@@ -42,9 +42,9 @@ ColumnKind
 
 
 def build_column_specs(frame: pd.DataFrame) -> tuple[ColumnSchemaSpec, ...]:
-    """Construct a column specs ready for fit or scoring.
+    """Summarize column types, categories, and missingness.
 
-Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+Each specification records the inferred kind and observed counts used by generator fitting and validation.
 
 Parameters
 ----------
@@ -115,9 +115,9 @@ class BootstrapGenerator:
         smooth_sigma: float = 0.0,
         random_state: int = 42,
     ) -> BootstrapGenerator:
-        """Run fit on input data using the fitted internal state.
+        """Store training rows and numeric scales for bootstrap sampling.
 
-Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+The frame is copied with a fresh index. Numeric standard deviations determine the optional smoothing noise applied during sampling.
 
 Parameters
 ----------
@@ -161,9 +161,9 @@ ValidationError
         )
 
     def sample(self, n: int, *, random_state: int | None = None) -> pd.DataFrame:
-        """Run sample on input data using the fitted internal state.
+        """Resample stored training rows with replacement.
 
-Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+Positive smoothing adds Gaussian noise scaled by each numeric column standard deviation; integer columns are rounded afterward.
 
 Parameters
 ----------
@@ -212,6 +212,8 @@ ValidationError
 class _CatTransform:
     categories: tuple[str, ...]
     thresholds: np.ndarray  # cumulative probs length = n_cats
+    values: tuple[Any, ...] | None = None
+    dtype: Any = None
 
 
 @dataclass
@@ -241,9 +243,9 @@ class GaussianCopulaGenerator:
         correlation_ridge: float = 1e-3,
         random_state: int = 42,
     ) -> GaussianCopulaGenerator:
-        """Run fit on input data using the fitted internal state.
+        """Fit marginal transforms and a latent Gaussian correlation.
 
-Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+Numeric columns use empirical distributions; categorical columns use frequency bins. Training null rates are retained for generated rows.
 
 Parameters
 ----------
@@ -312,8 +314,14 @@ ValidationError
                 probs = counts.to_numpy(dtype=float)
                 thresholds = np.cumsum(probs)
                 thresholds[-1] = 1.0
+                # String labels are useful for probability lookup, but samples
+                # must retain the original labels and dtype (for example 0/1
+                # targets, booleans, or pandas categorical/string columns).
+                native_values = dict(zip(as_str.dropna(), series[series.notna()], strict=True))
                 cat_transforms[col] = _CatTransform(
-                    categories=categories, thresholds=thresholds
+                    categories=categories, thresholds=thresholds,
+                    values=tuple(native_values[category] for category in categories),
+                    dtype=series.dtype,
                 )
                 # Mid-bin CDF for each row
                 cat_to_u = {}
@@ -369,9 +377,9 @@ ValidationError
         random_state: int | None = None,
         condition: dict[str, Any] | None = None,
     ) -> pd.DataFrame:
-        """Run sample on input data using the fitted internal state.
+        """Generate rows from the fitted Gaussian copula.
 
-Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+Samples are transformed back to observed column values. Optional equality conditions use bounded rejection sampling and raise if too few matching rows are generated.
 
 Parameters
 ----------
@@ -459,13 +467,18 @@ ValidationError
                 transform = self.cat_transforms[col]
                 idxs = np.searchsorted(transform.thresholds, uj, side="left")
                 idxs = np.clip(idxs, 0, len(transform.categories) - 1)
-                cats = np.asarray(transform.categories, dtype=object)[idxs]
+                native_values = getattr(transform, "values", None)
+                cats = np.asarray(
+                    transform.categories if native_values is None else native_values,
+                    dtype=object,
+                )[idxs]
                 rate = self.null_rates.get(col, 0.0)
                 if rate > 0:
                     null_mask = rng.random(len(cats)) < rate
                     cats = cats.copy()
                     cats[null_mask] = pd.NA
-                data[col] = cats
+                dtype = getattr(transform, "dtype", None)
+                data[col] = cats if dtype is None else pd.Series(cats, dtype=dtype)
         return pd.DataFrame(data)
 
 
@@ -501,9 +514,9 @@ class SmoteGenerator:
         sampling_strategy: Any = "auto",
         random_state: int = 42,
     ) -> SmoteGenerator:
-        """Run fit on input data using the fitted internal state.
+        """Prepare numeric features and class labels for SMOTE generation.
 
-Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+Stores the training arrays and sampling configuration for subsequent calls; the generator requires a categorical target and usable numeric features.
 
 Parameters
 ----------
@@ -606,9 +619,9 @@ ValidationError
         )
 
     def sample(self, n: int, *, random_state: int | None = None) -> pd.DataFrame:
-        """Run sample on input data using the fitted internal state.
+        """Generate synthetic labeled rows through SMOTE resampling.
 
-Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+Extracts new rows from resampling rounds, collecting the requested count and using replacement from generated rows when needed.
 
 Parameters
 ----------

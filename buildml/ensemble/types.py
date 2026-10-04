@@ -65,7 +65,7 @@ class EnsembleConfig:
     holdout_fraction:
         Share of train reserved for a blend's meta-learner.
     blend_method:
-        As requested. May have been downgraded; the plan holds the truth.
+        Requested setting. Check the fitted plan for the resolved setting.
     random_state:
         Seed for a blend's inner split.
     refit_bases_on_full_train:

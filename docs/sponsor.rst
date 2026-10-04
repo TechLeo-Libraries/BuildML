@@ -1,45 +1,19 @@
-❤️ Support `BuildML <https://github.com/TechLeo-Libraries/BuildML>`__
----------------------------------------------------------------------
+Support BuildML
+===============
 
-If you find BuildML helpful and would like to support its development,
-there are several ways you can contribute:
+You can support BuildML development through contributions, bug reports,
+or financial support.
 
-☕ Buy Me a Coffee
-~~~~~~~~~~~~~~~~~~
+Report issues and contribute code
+---------------------------------
 
-You can show your appreciation by `buying me a
-coffee <https://ko-fi.com/techleo#>`__. Every little bit helps and goes
-directly towards keeping this project maintained and improving.
+Report reproducible bugs or suggest improvements through
+`GitHub issues <https://github.com/TechLeo-Libraries/BuildML/issues>`_.
+Code and documentation contributions are welcome through pull requests.
 
-|Buy Me a Coffee|
+Financial support
+-----------------
 
-🌟 Sponsorship
-~~~~~~~~~~~~~~
-
-Consider becoming a sponsor to provide ongoing support. Sponsors receive
-special recognition and exclusive perks:
-
--  🎉 Exclusive updates on the latest features and developments.
--  🚀 Early access to pre-releases and beta versions.
--  📢 Special mention in the project documentation and README.
-
-Become a sponsor by clicking on the “Sponsor” button on the `BuildML
-repository <https://github.com/TechLeo-Libraries/BuildML>`__.
-
-👩‍💻 Contribute
-~~~~~~~~~~~~~~~~
-
-If you’re a developer, you can contribute directly by:
-
--  🐛 Reporting bugs or suggesting improvements by opening
-   `issues <https://github.com/TechLeo-Libraries/BuildML/issues>`__.
--  🛠 Submitting pull requests to enhance the codebase.
-
-No contribution is too small, and your involvement is highly
-appreciated!
-
-Thank you for considering supporting BuildML! Your generosity keeps the
-project alive and thriving. 🚀
-
-.. |Buy Me a Coffee| image:: https://ko-fi.com/img/githubbutton_sm.svg
-   :target: https://ko-fi.com/techleo#
+To contribute financially, visit the project's
+`Ko-fi page <https://ko-fi.com/techleo>`_ or the sponsorship links on the
+`BuildML repository <https://github.com/TechLeo-Libraries/BuildML>`_.

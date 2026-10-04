@@ -11,19 +11,27 @@ from buildml.dl.extras import _subprocess_import_ok
 
 
 def sdv_spec_present() -> bool:
-    """Cheap find_spec discovery for SDV (does not prove import works)."""
-    return importlib.util.find_spec("sdv") is not None
+    """Check whether Python can locate ``sdv``.
 
-
-def sdv_available() -> bool:
-    """True when SDV imports cleanly (may pull torch: catch broken wheels).
-
-Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+This discovery check does not import the package or establish runtime usability.
 
 Returns
 -------
 bool
-    ``True`` when the capability or dependency check succeeds.
+    Whether an import specification exists for the package.
+    """
+    return importlib.util.find_spec("sdv") is not None
+
+
+def sdv_available() -> bool:
+    """Check runtime availability for sdv.
+
+The package must be discoverable and import successfully. SDV and SDMetrics use an isolated import probe on Windows.
+
+Returns
+-------
+bool
+    Whether the required runtime import checks succeed.
     """
     if not sdv_spec_present():
         return False
@@ -37,15 +45,14 @@ bool
 
 
 def sdmetrics_available() -> bool:
-    """True when sdmetrics imports cleanly.
+    """Check runtime availability for sdmetrics.
 
-find_spec alone is insufficient: sdmetrics may import torch and raise
-OSError on broken Windows wheels.
+The package must be discoverable and import successfully. SDV and SDMetrics use an isolated import probe on Windows.
 
 Returns
 -------
 bool
-    ``True`` when the capability or dependency check succeeds.
+    Whether the required runtime import checks succeed.
     """
     if importlib.util.find_spec("sdmetrics") is None:
         return False
@@ -59,14 +66,14 @@ bool
 
 
 def great_expectations_available() -> bool:
-    """Return whether great expectations optional dependencies are installed and usable.
+    """Check runtime availability for great expectations.
 
-Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+The package must be discoverable and import successfully. SDV and SDMetrics use an isolated import probe on Windows.
 
 Returns
 -------
 bool
-    ``True`` when the capability or dependency check succeeds.
+    Whether the required runtime import checks succeed.
     """
     if importlib.util.find_spec("great_expectations") is None:
         return False
@@ -78,37 +85,38 @@ bool
 
 
 def synthetic_industry_available() -> bool:
-    """True when SDV (CTGAN/TVAE/CopulaGAN) is importable.
+    """Check runtime availability for synthetic industry.
 
-Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+This delegates to the SDV runtime check used by the tabular synthesizers.
 
 Returns
 -------
 bool
-    ``True`` when the capability or dependency check succeeds.
+    Whether the required runtime import checks succeed.
     """
     return sdv_available()
 
 
 def require_sdv(*, feature: str = "SDV tabular synthesizers") -> Any:
-    """Import optional dependency for sdv or raise MissingExtraError.
+    """Import and return ``sdv`` for the requested feature.
 
-Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+Dependency failures handled by this helper are reported with an installation
+hint identifying the required BuildML extra.
 
 Parameters
 ----------
-feature:
-    Capability name included in missing-extra error messages.
+feature : str
+    Feature name included in the missing-dependency message.
 
 Returns
 -------
 Any
-    Adapter-specific estimator or model object.
+    Imported ``sdv`` module.
 
 Raises
 ------
-ValidationError
-    When preconditions for this operation are not met.
+MissingExtraError
+    If the dependency cannot be imported by this helper.
     """
     try:
         import sdv
@@ -120,24 +128,25 @@ ValidationError
 
 
 def require_sdmetrics(*, feature: str = "SDMetrics synthetic quality reports") -> Any:
-    """Import optional dependency for sdmetrics or raise MissingExtraError.
+    """Import and return ``sdmetrics`` for the requested feature.
 
-Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+Dependency failures handled by this helper are reported with an installation
+hint identifying the required BuildML extra.
 
 Parameters
 ----------
-feature:
-    Capability name included in missing-extra error messages.
+feature : str
+    Feature name included in the missing-dependency message.
 
 Returns
 -------
 Any
-    Adapter-specific estimator or model object.
+    Imported ``sdmetrics`` module.
 
 Raises
 ------
-ValidationError
-    When preconditions for this operation are not met.
+MissingExtraError
+    If the dependency cannot be imported by this helper.
     """
     try:
         import sdmetrics

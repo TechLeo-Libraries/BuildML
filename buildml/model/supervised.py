@@ -452,6 +452,7 @@ def fit_kwargs_for_sample_weight(estimator: Any, sample_weight: pd.Series | None
 
     Examples
     --------
+    >>> from buildml.model.supervised import fit_kwargs_for_sample_weight
     >>> import pandas as pd
     >>> from sklearn.ensemble import RandomForestClassifier
     >>> fit_kwargs_for_sample_weight(RandomForestClassifier(), None)
@@ -706,6 +707,7 @@ def _infer_task(
     --------
     The estimator settles it, whatever the target looks like:
 
+    >>> from buildml.model.supervised import _infer_task
     >>> import pandas as pd
     >>> from sklearn.linear_model import LogisticRegression
     >>> _infer_task(pd.Series([1.5, 2.5, 3.5]), "auto", LogisticRegression())
@@ -806,14 +808,22 @@ def fit_estimator(
 
     Examples
     --------
-    Fit a gradient-boosted classifier::
+    .. code-block:: python
 
-        from sklearn.ensemble import HistGradientBoostingClassifier
-
-        fit = fit_estimator(
-            dataset, split_plan, HistGradientBoostingClassifier(random_state=0)
-        )
-        print(fit.task, fit.n_train_rows, fit.feature_columns)
+        import pandas as pd
+        from sklearn.datasets import make_classification
+        from sklearn.tree import DecisionTreeClassifier
+        from buildml import Session
+        X, y = make_classification(n_samples=80, n_features=4, n_informative=3, n_redundant=0, random_state=42)
+        frame = pd.DataFrame(X, columns=["age", "income", "spend", "visits"])
+        frame["target"] = y
+        session = Session.ingest(frame).set_roles({"target": "target"})
+        session.split(test_size=0.2, validation_size=0.2, stratify=True, random_state=42)
+        dataset, split_plan = session.dataset, session.split_plan
+        estimator = DecisionTreeClassifier(max_depth=3, random_state=42)
+        from buildml.model.supervised import fit_estimator
+        fit = fit_estimator(dataset, split_plan, estimator)
+        print(fit.task, fit.n_train_rows)
 
     See Also
     --------
@@ -983,13 +993,24 @@ def evaluate_estimator(
 
     Examples
     --------
-    Score on validation while iterating, and keep test for the end::
+    .. code-block:: python
 
-        result = evaluate_estimator(
-            dataset, split_plan, fit, partition="validation"
-        )
-        result.show()
-        print(result.diagnostics["confusion_matrix"])
+        import pandas as pd
+        from sklearn.datasets import make_classification
+        from sklearn.tree import DecisionTreeClassifier
+        from buildml import Session
+        X, y = make_classification(n_samples=80, n_features=4, n_informative=3, n_redundant=0, random_state=42)
+        frame = pd.DataFrame(X, columns=["age", "income", "spend", "visits"])
+        frame["target"] = y
+        session = Session.ingest(frame).set_roles({"target": "target"})
+        session.split(test_size=0.2, validation_size=0.2, stratify=True, random_state=42)
+        dataset, split_plan = session.dataset, session.split_plan
+        estimator = DecisionTreeClassifier(max_depth=3, random_state=42)
+        from buildml.model.supervised import evaluate_estimator
+        from buildml.model.supervised import fit_estimator
+        fit = fit_estimator(dataset, split_plan, estimator)
+        result = evaluate_estimator(dataset, split_plan, fit, partition="validation")
+        print(result.metrics)
 
     See Also
     --------

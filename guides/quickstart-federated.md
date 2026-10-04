@@ -12,7 +12,7 @@ still a local simulation, not a network stack and not secure
 aggregation.
 
 [Federated deep](federated-deep.md) ·
-Paste: [`examples/federated_fedavg_loop.py`](../examples/federated_fedavg_loop.py) ·
+Runnable example: [`examples/federated_fedavg_loop.py`](../examples/federated_fedavg_loop.py) ·
 Evidence: [federated-hospital-sim](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/federated-hospital-sim)
 
 ```python

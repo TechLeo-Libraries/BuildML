@@ -345,7 +345,9 @@ class PreprocessRecipe:
 
         Examples
         --------
-        >>> tuned = recipe.with_knobs({"select_k": 25, "n_bins": 8})  # doctest: +SKIP
+        >>> from buildml.preprocess import PreprocessRecipe
+        >>> recipe = PreprocessRecipe(impute="median")
+        >>> tuned = recipe.with_knobs({"select_k": 25, "n_bins": 8})
 
         See Also
         --------
@@ -370,9 +372,8 @@ class FoldLocalPreprocessor(TransformerMixin, BaseEstimator):
     This is what makes cross-validated scores honest. If you impute, encode,
     and scale once over the training set and *then* cross-validate, every fold's
     evaluation rows contributed to the medians, vocabularies, and standard
-    deviations that shaped the fold's training rows. The score comes out
-    optimistic, and the effect is largest exactly when your dataset is
-    small: when you most needed cross-validation to be trustworthy.
+    deviations that shaped the fold's training rows. This introduces information from the evaluation fold and can bias the
+    score. The size and direction of the effect depend on the data and steps.
 
     An instance of this class is fitted separately for each fold, seeing only
     that fold's training rows, and then applied to both halves. It follows the

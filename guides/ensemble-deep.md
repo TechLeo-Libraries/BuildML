@@ -10,9 +10,9 @@ Stacking's meta-learner sees out-of-fold predictions **inside train**.
 Blending carves a holdout **from train**. Session validation and test
 never enter the combiner.
 
-A single RandomForest passed to `session.fit` is not this path.
+Use `session.fit` to train a single estimator such as RandomForest.
 
-Short on-ramp: [ensemble quickstart](quickstart-ensemble.md).
+Quickstart: [ensemble quickstart](quickstart-ensemble.md).
 
 ## Which combiner
 
@@ -27,6 +27,18 @@ Soft voting needs `predict_proba` on every classification base.
 ## Voting
 
 ```python
+import pandas as pd
+from sklearn.datasets import make_classification
+from buildml import Session
+
+X, y = make_classification(n_samples=160, n_features=2, n_informative=2,
+                           n_redundant=0, random_state=0)
+frame = pd.DataFrame(X, columns=["x1", "x2"])
+frame["y"] = y
+session = (Session.ingest(frame)
+    .set_roles({"x1": "feature", "x2": "feature", "y": "target"})
+    .split(test_size=0.2, validation_size=0.2, stratify=True, random_state=0))
+
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from buildml import Session
@@ -36,14 +48,8 @@ bases = {
     "rf": RandomForestClassifier(n_estimators=80, random_state=0),
 }
 
-session = (
-    Session.ingest(frame)
-    .set_roles(...)
-    .split(test_size=0.2, validation_size=0.2, stratify=True, random_state=0)
-    .impute(strategy="median")
-    .encode()
-    .scale(method="standard")
-)
+session.scale(method="standard")
+
 session.ensemble.fit_voting(bases, voting="soft")
 session.ensemble.evaluate(partition="validation")
 session.ensemble.evaluate(partition="test")
@@ -55,6 +61,29 @@ meta-learners default to Ridge.
 ## Stacking
 
 ```python
+import pandas as pd
+from sklearn.datasets import make_classification
+from buildml import Session
+
+X, y = make_classification(n_samples=160, n_features=2, n_informative=2,
+                           n_redundant=0, random_state=0)
+frame = pd.DataFrame(X, columns=["x1", "x2"])
+frame["y"] = y
+session = (Session.ingest(frame)
+    .set_roles({"x1": "feature", "x2": "feature", "y": "target"})
+    .split(test_size=0.2, validation_size=0.2, stratify=True, random_state=0))
+
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LogisticRegression
+from buildml import Session
+
+bases = {
+    "lr": LogisticRegression(max_iter=500),
+    "rf": RandomForestClassifier(n_estimators=80, random_state=0),
+}
+
+session.scale(method="standard")
+
 session.ensemble.fit_stacking(
     bases, cv=5, final_estimator=LogisticRegression(max_iter=500)
 )
@@ -67,6 +96,29 @@ with cross-validation on the train matrix only. Session test stays out.
 ## Blending
 
 ```python
+import pandas as pd
+from sklearn.datasets import make_classification
+from buildml import Session
+
+X, y = make_classification(n_samples=160, n_features=2, n_informative=2,
+                           n_redundant=0, random_state=0)
+frame = pd.DataFrame(X, columns=["x1", "x2"])
+frame["y"] = y
+session = (Session.ingest(frame)
+    .set_roles({"x1": "feature", "x2": "feature", "y": "target"})
+    .split(test_size=0.2, validation_size=0.2, stratify=True, random_state=0))
+
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LogisticRegression
+from buildml import Session
+
+bases = {
+    "lr": LogisticRegression(max_iter=500),
+    "rf": RandomForestClassifier(n_estimators=80, random_state=0),
+}
+
+session.scale(method="standard")
+
 session.ensemble.fit_blending(
     bases,
     holdout_fraction=0.2,
@@ -76,7 +128,7 @@ session.ensemble.fit_blending(
 )
 ```
 
-The carve is from train (stratified for classification). Bases fit on
+The blending holdout comes from the training partition (stratified for classification). Bases fit on
 blend-train. The meta-learner fits on blend-holdout predictions.
 `refit_bases_on_full_train=True` (default) refits bases on full train
 for deploy and discloses it. Prefer stacking when you want CV OOF
@@ -90,6 +142,33 @@ contributions and diversity. That scoring is predict-only. Bases are
 not refit. Test never re-enters fitting.
 
 ```python
+import pandas as pd
+from sklearn.datasets import make_classification
+from buildml import Session
+
+X, y = make_classification(n_samples=160, n_features=2, n_informative=2,
+                           n_redundant=0, random_state=0)
+frame = pd.DataFrame(X, columns=["x1", "x2"])
+frame["y"] = y
+session = (Session.ingest(frame)
+    .set_roles({"x1": "feature", "x2": "feature", "y": "target"})
+    .split(test_size=0.2, validation_size=0.2, stratify=True, random_state=0))
+
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LogisticRegression
+from buildml import Session
+
+bases = {
+    "lr": LogisticRegression(max_iter=500),
+    "rf": RandomForestClassifier(n_estimators=80, random_state=0),
+}
+
+session.scale(method="standard")
+
+session.ensemble.fit_voting(bases, voting="soft")
+session.ensemble.evaluate(partition="validation")
+session.ensemble.evaluate(partition="test")
+
 ev = session.ensemble.evaluate(partition="test")
 print(ev.metrics)
 for row in ev.diagnostics["base_contributions"]:
@@ -118,6 +197,6 @@ Session checkpoints do not embed fitted ensemble weights.
 - Tiny blend holdout: warning on the fit result; prefer stacking.
 - Expecting preprocess plans inside the ensemble bundle.
 - Fold-local recipes inside stacking CV follow the same Session-global
-  refuse as classical CV. See [leakage](leakage-cv-recipes.md).
+  preprocessing restriction as classical CV. See [leakage](leakage-cv-recipes.md).
 
-Paste: [`examples/ensemble_vote_stack_loop.py`](../examples/ensemble_vote_stack_loop.py).
+Runnable example: [`examples/ensemble_vote_stack_loop.py`](../examples/ensemble_vote_stack_loop.py).

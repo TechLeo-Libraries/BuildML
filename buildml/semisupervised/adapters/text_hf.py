@@ -30,8 +30,6 @@ class TextPseudoLabelClassifier:
     def fit(self, texts: list[str], y: np.ndarray) -> TextPseudoLabelClassifier:
         """Run fit on input data using the fitted internal state.
 
-Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
-
 Parameters
 ----------
 texts:
@@ -76,8 +74,6 @@ ValidationError
     def predict(self, texts: list[str]) -> np.ndarray:
         """Run predict on input data using the fitted internal state.
 
-Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
-
 Parameters
 ----------
 texts:
@@ -102,8 +98,6 @@ ValidationError
 
     def predict_proba(self, texts: list[str]) -> np.ndarray:
         """Perform predict proba for the Session-facing workflow step.
-
-Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
 
 Parameters
 ----------
@@ -136,8 +130,6 @@ def build_text_estimator(
     random_state: int | None,
 ) -> TextPseudoLabelClassifier:
     """Construct a text estimator ready for fit or scoring.
-
-Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
 
 Parameters
 ----------

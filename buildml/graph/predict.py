@@ -50,7 +50,7 @@ def predict_graph(
     Returns
     -------
     GraphPredictResult
-        Predictions, optional probabilities, and honesty disclosures.
+        Predictions, optional probabilities, and implementation limitations.
 
     Raises
     ------

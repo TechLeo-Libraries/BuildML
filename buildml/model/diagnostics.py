@@ -531,14 +531,23 @@ def threshold_report(
 
     Examples
     --------
-    Tune with explicit costs on validation::
+    .. code-block:: python
 
-        report = threshold_report(
-            dataset, split_plan, fit,
-            partition="validation",
-            fp_cost=1.0,
-            fn_cost=20.0,
-        )
+        import pandas as pd
+        from sklearn.datasets import make_classification
+        from sklearn.tree import DecisionTreeClassifier
+        from buildml import Session
+        X, y = make_classification(n_samples=80, n_features=4, n_informative=3, n_redundant=0, random_state=42)
+        frame = pd.DataFrame(X, columns=["age", "income", "spend", "visits"])
+        frame["target"] = y
+        session = Session.ingest(frame).set_roles({"target": "target"})
+        session.split(test_size=0.2, validation_size=0.2, stratify=True, random_state=42)
+        dataset, split_plan = session.dataset, session.split_plan
+        estimator = DecisionTreeClassifier(max_depth=3, random_state=42)
+        from buildml.model.diagnostics import threshold_report
+        from buildml.model.supervised import fit_estimator
+        fit = fit_estimator(dataset, split_plan, estimator)
+        report = threshold_report(dataset, split_plan, fit, partition="validation", fp_cost=1.0, fn_cost=2.0)
         print(report.payload["recommended_threshold"])
 
     See Also
@@ -1204,16 +1213,24 @@ def segment_error_report(
 
     Examples
     --------
-    Check for disparity across a protected attribute::
+    .. code-block:: python
 
-        report = segment_error_report(
-            dataset, split_plan, fit,
-            by="age_band",
-            partition="test",
-            min_segment_n=30,
-        )
-        for row in report.payload["segments"]:
-            print(row)
+        import pandas as pd
+        from sklearn.datasets import make_classification
+        from sklearn.tree import DecisionTreeClassifier
+        from buildml import Session
+        X, y = make_classification(n_samples=80, n_features=4, n_informative=3, n_redundant=0, random_state=42)
+        frame = pd.DataFrame(X, columns=["age", "income", "spend", "visits"])
+        frame["target"] = y
+        session = Session.ingest(frame).set_roles({"target": "target"})
+        session.split(test_size=0.2, validation_size=0.2, stratify=True, random_state=42)
+        dataset, split_plan = session.dataset, session.split_plan
+        estimator = DecisionTreeClassifier(max_depth=3, random_state=42)
+        from buildml.model.diagnostics import segment_error_report
+        from buildml.model.supervised import fit_estimator
+        fit = fit_estimator(dataset, split_plan, estimator)
+        report = segment_error_report(dataset, split_plan, fit, by="age", partition="validation", min_segment_n=2)
+        print(report.payload["segments"])
 
     See Also
     --------

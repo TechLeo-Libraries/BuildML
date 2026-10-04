@@ -138,7 +138,7 @@ SELFSUPERVISED_NOTES: dict[str, ConceptNote] = {
                 "checkpoint_load ↛ SSL encoder; session.ssl.load_bundle ↛ dataset rows; "
                 "torch_bundle ↛ tabular MaskedTabularEncoder."
             ),
-            why_it_matters=("Artifact confusion drops weights or pretends loaders restored.",),
+            why_it_matters=("Loading the wrong artifact can omit model weights or required loader configuration.",),
             how_buildml_uses=("session.ssl.save_bundle / session.ssl.load_bundle.",),
             interpretation_rules=("Read meta.json format buildml.selfsupervised_bundle.v1.",),
             assumptions=("Feature contract still matches at load time.",),

@@ -30,8 +30,6 @@ def score_anomalies(
 ) -> tuple[Dataset | None, AnomalyScoreResult]:
     """Score and flag rows with a frozen anomaly plan (no refit).
 
-Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
-
 Parameters
 ----------
 partition:

@@ -6,16 +6,16 @@ pip install buildml
 # SB3 PPO/DQN/A2C and imitation BC/GAIL-lite: pip install "buildml[rl-industry]"
 ```
 
-Two surfaces live on `session.rl`. `fit_imitation` clones actions from a
+Two workflows are available through `session.rl`. `fit_imitation` clones actions from a
 demonstration table. `fit` is a contextual bandit on logged
 (context, action, reward) rows, or a Gymnasium loop when you ask for
 one.
 
-The cliff-walking teaching examples use `CliffWalking-v1`, as registered by
-current Gymnasium releases. Older Gymnasium releases may register only
-`CliffWalking-v0`; choose the environment ID supported by your installed version.
+The cliff-walking teaching examples select `CliffWalking-v1` when it is
+registered, otherwise `CliffWalking-v0`, to support both newer and older
+Gymnasium releases.
 
-`session.rl.fit()` with no extra knobs uses `algorithm="linucb"`, which
+`session.rl.fit()` with default parameters uses `algorithm="linucb"`, which
 resolves to the **sklearn contextual bandit** even when
 `buildml[rl-industry]` is installed. Gymnasium and Stable-Baselines3 are
 opt-in via `mode=` / `algorithm=` / `backend=`. `fit_imitation()` with
@@ -23,10 +23,10 @@ opt-in via `mode=` / `algorithm=` / `backend=`. `fit_imitation()` with
 Industry MLP BC is `method="bc_mlp"` (or `backend="industry"`).
 
 Gym loops still need a Session split. They do not train on those tabular
-rows; the env is the signal. This is not robotics, not MuJoCo, and not
-batch offline RL (CQL / IQL / Decision Transformer).
+rows; the env is the signal. Robotics integration and batch offline RL methods such as CQL, IQL, and
+Decision Transformer are outside these adapters.
 
-Short on-ramp: [imitation + RL quickstart](quickstart-imitation-rl.md).
+Quickstart: [imitation + RL quickstart](quickstart-imitation-rl.md).
 Proof: [imitation-cartpole-control](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/imitation-cartpole-control).
 
 ## Behavioral cloning
@@ -183,9 +183,37 @@ resolver treats linucb as unset and uses `q_learning`.
 | `q_learning` (mode default) | `r + γ max_a' Q(s', a')` | Off-policy TD control |
 | `sarsa` | `r + γ Q(s', a')` with the behaviour policy's `a'` | On-policy |
 | `expected_sarsa` | `r + γ Σ_a' π(a'\|s') Q(s', a')` | On-policy, lower variance |
-| `double_q_learning` | Cross-evaluated `Q_A` / `Q_B` | Off-policy, no max bias |
+| `double_q_learning` | Cross-evaluated `Q_A` / `Q_B` | Off-policy, reduces maximization bias |
 
 ```python
+import numpy as np
+import pandas as pd
+
+from buildml import Session
+
+rng = np.random.default_rng(0)
+x = rng.normal(size=(220, 2))
+action = (x[:, 0] + 0.3 * x[:, 1] > 0).astype(int)
+frame = pd.DataFrame({"s0": x[:, 0], "s1": x[:, 1], "action": action})
+
+session = (
+    Session.ingest(frame)
+    .set_roles({"s0": "feature", "s1": "feature", "action": "target"})
+    .split(test_size=0.2, validation_size=0.2, random_state=0, stratify=True)
+    .scale(method="standard")
+)
+
+fit = session.rl.fit_imitation()
+print(fit.task, fit.train_score)
+
+pred = session.rl.predict_imitation(partition="test")
+print(pred.actions[:5])
+
+ev = session.rl.evaluate_imitation(partition="validation")
+print(ev.metrics)
+
+session.rl.save_imitation_bundle("artifacts/imitation_bundle")
+
 session.rl.fit(
     mode="tabular_q",
     algorithm="q_learning",
@@ -218,10 +246,38 @@ how much of the table was actually visited.
 
 `backend="industry"`, `mode="gym_sb3"`. Algorithms: `ppo` (default when
 this mode is selected), `dqn`, `a2c`. Default `total_timesteps` is
-20_000. Small discrete sims (CartPole-class). Not multi-agent, not AV,
-not Ray RLlib.
+20_000. The examples use small discrete environments such as CartPole.
 
 ```python
+# Requires: pip install "buildml[rl-industry]" (Gymnasium and Stable-Baselines3).
+import numpy as np
+import pandas as pd
+
+from buildml import Session
+
+rng = np.random.default_rng(0)
+x = rng.normal(size=(220, 2))
+action = (x[:, 0] + 0.3 * x[:, 1] > 0).astype(int)
+frame = pd.DataFrame({"s0": x[:, 0], "s1": x[:, 1], "action": action})
+
+session = (
+    Session.ingest(frame)
+    .set_roles({"s0": "feature", "s1": "feature", "action": "target"})
+    .split(test_size=0.2, validation_size=0.2, random_state=0, stratify=True)
+    .scale(method="standard")
+)
+
+fit = session.rl.fit_imitation()
+print(fit.task, fit.train_score)
+
+pred = session.rl.predict_imitation(partition="test")
+print(pred.actions[:5])
+
+ev = session.rl.evaluate_imitation(partition="validation")
+print(ev.metrics)
+
+session.rl.save_imitation_bundle("artifacts/imitation_bundle")
+
 session.rl.fit(
     backend="industry",
     mode="gym_sb3",
@@ -249,7 +305,7 @@ checkpoint.
 `save_bundle` / `load_bundle` for `fit`. `trusted=True` only for a file
 you made.
 
-## When it refuses
+## Validation errors and prerequisites
 
 | What you see | What happened |
 | --- | --- |

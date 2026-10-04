@@ -9,11 +9,11 @@ pip install "buildml[graph]"
 Node classification. Rows are nodes. Edges are a separate table keyed by
 `node_id`. `set_spec` first, then a split (node partitions), then fit.
 Exactly one target. Default method is `classical` (NetworkX + sklearn).
-Default mode is inductive. This is not Neo4j and not `session.kg`.
+Default mode is inductive. Knowledge-graph embeddings use the separate `session.kg` API.
 
 **Go deeper:** [Graph deep](graph-deep.md) ·
 
-Paste: [`examples/graph_node_classification.py`](../examples/graph_node_classification.py) ·
+Runnable example: [`examples/graph_node_classification.py`](../examples/graph_node_classification.py) ·
 Evidence: [graph-fraud-rings](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/graph-fraud-rings).
 [Artifacts](artifacts-checkpoints-bundles.md)
 
@@ -65,8 +65,6 @@ session.graph.save_bundle("artifacts/graph_bundle")
 | --- | --- |
 | Node classification | Neo4j / knowledge-graph product |
 | Classical NetworkX + sklearn | PyG architectures beyond GCN/SAGE/GAT |
-| Pure-Torch GCN + PyG GCN/SAGE/GAT | Link prediction product depth |
+| Pure-Torch GCN + PyG GCN/SAGE/GAT | General graph link prediction |
 | Inductive / transductive modes | Graph-level classification |
 | Distinct `buildml.graph_bundle.v1` | Silent full-graph train as "inductive" |
-
-Related next: evolutionary algorithms (search/HPO backend).

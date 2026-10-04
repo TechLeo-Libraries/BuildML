@@ -296,21 +296,25 @@ def build_eval_plot_board(
 
     Examples
     --------
-    A fast board while iterating, then a full one to share::
+    .. code-block:: python
 
-        quick = build_eval_plot_board(
-            dataset, split_plan, fit,
-            partition="validation",
-            include_learning_curve=False,
-            include_importance=False,
-        )
-        quick.show()
-
-        full = build_eval_plot_board(
-            dataset, split_plan, fit,
-            export_figures="artifacts/figures",
-            export_html="artifacts/eval.html",
-        )
+        import pandas as pd
+        from sklearn.datasets import make_classification
+        from sklearn.tree import DecisionTreeClassifier
+        from buildml import Session
+        X, y = make_classification(n_samples=80, n_features=4, n_informative=3, n_redundant=0, random_state=42)
+        frame = pd.DataFrame(X, columns=["age", "income", "spend", "visits"])
+        frame["target"] = y
+        session = Session.ingest(frame).set_roles({"target": "target"})
+        session.split(test_size=0.2, validation_size=0.2, stratify=True, random_state=42)
+        dataset, split_plan = session.dataset, session.split_plan
+        estimator = DecisionTreeClassifier(max_depth=3, random_state=42)
+        from buildml.model.plot_boards import build_eval_plot_board
+        # Install plotting support first: pip install "buildml[viz]"
+        from buildml.model.supervised import fit_estimator
+        fit = fit_estimator(dataset, split_plan, estimator)
+        board = build_eval_plot_board(dataset, split_plan, fit, partition="validation", include_learning_curve=False, include_importance=False)
+        print(board.skipped)
 
     See Also
     --------

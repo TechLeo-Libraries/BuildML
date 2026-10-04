@@ -144,7 +144,7 @@ class DecisionFitResult:
         Returns
         -------
         dict[str, Any]
-            Fit metadata, metrics, and honesty disclosures.
+            Fit metadata, metrics, and implementation limitations.
         """
         return {
             "method": self.method,
@@ -218,7 +218,7 @@ class ApplyDecisionsResult:
         Returns
         -------
         dict[str, Any]
-            Apply metadata and honesty disclosures.
+            Apply metadata and implementation limitations.
         """
         return {
             "method": self.method,
@@ -270,7 +270,7 @@ class DecisionEvalResult:
         Returns
         -------
         dict[str, Any]
-            Eval metadata, metrics dict, and honesty disclosures.
+            Eval metadata, metrics dict, and implementation limitations.
         """
         return {
             "partition": self.partition,

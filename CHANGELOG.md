@@ -6,7 +6,54 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 with pre-release tags for alpha (`aN`) builds.
 
+Each entry describes its release at the time it was prepared. Historical
+installation instructions, dependency limits, and validation counts may differ
+from the current release; use the installation guide for current requirements.
+
 ## [Unreleased]
+
+## [2.6.4] - 2026-10-04
+
+### Fixed
+
+- Documentation examples include their imports, demonstration data, and setup.
+  Dashboard lessons preserve complete examples and distinguish synthetic
+  demonstrations from findings about the uploaded data.
+- Dashboard examples demonstrate missing values, duplicate observations,
+  feature interactions, and partial dependence with the appropriate data and
+  calculations. Explanations and API guidance have been corrected.
+- EDA handles missing nullable boolean and integer features, and regression
+  targets with only one observed value. Mutual information treats categorical
+  and boolean features as discrete variables.
+- Giotto retains requested homology dimensions when their diagrams are empty,
+  keeping feature values and names aligned between training and prediction.
+- PuLP optimization accepts both legacy status codes and PuLP 4 solver results,
+  while continuing to require a proven optimal solution.
+- Dashboard tables identify missing-value percentages, role charts account for
+  undeclared columns, and navigation safely handles charts still loading.
+  Readiness gates distinguish sampling from unrelated report warnings.
+- Text-only CBR embeddings no longer require an unrelated numeric feature.
+  Embedding and Torch retrieval use exact search when ANN is disabled on Windows.
+- SDMetrics accepts SDV metadata objects, and CTGAN rejects invalid batch sizes
+  before training. Synthetic categorical samples preserve their category types.
+- PyG uses the Torch tensor API, Giotto vectorization preserves one row per
+  sample, and Stable-Baselines3 handles array-valued discrete actions.
+- Causal bundles serialize NumPy treatment values, and causal-forest bootstrap
+  models use a valid number of estimators.
+- Distributed Torch training returns its fitted model after worker shutdown
+  and runs validation on every rank. Unsupported distributed early-stopping
+  and plateau-scheduler combinations fail before launching workers.
+
+### Changed
+
+- The LangChain adapter uses the separately declared `langchain-classic`
+  dependency and its invocation interface.
+- LightFM's extra excludes Python 3.12 and newer; the recommender guide
+  documents a tested Linux/Python 3.11 source-build procedure.
+- Optional-backend probes allow additional startup time for scientific stacks
+  that otherwise could be incorrectly reported as unavailable.
+- CI checks documentation examples for syntax and missing imports, alongside
+  regression checks for generated dashboard examples and user-facing wording.
 
 ## [2.6.3] - 2026-09-23
 
@@ -61,9 +108,9 @@ with pre-release tags for alpha (`aN`) builds.
 
 ### Fixed
 
-- `release.yml` publishes with the `PYPI_API_TOKEN` secret and
-  `skip-existing`, so a tag push stays green when Trusted Publishing is
-  unset or local twine already uploaded the same files.
+- At this release, `release.yml` used the `PYPI_API_TOKEN` secret and
+  `skip-existing` to handle previously uploaded distributions. Version 2.6.3
+  replaced this arrangement with protected Trusted Publishing.
 - `examples/multitask_multioutput_loop.py` and
   `examples/online_partial_fit_loop.py` print ASCII ``->`` instead of
   ``→``, so a Windows cp1252 console no longer raises
@@ -127,7 +174,6 @@ with pre-release tags for alpha (`aN`) builds.
 - **Package summary.** PyPI and the README opener describe one object
   that holds your data, split, preprocessing, model, and run history,
   and also runs the domain catalog. That object is named a Session.
-  They no longer sell a leakage slogan.
 - **Coverage floor is 66 on the Linux CI monolith.** The previous 70
   figure was a Windows isolated combine, not the gate that actually
   runs `pytest --cov=buildml`. This cut measured 66.67%.
@@ -189,9 +235,10 @@ with pre-release tags for alpha (`aN`) builds.
 
 ## [2.4.0] - 2026-08-04
 
-First **stable** Session 2.x release on PyPI. `pip install buildml` now resolves
-to 2.4.x (not legacy 1.0.9). Pre-release `2.4.0a3` remains on the index for
-historical pins.
+First **stable** Session 2.x release on PyPI. At release time, an unpinned
+installation selected 2.4.x instead of legacy 1.0.9. The 2.4.0 and 2.4.0a3
+distributions were subsequently yanked because their wheels omitted a required
+catalog file; version 2.6.1 corrected the packaging issue.
 
 ### Changed
 
@@ -260,8 +307,8 @@ historical pins.
 - **Domain-variable shadow warning.** Accessing a facade when the Session is
   bound to a domain-named local (`rag = Session()`) emits a one-shot
   `UserWarning` (prefer `session = Session()`).
-- **PyPI 2.x publish checklist.** `docs/pypi-2x-publish.md` (OIDC / ownership
-  one-shot for humans; repo is `2.4.0a3` build/twine ready).
+- **PyPI 2.x publish checklist.** Added `docs/pypi-2x-publish.md` covering
+  publisher configuration, project ownership, and distribution validation.
 
 ### Changed
 
@@ -466,8 +513,8 @@ historical pins.
     glossary of the jargon the answer itself used, a worked example, and the
     neighbouring tools. The primer is *derived* in `buildml/explain/pedagogy.py`
     from the catalog entry and its linked concept notes rather than hand-copied,
-    so it cannot drift from the expert sections it fronts: and any operation can
-    override any section with authored prose.
+    to keep the shared content consistent. Operations can override individual
+    sections with authored prose.
   - **A beginner layer on all 188 concept notes**, across every domain:
     supervised, unsupervised, forecasting, anomaly, NLP, RAG, RL, online,
     federated, causal, graph, knowledge graphs, symbolic, CBR, TDA,
@@ -629,12 +676,12 @@ historical pins.
   whether a result is trustworthy here, and both are now stated wherever they
   apply. The first is leakage: `create_split` explains why a random split is
   wrong for grouped or time-ordered data and what the resulting score would
-  overstate, `create_time_split` documents that a chronological cut is the only
-  honest evaluation of forecasting, and `guard_fit_partition` explains that its
-  refusal is deliberate friction rather than a missing convenience. The second
+  overstate, `create_time_split` documents why forecast evaluation must respect time
+  ordering, and `guard_fit_partition` explains its training-partition
+  restriction. The second
   is memory: every method now says whether it defers work or forces it, so
   `select_columns` and `filter_expr` are documented as the operations that keep
-  data off disk and out of memory, while `sample_rows`, `filter_rows`, and
+  unnecessary rows and columns out of memory, while `sample_rows`, `filter_rows`, and
   `to_pandas` are marked as the points where a lazy plan collects. Native
   handles are documented as narrowing what must be materialised and explicitly
   *not* as out-of-core fitting. `DuckDBTable` explains connection ownership :
@@ -646,10 +693,9 @@ historical pins.
   store, index build and incremental update, dense, BM25 and hybrid retrieval,
   fusion, cross-encoder reranking, grounded generation, retrieval and generation
   evaluation, bundle persistence, the capability matrix, the dependency gates,
-  the history hooks, and the LangChain adapter. Retrieval always returns
-  something, so the docstrings say what that something is worth: `retrieve`
-  documents that there is no relevance threshold and that a question the corpus
-  cannot answer still produces `k` confidently ranked passages; `rrf_fuse`
+  the history hooks, and the LangChain adapter. The `retrieve` documentation explains
+  that ranking does not establish relevance: a question the corpus cannot answer
+  may still return ranked passages. The `rrf_fuse` documentation
   explains why fusing by rank avoids comparing a BM25 score against a cosine
   similarity, and `weighted_fuse` explains why its per-query normalisation makes
   scores unstable across queries. Grounding claims are bounded rather than
@@ -694,9 +740,9 @@ historical pins.
   diagnostics, the evidence records, and both the HTML and plot-board exports.
   This is the package where an honest number and a flattering one look identical,
   so the docstrings say which is which: `fit_estimator` documents that
-  `train_score` is in-sample and therefore not evidence of anything;
-  `cv_score` explains that a fold standard deviation is the number that says
-  whether a difference between two models is real, and refuses to run when a
+  `train_score` describes fit on training data rather than holdout performance;
+  `cv_score` explains that fold standard deviation describes variation across
+  folds rather than statistical significance, and refuses to run when a
   Session split already exists because scoring the whole frame would put test
   rows in a training fold; `nested_cv_score` explains that it estimates the
   *procedure* rather than a model, which is why it returns no single winner; and
@@ -843,7 +889,7 @@ historical pins.
   contextual bandits, REINFORCE-lite policy gradient, and SB3 PPO/DQN/A2C but no
   foundational tabular methods. New `buildml/rl/tabular.py` implements
   `q_learning` (off-policy), `sarsa` and `expected_sarsa` (on-policy), and
-  `double_q_learning` (cross-evaluated, no maximisation bias) on discrete-action
+  `double_q_learning` (separate estimates reduce maximisation bias) on discrete-action
   Gymnasium envs behind `buildml[rl]`.
   - `ObservationDiscretizer` bins continuous Box observations uniformly
     (`n_bins=`), taking bounds from the declared space where finite and from a
@@ -875,8 +921,8 @@ historical pins.
 Hardens Session preprocess role skipping, FLAML AutoML evaluate/bundle predict
 paths, production extras markers (Windows / Py3.13), availability probes, and
 benchmark skip discipline; ships the Tier A/B/C proof suite with docs/README
-linkage. Bumps the package line to **`2.4.0a2`**. **Not published to PyPI** :
-GitHub prerelease / honesty banner only.
+linkage. This **`2.4.0a2`** prerelease was available through GitHub and was
+not published to PyPI.
 
 ### Added
 
@@ -1052,18 +1098,16 @@ GitHub prerelease / honesty banner only.
 
 - **Post-`v2.4.0a1` hygiene + `2.4.0a2` bump:** `e142f0d` removed the private
   `maintainers/` tree and refreshed public doc hygiene. This cut bumps the
-  package line to **`2.4.0a2`**. GitHub release is **prerelease**. Still not
-  published to PyPI: honesty banner only.
+  package line to **`2.4.0a2`**, a GitHub prerelease that was not published to PyPI.
 
 ## [2.4.0a1]: post-depth / process closure: 2026-08-02
 
 ### Summary
 
-Closes release/process gaps after the depth loop (Passes L–R): bumps the package
-line to **`2.4.0a1`**, documents GitHub-first install until PyPI carries 2.x,
-fixes stale org URLs, wires pretrained/serve CI + AI allowlist parity, hardens public
-serve binds, and refreshes maintainer / contributor process docs. **Not published
-to PyPI in this cut**: honesty banner only.
+The **`2.4.0a1`** prerelease documented installation from GitHub, corrected
+repository URLs, expanded pretrained and serving CI, aligned the AI tool
+allowlist, and added safeguards for public serving addresses. It was not
+published to PyPI.
 
 ### Added
 
@@ -1206,7 +1250,7 @@ to PyPI in this cut**: honesty banner only.
 - Scoped mypy and Phase C domain tests (`test_dl_phase_c`, `test_rag_generate`,
   `test_ai_phase_c`) in CI.
 - Concepts package split (`buildml/explain/concepts/{classical,dl,rag,ai}.py`)
-  replacing the monolithic hand blob.
+  replacing the single concepts module.
 - **Phase D teaching sync:** generated Session operation index
   (`buildml/explain/generated/operation_index.json`), domain catalog overlays
   under `buildml/explain/overlays/`, and CI gate
@@ -1244,8 +1288,8 @@ to PyPI in this cut**: honesty banner only.
 
 ## [2.3.0a1]: AI operator alpha: 2026-08-02
 
-First AI operator alpha on the BuildML 2.x `Session` API. Exit criteria and
-known limits are listed in this section. Classical alpha remains at `2.0.0a1`;
+First AI operator alpha on the BuildML 2.x `Session` API. Capabilities and
+limitations of that release are listed below. Classical alpha remains at `2.0.0a1`;
 DL alpha at `2.1.0a1`; RAG alpha at `2.2.0a1`. This line adds optional
 LLM-assisted workflow guidance: **not** autonomous agents or auto-execution.
 
@@ -1290,15 +1334,10 @@ LLM-assisted workflow guidance: **not** autonomous agents or auto-execution.
 - **CI runs with MockProvider only.** No real API keys in tests.
 - **Public AI APIs and transcript formats may change before a stable release.**
 
-### Verification
-
-- Confirm known limits above still match shipped behavior.
-- Tag only after remote CI is green (see `CONTRIBUTING.md`).
-
 ## [2.2.0a1]: RAG alpha: 2026-08-01
 
-First retrieval (RAG) alpha on the BuildML 2.x `Session` API. Exit criteria and
-known limits are listed in this section. Classical alpha remains at `2.0.0a1`;
+First retrieval (RAG) alpha on the BuildML 2.x `Session` API. Capabilities and
+limitations of that release are listed below. Classical alpha remains at `2.0.0a1`;
 DL alpha remains at `2.1.0a1`. This line adds optional retrieve / evaluate /
 bundle: **not** generate or an LLM operator.
 
@@ -1330,15 +1369,10 @@ bundle: **not** generate or an LLM operator.
 - Session checkpoints never embed the vector index.
 - Public RAG APIs and bundle formats may change before a stable RAG release.
 
-### Verification
-
-- Confirm known limits above still match shipped behavior.
-- Tag only after remote CI is green (see `CONTRIBUTING.md`).
-
 ## [2.1.0a1]: DL alpha: 2026-08-01
 
-First deep-learning alpha on the BuildML 2.x `Session` API. Exit criteria and
-known limits are listed in this section. Classical alpha remains documented at
+First deep-learning alpha on the BuildML 2.x `Session` API. Capabilities and
+limitations of that release are listed below. Classical alpha remains documented at
 `2.0.0a1`; this line adds optional Torch.
 
 ### Added
@@ -1366,15 +1400,10 @@ known limits are listed in this section. Classical alpha remains documented at
 - RAG / LLM operator remain out of scope.
 - Public Torch APIs and bundle formats may change before a stable DL release.
 
-### Verification
-
-- Confirm known limits above still match shipped behavior.
-- Tag only after remote CI is green (see `CONTRIBUTING.md`).
-
 ## [2.0.0a1]: classical alpha: 2026-08-01
 
-First classical-ML alpha of the BuildML 2.x `Session` API. Exit criteria and
-known limits are listed in this section.
+First classical-ML alpha of the BuildML 2.x `Session` API. Capabilities and
+limitations of that release are listed below.
 
 ### Added
 
@@ -1401,12 +1430,6 @@ known limits are listed in this section.
 - Deep learning / RAG / LLM operator, fairness, and SHAP-style explainability
   are out of classical alpha scope.
 - Public APIs and checkpoint/pipeline formats may change before stable 2.0.
-
-### Verification
-
-- Confirm known limits above still match shipped behavior.
-- Tag only after remote CI is green on the push that includes this release
-  candidate (see `CONTRIBUTING.md`).
 
 ## [1.x]
 

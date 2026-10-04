@@ -6,7 +6,7 @@ prose. That prose is correct but assumes vocabulary a newcomer does not have,
 which defeats the point of an explain system. A *beginner layer* supplies the
 missing tier for the same concept key: plain language, an analogy, a
 step-by-step walkthrough, when to reach for it and when not to, the myths
-people arrive with, and a runnable-shaped example.
+people arrive with, and a code example.
 
 Layers live beside the technical notes (one module per domain, mirroring
 ``concepts/``) and are merged onto the note in ``concepts/__init__``. Nothing is

@@ -1,4 +1,4 @@
-# BuildML 2.x surface stability policy
+# BuildML 2.x API stability policy
 
 BuildML **2.6.3** continues the stable Session 2.x line (first stable was
 **2.4.0**). This repo is **2.6.3**. `pip install buildml` selects the latest
@@ -17,7 +17,8 @@ deprecation rules, and dependency availability.
   matrices and runtime probes report backend availability. For subprocess use-case
   checks (`ok` / `crash`), see `guides/safe-install-and-runtime.md` and
   `scripts/verify_runtime_stability.py`.
-- Local serve is a single-deploy path, not a multi-tenant SaaS product.
+- The serving API runs a local application. Hosting and tenant isolation require
+  deployment infrastructure outside BuildML.
 
 ## Rules
 
@@ -31,11 +32,11 @@ deprecation rules, and dependency availability.
 4. **Capability matrices report backend availability.** Prefer reporting
    `available: false` over deleting a public method when an optional backend is
    withdrawn.
-5. **Supported freeze set.** Classical ingest / roles / split / preprocess /
+5. **Supported API groups.** Classical ingest / roles / split / preprocess /
    fit / evaluate / CV / search, checkpoint / pipeline bundles, domain facades,
    and `*_capability_matrix` names are supported in 2.6.x.
 6. **Proofs and CI smoke** (`python -m proofs._lib.run_all --smoke`) must stay
-   green on the freeze set. Smoke fails on unexpected `skipped_missing_extra` /
+   green for these API groups. Smoke fails on unexpected `skipped_missing_extra` /
    `partial` result statuses (use `--allow-skip` only for local investigation).
 7. **Namespaced Session facades.** For domains, facades are the supported public
    API (`session.<domain>.*`). Flat domain actions still work and emit
@@ -45,8 +46,9 @@ deprecation rules, and dependency availability.
    Discovery exposes `stability_tier` (`core` | `domain` | `experimental`) and
    `preferred_path`.
 
-## Coverage ratchet
+## Coverage requirements
 
 See `scripts/coverage_ratchet.json` and `pyproject.toml` `fail_under`.
 Active floor **66** (Linux CI monolith measured 66.67% on the 2.6.0 cut).
-Measure with `python scripts/run_full_coverage.py` - never from a tiny subset.
+Measure the complete suite with `python scripts/run_full_coverage.py`; subset
+runs are not comparable to the project coverage threshold.

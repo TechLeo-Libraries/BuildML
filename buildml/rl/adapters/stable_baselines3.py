@@ -1,26 +1,17 @@
 """Bridge to Stable-Baselines3 for deep reinforcement learning.
 
-BuildML's own environment loops are deliberately simple: a linear policy trained
-by REINFORCE, and a Q-table over discretised states. Both are readable and both
-have hard ceilings. When a problem genuinely needs a neural policy, this adapter
-hands off to Stable-Baselines3 rather than reimplementing PPO.
+This adapter trains neural policies with Stable-Baselines3's PPO, DQN, or A2C.
+BuildML supplies the Gymnasium environment, seed, training settings, and result
+records. Its separate native backends provide linear REINFORCE policies and
+tabular value-based methods.
 
-Three algorithms are exposed. **PPO** is the general-purpose default: on-policy,
-stable across a wide range of problems, and forgiving of hyperparameters. **DQN**
-is off-policy and reuses past experience, which makes it more sample-efficient
-when interaction is expensive, but it only handles discrete actions and is
-fussier to tune. **A2C** is the lightweight on-policy option, faster per step
-than PPO and correspondingly less stable.
+PPO and A2C learn from recent policy rollouts; DQN reuses transitions from a
+replay buffer. Performance and training cost depend on the environment and
+settings, so compare policies using evaluation episodes separate from training.
 
-The adapter is thin by design. BuildML supplies the environment, the seed, and a
-uniform result shape; Stable-Baselines3 does the learning. That keeps the surface
-small and the behaviour identical to using the library directly.
-
-Two limits are worth stating. The scope is small discrete-action environments,
-for learning and for modest problems: not robotics, autonomous driving, or
-multi-agent simulation. And ``act_sb3_observation`` cannot return true action
-probabilities, because Stable-Baselines3 does not expose them uniformly across
-algorithms; see that function for what it returns instead.
+The adapter supports discrete-action environments. ``act_sb3_observation``
+returns a one-hot action indicator, not action probabilities, because the
+algorithms do not expose probabilities through a uniform prediction interface.
 
 Requires ``buildml[rl-industry]``.
 
@@ -112,7 +103,7 @@ class SB3PolicyWrapper:
         """
         obs = np.asarray(observation, dtype=float).reshape(1, -1)
         action, state = self.model.predict(obs, deterministic=deterministic)
-        return int(action), state
+        return int(np.asarray(action).item()), state
 
 
 def _make_sb3_model(
@@ -298,7 +289,7 @@ def train_sb3_policy(
     ):
         warnings.append(
             "CartPole mean return is still low; increase total_timesteps: "
-            "this is an honest small-env teaching loop, not a robotics product."
+            "this example uses a limited training budget for a small environment."
         )
     return wrapper, metrics, disclosures, warnings
 
@@ -325,16 +316,16 @@ def evaluate_sb3_policy(
         Override the environment. Defaults to the one the policy was trained
         on; a different one measures transfer, not performance.
     n_episodes:
-        How many episodes to run. Returns vary a great deal, so twenty is a
-        reasonable floor rather than a generous sample.
+        Number of evaluation episodes. Increase this when returns vary widely;
+        the default of twenty does not establish statistical precision.
     max_steps:
         Per-episode step cap.
     random_state:
         Seeds the rollouts, offset from the training seeds so evaluation does
         not replay the episodes the policy trained on.
     deterministic:
-        ``True`` (default) evaluates the greedy policy, which is what you would
-        deploy.
+        ``True`` (default) requests deterministic actions. Set this to match
+        how the policy will be used.
 
     Returns
     -------
@@ -349,10 +340,9 @@ def evaluate_sb3_policy(
 
     Notes
     -----
-    **Read ``std_return`` and ``min_return`` alongside the mean.** A policy
-    averaging 400 that occasionally scores 20 fails badly some of the time, and
-    the mean alone conceals that. For anything that will actually be deployed,
-    the worst case usually matters more than the average.
+    Read ``std_return`` and ``min_return`` alongside the mean to assess
+    variability across the sampled episodes. The observed minimum is not a
+    bound on future performance.
 
     See Also
     --------
@@ -375,7 +365,7 @@ def evaluate_sb3_policy(
                     flat.reshape(1, -1),
                     deterministic=deterministic,
                 )
-                step_out = env.step(int(action))
+                step_out = env.step(int(np.asarray(action).item()))
                 if len(step_out) == 5:
                     obs, reward, terminated, truncated, _info = step_out
                     done = bool(terminated or truncated)

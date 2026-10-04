@@ -96,12 +96,23 @@ def analyze_drift(
 
     Examples
     --------
-    ::
+    .. code-block:: python
 
-        report = analyze_drift(dataset, split_plan, feature_columns=features)
-        if report["available"] and report["flagged_count"]:
-            for entry in report["flagged_columns"]:
-                print(entry["column"], entry.get("ks_stat") or entry["js_divergence"])
+        import pandas as pd
+        from sklearn.datasets import make_classification
+        from sklearn.tree import DecisionTreeClassifier
+        from buildml import Session
+        X, y = make_classification(n_samples=80, n_features=4, n_informative=3, n_redundant=0, random_state=42)
+        frame = pd.DataFrame(X, columns=["age", "income", "spend", "visits"])
+        frame["target"] = y
+        session = Session.ingest(frame).set_roles({"target": "target"})
+        session.split(test_size=0.2, validation_size=0.2, stratify=True, random_state=42)
+        dataset, split_plan = session.dataset, session.split_plan
+        estimator = DecisionTreeClassifier(max_depth=3, random_state=42)
+        from buildml.eda.analyzers.drift import analyze_drift
+        report = analyze_drift(dataset, split_plan, feature_columns=["age", "income"])
+        print(report["available"], report.get("flagged_columns", []))
+
     """
     if split_plan is None:
         return {"available": False, "reason": "No split defined"}

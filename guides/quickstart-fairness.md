@@ -11,10 +11,10 @@ Default evaluate partition is test. This is observational reporting, not
 a legal audit and not causal fairness.
 
 String labels need an explicit `positive_label`. Default `1` raises
-instead of inventing zero rates.
+when the requested positive label is absent.
 
 [Fairness deep](fairness-deep.md) ·
-Paste: [`examples/fairness_observational_loop.py`](../examples/fairness_observational_loop.py) ·
+Runnable example: [`examples/fairness_observational_loop.py`](../examples/fairness_observational_loop.py) ·
 Evidence: [loan-fairness-observational](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/loan-fairness-observational)
 
 ```python
@@ -59,6 +59,41 @@ that entity. Do not use the sensitive column as the group key: that
 would put every member of one group on one side of the split.
 
 ```python
+import numpy as np
+import pandas as pd
+from sklearn.linear_model import LogisticRegression
+
+from buildml import Session
+
+rng = np.random.default_rng(0)
+n = 400
+group = np.array(["A"] * (n // 2) + ["B"] * (n // 2))
+x = rng.normal(size=n)
+logits = x + np.where(group == "B", -0.7, 0.0)
+y = np.where(logits > 0, "approved", "denied")
+frame = pd.DataFrame({"x": x, "group": group, "decision": y})
+
+session = (
+    Session.ingest(frame)
+    .set_roles({"x": "feature", "group": "ignore", "decision": "target"})
+    .split(test_size=0.25, validation_size=0.2, stratify=True, random_state=0)
+    .fit(LogisticRegression(max_iter=500), task="classification")
+)
+
+print(session.fairness.capability_matrix()["non_goals"][:2])
+
+# String labels require an explicit positive_label - default 1 would raise.
+report = session.fairness.evaluate(
+    sensitive_column="group",
+    partition="test",
+    positive_label="approved",
+    bootstrap_samples=50,  # optional stability bands
+)
+print(report.demographic_parity_difference)
+print(report.selection_rate_by_group)
+print(report.classical_metrics_by_group["A"]["f1"])
+print(report.to_markdown().splitlines()[0])
+
 household = np.repeat(np.arange(n // 8), 8)[:n]
 frame["household"] = household
 grouped = (
@@ -79,6 +114,41 @@ grouped = (
 Bridge after classical evaluate:
 
 ```python
+import numpy as np
+import pandas as pd
+from sklearn.linear_model import LogisticRegression
+
+from buildml import Session
+
+rng = np.random.default_rng(0)
+n = 400
+group = np.array(["A"] * (n // 2) + ["B"] * (n // 2))
+x = rng.normal(size=n)
+logits = x + np.where(group == "B", -0.7, 0.0)
+y = np.where(logits > 0, "approved", "denied")
+frame = pd.DataFrame({"x": x, "group": group, "decision": y})
+
+session = (
+    Session.ingest(frame)
+    .set_roles({"x": "feature", "group": "ignore", "decision": "target"})
+    .split(test_size=0.25, validation_size=0.2, stratify=True, random_state=0)
+    .fit(LogisticRegression(max_iter=500), task="classification")
+)
+
+print(session.fairness.capability_matrix()["non_goals"][:2])
+
+# String labels require an explicit positive_label - default 1 would raise.
+report = session.fairness.evaluate(
+    sensitive_column="group",
+    partition="test",
+    positive_label="approved",
+    bootstrap_samples=50,  # optional stability bands
+)
+print(report.demographic_parity_difference)
+print(report.selection_rate_by_group)
+print(report.classical_metrics_by_group["A"]["f1"])
+print(report.to_markdown().splitlines()[0])
+
 session.evaluate(partition="test")
 report = session.fairness.attach_to_last_eval(
     sensitive_column="group",
@@ -88,16 +158,49 @@ report = session.fairness.attach_to_last_eval(
 
 Intersectional keys (composite `group|…`):
 
-```python
-# report = session.fairness.evaluate(
-#     sensitive_column=["group", "region"],
-#     positive_label="approved",
-# )
-```
+Pass a list of existing columns to `sensitive_column`, for example
+`["group", "region"]`, to report intersectional groups. Mark these columns
+`"ignore"` when they should not be model features. The
+[fairness guide](fairness-deep.md) includes a complete example with both columns.
 
 Opt-in mitigation **suggestions** (not auto-applied, not certification):
 
 ```python
+import numpy as np
+import pandas as pd
+from sklearn.linear_model import LogisticRegression
+
+from buildml import Session
+
+rng = np.random.default_rng(0)
+n = 400
+group = np.array(["A"] * (n // 2) + ["B"] * (n // 2))
+x = rng.normal(size=n)
+logits = x + np.where(group == "B", -0.7, 0.0)
+y = np.where(logits > 0, "approved", "denied")
+frame = pd.DataFrame({"x": x, "group": group, "decision": y})
+
+session = (
+    Session.ingest(frame)
+    .set_roles({"x": "feature", "group": "ignore", "decision": "target"})
+    .split(test_size=0.25, validation_size=0.2, stratify=True, random_state=0)
+    .fit(LogisticRegression(max_iter=500), task="classification")
+)
+
+print(session.fairness.capability_matrix()["non_goals"][:2])
+
+# String labels require an explicit positive_label - default 1 would raise.
+report = session.fairness.evaluate(
+    sensitive_column="group",
+    partition="test",
+    positive_label="approved",
+    bootstrap_samples=50,  # optional stability bands
+)
+print(report.demographic_parity_difference)
+print(report.selection_rate_by_group)
+print(report.classical_metrics_by_group["A"]["f1"])
+print(report.to_markdown().splitlines()[0])
+
 thr = session.fairness.suggest_thresholds(
     sensitive_column="group",
     partition="validation",
@@ -113,6 +216,41 @@ weights = session.fairness.suggest_reweighing(
 Discoverability helpers on Session:
 
 ```python
+import numpy as np
+import pandas as pd
+from sklearn.linear_model import LogisticRegression
+
+from buildml import Session
+
+rng = np.random.default_rng(0)
+n = 400
+group = np.array(["A"] * (n // 2) + ["B"] * (n // 2))
+x = rng.normal(size=n)
+logits = x + np.where(group == "B", -0.7, 0.0)
+y = np.where(logits > 0, "approved", "denied")
+frame = pd.DataFrame({"x": x, "group": group, "decision": y})
+
+session = (
+    Session.ingest(frame)
+    .set_roles({"x": "feature", "group": "ignore", "decision": "target"})
+    .split(test_size=0.25, validation_size=0.2, stratify=True, random_state=0)
+    .fit(LogisticRegression(max_iter=500), task="classification")
+)
+
+print(session.fairness.capability_matrix()["non_goals"][:2])
+
+# String labels require an explicit positive_label - default 1 would raise.
+report = session.fairness.evaluate(
+    sensitive_column="group",
+    partition="test",
+    positive_label="approved",
+    bootstrap_samples=50,  # optional stability bands
+)
+print(report.demographic_parity_difference)
+print(report.selection_rate_by_group)
+print(report.classical_metrics_by_group["A"]["f1"])
+print(report.to_markdown().splitlines()[0])
+
 caps = Session.list_capabilities()
 print([d["domain"] for d in caps["domains"] if d["domain"] == "fairness"])
 # describe_method still keys flat names; preferred call path is session.fairness.evaluate(...)
@@ -124,4 +262,4 @@ print(Session.describe_method("evaluate_fairness")["summary"][:120])
 - Legal disparate-impact certification
 - Inferring protected class membership
 - Multi-class / regression fairness suites
-- Automatic / silent reweighing or fairness washing
+- Automatic application of reweighing or threshold suggestions

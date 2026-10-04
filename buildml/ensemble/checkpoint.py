@@ -106,15 +106,28 @@ def save_ensemble_bundle(
 
     Examples
     --------
-    ::
+    .. code-block:: python
 
-        plan, ensemble, fit = fit_stacking_ensemble(dataset, split_plan, models)
-        save_ensemble_bundle(
-            "artifacts/churn_stack",
-            plan,
-            fit_result=fit,
-            ensemble_fit_result=ensemble,
-        )
+        import pandas as pd
+        from sklearn.datasets import make_classification
+        from sklearn.tree import DecisionTreeClassifier
+        from buildml import Session
+        X, y = make_classification(n_samples=80, n_features=4, n_informative=3, n_redundant=0, random_state=42)
+        frame = pd.DataFrame(X, columns=["age", "income", "spend", "visits"])
+        frame["target"] = y
+        session = Session.ingest(frame).set_roles({"target": "target"})
+        session.split(test_size=0.2, validation_size=0.2, stratify=True, random_state=42)
+        dataset, split_plan = session.dataset, session.split_plan
+        estimator = DecisionTreeClassifier(max_depth=3, random_state=42)
+        from sklearn.dummy import DummyClassifier
+        from buildml.ensemble.fit import fit_voting_ensemble
+        plan, ensemble, fit = fit_voting_ensemble(dataset, split_plan, {"tree": estimator, "baseline": DummyClassifier()}, voting="soft")
+        from tempfile import TemporaryDirectory
+        from buildml.ensemble.checkpoint import save_ensemble_bundle, load_ensemble_bundle
+        with TemporaryDirectory() as directory:
+            path = save_ensemble_bundle(directory + "/ensemble", plan, fit_result=fit, ensemble_fit_result=ensemble)
+            restored, restored_fit = load_ensemble_bundle(path, trusted=True)
+            print(restored.strategy)
 
     See Also
     --------
@@ -188,12 +201,28 @@ def load_ensemble_bundle(path: str | Path, *, trusted: bool = False) -> tuple[En
 
     Examples
     --------
-    ::
+    .. code-block:: python
 
-        plan, fit = load_ensemble_bundle("artifacts/churn_stack")
-        print(plan.strategy, plan.estimator_names)
-        for note in plan.disclosures:
-            print(note)
+        import pandas as pd
+        from sklearn.datasets import make_classification
+        from sklearn.tree import DecisionTreeClassifier
+        from buildml import Session
+        X, y = make_classification(n_samples=80, n_features=4, n_informative=3, n_redundant=0, random_state=42)
+        frame = pd.DataFrame(X, columns=["age", "income", "spend", "visits"])
+        frame["target"] = y
+        session = Session.ingest(frame).set_roles({"target": "target"})
+        session.split(test_size=0.2, validation_size=0.2, stratify=True, random_state=42)
+        dataset, split_plan = session.dataset, session.split_plan
+        estimator = DecisionTreeClassifier(max_depth=3, random_state=42)
+        from sklearn.dummy import DummyClassifier
+        from buildml.ensemble.fit import fit_voting_ensemble
+        plan, ensemble, fit = fit_voting_ensemble(dataset, split_plan, {"tree": estimator, "baseline": DummyClassifier()}, voting="soft")
+        from tempfile import TemporaryDirectory
+        from buildml.ensemble.checkpoint import save_ensemble_bundle, load_ensemble_bundle
+        with TemporaryDirectory() as directory:
+            path = save_ensemble_bundle(directory + "/ensemble", plan, fit_result=fit, ensemble_fit_result=ensemble)
+            restored, restored_fit = load_ensemble_bundle(path, trusted=True)
+            print(restored.strategy)
 
     See Also
     --------

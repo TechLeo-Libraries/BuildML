@@ -33,13 +33,13 @@ GATE_STAGES: tuple[dict[str, Any], ...] = (
         "key": 0,
         "n": "00",
         "label": "Framing",
-        "blurb": "what the data would have to be before any statistic means anything",
+        "blurb": "define the question, observations, population and target",
     },
     {
         "key": 1,
         "n": "01",
         "label": "Data quality",
-        "blurb": "what the frame is before anything is fitted",
+        "blurb": "check missing values, data types and measurement quality before fitting",
     },
     {
         "key": 2,
@@ -51,19 +51,19 @@ GATE_STAGES: tuple[dict[str, Any], ...] = (
         "key": 3,
         "n": "03",
         "label": "Validation",
-        "blurb": "what the evidence is allowed to certify",
+        "blurb": "design splits and validation that match the intended use",
     },
     {
         "key": 4,
         "n": "04",
         "label": "Evaluation",
-        "blurb": "what a score is worth",
+        "blurb": "interpret model performance using baselines, metrics and error costs",
     },
     {
         "key": 5,
         "n": "05",
         "label": "Interpretation",
-        "blurb": "what a fitted model may be said to show, and what ships with it",
+        "blurb": "explain model results, document limitations and prepare for handoff",
     },
 )
 
@@ -446,7 +446,7 @@ def build_gate_context(report: dict[str, Any]) -> dict[str, Any]:
         "rows": analysis_rows,
         "rowsTotal": n_rows,
         "colCount": len(columns) or int(overview.get("n_columns") or 0),
-        "sampled": analysis_rows < n_rows or bool(warnings),
+        "sampled": analysis_rows < n_rows,
         "idLike": [str(x) for x in (quality.get("id_like_columns") or [])],
         "missingCells": int(quality.get("missing_cell_count") or 0),
         "missing": missing_list,
@@ -559,7 +559,7 @@ def _r00_3(c: dict[str, Any]) -> dict[str, str]:
         "status": HUMAN,
         "evidence": (
             f"{_fmt_n(c['rows'])} of {_fmt_n(c['rowsTotal'])} rows examined{sampled}; "
-            "upstream filters are invisible here."
+            "filters applied before ingestion are not recorded in this report."
         ),
         "closes": "The extract query, the window, and what was excluded.",
     }

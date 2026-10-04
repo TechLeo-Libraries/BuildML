@@ -287,7 +287,8 @@ def _bootstrap_econml_ate(
                     model_t=model_t,
                     discrete_treatment=True,
                     random_state=random_state,
-                    n_estimators=50,
+                    # EconML's default inference groups trees in subforests of four.
+                    n_estimators=48,
                 )
             else:
                 est = LinearDML(

@@ -6,10 +6,10 @@ pip install "buildml[torch]"
 
 Pretext on train ignores labels. `evaluate` needs `fit_pretext` and
 `finetune_head`. Default tabular path is Torch when that extra is in.
-This is not BERT-from-scratch and not `session.nlp`.
+Document classification has a separate `session.nlp` API.
 
 [Self-supervised deep](selfsupervised-deep.md) ·
-Paste: [`examples/selfsupervised_masked_tabular_loop.py`](../examples/selfsupervised_masked_tabular_loop.py) ·
+Runnable example: [`examples/selfsupervised_masked_tabular_loop.py`](../examples/selfsupervised_masked_tabular_loop.py) ·
 Evidence: [ssl-representation-probe](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/ssl-representation-probe)
 
 ```bash
@@ -53,19 +53,34 @@ Other tabular methods: `byol_tabular`, `vicreg_tabular`, `mae_tabular`, `vae_tab
 Text SSL (`buildml[ssl]`):
 
 ```python
+# Requires: pip install "buildml[ssl]"; downloads a sentence-transformer on first use.
+import pandas as pd
+from buildml import Session
+
+frame = pd.DataFrame({"text": [f"invoice payment issue {i}" if i % 2 else f"parcel delivery issue {i}" for i in range(40)],
+                      "label": [i % 2 for i in range(40)]})
+session = (Session.ingest(frame)
+    .set_roles({"text": "feature", "label": "target"})
+    .split(test_size=0.25, stratify=True, random_state=0))
 session.ssl.fit_pretext(method="hf_text_ssl", text_column="text", latent_dim=384)
 ```
 
 Vision SSL (`buildml[vision]`):
 
 ```python
-session.ssl.fit_pretext(
-    method="vision_ssl",
-    image_column="path",
-    backbone="resnet18",
-    weight_mode="mock",
-    epochs=5,
-)
+# Requires: pip install "buildml[vision]"
+import numpy as np
+import pandas as pd
+from buildml import Session
+
+rng = np.random.default_rng(0)
+frame = pd.DataFrame({"image": [rng.integers(0, 256, size=(32, 32, 3), dtype=np.uint8) for _ in range(24)],
+                      "label": [i % 2 for i in range(24)]})
+session = (Session.ingest(frame)
+    .set_roles({"image": "feature", "label": "target"})
+    .split(test_size=0.25, stratify=True, random_state=0))
+session.ssl.fit_pretext(method="vision_ssl", image_column="image", backbone="resnet18",
+                        weight_mode="mock", epochs=2)
 ```
 
 **Deprecated:** `method="masked_tabular"` (sklearn MLP): migrate to Torch methods.

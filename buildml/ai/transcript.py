@@ -1,23 +1,15 @@
 """Keep a record of what the AI operator said, did, and disclosed.
 
-An agent that acts on your Session needs to leave an account of itself. A
-:class:`TranscriptStore` is that account: every message, every proposed call,
-every result, every confirmation, every failure, and: crucially: every
-:class:`~buildml.ai.privacy.EgressManifest`, so the question of what a provider
-received always has a written answer.
-
-Transcripts are redacted on the way out. Secrets have a way of ending up in
-conversation text: a key pasted into a prompt, a bearer token in an error
-message, a connection string in a stack trace: and a transcript written to
-disk is a file that gets copied, attached, and committed. Known credential
-shapes are masked before anything is persisted.
+:class:`TranscriptStore` records messages, tool calls, results, confirmations,
+errors, and egress manifests supplied by the caller. Saving applies pattern-based
+credential redaction to message content, tool results, and error text.
 
 Notes
 -----
 **Redaction covers message content, tool results, and error text.** Tool call
-arguments are not scanned, because they are validated against a schema and are
-structured rather than free text. A tool that accepts an opaque string argument
-is a place to be careful.
+arguments are not scanned by this redactor. Schema validation does not ensure
+that argument values contain no secrets; inspect those values before sharing
+transcripts.
 
 See Also
 --------
@@ -123,12 +115,21 @@ class TranscriptStore:
 
     Examples
     --------
-    Record a turn and persist it::
+    Save a transcript in a temporary directory::
 
-        store = TranscriptStore(session_id="run-42")
-        store.add_message(Message(role="user", content="what next?"))
-        store.add_egress_manifest(manifest)
-        save_transcript(store, "runs/run-42.json")
+        from pathlib import Path
+        from tempfile import TemporaryDirectory
+        from buildml.ai.transcript import TranscriptStore, save_transcript
+        from buildml.ai.types import Message
+
+        store = TranscriptStore(session_id='run-42')
+        store.add_message(Message(role='user', content='What columns are available?'))
+        with TemporaryDirectory() as directory:
+            path = Path(directory) / 'run-42.json'
+            save_transcript(store, path)
+            print(path.is_file())
+
+
 
     See Also
     --------
@@ -426,9 +427,21 @@ def save_transcript(
 
     Examples
     --------
-    Save under the generated session id::
+    Save a transcript in a temporary directory::
 
-        save_transcript(store, f"transcripts/{store.session_id}.json")
+        from pathlib import Path
+        from tempfile import TemporaryDirectory
+        from buildml.ai.transcript import TranscriptStore, save_transcript
+        from buildml.ai.types import Message
+
+        store = TranscriptStore(session_id='run-42')
+        store.add_message(Message(role='user', content='What columns are available?'))
+        with TemporaryDirectory() as directory:
+            path = Path(directory) / 'run-42.json'
+            save_transcript(store, path)
+            print(path.is_file())
+
+
 
     See Also
     --------

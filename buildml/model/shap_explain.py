@@ -39,7 +39,7 @@ def require_shap(*, feature: str = "SHAP attribution") -> Any:
 
 @dataclass(slots=True)
 class ShapExplainResult:
-    """Mean |SHAP| importances plus honesty disclosures."""
+    """Mean |SHAP| importances plus implementation limitations."""
 
     backend: str
     n_rows: int

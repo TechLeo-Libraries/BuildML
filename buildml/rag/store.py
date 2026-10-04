@@ -1,19 +1,9 @@
-"""Hold the vectors, and find the nearest ones to a query.
+"""Store passage vectors and rank them by cosine similarity.
 
-Similarity search over unit-length vectors is a matrix multiply. Normalise every
-row when the store is built, normalise the query, and the dot product *is* the
-cosine similarity: no per-query normalisation, no division, one BLAS call
-across the whole corpus.
-
-The default store does exactly that and nothing else: exact, brute-force, and
-fast enough that tens of thousands of chunks search in milliseconds. Approximate
-indexes exist for corpora large enough to need them, and trade recall for speed;
-until that trade is measured rather than assumed, exact is the right default.
-
-See Also
---------
-buildml.rag.index : What builds a store.
-buildml.rag.retrieve : What queries one.
+The NumPy implementation normalizes stored vectors and each query, then scores
+all vectors with a matrix multiplication. Search is exact over the stored
+vectors. Runtime and memory use depend on corpus size, vector dimension, and
+hardware; this implementation does not provide an approximate index.
 """
 
 from __future__ import annotations

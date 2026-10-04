@@ -5,17 +5,16 @@ pip install buildml
 ```
 
 A checkpoint resumes the data workflow. A pipeline bundle scores new rows.
-A domain bundle holds that domain's fitted plan. They do not embed each
-other. Load a checkpoint expecting weights, or a pipeline expecting the
-table, and you will get a silent gap.
+A domain bundle holds that domain's fitted plan. They store different information. Choose the artifact according to whether
+you need to resume data preparation or use a fitted model for predictions.
 
 Pickle / joblib / torch loaders default to `trusted=False`. Pass
-`trusted=True` only for a file you made. RAG bundles are JSONL / NumPy and
+`trusted=True` only for a file you created or whose source and contents you trust. RAG bundles are JSONL / NumPy and
 do not use that gate.
 
 ---
 
-## The three you pick first
+## Artifact types and scoring
 
 | Artifact | Typical API | Holds | Does not hold |
 | --- | --- | --- | --- |
@@ -42,7 +41,7 @@ are separate on purpose:
 
 Serving helpers (`session.dl.pack_torchserve`,
 `session.dl.prepare_tensorrt`, `session.dl.emit_k8s_ddp`) write recipes
-and templates. They do not start a managed cloud.
+and templates. Deploying those templates requires a separately configured service.
 
 Schemas follow `buildml.<domain>_bundle.v1` (and
 `buildml.torch_bundle.v1`, `buildml.rag_bundle.v1`,
@@ -82,7 +81,7 @@ session.checkpoint_save(
     sidecar_compression="zstd",
 )
 
-restored = Session.checkpoint_load("artifacts/checkpoint")
+restored = Session.checkpoint_load("artifacts/checkpoint", trusted=True)
 print(restored.reattach_result.status)
 
 restored.fit(LogisticRegression(max_iter=500), task="classification")
@@ -101,6 +100,44 @@ you want the frame without replaying history.
 ## Use case: predict_from_pipeline on new rows
 
 ```python
+import pandas as pd
+from sklearn.linear_model import LogisticRegression
+
+from buildml import Session
+
+frame = pd.DataFrame(
+    {
+        "age": [21, None, 35, 40, 29, 33, 52, 47],
+        "income": [40, 55, 60, 80, 50, 70, 90, 65],
+        "approved": [0, 1, 0, 1, 0, 1, 1, 0],
+    }
+)
+
+session = (
+    Session.ingest(frame)
+    .set_roles({"age": "feature", "income": "feature", "approved": "target"})
+    .split(test_size=0.25, stratify=True, random_state=0)
+    .impute(strategy="median")
+    .scale(method="standard")
+)
+
+session.checkpoint_save(
+    "artifacts/checkpoint",
+    sidecar_layout="auto",
+    sidecar_partition_rows=25_000,
+    sidecar_compression="zstd",
+)
+
+restored = Session.checkpoint_load("artifacts/checkpoint", trusted=True)
+print(restored.reattach_result.status)
+
+restored.fit(LogisticRegression(max_iter=500), task="classification")
+restored.save_pipeline("artifacts/pipeline", evaluate_partition="test")
+print(restored.model_card.lineage.get("plans_present"))
+
+# Estimator-only (no plans): prefer pipeline when prep must travel:
+restored.save_model("artifacts/model_only")
+
 from buildml.pipeline import predict_from_pipeline
 
 holdout = restored.partition("test")
@@ -108,6 +145,7 @@ scored = predict_from_pipeline(
     "artifacts/pipeline",
     holdout,
     return_proba=True,
+    trusted=True,
 )
 print(scored)
 ```
@@ -117,21 +155,15 @@ inference rows.
 
 ---
 
-## Use case: Torch / RAG / AI stay separate
+## Torch, RAG, and AI artifacts
 
-```python
-# Torch (buildml[torch])
-# session.dl.save_bundle("artifacts/torch_bundle")
-# restored.dl.load_bundle(path, module, map_location="cpu")
-# restored.dl.make_loaders(...)  # required again: load does not rebuild loaders
+Use the complete examples in the corresponding guides:
 
-# RAG (buildml[rag])
-# session.rag.save_bundle("artifacts/rag_bundle")
-# Session().rag.load_bundle("artifacts/rag_bundle")
-
-# AI (buildml[ai])
-# session.ai.save_transcript("artifacts/transcript.json")  # secrets redacted
-```
+| Artifact | Complete workflow |
+| --- | --- |
+| Torch model bundle and loader reconstruction | [Torch guide](torch-deep.md) |
+| RAG embeddings, index, and configuration | [RAG guide](rag-deep.md) |
+| AI conversation and tool-call transcript | [AI operator guide](ai-operator-safety.md) |
 
 Serving a pipeline or TorchScript artifact:
 [serve-deploy](serve-deploy.md).

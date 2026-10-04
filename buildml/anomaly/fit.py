@@ -356,8 +356,6 @@ def anomaly_scores(
 ) -> np.ndarray:
     """Compute higher-is-more-anomalous scores from a frozen plan or raw estimator.
 
-Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
-
 Parameters
 ----------
 plan_or_estimator:

@@ -244,7 +244,7 @@ class WorkflowSessionMixin:
         """Report which domain artifacts are present on this Session.
 
         Presence of plan/result attributes is not a maturity score; use
-        capability matrices for backend honesty.
+        capability matrices for backend availability and limitations.
 
         Returns
         -------

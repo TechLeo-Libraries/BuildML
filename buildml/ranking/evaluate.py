@@ -52,7 +52,7 @@ def evaluate_ranker(
     Returns
     -------
     RankerEvalResult
-        Macro-averaged metrics, query counts, and honesty disclosures.
+        Macro-averaged metrics, query counts, and implementation limitations.
 
     Raises
     ------

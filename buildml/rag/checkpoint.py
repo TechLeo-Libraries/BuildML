@@ -1,27 +1,12 @@
-"""Save an index to disk and load it back, without re-embedding the corpus.
+"""Save and reload RAG indexes without re-embedding stored passages.
 
-Building an index is the expensive part of RAG. Embedding a large corpus with a
-semantic model takes minutes and, on a paid API, money. Doing that again on
-every process start is the difference between a demo and something usable, so
-the embeddings are persisted.
+A bundle stores configuration in ``meta.json``, passage text and metadata in
+``chunks.jsonl``, and vectors in ``embeddings.npy``. These bundle files do not
+use pickle serialization. Reloading may initialize the configured embedding
+backend, which must be available to encode new queries.
 
-A RAG bundle is a directory, deliberately not a single opaque file: ``meta.json``
-holding the configuration, ``chunks.jsonl`` holding the text and metadata, and
-``embeddings.npy`` holding the vectors. Every part is inspectable with ordinary
-tools, and nothing is pickled: a bundle can be loaded without executing
-anything it contains.
-
-**This is not a Session checkpoint, and the distinction costs people their
-indexes.** A Session checkpoint stores data, roles, splits, history, and
-classical plans; it does not store the vector index. Restore a checkpoint and
-retrieval will not work until an index is rebuilt or a bundle is loaded. The
-boundary is stated in every bundle's metadata for the same reason it is stated
-here.
-
-See Also
---------
-buildml.rag.index.build_index : Producing what gets saved.
-buildml.rag.explain_hooks.rag_status : Seeing whether an index is attached.
+Session checkpoints do not include the RAG vector index. Save a RAG bundle
+separately and load it after restoring a Session checkpoint.
 """
 
 from __future__ import annotations
@@ -154,6 +139,22 @@ def save_rag_bundle(
     --------
     Save with its evaluation attached::
 
+        from buildml.rag.corpus import corpus_from_documents
+
+        corpus = corpus_from_documents([
+            {"doc_id": "refund", "text": "Refunds are available within 30 days of purchase.", "metadata": {"version": "2024"}},
+            {"doc_id": "cancel", "text": "Cancel a subscription from the account settings page.", "metadata": {"version": "2024"}},
+        ])
+        from buildml.rag.index import build_index
+        from buildml.rag.retrieve import retrieve
+
+        # Hashing runs locally without downloading an embedding model.
+        index = build_index(corpus, embedder="hashing", chunk_size=128, chunk_overlap=16)
+        qrels = [{"query": "refund window", "relevant_doc_ids": ["refund"]},
+                 {"query": "cancel subscription", "relevant_doc_ids": ["cancel"]}]
+        from buildml.rag.evaluate import evaluate_retrieval
+        from buildml.rag.checkpoint import save_rag_bundle
+        metrics = evaluate_retrieval(index, qrels, k=2)
         save_rag_bundle("artifacts/faq_index", index, eval_result=metrics)
 
     See Also
@@ -236,8 +237,22 @@ def load_rag_bundle(path: str | Path) -> RagIndex:
     --------
     Reload and query::
 
-        index = load_rag_bundle("artifacts/faq_index")
-        hits = retrieve(index, "how do I cancel?", k=5)
+        from buildml.rag.corpus import corpus_from_documents
+
+        corpus = corpus_from_documents([
+            {"doc_id": "refund", "text": "Refunds are available within 30 days of purchase.", "metadata": {"version": "2024"}},
+            {"doc_id": "cancel", "text": "Cancel a subscription from the account settings page.", "metadata": {"version": "2024"}},
+        ])
+        from buildml.rag.index import build_index
+        from buildml.rag.retrieve import retrieve
+
+        # Hashing runs locally without downloading an embedding model.
+        index = build_index(corpus, embedder="hashing", chunk_size=128, chunk_overlap=16)
+        from buildml.rag.checkpoint import save_rag_bundle, load_rag_bundle
+        save_rag_bundle("artifacts/faq_index", index)
+        restored = load_rag_bundle("artifacts/faq_index")
+        hits = retrieve(restored, "how do I cancel?", k=2)
+        print([hit.doc_id for hit in hits.hits])
 
     See Also
     --------

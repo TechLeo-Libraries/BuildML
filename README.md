@@ -3,23 +3,23 @@
 BuildML is a Python machine-learning library. One object holds your
 data, the train / validation / test split, preprocessing, the model, and
 the history of what you ran. That object is called a Session. The core
-path is classification and regression. The same object also runs
+workflows are classification and regression. The same object also supports
 forecasting, AutoML, fairness, recommenders, RAG, graphs, NLP, Torch,
-and the other domains in this repo. If you try to prepare or fit before
-a split, it stops you.
+and the other documented domains. Model fitting and preprocessing steps
+that learn parameters require a split.
 
 You choose the estimator. BuildML coordinates its data preparation,
 training, evaluation, and saved artifacts through the Session.
 
-A Session is a unified, stateful ML lifecycle. Enforced leakage
-safeguards, fold-local preprocessing, contextual teaching, workflow
-guidance, checkpointing, and auditable export live on that same object.
+Training-partition checks and fold-local preprocessing help prevent leakage.
+Teaching methods explain available operations, while checkpoints and reports
+let you resume or inspect the workflow.
 
 ```bash
 pip install buildml
 ```
 
-Python 3.10 through 3.13. This repository contains BuildML **2.6.3**.
+Python 3.10 through 3.13. This repository contains BuildML **2.6.4**.
 `pip install buildml` installs the latest published stable release from PyPI.
 Wheels `2.4.0a3`–`2.6.0` cannot `import buildml`; use `>=2.6.1`.
 The public entry point is `buildml.Session`.
@@ -51,7 +51,7 @@ print(session.evaluate(partition="test").metrics)
 ```
 
 Roles say how each column may be used. `split` creates the holdout.
-`impute` and `scale` learn from training rows and apply frozen numbers
+`impute` and `scale` learn from training rows and apply the fitted parameters
 everywhere else. `evaluate` scores the partition you name.
 
 When rows are not interchangeable (the same customer twice, a time order),
@@ -74,6 +74,8 @@ example uses a larger bundled dataset so each fold has enough examples:
 ```python
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.datasets import load_breast_cancer
+from sklearn.linear_model import LogisticRegression
+from buildml import Session
 from buildml.preprocess import PreprocessRecipe
 
 cv_frame = load_breast_cancer(as_frame=True).frame
@@ -105,14 +107,22 @@ The Session also remembers the run. You can ask what a step means, what is
 blocked, or write a walkthrough for someone else.
 
 ```python
-session.explain("split")           # this Session, right now
-session.learn("leakage")           # the idea, in reading order
-session.workflow()                 # done / available / blocked
+import pandas as pd
+from buildml import Session
+
+frame = pd.DataFrame({"age": range(20, 60), "approved": [0, 1] * 20})
+session = Session.ingest(frame).set_roles({"age": "feature", "approved": "target"})
+session.split(test_size=0.25, stratify=True, random_state=42)
+
+print(session.explain("split"))
+print(session.learn("leakage"))
+print(session.workflow())
 ```
 
-`beginner` is the default reading level. It does not assume machine-learning
-vocabulary. Teaching copy explains the contract. It does not inspect your
-data or certify that a choice fits the domain.
+`beginner` is the default reading level and explains machine-learning terms
+as they appear. These tools describe how BuildML operations work and which
+steps are available. Choosing a suitable split and model still requires
+knowledge of your data and the problem you are solving.
 
 ---
 
@@ -120,7 +130,7 @@ data or certify that a choice fits the domain.
 
 | I want to… | Open |
 | --- | --- |
-| Run a few real loops (imbalance, groups, time) | [First Session](https://buildml.readthedocs.io/en/latest/usage.html) |
+| Try classification with imbalanced, grouped, or time-ordered data | [First Session](https://buildml.readthedocs.io/en/latest/usage.html) |
 | Understand roles, leakage, and partitions | [Concepts](https://buildml.readthedocs.io/en/latest/concepts.html) |
 | Follow the order as a decision path | [Workflow guide](https://buildml.readthedocs.io/en/latest/workflow-guide.html) |
 | Work a full classical tutorial | [Classical quickstart](https://github.com/TechLeo-Libraries/BuildML/blob/main/guides/quickstart-classical.md) |
@@ -164,6 +174,15 @@ optional preprocess plans). A pipeline bundle stores fitted plans and the
 estimator. They do not embed each other.
 
 ```python
+import pandas as pd
+from sklearn.tree import DecisionTreeClassifier
+from buildml import Session
+
+frame = pd.DataFrame({"age": range(20, 60), "approved": [0, 1] * 20})
+session = Session.ingest(frame).set_roles({"age": "feature", "approved": "target"})
+session.split(test_size=0.25, stratify=True, random_state=42)
+session.fit(DecisionTreeClassifier(max_depth=2, random_state=42), task="classification")
+
 session.checkpoint_save("artifacts/checkpoint")
 restored = Session.checkpoint_load("artifacts/checkpoint", trusted=True)
 

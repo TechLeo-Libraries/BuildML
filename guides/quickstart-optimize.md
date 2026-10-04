@@ -10,10 +10,10 @@ on test is refused unless `allow_test_tuning=True`. Not a general MIP
 platform.
 
 [Decisions deep](optimize-deep.md) ·
-Paste: [`examples/decision_threshold_loop.py`](../examples/decision_threshold_loop.py) ·
+Runnable example: [`examples/decision_threshold_loop.py`](../examples/decision_threshold_loop.py) ·
 Evidence: [cost-sensitive-collections](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/cost-sensitive-collections)
 
-**Not** a general operations-research platform, arbitrary MIP suite, or digital twin.
+The optimization interface supports the policy and allocation forms listed below.
 
 ---
 
@@ -99,10 +99,10 @@ session.decision.save_bundle("artifacts/decision_demo_bundle")
 
 ---
 
-## Honesty
+## Supported decision methods
 
 Decision helpers for ML scores/costs/allocations: scoped PuLP/OR-Tools MIP
-knapsack and CVXPY LP only; not a general OR platform or digital twin.
+knapsack and CVXPY linear allocation problems.
 `tune_threshold` remains the classical diagnostic sweep;
 `session.decision.fit(method="threshold")` persists the chosen operating point.
 

@@ -151,13 +151,32 @@ def save_torch_bundle(path: str | Path, train_result: TrainResult) -> Path:
 
     Examples
     --------
-    Save after training, then inspect without Torch::
+    .. code-block:: python
 
-        save_torch_bundle("artifacts/run-01", train_result)
-
-        import json
-        meta = json.loads(open("artifacts/run-01/meta.json").read())
-        meta["contract"]["feature_columns"]
+        # Install PyTorch support first: pip install "buildml[torch]"
+        import pandas as pd
+        import torch
+        from sklearn.datasets import make_classification
+        from buildml import Session
+        X, y = make_classification(n_samples=40, n_features=4, n_informative=3, n_redundant=0, random_state=42)
+        frame = pd.DataFrame(X, columns=["a", "b", "c", "d"])
+        frame["target"] = y
+        session = Session.ingest(frame).set_roles({"target": "target"})
+        session.split(test_size=0.2, validation_size=0.2, stratify=True, random_state=42)
+        dataset, split_plan = session.dataset, session.split_plan
+        from buildml.dl.loaders import make_loaders
+        from buildml.dl.types import TrainConfig
+        from buildml.dl.train import train_supervised_module
+        bundle = make_loaders(dataset, split_plan, task="classification")
+        torch.manual_seed(42)
+        module = torch.nn.Linear(4, 2)
+        train_result = train_supervised_module(module, bundle, config=TrainConfig(epochs=1, device="cpu"))
+        from tempfile import TemporaryDirectory
+        from buildml.dl.checkpoint import save_torch_bundle, load_torch_bundle
+        with TemporaryDirectory() as directory:
+            path = save_torch_bundle(directory + "/model", train_result)
+            restored = load_torch_bundle(path, torch.nn.Linear(4, 2), trusted=True)
+            print(restored.n_epochs_ran)
 
     See Also
     --------
@@ -261,11 +280,32 @@ def load_torch_bundle(
 
     Examples
     --------
-    Reconstruct and resume::
+    .. code-block:: python
 
-        module = MyNetwork(n_features=12, n_classes=3)
-        result = load_torch_bundle("artifacts/run-01", module)
-        result.n_epochs_ran
+        # Install PyTorch support first: pip install "buildml[torch]"
+        import pandas as pd
+        import torch
+        from sklearn.datasets import make_classification
+        from buildml import Session
+        X, y = make_classification(n_samples=40, n_features=4, n_informative=3, n_redundant=0, random_state=42)
+        frame = pd.DataFrame(X, columns=["a", "b", "c", "d"])
+        frame["target"] = y
+        session = Session.ingest(frame).set_roles({"target": "target"})
+        session.split(test_size=0.2, validation_size=0.2, stratify=True, random_state=42)
+        dataset, split_plan = session.dataset, session.split_plan
+        from buildml.dl.loaders import make_loaders
+        from buildml.dl.types import TrainConfig
+        from buildml.dl.train import train_supervised_module
+        bundle = make_loaders(dataset, split_plan, task="classification")
+        torch.manual_seed(42)
+        module = torch.nn.Linear(4, 2)
+        train_result = train_supervised_module(module, bundle, config=TrainConfig(epochs=1, device="cpu"))
+        from tempfile import TemporaryDirectory
+        from buildml.dl.checkpoint import save_torch_bundle, load_torch_bundle
+        with TemporaryDirectory() as directory:
+            path = save_torch_bundle(directory + "/model", train_result)
+            restored = load_torch_bundle(path, torch.nn.Linear(4, 2), trusted=True)
+            print(restored.n_epochs_ran)
 
     See Also
     --------

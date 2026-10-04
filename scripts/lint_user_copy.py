@@ -20,6 +20,13 @@ QUOTED_EXAMPLE_DOCS: set[str] = set()
 
 COPY_RULES: tuple[tuple[str, re.Pattern[str]], ...] = (
     (
+        "unrelated-session-boilerplate",
+        re.compile(
+            r"Called from the Session-facing workflow after splits and roles are set",
+            re.IGNORECASE,
+        ),
+    ),
+    (
         "internal-or-dismissive-copy",
         re.compile(
             r"\b(?:estimator\s+zoo|empty\s+theater|perfect[- ]score\s+theater|"

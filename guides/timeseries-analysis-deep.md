@@ -12,7 +12,7 @@ model. That is `session.forecast`.
 
 Prophet and N-BEATS extras belong to forecasting, not this surface.
 
-Short on-ramp: [time-series analysis quickstart](quickstart-timeseries-analysis.md)
+Quickstart: [time-series analysis quickstart](quickstart-timeseries-analysis.md)
 · [Forecasting](quickstart-forecasting.md).
 
 ## What you get

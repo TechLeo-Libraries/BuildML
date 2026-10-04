@@ -122,8 +122,6 @@ ValidationError
 def matrix_from_frame(frame: pd.DataFrame, columns: list[str]) -> Any:
     """Build a float design matrix; refuse nulls with a precise message.
 
-Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
-
 Parameters
 ----------
 frame:

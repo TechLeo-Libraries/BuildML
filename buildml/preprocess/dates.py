@@ -1,21 +1,17 @@
-"""Turn timestamps into features a model can actually use.
+"""Extract calendar features from timestamps.
 
-A raw timestamp is close to useless to most estimators. Treated as a number it
-becomes "seconds since 1970", which grows monotonically and tells the model
-almost nothing beyond "later": and worse, guarantees that every future row
-falls outside the training range. Treated as a category, every timestamp is
-unique and the column carries no signal at all.
+Raw timestamps may encode trends, but many estimators need numeric inputs.
+Numeric timestamps do not explicitly represent recurring calendar patterns,
+and predictions beyond the training period can require extrapolation. Treating
+high-cardinality timestamps as categories can make generalisation difficult.
 
-What is actually predictive lives in the *parts*: the day of the week, because
-weekends behave differently; the month, because demand is seasonal; the hour,
-because mornings are not evenings; whether the date is the start or end of a
-month, because billing cycles are real. Splitting one timestamp into those
-components gives the model something it can learn a pattern from.
+Calendar features include the day of the week, month, hour, and indicators
+for the start or end of a month. These can represent recurring patterns such
+as weekly demand or billing cycles when those patterns matter to the task.
 
-This module does that expansion. It is deliberately not fitted: the calendar
-is the same for training and test rows, so there is no statistic to learn and
-no way for this step to leak. For lag features and rolling windows, which
-absolutely can leak, see :mod:`buildml.forecasting.features`.
+Calendar extraction does not estimate statistics from the data. The source
+timestamp must still be available at prediction time. For lag features and
+rolling windows, see :mod:`buildml.forecasting.features`.
 """
 
 from __future__ import annotations
@@ -146,11 +142,15 @@ def extract_date_features(
 
     Examples
     --------
-    >>> data, plan = extract_date_features(  # doctest: +SKIP
-    ...     dataset, ["order_date"], drop_original=True
-    ... )
-    >>> plan.created_columns[:3]  # doctest: +SKIP
-    ('order_date_year', 'order_date_month', 'order_date_day')
+    >>> import numpy as np
+    >>> import pandas as pd
+    >>> from buildml import Session
+    >>> frame = pd.DataFrame({"order_date": pd.date_range("2024-01-01", periods=40), "income": np.arange(40, dtype=float) ** 2, "target": [0, 1] * 20})
+    >>> session = Session.ingest(frame).set_roles({"target": "target"})
+    >>> _ = session.split(test_size=0.25, stratify=True, random_state=42)
+    >>> dataset, split_plan = session.dataset, session.split_plan
+    >>> from buildml.preprocess.dates import extract_date_features
+    >>> data, plan = extract_date_features(dataset, ["order_date"], drop_original=True)
 
     See Also
     --------

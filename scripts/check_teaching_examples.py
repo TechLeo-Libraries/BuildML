@@ -1,8 +1,8 @@
 """Bind authored teaching examples to the installed Session API without executing them.
 
-Examples are contextual fragments: their data and models may be supplied by the
-reader. This checks complete argument binding, including required arguments,
-and reports unparseable fragments rather than silently skipping them.
+This checks complete argument binding, including required arguments, and
+reports unparseable examples. The documentation-example checker separately
+checks standalone imports and data definitions.
 """
 from __future__ import annotations
 
@@ -28,6 +28,34 @@ def _literal_choices(annotation):
         if all(part is not None for part in choices):
             return tuple(value for part in choices for value in part)
     return None
+
+
+def _attribute_path(node):
+    """Return a simple dotted name, excluding methods on returned objects."""
+    if isinstance(node, ast.Name):
+        return [node.id]
+    if isinstance(node, ast.Attribute):
+        parent = _attribute_path(node.value)
+        return None if parent is None else [*parent, node.attr]
+    return None
+
+
+def _split_receivers(tree):
+    """Recognize direct split calls and split calls in assigned fluent chains."""
+    methods = {"inject_split", "split", "group_split", "time_split"}
+    receivers = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Call):
+            parts = _attribute_path(node.func)
+            if parts and parts[-1] in methods:
+                receivers.add(parts[0])
+        if isinstance(node, ast.Assign):
+            value = node.value
+            while isinstance(value, ast.Call) and isinstance(value.func, ast.Attribute):
+                if value.func.attr in methods:
+                    receivers.update(target.id for target in node.targets if isinstance(target, ast.Name))
+                value = value.func.value
+    return receivers
 
 
 def check_examples() -> tuple[int, list[str]]:
@@ -58,15 +86,13 @@ def check_examples() -> tuple[int, list[str]]:
                 and ast.unparse(statement.value).startswith(("Session.ingest(", "Session()."))
                 for target in statement.targets if isinstance(target, ast.Name)
             }
-            restored_splits = {
-                ast.unparse(call.func).split(".")[0]
-                for call in ast.walk(tree) if isinstance(call, ast.Call)
-                and ast.unparse(call.func).endswith((".inject_split", ".split", ".group_split", ".time_split"))
-            }
+            restored_splits = _split_receivers(tree)
             for call in ast.walk(tree):
                 if not isinstance(call, ast.Call):
                     continue
-                parts = ast.unparse(call.func).split(".")
+                parts = _attribute_path(call.func)
+                if parts is None:
+                    continue
                 if parts[0] not in {"session", "job", "service", "restored", "resumed", "review", "svc", "app", "serving", "audit", "other", "later"} or len(parts) not in {2, 3}:
                     continue
                 method = parts[-1] if len(parts) == 2 else DOMAIN_FACADES.get(parts[1], {}).get("bindings", {}).get(parts[2])
@@ -100,8 +126,8 @@ def check_examples() -> tuple[int, list[str]]:
             result_types = {}
             for statement in tree.body:
                 if isinstance(statement, ast.Assign) and isinstance(statement.value, ast.Call):
-                    parts = ast.unparse(statement.value.func).split(".")
-                    if parts[0] == "session" and len(parts) in {2, 3}:
+                    parts = _attribute_path(statement.value.func) or []
+                    if parts and parts[0] == "session" and len(parts) in {2, 3}:
                         method = parts[-1] if len(parts) == 2 else DOMAIN_FACADES.get(parts[1], {}).get("bindings", {}).get(parts[2])
                         function = getattr(Session, method or "", None)
                         try:

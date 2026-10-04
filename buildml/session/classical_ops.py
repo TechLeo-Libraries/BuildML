@@ -469,9 +469,18 @@ def eval_plots(
 
     Examples
     --------
-    >>> board = session.eval_plots(export_html="reports/board.html")  # doctest: +SKIP
-    >>> board.skipped  # doctest: +SKIP
-    ['roc_curve: estimator has no predict_proba']
+    >>> import pandas as pd
+    >>> from sklearn.datasets import make_classification
+    >>> from sklearn.tree import DecisionTreeClassifier
+    >>> from buildml import Session
+    >>> X, y = make_classification(n_samples=120, n_features=4, n_informative=3, n_redundant=0, random_state=42)
+    >>> frame = pd.DataFrame(X, columns=["a", "b", "c", "d"])
+    >>> frame["target"] = y
+    >>> session = Session.ingest(frame).set_roles({"target": "target"})
+    >>> _ = session.split(test_size=0.2, validation_size=0.2, stratify=True, random_state=42)
+    >>> _ = session.fit(DecisionTreeClassifier(max_depth=3, random_state=42))
+    >>> # Install plotting dependencies first: pip install "buildml[viz]"
+    >>> board = session.eval_plots()
 
     See Also
     --------
@@ -580,15 +589,17 @@ def compare_models(
 
     Examples
     --------
-    >>> from sklearn.ensemble import RandomForestClassifier
-    >>> from sklearn.linear_model import LogisticRegression
-    >>> comparison = session.compare_models(
-    ...     {
-    ...         "logistic": LogisticRegression(max_iter=500),
-    ...         "forest": RandomForestClassifier(random_state=0),
-    ...     },
-    ...     partition="validation",
-    ... )  # doctest: +SKIP
+    >>> import pandas as pd
+    >>> from sklearn.datasets import make_classification
+    >>> from sklearn.tree import DecisionTreeClassifier
+    >>> from buildml import Session
+    >>> X, y = make_classification(n_samples=120, n_features=4, n_informative=3, n_redundant=0, random_state=42)
+    >>> frame = pd.DataFrame(X, columns=["a", "b", "c", "d"])
+    >>> frame["target"] = y
+    >>> session = Session.ingest(frame).set_roles({"target": "target"})
+    >>> _ = session.split(test_size=0.2, validation_size=0.2, stratify=True, random_state=42)
+    >>> from sklearn.dummy import DummyClassifier
+    >>> comparison = session.compare_models({"tree": DecisionTreeClassifier(max_depth=3, random_state=42), "baseline": DummyClassifier(strategy="most_frequent")})
 
     See Also
     --------
@@ -668,8 +679,8 @@ def cv_score(
         How rows are assigned to folds when ``cv`` is a number. ``'auto'``
         reads the column roles and picks for you. ``'stratified'``
         preserves class balance in every fold, which matters for imbalanced
-        classification. ``'group'`` keeps an entity's rows in the same fold
-       : the cross-validation equivalent of :meth:`group_split`.
+        classification. ``'group'`` keeps an entity's rows in the same fold,
+        as :meth:`group_split` does for a single split.
         ``'stratified_group'`` does both. ``'time'`` only ever trains on
         folds earlier than the one being scored. Choosing wrongly here
         recreates the leakage the split was designed to prevent.
@@ -723,20 +734,19 @@ def cv_score(
 
     Examples
     --------
-    >>> from sklearn.ensemble import RandomForestClassifier
-    >>> result = session.cv_score(
-    ...     RandomForestClassifier(random_state=0), cv=5, cv_strategy="stratified"
-    ... )  # doctest: +SKIP
-    >>> result.mean_metrics["accuracy"], result.std_metrics["accuracy"]  # doctest: +SKIP
-    (0.884, 0.021)
-
-    With preprocessing done correctly, inside each fold:
-
-    >>> from buildml.preprocess.fold import PreprocessRecipe
+    >>> import pandas as pd
+    >>> from sklearn.datasets import make_classification
+    >>> from sklearn.tree import DecisionTreeClassifier
+    >>> from buildml import Session
+    >>> X, y = make_classification(n_samples=120, n_features=4, n_informative=3, n_redundant=0, random_state=42)
+    >>> frame = pd.DataFrame(X, columns=["a", "b", "c", "d"])
+    >>> frame["target"] = y
+    >>> session = Session.ingest(frame).set_roles({"target": "target"})
+    >>> _ = session.split(test_size=0.2, validation_size=0.2, stratify=True, random_state=42)
+    >>> from buildml.preprocess import PreprocessRecipe
     >>> recipe = PreprocessRecipe(impute="median", scale="standard")
-    >>> result = session.cv_score(
-    ...     RandomForestClassifier(), preprocess=recipe
-    ... )  # doctest: +SKIP
+    >>> result = session.cv_score(DecisionTreeClassifier(max_depth=3, random_state=42), cv=3, preprocess=recipe)
+    >>> assert "accuracy" in result.mean_metrics
 
     See Also
     --------
@@ -907,7 +917,7 @@ def nested_cv_score(
     Returns
     -------
     ~buildml.model.selection.NestedCVResult
-        ``mean_metrics`` and ``std_metrics`` hold the honest estimate and
+        ``mean_metrics`` and ``std_metrics`` hold the held-out performance estimate and
         its fold-to-fold spread. ``outer_folds`` records each fold's chosen
         ``best_params`` and ``best_recipe_knobs``, which is where you look
         to judge whether tuning is stable or thrashing.
@@ -935,13 +945,17 @@ def nested_cv_score(
 
     Examples
     --------
-    >>> result = session.nested_cv_score(  # doctest: +SKIP
-    ...     RandomForestClassifier(),
-    ...     param_distributions={"max_depth": [3, 5, 8, None]},
-    ...     inner_search="randomized",
-    ...     n_iter=8,
-    ... )
-    >>> result.mean_metrics["accuracy"]  # doctest: +SKIP
+    >>> import pandas as pd
+    >>> from sklearn.datasets import make_classification
+    >>> from sklearn.tree import DecisionTreeClassifier
+    >>> from buildml import Session
+    >>> X, y = make_classification(n_samples=120, n_features=4, n_informative=3, n_redundant=0, random_state=42)
+    >>> frame = pd.DataFrame(X, columns=["a", "b", "c", "d"])
+    >>> frame["target"] = y
+    >>> session = Session.ingest(frame).set_roles({"target": "target"})
+    >>> _ = session.split(test_size=0.2, validation_size=0.2, stratify=True, random_state=42)
+    >>> result = session.nested_cv_score(DecisionTreeClassifier(random_state=42), param_distributions={"max_depth": [2, 3]}, outer_cv=3, inner_cv=2, n_iter=2)
+    >>> assert "accuracy" in result.mean_metrics
 
     See Also
     --------
@@ -1120,15 +1134,17 @@ def grid_search(
 
     Examples
     --------
-    >>> from sklearn.ensemble import RandomForestClassifier
-    >>> search = session.grid_search(
-    ...     RandomForestClassifier(random_state=0),
-    ...     {"max_depth": [3, 6, None], "min_samples_leaf": [1, 5]},
-    ...     cv=5,
-    ... )  # doctest: +SKIP
-    >>> search.best_params  # doctest: +SKIP
-    {'max_depth': 6, 'min_samples_leaf': 5}
-    >>> search.to_frame().head()  # doctest: +SKIP
+    >>> import pandas as pd
+    >>> from sklearn.datasets import make_classification
+    >>> from sklearn.tree import DecisionTreeClassifier
+    >>> from buildml import Session
+    >>> X, y = make_classification(n_samples=120, n_features=4, n_informative=3, n_redundant=0, random_state=42)
+    >>> frame = pd.DataFrame(X, columns=["a", "b", "c", "d"])
+    >>> frame["target"] = y
+    >>> session = Session.ingest(frame).set_roles({"target": "target"})
+    >>> _ = session.split(test_size=0.2, validation_size=0.2, stratify=True, random_state=42)
+    >>> search = session.grid_search(DecisionTreeClassifier(random_state=42), {"max_depth": [2, 3]}, cv=3)
+    >>> assert search.best_params["max_depth"] in (2, 3)
 
     See Also
     --------
@@ -1279,17 +1295,17 @@ def randomized_search(
 
     Examples
     --------
-    >>> from scipy.stats import loguniform, randint
-    >>> from sklearn.ensemble import RandomForestClassifier
-    >>> search = session.randomized_search(
-    ...     RandomForestClassifier(random_state=0),
-    ...     {"max_depth": randint(2, 20), "min_samples_leaf": randint(1, 30)},
-    ...     n_iter=40,
-    ... )  # doctest: +SKIP
-
-    A learning rate should be sampled across magnitudes, not linearly:
-
-    >>> space = {"learning_rate": loguniform(1e-3, 1e-1)}  # doctest: +SKIP
+    >>> import pandas as pd
+    >>> from sklearn.datasets import make_classification
+    >>> from sklearn.tree import DecisionTreeClassifier
+    >>> from buildml import Session
+    >>> X, y = make_classification(n_samples=120, n_features=4, n_informative=3, n_redundant=0, random_state=42)
+    >>> frame = pd.DataFrame(X, columns=["a", "b", "c", "d"])
+    >>> frame["target"] = y
+    >>> session = Session.ingest(frame).set_roles({"target": "target"})
+    >>> _ = session.split(test_size=0.2, validation_size=0.2, stratify=True, random_state=42)
+    >>> search = session.randomized_search(DecisionTreeClassifier(random_state=42), {"max_depth": [2, 3, 4]}, cv=3, n_iter=2, random_state=42)
+    >>> assert "max_depth" in search.best_params
 
     See Also
     --------
@@ -1450,24 +1466,17 @@ def optuna_search(
 
     Examples
     --------
-    Declarative form, which covers most cases:
-
-    >>> space = {
-    ...     "max_depth": {"type": "int", "low": 2, "high": 20},
-    ...     "learning_rate": {"type": "float", "low": 1e-3, "high": 0.3, "log": True},
-    ... }
-    >>> search = session.optuna_search(
-    ...     estimator, param_space=space, n_trials=60
-    ... )  # doctest: +SKIP
-
-    Callable form, when one parameter depends on another:
-
-    >>> def space(trial):  # doctest: +SKIP
-    ...     kind = trial.suggest_categorical("kernel", ["linear", "rbf"])
-    ...     params = {"kernel": kind}
-    ...     if kind == "rbf":
-    ...         params["gamma"] = trial.suggest_float("gamma", 1e-4, 1.0, log=True)
-    ...     return params
+    >>> import pandas as pd
+    >>> from sklearn.datasets import make_classification
+    >>> from sklearn.tree import DecisionTreeClassifier
+    >>> from buildml import Session
+    >>> X, y = make_classification(n_samples=120, n_features=4, n_informative=3, n_redundant=0, random_state=42)
+    >>> frame = pd.DataFrame(X, columns=["a", "b", "c", "d"])
+    >>> frame["target"] = y
+    >>> session = Session.ingest(frame).set_roles({"target": "target"})
+    >>> _ = session.split(test_size=0.2, validation_size=0.2, stratify=True, random_state=42)
+    >>> # Install the optional backend first: pip install "buildml[optuna]"
+    >>> search = session.optuna_search(DecisionTreeClassifier(random_state=42), param_space={"max_depth": {"type": "int", "low": 2, "high": 4}}, n_trials=2, cv=3)
 
     See Also
     --------
@@ -1661,14 +1670,16 @@ def evolutionary_search(
 
     Examples
     --------
-    >>> space = {
-    ...     "max_depth": {"type": "int", "low": 2, "high": 24},
-    ...     "learning_rate": {"type": "float", "low": 1e-3, "high": 0.3, "log": True},
-    ...     "booster": {"type": "categorical", "choices": ["gbtree", "dart"]},
-    ... }
-    >>> search = session.evolutionary_search(
-    ...     estimator, param_space=space, population_size=16, n_generations=8
-    ... )  # doctest: +SKIP
+    >>> import pandas as pd
+    >>> from sklearn.datasets import make_classification
+    >>> from sklearn.tree import DecisionTreeClassifier
+    >>> from buildml import Session
+    >>> X, y = make_classification(n_samples=120, n_features=4, n_informative=3, n_redundant=0, random_state=42)
+    >>> frame = pd.DataFrame(X, columns=["a", "b", "c", "d"])
+    >>> frame["target"] = y
+    >>> session = Session.ingest(frame).set_roles({"target": "target"})
+    >>> _ = session.split(test_size=0.2, validation_size=0.2, stratify=True, random_state=42)
+    >>> search = session.evolutionary_search(DecisionTreeClassifier(random_state=42), param_space={"max_depth": {"type": "int", "low": 2, "high": 4}}, population_size=4, n_generations=2, cv=3, random_state=42)
 
     See Also
     --------
@@ -1878,15 +1889,21 @@ def save_pipeline(
 
     Examples
     --------
-    >>> path = session.save_pipeline(
-    ...     "artifacts/churn_v3", title="Churn model, Q1 refresh"
-    ... )  # doctest: +SKIP
-
-    Later, in a scoring job that has never seen this session:
-
+    >>> import pandas as pd
+    >>> from sklearn.datasets import make_classification
+    >>> from sklearn.tree import DecisionTreeClassifier
     >>> from buildml import Session
-    >>> scorer = Session.ingest(new_rows)  # doctest: +SKIP
-    >>> result = scorer.predict_from_pipeline("artifacts/churn_v3")  # doctest: +SKIP
+    >>> X, y = make_classification(n_samples=120, n_features=4, n_informative=3, n_redundant=0, random_state=42)
+    >>> frame = pd.DataFrame(X, columns=["a", "b", "c", "d"])
+    >>> frame["target"] = y
+    >>> session = Session.ingest(frame).set_roles({"target": "target"})
+    >>> _ = session.split(test_size=0.2, validation_size=0.2, stratify=True, random_state=42)
+    >>> _ = session.fit(DecisionTreeClassifier(max_depth=3, random_state=42))
+    >>> from tempfile import TemporaryDirectory
+    >>> with TemporaryDirectory() as directory:
+    ...     path = session.save_pipeline(directory + "/model")
+    ...     scorer = Session.ingest(frame.drop(columns="target").iloc[:3])
+    ...     result = scorer.predict_from_pipeline(path, trusted=True)
 
     See Also
     --------
@@ -2147,11 +2164,20 @@ def predict_from_pipeline(
     Examples
     --------
     >>> import pandas as pd
+    >>> from sklearn.datasets import make_classification
+    >>> from sklearn.tree import DecisionTreeClassifier
     >>> from buildml import Session
-    >>> incoming = pd.DataFrame({"tenure": [4], "plan": ["basic"]})  # doctest: +SKIP
-    >>> result = Session.ingest(incoming).predict_from_pipeline(
-    ...     "artifacts/churn_v3", return_proba=True, trusted=True
-    ... )  # doctest: +SKIP
+    >>> X, y = make_classification(n_samples=120, n_features=4, n_informative=3, n_redundant=0, random_state=42)
+    >>> frame = pd.DataFrame(X, columns=["a", "b", "c", "d"])
+    >>> frame["target"] = y
+    >>> session = Session.ingest(frame).set_roles({"target": "target"})
+    >>> _ = session.split(test_size=0.2, validation_size=0.2, stratify=True, random_state=42)
+    >>> _ = session.fit(DecisionTreeClassifier(max_depth=3, random_state=42))
+    >>> from tempfile import TemporaryDirectory
+    >>> with TemporaryDirectory() as directory:
+    ...     path = session.save_pipeline(directory + "/model")
+    ...     incoming = frame.drop(columns="target").iloc[:3].copy()
+    ...     result = Session.ingest(incoming).predict_from_pipeline(path, return_proba=True, trusted=True)
 
     See Also
     --------
@@ -2351,9 +2377,18 @@ def calibration(
 
     Examples
     --------
-    >>> report = session.calibration(partition="validation")  # doctest: +SKIP
-    >>> report.metrics["brier_score"]  # doctest: +SKIP
-    0.084
+    >>> import pandas as pd
+    >>> from sklearn.datasets import make_classification
+    >>> from sklearn.tree import DecisionTreeClassifier
+    >>> from buildml import Session
+    >>> X, y = make_classification(n_samples=120, n_features=4, n_informative=3, n_redundant=0, random_state=42)
+    >>> frame = pd.DataFrame(X, columns=["a", "b", "c", "d"])
+    >>> frame["target"] = y
+    >>> session = Session.ingest(frame).set_roles({"target": "target"})
+    >>> _ = session.split(test_size=0.2, validation_size=0.2, stratify=True, random_state=42)
+    >>> _ = session.fit(DecisionTreeClassifier(max_depth=3, random_state=42))
+    >>> report = session.calibration(partition="validation")
+    >>> assert "brier_score" in report.payload
 
     See Also
     --------
@@ -2466,11 +2501,18 @@ def tune_threshold(
 
     Examples
     --------
-    >>> report = session.tune_threshold(
-    ...     partition="validation", fp_cost=1.0, fn_cost=12.0
-    ... )  # doctest: +SKIP
-    >>> report.metrics["best_threshold"]  # doctest: +SKIP
-    0.18
+    >>> import pandas as pd
+    >>> from sklearn.datasets import make_classification
+    >>> from sklearn.tree import DecisionTreeClassifier
+    >>> from buildml import Session
+    >>> X, y = make_classification(n_samples=120, n_features=4, n_informative=3, n_redundant=0, random_state=42)
+    >>> frame = pd.DataFrame(X, columns=["a", "b", "c", "d"])
+    >>> frame["target"] = y
+    >>> session = Session.ingest(frame).set_roles({"target": "target"})
+    >>> _ = session.split(test_size=0.2, validation_size=0.2, stratify=True, random_state=42)
+    >>> _ = session.fit(DecisionTreeClassifier(max_depth=3, random_state=42))
+    >>> report = session.tune_threshold(partition="validation", fp_cost=1.0, fn_cost=2.0)
+    >>> assert "recommended_threshold" in report.payload
 
     See Also
     --------
@@ -2576,10 +2618,16 @@ def learning_curve(
 
     Examples
     --------
-    >>> from sklearn.ensemble import RandomForestClassifier
-    >>> report = session.learning_curve(
-    ...     RandomForestClassifier(random_state=0), cv=5
-    ... )  # doctest: +SKIP
+    >>> import pandas as pd
+    >>> from sklearn.datasets import make_classification
+    >>> from sklearn.tree import DecisionTreeClassifier
+    >>> from buildml import Session
+    >>> X, y = make_classification(n_samples=120, n_features=4, n_informative=3, n_redundant=0, random_state=42)
+    >>> frame = pd.DataFrame(X, columns=["a", "b", "c", "d"])
+    >>> frame["target"] = y
+    >>> session = Session.ingest(frame).set_roles({"target": "target"})
+    >>> _ = session.split(test_size=0.2, validation_size=0.2, stratify=True, random_state=42)
+    >>> report = session.learning_curve(DecisionTreeClassifier(max_depth=3, random_state=42), cv=3)
 
     See Also
     --------
@@ -2685,9 +2733,17 @@ def feature_importance(
 
     Examples
     --------
-    >>> report = session.feature_importance(
-    ...     partition="validation", n_repeats=20
-    ... )  # doctest: +SKIP
+    >>> import pandas as pd
+    >>> from sklearn.datasets import make_classification
+    >>> from sklearn.tree import DecisionTreeClassifier
+    >>> from buildml import Session
+    >>> X, y = make_classification(n_samples=120, n_features=4, n_informative=3, n_redundant=0, random_state=42)
+    >>> frame = pd.DataFrame(X, columns=["a", "b", "c", "d"])
+    >>> frame["target"] = y
+    >>> session = Session.ingest(frame).set_roles({"target": "target"})
+    >>> _ = session.split(test_size=0.2, validation_size=0.2, stratify=True, random_state=42)
+    >>> _ = session.fit(DecisionTreeClassifier(max_depth=3, random_state=42))
+    >>> report = session.feature_importance(partition="validation", n_repeats=2)
 
     See Also
     --------
@@ -2747,7 +2803,7 @@ def explain_shap(
     Returns
     -------
     ShapExplainResult
-        Mean absolute SHAP importances and honesty disclosures.
+        Mean absolute SHAP importances and implementation limitations.
 
     Raises
     ------
@@ -2866,13 +2922,17 @@ def error_slices(
 
     Examples
     --------
-    >>> report = session.error_slices(
-    ...     by="region", partition="validation"
-    ... )  # doctest: +SKIP
-
-    Look for an interaction the single-column view would hide:
-
-    >>> report = session.error_slices(by=["region", "product_tier"])  # doctest: +SKIP
+    >>> import pandas as pd
+    >>> from sklearn.datasets import make_classification
+    >>> from sklearn.tree import DecisionTreeClassifier
+    >>> from buildml import Session
+    >>> X, y = make_classification(n_samples=120, n_features=4, n_informative=3, n_redundant=0, random_state=42)
+    >>> frame = pd.DataFrame(X, columns=["a", "b", "c", "d"])
+    >>> frame["target"] = y
+    >>> session = Session.ingest(frame).set_roles({"target": "target"})
+    >>> _ = session.split(test_size=0.2, validation_size=0.2, stratify=True, random_state=42)
+    >>> _ = session.fit(DecisionTreeClassifier(max_depth=3, random_state=42))
+    >>> report = session.error_slices(by="a", partition="validation")
 
     See Also
     --------

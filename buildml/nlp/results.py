@@ -478,8 +478,8 @@ class NlpInterpretResult:
     def to_dict(self) -> dict[str, Any]:
         """Return the explanation as plain JSON-safe values.
 
-        Nested attributions are expanded in full, so the output can grow large
-       : it scales with documents times tokens per document. Cap
+        Nested attributions are expanded in full, so output size grows with
+        the number of documents and tokens per document. Cap
         ``max_documents`` and ``top_k`` at call time if you intend to log this.
 
         Returns

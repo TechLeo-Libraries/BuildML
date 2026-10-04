@@ -1,7 +1,6 @@
 # BuildML glossary
 
-These are the names this Session uses. They are not always the same object
-as a library of the same name. For general machine-learning words such as
+This glossary defines BuildML APIs, result types, and workflow terms. For general machine-learning words such as
 leakage, stratification, or ROC-AUC, start a Session and run
 `session.learn("<term>")`.
 
@@ -57,7 +56,7 @@ already materialized frame.
 
 **DataLoader (Torch)**  
 A batched iterator over partition tensors built by `session.dl.make_loaders`. Shuffle applies to
-the train loader only. Validation and test loaders stay unshuffled for evaluation honesty.
+the train loader only. Validation and test loaders stay unshuffled for consistent evaluation order.
 
 **DeviceSpec**  
 Resolved compute device for Torch training (`cpu`, `cuda`, or `mps`) plus any fallback warning when
@@ -98,9 +97,9 @@ A traceable observation, metric, statistical test, artifact, or configuration va
 a finding. Evidence includes its source and limitations where relevant.
 
 **Faithfulness (RAG)**  
-Cheap grounding heuristic attached to `GenerateResult.faithfulness`
+A lightweight grounding heuristic attached to `GenerateResult.faithfulness`
 (`FaithfulnessReport`): citation-marker coverage plus answer↔context token
-overlap. Not an NLI / LLM-as-judge product; high overlap does not prove
+overlap. It does not use natural-language inference or an LLM judge; high overlap does not prove
 factual correctness. See `buildml.rag.generate.score_faithfulness`.
 
 **Feature contract**  
@@ -127,7 +126,7 @@ opt in.
 **Hashing embedder**  
 Default RAG embedder id `buildml.hashing_embed.v1`: sklearn `HashingVectorizer`
 (`n_features=384`, L2-normalized). Deterministic and CPU-only; lexical/hashed,
-not a semantic sentence model. Disclosures and catalog copy must say so.
+not a semantic sentence model.
 
 **Hit-rate@k**  
 Fraction of evaluation queries for which at least one relevant document (or
@@ -234,7 +233,7 @@ Catalog entries document mechanics, ordering, risks, alternatives, state changes
 The beginner-facing briefing attached to every operation explanation: plain summary, analogy, why it
 exists, ordered steps, prerequisites in plain words, what each key parameter means in practice,
 pitfalls, an in-line glossary, and a worked example. Derived from the catalog entry and its linked
-concept notes, so it cannot drift from the expert sections it fronts. An operation may override any
+concept notes, to keep the introductory and technical explanations aligned. An operation may override any
 section with hand-written prose.
 
 **Learning level**  
@@ -287,8 +286,7 @@ change Session state. Distinct from **recommendation systems** (`session.recomme
 `session.recommender.fit` learns from train user–item interactions (item/user kNN CF,
 TruncatedSVD / NMF, or content profiles). `session.recommender.recommend` returns top-K train-catalog
 items; `session.recommender.evaluate` scores Precision@K, Recall@K, nDCG@K, MAP@K under
-a known-item protocol with cold-start disclosure. Not RAG; not EDA Recommendation
-Findings; not a Netflix-scale platform.
+a known-item protocol with cold-start disclosure. RAG retrieval and EDA recommendations use separate APIs.
 
 **Recommender bundle**  
 Directory schema `buildml.recommender_bundle.v1` (`meta.json` +
@@ -299,8 +297,7 @@ checkpoints and from RAG / TDA bundles.
 `session.ranking.fit` learns from train query–item (or query–document) feature rows
 with relevance labels (pointwise Ridge/HGB or pairwise RankSVM-lite).
 `session.ranking.rank` orders items per query; `session.ranking.evaluate` scores graded nDCG@K, MAP@K,
-MRR@K. Prefer `group_split` on the query id. Not a search-engine product; not
-RAG retrieve/generate; not recommender user–item CF.
+MRR@K. Prefer `group_split` on the query id. RAG retrieval and user-item recommendation have separate APIs.
 
 **Ranker bundle**  
 Directory schema `buildml.ranker_bundle.v1` (`meta.json` +
@@ -338,11 +335,11 @@ silhouettes), and optionally fits a sklearn head: all on train only. Requires
 `buildml[tda]`. Not a Mapper research suite.
 
 **TDA bundle**  
-Directory schema `buildml.tda_bundle.v1` (`meta.json` + `tda_plan.joblib`) holding
+Directory schema `buildml.tda_bundle.v2` (v1 remains readable) (`meta.json` + `tda_plan.joblib`) holding
 a `TdaPlan` (frozen PH vectorizer ± head). Distinct from Session checkpoints.
 
 **Natural language processing (Session)**  
-The `buildml.nlp` surface for one text column that lives on the Session dataset:
+The `buildml.nlp` API for one text column that lives on the Session dataset:
 `session.nlp.profile_corpus`, `session.nlp.fit_classifier` → `session.nlp.predict` /
 `session.nlp.evaluate` / `session.nlp.interpret`, plus `session.nlp.fit_topics` /
 `session.nlp.assign_topics`, `session.nlp.extract_keyphrases`, `session.nlp.analyze_sentiment`, `session.nlp.extract_entities`,
@@ -367,9 +364,9 @@ dimensions).
 
 **NPMI coherence (NLP topics)**  
 Normalized pointwise mutual information over a topic's top terms, computed on the
-train partition and bounded in [-1, 1]. The usual proxy for "are these topics
-real" and the usual way to choose `n_topics`. Reconstruction error always falls as
-topics are added, so it cannot serve the same purpose.
+train partition and bounded in [-1, 1]. It measures co-occurrence among top terms and can inform topic-count selection.
+It does not establish that topics correspond to real categories; review the terms
+and representative documents alongside the metric.
 
 **Corpus contamination screen**  
 The part of `session.nlp.profile_corpus` that counts holdout documents which are exact
@@ -380,8 +377,8 @@ rows.
 **NLP bundle**  
 Directory schema `buildml.nlp_bundle.v1` (`meta.json` + `nlp_text_plan.joblib`
 ± `nlp_topic_plan.joblib`) holding the normalization plan, the train-fitted
-representation, and the fitted head. Because the normalization plan travels with
-the representation, a reload reproduces a holdout score exactly. Not a Session
+representation, and the fitted head. Persisting the normalization plan and representation supports repeatable scoring
+when input data, dependency versions, and evaluation settings are unchanged. Not a Session
 checkpoint, not a `buildml.rag_bundle.v1`, and not a Torch trainer bundle.
 
 **Reattach**  
@@ -419,8 +416,8 @@ The semantic use assigned to a column, such as feature, target, identifier, or i
 inferred safely from dtype alone.
 
 **Session**  
-The thin public facade that owns workflow state and delegates computation to BuildML domain
-packages. It should not duplicate analyzer, transform, estimator, or report-rendering logic.
+The public object that holds data, roles, partitions, fitted plans, and operation history
+and provides methods for BuildML workflows.
 
 **Split plan**  
 The stored partition memberships and split metadata. Row-preserving transforms retain it; operations
@@ -442,7 +439,7 @@ sample rates, layout). Load restores that meta for inspection but does not rebui
 It is not a Session checkpoint and does not embed dataset rows or split indices.
 
 **TrainConfig**  
-Typed epoch-loop knobs for `session.dl.fit` (epochs, learning rate, device, grad clip, scheduler,
+Typed training parameters for `session.dl.fit` (epochs, learning rate, device, grad clip, scheduler,
 early-stopping patience/monitor). Defaults are documented on `buildml.dl.types.TrainConfig`.
 
 **TrainingCurveReport**  

@@ -186,7 +186,7 @@ def run_automl(
         ``optuna`` (requires ``buildml[automl]``), or ``evolutionary`` (in-tree GA).
     selection:
         ``cv``: rank by train-fold CV;
-        ``nested``: outer train folds after inner selection (honest post-selection
+        ``nested``: outer train folds after inner selection (held-out post-selection
         estimate) then refit best globally;
         ``validation``: rank on Session validation (never test). Requires a
         validation partition.
@@ -1616,7 +1616,7 @@ def _disclosures(
         )
     if selection == "nested":
         tips.append(
-            "selection='nested' (prominent honesty path): outer nested scores are the "
+            "selection='nested' (nested evaluation): outer nested scores are the "
             "post-selection estimate; inner means are selection evidence only."
         )
     if selection == "validation":

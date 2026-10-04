@@ -4,19 +4,19 @@
 pip install buildml
 ```
 
-This is the long classical path: a dirty table, roles, a split, train-only
-preparation, a model, validation choices, one test number, and a pipeline
+This guide covers a complete classical workflow: a table with missing values, roles, a split, training-only
+preparation, a model, validation choices, test metrics, and a pipeline
 bundle. The short version is [quickstart-classical](quickstart-classical.md).
 Fold-local CV is [leakage and recipes](leakage-cv-recipes.md).
-Paste: [`examples/classical_loan_loop.py`](../examples/classical_loan_loop.py)
+Runnable script: [`examples/classical_loan_loop.py`](../examples/classical_loan_loop.py)
 (120 rows, calibration and threshold on validation). The snippet below
 is a short table so you can read every cell.
 
-`session.fit` and `session.evaluate` stay first-class. `session.classical.*`
-is the same work under a namespace, not a second API.
+`session.fit` and `session.evaluate` remain supported. The corresponding
+`session.classical` methods call the same implementation.
 
-The order is the product. Roles say what a column is; the library will not
-guess deployment meaning. The split exists before any fit-capable step.
+This order prevents preprocessing from learning statistics from holdout rows. Roles identify each column's purpose;
+choose them according to how the model will be used. The split exists before any fit-capable step.
 Preparation learns on train and freezes plans. Validation is for choices.
 Test is for a fixed policy. `assert_can_fit("train")` backs impute, encode,
 scale, resample, and `fit`. Skip the split and the call fails.
@@ -207,8 +207,8 @@ session = (
 print(session.evaluate(partition="test").metrics)
 ```
 
-Random `split` would put the same customer in train and test. `group` role +
-`group_split` keeps entities whole. BuildML does **not** invent your entity key.
+Random `split` can put the same customer in train and test. `group` role +
+`group_split` keeps entities whole. Choose a group column that identifies the relevant independent entities.
 
 ---
 
@@ -261,9 +261,18 @@ session.inject_split(
 
 ---
 
-## Teaching before mutating
+## Review an operation before applying it
 
 ```python
+from sklearn.datasets import load_breast_cancer
+from sklearn.linear_model import LogisticRegression
+from buildml import Session
+
+frame = load_breast_cancer(as_frame=True).frame
+session = (Session.ingest(frame)
+    .set_roles({**{c: "feature" for c in frame if c != "target"}, "target": "target"})
+    .split(test_size=0.2, validation_size=0.2, stratify=True, random_state=42))
+
 before = session.explain("impute", moment="before")
 print(before.risks)
 preview = session.dry_run(["impute", "encode", "scale", "fit"])
@@ -279,9 +288,19 @@ See [EDA / Teaching Studio](eda-teaching-studio.md).
 ## Persistence: checkpoint vs pipeline
 
 ```python
+from sklearn.datasets import load_breast_cancer
+from sklearn.linear_model import LogisticRegression
+from buildml import Session
+
+frame = load_breast_cancer(as_frame=True).frame
+session = (Session.ingest(frame)
+    .set_roles({**{c: "feature" for c in frame if c != "target"}, "target": "target"})
+    .split(test_size=0.2, validation_size=0.2, stratify=True, random_state=42))
+
+session.scale(method="standard").fit(LogisticRegression(max_iter=500))
 # Mid-workflow resume (data + roles + splits + history + optional plans)
 session.checkpoint_save("artifacts/ckpt")
-restored = Session.checkpoint_load("artifacts/ckpt")
+restored = Session.checkpoint_load("artifacts/ckpt", trusted=True)
 print(restored.reattach_result.status)
 
 # Deployable scoring (plans + estimator + model card): not a checkpoint
@@ -293,6 +312,7 @@ scored = predict_from_pipeline(
     "artifacts/pipe",
     session.partition("test"),
     return_proba=True,
+    trusted=True,
 )
 ```
 
@@ -306,7 +326,7 @@ Full matrix: [artifacts-checkpoints-bundles](artifacts-checkpoints-bundles.md).
 | --- | --- | --- |
 | `ValidationError: No split exists` | Prep/fit before split | Call `split` / `group_split` / `time_split` / `inject_split` |
 | `LeakageError` | Fit-capable work outside train | Keep prep + `fit` on train scope |
-| Weak test after many validation tweaks | Test used for selection | Freeze policy on validation; score test once |
+| Validation scores improve but test scores do not | Possible validation overfitting or a distribution difference | Review selection history and partition design; avoid repeatedly tuning against test results |
 | `MissingExtraError: imbalanced` | Extra not installed | `pip install "buildml[imbalanced]"` on 2.x |
 | Pipeline scores differ from Session | Plans missing / resample lineage | Prefer `save_pipeline`; resample is lineage-only at score time |
 

@@ -127,7 +127,7 @@ function renderEntryFull(item, stage) {
 
         ${
           decide
-            ? `<div class="academy-decide"><span class="om-kick" style="display:block;margin-bottom:2px">The decision it forces</span>${escapeHtml(decide)}</div>`
+            ? `<div class="academy-decide"><span class="om-kick" style="display:block;margin-bottom:2px">Decision to consider</span>${escapeHtml(decide)}</div>`
             : ""
         }
 
@@ -278,6 +278,7 @@ export async function renderAcademy(deps) {
 
   const q = state.academyQuery || "";
   const data = await api("/api/domains/academy");
+  if (deps.isCurrent && !deps.isCurrent()) return;
   const mode = state.academyMode || "all";
   const picked = state.academyStages || [];
   const needle = q.trim().toLowerCase();

@@ -224,12 +224,12 @@ def render_torchrun_ddp_job(
 
     Examples
     --------
-    Two nodes, two GPUs each::
+    .. code-block:: python
 
-        yaml_text = render_torchrun_ddp_job(
-            nnodes=2, nproc_per_node=2, gpu_limit=2,
-            script_path="/workspace/train.py",
-        )
+        from buildml.dl.k8s import render_torchrun_ddp_job
+        # This renders a manifest; deploying it requires the named image and files.
+        yaml_text = render_torchrun_ddp_job(nnodes=2, nproc_per_node=2, gpu_limit=2, script_path="/workspace/train.py")
+        print(yaml_text)
 
     See Also
     --------
@@ -378,10 +378,14 @@ def write_torchrun_ddp_job(path: str | Path, **kwargs: Any) -> K8sJobRenderResul
 
     Examples
     --------
-    Write and apply::
+    .. code-block:: python
 
-        result = write_torchrun_ddp_job("k8s/train-job.yaml", nnodes=4)
-        result.limitations  # read before assuming this is deployable
+        from buildml.dl.k8s import write_torchrun_ddp_job
+        # This renders a manifest; deploying it requires the named image and files.
+        from tempfile import TemporaryDirectory
+        with TemporaryDirectory() as directory:
+            result = write_torchrun_ddp_job(directory + "/job.yaml", nnodes=2)
+            print(result.limitations)
 
     See Also
     --------
@@ -505,11 +509,12 @@ def render_serve_deployment(
 
     Examples
     --------
-    Three replicas serving a pipeline bundle::
+    .. code-block:: python
 
-        yaml_text = render_serve_deployment(
-            replicas=3, bundle_path="/models/churn", kind="pipeline",
-        )
+        from buildml.dl.k8s import render_serve_deployment
+        # This renders a manifest; deploying it requires the named image and files.
+        yaml_text = render_serve_deployment(replicas=2, bundle_path="/models/example", kind="pipeline")
+        print(yaml_text)
 
     See Also
     --------

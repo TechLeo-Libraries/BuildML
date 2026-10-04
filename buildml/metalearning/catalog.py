@@ -1,4 +1,4 @@
-"""Meta-learning catalog and honest capability matrix."""
+"""Meta-learning catalog and capability matrix."""
 
 from __future__ import annotations
 
@@ -29,7 +29,7 @@ INDUSTRY_METHODS = (
 
 
 def metalearning_capability_matrix() -> dict[str, Any]:
-    """Build the honest capability matrix for meta-learning backends and methods.
+    """Build the capability matrix for meta-learning backends and methods.
 
     Reports sklearn, torch, and industry paths, episodic protocol fields,
     evaluation metrics, install hints, and explicit non-goals for teaching
@@ -211,7 +211,7 @@ def resolve_backend_method(
     backend: MetaLearningBackendName | None,
     method: str,
 ) -> tuple[MetaLearningBackendName, str]:
-    """Validate backend/method pairing and apply honest defaults.
+    """Validate backend/method pairing and apply documented defaults.
 
     Normalizes method aliases, infers backend when omitted, and raises when the
     requested pair requires a missing extra.

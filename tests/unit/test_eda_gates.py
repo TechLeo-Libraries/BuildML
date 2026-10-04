@@ -16,6 +16,15 @@ from buildml.eda.industry_tokens import INDUSTRY_ACCENT, INDUSTRY_ROOT_CSS
 
 pytest.importorskip("fastapi")
 
+
+@pytest.mark.parametrize("analysis_rows, sampled", [(800, False), (100, True)])
+def test_scope_warning_does_not_imply_sampling(analysis_rows, sampled):
+    context = build_gate_context({
+        "overview": {"n_rows": 800, "analysis_rows": analysis_rows, "n_columns": 1},
+        "warnings": ["Analysis scope: all rows. Drift unavailable: no split is defined."],
+    })
+    assert context["sampled"] is sampled
+
 _ROOT = Path(__file__).resolve().parents[2]
 _DASHBOARD = _ROOT / "buildml" / "dashboard"
 _FORBIDDEN_DEMO_CLAIMS = (

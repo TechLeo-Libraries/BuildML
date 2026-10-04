@@ -14,8 +14,7 @@ Default method is `fedavg`, estimator `sgd_classifier`, `n_rounds=5`,
 backends, so `backend=None` picks Flower when `flwr` imports cleanly,
 otherwise native. That is different from domains whose default method
 locks you to sklearn. Flower here is still an in-process simulation on
-Session partitions. It is not a gRPC network, not Ray production FL,
-and not cryptographic secure aggregation. Pass `backend="native"` if
+Session partitions. It does not provide network transport or cryptographic secure aggregation. Pass `backend="native"` if
 you want the core path regardless of extras.
 
 The API refuses a fit without a split, local updates on holdout,
@@ -23,7 +22,7 @@ missing client identity, and more than one target. You decide the
 client column, how many rounds, `client_fraction`, and (for FedProx)
 `mu`.
 
-Short on-ramp: [federated quickstart](quickstart-federated.md).
+Quickstart: [federated quickstart](quickstart-federated.md).
 Proof: [federated-hospital-sim](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/federated-hospital-sim).
 
 ## A local FedAvg loop
@@ -113,10 +112,65 @@ SGD estimators use `partial_fit`. Full-fit models use `.fit` (with
 | `native` | none | In-process weighted `coef_` / `intercept_` averaging |
 | `flower` | `buildml[federated-industry]` | Flower `NumPyClient` wrappers + `flwr` weighted ndarray aggregation, still in-process |
 
-Flower `available` requires `flwr` to import, not just sit on disk.
+Flower is available only when `flwr` imports successfully.
 A broken install reports unavailable.
 
 ```python
+import numpy as np
+import pandas as pd
+
+from buildml import Session
+
+rng = np.random.default_rng(0)
+rows = []
+for client in range(8):
+    shift = rng.normal(0, 0.8, size=2)
+    for i in range(40):
+        label = i % 2
+        center = shift + (1.1 if label else -1.1)
+        x = rng.normal(center, 0.35, size=2)
+        rows.append(
+            {
+                "x": float(x[0]),
+                "y": float(x[1]),
+                "label": int(label),
+                "client_id": f"c{client}",
+            }
+        )
+frame = pd.DataFrame(rows)
+
+session = (
+    Session.ingest(frame)
+    .set_roles(
+        {
+            "x": "feature",
+            "y": "feature",
+            "label": "target",
+            "client_id": "group",
+        }
+    )
+    .split(test_size=0.2, validation_size=0.2, random_state=0)
+    .scale(method="standard")
+)
+
+fit = session.federated.fit(
+    backend="native",
+    method="fedavg",
+    estimator="sgd_classifier",
+    n_rounds=5,
+    local_epochs=2,
+)
+print(fit.backend, fit.n_clients, fit.final_train_metric, len(fit.round_history))
+
+ev = session.federated.evaluate(partition="validation", per_client=True)
+print(ev.metrics, ev.n_clients_evaluated)
+
+preds = session.federated.predict(partition="test")
+print(len(preds.predictions))
+
+session.federated.save_bundle("artifacts/federated_bundle")
+session.federated.export_round_history("artifacts/federated_rounds.json")
+
 session.federated.capability_matrix()
 ```
 
@@ -142,8 +196,8 @@ target column (labels only) and stored on the plan.
 Aggregation is in-process. The orchestrator sees client coefficient
 updates. Neither backend gives differential privacy, secure
 multi-party computation, or cryptographic secure aggregation. If you
-deploy a real Flower ServerApp/ClientApp yourself, that is your
-deployment, not `session.federated.fit`.
+deploy a real Flower ServerApp/ClientApp yourself, network transport and security must be configured outside
+`session.federated.fit`.
 
 ## Bundles
 
@@ -151,11 +205,11 @@ deployment, not `session.federated.fit`.
 estimator, client contract, round history, backend. A Session
 checkpoint stores data, roles, splits, and history. It does not embed
 the federated model. `export_round_history` writes JSON (optional
-`include_disclosures=True`). `trusted=True` only for a file you made.
+`include_disclosures=True`). `trusted=True` only for a file you created or whose source and contents you trust.
 
 [Artifacts](artifacts-checkpoints-bundles.md)
 
-## When it refuses
+## Validation errors and prerequisites
 
 | What you see | What happened |
 | --- | --- |
@@ -164,6 +218,6 @@ the federated model. `export_round_history` writes JSON (optional
 | Zero or several targets | Federated simulation is single-target (`session.multitask.fit` is the other path) |
 | `method="fedprox"` with `mu=0` | Set `mu > 0` |
 | `MissingExtraError` for flower | `backend="flower"` without a working `flwr` |
-| Too few eligible clients | Raise `min_client_rows` clients, or lower the threshold |
+| Too few eligible clients | Provide more training rows per client, or lower `min_client_rows` |
 
 [Federated quickstart](quickstart-federated.md)

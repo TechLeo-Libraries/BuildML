@@ -6,13 +6,13 @@ pip install buildml
 # SB3: pip install "buildml[rl-industry]"
 ```
 
-Two surfaces on `session.rl`: `fit_imitation` (behavioral cloning) and
+Two workflows on `session.rl`: `fit_imitation` (behavioral cloning) and
 `fit` (default LinUCB bandit). The bandit needs a numeric reward: pass
 `reward_column`, or name a column `reward`. Gym loops do not fit on
-tabular partitions. Not robotics, not batch offline RL.
+tabular partitions. Robotics integration and batch offline RL are outside these adapters.
 
 [Imitation + RL deep](imitation-rl-deep.md) ·
-Paste: [`examples/imitation_rl_loop.py`](../examples/imitation_rl_loop.py) ·
+Runnable example: [`examples/imitation_rl_loop.py`](../examples/imitation_rl_loop.py) ·
 Evidence: [imitation-cartpole-control](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/imitation-cartpole-control)
 
 ---
@@ -179,6 +179,7 @@ Inspect `session.rl.plan.config["discretizer"]` to see the bounds used.
 ## Optional SB3 PPO (`buildml[rl-industry]`)
 
 ```python
+# Requires: pip install "buildml[rl-industry]" (Gymnasium and Stable-Baselines3).
 # pip install "buildml[rl-industry]"
 from buildml import Session
 import pandas as pd
@@ -206,7 +207,7 @@ session.rl.save_bundle("artifacts/rl_sb3_demo_bundle")
 
 ---
 
-## Honesty checklist
+## Supported workflows
 
 | Claim | Reality in BuildML |
 | --- | --- |
@@ -218,6 +219,6 @@ session.rl.save_bundle("artifacts/rl_sb3_demo_bundle")
 
 ---
 
-## Next
+## Additional examples
 
-IL+RL industry depth is shipped (Gymnasium / SB3 extras when installed).
+See the [detailed RL guide](imitation-rl-deep.md) for Gymnasium and Stable-Baselines3 workflows.

@@ -115,7 +115,7 @@ def build_graph_spec(
     """Build a validated :class:`GraphSpec` from a raw edge list.
 
     Normalises endpoints, counts nodes appearing in edges, and attaches
-    honesty disclosures for Session ``set_graph``.
+    implementation limitations for Session ``set_graph``.
 
     Parameters
     ----------

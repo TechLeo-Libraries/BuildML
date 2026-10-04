@@ -5,9 +5,9 @@ computes the distance to every case and takes the smallest, which means the
 neighbours it returns are the neighbours: no approximation, no index parameters
 to tune, no recall to lose.
 
-The cost is linear in memory size per query. That is entirely fine up to tens of
-thousands of cases and becomes the bottleneck beyond it, which is the point at
-which the approximate backend starts to be worth its dependency.
+The search evaluates every stored case for each query. Runtime depends on
+case count, feature dimensions, and the metric. Measure latency on the intended
+workload before choosing an approximate backend.
 
 This is also the only backend supporting every metric, since Manhattan and the
 mixed Gower-style distance have no approximate-index implementation.

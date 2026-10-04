@@ -256,11 +256,15 @@ def fit_reducer(
 
     Examples
     --------
-    >>> plan = fit_reducer(  # doctest: +SKIP
-    ...     dataset, split_plan, method="pca", n_components=0.95
-    ... )
-    >>> plan.n_components  # doctest: +SKIP
-    12
+    >>> import numpy as np
+    >>> import pandas as pd
+    >>> from buildml import Session
+    >>> frame = pd.DataFrame({"age": np.arange(40, dtype=float), "income": np.arange(40, dtype=float) ** 2, "target": [0, 1] * 20})
+    >>> session = Session.ingest(frame).set_roles({"target": "target"})
+    >>> _ = session.split(test_size=0.25, stratify=True, random_state=42)
+    >>> dataset, split_plan = session.dataset, session.split_plan
+    >>> from buildml.preprocess.reduce import fit_reducer
+    >>> plan = fit_reducer(dataset, split_plan, method="pca", n_components=1)
 
     See Also
     --------

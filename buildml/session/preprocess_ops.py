@@ -173,9 +173,6 @@ def impute(
 
     Treat an absent value as a fact rather than a gap:
 
-    >>> _ = session.impute(
-    ...     columns=["prior_claims"], strategy="constant", fill_value=0
-    ... )  # doctest: +SKIP
 
     See Also
     --------
@@ -303,9 +300,6 @@ def encode(
 
     Compress a wide identifier-like column instead of exploding it:
 
-    >>> _ = session.encode(
-    ...     columns=["merchant"], method="infrequent", min_frequency=0.01
-    ... )  # doctest: +SKIP
 
     See Also
     --------
@@ -864,7 +858,6 @@ def text_features(
 
     Capture short phrases rather than isolated words:
 
-    >>> _ = session.text_features(ngram_range=(1, 2))  # doctest: +SKIP
 
     See Also
     --------
@@ -1017,7 +1010,6 @@ def reduce_dimensions(
 
     Keep as many components as it takes to retain most of the variance:
 
-    >>> _ = session.reduce_dimensions(method="pca", n_components=0.95)  # doctest: +SKIP
 
     See Also
     --------
@@ -1244,7 +1236,18 @@ def apply_custom_transform(
 
     Examples
     --------
-    >>> _ = session.apply_custom_transform("log1p", columns=["amount"])  # doctest: +SKIP
+    >>> import pandas as pd
+    >>> from buildml import Session
+    >>> frame = pd.DataFrame({"amount": [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0], "target": [0, 1] * 4})
+    >>> session = Session.ingest(frame).set_roles({"target": "target"})
+    >>> _ = session.split(test_size=0.25, stratify=True, random_state=42)
+    >>> import numpy as np
+    >>> def fit_log(frame, params):
+    ...     return {}
+    >>> def apply_log(frame, artifact):
+    ...     return np.log1p(frame)
+    >>> _ = Session.register_transform("example_log1p", fit=fit_log, transform=apply_log, overwrite=True)
+    >>> _ = session.apply_custom_transform("example_log1p", columns=["amount"])
 
     See Also
     --------
@@ -1420,12 +1423,20 @@ def apply_preprocess_plans(
 
     Examples
     --------
+    >>> import pandas as pd
     >>> from buildml import Session
-    >>> scorer = Session.ingest(new_rows)  # doctest: +SKIP
-    >>> _ = scorer.load_pipeline("artifacts/churn_v3")  # doctest: +SKIP
-    >>> applied = scorer.apply_preprocess_plans()  # doctest: +SKIP
-    >>> applied.skipped  # doctest: +SKIP
-    []
+    >>> frame = pd.DataFrame({"amount": [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0], "target": [0, 1] * 4})
+    >>> session = Session.ingest(frame).set_roles({"target": "target"})
+    >>> _ = session.split(test_size=0.25, stratify=True, random_state=42)
+    >>> from sklearn.tree import DecisionTreeClassifier
+    >>> from tempfile import TemporaryDirectory
+    >>> _ = session.scale()
+    >>> _ = session.fit(DecisionTreeClassifier(random_state=42))
+    >>> with TemporaryDirectory() as directory:
+    ...     path = session.save_pipeline(directory + "/model")
+    ...     scorer = Session.ingest(pd.DataFrame({"amount": [2.5, 4.5]}))
+    ...     _ = scorer.load_pipeline(path, trusted=True)
+    ...     applied = scorer.apply_preprocess_plans()
 
     See Also
     --------
@@ -1537,7 +1548,13 @@ def resample(
 
     Examples
     --------
-    >>> _ = session.resample(sampler="smote", sampling_strategy=0.5)  # doctest: +SKIP
+    >>> # Install the sampler first: pip install "buildml[imbalanced]"
+    >>> import pandas as pd
+    >>> from buildml import Session
+    >>> frame = pd.DataFrame({"x": range(40), "target": [0] * 30 + [1] * 10})
+    >>> session = Session.ingest(frame).set_roles({"target": "target"})
+    >>> _ = session.split(test_size=0.25, stratify=True, random_state=42)
+    >>> _ = session.resample(sampler="random_oversample", sampling_strategy=1.0)
 
     See Also
     --------
@@ -1576,8 +1593,12 @@ def resample_strategies(session) -> list[dict[str, Any]]:
 
     Examples
     --------
-    >>> [s["name"] for s in session.resample_strategies()]  # doctest: +SKIP
-    ['smote', 'random_oversample', 'random_undersample', ...]
+    >>> import pandas as pd
+    >>> from buildml import Session
+    >>> frame = pd.DataFrame({"amount": [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0], "target": [0, 1] * 4})
+    >>> session = Session.ingest(frame).set_roles({"target": "target"})
+    >>> _ = session.split(test_size=0.25, stratify=True, random_state=42)
+    >>> strategies = session.resample_strategies()
 
     See Also
     --------

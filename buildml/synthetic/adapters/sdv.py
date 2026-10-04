@@ -22,6 +22,8 @@ def _build_synthesizer(
     batch_size: int,
     verbose: bool = False,
 ) -> Any:
+    if method == "ctgan" and (int(batch_size) <= 0 or int(batch_size) % 10):
+        raise ValidationError("CTGAN batch_size must be a positive multiple of 10 (the default packing size).")
     require_sdv()
     if method == "ctgan":
         from sdv.single_table import CTGANSynthesizer
@@ -79,9 +81,9 @@ class SdvTabularGenerator:
         random_state: int = 42,
         verbose: bool = False,
     ) -> SdvTabularGenerator:
-        """Run fit on input data using the fitted internal state.
+        """Fit an SDV single-table synthesizer to the supplied frame.
 
-Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+Infers table metadata and trains the selected CTGAN, TVAE, or CopulaGAN model. At least ten rows are required.
 
 Parameters
 ----------
@@ -146,9 +148,9 @@ ValidationError
         random_state: int | None = None,
         condition: dict[str, Any] | None = None,
     ) -> pd.DataFrame:
-        """Run sample on input data using the fitted internal state.
+        """Generate rows with the fitted SDV synthesizer.
 
-Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+Returns columns in their fitted order. Conditional sampling is unsupported here; random_state is retained for API compatibility but is not passed to SDV.
 
 Parameters
 ----------

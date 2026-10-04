@@ -194,9 +194,9 @@ def _run_ge_lite(
 
 
 def enrich_specs_with_train_stats(train: pd.DataFrame, specs: tuple[Any, ...]) -> tuple[Any, ...]:
-    """Attach train min/max to numeric specs for validation range checks.
+    """Add training numeric ranges to copied column specifications.
 
-Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+Observed numeric minima and maxima are stored in extras for later range checks; categorical specifications retain their existing metadata.
 
 Parameters
 ----------

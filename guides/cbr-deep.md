@@ -29,7 +29,7 @@ requires a non-empty `source_disclosure`. This is not RAG: CBR reuses a
 solution from similar cases, it does not retrieve passages for a
 generator.
 
-Short on-ramp: [CBR quickstart](quickstart-cbr.md). Proof:
+Quickstart: [CBR quickstart](quickstart-cbr.md). Proof:
 [case-memory-claims](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/case-memory-claims).
 
 ## Fit, retrieve, predict, evaluate
@@ -38,8 +38,7 @@ Fit needs a split. The case base is train only. `retrieve` and `predict`
 default to test. `evaluate` defaults to validation (accuracy / F1 or
 RMSE / R², plus mean neighbor distance). Task is inferred from the
 target: numeric with more than 20 unique values is treated as
-regression, otherwise classification. Say `task=` yourself when an
-integer label would look like a quantity.
+regression, otherwise classification. Set `task=` explicitly when integer-valued outcomes make inference ambiguous.
 
 ```python
 import numpy as np
@@ -116,14 +115,21 @@ vocabularies, encoders, ANN indexes) freeze at `fit` and are reused at
 score and retain. They are never refit on holdout or retained rows.
 
 ```python
-# Text / hybrid cases when sentence-transformers are installed:
-session.cbr.fit(
-    backend="embedding",
-    text_columns=["description"],
-    text_model_name="sentence-transformers/all-MiniLM-L6-v2",
-    metric="cosine",
-    k=7,
-)
+# Requires: pip install "buildml[rag]"; downloads the model on first use.
+import pandas as pd
+from buildml import Session
+
+frame = pd.DataFrame({
+    "description": [f"Payment invoice issue for order {i}" if i % 2 else f"Parcel delivery issue for order {i}" for i in range(80)],
+    "queue": ["billing" if i % 2 else "shipping" for i in range(80)],
+})
+session = (Session.ingest(frame)
+    .set_roles({"description": "feature", "queue": "target"})
+    .split(test_size=0.2, validation_size=0.2, stratify=True, random_state=0))
+session.cbr.fit(backend="embedding", task="classification",
+    text_columns=["description"], text_model_name="sentence-transformers/all-MiniLM-L6-v2",
+    metric="cosine", k=7)
+print(session.cbr.evaluate(partition="test").metrics)
 ```
 
 `embedding` without `text_columns` is refused.
@@ -156,6 +162,42 @@ its own nearest neighbor the next time you score that partition.
 plan.
 
 ```python
+import numpy as np
+import pandas as pd
+
+from buildml import Session
+
+rng = np.random.default_rng(0)
+x = rng.normal(size=(220, 2))
+y = (x[:, 0] + 0.3 * x[:, 1] > 0).astype(int)
+frame = pd.DataFrame({"a": x[:, 0], "b": x[:, 1], "y": y})
+
+session = (
+    Session.ingest(frame)
+    .set_roles({"a": "feature", "b": "feature", "y": "target"})
+    .split(test_size=0.2, validation_size=0.2, random_state=0, stratify=True)
+    .scale(method="standard")
+)
+
+fit = session.cbr.fit(
+    task="classification",
+    metric="euclidean",
+    reuse="distance_weighted",
+    k=5,
+)
+print(fit.backend, fit.n_cases, fit.metric)
+
+neighbors = session.cbr.retrieve(partition="test", k=3)
+print(neighbors.traces[0].neighbor_case_ids, neighbors.traces[0].distances)
+
+pred = session.cbr.predict(partition="test", return_traces=True)
+print(pred.traces[0].neighbor_solutions, pred.traces[0].prediction)
+
+ev = session.cbr.evaluate(partition="validation")
+print(ev.metrics, ev.mean_neighbor_distance)
+
+session.cbr.save_bundle("artifacts/cbr_bundle")
+
 new_cases = pd.DataFrame({"a": [0.1, -0.4], "b": [0.2, 0.3], "y": [1, 0]})
 session.cbr.retain(
     labeled_frame=new_cases,
@@ -173,8 +215,7 @@ CBR memory is train tabular cases with a solution. RAG memory is a text
 corpus for grounding generation. Sharing nearest-neighbor search or
 sentence-transformers does not make this a submodule of
 `session.rag`. The bundles are different:
-`buildml.cbr_bundle.v1` vs `buildml.rag_bundle.v1`. Do not call CBR
-"tabular RAG", and do not route cases through `session.rag.retrieve`.
+`buildml.cbr_bundle.v1` vs `buildml.rag_bundle.v1`. Use the CBR API for labeled cases and the RAG API for text retrieval.
 
 ## Bundles
 
@@ -183,10 +224,10 @@ frozen transforms. A Session checkpoint does not embed `CbrPlan`. Reload
 the table, then `session.cbr.load_bundle(..., trusted=True)` for a file
 you made.
 
-Paste: [`examples/cbr_knn_loop.py`](../examples/cbr_knn_loop.py).
+Runnable example: [`examples/cbr_knn_loop.py`](../examples/cbr_knn_loop.py).
 Benchmark: `python benchmarks/cbr/retrieval_accuracy.py`.
 
-## When it refuses
+## Validation errors and prerequisites
 
 | What you see | What happened |
 | --- | --- |

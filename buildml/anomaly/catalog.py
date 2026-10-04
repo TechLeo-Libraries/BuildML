@@ -1,4 +1,4 @@
-"""Anomaly detector catalog and honest capability matrix."""
+"""Anomaly detector catalog and capability matrix."""
 
 from __future__ import annotations
 
@@ -145,9 +145,9 @@ def list_anomaly_methods(
     backend: AnomalyBackendName | None = None,
     mode: str | None = None,
 ) -> list[str]:
-    """List detector methods for a backend (or all when backend is None).
+    """List supported anomaly method identifiers.
 
-Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+Returns catalog method identifiers, optionally restricted to one backend. Unavailable backends can still have catalog entries. Supervised mode instead lists available supervised scorers.
 
 Parameters
 ----------
@@ -182,9 +182,9 @@ list[str]
 
 
 def backend_available(name: AnomalyBackendName) -> bool:
-    """Return whether backend optional dependencies are installed and usable.
+    """Check whether the named backend is usable.
 
-Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+Reads the runtime capability matrix; unknown backend names return false.
 
 Parameters
 ----------
@@ -209,9 +209,9 @@ def resolve_backend_method(
     method: str,
     mode: str,
 ) -> tuple[AnomalyBackendName, str]:
-    """Validate backend/method pairing and apply honest defaults.
+    """Resolve and validate the backend and method pairing.
 
-Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+Checks the catalog and dependency availability before fitting, raising for unsupported combinations or missing optional dependencies.
 
 Parameters
 ----------

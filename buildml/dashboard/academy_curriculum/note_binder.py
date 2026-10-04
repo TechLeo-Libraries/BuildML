@@ -106,7 +106,7 @@ def _read_steps(note: Any) -> list[str]:
         steps = [
             "Read the plain-language summary.",
             "Open Calculation and bind the numbers to this session.",
-            "Run the worked Session example on your frame.",
+            "Run the standalone demonstration, then adapt its inputs and roles to your data.",
             "Check pitfalls before you trust a metric.",
         ]
     return steps
@@ -322,29 +322,12 @@ def _example_code(key: str, note: Any, ctx: Ctx) -> str:
         "# Worked BuildML Session example - change paths/columns to your data.",
         *[f"# Pattern: {step}" for step in (note.worked_example_pattern or ())[:3]],
     ]
-    mini = [str(line) for line in (note.mini_example or ())[:6]]
+    mini = [str(line) for line in (note.mini_example or ())]
+    if mini:
+        # Render the authored example intact: truncating its lines can cut a
+        # multiline call, and appended inferred calls may lack required inputs.
+        return code_block("# Standalone example; use the stated optional dependencies where required.", *mini)
     tools = _tool_calls(note, key)
-    # Prefer mini_example when it already looks like Session code.
-    if any("session" in line.lower() or "Session" in line for line in mini):
-        body = [
-            "from buildml import Session",
-            "import pandas as pd",
-            "",
-            'frame = pd.read_csv("your_data.csv")  # <-- change',
-            "session = Session.ingest(frame)",
-            "session = session.set_roles({",
-            f'    "{target_name(ctx)}": "target",  # <-- change',
-            f'    "{first_feature(ctx)}": "feature",  # <-- add predictors',
-            "})",
-            "session = session.split(test_size=0.2, random_state=0"
-            + (", stratify=True" if is_classification(ctx) else "")
-            + ")",
-            "",
-            *mini,
-            "",
-            *tools[:3],
-        ]
-        return code_block(*header, "", *body)
 
     extras = [
         *tools,

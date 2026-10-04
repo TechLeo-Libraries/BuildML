@@ -1,4 +1,4 @@
-"""Causal backend catalog and honest capability matrix."""
+"""Causal backend catalog and capability matrix."""
 
 from __future__ import annotations
 
@@ -23,7 +23,7 @@ EconMLMethodName = Literal["dml", "causal_forest", "policy_tree"]
 
 
 def causal_capability_matrix() -> dict[str, Any]:
-    """Build the honest capability matrix for causal estimation backends.
+    """Build the capability matrix for causal estimation backends.
 
     Reports native, DoWhy, and EconML methods, refutation kinds, assumption
     gates, and explicit non-goals for teaching overlays and walkthrough panels.
@@ -245,7 +245,7 @@ def resolve_backend_method(
     backend: CausalBackendName | None,
     method: str,
 ) -> tuple[CausalBackendName, str]:
-    """Validate backend/method pairing and apply honest defaults.
+    """Validate backend/method pairing and apply documented defaults.
 
     Infers backend from method when omitted and checks install status before fit.
 

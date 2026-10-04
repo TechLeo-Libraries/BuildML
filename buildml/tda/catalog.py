@@ -1,4 +1,4 @@
-"""TDA backend catalog and honest capability matrix."""
+"""TDA backend catalog and capability matrix."""
 
 from __future__ import annotations
 
@@ -182,7 +182,7 @@ def resolve_backend_vectorization(
     backend: TdaBackendName | None,
     vectorization: str,
 ) -> tuple[TdaBackendName, str]:
-    """Validate a backend/vectorization pair and apply honest defaults.
+    """Validate a backend/vectorization pair and apply documented defaults.
 
     Normalises hyphenated names, picks a backend when ``None``, and refuses
     pairings that are not advertised in :func:`tda_capability_matrix`.

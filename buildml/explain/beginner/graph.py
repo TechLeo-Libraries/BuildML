@@ -43,9 +43,23 @@ GRAPH_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.set_roles({'account_id': 'id', 'is_fraud': 'target'})",
-            "session.graph.set_spec(edges=edge_frame, node_id_col='account_id')",
-            "session.graph.fit(method='classical', random_state=0)",
+            "from pathlib import Path",
+            "import numpy as np",
+            "import pandas as pd",
+            "from buildml import Session",
+            "",
+            "rng = np.random.default_rng(42)",
+            'Path("artifacts").mkdir(exist_ok=True)',
+            '# Requires: python -m pip install "buildml[graph]"',
+            "n = 60",
+            'nodes_frame = pd.DataFrame({"account_id": np.arange(n), "x1": rng.normal(size=n), "x2": rng.normal(size=n)})',
+            'nodes_frame["is_fraud"] = (nodes_frame.x1 + nodes_frame.x2 > 0).astype(int)',
+            'edge_frame = pd.DataFrame([(i, (i + offset) % n) for i in range(n) for offset in (1, 2, 5)], columns=["source", "target"])',
+            'session = Session.ingest(nodes_frame).set_roles({"account_id": "id", "x1": "feature", "x2": "feature", "is_fraud": "target"})',
+            "session.split(test_size=0.2, validation_size=0.2, stratify=True, random_state=42)",
+            'session.graph.set_spec(edges=edge_frame, node_id_col="account_id")',
+            'session.graph.fit(method="classical", random_state=42)',
+            'print(session.graph.evaluate(partition="validation").metrics)',
         ),
         check=(
             "Does every edge endpoint correspond to a row in your node table?",
@@ -80,7 +94,7 @@ GRAPH_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         avoid=(
             "Do not report a transductive score as evidence the model will handle new nodes; it never had to.",
-            "Do not use inductive splitting on a graph so sparse that removing cross-boundary edges leaves isolated nodes.",
+            "Inspect isolated nodes after an inductive split and compare against a model using node features alone.",
         ),
         myths=(
             (
@@ -89,12 +103,28 @@ GRAPH_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
             (
                 "Inductive and transductive scores are comparable.",
-                "Transductive is systematically higher because the model had more information. Comparing them across papers or experiments is a common mistake.",
+                "The protocols expose different information during training. Neither guarantees a higher score; compare results only when their deployment assumptions and evaluation protocols align.",
             ),
         ),
         example=(
-            "session.graph.fit(method='gcn', mode='inductive', random_state=0)",
-            "session.graph.evaluate(partition='test')",
+            '# Requires: python -m pip install "buildml[torch]"',
+            "from pathlib import Path",
+            "import numpy as np",
+            "import pandas as pd",
+            "from buildml import Session",
+            "",
+            "rng = np.random.default_rng(42)",
+            'Path("artifacts").mkdir(exist_ok=True)',
+            '# Requires: python -m pip install "buildml[graph]"',
+            "n = 60",
+            'nodes_frame = pd.DataFrame({"account_id": np.arange(n), "x1": rng.normal(size=n), "x2": rng.normal(size=n)})',
+            'nodes_frame["is_fraud"] = (nodes_frame.x1 + nodes_frame.x2 > 0).astype(int)',
+            'edge_frame = pd.DataFrame([(i, (i + offset) % n) for i in range(n) for offset in (1, 2, 5)], columns=["source", "target"])',
+            'session = Session.ingest(nodes_frame).set_roles({"account_id": "id", "x1": "feature", "x2": "feature", "is_fraud": "target"})',
+            "session.split(test_size=0.2, validation_size=0.2, stratify=True, random_state=42)",
+            'session.graph.set_spec(edges=edge_frame, node_id_col="account_id")',
+            'session.graph.fit(method="gcn", mode="inductive", epochs=3, random_state=42)',
+            'print(session.graph.evaluate(partition="test").metrics)',
             "print(session.graph.plan.mode, session.graph.plan.disclosures)",
         ),
         check=(
@@ -142,13 +172,23 @@ GRAPH_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.graph.fit(",
-            "    method='classical',",
-            "    include_graph_metrics=True,",
-            "    classical_estimator='random_forest',",
-            "    random_state=0,",
-            ")",
-            "session.graph.evaluate(partition='validation')",
+            "from pathlib import Path",
+            "import numpy as np",
+            "import pandas as pd",
+            "from buildml import Session",
+            "",
+            "rng = np.random.default_rng(42)",
+            'Path("artifacts").mkdir(exist_ok=True)',
+            '# Requires: python -m pip install "buildml[graph]"',
+            "n = 60",
+            'nodes_frame = pd.DataFrame({"account_id": np.arange(n), "x1": rng.normal(size=n), "x2": rng.normal(size=n)})',
+            'nodes_frame["is_fraud"] = (nodes_frame.x1 + nodes_frame.x2 > 0).astype(int)',
+            'edge_frame = pd.DataFrame([(i, (i + offset) % n) for i in range(n) for offset in (1, 2, 5)], columns=["source", "target"])',
+            'session = Session.ingest(nodes_frame).set_roles({"account_id": "id", "x1": "feature", "x2": "feature", "is_fraud": "target"})',
+            "session.split(test_size=0.2, validation_size=0.2, stratify=True, random_state=42)",
+            'session.graph.set_spec(edges=edge_frame, node_id_col="account_id")',
+            'session.graph.fit(method="classical", include_graph_metrics=True, classical_estimator="random_forest", random_state=42)',
+            'print(session.graph.evaluate(partition="validation").metrics)',
         ),
         check=(
             "Do the structural columns appear in your top feature importances?",
@@ -161,9 +201,7 @@ GRAPH_BEGINNER: dict[str, BeginnerLayer] = _index(
     _layer(
         "graph-pyg",
         plain=(
-            "PyTorch Geometric is the standard library for graph neural networks. With the optional extra "
-            "installed, BuildML can build GCN, GraphSAGE, or GAT models through it: architectures that let "
-            "each node's prediction depend on a learned combination of its neighbours."
+            "PyTorch Geometric provides graph neural network layers. With the optional extra installed, BuildML can build GCN, GraphSAGE, or GAT models through it: architectures that let each node's prediction depend on a learned combination of its neighbours."
         ),
         analogy=(
             "Rather than counting how many colleagues someone has, you learn what to take from each "
@@ -171,17 +209,17 @@ GRAPH_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         steps=(
             "Install `pip install buildml[graph-pyg]`.",
-            "Choose an architecture: GCN averages neighbours uniformly, GraphSAGE samples them, GAT learns attention weights over them.",
-            "Set the number of layers: this is how many hops of influence the model can see. Two is typical.",
+            "Choose GCN for degree-normalized aggregation, GraphSAGE for learned neighborhood aggregation, or GAT for attention-weighted aggregation.",
+            "Set `n_layers` to 1 or 2, the values supported by this adapter. Each layer adds one message-passing step.",
             "Train with a mask so only training-node labels contribute to the loss.",
             "Evaluate on the held-out node mask.",
         ),
         use=(
             "When multi-hop structure genuinely matters and classical features have plateaued.",
-            "On large graphs where GraphSAGE's neighbour sampling makes training feasible.",
+            "When you want to compare PyG convolution layers on a graph that fits in memory. This adapter processes the graph in full; it does not expose neighbor sampling.",
         ),
         avoid=(
-            "Do not stack many layers: beyond three or four, every node's representation converges to the same thing, a failure called over-smoothing.",
+            "The adapter supports one or two layers. More message passing is not automatically better; aggregation can make node representations less distinct.",
             "Do not use it on a graph with very few labelled nodes; graph neural networks are data-hungry like any neural network.",
         ),
         myths=(
@@ -195,12 +233,24 @@ GRAPH_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "# pip install \"buildml[graph-pyg]\"",
-            "session.graph.fit(",
-            "    method='pyg', pyg_model='graphsage',",
-            "    n_layers=2, hidden_dim=64, epochs=200, random_state=0,",
-            ")",
-            "session.graph.evaluate(partition='test')",
+            '# Requires: python -m pip install "buildml[graph-pyg]"',
+            "from pathlib import Path",
+            "import numpy as np",
+            "import pandas as pd",
+            "from buildml import Session",
+            "",
+            "rng = np.random.default_rng(42)",
+            'Path("artifacts").mkdir(exist_ok=True)',
+            '# Requires: python -m pip install "buildml[graph]"',
+            "n = 60",
+            'nodes_frame = pd.DataFrame({"account_id": np.arange(n), "x1": rng.normal(size=n), "x2": rng.normal(size=n)})',
+            'nodes_frame["is_fraud"] = (nodes_frame.x1 + nodes_frame.x2 > 0).astype(int)',
+            'edge_frame = pd.DataFrame([(i, (i + offset) % n) for i in range(n) for offset in (1, 2, 5)], columns=["source", "target"])',
+            'session = Session.ingest(nodes_frame).set_roles({"account_id": "id", "x1": "feature", "x2": "feature", "is_fraud": "target"})',
+            "session.split(test_size=0.2, validation_size=0.2, stratify=True, random_state=42)",
+            'session.graph.set_spec(edges=edge_frame, node_id_col="account_id")',
+            'session.graph.fit(method="pyg", pyg_model="graphsage", n_layers=2, hidden_dim=16, epochs=3, random_state=42)',
+            'print(session.graph.evaluate(partition="test").metrics)',
         ),
         check=(
             "How many hops away is the information you believe matters?",
@@ -213,9 +263,7 @@ GRAPH_BEGINNER: dict[str, BeginnerLayer] = _index(
     _layer(
         "graph-gcn",
         plain=(
-            "BuildML also ships a compact graph convolutional network written directly in PyTorch, with no "
-            "PyTorch Geometric required. It is a one- or two-layer GCN using a normalized adjacency matrix "
-            ": enough for many node-classification problems and far lighter to install."
+            "BuildML also ships a compact graph convolutional network written directly in PyTorch, with no PyTorch Geometric required. It is a one- or two-layer GCN using a normalized adjacency matrix."
         ),
         analogy=(
             "A simple recipe with three ingredients that gets you most of the way, rather than the "
@@ -234,7 +282,7 @@ GRAPH_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         avoid=(
             "Do not use it on very large graphs; the dense normalized adjacency does not scale the way sampled approaches do.",
-            "Do not expect the architectural variety of PyG: this is GCN, not a menu of designs.",
+            "Use the PyG adapter if you need GraphSAGE or GAT; this implementation supports GCN.",
         ),
         myths=(
             (
@@ -247,11 +295,24 @@ GRAPH_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.graph.fit(",
-            "    method='gcn', n_layers=2, hidden_dim=32,",
-            "    epochs=200, random_state=0,",
-            ")",
-            "session.graph.evaluate(partition='validation')",
+            '# Requires: python -m pip install "buildml[torch]"',
+            "from pathlib import Path",
+            "import numpy as np",
+            "import pandas as pd",
+            "from buildml import Session",
+            "",
+            "rng = np.random.default_rng(42)",
+            'Path("artifacts").mkdir(exist_ok=True)',
+            '# Requires: python -m pip install "buildml[graph]"',
+            "n = 60",
+            'nodes_frame = pd.DataFrame({"account_id": np.arange(n), "x1": rng.normal(size=n), "x2": rng.normal(size=n)})',
+            'nodes_frame["is_fraud"] = (nodes_frame.x1 + nodes_frame.x2 > 0).astype(int)',
+            'edge_frame = pd.DataFrame([(i, (i + offset) % n) for i in range(n) for offset in (1, 2, 5)], columns=["source", "target"])',
+            'session = Session.ingest(nodes_frame).set_roles({"account_id": "id", "x1": "feature", "x2": "feature", "is_fraud": "target"})',
+            "session.split(test_size=0.2, validation_size=0.2, stratify=True, random_state=42)",
+            'session.graph.set_spec(edges=edge_frame, node_id_col="account_id")',
+            'session.graph.fit(method="gcn", n_layers=2, hidden_dim=16, epochs=3, random_state=42)',
+            'print(session.graph.evaluate(partition="validation").metrics)',
         ),
         check=(
             "How many nodes does your graph have, and will a dense adjacency fit?",
@@ -275,7 +336,7 @@ GRAPH_BEGINNER: dict[str, BeginnerLayer] = _index(
         steps=(
             "Fit a graph model so a plan exists.",
             "Call `session.graph.save_bundle(path)`.",
-            "Reload with `session.graph.load_bundle(path)` and reattach a graph with `session.graph.set_spec`.",
+            "Attach the graph with `session.graph.set_spec`, then load a trusted bundle with `session.graph.load_bundle(path, trusted=True)`. Setting a graph spec clears any previously loaded plan.",
             "Predict for nodes, remembering that inductive and transductive plans expect different things.",
             "Keep checkpoints separate for the node data.",
         ),
@@ -298,10 +359,27 @@ GRAPH_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.graph.save_bundle('artifacts/fraud-graph')",
-            "job = Session.ingest(nodes_frame).graph.load_bundle('artifacts/fraud-graph', trusted=True)",
-            "job.graph.set_spec(edges=todays_edges, node_id_col='account_id')",
-            "job.graph.predict(partition='all')",
+            "from pathlib import Path",
+            "import numpy as np",
+            "import pandas as pd",
+            "from buildml import Session",
+            "",
+            "rng = np.random.default_rng(42)",
+            'Path("artifacts").mkdir(exist_ok=True)',
+            '# Requires: python -m pip install "buildml[graph]"',
+            "n = 60",
+            'nodes_frame = pd.DataFrame({"account_id": np.arange(n), "x1": rng.normal(size=n), "x2": rng.normal(size=n)})',
+            'nodes_frame["is_fraud"] = (nodes_frame.x1 + nodes_frame.x2 > 0).astype(int)',
+            'edge_frame = pd.DataFrame([(i, (i + offset) % n) for i in range(n) for offset in (1, 2, 5)], columns=["source", "target"])',
+            'session = Session.ingest(nodes_frame).set_roles({"account_id": "id", "x1": "feature", "x2": "feature", "is_fraud": "target"})',
+            "session.split(test_size=0.2, validation_size=0.2, stratify=True, random_state=42)",
+            'session.graph.set_spec(edges=edge_frame, node_id_col="account_id")',
+            'session.graph.fit(method="classical", random_state=42)',
+            'session.graph.save_bundle("artifacts/graph-model")',
+            "job = Session.ingest(nodes_frame).set_roles(dict(session.dataset.roles))",
+            'job.graph.set_spec(edges=edge_frame, node_id_col="account_id")',
+            'job.graph.load_bundle("artifacts/graph-model", trusted=True)',
+            'print(job.graph.predict(partition="all"))',
         ),
         check=(
             "Was your plan fitted inductively or transductively, and does today's graph match that assumption?",

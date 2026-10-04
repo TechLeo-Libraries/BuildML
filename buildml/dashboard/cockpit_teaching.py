@@ -27,7 +27,7 @@ LEDGER_GROUP_GLOSSARY: dict[str, dict[str, str]] = {
         ),
         "why_on_sheet": (
             "Every later metric is relative to this frame. If sampling or engine "
-            "limits apply, the ledger records them so audits do not invent full-frame coverage."
+            "limits apply, the ledger shows which rows and columns were analysed."
         ),
     },
     "roles": {
@@ -37,7 +37,7 @@ LEDGER_GROUP_GLOSSARY: dict[str, dict[str, str]] = {
         ),
         "why_on_sheet": (
             "Roles decide which columns enter modeling screens; severity tallies "
-            "show how noisy the triage board is before you open individual findings."
+            "show how many findings need attention before you review them individually."
         ),
     },
     "missing": {
@@ -254,11 +254,11 @@ def ledger_purpose_copy() -> dict[str, str]:
         "purpose": (
             "The ledger is the audit trail of computed EDA numbers for this frame. "
             "Each group is a family of measured values (counts, rates, associations, "
-            "exclusions). Jump chips scroll within this sheet - they are not domain boards."
+            "exclusions). Use the group links to move to a section of this sheet."
         ),
         "how_to_use": (
             "Scan groups that match your risk, open a group to learn what the numbers mean, "
-            "then drill a metric when you need the Session call that produced it."
+            "then open a metric for its explanation and a Session example."
         ),
     }
 
@@ -270,11 +270,11 @@ def assumptions_purpose_copy() -> dict[str, str]:
         "purpose": (
             "Every automated finding rests on assumptions - what the number means, "
             "why it matters before modeling, and what to check next. This section "
-            "collects those footnotes so the register never floats free of its caveats."
+            "keeps those limitations alongside the findings they help explain."
         ),
         "how_to_use": (
             "Filter by theme, open a footnote for Means / Matters, then use the sidebar "
-            "for beginner→advanced depth and a Session example bound to this report."
+            "for explanations at different levels and a runnable Session example using synthetic data."
         ),
     }
 

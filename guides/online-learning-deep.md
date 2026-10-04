@@ -18,12 +18,12 @@ take industry if `buildml[online-industry]` imported cleanly. Pass
 `backend="industry"` with the default `sgd_classifier` is refused:
 pick a `river_*` estimator for that backend.
 
-The API refuses holdout indices on `partial_fit`, and it refuses a
-silent full `.fit` pretending to be online (`allow_refit_fallback`
+The API refuses holdout indices on `partial_fit`, and it refuses an
+implicit full refit (`allow_refit_fallback`
 defaults to False). You decide chunk size, whether to pass `classes=`
 yourself, and whether to opt into a disclosed full-refit fallback.
 
-Short on-ramp: [online quickstart](quickstart-online-learning.md).
+Quickstart: [online quickstart](quickstart-online-learning.md).
 Proof: [stream-fraud-online](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/stream-fraud-online).
 
 ## A first stream
@@ -85,8 +85,7 @@ session.online.save_bundle("artifacts/online_bundle")
 | `torch` | `buildml[torch]` | `replay_mlp`, `ewc_mlp` | `mean_shift` |
 
 Industry needs a successful River import, not just a wheel on disk.
-Torch replay/EWC is a small tabular MLP, not a lifelong-learning
-research suite.
+Torch replay and EWC use small tabular MLPs.
 
 `drift_detector=None` picks `adwin` on industry when River is there,
 otherwise `mean_shift`. `adwin` and `page_hinkley` refuse on
@@ -94,6 +93,44 @@ sklearn/torch. Set `drift_detector="none"` if you do not want the
 disclosure. `drift_disclose` defaults to True.
 
 ```python
+import numpy as np
+import pandas as pd
+
+from buildml import Session
+
+rng = np.random.default_rng(0)
+x0 = rng.normal([-1.0, -1.0], 0.55, size=(160, 2))
+x1 = rng.normal([1.2, 1.0], 0.55, size=(160, 2))
+frame = pd.DataFrame(np.vstack([x0, x1]), columns=["x", "y"])
+frame["label"] = [0] * 160 + [1] * 160
+
+session = (
+    Session.ingest(frame)
+    .set_roles({"x": "feature", "y": "feature", "label": "target"})
+    .split(test_size=0.2, validation_size=0.2, stratify=True, random_state=0)
+    .scale(method="standard")
+)
+
+fit = session.online.fit(
+    estimator="sgd_classifier",
+    chunk_size=40,
+    n_init=40,
+)
+print(fit.n_init_rows, fit.n_remaining_train)
+
+while True:
+    plan = session.online.plan
+    assert plan is not None
+    remaining = plan.n_train_rows - plan.cursor
+    if remaining <= 0:
+        break
+    update = session.online.partial_fit(n_rows=min(40, remaining))
+    print(update.n_updates, update.n_seen_rows, update.update_mode)
+
+ev = session.online.evaluate(partition="validation")
+print(ev.metrics)
+session.online.save_bundle("artifacts/online_bundle")
+
 session.online.capability_matrix()
 ```
 
@@ -111,7 +148,8 @@ drift_check=True)` (the default) can flag mean-shift against the init
 chunk on every backend, and River error-stream detectors on industry.
 
 Results expose `drift_detected` and `drift_notes` on the update and
-eval objects. That is a disclosure, not a production drift platform.
+eval objects. These fields report checks performed during the update or evaluation;
+continuous production monitoring requires a separate service.
 
 ## Bundles
 
@@ -121,7 +159,7 @@ does not embed it. `trusted=False` on load unless the file is yours.
 
 [Artifacts](artifacts-checkpoints-bundles.md)
 
-## When it refuses
+## Validation errors and prerequisites
 
 | What you see | What happened |
 | --- | --- |
@@ -131,6 +169,6 @@ does not embed it. `trusted=False` on load unless the file is yours.
 | Estimator without `partial_fit` | Refused unless `allow_refit_fallback=True` (disclosed full refit) |
 | Classifier without a class vocabulary | Pass `classes=` or keep train targets readable on first fit |
 
-This is not Kafka, Flink, or a distributed streaming product.
+Stream transport and distributed processing must be managed separately.
 
 [Online quickstart](quickstart-online-learning.md)

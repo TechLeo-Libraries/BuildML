@@ -28,9 +28,7 @@ TEACHING_NOTES: dict[str, ConceptNote] = {
                 "carries a derived OperationPrimer written for a newcomer."
             ),
             intuition=(
-                "One document, three depths of reading. A beginner is not handed a "
-                "different, softer truth; they are handed the same truth with the "
-                "vocabulary supplied."
+                "One document, three depths of reading. Introductory explanations define the vocabulary, while advanced notes provide more technical detail."
             ),
             formal_idea=(
                 "Levels increase in depth: beginner, intermediate, advanced. "
@@ -38,7 +36,7 @@ TEACHING_NOTES: dict[str, ConceptNote] = {
                 "related concepts; advanced notes add assumptions and failure modes."
             ),
             why_it_matters=(
-                "An explanation that assumes the vocabulary it is explaining is not an explanation.",
+                "Defining technical terms helps readers understand unfamiliar operations.",
                 "Operation primers help you understand the inputs before running an unfamiliar operation.",
                 "Difficulty tags and prerequisite links help you choose a reading order.",
             ),

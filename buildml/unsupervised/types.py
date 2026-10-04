@@ -116,9 +116,9 @@ dict[str, Any]
 
 
 def validate_cluster_method(method: str) -> ClusterMethod:
-    """Validate cluster method against supported catalog identifiers.
+    """Validate a clustering method identifier.
 
-Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+Returns a recognized identifier unchanged; unknown names raise ValueError before backend selection.
 
 Parameters
 ----------
@@ -132,8 +132,8 @@ ClusterMethod
 
 Raises
 ------
-ValidationError
-    When preconditions for this operation are not met.
+ValueError
+    If the method name is absent from the supported catalog.
     """
     if method not in ALL_CLUSTER_METHODS:
         raise ValueError(f"Unknown cluster method {method!r}")
@@ -141,9 +141,9 @@ ValidationError
 
 
 def validate_reduce_method(method: str) -> ReduceMethod:
-    """Validate reduce method against supported catalog identifiers.
+    """Validate a dimensionality-reduction method identifier.
 
-Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+Returns a recognized identifier unchanged; unknown names raise ValueError before backend selection.
 
 Parameters
 ----------
@@ -157,8 +157,8 @@ ReduceMethod
 
 Raises
 ------
-ValidationError
-    When preconditions for this operation are not met.
+ValueError
+    If the method name is absent from the supported catalog.
     """
     if method not in ALL_REDUCE_METHODS:
         raise ValueError(f"Unknown reduce method {method!r}")

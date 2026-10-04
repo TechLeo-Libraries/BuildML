@@ -37,29 +37,12 @@ class SupervisedLearning:
         The input dataset for supervised learning.
     show_warnings : bool, optional
         If True, display warnings. Default is False.
+    Migration
+    ---------
+    This archived 1.x implementation is excluded from current packages.
+    For runnable Session examples, see the current installation and
+    first-session guides at https://buildml.readthedocs.io/.
 
-    Examples
-    --------
-    >>> import numpy as np
-    >>> import pandas as pd
-    >>> from sklearn.linear_model import LogisticRegression
-    >>> from sklearn.ensemble import RandomForestClassifier, DecisionTreeClassifier
-    >>> from sklearn.snm import SVC
-    >>> from buildml import SupervisedLearning
-    >>>
-    >>>
-    >>> dataset = pd.read_csv("Your_file_path")  # Load your dataset(e.g Pandas DataFrame)
-    >>> data = SupervisedLearning(dataset)
-    >>>
-    >>> # Exploratory Data Analysis
-    >>> eda = data.eda()
-    >>> 
-    >>> # Build and Evaluate Classifier
-    >>> classifiers = ["LogisticRegression(random_state = 0)", 
-    >>>                "RandomForestClassifier(random_state = 0)", 
-    >>>                "DecisionTreeClassifier(random_state = 0)", 
-    >>>                "SVC()"]
-    >>> build_model = data.build_multiple_classifiers(classifiers)
 
     Notes
     -----
@@ -167,16 +150,11 @@ class SupervisedLearning:
         See Also
         --------
         - pandas.DataFrame.drop : Drop specified labels from rows or columns.
-        
-        Examples
-        --------
-        >>> # Drop a single column
-        >>> df = SupervisedLearning(dataset)
-        >>> df.drop_columns('column_name')
-    
-        >>> # Drop multiple columns
-        >>> df = SupervisedLearning(dataset)
-        >>> df.drop_columns(['column1', 'column2'])
+        Migration
+        ---------
+        This archived 1.x implementation is excluded from current packages.
+        For runnable Session examples, see the current installation and
+        first-session guides at https://buildml.readthedocs.io/.
 
         """
         self.__data = self.__data.drop(columns, axis = 1)
@@ -200,12 +178,12 @@ class SupervisedLearning:
         See Also
         --------
         - sklearn.model_selection.train_test_split : Split arrays or matrices into random train and test subsets.
-        
-        Examples
-        --------
-        >>> # Get training and test data splits
-        >>> df = SupervisedLearning(dataset)
-        >>> X_train, X_test, y_train, y_test = df.get_training_test_data()
+        Migration
+        ---------
+        This archived 1.x implementation is excluded from current packages.
+        For runnable Session examples, see the current installation and
+        first-session guides at https://buildml.readthedocs.io/.
+
         """
         return (self.__x_train, self.__x_test, self.__y_train, self.__y_test)
         
@@ -226,12 +204,12 @@ class SupervisedLearning:
         See Also
         --------
         pandas.DataFrame : Data structure for handling tabular data.
-        
-        Examples
-        --------
-        >>> # Get the original and processed datasets
-        >>> df = SupervisedLearning(dataset)
-        >>> original_data, processed_data = df.get_dataset()
+        Migration
+        ---------
+        This archived 1.x implementation is excluded from current packages.
+        For runnable Session examples, see the current installation and
+        first-session guides at https://buildml.readthedocs.io/.
+
         """
         return (self.__data, self.__dataset)
     
@@ -258,15 +236,12 @@ class SupervisedLearning:
         See Also
         --------
         sklearn.impute.SimpleImputer : Imputation transformer for completing missing values.
+        Migration
+        ---------
+        This archived 1.x implementation is excluded from current packages.
+        For runnable Session examples, see the current installation and
+        first-session guides at https://buildml.readthedocs.io/.
 
-        Examples
-        --------
-        >>> # Fix missing values using the default strategy ("mean")
-        >>> df = SupervisedLearning(dataset)
-        >>> df.fix_missing_values()
-    
-        >>> # Fix missing values using a specific strategy (e.g., "median")
-        >>> df.fix_missing_values(strategy="median")
         """
         self.__strategy = strategy
         if self.__strategy == None:
@@ -312,15 +287,12 @@ class SupervisedLearning:
         See Also
         --------
         pandas.get_dummies : Convert categorical variable(s) into dummy/indicator variables.
-        
-        Examples
-        --------
-        >>> # Convert all categorical columns to numerical using one-hot encoding
-        >>> df = SupervisedLearning(dataset)
-        >>> df.categorical_to_numerical()
-    
-        >>> # Convert specific columns to numerical using one-hot encoding
-        >>> df.categorical_to_numerical(columns=['Category1', 'Category2'])
+        Migration
+        ---------
+        This archived 1.x implementation is excluded from current packages.
+        For runnable Session examples, see the current installation and
+        first-session guides at https://buildml.readthedocs.io/.
+
         """
         self.__columns = columns
         
@@ -357,15 +329,12 @@ class SupervisedLearning:
         See Also
         --------
         sklearn.preprocessing.StandardScaler : Standardize features by removing the mean and scaling to unit variance.
+        Migration
+        ---------
+        This archived 1.x implementation is excluded from current packages.
+        For runnable Session examples, see the current installation and
+        first-session guides at https://buildml.readthedocs.io/.
 
-        Examples
-        --------
-        >>> # Remove outliers, replace with NaN
-        >>> df = SupervisedLearning(dataset)
-        >>> df.remove_outlier(drop_na=False)
-    
-        >>> # Remove outliers and drop rows with NaN values
-        >>> df.remove_outlier(drop_na=True)
         """
         if drop_na == False:
             scaler = sp.StandardScaler()
@@ -398,13 +367,12 @@ class SupervisedLearning:
         Notes
         -----
         This method uses the `sklearn.preprocessing` library for standardization.
-    
-        Examples
-        --------
-        >>> # Create an instance of SupervisedLearning
-        >>> df = SupervisedLearning(dataset)
-        >>> # Scale independent variables
-        >>> scaled_data = df.scale_independent_variables()
+        Migration
+        ---------
+        This archived 1.x implementation is excluded from current packages.
+        For runnable Session examples, see the current installation and
+        first-session guides at https://buildml.readthedocs.io/.
+
     
         See Also
         --------
@@ -430,12 +398,12 @@ class SupervisedLearning:
         Notes
         -----
         This method utilizes functionalities from pandas for data analysis.
-    
-        Examples
-        --------
-        >>> # Perform Exploratory Data Analysis
-        >>> df = SupervisedLearning(dataset)
-        >>> eda_results = df.eda()
+        Migration
+        ---------
+        This archived 1.x implementation is excluded from current packages.
+        For runnable Session examples, see the current installation and
+        first-session guides at https://buildml.readthedocs.io/.
+
     
         See Also
         --------
@@ -491,15 +459,11 @@ class SupervisedLearning:
         This method utilizes the following libraries for visualization:
         - `matplotlib.pyplot` for creating histograms and heatmaps.
         - `seaborn` for creating count plots and box plots.
-    
-        Examples
-        --------
-        >>> # Generate EDA visualizations before data cleaning
-        >>> df = SupervisedLearning(dataset)
-        >>> df.eda_visual(y='target_variable', before_data_cleaning=True)
-    
-        >>> # Generate EDA visualizations after data cleaning
-        >>> df.eda_visual(y='target_variable', before_data_cleaning=False)
+        Migration
+        ---------
+        This archived 1.x implementation is excluded from current packages.
+        For runnable Session examples, see the current installation and
+        first-session guides at https://buildml.readthedocs.io/.
 
         """
         if before_data_cleaning == False:
@@ -545,12 +509,12 @@ class SupervisedLearning:
         Notes
         -----
         This method uses the `pandas` library for data manipulation.
-    
-        Examples
-        --------
-        >>> # Select dependent and independent variables
-        >>> df = SupervisedLearning(dataset)
-        >>> variables = df.select_dependent_and_independent("target_column")
+        Migration
+        ---------
+        This archived 1.x implementation is excluded from current packages.
+        For runnable Session examples, see the current installation and
+        first-session guides at https://buildml.readthedocs.io/.
+
     
         See Also
         --------
@@ -581,17 +545,12 @@ class SupervisedLearning:
         Notes
         -----
         This method uses the `sklearn.model_selection.train_test_split` function for data splitting.
-    
-        Examples
-        --------
-        >>> # Split the data into training and test sets
-        >>> df = SupervisedLearning(dataset)
-        >>> data_splits = df.split_data()
-        >>>
-        >>> X_train = data_splits["Training X"]
-        >>> X_test = data_splits["Test X"]
-        >>> y_train = data_splits["Training Y"]
-        >>> y_test = data_splits["Test Y"]
+        Migration
+        ---------
+        This archived 1.x implementation is excluded from current packages.
+        For runnable Session examples, see the current installation and
+        first-session guides at https://buildml.readthedocs.io/.
+
     
         See Also
         --------
@@ -625,15 +584,12 @@ class SupervisedLearning:
         -----
         - This method uses the `sklearn.model_selection` and `sklearn.metrics` libraries for training and evaluation. 
         - All required steps before model training should have been completed before running this function.
-    
-        Examples
-        --------
-        >>> from sklearn.linear_model import LinearRegression
-        >>>
-        >>> # Train a regressor model
-        >>> df = SupervisedLearning(dataset)
-        >>> regressor = LinearRegression()
-        >>> trained_regressor = df.train_model_regressor(regressor)
+        Migration
+        ---------
+        This archived 1.x implementation is excluded from current packages.
+        For runnable Session examples, see the current installation and
+        first-session guides at https://buildml.readthedocs.io/.
+
     
         See Also
         --------
@@ -677,15 +633,12 @@ class SupervisedLearning:
         Notes
         -----
         This method uses the `sklearn.model_selection` and `sklearn.metrics` libraries for training and evaluating the classifier.
-    
-        Examples
-        --------
-        >>> from sklearn.ensemble import RandomForestClassifier
-        >>>
-        >>> # Train a classifier
-        >>> df = SupervisedLearning(dataset)
-        >>> classifier = RandomForestClassifier(random_state = 0)
-        >>> trained_classifier = df.train_model_classifier(classifier)
+        Migration
+        ---------
+        This archived 1.x implementation is excluded from current packages.
+        For runnable Session examples, see the current installation and
+        first-session guides at https://buildml.readthedocs.io/.
+
     
         See Also
         --------
@@ -731,22 +684,12 @@ class SupervisedLearning:
         Notes
         -----
         This method uses the `sklearn` library for regression model prediction.
-    
-        Examples
-        --------
-        >>> from sklearn.linear_model import LinearRegression
-        >>>
-        >>> # Train a regressor model
-        >>> df = SupervisedLearning(dataset)
-        >>> regressor = LinearRegression()
-        >>> trained_regressor = df.train_model_regressor(regressor)
-        >>>
-        >>> # Predict for regression model
-        >>> predictions = df.regressor_predict()
-        >>>
-        >>> print(predictions)
-        {'Actual Training Y': array([...]), 'Actual Test Y': array([...]),
-         'Predicted Training Y': array([...]), 'Predicted Test Y': array([...])}
+        Migration
+        ---------
+        This archived 1.x implementation is excluded from current packages.
+        For runnable Session examples, see the current installation and
+        first-session guides at https://buildml.readthedocs.io/.
+
     
         See Also
         --------
@@ -783,22 +726,12 @@ class SupervisedLearning:
         Notes
         -----
         This method uses the `sklearn` library for classification model prediction.
-    
-        Examples
-        --------
-        >>> from sklearn.ensemble import RandomForestClassifier
-        >>>
-        >>> # Train a regressor model
-        >>> df = SupervisedLearning(dataset)
-        >>> classifier = RandomForestClassifier(random_state = 0)
-        >>> trained_classifier = df.train_model_classifier(classifier)
-        >>>
-        >>> # Predict for regression model
-        >>> predictions = df.classifier_predict()
-        >>>
-        >>> print(predictions)
-        {'Actual Training Y': array([...]), 'Actual Test Y': array([...]),
-         'Predicted Training Y': array([...]), 'Predicted Test Y': array([...])}
+        Migration
+        ---------
+        This archived 1.x implementation is excluded from current packages.
+        For runnable Session examples, see the current installation and
+        first-session guides at https://buildml.readthedocs.io/.
+
     
         See Also
         --------
@@ -851,12 +784,12 @@ class SupervisedLearning:
         -----
         - This method tests a pre-trained regressor model. 
         - If scaling is set to True, the input variables are expected to be scaled using the same scaler used during training.
-    
-        Examples
-        --------
-        >>> # Assuming df is an instance of SupervisedLearning class with a trained regressor model
-        >>> df.regressor_model_testing([1.5, 0.7, 2.0], scaling=True)
-        array([42.0])
+        Migration
+        ---------
+        This archived 1.x implementation is excluded from current packages.
+        For runnable Session examples, see the current installation and
+        first-session guides at https://buildml.readthedocs.io/.
+
     
         See Also
         --------
@@ -903,32 +836,12 @@ class SupervisedLearning:
         Notes
         -----
         This method uses the `sklearn.metrics` and `sklearn.model_selection` libraries for regression evaluation.
-    
-        Examples
-        --------
-        >>> # Evaluate regression model performance using simple train-test split
-        >>> from sklearn.linear_model import LinearRegression
-        >>>
-        >>> # Train a regressor model
-        >>> df = SupervisedLearning(dataset)
-        >>> regressor = LinearRegression()
-        >>> trained_regressor = df.train_model_regressor(regressor)
-        >>>
-        >>> # Predict for regression model
-        >>> predictions = df.regressor_predict()
-        >>> evaluation_results = df.regressor_evaluation()
-    
-        >>> # Evaluate regression model performance using 10-fold cross-validation
-        >>> from sklearn.linear_model import LinearRegression
-        >>>
-        >>> # Train a regressor model
-        >>> df = SupervisedLearning(dataset)
-        >>> regressor = LinearRegression()
-        >>> trained_regressor = df.train_model_regressor(regressor)
-        >>>
-        >>> # Predict for regression model
-        >>> predictions = df.regressor_predict()
-        >>> evaluation_results = df.regressor_evaluation(kfold=10, cross_validation=True)
+        Migration
+        ---------
+        This archived 1.x implementation is excluded from current packages.
+        For runnable Session examples, see the current installation and
+        first-session guides at https://buildml.readthedocs.io/.
+
     
         See Also
         --------
@@ -1047,18 +960,12 @@ class SupervisedLearning:
         This method uses the following libraries:
         - `sklearn.model_selection` for train-test splitting and cross-validation.
         - `matplotlib.pyplot` for plotting if graph=True.
-    
-        Examples
-        --------
-        >>> # Build and evaluate multiple regression models
-        >>> df = SupervisedLearning(dataset)
-        >>> models = [LinearRegression(), 
-        >>>           RandomForestRegressor(), 
-        >>>           GradientBoostingRegressor()]
-        >>> results = df.build_multiple_regressors(regressors=models, 
-        >>>                                        kfold=5, 
-        >>>                                        cross_validation=True, 
-        >>>                                        graph=True)
+        Migration
+        ---------
+        This archived 1.x implementation is excluded from current packages.
+        For runnable Session examples, see the current installation and
+        first-session guides at https://buildml.readthedocs.io/.
+
     
         See Also
         --------
@@ -1367,21 +1274,11 @@ class SupervisedLearning:
         - `matplotlib: Python plotting <https://matplotlib.org/>`_
         - `numpy: The fundamental package for scientific computing with Python <https://numpy.org/>`_
         - `pandas: Powerful data structures for data analysis <https://pandas.pydata.org/>`_
-    
-    
-        Example:
-        --------
-        >>> classifiers = [LogisticRegression(random_state = 0), 
-        >>>                RandomForestClassifier(random_state = 0), 
-        >>>                SVC(random_state = 0)]
-        >>> results = build_multiple_classifiers(classifiers, 
-        >>>                                      kfold=5, 
-        >>>                                      cross_validation=True, 
-        >>>                                      graph=True, 
-        >>>                                      length=8, 
-        >>>                                      width=12)
-    
-        Note: Ensure that the classifiers provided are compatible with scikit-learn's classification API.
+        Migration
+        ---------
+        This archived 1.x implementation is excluded from current packages.
+        For runnable Session examples, see the current installation and
+        first-session guides at https://buildml.readthedocs.io/.
 
         """
         if self.__split_data == True:
@@ -1852,18 +1749,12 @@ class SupervisedLearning:
         -----------
         - scikit-learn documentation for feature selection: https://scikit-learn.org/stable/modules/feature_selection.html
         - scikit-learn documentation for regression models: https://scikit-learn.org/stable/supervised_learning.html#regression
-    
-        Example
-        --------
-        >>> from sklearn.feature_selection import f_regression
-        >>> from buildml import SupervisedLearning
-        >>> from sklearn.linear_model import LinearRegression
-        >>>
-        >>> learn = SupervisedLearning(dataset)
-        >>> results = learn.build_single_regressor_from_features(strategy='selectkbest', 
-        >>>                                                      estimator=f_regression, 
-        >>>                                                      regressor=LinearRegression())
-        >>> print(results)
+        Migration
+        ---------
+        This archived 1.x implementation is excluded from current packages.
+        For runnable Session examples, see the current installation and
+        first-session guides at https://buildml.readthedocs.io/.
+
         """
         if self.__split_data == True:
             types1 = ["selectkbest", "selectpercentile"]
@@ -2321,18 +2212,12 @@ class SupervisedLearning:
         -----------
         - scikit-learn documentation for feature selection: https://scikit-learn.org/stable/modules/feature_selection.html
         - scikit-learn documentation for classification models: https://scikit-learn.org/stable/supervised_learning.html#classification
-    
-        Example
-        --------
-        >>> from sklearn.feature_selection import f_classif
-        >>> from buildml import SupervisedLearning
-        >>> from sklearn.ensemble import RandomForestClassifier
-        >>>
-        >>> learn = SupervisedLearning(dataset)
-        >>> results = learn.build_single_classifier_from_features(strategy='selectkbest', 
-        >>>                                                       estimator=f_classif, 
-        >>>                                                       classifier=RandomForestClassifier(random_state = 0))
-        >>> print(results)
+        Migration
+        ---------
+        This archived 1.x implementation is excluded from current packages.
+        For runnable Session examples, see the current installation and
+        first-session guides at https://buildml.readthedocs.io/.
+
         """
         if self.__split_data == True:
             types1 = ["selectkbest", "selectpercentile"]
@@ -2785,26 +2670,12 @@ class SupervisedLearning:
         --------
         dict
             A dictionary containing feature metrics and additional information for each model.
-    
-        Example:
-        --------
-        >>> from buildml import SupervisedLearning
-        >>> from sklearn.feature_selection import f_regression
-        >>> from sklearn.ensemble import RandomForestRegressor, DecisionTreeRegressor
-        >>> from sklearn.linear_model import LinearRegression
-        >>>
-        >>>
-        >>> data = SupervisedLearning(dataset)
-        >>> results = data.build_multiple_regressors_from_features(
-        >>>        strategy='selectkbest',
-        >>>        estimator=f_regression,
-        >>>        regressors=[LinearRegression(), 
-        >>>                    RandomForestRegressor(random_state = 0), 
-        >>>                    DecisionTreeRegressor(random_state = 0)],
-        >>>        max_num_features=10,
-        >>>        kfold=5,
-        >>>        cv=True
-        >>>        )
+        Migration
+        ---------
+        This archived 1.x implementation is excluded from current packages.
+        For runnable Session examples, see the current installation and
+        first-session guides at https://buildml.readthedocs.io/.
+
     
         See Also:
         ---------
@@ -3263,22 +3134,12 @@ class SupervisedLearning:
         - `pandas` for data manipulation: https://pandas.pydata.org/docs/
         - `numpy` for numerical operations: https://numpy.org/doc/stable/
         - `sklearn` for various machine learning utilities: https://scikit-learn.org/stable/documentation.html
-    
-        Example:
-        --------
-        >>> from buildml import SupervisedLearning
-        >>> from sklearn.feature_selection import f_classif
-        >>> from sklearn.ensemble import RandomForestClassifier, DecisionTreeClassifier
-        >>>
-        >>>
-        >>> data = SupervisedLearning(dataset)
-        >>> classifiers = [RandomForestClassifier(random_state = 0), 
-        >>>                DecisionTreeClassifier(random_state = 0)]
-        >>> result = data.build_multiple_classifiers_from_features(strategy='selectkbest', 
-        >>>                                                        estimator=f_classif, 
-        >>>                                                        classifiers=classifiers, 
-        >>>                                                        max_num_features=10, 
-        >>>                                                        kfold=5)
+        Migration
+        ---------
+        This archived 1.x implementation is excluded from current packages.
+        For runnable Session examples, see the current installation and
+        first-session guides at https://buildml.readthedocs.io/.
+
         """
         if self.__split_data == True:        
             types1 = ["selectkbest", "selectpercentile"]
@@ -3734,16 +3595,12 @@ class SupervisedLearning:
         - This method evaluates the performance of a classification model using metrics such as confusion matrix, classification report, accuracy, precision, recall, and F1 score.
         - If `kfold` is not provided, it evaluates the model on the training and test sets.
         - If `cross_validation` is set to True, cross-validation scores are also included in the result.
-    
-        Examples
-        --------
-        >>> # Create a supervised learning instance and train a classification model
-        >>> model = SupervisedLearning(dataset)
-        >>> model.train_model_classifier()
-        >>>
-        >>> # Evaluate the model
-        >>> evaluation_results = model.classifier_evaluation(kfold=5, cross_validation=True)
-        >>> print(evaluation_results)
+        Migration
+        ---------
+        This archived 1.x implementation is excluded from current packages.
+        For runnable Session examples, see the current installation and
+        first-session guides at https://buildml.readthedocs.io/.
+
     
         See Also
         --------
@@ -3986,19 +3843,12 @@ class SupervisedLearning:
         -----
         - This method is used to test a classification model by providing values for the input variables and obtaining predicted labels. 
         - If scaling is required, it is important to set the `scaling` parameter to True.
-    
-        Examples
-        --------
-        >>> # Create a supervised learning instance and train a classification model
-        >>> model = SupervisedLearning(dataset)
-        >>> model.train_model_classifier()
-        >>>
-        >>> # Provide input variables for testing
-        >>> input_data = [value1, value2, value3]
-        >>>
-        >>> # Test the model
-        >>> predicted_labels = model.classifier_model_testing(input_data, scaling=True)
-        >>> print(predicted_labels)
+        Migration
+        ---------
+        This archived 1.x implementation is excluded from current packages.
+        For runnable Session examples, see the current installation and
+        first-session guides at https://buildml.readthedocs.io/.
+
     
         See Also
         --------
@@ -4059,15 +3909,12 @@ class SupervisedLearning:
         -----
         - This method visualizes the decision boundaries of a classification model by plotting the regions where the model predicts different classes. 
         - It supports both training and test sets, with different markers and colormaps for each.
-    
-        Examples
-        --------
-        >>> # Create a supervised learning instance and train a classification model
-        >>> model = SupervisedLearning(dataset)
-        >>> model.train_model_classifier()
-        >>>
-        >>> # Visualize the decision boundaries
-        >>> model.classifier_graph(classifier=model.model_classifier)
+        Migration
+        ---------
+        This archived 1.x implementation is excluded from current packages.
+        For runnable Session examples, see the current installation and
+        first-session guides at https://buildml.readthedocs.io/.
+
     
         See Also
         --------
@@ -4211,17 +4058,12 @@ class SupervisedLearning:
         -----
         - This method converts numerical columns in the dataset to categorical type. 
         - It is useful when dealing with features that represent categories or labels but are encoded as numerical values.
-    
-        Examples
-        --------
-        >>> # Create a supervised learning instance and load a dataset
-        >>> data = SupervisedLearning(dataset)
-        >>>
-        >>> # Convert a single numerical column to categorical
-        >>> data.numerical_to_categorical("numeric_column")
-        >>>
-        >>> # Convert multiple numerical columns to categorical
-        >>> data.numerical_to_categorical(["numeric_col1", "numeric_col2"])
+        Migration
+        ---------
+        This archived 1.x implementation is excluded from current packages.
+        For runnable Session examples, see the current installation and
+        first-session guides at https://buildml.readthedocs.io/.
+
     
         See Also
         --------
@@ -4265,18 +4107,12 @@ class SupervisedLearning:
         Notes
         -----
         This method allows for the conversion of categorical columns containing date or time information to the datetime format.
-    
-        Examples
-        --------
-        >>> # Create a supervised learning instance and convert a single column
-        >>> model = SupervisedLearning(dataset)
-        >>> model.categorical_to_datetime('date_column')
-    
-        >>> # Convert multiple columns
-        >>> model.categorical_to_datetime(['start_date', 'end_date'])
-    
-        >>> # Convert a combination of columns using a tuple
-        >>> model.categorical_to_datetime(('start_date', 'end_date'))
+        Migration
+        ---------
+        This archived 1.x implementation is excluded from current packages.
+        For runnable Session examples, see the current installation and
+        first-session guides at https://buildml.readthedocs.io/.
+
     
         See Also
         --------
@@ -4322,16 +4158,12 @@ class SupervisedLearning:
         -----
         - This method extracts date-related features such as day, month, year, quarter, and day of the week from the specified datetime column(s). 
         - If `hrs_mins_sec` is set to True, it also includes hour, minute, and second features.
-    
-        Examples
-        --------
-        >>> # Create a supervised learning instance and extract date features
-        >>> model = SupervisedLearning(dataset)
-        >>> date_columns = ['DateOfBirth', 'TransactionDate']
-        >>> model.extract_date_features(date_columns, hrs_mins_sec=True)
-        >>>
-        >>> # Access the DataFrame with additional date-related columns
-        >>> processed_data = model.get_dataset()
+        Migration
+        ---------
+        This archived 1.x implementation is excluded from current packages.
+        For runnable Session examples, see the current installation and
+        first-session guides at https://buildml.readthedocs.io/.
+
     
         See Also
         --------
@@ -4432,13 +4264,12 @@ class SupervisedLearning:
         -----
         - This method uses the `pd.cut` function to apply binning to the specified column(s).
         - Binning is a process of converting numerical data into categorical data.
-    
-        Examples
-        --------
-        >>> # Create a supervised learning instance and perform column binning
-        >>> model = SupervisedLearning(dataset)
-        >>> model.column_binning(column="Age", number_of_bins=5)
-        >>> model.column_binning(column=["Salary", "Experience"], number_of_bins=10)
+        Migration
+        ---------
+        This archived 1.x implementation is excluded from current packages.
+        For runnable Session examples, see the current installation and
+        first-session guides at https://buildml.readthedocs.io/.
+
     
         See Also
         --------
@@ -4491,12 +4322,12 @@ class SupervisedLearning:
         -----
         - This method addresses class imbalance in the dataset using various resampling techniques.
         - Supported samplers include SMOTE, RandomOverSampler, and RandomUnderSampler.
-    
-        Examples
-        --------
-        >>> # Create a supervised learning instance and fix unbalanced dataset
-        >>> model = SupervisedLearning(dataset)
-        >>> model.fix_unbalanced_dataset(sampler="SMOTE", k_neighbors=5)
+        Migration
+        ---------
+        This archived 1.x implementation is excluded from current packages.
+        For runnable Session examples, see the current installation and
+        first-session guides at https://buildml.readthedocs.io/.
+
     
         See Also
         --------
@@ -4627,17 +4458,12 @@ class SupervisedLearning:
         Notes
         -----
         This method replaces specified values in the dataset. The replacement can be done for a single value, a list of values, or using a dictionary for multiple replacements.
-    
-        Examples
-        --------
-        >>> # Create a supervised learning instance and replace values
-        >>> data = SupervisedLearning(dataset)
-        >>>
-        >>> # Replace a single value
-        >>> replaced_values = data.replace_values(0, -1)
-        >>>
-        >>> # Replace multiple values using a dictionary
-        >>> replaced_values = data.replace_values({'Male': 1, 'Female': 0})
+        Migration
+        ---------
+        This archived 1.x implementation is excluded from current packages.
+        For runnable Session examples, see the current installation and
+        first-session guides at https://buildml.readthedocs.io/.
+
     
         See Also
         --------
@@ -4695,15 +4521,12 @@ class SupervisedLearning:
         -------
         pd.DataFrame
             The dataset sorted according to the specified column or columns.
+        Migration
+        ---------
+        This archived 1.x implementation is excluded from current packages.
+        For runnable Session examples, see the current installation and
+        first-session guides at https://buildml.readthedocs.io/.
 
-        Examples
-        --------
-        >>> # Create a supervised learning instance and sort the dataset
-        >>> data = SupervisedLearning(dataset)
-        >>> sorted_data = data.sort_values("column_name", 
-        >>>                                ascending=False, 
-        >>>                                reset_index=True)
-        >>> print(sorted_data)
         
         See Also
         --------
@@ -4731,13 +4554,12 @@ class SupervisedLearning:
         -------
         pd.DataFrame
             The dataset with the index set to the specified column or columns.
+        Migration
+        ---------
+        This archived 1.x implementation is excluded from current packages.
+        For runnable Session examples, see the current installation and
+        first-session guides at https://buildml.readthedocs.io/.
 
-        Examples
-        --------
-        >>> # Create a supervised learning instance and set the index
-        >>> data = SupervisedLearning(dataset)
-        >>> index_set_data = data.set_index("column_name")
-        >>> print(index_set_data)
         
         See Also
         --------
@@ -4768,15 +4590,12 @@ class SupervisedLearning:
         -------
         pd.DataFrame
             A dataframe containing the sorted dataset.
+        Migration
+        ---------
+        This archived 1.x implementation is excluded from current packages.
+        For runnable Session examples, see the current installation and
+        first-session guides at https://buildml.readthedocs.io/.
 
-        Examples
-        --------
-        >>> # Create a supervised learning instance and sort the dataset based on index
-        >>> data = SupervisedLearning(dataset)
-        >>> sorted_index_data = data.sort_index("index_column", 
-        >>>                                     ascending=False, 
-        >>>                                     reset_index=True)
-        >>> print(sorted_index_data)
         
         See Also
         --------
@@ -4805,13 +4624,12 @@ class SupervisedLearning:
         -------
         pd.DataFrame
             A dataframe containing the modified dataset with the column name(s) changed.
+        Migration
+        ---------
+        This archived 1.x implementation is excluded from current packages.
+        For runnable Session examples, see the current installation and
+        first-session guides at https://buildml.readthedocs.io/.
 
-        Examples
-        --------
-        >>> # Create a supervised learning instance and rename columns
-        >>> data = SupervisedLearning(dataset)
-        >>> renamed_data = data.rename_columns("old_column_name", "new_column_name")
-        >>> print(renamed_data)
         
         See Also
         --------
@@ -4841,13 +4659,12 @@ class SupervisedLearning:
         -------
         pd.DataFrame
             A dataframe containing the modified dataset with the index reset.
+        Migration
+        ---------
+        This archived 1.x implementation is excluded from current packages.
+        For runnable Session examples, see the current installation and
+        first-session guides at https://buildml.readthedocs.io/.
 
-        Examples
-        --------
-        >>> # Create a supervised learning instance and reset the index
-        >>> data = SupervisedLearning(dataset)
-        >>> reset_index_data = data.reset_index(drop_index_after_reset=True)
-        >>> print(reset_index_data)
 
         See Also
         --------
@@ -4884,21 +4701,12 @@ class SupervisedLearning:
         Raises
         ------
         - TypeError: If input parameters are invalid or inconsistent.
-    
-        Example
-        -------
-        >>> # Create a supervised learning instance and sort the dataset
-        >>> data = SupervisedLearning(dataset)
-        >>>
-        >>> # Filter data where 'column' is greater than 5
-        >>> filter_data = data.filter_data(column='column', 
-        >>>                                operation='>', 
-        >>>                                value=5)
-        >>>
-        >>> # Filter data where 'column1' is less than or equal to 10 and 'column2' is not equal to 'value'
-        >>> filter_data = data.filter_data(column=['column1', 'column2'], 
-        >>>                                operation=['<=', '!='], 
-        >>>                               value=[10, 'value'])
+        Migration
+        ---------
+        This archived 1.x implementation is excluded from current packages.
+        For runnable Session examples, see the current installation and
+        first-session guides at https://buildml.readthedocs.io/.
+
     
         References
         ----------
@@ -5222,13 +5030,12 @@ class SupervisedLearning:
         -----
         - This method removes duplicate rows from the dataset based on the specified column(s).
         - If no columns are specified, it considers all columns when identifying duplicates.
-    
-        Examples
-        --------
-        >>> # Create a supervised learning instance and load a dataset
-        >>> model = SupervisedLearning(dataset)
-        >>> # Remove duplicate rows based on a specific column
-        >>> model.remove_duplicates(which_columns='column_name')
+        Migration
+        ---------
+        This archived 1.x implementation is excluded from current packages.
+        For runnable Session examples, see the current installation and
+        first-session guides at https://buildml.readthedocs.io/.
+
     
         See Also
         --------
@@ -5280,18 +5087,12 @@ class SupervisedLearning:
         Notes
         -----
         - This method allows feature selection using different techniques such as Recursive Feature Elimination (RFE), SelectKBest, SelectFromModel, and SelectPercentile.
-    
-        Examples
-        --------
-        >>> # Create a supervised learning instance and load a dataset
-        >>> model = SupervisedLearning(dataset)
-        >>>
-        >>> # Select features using Recursive Feature Elimination (RFE)
-        >>> selected_features = model.select_features(strategy='rfe', 
-        >>>                                           estimator=RandomForestRegressor(), 
-        >>>                                           number_of_features=5)
-        >>>
-        >>> print(selected_features)
+        Migration
+        ---------
+        This archived 1.x implementation is excluded from current packages.
+        For runnable Session examples, see the current installation and
+        first-session guides at https://buildml.readthedocs.io/.
+
     
         See Also
         --------
@@ -5379,19 +5180,12 @@ class SupervisedLearning:
         ------
         TypeError
             If the column types or aggregate function are not recognized.
-            
-        
-        Examples
-        --------
-        >>> # Create a supervised learning instance and load a dataset
-        >>> model = SupervisedLearning(dataset)
-        >>>
-        >>> # Group data by 'Category' and calculate the mean for 'Value'
-        >>> grouped_data = model.group_data(columns=['Value'], 
-        >>>                                 column_to_groupby='Category', 
-        >>>                                 aggregate_function='mean')
-        >>>
-        >>> print(grouped_data)
+        Migration
+        ---------
+        This archived 1.x implementation is excluded from current packages.
+        For runnable Session examples, see the current installation and
+        first-session guides at https://buildml.readthedocs.io/.
+
     
         See Also
         --------
@@ -5514,16 +5308,12 @@ class SupervisedLearning:
         ------
         TypeError
             If the column type is not recognized.
-    
-        Examples
-        --------
-        >>> # Create a supervised learning instance and load a dataset
-        >>> model = SupervisedLearning(dataset)
-        >>>
-        >>> # Count the occurrences of each category in the 'Category' column
-        >>> category_counts = model.count_column_categories(column='Category')
-        >>>
-        >>> print(category_counts)
+        Migration
+        ---------
+        This archived 1.x implementation is excluded from current packages.
+        For runnable Session examples, see the current installation and
+        first-session guides at https://buildml.readthedocs.io/.
+
     
         See Also
         --------
@@ -5836,12 +5626,12 @@ class SupervisedLearning:
         -----
         This method evaluates the KNN classifier with different values of k and plots a graph to help identify the best k.
         The best k-value is determined based on the highest accuracy score.
-    
-        Examples
-        --------
-        >>> data = SupervisedLearning(dataset)
-        >>> data.get_bestK_KNNclassifier(weight='distance', 
-        >>>                              algorithm='kd_tree')
+        Migration
+        ---------
+        This archived 1.x implementation is excluded from current packages.
+        For runnable Session examples, see the current installation and
+        first-session guides at https://buildml.readthedocs.io/.
+
     
         See Also
         --------
@@ -5964,11 +5754,12 @@ class SupervisedLearning:
         -----
         This method evaluates the KNN regressor with different values of k and plots a graph to help identify the best k.
         The best k-value is determined based on the highest R-squared score.
-    
-        Examples
-        --------
-        >>> data = SupervisedLearning(dataset)
-        >>> data.get_bestK_KNNregressor(weight='distance', algorithm='kd_tree')
+        Migration
+        ---------
+        This archived 1.x implementation is excluded from current packages.
+        For runnable Session examples, see the current installation and
+        first-session guides at https://buildml.readthedocs.io/.
+
     
         See Also
         --------
@@ -6079,12 +5870,12 @@ class SupervisedLearning:
         Notes
         -----
         This method utilizes Pandas for extracting unique elements and their counts.
-    
-        Examples
-        --------
-        >>> from buildml import SupervisedLearning
-        >>> model = SupervisedLearning(dataset)
-        >>> unique_elements = model.unique_elements_in_columns(count=True)
+        Migration
+        ---------
+        This archived 1.x implementation is excluded from current packages.
+        For runnable Session examples, see the current installation and
+        first-session guides at https://buildml.readthedocs.io/.
+
     
         References
         ----------
@@ -6147,21 +5938,12 @@ class SupervisedLearning:
         --------
         None
             Displays a simple linear regression graph.
-    
-        Examples:
+        Migration
         ---------
-        >>> # Example 1: Visualize a simple linear regression model
-        >>> model.simple_linregres_graph(regressor=LinearRegression(), 
-                                         title="Simple Linear Regression",
-                                         xlabel="Specify your title for xaxis",
-                                         ylabel="Specify your title for yaxis")
-    
-        >>> # Example 2: Visualize multiple linear regression models
-        >>> regressors = [LinearRegression(), Ridge(), Lasso()]
-        >>> model.simple_linregres_graph(regressor=regressors, 
-                                         title="Analyzing Impact of Expenditure on Growth",
-                                         xlabel="Expenditure",
-                                         ylabel="Growth")
+        This archived 1.x implementation is excluded from current packages.
+        For runnable Session examples, see the current installation and
+        first-session guides at https://buildml.readthedocs.io/.
+
         
         References:
         -----------
@@ -6291,35 +6073,12 @@ class SupervisedLearning:
         - `matplotlib.pyplot.plot`: Plot lines and/or markers using Matplotlib.
         - `numpy`: Fundamental package for scientific computing with Python.
         - `scikit-learn`: Simple and efficient tools for predictive data analysis.
-    
-        Example
-        -------
-        >>> import pandas as pd
-        >>> import numpy as np
-        >>> from buildml import SupervisedLearning
-        >>> from sklearn.linear_model import LinearRegression
-        >>>
-        >>> # Get the Dataset
-        >>> dataset = pd.read_csv("Your dataset/path")
-        >>> 
-        >>> # Assuming `automate` is an instance of the SupervisedLearning class
-        >>> automate = SupervisedLearning(dataset)
-        >>> regressor = LinearRegression()
-        >>>
-        >>> # Further Data Preparation and Segregation
-        >>> select_variables = automate.select_dependent_and_independent(predict = "Salary")
-        >>> poly_x = automate.polyreg_x(degree = 5)
-        >>>
-        >>> # Model Building
-        >>> training = automate.train_model_regressor(regressor)
-        >>> prediction = automate.regressor_predict()
-        >>> evaluation = automate.regressor_evaluation()
-        >>> poly_reg = automate.polyreg_graph(title = "Analyzing salary across different levels",  
-        >>>                                   xlabel = "Levels", 
-        >>>                                   ylabel = "Salary", 
-        >>>                                   whole_dataset = True, 
-        >>>                                   line_marker = None, 
-        >>>                                   line_style = "solid")
+        Migration
+        ---------
+        This archived 1.x implementation is excluded from current packages.
+        For runnable Session examples, see the current installation and
+        first-session guides at https://buildml.readthedocs.io/.
+
         """
         
         model = self.model_regressor
@@ -6374,12 +6133,12 @@ class SupervisedLearning:
         Notes
         -----
         This method utilizes scikit-learn's PolynomialFeatures for feature expansion.
-    
-        Examples
-        --------
-        >>> from buildml import SupervisedLearning
-        >>> model = SupervisedLearning(dataset)
-        >>> model.polyreg_x(degree=2, include_bias=True)
+        Migration
+        ---------
+        This archived 1.x implementation is excluded from current packages.
+        For runnable Session examples, see the current installation and
+        first-session guides at https://buildml.readthedocs.io/.
+
     
         References
         ----------
@@ -6431,32 +6190,12 @@ class SupervisedLearning:
             Dictionary: A dictionary containing two keys:
                 - "Degree Metrics": A DataFrame with metrics for each degree, including training R2, training RMSE, test R2, test RMSE, cross-validation mean, and cross-validation standard deviation.
                 - "Cross Validation Info": An array containing cross-validation scores.
+        Migration
+        ---------
+        This archived 1.x implementation is excluded from current packages.
+        For runnable Session examples, see the current installation and
+        first-session guides at https://buildml.readthedocs.io/.
 
-        Example
-        -------
-        >>> # Import Libraries
-        >>> import pandas as pd
-        >>> import numpy as np
-        >>> import matplotlib.pyplot as plt
-        >>> from buildml import SupervisedLearning
-        >>> 
-        >>> # Get the Dataset
-        >>> dataset = pd.read_csv("Your dataset")
-        >>> 
-        >>> # Using BuildML
-        >>> automate = SupervisedLearning(data)
-        >>> 
-        >>> # EDA
-        >>> eda = automate.eda()
-        >>> 
-        >>> # Further Data Preparation and Segregation
-        >>> select_variables = automate.select_dependent_and_independent(predict = "Salary")
-        >>> best_degree = automate.poly_get_optimal_degree(max_degree=5, 
-        >>>                                                whole_dataset=False, 
-        >>>                                                test_size=0.2, 
-        >>>                                                random_state=42, 
-        >>>                                                include_bias=True, 
-        >>>                                                cross_validation=True)
 
         Notes
         -----

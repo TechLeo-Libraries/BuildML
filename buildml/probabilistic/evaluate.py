@@ -61,7 +61,7 @@ def evaluate_probabilistic(
     Returns
     -------
     ProbabilisticEvalResult
-        Point metrics, interval coverage, and honesty disclosures.
+        Point metrics, interval coverage, and implementation limitations.
 
     Raises
     ------

@@ -34,7 +34,7 @@ dataset:
 frame:
     Partition or full DataFrame slice used for this operation.
 columns:
-    Optional explicit feature column list; ``None`` auto-selects numerics.
+    Ordered column names to include in the matrix.
 reduce_plan:
     Optional preprocess reduce plan from Session.
 prefer_reduce_components:
@@ -105,21 +105,21 @@ ValidationError
 
 
 def matrix_from_frame(frame: pd.DataFrame, columns: list[str]) -> Any:
-    """Build a float design matrix; refuse nulls with a precise message.
+    """Convert selected columns to a floating-point design matrix.
 
-Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+Column order is preserved. Missing values are rejected with guidance to impute before distance-based clustering.
 
 Parameters
 ----------
 frame:
     Partition or full DataFrame slice used for this operation.
 columns:
-    Optional explicit feature column list; ``None`` auto-selects numerics.
+    Ordered column names to include in the matrix.
 
 Returns
 -------
 Any
-    Adapter-specific estimator or model object.
+    Two-dimensional NumPy array containing the selected features.
 
 Raises
 ------

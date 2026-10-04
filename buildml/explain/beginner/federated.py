@@ -40,13 +40,24 @@ FEDERATED_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
             (
                 "The federated model should match a model trained on pooled data.",
-                "It usually will not, and the gap is the point of measuring. Averaging weights across heterogeneous clients loses something.",
+                "The training procedures differ, so compare pooled and federated results on the same evaluation partitions rather than assuming equivalence.",
             ),
         ),
         example=(
-            "session.set_roles({'hospital_id': 'group', 'readmitted': 'target'})",
-            "session.federated.fit(method='fedavg', n_rounds=5, random_state=0)",
-            "report = session.federated.evaluate(partition='validation')",
+            "from pathlib import Path",
+            "import numpy as np",
+            "import pandas as pd",
+            "from buildml import Session",
+            "",
+            "rng = np.random.default_rng(42)",
+            'Path("artifacts").mkdir(exist_ok=True)',
+            'frame = pd.DataFrame(rng.normal(size=(160, 2)), columns=["x1", "x2"])',
+            'frame["hospital_id"] = np.repeat(["a", "b", "c", "d"], 40)',
+            'frame["readmitted"] = (frame.x1 + 0.5 * frame.x2 > 0).astype(int)',
+            'session = Session.ingest(frame).set_roles({"x1": "feature", "x2": "feature", "hospital_id": "group", "readmitted": "target"})',
+            "session.split(test_size=0.2, validation_size=0.2, stratify=True, random_state=42)",
+            'session.federated.fit(backend="native", method="fedavg", n_rounds=3, random_state=42)',
+            'report = session.federated.evaluate(partition="validation")',
             "print(report.metrics, report.per_client_metrics)",
         ),
         check=(
@@ -60,9 +71,7 @@ FEDERATED_BEGINNER: dict[str, BeginnerLayer] = _index(
     _layer(
         "federated-flower-backend",
         plain=(
-            "Flower is a real federated-learning framework. With `buildml[federated-industry]` installed, "
-            "`backend='flower'` wraps each client partition as a Flower client and lets Flower do the "
-            "aggregation. It still runs locally in your process unless you deploy a Flower runtime yourself."
+            "Flower is a federated-learning framework. With `buildml[federated-industry]` installed, `backend='flower'` wraps each client partition as a Flower client and lets Flower do the aggregation. BuildML's adapter runs locally in one process; deploying a separate Flower runtime is outside this API."
         ),
         analogy=(
             "Doing the same classroom exercise, but using the official scoring software instead of adding "
@@ -90,13 +99,25 @@ FEDERATED_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
             (
                 "The Flower backend will give different, better results.",
-                "It performs the same weighted average over the same local fits. Expect the same numbers, not better ones.",
+                "It performs the same weighted average over the same local fits. Compare results under matched seeds and settings; selecting Flower alone does not imply improved accuracy.",
             ),
         ),
         example=(
-            "# pip install \"buildml[federated-industry]\"",
-            "session.federated.fit(backend='flower', method='fedavg', n_rounds=5)",
-            "session.federated.export_round_history('artifacts/fed_rounds.json')",
+            '# Requires: python -m pip install "buildml[federated-industry]"',
+            "from pathlib import Path",
+            "import numpy as np",
+            "import pandas as pd",
+            "from buildml import Session",
+            "",
+            "rng = np.random.default_rng(42)",
+            'Path("artifacts").mkdir(exist_ok=True)',
+            'frame = pd.DataFrame(rng.normal(size=(160, 2)), columns=["x1", "x2"])',
+            'frame["hospital_id"] = np.repeat(["a", "b", "c", "d"], 40)',
+            'frame["readmitted"] = (frame.x1 + 0.5 * frame.x2 > 0).astype(int)',
+            'session = Session.ingest(frame).set_roles({"x1": "feature", "x2": "feature", "hospital_id": "group", "readmitted": "target"})',
+            "session.split(test_size=0.2, validation_size=0.2, stratify=True, random_state=42)",
+            'session.federated.fit(backend="flower", method="fedavg", n_rounds=3, random_state=42)',
+            'session.federated.export_round_history("artifacts/federated-rounds.json")',
             "print(session.federated.plan.backend, session.federated.plan.disclosures)",
         ),
         check=(
@@ -131,7 +152,7 @@ FEDERATED_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         avoid=(
             "Do not use it with models that have no coefficients to average: tree ensembles cannot be combined this way.",
-            "Do not use plain FedAvg when clients differ sharply; local models drift apart and the average satisfies nobody.",
+            "When clients differ sharply, compare FedAvg with the proximal option and inspect performance per client.",
         ),
         myths=(
             (
@@ -144,11 +165,21 @@ FEDERATED_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.federated.fit(",
-            "    method='fedavg', estimator='logistic_regression',",
-            "    n_rounds=8, local_epochs=2, random_state=0,",
-            ")",
-            "for row in session.federated.plan.round_history: print(row)",
+            "from pathlib import Path",
+            "import numpy as np",
+            "import pandas as pd",
+            "from buildml import Session",
+            "",
+            "rng = np.random.default_rng(42)",
+            'Path("artifacts").mkdir(exist_ok=True)',
+            'frame = pd.DataFrame(rng.normal(size=(160, 2)), columns=["x1", "x2"])',
+            'frame["hospital_id"] = np.repeat(["a", "b", "c", "d"], 40)',
+            'frame["readmitted"] = (frame.x1 + 0.5 * frame.x2 > 0).astype(int)',
+            'session = Session.ingest(frame).set_roles({"x1": "feature", "x2": "feature", "hospital_id": "group", "readmitted": "target"})',
+            "session.split(test_size=0.2, validation_size=0.2, stratify=True, random_state=42)",
+            'session.federated.fit(backend="native", method="fedavg", estimator="logistic_regression", n_rounds=3, local_epochs=2, random_state=42)',
+            "for row in session.federated.plan.round_history:",
+            "    print(row)",
         ),
         check=(
             "Does your chosen estimator actually expose coefficients?",
@@ -161,9 +192,7 @@ FEDERATED_BEGINNER: dict[str, BeginnerLayer] = _index(
     _layer(
         "federated-fedprox",
         plain=(
-            "FedProx is FedAvg with a leash. After each local training pass, each client's weights are "
-            "pulled part of the way back toward the shared global weights. The strength of the pull is `mu`. "
-            "It stops clients with unusual data from wandering too far."
+            "BuildML's FedProx option adds a proximal pull to FedAvg. After each local training pass, each client's weights are pulled part of the way back toward the shared global weights. The strength of the pull is `mu`. This reduces the size of local deviations from the shared weights."
         ),
         analogy=(
             "Letting everyone edit the draft, but with a rule that no edit may stray more than so far from "
@@ -187,7 +216,7 @@ FEDERATED_BEGINNER: dict[str, BeginnerLayer] = _index(
         myths=(
             (
                 "FedProx is strictly better than FedAvg.",
-                "It trades local adaptation for stability. When clients are similar, that trade costs you accuracy for no benefit.",
+                "It trades local adaptation for stability. Whether that trade improves accuracy depends on the client data and settings.",
             ),
             (
                 "This is the complete FedProx method from the paper.",
@@ -195,8 +224,21 @@ FEDERATED_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.federated.fit(method='fedprox', mu=0.05, n_rounds=5, random_state=0)",
-            "# compare against the fedavg run on the same holdout",
+            "from pathlib import Path",
+            "import numpy as np",
+            "import pandas as pd",
+            "from buildml import Session",
+            "",
+            "rng = np.random.default_rng(42)",
+            'Path("artifacts").mkdir(exist_ok=True)',
+            'frame = pd.DataFrame(rng.normal(size=(160, 2)), columns=["x1", "x2"])',
+            'frame["hospital_id"] = np.repeat(["a", "b", "c", "d"], 40)',
+            'frame["readmitted"] = (frame.x1 + 0.5 * frame.x2 > 0).astype(int)',
+            'session = Session.ingest(frame).set_roles({"x1": "feature", "x2": "feature", "hospital_id": "group", "readmitted": "target"})',
+            "session.split(test_size=0.2, validation_size=0.2, stratify=True, random_state=42)",
+            'for method, mu in (("fedavg", 0.0), ("fedprox", 0.05)):',
+            '    session.federated.fit(backend="native", method=method, mu=mu, n_rounds=3, random_state=42)',
+            '    print(method, session.federated.evaluate(partition="validation").metrics)',
         ),
         check=(
             "How does holdout performance compare with your FedAvg baseline?",
@@ -241,15 +283,34 @@ FEDERATED_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.federated.save_bundle('artifacts/consortium-model')",
-            "svc = Session.ingest(new_rows).federated.load_bundle('artifacts/consortium-model', trusted=True)",
-            "svc.federated.predict(partition='all')",
+            "from pathlib import Path",
+            "import numpy as np",
+            "import pandas as pd",
+            "from buildml import Session",
+            "",
+            "rng = np.random.default_rng(42)",
+            'Path("artifacts").mkdir(exist_ok=True)',
+            'frame = pd.DataFrame(rng.normal(size=(160, 2)), columns=["x1", "x2"])',
+            'frame["hospital_id"] = np.repeat(["a", "b", "c", "d"], 40)',
+            'frame["readmitted"] = (frame.x1 + 0.5 * frame.x2 > 0).astype(int)',
+            'session = Session.ingest(frame).set_roles({"x1": "feature", "x2": "feature", "hospital_id": "group", "readmitted": "target"})',
+            "session.split(test_size=0.2, validation_size=0.2, stratify=True, random_state=42)",
+            'session.federated.fit(backend="native", method="fedavg", n_rounds=3, random_state=42)',
+            'session.federated.save_bundle("artifacts/federated-model")',
+            "new_rows = frame.iloc[:4].copy()",
+            'svc = Session.ingest(new_rows).federated.load_bundle("artifacts/federated-model", trusted=True)',
+            'print(svc.federated.predict(partition="all"))',
         ),
         check=(
             "Does the serving data carry the same feature and client columns?",
             "Have you kept the round history alongside the model for review?",
         ),
-        tools=("save_federated_bundle", "load_federated_bundle", "predict_federated", "checkpoint_save"),
+        tools=(
+            "save_federated_bundle",
+            "load_federated_bundle",
+            "predict_federated",
+            "checkpoint_save",
+        ),
         terms=("bundle", "checkpoint", "federated learning"),
         difficulty=CORE,
     ),

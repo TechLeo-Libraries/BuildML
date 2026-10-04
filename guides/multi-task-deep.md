@@ -21,16 +21,15 @@ refused: name an industry method (`multi_output_xgb`,
 The API refuses mixed classification plus regression on sklearn and
 industry, fewer than two targets, and a fit without a split. You decide
 which columns are targets (`role="target"` or `targets=`), whether to
-chain them, and whether mixed heads on torch are what you meant.
+chain them, and whether separate Torch heads are appropriate for mixed targets.
 
-Short on-ramp: [multi-task quickstart](quickstart-multi-task.md).
+Quickstart: [multi-task quickstart](quickstart-multi-task.md).
 Proof: [multi-target-underwriting](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/multi-target-underwriting).
 
 ## A first joint fit
 
 Prefer two or more `role="target"` columns. `task="auto"` infers
-classification vs regression from dtypes and cardinality. Say the task
-yourself when an integer label would look like a quantity.
+classification vs regression from dtypes and cardinality. Set the task explicitly when integer-valued outcomes make inference ambiguous.
 
 `split(stratify=True)` still goes through the single-target gate. With
 several target roles, split without stratification (or stratify on a
@@ -89,10 +88,43 @@ CatBoost imports in a subprocess. Chains stay on sklearn. There is no
 ClassifierChain on a GBDT backend.
 
 Torch is a shared MLP trunk with per-task heads and joint training.
-`epochs` defaults to 60, `batch_size` to 64, `device` to `"cpu"`. It is
-not a task-affinity search product.
+`epochs` defaults to 60, `batch_size` to 64, `device` to `"cpu"`. Task relationships and the shared architecture are specified by the caller.
 
 ```python
+import numpy as np
+import pandas as pd
+
+from buildml import Session
+
+rng = np.random.default_rng(0)
+n = 240
+x0 = rng.normal([-1.0, -1.0], 0.55, size=(n // 2, 2))
+x1 = rng.normal([1.2, 1.0], 0.55, size=(n - n // 2, 2))
+frame = pd.DataFrame(np.vstack([x0, x1]), columns=["x", "y"])
+frame["t1"] = [0] * (n // 2) + [1] * (n - n // 2)
+frame["t2"] = ([0, 1] * (n // 2))[:n]
+
+session = (
+    Session.ingest(frame)
+    .set_roles({"x": "feature", "y": "feature", "t1": "target", "t2": "target"})
+    .split(test_size=0.2, validation_size=0.2, random_state=0)
+    .scale(method="standard")
+)
+
+fit = session.multitask.fit(
+    backend="sklearn",
+    method="multi_output",
+    task="classification",
+    base_estimator="logistic_regression",
+)
+print(fit.backend, fit.n_tasks, fit.target_columns)
+
+ev = session.multitask.evaluate(partition="validation")
+print(ev.metrics)
+print(ev.per_task_metrics)
+
+session.multitask.save_bundle("artifacts/multitask_bundle")
+
 session.multitask.capability_matrix()
 ```
 
@@ -112,11 +144,11 @@ separately. Holdout is never used for fitting.
 target contract, per-task label encoders, backend metadata. A Session
 checkpoint does not embed it. Reload the table with `checkpoint_load`.
 Reload the learner with `session.multitask.load_bundle`. `trusted=True`
-only for a file you made.
+only for a file you created or whose source and contents you trust.
 
 [Artifacts](artifacts-checkpoints-bundles.md)
 
-## When it refuses
+## Validation errors and prerequisites
 
 | What you see | What happened |
 | --- | --- |

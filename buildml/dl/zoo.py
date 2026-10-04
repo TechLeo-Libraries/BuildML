@@ -249,8 +249,8 @@ def freeze_module(module: Any, *, freeze: bool = True) -> Any:
     Notes
     -----
     **Frozen makes training much faster and much less flexible.** No gradients
-    are computed for those layers, so each step is cheaper and uses less memory
-   : but the representations cannot adapt to your data at all.
+    are computed for those layers, reducing backward-pass computation and memory
+    use. Their weights remain fixed during training.
 
     **Unfreezing after the head has trained is the usual refinement.** Training
     a random head against an unfrozen backbone lets large early gradients damage
@@ -350,11 +350,14 @@ def attach_backbone_head(
 
     Examples
     --------
-    Linear probe on a pretrained ResNet::
+    .. code-block:: python
 
+        # Install the backend first: pip install "buildml[vision]"
+        # The first call downloads pretrained weights and requires network access.
+        from buildml.dl.zoo import attach_backbone_head, load_vision_backbone
         backbone = load_vision_backbone("resnet18", weights="pretrained")
-        head = attach_backbone_head(backbone, n_classes=5)
-        head.module  # pass to train_supervised_module
+        head = attach_backbone_head(backbone, n_classes=2)
+        print(head.module)
 
     See Also
     --------
@@ -480,10 +483,13 @@ def load_vision_backbone(
 
     Examples
     --------
-    Pretrained extractor, frozen for a linear probe::
+    .. code-block:: python
 
+        # Install the backend first: pip install "buildml[vision]"
+        # The first call downloads pretrained weights and requires network access.
+        from buildml.dl.zoo import load_vision_backbone, load_vision_backbone
         backbone = load_vision_backbone("resnet18", weights="pretrained")
-        backbone.feature_dim  # 512
+        print(backbone.feature_dim)
 
     See Also
     --------
@@ -606,10 +612,13 @@ def load_audio_backbone(
 
     Examples
     --------
-    Frozen speech representations::
+    .. code-block:: python
 
+        # Install the backend first: pip install "buildml[speech]"
+        # The first call downloads pretrained weights and requires network access.
+        from buildml.dl.zoo import load_audio_backbone, load_vision_backbone
         backbone = load_audio_backbone("wav2vec2_base", weights="pretrained")
-        backbone.feature_dim  # 768
+        print(backbone.feature_dim)
 
     See Also
     --------
@@ -720,10 +729,13 @@ def load_speech_backbone(
 
     Examples
     --------
-    Feature extraction from the tiny encoder::
+    .. code-block:: python
 
+        # Install the backend first: pip install "buildml[speech]"
+        # The first call downloads pretrained weights and requires network access.
+        from buildml.dl.zoo import load_speech_backbone, load_vision_backbone
         backbone = load_speech_backbone("whisper_tiny_encoder", weights="pretrained")
-        backbone.feature_dim  # 384 for tiny
+        print(backbone.feature_dim)
 
     See Also
     --------
@@ -836,9 +848,13 @@ def load_pretrained_backbone(
 
     Examples
     --------
-    Load whatever the configuration asked for::
+    .. code-block:: python
 
-        backbone = load_pretrained_backbone("vision", weights="pretrained")
+        # Install the backend first: pip install "buildml[vision]"
+        # The first call downloads pretrained weights and requires network access.
+        from buildml.dl.zoo import load_pretrained_backbone, load_vision_backbone
+        backbone = load_pretrained_backbone("vision", architecture="resnet18", weights="pretrained")
+        print(backbone.feature_dim)
 
     See Also
     --------

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "buildml"
-version = "2.6.3"
+version = "2.6.4"
 description = "Python machine-learning library where one object holds your data, split, preprocessing, model, and run history, and that same object also runs forecasting, AutoML, fairness, recommenders, RAG, graphs, NLP, Torch, and more."
 readme = "README.md"
 license = { text = "Apache-2.0" }
@@ -62,7 +62,7 @@ vision = ["buildml[torch]", "torchvision>=0.17"]
 pretrained = ["buildml[vision,speech]"]
 onnx = ["onnx>=1.15"]
 rag = ["sentence-transformers>=2.2", "transformers>=4.36"]
-rag-advanced = ["buildml[rag]", "langchain-community>=0.2", "langchain-core>=0.2"]
+rag-advanced = ["buildml[rag]", "langchain-community>=0.2", "langchain-core>=0.2", "langchain-classic>=1.0"]
 graph = ["networkx>=3.0"]
 graph-pyg = ["buildml[torch]", "torch-geometric>=2.5"]
 rl = ["gymnasium>=0.29"]
@@ -125,7 +125,7 @@ recommenders-industry = [
   "implicit>=0.7",
 ]
 recommenders-lightfm = [
-  "lightfm>=1.17; python_version < '3.13' and sys_platform != 'win32'",
+  "lightfm>=1.17; python_version < '3.12' and sys_platform != 'win32'",
 ]
 causal-industry = [
     "dowhy>=0.11",

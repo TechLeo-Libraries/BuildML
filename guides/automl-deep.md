@@ -6,8 +6,7 @@ pip install buildml
 # FLAML / AutoGluon: pip install "buildml[automl-industry]"
 ```
 
-Family and preprocess strategy are part of the decision, not a
-single-estimator grid you already chose. Default selection is `cv`
+AutoML searches over model families and preprocessing strategies. Default selection is `cv`
 (train-fold ranking). Session test never enters selection. Confirm once
 with `session.automl.evaluate(partition="test")`.
 
@@ -16,7 +15,7 @@ Session-global `impute` / `encode` / `scale` then AutoML is the same
 native-only. FLAML / AutoGluon fit on train only and disclose that
 fold-local recipes are bypassed.
 
-Short on-ramp: [AutoML quickstart](quickstart-automl.md) ·
+Quickstart: [AutoML quickstart](quickstart-automl.md) ·
 [Leakage](leakage-cv-recipes.md).
 
 ## When this is the right call
@@ -28,19 +27,31 @@ and preprocess strategy are still open.
 | Concern | Single-estimator search | `session.automl.run` |
 | --- | --- | --- |
 | Estimator | One model you chose | Catalog of families (+ industry GBDT when installed) |
-| Preprocess | Optional knobs on one recipe | Discrete strategy search |
+| Preprocess | Optional parameters for one recipe | Discrete strategy search |
 | Backends | Optuna for `optuna_search`; GA for evolutionary | `native`, `optuna`, `flaml`, `autogluon` |
-| Ensembles | Bring your own | Optional voting/stacking of top families |
+| Ensembles | Supply an estimator | Optional voting/stacking of top families |
 
 ## Selection
 
 | Mode | Ranking evidence | When |
 | --- | --- | --- |
-| `cv` (default) | Train-fold CV means | Fast exploration (optimistic vs outer) |
+| `cv` (default) | Train-fold CV means | Initial selection; use outer folds for a post-selection estimate |
 | `nested` | Outer train folds after inner selection | Stronger post-selection estimate |
 | `validation` | Session validation partition | Needs `validation_size` |
 
 ```python
+import pandas as pd
+from sklearn.datasets import make_classification
+from buildml import Session
+
+X, y = make_classification(n_samples=160, n_features=2, n_informative=2,
+                           n_redundant=0, random_state=0)
+frame = pd.DataFrame(X, columns=["x1", "x2"])
+frame["y"] = y
+session = (Session.ingest(frame)
+    .set_roles({"x1": "feature", "x2": "feature", "y": "target"})
+    .split(test_size=0.2, validation_size=0.2, stratify=True, random_state=0))
+
 result = session.automl.run(n_trials=12, cv=3, selection="cv", random_state=0)
 board = result.leaderboard()
 print(board.head())
@@ -49,6 +60,18 @@ print(board.head())
 ## Leakage
 
 ```python
+import pandas as pd
+from sklearn.datasets import make_classification
+from buildml import Session
+
+X, y = make_classification(n_samples=160, n_features=2, n_informative=2,
+                           n_redundant=0, random_state=0)
+frame = pd.DataFrame(X, columns=["x1", "x2"])
+frame["y"] = y
+session = (Session.ingest(frame)
+    .set_roles({"x1": "feature", "x2": "feature", "y": "target"})
+    .split(test_size=0.2, validation_size=0.2, stratify=True, random_state=0))
+
 from buildml.core.errors import LeakageError
 
 session = (
@@ -94,6 +117,22 @@ families under a shared recipe. That is not a substitute for
 ## Bundle
 
 ```python
+import pandas as pd
+from sklearn.datasets import make_classification
+from buildml import Session
+
+X, y = make_classification(n_samples=160, n_features=2, n_informative=2,
+                           n_redundant=0, random_state=0)
+frame = pd.DataFrame(X, columns=["x1", "x2"])
+frame["y"] = y
+session = (Session.ingest(frame)
+    .set_roles({"x1": "feature", "x2": "feature", "y": "target"})
+    .split(test_size=0.2, validation_size=0.2, stratify=True, random_state=0))
+
+result = session.automl.run(n_trials=12, cv=3, selection="cv", random_state=0)
+board = result.leaderboard()
+print(board.head())
+
 session.automl.run(n_trials=10, cv=3, random_state=0)
 session.automl.save_bundle("artifacts/automl_bundle")
 session.save_pipeline("artifacts/automl_pipeline", evaluate_partition="test")

@@ -295,8 +295,8 @@ def unpack_plans_payload(loaded: Any) -> tuple[dict[str, Any], str]:
     Returns
     -------
     tuple of (dict, str)
-        The plan dictionary with every key present: missing plans as ``None``
-       : and the detected format label.
+        The plan dictionary, with missing plans represented as ``None``,
+        and the detected format label.
 
     Raises
     ------
@@ -460,19 +460,29 @@ def save_pipeline_bundle(
 
     Examples
     --------
-    Save a fitted model with everything needed to serve and to audit it::
+    .. code-block:: python
 
-        save_pipeline_bundle(
-            "artifacts/churn-v3",
-            fit_result=fit,
-            impute_plan=impute,
-            encode_plan=encode,
-            scale_plan=scale,
-            dataset_schema=dataset.schema.to_dict(),
-            metrics={"test": evaluation.metrics},
-            history=session.history(),
-            title="Churn model v3",
-        )
+        import pandas as pd
+        from sklearn.datasets import make_classification
+        from sklearn.tree import DecisionTreeClassifier
+        from buildml import Session
+        X, y = make_classification(n_samples=80, n_features=4, n_informative=3, n_redundant=0, random_state=42)
+        frame = pd.DataFrame(X, columns=["age", "income", "spend", "visits"])
+        frame["target"] = y
+        session = Session.ingest(frame).set_roles({"target": "target"})
+        session.split(test_size=0.2, validation_size=0.2, stratify=True, random_state=42)
+        dataset, split_plan = session.dataset, session.split_plan
+        estimator = DecisionTreeClassifier(max_depth=3, random_state=42)
+        from buildml.model.supervised import fit_estimator
+        fit = fit_estimator(dataset, split_plan, estimator)
+        from tempfile import TemporaryDirectory
+        from buildml.pipeline.bundle import save_pipeline_bundle, load_pipeline_bundle
+        from buildml.pipeline.score import predict_from_pipeline
+        with TemporaryDirectory() as directory:
+            path = save_pipeline_bundle(directory + "/model", fit_result=fit, dataset_schema=dataset.schema.to_dict(), roles=dataset.roles)
+            bundle = load_pipeline_bundle(path, trusted=True)
+            result = predict_from_pipeline(bundle, frame.drop(columns="target").iloc[:3], return_proba=True)
+            print(result.predictions)
 
     See Also
     --------

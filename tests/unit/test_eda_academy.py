@@ -14,6 +14,7 @@ from buildml.dashboard.academy_curriculum import (
     readiness_slugs,
 )
 from buildml.explain.concepts import CONCEPT_NOTES
+from scripts.check_documentation_examples import static_check
 
 pytest.importorskip("fastapi")
 
@@ -216,7 +217,8 @@ def test_academy_payload_covers_catalog_at_full_depth() -> None:
         code = sections["worked_example"]["code"]
         assert code.strip()
         assert "TODO" not in code
-        assert "Session" in code or "session" in code
+        assert "buildml" in code
+        assert static_check(code)["status"] == "static-pass", (key, static_check(code))
         assert sections["worked_example"]["what_to_change"]
         assert sections["evidence"]["session"]
         assert sections["how_to_read"]
@@ -239,7 +241,10 @@ def test_academy_payload_richness_and_real_session_api() -> None:
     assert "Session.ingest" in code or "session =" in code
     assert "session.split" in code or ".split(" in code
     assert "impute" in code
-    assert "<--" in code or "change" in code.lower()
+    example_state = {}
+    exec(compile(code, "<missing-data lesson>", "exec"), example_state)
+    assert example_state["frame"]["measurement"].isna().any()
+    assert not example_state["session"].to_pandas()["measurement"].isna().any()
     assert sections["worked_example"]["what_to_change"]
     assert sections["evidence"]["session"]
     assert "y" in sections["evidence"]["session"] or "missing" in sections["evidence"]["session"].lower()
@@ -275,9 +280,11 @@ def test_academy_adapts_classification_vs_regression() -> None:
     ].lower() or "n/a" in reg_imb["session"].lower()
 
     roles = next(c for c in class_academy["concepts"] if c["slug"] == "column-roles")
-    assert '"y": "target"' in roles["example"]
+    assert '"outcome": "target"' in roles["example"]
+    assert "not your uploaded rows" in roles["example"]
     reg_roles = next(c for c in reg_academy["concepts"] if c["slug"] == "column-roles")
-    assert '"price": "target"' in reg_roles["example"]
+    assert '"outcome": "target"' in reg_roles["example"]
+    assert "not your uploaded rows" in reg_roles["example"]
 
 
 def test_academy_lessons_have_no_todo_stubs() -> None:

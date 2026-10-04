@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from buildml.dashboard.academy_curriculum._factory import L, rows_blurb, with_starter
 from buildml.dashboard.academy_curriculum._helpers import (
+    demo_example,
     fmt_n,
     fmt_pct,
     is_classification,
@@ -38,14 +39,14 @@ def _core() -> list[LessonSpec]:
             formula="prevalence = n_positive / n; majority_accuracy = max(prevalence, 1-prevalence)",
             calculation=lambda ctx: _imb_calc(ctx),
             session_evidence=lambda ctx: _imb_calc(ctx),
-            example_code=lambda ctx: with_starter(
+            example_code=demo_example(lambda ctx: with_starter(
                 ctx,
                 "print(session.resample_strategies())  # what BuildML can do",
                 "session = session.resample(sampler=\"random_oversample\")  # <-- or smote / random_undersample",
                 "# Fit only after resample on train; evaluate on untouched test",
                 'session.learn("class-imbalance", level="beginner")',
                 stratify=True,
-            ),
+            ), task='classification'),
             what_to_change=(
                 "Pick metric first (ROC-AUC / PR-AUC / recall@cost).",
                 "Try class weights before heavy resampling.",
@@ -69,11 +70,11 @@ def _core() -> list[LessonSpec]:
             formula=None,
             calculation=lambda ctx: _target_dist(ctx),
             session_evidence=lambda ctx: _target_dist(ctx),
-            example_code=lambda ctx: with_starter(
+            example_code=demo_example(lambda ctx: with_starter(
                 ctx,
                 "report = session.eda(include_plots=False, show=False)",
                 "print(report.to_dict().get(\"target\"))",
-            ),
+            )),
             what_to_change=("For regression, consider log-target only with domain justification."),
             pitfalls=("Transforming y without inverting for reporting."),
             decide="Document y's distribution and any transform applied to it.",
@@ -106,18 +107,18 @@ def _core() -> list[LessonSpec]:
                 )
             ),
             session_evidence=lambda ctx: f"task={ctx.get('task')}; target={target_name(ctx)}.",
-            example_code=lambda ctx: with_starter(
+            example_code=demo_example(lambda ctx: with_starter(
                 ctx,
                 "from sklearn.linear_model import LogisticRegression, Ridge",
                 "",
-                "session = session.impute().encode().scale()",
+                "session = session.impute().encode(columns=[\"category\"]).scale()",
                 "est = LogisticRegression(max_iter=200) if "
                 f"{is_classification(ctx)} else Ridge()",
                 "session = session.fit(est)",
                 "card = session.evaluate(partition=\"test\")",
                 "print(card.metrics)",
                 'session.learn("model-selection", level="beginner")',
-            ),
+            ), task='classification'),
             what_to_change=("Set the primary metric to match business cost; ignore vanity metrics."),
             pitfalls=("Optimising accuracy under imbalance.", "Reporting many metrics without a primary."),
             decide="Freeze one primary metric before comparing models.",
@@ -135,7 +136,7 @@ def _core() -> list[LessonSpec]:
             ),
             technical=("session.tune_threshold(...) searches operating points on a validation partition."),
             why=("0.5 is rarely the right cut."),
-            formula="choose τ maximising utility(TP,FP,FN,TN; costs) on validation",
+            formula="choose Ï„ maximising utility(TP,FP,FN,TN; costs) on validation",
             calculation=lambda ctx: (
                 "Classification thresholds apply only when task=classification; "
                 f"here task={ctx.get('task')}."
@@ -143,17 +144,17 @@ def _core() -> list[LessonSpec]:
                 else "Regression uses decision rules on continuous predictions - define them explicitly."
             ),
             session_evidence=lambda ctx: f"task={ctx.get('task')}.",
-            example_code=lambda ctx: with_starter(
+            example_code=demo_example(lambda ctx: with_starter(
                 ctx,
                 "from sklearn.linear_model import LogisticRegression",
                 "",
-                "session = session.impute().encode().scale()",
+                "session = session.impute().encode(columns=[\"category\"]).scale()",
                 "session = session.fit(LogisticRegression(max_iter=200))",
                 "threshold = session.tune_threshold(partition=\"validation\")  # needs val split",
                 "print(threshold)",
                 'session.learn("thresholds", level="beginner")',
                 stratify=True,
-            ),
+            ), task='classification'),
             what_to_change=("Set costs / capacity constraints; tune on validation, freeze for test."),
             pitfalls=("Tuning threshold on the test set.", "Ignoring capacity (how many you can act on)."),
             decide="Publish the threshold policy with the model, not just the probabilities.",
@@ -178,12 +179,12 @@ def _core() -> list[LessonSpec]:
                 else f"Regression baseline: predict train mean/median of {target_name(ctx)}."
             ),
             session_evidence=lambda ctx: f"task={ctx.get('task')}; n={fmt_n(ctx.get('rows'))}.",
-            example_code=lambda ctx: with_starter(
+            example_code=demo_example(lambda ctx: with_starter(
                 ctx,
                 "from sklearn.dummy import DummyClassifier, DummyRegressor",
                 "from sklearn.linear_model import LogisticRegression, Ridge",
                 "",
-                "session = session.impute().encode().scale()",
+                "session = session.impute().encode(columns=[\"category\"]).scale()",
                 "dummy = DummyClassifier(strategy=\"most_frequent\") if "
                 f"{is_classification(ctx)} else DummyRegressor(strategy=\"mean\")",
                 "session.compare_models(",
@@ -194,7 +195,7 @@ def _core() -> list[LessonSpec]:
                 "    }",
                 ")",
                 'session.learn("baselines", level="beginner")',
-            ),
+            ), task='classification'),
             what_to_change=("Keep the baseline in every comparison table."),
             pitfalls=("Reporting model scores without the majority/mean baseline beside them."),
             decide="Do not ship a model that does not beat a documented baseline on the primary metric.",
@@ -210,7 +211,7 @@ def _core() -> list[LessonSpec]:
                 "A score of 0.8 should mean 'about 80% chance' if you treat it as a probability. "
                 "Many classifiers are not born that way.",
             ),
-            technical=("session.calibration(...) diagnoses/adjusts probability quality on a holdout."),
+            technical=("session.calibration(...) reports calibration diagnostics on held-out data; it does not recalibrate the model."),
             why=("Bad calibration breaks threshold policies and capacity planning."),
             formula="perfect calibration: P(Y=1 | s(x)=p) ~ p",
             calculation=lambda ctx: (
@@ -218,17 +219,17 @@ def _core() -> list[LessonSpec]:
                 f"task={ctx.get('task')}."
             ),
             session_evidence=lambda ctx: f"task={ctx.get('task')}.",
-            example_code=lambda ctx: with_starter(
+            example_code=demo_example(lambda ctx: with_starter(
                 ctx,
                 "from sklearn.linear_model import LogisticRegression",
                 "",
-                "session = session.impute().encode().scale()",
+                "session = session.impute().encode(columns=[\"category\"]).scale()",
                 "session = session.fit(LogisticRegression(max_iter=200))",
                 "cal = session.calibration(partition=\"validation\")",
                 "print(cal)",
                 'session.learn("probability-calibration", level="beginner")',
                 stratify=True,
-            ),
+            ), task='classification'),
             what_to_change=("Calibrate on validation; re-check after major retrains."),
             pitfalls=("Calibrating on test.", "Trusting raw margins from boosted trees as probabilities."),
             decide="If decisions use probabilities, require a calibration check in the release gate.",
@@ -253,15 +254,15 @@ def _additions() -> list[LessonSpec]:
                 f"Use after fit on task={ctx.get('task')}; needs a thresholded classifier."
             ),
             session_evidence=lambda ctx: f"task={ctx.get('task')}.",
-            example_code=lambda ctx: with_starter(
+            example_code=demo_example(lambda ctx: with_starter(
                 ctx,
                 "from sklearn.linear_model import LogisticRegression",
-                "session = session.impute().encode().scale().fit(LogisticRegression(max_iter=200))",
+                "session = session.impute().encode(columns=[\"category\"]).scale().fit(LogisticRegression(max_iter=200))",
                 "card = session.evaluate(partition=\"test\")",
                 "print(card.metrics)",
                 "print(getattr(card, \"diagnostics\", None))",
                 stratify=True,
-            ),
+            ), task='classification'),
             what_to_change=("Inspect errors at the operating threshold you will ship."),
             pitfalls=("Reading a confusion matrix at 0.5 when you will deploy another cut."),
             decide="Publish the confusion matrix at the production threshold.",
@@ -281,14 +282,14 @@ def _additions() -> list[LessonSpec]:
                 f"Imbalance context: {_imb_calc(ctx)}" if is_classification(ctx) else "Classification-only topic."
             ),
             session_evidence=lambda ctx: _imb_calc(ctx) if is_classification(ctx) else "n/a",
-            example_code=lambda ctx: with_starter(
+            example_code=demo_example(lambda ctx: with_starter(
                 ctx,
                 "from sklearn.linear_model import LogisticRegression",
-                "session = session.impute().encode().scale().fit(LogisticRegression(max_iter=200))",
+                "session = session.impute().encode(columns=[\"category\"]).scale().fit(LogisticRegression(max_iter=200))",
                 "board = session.eval_plots(partition=\"test\", include_learning_curve=False)",
                 "print(board)",
                 stratify=True,
-            ),
+            ), task='classification'),
             what_to_change=("Choose ROC vs PR from prevalence and costs."),
             pitfalls=("Boasting ROC-AUC at 0.5% prevalence without PR."),
             decide="Report the ranking curve that matches prevalence and decision style.",
@@ -306,13 +307,13 @@ def _additions() -> list[LessonSpec]:
             formula=None,
             calculation=lambda ctx: _multiclass_calc(ctx),
             session_evidence=lambda ctx: _multiclass_calc(ctx),
-            example_code=lambda ctx: with_starter(
+            example_code=demo_example(lambda ctx: with_starter(
                 ctx,
                 "from sklearn.linear_model import LogisticRegression",
-                "session = session.impute().encode().scale().fit(LogisticRegression(max_iter=400))",
+                "session = session.impute().encode(columns=[\"category\"]).scale().fit(LogisticRegression(max_iter=400))",
                 "print(session.evaluate(partition=\"test\").metrics)",
                 stratify=True,
-            ),
+            ), task='classification'),
             what_to_change=("Pick micro/macro/weighted deliberately; monitor worst class."),
             pitfalls=("Reporting only overall accuracy for multiclass."),
             decide="Publish per-class metrics alongside the average you optimise.",
@@ -327,12 +328,12 @@ def _additions() -> list[LessonSpec]:
             plain=("Residuals show where the model systematically fails - not just how wrong on average."),
             technical=("For regression, plot residual vs predicted and vs key features; check heteroscedasticity."),
             why=("Good RMSE can hide large structured mistakes in a segment."),
-            formula="residual = y - ŷ",
+            formula="residual = y - Å·",
             calculation=lambda ctx: (
                 f"Focus for regression task; here task={ctx.get('task')}."
             ),
             session_evidence=lambda ctx: f"task={ctx.get('task')}.",
-            example_code=lambda ctx: with_starter(
+            example_code=demo_example(lambda ctx: with_starter(
                 ctx,
                 "from sklearn.linear_model import Ridge",
                 "session = session.impute().scale().fit(Ridge())",
@@ -340,11 +341,11 @@ def _additions() -> list[LessonSpec]:
                 "print(card.metrics)",
                 "board = session.eval_plots(partition=\"test\")",
                 stratify=False,
-            ),
+            ), task='regression'),
             what_to_change=("Investigate structured residual patterns before adding complexity."),
             pitfalls=("Only reading RMSE.", "Fixing residuals by peeking at test rows' identities."),
             decide="Require residual plots for regression releases.",
-            read_steps=("Plot residual vs ŷ.", "Slice residuals by key segments."),
+            read_steps=("Plot residual vs Å·.", "Slice residuals by key segments."),
         ),
         L(
             slug="uncertainty-intervals",
@@ -361,11 +362,11 @@ def _additions() -> list[LessonSpec]:
             formula=None,
             calculation=lambda ctx: rows_blurb(ctx) + f"; task={ctx.get('task')}.",
             session_evidence=lambda ctx: f"task={ctx.get('task')}.",
-            example_code=lambda ctx: with_starter(
+            example_code=demo_example(lambda ctx: with_starter(
                 ctx,
                 'session.learn("probabilistic-uncertainty", level="beginner")',
                 "# Prefer models that expose predictive distributions when decisions need intervals.",
-            ),
+            )),
             what_to_change=("Choose interval method matching stake level."),
             pitfalls=("Showing +/-sigma from training residuals as if it were predictive uncertainty."),
             decide="If actions need confidence, ship an interval method - not only a point forecast.",
@@ -385,16 +386,16 @@ def _additions() -> list[LessonSpec]:
                 f"Candidate slice columns: {list_names(ctx.get('categorical') or [])}."
             ),
             session_evidence=lambda ctx: f"categoricals={list_names(ctx.get('categorical') or [])}.",
-            example_code=lambda ctx: with_starter(
+            example_code=demo_example(lambda ctx: with_starter(
                 ctx,
                 "from sklearn.linear_model import LogisticRegression, Ridge",
-                "session = session.impute().encode().scale()",
+                "session = session.impute().encode(columns=[\"category\"]).scale()",
                 "est = LogisticRegression(max_iter=200) if "
                 f"{is_classification(ctx)} else Ridge()",
                 "session = session.fit(est)",
-                f"slices = session.error_slices(by=\"{ (ctx.get('categorical') or ['<segment_col>'])[0] }\", partition=\"test\")",
+                "slices = session.error_slices(by=\"entity_id\", partition=\"test\")",
                 "print(slices)",
-            ),
+            ), task='classification'),
             what_to_change=("Pre-declare critical slices (region, channel, cohort)."),
             pitfalls=("Only reporting the global mean metric."),
             decide="Set minimum acceptable performance on critical slices before release.",

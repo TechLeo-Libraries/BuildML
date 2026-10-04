@@ -5,11 +5,10 @@ pip install buildml
 ```
 
 Query the train pool, then you label. Unlabeled means target NaN.
-Validation and test are never queried. The core does not invent an
-oracle. Default strategy is margin. `label_budget` defaults to 50.
+Validation and test are never queried. A person or a separate labeling system supplies the queried labels. Default strategy is margin. `label_budget` defaults to 50.
 
 [Active learning deep](active-learning-deep.md) ·
-Paste: [`examples/activelearning_margin_loop.py`](../examples/activelearning_margin_loop.py) ·
+Runnable example: [`examples/activelearning_margin_loop.py`](../examples/activelearning_margin_loop.py) ·
 Evidence: [active-labeling-budget](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/active-labeling-budget)
 
 ```bash
@@ -21,8 +20,6 @@ import numpy as np
 import pandas as pd
 
 from buildml import Session
-from buildml.data.dataset import Dataset
-from buildml.ingest.detect import schema_from_dataframe
 
 rng = np.random.default_rng(0)
 x0 = rng.normal([-1.0, -1.0], 0.55, size=(140, 2))
@@ -39,17 +36,17 @@ session = (
     .scale(method="standard")
 )
 
-# Seed: blank most TRAIN labels (holdout stays labeled for honest eval).
+# Seed: blank most TRAIN labels (holdout labels are retained for evaluation).
 full = session.to_pandas().copy()
 train_idx = list(session.split_plan.train_indices)
 blank = rng.choice(train_idx, size=int(0.85 * len(train_idx)), replace=False)
 full.loc[blank, "label"] = np.nan
-session._dataset = Dataset.from_transformed(
-    session.dataset,
-    full,
-    schema=schema_from_dataframe(full),
-    roles=dict(session.dataset.roles),
-)
+# Re-ingest the masked table while preserving the original row assignments.
+session = (Session.ingest(full)
+    .set_roles(dict(session.dataset.roles))
+    .inject_split(train_indices=session.split_plan.train_indices,
+                  validation_indices=session.split_plan.validation_indices,
+                  test_indices=session.split_plan.test_indices))
 
 fit = session.active_learning.fit(
     strategy="margin",

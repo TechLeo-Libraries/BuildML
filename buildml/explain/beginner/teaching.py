@@ -16,8 +16,7 @@ TEACHING_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         analogy=(
             "A good museum label. The big print tells you what you are looking at, the small print tells "
-            "you the provenance, and the catalogue in the shop has the full scholarship. Nobody is lied "
-            "to; people just start at different places."
+            "you the provenance, and the catalogue in the shop has the full scholarship. Readers can choose the detail they need."
         ),
         steps=(
             "Ask about anything: `session.explain('split')` for an operation, `session.learn('data-splitting')` for a concept.",
@@ -37,23 +36,28 @@ TEACHING_BEGINNER: dict[str, BeginnerLayer] = _index(
         ),
         myths=(
             (
-                "The beginner level leaves out the hard truths.",
-                "It leads with the plain reading and still names the leakage risks, the failure modes, and the misconceptions. Nothing correct is withheld.",
+                "The beginner level omits assumptions and limitations.",
+                "It leads with the plain reading and still names the leakage risks, the failure modes, and the misconceptions. Advanced notes provide additional technical detail.",
             ),
             (
                 "Explanations are written by hand for every operation, so some must be out of date.",
-                "Operation primers are derived from the same catalog that defines the parameters and prerequisites. They cannot describe a signature that no longer exists.",
+                "Operation primers are derived from the same catalog that defines the parameters and prerequisites. Examples must still be checked against the installed version.",
             ),
         ),
         example=(
-            "brief = session.explain('split')",
-            "print(brief.beginner.plain_summary)",
-            "print(brief.beginner.analogy)",
-            "for term in brief.beginner.glossary: print(term.term, '-', term.plain_meaning)",
-            "",
-            "session.learn()                       # foundation concepts, in reading order",
-            "session.learn('leakage-boundary')     # one concept, all three layers",
-            "session.learn('fit', level='advanced')  # an operation, expert tier",
+            'import pandas as pd',
+            'from sklearn.datasets import make_classification',
+            'from sklearn.tree import DecisionTreeClassifier',
+            'from buildml import Session',
+            'X, y = make_classification(n_samples=80, n_features=4, n_informative=3, n_redundant=0, random_state=42)',
+            'frame = pd.DataFrame(X, columns=["age", "income", "spend", "visits"])',
+            'frame["target"] = y',
+            'session = Session.ingest(frame).set_roles({"target": "target"})',
+            'session.split(test_size=0.2, validation_size=0.2, stratify=True, random_state=42)',
+            'brief = session.explain("split")',
+            'print(brief.beginner.plain_summary)',
+            'foundation = session.learn()',
+            'leakage = session.learn("leakage-boundary")',
         ),
         check=(
             "Can you say, in your own words, what the operation you are about to run will change?",

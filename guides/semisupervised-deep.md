@@ -14,7 +14,7 @@ is installed. Holdout labels are for evaluation only.
 This is not novelty detection (`session.anomaly`), not pretext
 (`session.ssl`), and not an oracle (`session.active_learning`).
 
-Short on-ramp: [semi-supervised quickstart](quickstart-semisupervised.md).
+Quickstart: [semi-supervised quickstart](quickstart-semisupervised.md).
 
 ## Backends
 
@@ -26,6 +26,36 @@ Short on-ramp: [semi-supervised quickstart](quickstart-semisupervised.md).
 | `hf` | `ssl` | `text_pseudo_label` |
 
 ```python
+import numpy as np
+import pandas as pd
+
+from buildml import Session
+
+rng = np.random.default_rng(0)
+x0 = rng.normal([-1.0, -1.0], 0.6, size=(120, 2))
+x1 = rng.normal([1.2, 1.0], 0.6, size=(120, 2))
+frame = pd.DataFrame(np.vstack([x0, x1]), columns=["x", "y"])
+frame["label"] = [0] * 120 + [1] * 120
+
+session = (
+    Session.ingest(frame)
+    .set_roles({"x": "feature", "y": "feature", "label": "target"})
+    .split(test_size=0.25, stratify=True, random_state=0)
+    .scale(method="standard")
+)
+
+# Scarce labels on TRAIN only (holdout remains fully labeled).
+full = session.to_pandas().copy()
+train_idx = list(session.split_plan.train_indices)
+blank = rng.choice(train_idx, size=int(0.7 * len(train_idx)), replace=False)
+full.loc[blank, "label"] = np.nan
+# Re-ingest the masked table while preserving the original row assignments.
+session = (Session.ingest(full)
+    .set_roles(dict(session.dataset.roles))
+    .inject_split(train_indices=session.split_plan.train_indices,
+                  validation_indices=session.split_plan.validation_indices,
+                  test_indices=session.split_plan.test_indices))
+
 session.semisupervised.fit(
     backend="industry",
     method="pseudo_label_xgb",
@@ -49,6 +79,36 @@ Self-supervised pretext can run on all train rows (labels optional).
 Semi-supervised fit then uses partial labels on those representations:
 
 ```python
+import numpy as np
+import pandas as pd
+
+from buildml import Session
+
+rng = np.random.default_rng(0)
+x0 = rng.normal([-1.0, -1.0], 0.6, size=(120, 2))
+x1 = rng.normal([1.2, 1.0], 0.6, size=(120, 2))
+frame = pd.DataFrame(np.vstack([x0, x1]), columns=["x", "y"])
+frame["label"] = [0] * 120 + [1] * 120
+
+session = (
+    Session.ingest(frame)
+    .set_roles({"x": "feature", "y": "feature", "label": "target"})
+    .split(test_size=0.25, stratify=True, random_state=0)
+    .scale(method="standard")
+)
+
+# Scarce labels on TRAIN only (holdout remains fully labeled).
+full = session.to_pandas().copy()
+train_idx = list(session.split_plan.train_indices)
+blank = rng.choice(train_idx, size=int(0.7 * len(train_idx)), replace=False)
+full.loc[blank, "label"] = np.nan
+# Re-ingest the masked table while preserving the original row assignments.
+session = (Session.ingest(full)
+    .set_roles(dict(session.dataset.roles))
+    .inject_split(train_indices=session.split_plan.train_indices,
+                  validation_indices=session.split_plan.validation_indices,
+                  test_indices=session.split_plan.test_indices))
+
 session.ssl.fit_pretext(method="simclr_tabular", latent_dim=16, epochs=30)
 session.ssl.transform(attach=True, partition="all")
 session.semisupervised.fit(

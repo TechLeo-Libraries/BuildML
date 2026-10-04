@@ -267,7 +267,21 @@ def evaluate_retrieval(
     --------
     Evaluate at 5, then read the failures::
 
-        result = evaluate_retrieval(index, qrels, k=5)
+        from buildml.rag.corpus import corpus_from_documents
+
+        corpus = corpus_from_documents([
+            {"doc_id": "refund", "text": "Refunds are available within 30 days of purchase.", "metadata": {"version": "2024"}},
+            {"doc_id": "cancel", "text": "Cancel a subscription from the account settings page.", "metadata": {"version": "2024"}},
+        ])
+        from buildml.rag.index import build_index
+        from buildml.rag.retrieve import retrieve
+
+        # Hashing runs locally without downloading an embedding model.
+        index = build_index(corpus, embedder="hashing", chunk_size=128, chunk_overlap=16)
+        qrels = [{"query": "refund window", "relevant_doc_ids": ["refund"]},
+                 {"query": "cancel subscription", "relevant_doc_ids": ["cancel"]}]
+        from buildml.rag.evaluate import evaluate_retrieval
+        result = evaluate_retrieval(index, qrels, k=2)
         print(result.recall_at_k, result.mrr)
         for row in result.per_query:
             if not row["hit"]:
@@ -450,13 +464,19 @@ def compare_retrieval_configs(
     --------
     Compare two chunk sizes::
 
-        result = compare_retrieval_configs(
-            corpus,
-            [{"name": "small", "chunk_size": 300},
-             {"name": "large", "chunk_size": 1000}],
-            qrels,
-            k=5,
-        )
+        from buildml.rag.corpus import corpus_from_documents
+
+        corpus = corpus_from_documents([
+            {"doc_id": "refund", "text": "Refunds are available within 30 days of purchase.", "metadata": {"version": "2024"}},
+            {"doc_id": "cancel", "text": "Cancel a subscription from the account settings page.", "metadata": {"version": "2024"}},
+        ])
+        qrels = [{"query": "refund window", "relevant_doc_ids": ["refund"]},
+                 {"query": "cancel subscription", "relevant_doc_ids": ["cancel"]}]
+        from buildml.rag.evaluate import compare_retrieval_configs
+        result = compare_retrieval_configs(corpus,
+            [{"name": "small", "chunk_size": 128, "chunk_overlap": 16, "embedder": "hashing"},
+             {"name": "large", "chunk_size": 256, "chunk_overlap": 16, "embedder": "hashing"}],
+            qrels, k=2)
         for row in result.rows:
             print(row["name"], row["recall_at_k"], row["ndcg_at_k"])
 
@@ -575,7 +595,7 @@ def evaluate_generation(
     retrieve_config: RetrieveConfig | None = None,
     provider: Any | None = None,
 ) -> RagGenerateEvalResult:
-    """Score generated answers against reference answers, cheaply.
+    """Compute lexical diagnostics against reference answers.
 
     Runs the full retrieve-and-generate path for each example and reports mean
     faithfulness, mean answer relevance, and citation coverage, with per-example
@@ -633,9 +653,23 @@ def evaluate_generation(
     --------
     Score against a small labelled set::
 
-        examples = [
-            {"query": "refund window?", "reference_answer": "30 days"},
-        ]
+        from buildml.rag.corpus import corpus_from_documents
+
+        corpus = corpus_from_documents([
+            {"doc_id": "refund", "text": "Refunds are available within 30 days of purchase.", "metadata": {"version": "2024"}},
+            {"doc_id": "cancel", "text": "Cancel a subscription from the account settings page.", "metadata": {"version": "2024"}},
+        ])
+        from buildml.rag.index import build_index
+        from buildml.rag.retrieve import retrieve
+
+        # Hashing runs locally without downloading an embedding model.
+        index = build_index(corpus, embedder="hashing", chunk_size=128, chunk_overlap=16)
+        from buildml.rag.generate import EchoGroundedProvider
+
+        # Offline API demonstration: this provider echoes evidence, not an LLM answer.
+        provider = EchoGroundedProvider()
+        from buildml.rag.evaluate import evaluate_generation
+        examples = [{"query": "refund window?", "reference_answer": "30 days"}]
         result = evaluate_generation(index, examples, provider=provider)
         print(result.mean_faithfulness, result.mean_answer_relevance)
 

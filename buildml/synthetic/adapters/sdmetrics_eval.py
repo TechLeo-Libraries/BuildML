@@ -14,23 +14,25 @@ def sdmetrics_quality_scores(
     synthetic: pd.DataFrame,
     metadata: Any | None = None,
 ) -> tuple[dict[str, float], list[str]]:
-    """Run SDMetrics QualityReport; return scalar metrics + warnings.
+    """Compare real and generated rows with SDMetrics QualityReport.
 
-Called from the Session-facing workflow after splits and roles are set. Validation and test partitions are evaluation-only unless explicitly documented.
+Reports overall quality and available property scores. A missing property breakdown is recorded as a warning rather than discarding the overall score.
 
-Parameters
-----------
-real:
-    real (pd.DataFrame).
-synthetic:
-    synthetic (pd.DataFrame).
-metadata:
-    metadata (Any | None).
+    Parameters
+    ----------
+    real:
+        Reference rows for evaluating the generated data.
+    synthetic:
+        Generated rows with the same columns as the reference data.
+    metadata:
+        SDMetrics metadata dictionary or an SDV metadata object supporting
+        ``to_dict``. When omitted, infer metadata from the reference rows and
+        record that choice in the returned warnings.
 
-Returns
--------
-tuple[dict[str, float], list[str]]
-    Tuple of results (tuple[dict[str, float], list[str]]) for downstream Session steps.
+    Returns
+    -------
+    tuple[dict[str, float], list[str]]
+        Overall and available property scores, plus evaluation warnings.
     """
     require_sdmetrics()
     from sdmetrics.reports.single_table import QualityReport
@@ -45,6 +47,9 @@ tuple[dict[str, float], list[str]]
             "SDMetrics metadata inferred from real partition (not the frozen plan metadata)."
         )
 
+    if hasattr(metadata, "to_dict"):
+        metadata = metadata.to_dict()
+
     report = QualityReport()
     report.generate(real.reset_index(drop=True), synthetic.reset_index(drop=True), metadata)
 
@@ -58,7 +63,7 @@ tuple[dict[str, float], list[str]]
                 if prop and score is not None:
                     key = f"sdmetrics_{prop.lower().replace(' ', '_')}"
                     metrics[key] = float(score)
-    except Exception as exc:  # noqa: BLE001: SDMetrics API drift across versions
+    except Exception as exc:  # noqa: BLE001 -- SDMetrics API drift across versions
         warnings.append(f"SDMetrics property breakdown unavailable: {exc}")
 
     return metrics, warnings

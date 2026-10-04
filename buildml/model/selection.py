@@ -991,17 +991,23 @@ def cv_score(
 
     Examples
     --------
-    Cross-validate with fold-local preprocessing::
+    .. code-block:: python
 
-        from buildml.preprocess.fold import PreprocessRecipe
-
-        result = cv_score(
-            dataset, split_plan, estimator,
-            cv=5,
-            preprocess=PreprocessRecipe(impute="median", scale="standard"),
-        )
-        result.show()
-        print(result.to_frame())
+        import pandas as pd
+        from sklearn.datasets import make_classification
+        from sklearn.tree import DecisionTreeClassifier
+        from buildml import Session
+        X, y = make_classification(n_samples=80, n_features=4, n_informative=3, n_redundant=0, random_state=42)
+        frame = pd.DataFrame(X, columns=["age", "income", "spend", "visits"])
+        frame["target"] = y
+        session = Session.ingest(frame).set_roles({"target": "target"})
+        session.split(test_size=0.2, validation_size=0.2, stratify=True, random_state=42)
+        dataset, split_plan = session.dataset, session.split_plan
+        estimator = DecisionTreeClassifier(max_depth=3, random_state=42)
+        from buildml.model.selection import cv_score
+        from buildml.preprocess import PreprocessRecipe
+        result = cv_score(dataset, split_plan, estimator, cv=3, preprocess=PreprocessRecipe(impute="median", scale="standard"))
+        print(result.mean_metrics)
 
     See Also
     --------
@@ -1252,15 +1258,22 @@ def grid_search(
 
     Examples
     --------
-    Search two parameters and a fold-local knob::
+    .. code-block:: python
 
-        result = grid_search(
-            dataset, split_plan, estimator,
-            {"max_depth": [3, 5, 10], "min_samples_leaf": [1, 5]},
-            recipe_grid={"select_k": [10, 20]},
-            preprocess=PreprocessRecipe(scale="standard", select="model"),
-        )
-        print(result.best_params, result.best_score)
+        import pandas as pd
+        from sklearn.datasets import make_classification
+        from sklearn.tree import DecisionTreeClassifier
+        from buildml import Session
+        X, y = make_classification(n_samples=80, n_features=4, n_informative=3, n_redundant=0, random_state=42)
+        frame = pd.DataFrame(X, columns=["age", "income", "spend", "visits"])
+        frame["target"] = y
+        session = Session.ingest(frame).set_roles({"target": "target"})
+        session.split(test_size=0.2, validation_size=0.2, stratify=True, random_state=42)
+        dataset, split_plan = session.dataset, session.split_plan
+        estimator = DecisionTreeClassifier(max_depth=3, random_state=42)
+        from buildml.model.selection import grid_search
+        result = grid_search(dataset, split_plan, estimator, {"max_depth": [2, 3]}, cv=3)
+        print(result.best_params)
 
     See Also
     --------
@@ -1385,16 +1398,22 @@ def randomized_search(
 
     Examples
     --------
-    Sample from mixed discrete and continuous ranges::
+    .. code-block:: python
 
-        from scipy.stats import loguniform
-
-        result = randomized_search(
-            dataset, split_plan, estimator,
-            {"learning_rate": loguniform(1e-3, 1e-1), "max_depth": [3, 5, 7, 10]},
-            n_iter=40,
-        )
-        print(result.to_frame().head())
+        import pandas as pd
+        from sklearn.datasets import make_classification
+        from sklearn.tree import DecisionTreeClassifier
+        from buildml import Session
+        X, y = make_classification(n_samples=80, n_features=4, n_informative=3, n_redundant=0, random_state=42)
+        frame = pd.DataFrame(X, columns=["age", "income", "spend", "visits"])
+        frame["target"] = y
+        session = Session.ingest(frame).set_roles({"target": "target"})
+        session.split(test_size=0.2, validation_size=0.2, stratify=True, random_state=42)
+        dataset, split_plan = session.dataset, session.split_plan
+        estimator = DecisionTreeClassifier(max_depth=3, random_state=42)
+        from buildml.model.selection import randomized_search
+        result = randomized_search(dataset, split_plan, estimator, {"max_depth": [2, 3, 4]}, n_iter=2, cv=3, random_state=42)
+        print(result.best_params)
 
     See Also
     --------
@@ -1539,16 +1558,23 @@ def optuna_search(
 
     Examples
     --------
-    Search a declare-style space::
+    .. code-block:: python
 
-        result = optuna_search(
-            dataset, split_plan, estimator,
-            param_space={
-                "learning_rate": {"type": "float", "low": 1e-3, "high": 0.3, "log": True},
-                "max_depth": {"type": "int", "low": 2, "high": 12},
-            },
-            n_trials=50,
-        )
+        import pandas as pd
+        from sklearn.datasets import make_classification
+        from sklearn.tree import DecisionTreeClassifier
+        from buildml import Session
+        X, y = make_classification(n_samples=80, n_features=4, n_informative=3, n_redundant=0, random_state=42)
+        frame = pd.DataFrame(X, columns=["age", "income", "spend", "visits"])
+        frame["target"] = y
+        session = Session.ingest(frame).set_roles({"target": "target"})
+        session.split(test_size=0.2, validation_size=0.2, stratify=True, random_state=42)
+        dataset, split_plan = session.dataset, session.split_plan
+        estimator = DecisionTreeClassifier(max_depth=3, random_state=42)
+        from buildml.model.selection import optuna_search
+        # Install the optimizer first: pip install "buildml[optuna]"
+        result = optuna_search(dataset, split_plan, estimator, param_space={"max_depth": {"type": "int", "low": 2, "high": 4}}, n_trials=2, cv=3)
+        print(result.best_params)
 
     See Also
     --------
@@ -1816,19 +1842,22 @@ def evolutionary_search(
 
     Examples
     --------
-    Evolve over interacting parameters::
+    .. code-block:: python
 
-        result = evolutionary_search(
-            dataset, split_plan, estimator,
-            param_space={
-                "learning_rate": {"type": "float", "low": 0.01, "high": 0.3, "log": True},
-                "max_depth": {"type": "int", "low": 2, "high": 12},
-                "max_features": ["sqrt", "log2", None],
-            },
-            population_size=16,
-            n_generations=6,
-        )
-        print(result.study["generation_best"])
+        import pandas as pd
+        from sklearn.datasets import make_classification
+        from sklearn.tree import DecisionTreeClassifier
+        from buildml import Session
+        X, y = make_classification(n_samples=80, n_features=4, n_informative=3, n_redundant=0, random_state=42)
+        frame = pd.DataFrame(X, columns=["age", "income", "spend", "visits"])
+        frame["target"] = y
+        session = Session.ingest(frame).set_roles({"target": "target"})
+        session.split(test_size=0.2, validation_size=0.2, stratify=True, random_state=42)
+        dataset, split_plan = session.dataset, session.split_plan
+        estimator = DecisionTreeClassifier(max_depth=3, random_state=42)
+        from buildml.model.selection import evolutionary_search
+        result = evolutionary_search(dataset, split_plan, estimator, param_space={"max_depth": {"type": "int", "low": 2, "high": 4}}, population_size=4, n_generations=2, cv=3)
+        print(result.best_params)
 
     See Also
     --------
@@ -2190,18 +2219,22 @@ def nested_cv_score(
 
     Examples
     --------
-    Estimate the procedure, then tune once for real::
+    .. code-block:: python
 
-        nested = nested_cv_score(
-            dataset, split_plan, estimator,
-            param_distributions={"max_depth": [3, 5, 8], "min_samples_leaf": [1, 5, 10]},
-            outer_cv=5,
-            inner_cv=3,
-        )
-        nested.show()
-        print(nested.inner_selection_summary["param_stability"])
-
-        final = randomized_search(dataset, split_plan, estimator, {...})
+        import pandas as pd
+        from sklearn.datasets import make_classification
+        from sklearn.tree import DecisionTreeClassifier
+        from buildml import Session
+        X, y = make_classification(n_samples=80, n_features=4, n_informative=3, n_redundant=0, random_state=42)
+        frame = pd.DataFrame(X, columns=["age", "income", "spend", "visits"])
+        frame["target"] = y
+        session = Session.ingest(frame).set_roles({"target": "target"})
+        session.split(test_size=0.2, validation_size=0.2, stratify=True, random_state=42)
+        dataset, split_plan = session.dataset, session.split_plan
+        estimator = DecisionTreeClassifier(max_depth=3, random_state=42)
+        from buildml.model.selection import nested_cv_score
+        result = nested_cv_score(dataset, split_plan, estimator, param_grid={"max_depth": [2, 3]}, outer_cv=3, inner_cv=2)
+        print(result.mean_metrics)
 
     See Also
     --------

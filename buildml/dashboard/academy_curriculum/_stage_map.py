@@ -130,8 +130,8 @@ DOMAIN_STAGE = {
     "n": "06",
     "label": "Domain depth",
     "blurb": (
-        "specialized BuildML domains (NLP, RL, graphs, forecasting, …) - "
-        "full lessons, staged honestly outside the core EDA readiness spine"
+        "Lessons on specialized BuildML domains, including NLP, RL, graphs, "
+        "and forecasting, that build on the earlier data and evaluation topics."
     ),
 }
 

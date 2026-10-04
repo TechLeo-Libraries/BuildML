@@ -112,7 +112,8 @@ def test_econml_dml_recovers_ate() -> None:
 
 
 @pytest.mark.skipif(not econml_available(), reason="buildml[causal-industry] econml not installed")
-def test_econml_causal_forest_cate_std() -> None:
+@pytest.mark.parametrize("bootstrap_samples", [0, 20])
+def test_econml_causal_forest_cate_std(bootstrap_samples: int) -> None:
     session = _session()
     assumptions = _assumptions()
     plan, fit = fit_causal(
@@ -121,10 +122,14 @@ def test_econml_causal_forest_cate_std() -> None:
         assumptions,
         backend="econml",
         method="causal_forest",
-        bootstrap_samples=0,
+        bootstrap_samples=bootstrap_samples,
         random_state=0,
     )
     assert plan.cate_std is not None or fit.cate_std is not None
+    if bootstrap_samples:
+        assert fit.ate_ci_low is not None
+        assert fit.ate_ci_high is not None
+        assert fit.ate_ci_low <= fit.ate_ci_high
 
 
 def test_session_backend_routing_native() -> None:

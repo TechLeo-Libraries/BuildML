@@ -1,8 +1,8 @@
 """Fill in missing values with a constant learned from the training rows.
 
-Most estimators cannot accept a missing value at all: scikit-learn will raise
-rather than guess. So before modelling you have to decide what a gap means and
-what to put there.
+Some estimators reject missing values; others support them directly. Decide
+whether imputation is appropriate for the chosen estimator and what the
+missingness means before filling gaps.
 
 Simple imputation replaces every gap in a column with one number: the column's
 median, its mean, its most frequent value, or a constant you choose. It is
@@ -118,7 +118,7 @@ def fit_simple_imputer(
     split_plan:
         The split that defines the training rows. Required, with no "fit on
         everything" fallback, because a median computed across the test rows
-        quietly inflates every score you subsequently report.
+        uses holdout information and can bias subsequent evaluation.
     columns:
         Columns to fill. By default this covers numeric ``feature`` columns and
         skips ``ignore``, ``id``, ``target``, ``group``, ``time``, and
@@ -164,9 +164,15 @@ def fit_simple_imputer(
 
     Examples
     --------
-    >>> plan = fit_simple_imputer(dataset, split_plan, strategy="median")  # doctest: +SKIP
-    >>> plan.statistics_  # doctest: +SKIP
-    {'age': 38.0, 'income': 52000.0}
+    >>> import numpy as np
+    >>> import pandas as pd
+    >>> from buildml import Session
+    >>> frame = pd.DataFrame({"age": np.arange(40, dtype=float), "income": np.arange(40, dtype=float) ** 2, "target": [0, 1] * 20})
+    >>> session = Session.ingest(frame).set_roles({"target": "target"})
+    >>> _ = session.split(test_size=0.25, stratify=True, random_state=42)
+    >>> dataset, split_plan = session.dataset, session.split_plan
+    >>> from buildml.preprocess.impute import fit_simple_imputer
+    >>> plan = fit_simple_imputer(dataset, split_plan, strategy="median")
 
     See Also
     --------

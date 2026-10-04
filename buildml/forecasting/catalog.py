@@ -220,7 +220,7 @@ def forecast_status_payload() -> dict[str, Any]:
 
 
 def forecast_capability_matrix() -> dict[str, Any]:
-    """Build the honest capability matrix for forecasting backends and methods.
+    """Build the capability matrix for forecasting backends and methods.
 
     Reports baseline, sklearn lag, statsmodels, Prophet, and neuralforecast
     availability, install hints, and explicit non-goals for teaching overlays.

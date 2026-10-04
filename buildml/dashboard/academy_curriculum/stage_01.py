@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from buildml.dashboard.academy_curriculum._helpers import (
     code_block,
+    demo_example,
     first_categorical,
     first_feature,
     first_missing,
@@ -72,11 +73,11 @@ def _core() -> list[LessonSpec]:
                 )
                 + f"Eligible features: {fmt_n(ctx.get('eligible'))}."
             ),
-            example_code=lambda ctx: code_block(
+            example_code=demo_example(lambda ctx: code_block(
                 "from buildml import Session",
                 "import pandas as pd",
                 "",
-                "session = Session.ingest(pd.read_csv(\"your_data.csv\"))  # <-- change path",
+                "session = Session.ingest(frame.copy())  # <-- change path",
                 "session = session.set_roles({",
                 *(
                     [f'    "{n}": "id",' for n in (ctx.get("idLike") or [])[:2]]
@@ -93,7 +94,7 @@ def _core() -> list[LessonSpec]:
                 "# Confirm the contract before splitting",
                 "print(session.dataset.roles)  # role map on the dataset",
                 'session.learn("column-roles", level="beginner")',
-            ),
+            )),
             what_to_change=(
                 "Map every column: feature / target / id / group / time / weight / ignore.",
                 "Change target name to your label; mark true identifiers as id.",
@@ -137,13 +138,13 @@ def _core() -> list[LessonSpec]:
             formula=None,
             calculation=lambda ctx: _dtype_calc(ctx),
             session_evidence=lambda ctx: _dtype_calc(ctx),
-            example_code=lambda ctx: code_block(
+            example_code=demo_example(lambda ctx: code_block(
                 "from buildml import Session",
                 "import pandas as pd",
                 "",
                 "# Prefer explicit dtypes at load when you know them:",
                 "frame = pd.read_csv(",
-                "    \"your_data.csv\",  # <-- change",
+                "    __import__(\"io\").StringIO(frame.to_csv(index=False)),",
                 "    dtype={",
                 f'        "{first_categorical(ctx)}": "string",  # <-- adjust',
                 "    },",
@@ -155,7 +156,7 @@ def _core() -> list[LessonSpec]:
                 "",
                 "# Categories / codes that must stay strings should not be cast to int.",
                 'session.learn("feature-schema", level="beginner")',
-            ),
+            )),
             what_to_change=(
                 "Set dtype= and parse_dates= for your columns at load.",
                 "Keep zero-padded codes as strings.",
@@ -181,8 +182,8 @@ def _core() -> list[LessonSpec]:
             tags=("missing", "impute"),
             search_terms=("missing", "nan", "impute", "completeness"),
             plain=(
-                "A missing cell is an absence of record, not a zero. Imputation fills gaps with a rule learned "
-                "from rows you are allowed to learn from - it does not recover what was never written.",
+                "A missing cell means no value is available; it should not automatically be treated as zero. "
+                "Imputation fills gaps using a rule fitted on training rows. It does not recover the original missing values.",
             ),
             technical=(
                 "Imputation is a fitted transform: fit fill values on train, apply everywhere. "
@@ -214,7 +215,7 @@ def _core() -> list[LessonSpec]:
                     f"Complete rows ~ {fmt_n(ctx.get('completeRows'))} of {fmt_n(ctx.get('rows'))}."
                 )
             ),
-            example_code=lambda ctx: _missing_example(ctx),
+            example_code=demo_example(lambda ctx: _missing_example(ctx), task='classification'),
             what_to_change=(
                 "Choose strategy per column (median / most_frequent / constant).",
                 "Always split before impute so fills fit on train only.",
@@ -238,7 +239,7 @@ def _core() -> list[LessonSpec]:
             decide=lambda ctx: (
                 "Nothing to fill here - record the strategy you would use if the next extract is incomplete."
                 if int(ctx.get("missingCells") or 0) == 0
-                else "Pick one strategy per gappy column, fit inside the training fold, add indicators where gaps may be informative."
+                else "Choose a strategy for each column with missing values, fit it within the training fold, and consider indicators when missingness may be informative."
             ),
             read_steps=lambda ctx: [
                 f"Read per-column rates before the total (worst: {first_missing(ctx)}).",
@@ -255,22 +256,23 @@ def _core() -> list[LessonSpec]:
             tags=("MCAR", "MAR", "MNAR"),
             search_terms=("MCAR", "MAR", "MNAR", "mechanism"),
             plain=(
-                "Three mechanisms behave differently: missing completely at random loses precision only; "
-                "missing at random can be repaired using other columns; missing not at random encodes the "
-                "thing you care about, and no fill recovers it.",
+                "Missing completely at random (MCAR) means absence is independent of observed and missing values. "
+                "Under missing at random (MAR), observed variables can explain absence; suitable imputation "
+                "requires adequate models and assumptions. Under missing not at random (MNAR), absence "
+                "also depends on unobserved values, requiring additional assumptions or sensitivity analysis.",
             ),
             technical=(
-                "You cannot prove the mechanism from rates alone. Test whether a missingness indicator "
-                "predicts the target or correlates with covariates; keep indicators when association appears.",
+                "Rates and associations cannot establish the missingness mechanism. Investigate collection processes "
+                "with domain experts and compare missingness indicators using training-only validation.",
             ),
             why=(
-                "Imputation assumptions fail under MNAR.",
-                "Discarding missingness indicators throws away signal.",
+                "Ignoring the missingness process can bias estimates.",
+                "Missingness indicators may contain useful information, but require validation.",
             ),
             formula="MCAR / MAR / MNAR - classified from evidence + domain knowledge, not from a single p-value",
             calculation=lambda ctx: (
-                f"{fmt_n(len(ctx.get('missing') or []))} gappy "
-                f"{plural(len(ctx.get('missing') or []), 'column')}; "
+                f"{fmt_n(len(ctx.get('missing') or []))} "
+                f"{plural(len(ctx.get('missing') or []), 'column')} with missing values; "
                 "no automatic mechanism inference ran - rates are observed, reasons are not."
                 if ctx.get("missing")
                 else "Nothing missing in this extract, so there is no mechanism to classify."
@@ -281,12 +283,13 @@ def _core() -> list[LessonSpec]:
                 if ctx.get("missing")
                 else "Complete extract in-session; still document expected mechanisms for production loads."
             ),
-            example_code=lambda ctx: code_block(
+            example_code=demo_example(lambda ctx: code_block(
                 "from buildml import Session",
                 "import pandas as pd",
                 "",
-                "frame = pd.read_csv(\"your_data.csv\")  # <-- change",
-                f"col = \"{first_missing(ctx)}\"  # <-- gappy column",
+                "frame = frame.copy()  # <-- change",
+                f"col = \"{first_missing(ctx)}\"  # Column used to demonstrate missingness",
+                "frame.loc[frame.index[::7], col] = np.nan  # synthetic missing measurements",
                 "frame[f\"{col}__was_missing\"] = frame[col].isna().astype(int)",
                 "session = Session.ingest(frame).set_roles({",
                 f'    "{target_name(ctx)}": "target",',
@@ -296,9 +299,9 @@ def _core() -> list[LessonSpec]:
                 "session = session.split(test_size=0.2, stratify=True, random_state=0)",
                 "session = session.impute(strategy=\"median\")  # train-fitted",
                 'session.explain("impute", moment="before")',
-            ),
+            ), task='classification'),
             what_to_change=(
-                "Swap in your gappy columns and decide which indicators to keep.",
+                "Choose columns with missing values and decide which indicators to keep.",
                 "Interview source owners before modeling MNAR-looking gaps.",
             ),
             pitfalls=(
@@ -306,7 +309,7 @@ def _core() -> list[LessonSpec]:
                 "Filling 'not recorded' with the mode (invents a positive answer).",
                 "Discarding missing indicators as noise when absence is predictive.",
             ),
-            decide="Classify each gappy column MCAR/MAR/MNAR on available evidence and keep indicators when not MCAR.",
+            decide="Document plausible missingness mechanisms and uncertainty; validate imputation and indicator choices without using the final test set.",
             read_steps=(
                 "Compare target rate for missing vs present rows.",
                 "Compare other feature distributions between missing/present groups.",
@@ -323,7 +326,7 @@ def _core() -> list[LessonSpec]:
             search_terms=("duplicate", "dedupe", "grain"),
             plain=(
                 "Duplicates multiply some entities in training and evaluation. Exact copies are easy; "
-                "same key with different payloads means your grain is wrong.",
+                "a repeated entity key can also represent legitimate observations at different times.",
             ),
             technical=(
                 "Compare rows, distinct full rows, and distinct keys. Join fan-out creates duplicates "
@@ -342,21 +345,24 @@ def _core() -> list[LessonSpec]:
                 f"Exact duplicate rows reported: {fmt_n((ctx.get('duplicates') or {}).get('rows') or 0)} "
                 f"of {fmt_n(ctx.get('rows'))}."
             ),
-            example_code=lambda ctx: code_block(
+            example_code=demo_example(lambda ctx: code_block(
                 "from buildml import Session",
                 "import pandas as pd",
                 "",
-                "frame = pd.read_csv(\"your_data.csv\")  # <-- change",
+                "frame = frame.copy()  # <-- change",
                 "print(\"exact dupes:\", int(frame.duplicated().sum()))",
                 f"key = \"{(ctx.get('idLike') or ['<entity_id>'])[0]}\"  # <-- grain key",
                 "print(\"key dupes:\", int(frame.duplicated(subset=[key]).sum()))",
                 "",
-                "# De-duplicate to the intended grain BEFORE split",
-                "frame = frame.drop_duplicates(subset=[key], keep=\"last\")  # <-- policy",
+                "# This demonstration records one observation per entity and timestamp.",
+                "grain = [key, \"timestamp\"]",
+                "frame = pd.concat([frame, frame.iloc[[0, 1]]], ignore_index=True)",
+                "print(\"duplicate observations:\", int(frame.duplicated(subset=grain).sum()))",
+                "frame = frame.drop_duplicates(subset=grain, keep=\"first\")",
                 "session = Session.ingest(frame)",
                 "session = session.set_roles({key: \"id\", "
                 f"\"{target_name(ctx)}\": \"target\"}})",
-            ),
+            )),
             what_to_change=(
                 "Choose the grain key and keep policy (first/last/aggregate).",
                 "De-duplicate before split.",
@@ -365,7 +371,7 @@ def _core() -> list[LessonSpec]:
                 "Dropping duplicates without stating the key.",
                 "Ignoring join-induced row multiplication.",
             ),
-            decide="State the grain, enforce uniqueness on the entity key, de-duplicate before splitting.",
+            decide="State the observation grain, remove confirmed duplicate observations, and retain legitimate repeated measurements with an appropriate grouped or temporal split.",
             read_steps=(
                 "Count exact duplicates, then key duplicates.",
                 "Inspect two colliding rows side by side.",
@@ -400,11 +406,11 @@ def _core() -> list[LessonSpec]:
                 f"{fmt_n(len(ctx.get('constants') or []))} constant and "
                 f"{fmt_n(len(ctx.get('nearConstant') or []))} near-constant columns flagged."
             ),
-            example_code=lambda ctx: code_block(
+            example_code=demo_example(lambda ctx: code_block(
                 "from buildml import Session",
                 "import pandas as pd",
                 "",
-                "session = Session.ingest(pd.read_csv(\"your_data.csv\"))  # <-- change",
+                "session = Session.ingest(frame.copy())  # <-- change",
                 "roles = {",
                 f'    "{target_name(ctx)}": "target",',
                 f'    "{first_feature(ctx)}": "feature",',
@@ -415,7 +421,7 @@ def _core() -> list[LessonSpec]:
                 "    roles[col] = \"ignore\"",
                 "session = session.set_roles(roles)",
                 'session.learn("column-roles", level="beginner")',
-            ),
+            )),
             what_to_change=(
                 "Ignore true constants; reframe rare flags into coarser indicators if needed.",
             ),
@@ -465,12 +471,12 @@ def _core() -> list[LessonSpec]:
                 f"{plural(len(ctx.get('highCard') or []), 'column')}: "
                 f"{list_names(ctx.get('highCard') or [])}."
             ),
-            example_code=lambda ctx: code_block(
+            example_code=demo_example(lambda ctx: code_block(
                 "from buildml import Session",
                 "import pandas as pd",
                 "",
                 "session = (",
-                "    Session.ingest(pd.read_csv(\"your_data.csv\"))  # <-- change",
+                "    Session.ingest(frame.copy())  # <-- change",
                 "    .set_roles({",
                 f'        "{target_name(ctx)}": "target",',
                 f'        "{_high_card_col(ctx)}": "feature",',
@@ -479,10 +485,10 @@ def _core() -> list[LessonSpec]:
                 ")",
                 "",
                 "# Rare-level bundling before one-hot, or target encode carefully:",
-                "session = session.encode(method=\"infrequent\", min_frequency=0.05)  # <-- tune",
+                "session = session.encode(method=\"infrequent\", columns=[\"category\"], min_frequency=0.05)  # <-- tune",
                 "# session = session.encode(method=\"target\", n_folds=5)  # alternative",
                 'session.explain("encode", moment="before")',
-            ),
+            ), task='classification'),
             what_to_change=(
                 "Pick encode method per column family; tune min_frequency.",
                 "Consider hashing / grouping for extreme cardinalities.",
@@ -526,22 +532,22 @@ def _core() -> list[LessonSpec]:
             session_evidence=lambda ctx: (
                 f"Categoricals in frame: {list_names(ctx.get('categorical') or []) or 'none flagged'}."
             ),
-            example_code=lambda ctx: code_block(
+            example_code=demo_example(lambda ctx: code_block(
                 "from buildml import Session",
                 "import pandas as pd",
                 "",
                 "session = (",
-                "    Session.ingest(pd.read_csv(\"your_data.csv\"))",
+                "    Session.ingest(frame.copy())",
                 "    .set_roles({",
                 f'        "{target_name(ctx)}": "target",',
                 f'        "{first_categorical(ctx)}": "feature",',
                 "    })",
                 "    .split(test_size=0.2, stratify=True, random_state=0)",
-                "    .impute(strategy=\"most_frequent\")",
+                "    .impute(strategy=\"most_frequent\", columns=[\"category\"])",
                 f'    .encode(method="onehot", columns=["{first_categorical(ctx)}"])  # <-- change',
                 ")",
                 'session.learn("categorical-encoding", level="beginner")',
-            ),
+            ), task='classification'),
             what_to_change=(
                 "Select columns and method (onehot/ordinal/infrequent/target).",
                 "Impute categoricals before encode when needed.",
@@ -578,11 +584,11 @@ def _core() -> list[LessonSpec]:
             formula=None,
             calculation=lambda ctx: _range_calc(ctx),
             session_evidence=lambda ctx: _range_calc(ctx),
-            example_code=lambda ctx: code_block(
+            example_code=demo_example(lambda ctx: code_block(
                 "from buildml import Session",
                 "import pandas as pd",
                 "",
-                "frame = pd.read_csv(\"your_data.csv\")  # <-- change",
+                "frame = frame.copy()  # <-- change",
                 f"col = \"{first_numeric(ctx)}\"",
                 "print(frame[col].describe(percentiles=[0.01, 0.5, 0.99]))",
                 "# Harmonise units BEFORE session modeling, e.g. cents -> dollars",
@@ -590,7 +596,7 @@ def _core() -> list[LessonSpec]:
                 "session = Session.ingest(frame)",
                 "report = session.eda(include_plots=False, show=False)",
                 "print(report.to_dict().get(\"univariate\", {}).get(\"per_column\", {}).get(col))",
-            ),
+            )),
             what_to_change=(
                 "Document units per numeric column; convert before ingest.",
                 "Replace sentinels with true missing values.",
@@ -634,12 +640,12 @@ def _core() -> list[LessonSpec]:
                 f"Review string-like columns for case variants and junk tokens before vectorising. "
                 f"Categoricals listed: {list_names(ctx.get('categorical') or [])}."
             ),
-            example_code=lambda ctx: code_block(
+            example_code=demo_example(lambda ctx: code_block(
                 "from buildml import Session",
                 "import pandas as pd",
                 "",
-                "frame = pd.read_csv(\"your_data.csv\")  # <-- change",
-                "text_col = \"<text_column>\"  # <-- change",
+                "frame = frame.copy()  # <-- change",
+                "text_col = \"category\"  # <-- change",
                 "frame[text_col] = frame[text_col].astype(\"string\").str.strip().str.lower()",
                 "session = (",
                 "    Session.ingest(frame)",
@@ -651,7 +657,7 @@ def _core() -> list[LessonSpec]:
                 "    .text_features(columns=[text_col], method=\"tfidf\", max_features=128)",
                 ")",
                 'session.learn("text-features", level="beginner")',
-            ),
+            )),
             what_to_change=(
                 "Set text column names and hygiene rules; keep them identical at serve time.",
                 "Tune max_features / ngram_range.",
@@ -698,19 +704,19 @@ def _additions() -> list[LessonSpec]:
                 f"Frame rows={fmt_n(ctx.get('rows'))}; id-like={list_names(ctx.get('idLike') or [])}. "
                 "Re-run join tests on the pipelines that built this extract."
             ),
-            example_code=lambda ctx: code_block(
+            example_code=demo_example(lambda ctx: code_block(
                 "import pandas as pd",
                 "from buildml import Session",
                 "",
-                "left = pd.read_csv(\"entities.csv\")   # <-- change",
-                "right = pd.read_csv(\"attrs.csv\")    # <-- change",
+                "left = frame[[\"entity_id\", \"measurement\"]].copy()   # <-- change",
+                "right = pd.DataFrame({\"entity_id\": np.arange(12), \"region\": [\"north\", \"south\"] * 6})    # <-- change",
                 "key = \"entity_id\"                   # <-- change",
                 "before = len(left)",
                 "merged = left.merge(right, on=key, how=\"left\", validate=\"m:1\")  # raises if not m:1",
                 "print(\"rows before/after\", before, len(merged))",
                 "print(\"match rate\", merged[key].notna().mean())",
                 "session = Session.ingest(merged)",
-            ),
+            )),
             what_to_change=(
                 "Set join keys, expected cardinality (1:1 / m:1), and minimum match rate.",
             ),
@@ -749,17 +755,17 @@ def _additions() -> list[LessonSpec]:
             session_evidence=lambda ctx: (
                 "No automatic cross-field solver ran; use domain rules on this frame's columns."
             ),
-            example_code=lambda ctx: code_block(
+            example_code=demo_example(lambda ctx: code_block(
                 "import pandas as pd",
                 "from buildml import Session",
                 "",
-                "frame = pd.read_csv(\"your_data.csv\")  # <-- change",
+                "frame = frame.copy()  # <-- change",
                 "# Example rule - replace with your constraints:",
                 "# bad = frame[\"end_date\"] < frame[\"start_date\"]",
                 "# print(bad.sum())",
                 "session = Session.ingest(frame)",
                 "session.eda(include_plots=False, show=False)",
-            ),
+            )),
             what_to_change=("Encode your real multi-column rules; quarantine or fix violators."),
             pitfalls=("Fixing inconsistencies using test labels."),
             decide="Write the top five cross-field rules and a fail policy (drop / repair / quarantine).",
@@ -790,11 +796,11 @@ def _additions() -> list[LessonSpec]:
             session_evidence=lambda ctx: (
                 f"Time column: {(ctx.get('timeCol') or {}).get('name') if ctx.get('timeCol') else 'not detected'}."
             ),
-            example_code=lambda ctx: code_block(
+            example_code=demo_example(lambda ctx: code_block(
                 "import pandas as pd",
                 "from buildml import Session",
                 "",
-                "frame = pd.read_csv(\"your_data.csv\")  # <-- change",
+                "frame = frame.copy()  # <-- change",
                 f"time_col = \"{(ctx.get('timeCol') or {}).get('name') or '<timestamp>'}\"  # <-- change",
                 "frame[time_col] = pd.to_datetime(frame[time_col], utc=True, errors=\"coerce\")",
                 "session = Session.ingest(frame)",
@@ -803,7 +809,7 @@ def _additions() -> list[LessonSpec]:
                 f'    "{target_name(ctx)}": "target",',
                 "})",
                 "session = session.extract_dates(columns=[time_col])  # calendar parts",
-            ),
+            )),
             what_to_change=("Set timestamp column and timezone policy; assign role 'time'."),
             pitfalls=("Parsing with dayfirst ambiguity; mixing naive and aware timestamps."),
             decide="Parse timestamps once, store timezone policy, assign the time role before splitting.",
@@ -834,11 +840,11 @@ def _additions() -> list[LessonSpec]:
             session_evidence=lambda ctx: (
                 f"Numeric columns available for heaping review: {list_names(ctx.get('numeric') or [])}."
             ),
-            example_code=lambda ctx: code_block(
+            example_code=demo_example(lambda ctx: code_block(
                 "import pandas as pd",
                 "from buildml import Session",
                 "",
-                "frame = pd.read_csv(\"your_data.csv\")",
+                "frame = frame.copy()",
                 f"col = \"{first_numeric(ctx)}\"",
                 "vc = frame[col].value_counts().head(15)",
                 "print(vc)  # look for round heaps",
@@ -846,7 +852,7 @@ def _additions() -> list[LessonSpec]:
                 "# If you bin deliberately:",
                 "session = session.split(test_size=0.2, random_state=0)",
                 f"session = session.bin(columns=[\"{first_numeric(ctx)}\"], n_bins=5)  # <-- tune",
-            ),
+            )),
             what_to_change=("Choose keep / deliberate binning; never silent jitter without documenting."),
             pitfalls=("Mistaking heaping for multimodal truth.", "Binning using test-driven edges."),
             decide="Document measurement precision and whether heaping is artifact or policy.",
@@ -877,11 +883,11 @@ def _additions() -> list[LessonSpec]:
             session_evidence=lambda ctx: (
                 "Flatten/aggregate nested fields upstream, then ingest a rectangular frame into BuildML."
             ),
-            example_code=lambda ctx: code_block(
+            example_code=demo_example(lambda ctx: code_block(
                 "import pandas as pd",
                 "from buildml import Session",
                 "",
-                "frame = pd.read_csv(\"your_data.csv\")  # <-- already flattened preferred",
+                "frame = frame.copy()  # <-- already flattened preferred",
                 "# Example: multi-label tags -> count / multi-hot outside Session, then:",
                 "session = Session.ingest(frame)",
                 "session = session.set_roles({",
@@ -889,7 +895,7 @@ def _additions() -> list[LessonSpec]:
                 f'    "{first_feature(ctx)}": "feature",',
                 "})",
                 'session.learn("feature-schema", level="intermediate")',
-            ),
+            )),
             what_to_change=("Flatten nested fields with a documented aggregation grain."),
             pitfalls=("Exploding lists without re-aggregating to the modeling grain."),
             decide="Pick one rectangular representation for each nested field and freeze it.",
@@ -945,7 +951,7 @@ def _missing_example(ctx: dict) -> str:
             "from buildml import Session",
             "import pandas as pd",
             "",
-            "session = Session.ingest(pd.read_csv(\"your_data.csv\"))",
+            "session = Session.ingest(frame.copy())",
             "session = session.set_roles({",
             f'    "{target_name(ctx)}": "target",',
             f'    "{first_feature(ctx)}": "feature",',
@@ -955,11 +961,13 @@ def _missing_example(ctx: dict) -> str:
             "# nothing to fill in this frame - keep the plan for the next extract",
         )
     lines = [
+        "# Add missing measurements to this synthetic demonstration after creating its target.",
+        "frame.loc[frame.index[::7], \"measurement\"] = np.nan",
         "from buildml import Session",
         "import pandas as pd",
         "",
         "session = (",
-        "    Session.ingest(pd.read_csv(\"your_data.csv\"))  # <-- change",
+        "    Session.ingest(frame.copy())",
         "    .set_roles({",
         f'        "{target_name(ctx)}": "target",',
         f'        "{first_feature(ctx)}": "feature",',
@@ -971,7 +979,7 @@ def _missing_example(ctx: dict) -> str:
     if num_cols or missing:
         cols = num_cols or [m["name"] for m in missing[:2]]
         lines.append("session = session.impute(")
-        lines.append("    strategy=\"median\",  # <-- or mean / constant")
+        lines.append("    strategy=\"median\",  # Numeric fill value learned from training rows")
         lines.append("    columns=[")
         lines.append(quote_list(cols))
         lines.append("    ],")

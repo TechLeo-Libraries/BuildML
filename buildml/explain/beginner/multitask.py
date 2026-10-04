@@ -9,9 +9,7 @@ MULTITASK_BEGINNER: dict[str, BeginnerLayer] = _index(
     _layer(
         "multitask-multi-output",
         plain=(
-            "Multi-task modeling predicts several targets at once from the same features. Instead of "
-            "training three separate models for three questions, you train one that answers all three: "
-            "and lets what it learns for one question help with the others."
+            "Multi-task modeling predicts several targets at once from the same features. Instead of training three separate models for three questions, you train one that answers all three: with sharing determined by the selected method. Independent multi-output wrappers fit a separate estimator per target."
         ),
         analogy=(
             "One doctor who examines you once and reports on your heart, lungs, and blood pressure. Three "
@@ -29,23 +27,34 @@ MULTITASK_BEGINNER: dict[str, BeginnerLayer] = _index(
             "When maintaining several separate models is operationally painful and the accuracy cost of sharing is small.",
         ),
         avoid=(
-            "Do not force unrelated targets into one model; they will compete for capacity and all of them get worse.",
-            "Do not use it when one target matters far more than the others: a dedicated model for that target will usually win.",
+            "Shared models can suffer negative transfer when targets conflict. Independent multi-output wrappers do not share fitted parameters.",
+            "If one target has priority, compare its performance against a dedicated model and choose metrics that reflect that priority.",
         ),
         myths=(
             (
                 "Multi-task learning always beats separate models.",
-                "It helps when tasks share structure. When they do not, the shared representation is a compromise nobody wanted: a phenomenon called negative transfer.",
+                "It helps when tasks share structure. When they do not, sharing can reduce performance, a phenomenon called negative transfer.",
             ),
             (
                 "This is a deep-learning-only technique.",
-                "Scikit-learn's MultiOutput wrappers and native multi-target gradient boosting give you most of the practical benefit without any neural network.",
+                "Scikit-learn MultiOutput wrappers fit independent estimators behind one API. Other backends can share parameters; compare their per-target results.",
             ),
         ),
         example=(
-            "session.set_roles({'churn_risk': 'target', 'upsell_score': 'target'})",
-            "session.multitask.fit(method='multi_output', task='regression', base_estimator='hist_gradient_boosting_regressor')",
-            "session.multitask.evaluate(partition='validation')   # per-target metrics",
+            "from pathlib import Path",
+            "import numpy as np",
+            "import pandas as pd",
+            "from buildml import Session",
+            "",
+            "rng = np.random.default_rng(42)",
+            'Path("artifacts").mkdir(exist_ok=True)',
+            'frame = pd.DataFrame(rng.normal(size=(160, 2)), columns=["x1", "x2"])',
+            'frame["renewed"] = 2 * frame.x1 + frame.x2',
+            'frame["upsold"] = frame.x1 - 2 * frame.x2',
+            'session = Session.ingest(frame).set_roles({"x1": "feature", "x2": "feature", "renewed": "target", "upsold": "target"})',
+            "session.split(test_size=0.2, validation_size=0.2, random_state=42)",
+            'session.multitask.fit(backend="sklearn", method="multi_output", task="regression", base_estimator="ridge")',
+            'print(session.multitask.evaluate(partition="validation").per_task_metrics)',
         ),
         check=(
             "Do your targets share the same drivers, or are they unrelated?",
@@ -92,11 +101,20 @@ MULTITASK_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.multitask.fit(",
-            "    method='classifier_chain',",
-            "    order=['has_complaint', 'will_escalate', 'will_churn'],",
-            ")",
-            "session.multitask.evaluate(partition='validation')",
+            "from pathlib import Path",
+            "import numpy as np",
+            "import pandas as pd",
+            "from buildml import Session",
+            "",
+            "rng = np.random.default_rng(42)",
+            'Path("artifacts").mkdir(exist_ok=True)',
+            'frame = pd.DataFrame(rng.normal(size=(160, 2)), columns=["x1", "x2"])',
+            'frame["renewed"] = (frame.x1 > 0).astype(int)',
+            'frame["upsold"] = (frame.x2 > 0).astype(int)',
+            'session = Session.ingest(frame).set_roles({"x1": "feature", "x2": "feature", "renewed": "target", "upsold": "target"})',
+            "session.split(test_size=0.2, validation_size=0.2, random_state=42)",
+            'session.multitask.fit(backend="sklearn", method="classifier_chain", task="classification", order=["renewed", "upsold"])',
+            'print(session.multitask.evaluate(partition="validation").per_task_metrics)',
         ),
         check=(
             "Which of your targets is most reliably predictable? Is it first?",
@@ -109,9 +127,7 @@ MULTITASK_BEGINNER: dict[str, BeginnerLayer] = _index(
     _layer(
         "multitask-target-roles",
         plain=(
-            "BuildML's classical `fit` requires exactly one target: that constraint keeps the ordinary "
-            "path unambiguous. The multi-task path requires at least two. The number of target roles you "
-            "assign is what selects which world you are in."
+            "BuildML's classical `fit` requires exactly one target: that constraint keeps the ordinary path unambiguous. The multi-task path requires at least two. Assign the target roles and call the corresponding API explicitly."
         ),
         analogy=(
             "A form that accepts one answer per question versus one designed for multiple selections. "
@@ -143,10 +159,25 @@ MULTITASK_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.set_roles({'renewed': 'target'})",
-            "session.fit(LogisticRegression())              # exactly one target",
-            "session.set_roles({'renewed': 'target', 'upsold': 'target'})",
-            "session.multitask.fit(method='multi_output')    # two or more",
+            "from pathlib import Path",
+            "import numpy as np",
+            "import pandas as pd",
+            "from buildml import Session",
+            "",
+            "rng = np.random.default_rng(42)",
+            'Path("artifacts").mkdir(exist_ok=True)',
+            'frame = pd.DataFrame(rng.normal(size=(160, 2)), columns=["x1", "x2"])',
+            'frame["renewed"] = (frame.x1 > 0).astype(int)',
+            'frame["upsold"] = (frame.x2 > 0).astype(int)',
+            'session = Session.ingest(frame).set_roles({"x1": "feature", "x2": "feature", "renewed": "target", "upsold": "target"})',
+            "session.split(test_size=0.2, validation_size=0.2, random_state=42)",
+            "from sklearn.linear_model import LogisticRegression",
+            'session.set_roles({"upsold": "ignore"})',
+            'session.fit(LogisticRegression(max_iter=500), task="classification")',
+            'print(session.evaluate(partition="validation").metrics)',
+            'session.set_roles({"upsold": "target"})',
+            'session.multitask.fit(backend="sklearn", method="multi_output", task="classification")',
+            'print(session.multitask.evaluate(partition="validation").per_task_metrics)',
         ),
         check=(
             "How many columns currently hold the target role?",
@@ -192,15 +223,34 @@ MULTITASK_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.multitask.save_bundle('artifacts/customer-outcomes')",
-            "job = Session.ingest(new_frame).multitask.load_bundle('artifacts/customer-outcomes', trusted=True)",
-            "predictions = job.multitask.predict(partition='all')",
+            "from pathlib import Path",
+            "import numpy as np",
+            "import pandas as pd",
+            "from buildml import Session",
+            "",
+            "rng = np.random.default_rng(42)",
+            'Path("artifacts").mkdir(exist_ok=True)',
+            'frame = pd.DataFrame(rng.normal(size=(160, 2)), columns=["x1", "x2"])',
+            'frame["renewed"] = (frame.x1 > 0).astype(int)',
+            'frame["upsold"] = (frame.x2 > 0).astype(int)',
+            'session = Session.ingest(frame).set_roles({"x1": "feature", "x2": "feature", "renewed": "target", "upsold": "target"})',
+            "session.split(test_size=0.2, validation_size=0.2, random_state=42)",
+            'session.multitask.fit(backend="sklearn", method="multi_output", task="classification")',
+            'session.multitask.save_bundle("artifacts/multiple-outcomes")',
+            "new_frame = frame.iloc[:4].copy()",
+            'job = Session.ingest(new_frame).multitask.load_bundle("artifacts/multiple-outcomes", trusted=True)',
+            'print(job.multitask.predict(partition="all"))',
         ),
         check=(
             "Does your consuming system rely on target order or on target name?",
             "Which artifact restores the model, and which restores the data?",
         ),
-        tools=("save_multitask_bundle", "load_multitask_bundle", "predict_multitask", "checkpoint_save"),
+        tools=(
+            "save_multitask_bundle",
+            "load_multitask_bundle",
+            "predict_multitask",
+            "checkpoint_save",
+        ),
         terms=("bundle", "checkpoint", "multi-task", "plan"),
         difficulty=CORE,
     ),

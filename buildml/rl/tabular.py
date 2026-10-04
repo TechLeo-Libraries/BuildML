@@ -1002,6 +1002,7 @@ def train_tabular_control(
 
     Examples
     --------
+    >>> from buildml.rl.tabular import train_tabular_control
     >>> policy, metrics, _disclosures, _warnings = train_tabular_control(
     ...     env_id="FrozenLake-v1", algorithm="q_learning", n_episodes=2000
     ... )

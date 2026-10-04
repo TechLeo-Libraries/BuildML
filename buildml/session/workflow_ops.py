@@ -76,8 +76,17 @@ def dry_run(
 
     Examples
     --------
-    >>> session.dry_run("scale", parameters={"method": "minmax"})  # doctest: +SKIP
-    >>> session.dry_run()  # doctest: +SKIP
+    >>> import pandas as pd
+    >>> from sklearn.datasets import make_classification
+    >>> from sklearn.tree import DecisionTreeClassifier
+    >>> from buildml import Session
+    >>> X, y = make_classification(n_samples=120, n_features=4, n_informative=3, n_redundant=0, random_state=42)
+    >>> frame = pd.DataFrame(X, columns=["a", "b", "c", "d"])
+    >>> frame["target"] = y
+    >>> session = Session.ingest(frame).set_roles({"target": "target"})
+    >>> _ = session.split(test_size=0.2, validation_size=0.2, stratify=True, random_state=42)
+    >>> report = session.dry_run("scale", parameters={"method": "minmax"})
+    >>> overview = session.dry_run()
 
     See Also
     --------
@@ -125,9 +134,16 @@ def summarize_history(session) -> HistorySummary:
 
     Examples
     --------
-    >>> summary = session.summarize_history()  # doctest: +SKIP
-    >>> summary.risks  # doctest: +SKIP
-    ['Session-global scale ran before cv_score; fold estimates may be optimistic.']
+    >>> import pandas as pd
+    >>> from sklearn.datasets import make_classification
+    >>> from sklearn.tree import DecisionTreeClassifier
+    >>> from buildml import Session
+    >>> X, y = make_classification(n_samples=120, n_features=4, n_informative=3, n_redundant=0, random_state=42)
+    >>> frame = pd.DataFrame(X, columns=["a", "b", "c", "d"])
+    >>> frame["target"] = y
+    >>> session = Session.ingest(frame).set_roles({"target": "target"})
+    >>> _ = session.split(test_size=0.2, validation_size=0.2, stratify=True, random_state=42)
+    >>> summary = session.summarize_history()
 
     See Also
     --------
@@ -165,7 +181,16 @@ def workflow(session) -> tuple[WorkflowStep, ...]:
 
     Examples
     --------
-    >>> ready = [s for s in session.workflow() if s.available]  # doctest: +SKIP
+    >>> import pandas as pd
+    >>> from sklearn.datasets import make_classification
+    >>> from sklearn.tree import DecisionTreeClassifier
+    >>> from buildml import Session
+    >>> X, y = make_classification(n_samples=120, n_features=4, n_informative=3, n_redundant=0, random_state=42)
+    >>> frame = pd.DataFrame(X, columns=["a", "b", "c", "d"])
+    >>> frame["target"] = y
+    >>> session = Session.ingest(frame).set_roles({"target": "target"})
+    >>> _ = session.split(test_size=0.2, validation_size=0.2, stratify=True, random_state=42)
+    >>> ready = [step for step in session.workflow() if step.status.value == "available"]
 
     See Also
     --------
@@ -214,7 +239,16 @@ def walkthrough(
 
     Examples
     --------
-    >>> report = session.walkthrough(export_html="reports/run.html")  # doctest: +SKIP
+    >>> import pandas as pd
+    >>> from sklearn.datasets import make_classification
+    >>> from sklearn.tree import DecisionTreeClassifier
+    >>> from buildml import Session
+    >>> X, y = make_classification(n_samples=120, n_features=4, n_informative=3, n_redundant=0, random_state=42)
+    >>> frame = pd.DataFrame(X, columns=["a", "b", "c", "d"])
+    >>> frame["target"] = y
+    >>> session = Session.ingest(frame).set_roles({"target": "target"})
+    >>> _ = session.split(test_size=0.2, validation_size=0.2, stratify=True, random_state=42)
+    >>> report = session.walkthrough(capability_probe="skip")
 
     See Also
     --------
@@ -290,9 +324,17 @@ def explain(
 
     Examples
     --------
-    >>> session.explain("group_split")  # doctest: +SKIP
-    >>> session.explain("split").beginner.analogy  # doctest: +SKIP
-    >>> session.explain("encode", moment="after", level="advanced")  # doctest: +SKIP
+    >>> import pandas as pd
+    >>> from sklearn.datasets import make_classification
+    >>> from sklearn.tree import DecisionTreeClassifier
+    >>> from buildml import Session
+    >>> X, y = make_classification(n_samples=120, n_features=4, n_informative=3, n_redundant=0, random_state=42)
+    >>> frame = pd.DataFrame(X, columns=["a", "b", "c", "d"])
+    >>> frame["target"] = y
+    >>> session = Session.ingest(frame).set_roles({"target": "target"})
+    >>> _ = session.split(test_size=0.2, validation_size=0.2, stratify=True, random_state=42)
+    >>> brief = session.explain("split")
+    >>> assert brief.beginner.analogy
 
     See Also
     --------
@@ -343,9 +385,18 @@ def learn(session, topic: str | None = None, *, level: str = "beginner") -> Lear
 
     Examples
     --------
-    >>> session.learn()                        # doctest: +SKIP
-    >>> session.learn("leakage-boundary")      # doctest: +SKIP
-    >>> session.learn("fit", level="advanced") # doctest: +SKIP
+    >>> import pandas as pd
+    >>> from sklearn.datasets import make_classification
+    >>> from sklearn.tree import DecisionTreeClassifier
+    >>> from buildml import Session
+    >>> X, y = make_classification(n_samples=120, n_features=4, n_informative=3, n_redundant=0, random_state=42)
+    >>> frame = pd.DataFrame(X, columns=["a", "b", "c", "d"])
+    >>> frame["target"] = y
+    >>> session = Session.ingest(frame).set_roles({"target": "target"})
+    >>> _ = session.split(test_size=0.2, validation_size=0.2, stratify=True, random_state=42)
+    >>> foundation = session.learn()
+    >>> leakage = session.learn("leakage-boundary")
+    >>> fitting = session.learn("fit", level="advanced")
 
     See Also
     --------

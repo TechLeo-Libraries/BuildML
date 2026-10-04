@@ -74,6 +74,7 @@ def escape(value: object, *, quote: bool = True) -> str:
 
     Examples
     --------
+    >>> from buildml.reporting.html import escape
     >>> escape("<script>alert(1)</script>")
     '&lt;script&gt;alert(1)&lt;/script&gt;'
     >>> escape(None)
@@ -124,6 +125,7 @@ def element_id(value: object, *, prefix: str = "section") -> str:
 
     Examples
     --------
+    >>> from buildml.reporting.html import element_id
     >>> element_id("Missing Values")
     'missing-values'
     >>> element_id("ROC / PR curves")
@@ -185,6 +187,7 @@ def encode_asset(
 
     Examples
     --------
+    >>> from buildml.reporting.html import encode_asset
     >>> uri = encode_asset(b"\\x89PNG...", media_type="image/png")
     >>> uri.startswith("data:image/png;base64,")
     True
@@ -233,6 +236,7 @@ def render_badge(label: object, *, tone: str = "neutral") -> str:
 
     Examples
     --------
+    >>> from buildml.reporting.html import render_badge
     >>> render_badge("high", tone="danger")
     '<span class="bml-badge bml-badge--danger">high</span>'
     >>> render_badge("ok", tone="nonsense")
@@ -276,6 +280,7 @@ def severity_tone(severity: object) -> str:
 
     Examples
     --------
+    >>> from buildml.reporting.html import severity_tone
     >>> severity_tone("critical"), severity_tone("HIGH")
     ('danger', 'danger')
     >>> severity_tone("medium"), severity_tone("low")
@@ -403,6 +408,7 @@ def render_card(
 
     Examples
     --------
+    >>> from buildml.reporting.html import render_card
     >>> render_card("Class imbalance", "Positives are 3% of rows.", tone="warn")
     '<article class="bml-card bml-card--warn"><h3>Class imbalance</h3><p>Positives are 3% of rows.</p></article>'
 
@@ -450,6 +456,7 @@ def render_list(items: Iterable[object], *, ordered: bool = False) -> str:
 
     Examples
     --------
+    >>> from buildml.reporting.html import render_list
     >>> render_list(["age", "income"])
     '<ul><li>age</li><li>income</li></ul>'
     >>> render_list(["first", "second"], ordered=True)
@@ -528,6 +535,7 @@ def render_table(
 
     Examples
     --------
+    >>> from buildml.reporting.html import render_table
     >>> rows = [{"feature": "age", "importance": 0.42}]
     >>> "0.42" in render_table(rows, caption="Top features")
     True
@@ -726,22 +734,13 @@ def render_report(
 
     Examples
     --------
-    A minimal report::
+    .. code-block:: python
 
-        sections = [
-            ReportSection(
-                key="overview",
-                title="Overview",
-                summary="What this dataset contains.",
-                body_html=render_table(rows, caption="Column summary"),
-            )
-        ]
-        html_text = render_report(
-            "Churn dataset review",
-            sections,
-            subtitle="Snapshot taken 2026-08-01",
-            metadata={"Rows": 48_120, "Target": "churned"},
-        )
+        from buildml.reporting.html import ReportSection, render_table, render_report, write_report
+        rows = [{"column": "age", "missing": 0}, {"column": "income", "missing": 1}]
+        sections = [ReportSection(key="overview", title="Column summary", summary="Missing values in this example.", body_html=render_table(rows))]
+        html = render_report("Example data review", sections)
+        assert "Column summary" in html
 
     See Also
     --------
@@ -840,14 +839,15 @@ def write_report(
 
     Examples
     --------
-    ::
+    .. code-block:: python
 
-        path = write_report(
-            "artifacts/reports/eda.html",
-            "Churn dataset review",
-            sections,
-            metadata={"Rows": 48_120},
-        )
+        from buildml.reporting.html import ReportSection, render_table, render_report, write_report
+        rows = [{"column": "age", "missing": 0}, {"column": "income", "missing": 1}]
+        sections = [ReportSection(key="overview", title="Column summary", summary="Missing values in this example.", body_html=render_table(rows))]
+        from tempfile import TemporaryDirectory
+        with TemporaryDirectory() as directory:
+            path = write_report(directory + "/report.html", "Example data review", sections)
+            print(path)
 
     See Also
     --------

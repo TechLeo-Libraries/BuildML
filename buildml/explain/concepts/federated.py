@@ -119,7 +119,7 @@ FEDERATED_NOTES: dict[str, ConceptNote] = {
                 "sklearn linear/SGD families."
             ),
             why_it_matters=(
-                "A complete, honest FL teaching/research path without pretending a network stack.",
+                "Demonstrates federated aggregation in a local simulation; it does not provide network transport.",
             ),
             how_buildml_uses=(
                 "session.federated.fit(method='fedavg', estimator='sgd_classifier'|...).",

@@ -376,8 +376,8 @@ class HoldoutBlendClassifier(ClassifierMixin, BaseEstimator):
         Raises
         ------
         AttributeError
-            If the meta-learner has no ``predict_proba``. Choose one that does
-           : the default logistic regression is such a model.
+            If the meta-learner has no ``predict_proba``. Choose a model that
+            supports it, such as the default logistic regression.
         NotFittedError
             If called before ``fit``.
 

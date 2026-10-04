@@ -112,12 +112,14 @@ class AutonomyConfig:
 
     Examples
     --------
-    Read-only exploration, unattended::
+    Configure read-only operations::
 
-        config = AutonomyConfig(
-            max_steps=4,
-            tool_allowlist=("describe_dataset", "eda_summary", "workflow_status"),
-        )
+        from buildml.ai.autonomous import AutonomyConfig
+
+        config = AutonomyConfig(max_steps=4, tool_allowlist=('describe_dataset', 'workflow_status'))
+        print(config.max_steps)
+
+
 
     See Also
     --------
@@ -430,18 +432,31 @@ def run_autonomous(
 
     Examples
     --------
-    Review the plan, then run it unattended::
+    Execute one explicitly approved step on toy data::
 
-        plan = advisor.run_plan(session, "prepare the data for fitting", provider)
-        result = run_autonomous(
-            session,
-            "prepare the data for fitting",
-            plan=plan,
-            provider_plan=False,
-            confirm_autonomy=True,
-            config=AutonomyConfig(max_steps=5),
+        import pandas as pd
+        from buildml import Session
+
+        frame = pd.DataFrame({'age': list(range(20, 40)), 'outcome': [0, 1] * 10})
+        session = Session.ingest(frame).set_roles({'age': 'feature', 'outcome': 'target'})
+        from buildml.ai.results import PlanResult, PlanStep
+        from buildml.ai.tools import build_default_registry
+
+        registry = build_default_registry()
+        plan = PlanResult(
+            goal='Create a holdout split', current_state_summary='Data and roles are set.',
+            assumptions=('Rows are independent for this toy example.',),
+            steps=(PlanStep(operation='split', description='Split the rows.',
+                            rationale='Reserve rows for evaluation.', prerequisites=('data',),
+                            expected_changes=('A split is created.',), parameters={'test_size': 0.2}),),
         )
-        result.residual_risks
+        from buildml.ai.autonomous import AutonomyConfig, run_autonomous
+
+        result = run_autonomous(session, plan.goal, plan=plan, provider_plan=False,
+                                confirm_autonomy=True, config=AutonomyConfig(max_steps=1))
+        print(result.residual_risks)
+
+
 
     See Also
     --------

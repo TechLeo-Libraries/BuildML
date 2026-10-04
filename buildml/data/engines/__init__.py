@@ -70,10 +70,14 @@ def get_engine(name: EngineName | str) -> Engine:
 
     Examples
     --------
-    Resolve and use an adapter::
+    .. code-block:: python
 
-        engine = get_engine("polars")
+        import pandas as pd
+        from buildml.data.engines import get_engine
+        engine = get_engine("pandas")
+        frame = pd.DataFrame({"age": [20, 30]})
         table = engine.from_pandas(frame)
+        print(table)
 
     See Also
     --------

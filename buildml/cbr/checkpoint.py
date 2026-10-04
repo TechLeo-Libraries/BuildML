@@ -101,9 +101,27 @@ def save_cbr_bundle(
 
     Examples
     --------
-    Save with its evaluation attached::
+    .. code-block:: python
 
-        save_cbr_bundle("artifacts/triage_cbr", plan, eval_result=metrics)
+        import pandas as pd
+        from sklearn.datasets import make_classification
+        from sklearn.tree import DecisionTreeClassifier
+        from buildml import Session
+        X, y = make_classification(n_samples=80, n_features=4, n_informative=3, n_redundant=0, random_state=42)
+        frame = pd.DataFrame(X, columns=["age", "income", "spend", "visits"])
+        frame["target"] = y
+        session = Session.ingest(frame).set_roles({"target": "target"})
+        session.split(test_size=0.2, validation_size=0.2, stratify=True, random_state=42)
+        dataset, split_plan = session.dataset, session.split_plan
+        estimator = DecisionTreeClassifier(max_depth=3, random_state=42)
+        from buildml.cbr.fit import fit_cbr
+        plan, fitted = fit_cbr(dataset, split_plan, k=3)
+        from tempfile import TemporaryDirectory
+        from buildml.cbr.checkpoint import save_cbr_bundle, load_cbr_bundle
+        with TemporaryDirectory() as directory:
+            path = save_cbr_bundle(directory + "/cases", plan)
+            restored = load_cbr_bundle(path, trusted=True)
+            print(restored.k)
 
     See Also
     --------
@@ -172,10 +190,27 @@ def load_cbr_bundle(path: str | Path, *, trusted: bool = False) -> CbrPlan:
 
     Examples
     --------
-    Reload and predict::
+    .. code-block:: python
 
-        plan = load_cbr_bundle("artifacts/triage_cbr")
-        result = predict_cbr(dataset, plan, split_plan, partition="test")
+        import pandas as pd
+        from sklearn.datasets import make_classification
+        from sklearn.tree import DecisionTreeClassifier
+        from buildml import Session
+        X, y = make_classification(n_samples=80, n_features=4, n_informative=3, n_redundant=0, random_state=42)
+        frame = pd.DataFrame(X, columns=["age", "income", "spend", "visits"])
+        frame["target"] = y
+        session = Session.ingest(frame).set_roles({"target": "target"})
+        session.split(test_size=0.2, validation_size=0.2, stratify=True, random_state=42)
+        dataset, split_plan = session.dataset, session.split_plan
+        estimator = DecisionTreeClassifier(max_depth=3, random_state=42)
+        from buildml.cbr.fit import fit_cbr
+        plan, fitted = fit_cbr(dataset, split_plan, k=3)
+        from tempfile import TemporaryDirectory
+        from buildml.cbr.checkpoint import save_cbr_bundle, load_cbr_bundle
+        with TemporaryDirectory() as directory:
+            path = save_cbr_bundle(directory + "/cases", plan)
+            restored = load_cbr_bundle(path, trusted=True)
+            print(restored.k)
 
     See Also
     --------

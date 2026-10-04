@@ -117,7 +117,14 @@ def load_text_corpus(
     --------
     Load a folder of Markdown files::
 
-        corpus = load_text_corpus("docs/", glob="*.md")
+        from pathlib import Path
+        from tempfile import TemporaryDirectory
+        from buildml.rag.corpus import load_text_corpus
+
+        with TemporaryDirectory() as folder:
+            Path(folder, "refund.md").write_text("Refunds are available within 30 days.", encoding="utf-8")
+            corpus = load_text_corpus(folder, glob="*.md")
+            print(len(corpus.documents))
 
     See Also
     --------
@@ -201,10 +208,12 @@ def corpus_from_documents(
     --------
     Mixed roles in one corpus::
 
+        from buildml.rag.corpus import corpus_from_documents
         corpus = corpus_from_documents([
-            {"doc_id": "faq-1", "text": "..."},
-            {"doc_id": "gold-1", "text": "...", "role": "eval_only"},
+            {"doc_id": "faq-1", "text": "Refunds are available within 30 days."},
+            {"doc_id": "gold-1", "text": "The refund window is 30 days.", "role": "eval_only"},
         ])
+        print([document.role for document in corpus.documents])
 
     See Also
     --------
@@ -272,9 +281,13 @@ def corpus_from_frame(
     --------
     Index a ticket description column::
 
-        corpus = corpus_from_frame(
-            tickets, text_column="description", id_column="ticket_id",
-        )
+        import pandas as pd
+        from buildml.rag.corpus import corpus_from_frame
+
+        tickets = pd.DataFrame({"ticket_id": ["t1", "t2"],
+            "description": ["Invoice was charged twice.", "Parcel tracking has not updated."]})
+        corpus = corpus_from_frame(tickets, text_column="description", id_column="ticket_id")
+        print(len(corpus.documents))
 
     See Also
     --------

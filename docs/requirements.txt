@@ -1,5 +1,3 @@
-# Optional local helper: `pip install -r docs/requirements.txt`
-# Editable path is relative to this file (repo root = parent of docs/).
-# Read the Docs installs via `.readthedocs.yaml` (`path: .` + `docs` extra)
-# and does not use this file.
--e ..[docs]
+# From the repository root: python -m pip install -r docs/requirements.txt
+# Read the Docs uses the docs extra configured in .readthedocs.yaml.
+-e .[docs]

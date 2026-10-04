@@ -487,6 +487,7 @@ def softmax(logits: np.ndarray, *, temperature: float = 1.0, axis: int = -1) -> 
 
     Examples
     --------
+    >>> from buildml.rl.features import softmax
     >>> import numpy as np
     >>> np.round(softmax(np.array([1.0, 2.0, 3.0])), 3)
     array([0.09 , 0.245, 0.665])

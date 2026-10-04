@@ -301,6 +301,7 @@ def tokenize(text: str) -> list[str]:
 
     Examples
     --------
+    >>> from buildml.dl.text import tokenize
     >>> tokenize("Hello, World! It's 2024.")
     ['hello', 'world', 'it', 's', '2024']
     """
@@ -489,13 +490,20 @@ def make_text_loaders(
 
     Examples
     --------
-    Build loaders and a matching model::
+    .. code-block:: python
 
-        bundle = make_text_loaders(dataset, split_plan, text_column="review")
-        module = build_text_classifier(
-            vocab_size=bundle.text_vocab.vocab_size,
-            n_classes=len(bundle.contract.class_labels),
-        )
+        # Install PyTorch support first: pip install "buildml[torch]"
+        import pandas as pd
+        import torch
+        from buildml import Session
+        from buildml.dl.text import make_text_loaders
+        from buildml.dl.models import build_text_classifier
+        frame = pd.DataFrame({"review": ["good service", "poor service", "excellent value", "bad value"] * 5, "target": [1, 0, 1, 0] * 5})
+        session = Session.ingest(frame).set_roles({"target": "target"})
+        session.split(test_size=0.2, stratify=True, random_state=42)
+        bundle = make_text_loaders(session.dataset, session.split_plan, text_column="review")
+        module = build_text_classifier(vocab_size=bundle.text_vocab.vocab_size, n_classes=2)
+        print(bundle.report)
 
     See Also
     --------

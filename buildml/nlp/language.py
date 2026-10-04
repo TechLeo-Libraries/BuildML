@@ -140,6 +140,7 @@ def detect_document_language(
 
     Examples
     --------
+    >>> from buildml.nlp.language import detect_document_language
     >>> code, confidence = detect_document_language(
     ...     "The quick brown fox jumps over the lazy dog and the cat."
     ... )
@@ -240,8 +241,15 @@ def detect_language(
 
     Examples
     --------
-    >>> result = detect_language(dataset, split_plan)  # doctest: +SKIP
-    >>> result.dominant_language, result.language_counts  # doctest: +SKIP
+    >>> import pandas as pd
+    >>> from buildml import Session
+    >>> texts = ["card payment declined", "invoice billing question", "payment refund requested", "billing invoice amount", "password login broken", "technical account access", "login password reset", "technical account error"] * 3
+    >>> frame = pd.DataFrame({"ticket_body": texts, "label": ["billing"] * 4 + ["technical"] * 4 + ["billing"] * 4 + ["technical"] * 4 + ["billing"] * 4 + ["technical"] * 4})
+    >>> session = Session.ingest(frame).set_roles({"ticket_body": "feature", "label": "target"})
+    >>> _ = session.split(test_size=0.25, stratify=True, random_state=42)
+    >>> dataset, split_plan = session.dataset, session.split_plan
+    >>> from buildml.nlp.language import detect_language
+    >>> result = detect_language(dataset, split_plan, text_column="ticket_body")
 
     See Also
     --------

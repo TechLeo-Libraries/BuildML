@@ -84,6 +84,7 @@ def nlp_capability_matrix() -> dict[str, Any]:
 
     Examples
     --------
+    >>> from buildml.nlp.catalog import nlp_capability_matrix
     >>> matrix = nlp_capability_matrix()
     >>> matrix["backends"]["sklearn"]["available"]
     True

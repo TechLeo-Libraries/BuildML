@@ -7,28 +7,27 @@ pip install buildml
 
 A text column on the Session table. Classifier fit is train-only and needs
 a target plus a `text_column` (or exactly one string feature). Default
-backend is sklearn bag-of-n-grams even when extras are installed. Not
-sequence labelling, not generation, not Torch fine-tuning, and not RAG.
+backend is sklearn bag-of-n-grams even when extras are installed. Sequence-model training and retrieval-augmented generation have separate
+Torch and RAG APIs.
 
 [NLP deep](nlp-deep.md) ·
-Paste: [`examples/nlp_text_classifier_loop.py`](../examples/nlp_text_classifier_loop.py) ·
+Runnable example: [`examples/nlp_text_classifier_loop.py`](../examples/nlp_text_classifier_loop.py) ·
 Evidence: [ticket-routing-nlp](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/ticket-routing-nlp)
 
 ```python
 import pandas as pd
 from buildml import Session
 
-frame = pd.DataFrame(
-    {
-        "body": [
-            "Invoice INV-4482 charged the annual fee twice on the same card.",
-            "The order was promised for the 3rd and arrived nine days late.",
-            "Single sign-on stopped working for the whole workspace this morning.",
-            # ... hundreds more tickets ...
-        ],
-        "queue": ["billing", "shipping", "account"],
-    }
-)
+tickets = {
+    "billing": ["Invoice charged twice", "Refund missing from statement", "Card payment rejected",
+                "Monthly invoice amount is wrong", "Please update billing address", "Tax charge needs correction"],
+    "shipping": ["Package arrived late", "Tracking number does not work", "Parcel lost during delivery",
+                 "Order shipped to wrong address", "Delivery date changed again", "Package arrived damaged"],
+    "account": ["Password reset link expired", "Account sign in fails", "My account is locked",
+                "Two factor login code missing", "Change my account email", "User permission is incorrect"],
+}
+frame = pd.DataFrame([(body, queue) for queue, rows in tickets.items() for body in rows],
+                     columns=["body", "queue"])
 
 session = (
     Session.ingest(frame)
@@ -36,7 +35,7 @@ session = (
     .split(test_size=0.2, validation_size=0.2, random_state=0, stratify=True)
 )
 
-# What can this install actually do, and what would more cost?
+# Inspect the default classifier backend available in this installation.
 print(session.nlp.capability_matrix()["default_backend_when_installed"])  # 'sklearn'
 
 # 1. Screen the split before trusting any score.
@@ -50,7 +49,7 @@ fit = session.nlp.fit_classifier(
     vectorizer="tfidf",
     estimator="logistic",
     ngram_range=(1, 2),
-    min_df=2,
+    min_df=1,
     class_weight="balanced",
 )
 print(fit.backend, fit.estimator, fit.vocabulary_size, fit.class_counts)
@@ -69,11 +68,11 @@ for item in interpret.document_attributions[0]:
     print(item.token, round(item.contribution, 4))
 
 # 5. Unsupervised structure fitted on train, assigned to holdout.
-topics = session.nlp.fit_topics(method="nmf", n_topics=4, min_df=3)
+topics = session.nlp.fit_topics(method="nmf", n_topics=3, min_df=1)
 print([t.label for t in topics.topics], topics.mean_coherence)  # NPMI on train
 print(session.nlp.assign_topics(partition="test").topic_share)
 
-# 6. Description surfaces that claim no quality metric.
+# 6. Extract descriptive text features; these outputs do not measure model quality.
 print(session.nlp.extract_keyphrases(partition="train", method="tfidf", top_n=10).corpus_keyphrases)
 print(session.nlp.summarize(partition="test", method="textrank", n_sentences=2).summaries[0])
 print(session.nlp.extract_entities(partition="test", backend="rules").label_counts)

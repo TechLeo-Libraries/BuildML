@@ -105,7 +105,7 @@ def fit_graph(
     plan:
         Fitted :class:`GraphPlan` for predict/eval/bundle persistence.
     fit_result:
-        Training summary with train accuracy and honesty disclosures.
+        Training summary with train accuracy and implementation limitations.
 
     Raises
     ------

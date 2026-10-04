@@ -1,4 +1,4 @@
-"""Decision / optimisation catalog and honest capability matrix."""
+"""Decision / optimisation catalog and capability matrix."""
 
 from __future__ import annotations
 
@@ -28,7 +28,7 @@ DecisionMethodName = Literal[
 
 
 def decision_capability_matrix() -> dict[str, Any]:
-    """Return an honest capability matrix for decision backends and solvers.
+    """Return an capability matrix for decision backends and solvers.
 
     Summarizes which threshold, cost-matrix, and allocation methods each
     backend supports, install extras, default routing, and non-goals. Consult
@@ -234,7 +234,7 @@ def resolve_backend(
     method: str,
     backend: DecisionBackendName | None,
 ) -> DecisionBackendName:
-    """Validate backend/method pairing and apply honest defaults.
+    """Validate backend/method pairing and apply documented defaults.
 
     When ``backend`` is ``None``, picks an installed default for knapsack,
     LP, or threshold methods. Raises when the requested backend does not

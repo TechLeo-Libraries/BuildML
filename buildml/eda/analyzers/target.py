@@ -178,9 +178,9 @@ def analyze_target(
             "column": target,
             "summary": {
                 "type": "regression_target",
-                "mean": float(y.mean()),
-                "std": float(y.std()),
-                "skew": float(y.skew()),
+                "mean": _optional_float(y.mean()),
+                "std": _optional_float(y.std()),
+                "skew": _optional_float(y.skew()),
             },
             "top_numeric_associations": associations[:20],
             "categorical_effect_tests": cat_effects[:15],
@@ -229,3 +229,8 @@ def analyze_target(
         "n_rows": int(len(frame)),
         "non_missing_target_rows": int(y.notna().sum()),
     }
+
+
+def _optional_float(value: Any) -> float | None:
+    """Keep unavailable small-sample statistics null across pandas dtypes."""
+    return None if pd.isna(value) else float(value)

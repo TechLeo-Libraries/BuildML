@@ -732,9 +732,9 @@ class DuckDBEngine:
     def filter_expr(self, table: Any, expression: str) -> Any:
         """Add a SQL predicate to the plan.
 
-        **The most efficient way to drop rows.** On a Parquet-backed relation
-        DuckDB pushes the predicate into the scan and uses row-group statistics
-        to skip whole blocks: non-matching rows are never read.
+        **Allows filtering before materialisation.** On a Parquet-backed relation,
+        eligible predicates and row-group statistics can let DuckDB skip blocks.
+        Non-matching rows in other blocks may still be read.
 
         Parameters
         ----------

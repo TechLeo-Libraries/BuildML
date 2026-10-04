@@ -20,13 +20,13 @@ even if fit ignores holdout rows.
 `backend=None` and `method=None` picks **LightGBM LambdaRank** when
 `buildml[ranking-industry]` imported (then XGBoost `rank:ndcg`, then
 CatBoost YetiRank). On a core install it is sklearn **pointwise** Ridge.
-That is one of the surfaces where omitting both knobs can select
-industry.
+Set `backend` and `method` explicitly to keep backend selection consistent
+between environments.
 
 This is tabular LTR. It is not a search engine, not
 `session.rag.retrieve`, and not `session.recommender`.
 
-Short on-ramp: [ranking quickstart](quickstart-ranking.md). Proof:
+Quickstart: [ranking quickstart](quickstart-ranking.md). Proof:
 [search-relevance-ltr](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/search-relevance-ltr).
 
 ## Fit, rank, evaluate
@@ -104,6 +104,62 @@ Or omit `backend` and `method` to take the industry default when that
 extra imported:
 
 ```python
+import numpy as np
+import pandas as pd
+
+from buildml import Session
+
+rng = np.random.default_rng(0)
+rows = []
+for q in range(40):
+    for item in range(8):
+        f1 = float(rng.normal(q % 5, 1.0))
+        f2 = float(rng.normal(item, 1.0))
+        rel = float(max(0, int(3 - abs(f1 - (q % 5)) + (item % 3 == 0))))
+        rows.append(
+            {
+                "query_id": f"q{q}",
+                "item_id": f"i{item}",
+                "f1": f1,
+                "f2": f2,
+                "bm25": float(rng.random()),
+                "relevance": rel,
+            }
+        )
+frame = pd.DataFrame(rows)
+
+session = (
+    Session.ingest(frame)
+    .set_roles(
+        {
+            "query_id": "group",
+            "item_id": "id",
+            "relevance": "target",
+            "f1": "feature",
+            "f2": "feature",
+            "bm25": "feature",
+        }
+    )
+    .group_split(test_size=0.25, validation_size=0.15, random_state=0)
+)
+
+fit = session.ranking.fit(
+    backend="sklearn",
+    method="pointwise",
+    query_column="query_id",
+    item_column="item_id",
+    pointwise_estimator="ridge",
+)
+print(fit.backend, fit.method)
+
+ranked = session.ranking.rank(partition="test", k=5)
+print(ranked.n_queries)
+
+ev = session.ranking.evaluate(partition="test", k=5)
+print(ev.metrics)
+
+session.ranking.save_bundle("artifacts/ranker_bundle")
+
 session.ranking.fit(query_column="query_id", item_column="item_id")
 ```
 
@@ -137,6 +193,62 @@ installed is LightGBM, then XGB, then CatBoost, matching what actually
 imported.
 
 ```python
+import numpy as np
+import pandas as pd
+
+from buildml import Session
+
+rng = np.random.default_rng(0)
+rows = []
+for q in range(40):
+    for item in range(8):
+        f1 = float(rng.normal(q % 5, 1.0))
+        f2 = float(rng.normal(item, 1.0))
+        rel = float(max(0, int(3 - abs(f1 - (q % 5)) + (item % 3 == 0))))
+        rows.append(
+            {
+                "query_id": f"q{q}",
+                "item_id": f"i{item}",
+                "f1": f1,
+                "f2": f2,
+                "bm25": float(rng.random()),
+                "relevance": rel,
+            }
+        )
+frame = pd.DataFrame(rows)
+
+session = (
+    Session.ingest(frame)
+    .set_roles(
+        {
+            "query_id": "group",
+            "item_id": "id",
+            "relevance": "target",
+            "f1": "feature",
+            "f2": "feature",
+            "bm25": "feature",
+        }
+    )
+    .group_split(test_size=0.25, validation_size=0.15, random_state=0)
+)
+
+fit = session.ranking.fit(
+    backend="sklearn",
+    method="pointwise",
+    query_column="query_id",
+    item_column="item_id",
+    pointwise_estimator="ridge",
+)
+print(fit.backend, fit.method)
+
+ranked = session.ranking.rank(partition="test", k=5)
+print(ranked.n_queries)
+
+ev = session.ranking.evaluate(partition="test", k=5)
+print(ev.metrics)
+
+session.ranking.save_bundle("artifacts/ranker_bundle")
+
 session.ranking.fit(
     backend="industry",
     method="lambdarank_lgbm",
@@ -175,13 +287,13 @@ frozen plan. A mismatch raises.
 `session.ranking.save_bundle` writes `buildml.ranker_bundle.v1`:
 `meta.json` plus `ranker_plan.joblib` (estimator and train
 standardization). A Session checkpoint does not embed `RankerPlan`.
-`trusted=True` only for a file you made.
+`trusted=True` only for a file you created or whose source and contents you trust.
 
-Paste:
+Runnable example:
 [`examples/ranking_pointwise_loop.py`](../examples/ranking_pointwise_loop.py).
 Benchmark: `python benchmarks/ranking/ndcg_lift.py`.
 
-## When it refuses
+## Validation errors and prerequisites
 
 | What you see | What happened |
 | --- | --- |

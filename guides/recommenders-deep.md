@@ -13,18 +13,30 @@ classical `fit()` does not treat ids as features.
 
 `session.recommender.fit()` with the mixin defaults (`feedback="explicit"`,
 `method=None`) is item kNN on sklearn. That stays sklearn even when
-`implicit` is installed, because explicit ratings are not an ALS
-problem. `feedback="implicit"` with `method=None` picks ALS when
+`implicit` is installed, because this adapter routes explicit feedback to the sklearn methods. `feedback="implicit"` with `method=None` picks ALS when
 `buildml[recommenders-industry]` imported, otherwise sklearn NMF.
 LightFM is `method="lightfm"` (extra `recommenders-lightfm`, not the
-implicit extra). LightFM wheels are skipped on Windows and on Python
-3.13.
+implicit extra). This extra excludes native Windows and Python 3.12 or newer.
+LightFM 1.17's published C extension failed to build on Python 3.12 in our
+installation checks. The example below was verified on Ubuntu with Python 3.11.
+
+For that environment, install LightFM in a dedicated virtual environment before
+installing the BuildML extra. LightFM 1.17 requires the legacy build path shown
+here; a C compiler and Python development headers must already be installed:
+
+```bash
+python3.11 -m venv .venv-lightfm
+. .venv-lightfm/bin/activate
+python -m pip install "pip<25" setuptools wheel "numpy<2" scipy
+python -m pip install --no-use-pep517 --no-build-isolation lightfm==1.17
+python -m pip install "buildml[recommenders-industry,recommenders-lightfm]"
+```
 
 This is collaborative filtering and content profiles on a Session split.
-It is not RAG, not learning-to-rank, and not an EDA "recommendation"
-finding (those are teaching notes on the report, they never rank items).
+RAG retrieval, supervised learning-to-rank, and EDA recommendations have
+separate APIs and purposes.
 
-Short on-ramp: [recommenders quickstart](quickstart-recommenders.md).
+Quickstart: [recommenders quickstart](quickstart-recommenders.md).
 Proof: [movie-recs-collaborative](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/movie-recs-collaborative).
 
 ## Fit, recommend, evaluate
@@ -52,6 +64,7 @@ for user in range(40):
                 "user_id": f"u{user}",
                 "item_id": f"i{item}",
                 "rating": float(rng.integers(3, 6)),
+                "age": float(20 + user),
                 "f1": float(item % 5),
                 "f2": float(item // 5),
             }
@@ -65,6 +78,7 @@ session = (
             "user_id": "id",
             "item_id": "id",
             "rating": "target",
+            "age": "feature",
             "f1": "feature",
             "f2": "feature",
         }
@@ -107,6 +121,60 @@ never a collaborative candidate.
 `svd` / `nmf` / `item_knn` for ratings, or LightFM for hybrid.
 
 ```python
+# Requires: pip install "buildml[recommenders-industry,recommenders-lightfm]".
+import numpy as np
+import pandas as pd
+
+from buildml import Session
+
+rng = np.random.default_rng(0)
+rows = []
+for user in range(40):
+    liked = rng.choice(30, size=8, replace=False)
+    for item in liked:
+        rows.append(
+            {
+                "user_id": f"u{user}",
+                "item_id": f"i{item}",
+                "rating": float(rng.integers(3, 6)),
+                "age": float(20 + user),
+                "f1": float(item % 5),
+                "f2": float(item // 5),
+            }
+        )
+frame = pd.DataFrame(rows)
+
+session = (
+    Session.ingest(frame)
+    .set_roles(
+        {
+            "user_id": "id",
+            "item_id": "id",
+            "rating": "target",
+            "age": "feature",
+            "f1": "feature",
+            "f2": "feature",
+        }
+    )
+    .split(test_size=0.2, validation_size=0.15, random_state=0)
+)
+
+fit = session.recommender.fit(
+    method="item_knn",
+    user_column="user_id",
+    item_column="item_id",
+    n_neighbors=20,
+)
+print(fit.method, fit.backend)
+
+recs = session.recommender.recommend(partition="test", k=5)
+print(recs.to_dict())
+
+ev = session.recommender.evaluate(partition="test", k=5)
+print(ev.metrics)
+
+session.recommender.save_bundle("artifacts/recommender_bundle")
+
 # Implicit industry default when implicit is installed:
 session.recommender.fit(
     user_column="user_id",
@@ -162,11 +230,11 @@ them to `session.ranking.evaluate` (judgment tables) or
 does not embed `RecommenderPlan`. `trusted=True` only for a file you
 made.
 
-Paste:
+Runnable example:
 [`examples/recommender_item_knn_loop.py`](../examples/recommender_item_knn_loop.py).
 Benchmark: `python benchmarks/recommenders/ranking_quality.py`.
 
-## When it refuses
+## Validation errors and prerequisites
 
 | What you see | What happened |
 | --- | --- |

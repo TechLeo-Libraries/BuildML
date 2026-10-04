@@ -117,19 +117,18 @@ def ingest(
 
     Examples
     --------
-    Inspect a large file without loading it::
+    .. code-block:: python
 
-        _, report = ingest("data/events.parquet", dry_run=True)
-        print(report.schema.columns())
-        print(report.recommended_mode, report.recommended_engine)
-
-    Read it natively once you know what is in it::
-
-        dataset, report = ingest(
-            "data/events.parquet", engine="polars", mode="lazy"
-        )
-        for note in report.warnings:
-            print(note)
+        import pandas as pd
+        from pathlib import Path
+        from tempfile import TemporaryDirectory
+        from buildml.ingest.pipeline import ingest
+        with TemporaryDirectory() as directory:
+            path = Path(directory) / "example.csv"
+            pd.DataFrame({"age": [20, 30], "income": [2000, 3000]}).to_csv(path, index=False)
+            _, preview = ingest(path, dry_run=True)
+            dataset, report = ingest(path)
+            print(report.recommended_mode, report.recommended_engine)
 
     See Also
     --------

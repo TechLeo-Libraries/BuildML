@@ -151,7 +151,7 @@ def list_ssl_methods(*, include_legacy: bool = True) -> tuple[dict[str, Any], ..
 
 
 def ssl_capability_matrix() -> dict[str, Any]:
-    """Build an honest capability matrix for self-supervised backends.
+    """Build an capability matrix for self-supervised backends.
 
     Reports which Torch, HF text, and vision methods are importable in the
     current environment together with install hints and non-goals.

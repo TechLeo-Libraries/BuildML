@@ -7,10 +7,10 @@ pip install buildml
 `fit` on a train chunk, then `partial_fit` on later train chunks.
 Validation and test are never updated. Silent full refits are refused
 (`allow_refit_fallback` is off). Default estimator is SGD classifier.
-This is not a distributed streaming product.
+Distributed stream transport must be managed separately.
 
 [Online deep](online-learning-deep.md) ·
-Paste: [`examples/online_partial_fit_loop.py`](../examples/online_partial_fit_loop.py) ·
+Runnable example: [`examples/online_partial_fit_loop.py`](../examples/online_partial_fit_loop.py) ·
 Evidence: [stream-fraud-online](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/stream-fraud-online)
 
 ```bash
@@ -60,13 +60,11 @@ print(ev.metrics)
 session.online.save_bundle("artifacts/online_bundle")
 ```
 
-## Honest boundaries
+## Supported workflows and limitations
 
 | In scope | Out of scope |
 | --- | --- |
 | sklearn `partial_fit` family on Session train chunks | Distributed streaming / Kafka / Flink |
-| Explicit `classes=` (or train-target discovery) | Silent full `.fit` pretending to be online |
-| Holdout eval never used for updates | Lifelong / continual research suites (EWC, replay zoos, …) |
-| Optional lite drift disclosure vs init chunk | Full production drift platform |
-
-Related next: meta-learning.
+| Explicit `classes=` (or train-target discovery) | Implicit full refitting |
+| Holdout evaluation never used for updates | Updating a learner from holdout labels |
+| Optional lite drift disclosure vs init chunk | Continuous production monitoring service |

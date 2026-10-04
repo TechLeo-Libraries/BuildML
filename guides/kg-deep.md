@@ -7,8 +7,8 @@ pip install buildml
 
 You have rows that are triples: who, what relation, whom. You want to
 score missing links and ask exact neighborhood questions on the same
-Session split you use for everything else. That is this path. It is not
-Neo4j, not Cypher, not `session.graph` node classification, and not RAG.
+Session split you use for everything else. The API supports embedding-based link prediction and queries over known
+training edges. Node classification has a separate `session.graph` API.
 
 `session.kg.fit` needs `head_column`, `relation_column`, and
 `tail_column`. Those names are not inferred. Default method is native
@@ -23,7 +23,7 @@ or vocabularies. You choose the operating point (epochs, dim, k). The
 API refuses a missing split, missing triple columns, and a PyKEEN
 method without the extra.
 
-Short on-ramp: [KG quickstart](quickstart-kg.md). Proof:
+Quickstart: [KG quickstart](quickstart-kg.md). Proof:
 [kg-biomed-linkpred](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/kg-biomed-linkpred).
 
 ## A first loop
@@ -105,6 +105,60 @@ When `backend=None`:
 - explicit `backend="pykeen"` with `transe` uses PyKEEN, not native
 
 ```python
+import pandas as pd
+
+from buildml import Session
+
+frame = pd.DataFrame(
+    [
+        ("Alice", "works_at", "Acme"),
+        ("Bob", "works_at", "Acme"),
+        ("Alice", "knows", "Bob"),
+        ("Acme", "located_in", "London"),
+        ("Bob", "lives_in", "London"),
+        ("Carol", "works_at", "Beta"),
+        ("Carol", "knows", "Alice"),
+        ("Beta", "located_in", "Paris"),
+        ("Alice", "lives_in", "London"),
+        ("Bob", "knows", "Carol"),
+        ("Carol", "lives_in", "Paris"),
+        ("Acme", "knows", "Beta"),
+    ],
+    columns=["head", "relation", "tail"],
+)
+
+session = (
+    Session.ingest(frame)
+    .set_roles({"head": "id", "relation": "id", "tail": "id"})
+    .split(test_size=0.2, validation_size=0.1, random_state=0)
+)
+
+fit = session.kg.fit(
+    method="transe",
+    head_column="head",
+    relation_column="relation",
+    tail_column="tail",
+    embedding_dim=32,
+    epochs=40,
+    neg_ratio=1,
+    random_state=0,
+)
+print(fit.backend, fit.n_train_triples, fit.n_entities)
+
+preds = session.kg.predict_links(
+    mode="tail",
+    heads=["Alice"],
+    relations=["works_at"],
+    k=5,
+)
+print(preds.predictions)
+
+nbrs = session.kg.query(mode="neighbors", entity="Alice", direction="out")
+print(nbrs.results)
+
+ev = session.kg.evaluate(partition="test", k=5)
+print(ev.metrics)
+
 session.kg.fit(
     backend="native",
     method="transe",
@@ -170,7 +224,7 @@ OOV entities and relations are skipped (`n_skipped_unknown` on the
 eval result). Training loss is not a substitute for
 `session.kg.evaluate`.
 
-## What the API refuses
+## Validation checks
 
 - `head_column` / `relation_column` / `tail_column` omitted or not
   distinct
@@ -181,7 +235,7 @@ eval result). Training loss is not a substitute for
   `session.kg.fit`
 
 You still decide epochs, dimension, whether to use PyKEEN, and whether
-a Hits@K on a tiny graph is worth quoting.
+the graph contains enough evaluation cases for a meaningful Hits@K estimate.
 
 ## Bundle
 
@@ -191,6 +245,60 @@ the plan). Session checkpoints do not embed `KgPlan`. Reload with
 has the same split if you want to re-evaluate.
 
 ```python
+import pandas as pd
+
+from buildml import Session
+
+frame = pd.DataFrame(
+    [
+        ("Alice", "works_at", "Acme"),
+        ("Bob", "works_at", "Acme"),
+        ("Alice", "knows", "Bob"),
+        ("Acme", "located_in", "London"),
+        ("Bob", "lives_in", "London"),
+        ("Carol", "works_at", "Beta"),
+        ("Carol", "knows", "Alice"),
+        ("Beta", "located_in", "Paris"),
+        ("Alice", "lives_in", "London"),
+        ("Bob", "knows", "Carol"),
+        ("Carol", "lives_in", "Paris"),
+        ("Acme", "knows", "Beta"),
+    ],
+    columns=["head", "relation", "tail"],
+)
+
+session = (
+    Session.ingest(frame)
+    .set_roles({"head": "id", "relation": "id", "tail": "id"})
+    .split(test_size=0.2, validation_size=0.1, random_state=0)
+)
+
+fit = session.kg.fit(
+    method="transe",
+    head_column="head",
+    relation_column="relation",
+    tail_column="tail",
+    embedding_dim=32,
+    epochs=40,
+    neg_ratio=1,
+    random_state=0,
+)
+print(fit.backend, fit.n_train_triples, fit.n_entities)
+
+preds = session.kg.predict_links(
+    mode="tail",
+    heads=["Alice"],
+    relations=["works_at"],
+    k=5,
+)
+print(preds.predictions)
+
+nbrs = session.kg.query(mode="neighbors", entity="Alice", direction="out")
+print(nbrs.results)
+
+ev = session.kg.evaluate(partition="test", k=5)
+print(ev.metrics)
+
 session.kg.save_bundle("artifacts/kg_bundle")
 other = (
     Session.ingest(frame)

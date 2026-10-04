@@ -36,7 +36,7 @@ _OPERATIONS: tuple[OperationSpec, ...] = (
             _p(
                 "backend",
                 "sklearn | torch | industry",
-                "Meta-learning backend (honest defaults when extras installed).",
+                "Meta-learning backend (documented defaults when extras installed).",
                 "sklearn",
             ),
             _p(

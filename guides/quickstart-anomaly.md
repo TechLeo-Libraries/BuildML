@@ -8,11 +8,10 @@ pip install buildml
 
 Default is sklearn IsolationForest, unsupervised. A target is only required
 for supervised mode, threshold tuning, and labeled eval. Tuning on test is
-refused unless `allow_test_tuning=True`. This is not clustering and not a
-streaming fraud platform.
+refused unless `allow_test_tuning=True`. Clustering and stream processing have separate workflows.
 
 [Anomaly deep](anomaly-deep.md) ·
-Paste: [`examples/anomaly_iforest_loop.py`](../examples/anomaly_iforest_loop.py) ·
+Runnable example: [`examples/anomaly_iforest_loop.py`](../examples/anomaly_iforest_loop.py) ·
 Evidence: [network-intrusion-anomaly](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/network-intrusion-anomaly)
 
 Classical `Session.fit` stays unchanged. Anomaly methods are
@@ -57,6 +56,37 @@ print(metrics.alert_rate, metrics.labeled_metrics)
 PyOD industry backend (when `buildml[anomaly-industry]` installed):
 
 ```python
+import numpy as np
+import pandas as pd
+
+from buildml import Session
+
+rng = np.random.default_rng(0)
+n_normal, n_fraud = 200, 20
+normal = rng.normal(0.0, 1.0, size=(n_normal, 2))
+fraud = rng.normal(4.0, 0.6, size=(n_fraud, 2))
+frame = pd.DataFrame(np.vstack([normal, fraud]), columns=["x", "y"])
+frame["is_fraud"] = [0] * n_normal + [1] * n_fraud
+
+session = (
+    Session.ingest(frame)
+    .set_roles({"x": "feature", "y": "feature", "is_fraud": "target"})
+    .split(test_size=0.25, validation_size=0.15, stratify=True, random_state=0)
+    .scale(method="standard")
+)
+
+print(session.anomaly.capability_matrix()["backends"].keys())
+
+fit = session.anomaly.fit(
+    backend="sklearn",
+    method="isolation_forest",
+    mode="unsupervised",
+    contamination=0.1,
+)
+session.anomaly.tune_threshold(partition="validation", metric="f1")
+metrics = session.anomaly.evaluate(partition="test", positive_label=1)
+print(metrics.alert_rate, metrics.labeled_metrics)
+
 session.anomaly.fit(backend="pyod", method="ecod", contamination=0.1)
 session.anomaly.evaluate(partition="test")
 ```
@@ -64,6 +94,37 @@ session.anomaly.evaluate(partition="test")
 Torch autoencoder reconstruction error (when `buildml[torch]` installed):
 
 ```python
+import numpy as np
+import pandas as pd
+
+from buildml import Session
+
+rng = np.random.default_rng(0)
+n_normal, n_fraud = 200, 20
+normal = rng.normal(0.0, 1.0, size=(n_normal, 2))
+fraud = rng.normal(4.0, 0.6, size=(n_fraud, 2))
+frame = pd.DataFrame(np.vstack([normal, fraud]), columns=["x", "y"])
+frame["is_fraud"] = [0] * n_normal + [1] * n_fraud
+
+session = (
+    Session.ingest(frame)
+    .set_roles({"x": "feature", "y": "feature", "is_fraud": "target"})
+    .split(test_size=0.25, validation_size=0.15, stratify=True, random_state=0)
+    .scale(method="standard")
+)
+
+print(session.anomaly.capability_matrix()["backends"].keys())
+
+fit = session.anomaly.fit(
+    backend="sklearn",
+    method="isolation_forest",
+    mode="unsupervised",
+    contamination=0.1,
+)
+session.anomaly.tune_threshold(partition="validation", metric="f1")
+metrics = session.anomaly.evaluate(partition="test", positive_label=1)
+print(metrics.alert_rate, metrics.labeled_metrics)
+
 session.anomaly.fit(
     backend="torch",
     method="autoencoder",
@@ -75,16 +136,47 @@ session.anomaly.fit(
 Supervised fraud scorers:
 
 ```python
+import numpy as np
+import pandas as pd
+
+from buildml import Session
+
+rng = np.random.default_rng(0)
+n_normal, n_fraud = 200, 20
+normal = rng.normal(0.0, 1.0, size=(n_normal, 2))
+fraud = rng.normal(4.0, 0.6, size=(n_fraud, 2))
+frame = pd.DataFrame(np.vstack([normal, fraud]), columns=["x", "y"])
+frame["is_fraud"] = [0] * n_normal + [1] * n_fraud
+
+session = (
+    Session.ingest(frame)
+    .set_roles({"x": "feature", "y": "feature", "is_fraud": "target"})
+    .split(test_size=0.25, validation_size=0.15, stratify=True, random_state=0)
+    .scale(method="standard")
+)
+
+print(session.anomaly.capability_matrix()["backends"].keys())
+
+fit = session.anomaly.fit(
+    backend="sklearn",
+    method="isolation_forest",
+    mode="unsupervised",
+    contamination=0.1,
+)
+session.anomaly.tune_threshold(partition="validation", metric="f1")
+metrics = session.anomaly.evaluate(partition="test", positive_label=1)
+print(metrics.alert_rate, metrics.labeled_metrics)
+
 session.anomaly.fit(method="supervised_hgb", mode="supervised")  # core
 # session.anomaly.fit(method="supervised_xgb", mode="supervised")  # industry
 session.anomaly.evaluate(partition="test", k=10)
 ```
 
-## Honesty limits
+## Interpretation and limitations
 
 - Higher `anomaly_score` means more anomalous. Score calibration differs by
   backend: compare detectors with ranking metrics (PR-AUC), not raw score scale.
 - Tune thresholds on validation via `session.anomaly.tune_threshold`; reserve test for
   final claims (same discipline as `Session.tune_threshold`).
-- Not a full fraud platform (no graph fraud, no online streaming product).
+- Graph analysis and stream processing require separate workflows.
 - No causal fraud claims. Under labels, prefer PR-AUC and precision/recall@k.

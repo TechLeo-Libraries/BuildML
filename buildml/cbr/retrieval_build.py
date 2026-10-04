@@ -1,18 +1,13 @@
-"""Build, once at fit time, whatever the chosen backend needs to search.
+"""Prepare training vectors and optional indexes for case retrieval.
 
-Exact search over raw features needs nothing; the numeric matrix is already the
-search space. The other backends need something constructed first: text
-embedded into vectors, a metric encoder trained, an approximate index built :
-and all of it belongs here, at fit time, on training rows.
+Numeric search uses the supplied feature matrix. Text and Torch backends
+construct embeddings at fit time and reuse the fitted transformation for
+queries. Optional approximate indexes accelerate retrieval over those vectors.
 
-Doing it once is not only an optimisation. These artefacts define the space
-queries are compared in, so building them per query would mean each query was
-compared in a slightly different space. Fitting once and reusing is what makes
-distances comparable at all.
-
-The build degrades rather than fails. If an approximate index cannot be built,
-the search matrix is still produced and retrieval falls back to an exact scan
-over it: same answers, less speed: and the fallback is recorded in the notes.
+When the optional ANN backend is unavailable, retrieval can scan the vectors
+exactly. Embedding and Torch backends also use this path on Windows. Errors
+raised while building an available ANN index propagate to the caller.
+Approximate search may return different neighbours from an exact scan.
 
 See Also
 --------
@@ -29,7 +24,7 @@ import pandas as pd
 
 from buildml.cbr.adapters.industry_ann import build_ann_index
 from buildml.cbr.adapters.text_embed import embed_text_cases
-from buildml.cbr.extras import cbr_industry_available
+from buildml.cbr.extras import cbr_industry_available, windows_industry_ann_refused
 from buildml.core.errors import ValidationError
 
 
@@ -108,17 +103,15 @@ def build_search_artifacts(
 
     Notes
     -----
-    **A failed index build is a warning, not an error.** The search matrix
-    stands on its own and retrieval scans it exactly, which returns the same
-    neighbours more slowly. The note records what happened.
+    Missing optional ANN support leaves the search matrix available for exact
+    retrieval. This does not suppress failures from an attempted index build.
 
-    **This is the expensive part of fitting.** Embedding a corpus or training an
-    encoder can take minutes, against near-zero for exact search: which is why
-    persisting the plan is worth doing.
+    Embedding and encoder training costs depend on the model and dataset.
+    Persisting the fitted plan avoids repeating that preparation.
 
-    **The learned backends produce a space nobody can read.** Neighbours are
-    still correct in that space, but "why is this case similar?" no longer has
-    an answer in terms of your columns.
+    Distances between learned vectors do not directly explain the contribution
+    of each original feature. Inspect the retrieved cases before interpreting
+    similarity as evidence of a shared cause or outcome.
     """
     notes: list[str] = []
     backend_key = str(backend).lower()
@@ -179,7 +172,9 @@ def build_search_artifacts(
             raise ValidationError("industry backend requires numeric feature columns.")
         notes.append("Industry ANN retrieval on standardized numeric features.")
 
-    if backend_key in {"industry", "embedding", "torch"} and cbr_industry_available():
+    if backend_key in {"embedding", "torch"} and windows_industry_ann_refused():
+        notes.append("Optional ANN is disabled on Windows; using exact retrieval on the learned vectors.")
+    elif backend_key in {"industry", "embedding", "torch"} and cbr_industry_available():
         ann_index, ann_library = build_ann_index(search, metric=metric)
         notes.append(f"Approximate NN index built with {ann_library} (metric={metric}).")
     elif backend_key == "industry":

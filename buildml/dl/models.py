@@ -93,13 +93,29 @@ def build_tabular_mlp(
 
     Examples
     --------
-    Size the network from the loader contract::
+    .. code-block:: python
 
-        module = build_tabular_mlp(
-            in_features=len(bundle.contract.feature_columns),
-            task=bundle.contract.task,
-            n_classes=len(bundle.contract.class_labels) or 2,
-        )
+        # Install PyTorch support first: pip install "buildml[torch]"
+        import pandas as pd
+        import torch
+        from sklearn.datasets import make_classification
+        from buildml import Session
+        X, y = make_classification(n_samples=40, n_features=4, n_informative=3, n_redundant=0, random_state=42)
+        frame = pd.DataFrame(X, columns=["a", "b", "c", "d"])
+        frame["target"] = y
+        session = Session.ingest(frame).set_roles({"target": "target"})
+        session.split(test_size=0.2, validation_size=0.2, stratify=True, random_state=42)
+        dataset, split_plan = session.dataset, session.split_plan
+        from buildml.dl.loaders import make_loaders
+        from buildml.dl.types import TrainConfig
+        from buildml.dl.train import train_supervised_module
+        bundle = make_loaders(dataset, split_plan, task="classification")
+        torch.manual_seed(42)
+        module = torch.nn.Linear(4, 2)
+        from buildml.dl.models import build_tabular_mlp
+        module = build_tabular_mlp(in_features=4, task="classification", n_classes=2)
+        logits = module(torch.zeros(3, 4))
+        assert logits.shape == (3, 2)
 
     See Also
     --------
@@ -241,12 +257,20 @@ def build_text_classifier(
 
     Examples
     --------
-    Size from the text loader's vocabulary::
+    .. code-block:: python
 
-        module = build_text_classifier(
-            vocab_size=bundle.report.vocab_size,
-            n_classes=len(bundle.contract.class_labels),
-        )
+        # Install PyTorch support first: pip install "buildml[torch]"
+        import pandas as pd
+        import torch
+        from buildml import Session
+        from buildml.dl.text import make_text_loaders
+        from buildml.dl.models import build_text_classifier
+        frame = pd.DataFrame({"review": ["good service", "poor service", "excellent value", "bad value"] * 5, "target": [1, 0, 1, 0] * 5})
+        session = Session.ingest(frame).set_roles({"target": "target"})
+        session.split(test_size=0.2, stratify=True, random_state=42)
+        bundle = make_text_loaders(session.dataset, session.split_plan, text_column="review")
+        module = build_text_classifier(vocab_size=bundle.text_vocab.vocab_size, n_classes=2)
+        print(module)
 
     See Also
     --------

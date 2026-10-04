@@ -10,22 +10,32 @@ pip install buildml
 One `time` role, one target, and `time_split`. Random, stratified, and
 group splits are `LeakageError`. Default `method="auto"` is ETS when
 statsmodels is installed, otherwise `lag_ridge`. Fit is train-only.
-`generate` is the operational H-step from the origin you name.
-`evaluate` is holdout skill under a stated protocol.
+`generate` forecasts the requested horizon from the selected origin.
+`evaluate` compares forecasts with observed holdout values under a selected protocol.
 
-This is not a Torch sequence product and not causal identification.
-Analysis without a model is `session.timeseries`.
+For descriptive time-series analysis without fitting a forecast model,
+use `session.timeseries`.
 
-Short on-ramp: [forecasting quickstart](quickstart-forecasting.md).
+Quickstart: [forecasting quickstart](quickstart-forecasting.md).
 
 ## Setup
 
 ```python
-session = (
-    Session.ingest(frame)
-    .set_roles({"ts": "time", "y": "target"})
-    .time_split(test_size=0.2, validation_size=0.15)
-)
+import numpy as np
+import pandas as pd
+from buildml import Session
+
+rng = np.random.default_rng(0)
+n = 120
+frame = pd.DataFrame({
+    "ts": pd.date_range("2024-01-01", periods=n, freq="D"),
+    "y": 10 + 0.05 * np.arange(n) + np.sin(np.arange(n) / 7) + rng.normal(0, 0.3, n),
+    "promo": (np.arange(n) % 7 == 0).astype(float),
+})
+session = (Session.ingest(frame)
+    .set_roles({"ts": "time", "y": "target", "promo": "ignore"})
+    .time_split(test_size=0.2, validation_size=0.15))
+
 ```
 
 `horizon` is the default H-step stored on `ForecastPlan`.
@@ -33,17 +43,37 @@ session = (
 row *t* uses only `y[t-lag]`. Early rows that lack a full lag history
 are dropped from fit.
 
-## What is refused
+## Data requirements
 
 - `split` / `group_split` / stratified: `LeakageError`.
 - Fit when train does not end before holdout on the time column.
-- Inventing future exogenous drivers. If you fit with `exog_columns`,
+- Missing future exogenous values. If you fit with `exog_columns`,
   `generate` needs `future_exog`. Offline `evaluate` may use holdout
   exog at each scored timestamp and discloses that.
 
 ```python
-bad = Session.ingest(frame).set_roles({"ts": "time", "y": "target"}).split(test_size=0.2)
-bad.forecast.fit(method="naive")  # LeakageError
+import numpy as np
+import pandas as pd
+from buildml import Session
+
+rng = np.random.default_rng(0)
+n = 120
+frame = pd.DataFrame({
+    "ts": pd.date_range("2024-01-01", periods=n, freq="D"),
+    "y": 10 + 0.05 * np.arange(n) + np.sin(np.arange(n) / 7) + rng.normal(0, 0.3, n),
+    "promo": (np.arange(n) % 7 == 0).astype(float),
+})
+session = (Session.ingest(frame)
+    .set_roles({"ts": "time", "y": "target", "promo": "ignore"})
+    .time_split(test_size=0.2, validation_size=0.15))
+
+from buildml.core.errors import LeakageError
+
+bad = Session.ingest(frame).set_roles({"ts": "time", "y": "target", "promo": "ignore"}).split(test_size=0.2)
+try:
+    bad.forecast.fit(method="naive")
+except LeakageError as exc:
+    print("Expected rejection of a random time-series split:", exc)
 ```
 
 ## Methods
@@ -69,6 +99,21 @@ claiming lag-model value.
 ## Generate vs evaluate
 
 ```python
+import numpy as np
+import pandas as pd
+from buildml import Session
+
+rng = np.random.default_rng(0)
+n = 120
+frame = pd.DataFrame({
+    "ts": pd.date_range("2024-01-01", periods=n, freq="D"),
+    "y": 10 + 0.05 * np.arange(n) + np.sin(np.arange(n) / 7) + rng.normal(0, 0.3, n),
+    "promo": (np.arange(n) % 7 == 0).astype(float),
+})
+session = (Session.ingest(frame)
+    .set_roles({"ts": "time", "y": "target", "promo": "ignore"})
+    .time_split(test_size=0.2, validation_size=0.15))
+
 session.forecast.fit(method="lag_ridge", horizon=14, lags=[1, 2, 7, 14])
 
 gen = session.forecast.generate(horizon=14, origin="train_end")
@@ -89,6 +134,21 @@ actuals; lead with MAE/RMSE.
 ## Exogenous
 
 ```python
+import numpy as np
+import pandas as pd
+from buildml import Session
+
+rng = np.random.default_rng(0)
+n = 120
+frame = pd.DataFrame({
+    "ts": pd.date_range("2024-01-01", periods=n, freq="D"),
+    "y": 10 + 0.05 * np.arange(n) + np.sin(np.arange(n) / 7) + rng.normal(0, 0.3, n),
+    "promo": (np.arange(n) % 7 == 0).astype(float),
+})
+session = (Session.ingest(frame)
+    .set_roles({"ts": "time", "y": "target", "promo": "ignore"})
+    .time_split(test_size=0.2, validation_size=0.15))
+
 session.forecast.fit(
     method="lag_ridge",
     lags=[1, 2, 3],
@@ -105,10 +165,26 @@ session.forecast.generate(horizon=7, future_exog=future)
 Not a Session checkpoint.
 
 ```python
+import numpy as np
+import pandas as pd
+from buildml import Session
+
+rng = np.random.default_rng(0)
+n = 120
+frame = pd.DataFrame({
+    "ts": pd.date_range("2024-01-01", periods=n, freq="D"),
+    "y": 10 + 0.05 * np.arange(n) + np.sin(np.arange(n) / 7) + rng.normal(0, 0.3, n),
+    "promo": (np.arange(n) % 7 == 0).astype(float),
+})
+session = (Session.ingest(frame)
+    .set_roles({"ts": "time", "y": "target", "promo": "ignore"})
+    .time_split(test_size=0.2, validation_size=0.15))
+
+session.forecast.fit(method="lag_ridge", lags=[1, 2, 7])
 path = session.forecast.save_bundle("artifacts/forecast_bundle")
 restored = Session.ingest(frame).set_roles({"ts": "time", "y": "target"})
 restored.time_split(test_size=0.2, validation_size=0.15)
-restored.forecast.load_bundle(path)
+restored.forecast.load_bundle(path, trusted=True)
 print(restored.forecast.generate(horizon=7).predictions)
 ```
 

@@ -9,13 +9,10 @@ SYNTHETIC_BEGINNER: dict[str, BeginnerLayer] = _index(
     _layer(
         "synthetic-train-only-generator",
         plain=(
-            "A synthesizer learns what your table looks like: the range of each column, how columns move "
-            "together: and can then produce brand-new rows that resemble the real ones without being "
-            "copies. It learns from training rows only."
+            'A synthesizer uses training rows to construct a reusable sampling model. Bootstrap sampling resamples observed rows; other methods model distributions or interpolate. Generated rows can duplicate or closely resemble training data.'
         ),
         analogy=(
-            "A forger who has studied a thousand genuine signatures and can produce a convincing new one. "
-            "Convincing is the goal; it is still not anyone's actual signature."
+            'A sampling recipe describes how to produce more rows with selected properties of a reference table. Some recipes resample existing rows, while others generate new combinations.'
         ),
         steps=(
             "Split your data first, so training and holdout are already separate.",
@@ -35,18 +32,28 @@ SYNTHETIC_BEGINNER: dict[str, BeginnerLayer] = _index(
         myths=(
             (
                 "Synthetic data can only help, since it is not real.",
-                "It is generated from a model of your training data. If that model is wrong, you are training on confident fiction.",
+                "Generated rows reflect the generator's assumptions and errors. Measure whether adding them improves performance on real held-out data.",
             ),
             (
                 "Fitting the generator on everything gives a better generator.",
-                "It gives one that has seen your test set. Every downstream number then flatters you, and nothing you report is trustworthy.",
+                "Using test rows to fit the generator compromises the independence of subsequent test scores. Fit the generator on training rows only.",
             ),
         ),
         example=(
-            "session.split(test_size=0.2, random_state=0)",
+            'import pandas as pd',
+            'from sklearn.datasets import make_classification',
+            'from sklearn.linear_model import LogisticRegression',
+            'from buildml import Session',
+            '',
+            'x, y = make_classification(n_samples=240, n_features=6, n_informative=4, random_state=0)',
+            "frame = pd.DataFrame(x, columns=[f'x{i}' for i in range(6)])",
+            "frame['target'] = y",
+            "session = Session.ingest(frame).set_roles({**{f'x{i}': 'feature' for i in range(6)}, 'target': 'target'})",
+            'session.split(test_size=0.2, validation_size=0.2, stratify=True, random_state=0)',
             "session.synthetic.fit(method='gaussian_copula', random_state=0)",
-            "extra = session.synthetic.sample(n=500)",
-            "session.synthetic.evaluate(mode='tstr', partition='test')",
+            'sample = session.synthetic.sample(n=200, random_state=1)',
+            'print(sample.frame.shape)',
+            "print(session.synthetic.evaluate(mode='tstr', partition='test').metrics)",
         ),
         check=(
             "Did you split before fitting the synthesizer?",
@@ -67,13 +74,7 @@ SYNTHETIC_BEGINNER: dict[str, BeginnerLayer] = _index(
             "Adjusting the guest list so the room is balanced, versus hiring a company that can produce "
             "convincing extras on demand. Both change who is in the room; only one is a reusable service."
         ),
-        steps=(
-            "Ask what you are trying to fix.",
-            "Too few rows of the rare class, and you just want a fair classifier? Use `resample`.",
-            "Want new rows on demand, saved as an artifact, possibly for sharing? Use `session.synthetic.fit`.",
-            "`resample` mutates training membership directly and persists nothing.",
-            "The synthetic path returns a frame by default and can save a bundle.",
-        ),
+        steps=('Ask what you are trying to fix.', 'To adjust class proportions in the current training set, use `resample` and evaluate the resulting classifier on unchanged holdout data.', 'Want new rows on demand, saved as an artifact, possibly for sharing? Use `session.synthetic.fit`.', '`resample` changes training membership and records workflow history; it does not create a reusable generator bundle.', 'The synthetic path returns a frame by default and can save a bundle.'),
         use=(
             "`resample` for the specific, common problem of class imbalance before fitting.",
             "`session.synthetic.fit` when generation itself is the deliverable.",
@@ -82,20 +83,29 @@ SYNTHETIC_BEGINNER: dict[str, BeginnerLayer] = _index(
             "Do not use `resample` as a general synthetic-data product; it has no bundle and no evaluation surface.",
             "Do not use the synthetic path purely to balance classes; `resample` is simpler and purpose-built.",
         ),
-        myths=(
-            (
-                "SMOTE is SMOTE, so the two are interchangeable.",
-                "The algorithm overlaps; the product surface does not. One rebalances training membership; the other produces a saveable generator plan with disclosures and evaluation.",
-            ),
-            (
-                "Resample saves a generator I can reuse later.",
-                "It does not. It changes the current training rows and that is all. If you need reuse, you need a synthetic bundle.",
-            ),
-        ),
+        myths=(('SMOTE is SMOTE, so the two are interchangeable.', 'The algorithm overlaps; the product surface does not. One rebalances training membership; the other produces a saveable generator plan with disclosures and evaluation.'), ('Resample saves a generator I can reuse later.', 'It does not. It changes the current training rows and records the operation in session history. If you need reuse, you need a synthetic bundle.')),
         example=(
-            "session.resample(sampler='smote')            # imbalance fix",
-            "session.synthetic.fit(method='smote')      # reusable generator",
-            "session.synthetic.save_bundle('artifacts/gen')",
+            '# Install first: pip install "buildml[imbalanced]"',
+            'import pandas as pd',
+            'from sklearn.datasets import make_classification',
+            'from sklearn.linear_model import LogisticRegression',
+            'from buildml import Session',
+            '',
+            'x, y = make_classification(n_samples=240, n_features=6, n_informative=4, weights=[0.8, 0.2], random_state=0)',
+            "frame = pd.DataFrame(x, columns=[f'x{i}' for i in range(6)])",
+            "frame['target'] = y",
+            "session = Session.ingest(frame).set_roles({**{f'x{i}': 'feature' for i in range(6)}, 'target': 'target'})",
+            'session.split(test_size=0.2, validation_size=0.2, stratify=True, random_state=0)',
+            '# In-place class balancing for a training run:',
+            'original_split = session.split_plan',
+            "session.resample(sampler='smote')",
+            '# Use the original split in a separate Session to fit a reusable generator.',
+            'generator = Session.ingest(frame).set_roles(session.dataset.roles)',
+            'generator.inject_split(train_indices=original_split.train_indices,',
+            '                       test_indices=original_split.test_indices,',
+            '                       validation_indices=original_split.validation_indices)',
+            "generator.synthetic.fit(method='smote', random_state=0)",
+            'print(generator.synthetic.sample(n=50, random_state=1).frame.shape)',
         ),
         check=(
             "Do you need the generated rows once, or repeatedly?",
@@ -131,20 +141,21 @@ SYNTHETIC_BEGINNER: dict[str, BeginnerLayer] = _index(
             "Do not tune generator settings repeatedly against test TSTR; you will overfit the test set through the generator.",
             "Do not report fidelity as evidence of privacy. It measures similarity, and high similarity is arguably the opposite of private.",
         ),
-        myths=(
-            (
-                "High fidelity means the synthetic data is useful.",
-                "A generator can match every marginal distribution perfectly and destroy the relationships a model needs. TSTR catches that; fidelity does not.",
-            ),
-            (
-                "Good TSTR means the synthetic data is safe to release.",
-                "Utility and privacy are unrelated axes. A generator that memorized your training rows would score wonderfully on TSTR.",
-            ),
-        ),
+        myths=(('High fidelity means the synthetic data is useful.', 'Marginal distributions can match while predictive relationships differ. Fidelity summaries inspect selected statistics; TSTR evaluates utility for a chosen downstream task.'), ('Good TSTR means the synthetic data is safe to release.', 'Utility and privacy are unrelated axes. A generator that reproduces training rows may retain useful predictive information while exposing those rows. TSTR does not assess that privacy risk.')),
         example=(
-            "session.synthetic.evaluate(mode='fidelity', partition='test')",
-            "session.synthetic.evaluate(mode='tstr', partition='test')",
-            "# compare TSTR against the real-data baseline before drawing conclusions",
+            'import pandas as pd',
+            'from sklearn.datasets import make_classification',
+            'from sklearn.linear_model import LogisticRegression',
+            'from buildml import Session',
+            '',
+            'x, y = make_classification(n_samples=240, n_features=6, n_informative=4, random_state=0)',
+            "frame = pd.DataFrame(x, columns=[f'x{i}' for i in range(6)])",
+            "frame['target'] = y",
+            "session = Session.ingest(frame).set_roles({**{f'x{i}': 'feature' for i in range(6)}, 'target': 'target'})",
+            'session.split(test_size=0.2, validation_size=0.2, stratify=True, random_state=0)',
+            "session.synthetic.fit(method='gaussian_copula', random_state=0)",
+            "print(session.synthetic.evaluate(mode='fidelity', partition='test', eval_backend='builtin').metrics)",
+            "print(session.synthetic.evaluate(mode='tstr', partition='test').metrics)",
         ),
         check=(
             "How much worse is TSTR than training on real data?",
@@ -165,21 +176,12 @@ SYNTHETIC_BEGINNER: dict[str, BeginnerLayer] = _index(
             "Stamping every reproduction in the archive. It can sit on the same shelf as the originals "
             "precisely because nobody can mistake it for one."
         ),
-        steps=(
-            "`session.synthetic.sample(n=...)` returns a frame; `merge_mode` defaults to none.",
-            "With `merge_mode='extend_train'`, the rows are appended to training only.",
-            "A provenance column (`_synthetic` by default) marks the generated rows.",
-            "That column gets the `ignore` role, so no model can accidentally learn from the marker itself.",
-            "Existing fit results are cleared, because the training set they were fitted on no longer exists.",
-        ),
+        steps=('`session.synthetic.sample(n=...)` returns a frame; `merge_mode` defaults to none.', "With `merge_mode='extend_train'`, the rows are appended to training only.", 'A provenance column (`_synthetic` by default) marks the generated rows.', 'That column gets the `ignore` role, so standard role-based feature selection excludes it.', 'Existing fit results are cleared, because the training set they were fitted on no longer exists.'),
         use=(
             "When you want to train on real plus synthetic rows and still be able to separate them afterwards.",
             "When an audit will ask which rows in this training set were real.",
         ),
-        avoid=(
-            "Do not merge into validation or test: BuildML will not do it, and neither should you by hand.",
-            "Do not reuse an existing column name for provenance; you will silently overwrite real data.",
-        ),
+        avoid=('Do not merge into validation or test: BuildML will not do it, and neither should you by hand.', 'Choose a new provenance column name. BuildML rejects a name already present in the dataset.'),
         myths=(
             (
                 "The provenance column is just documentation.",
@@ -191,10 +193,20 @@ SYNTHETIC_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.synthetic.sample(",
-            "    n=200, merge_mode='extend_train', provenance_column='_synthetic',",
-            ")",
-            "session.fit(LogisticRegression(max_iter=1000))  # refit on the extended training set",
+            'import pandas as pd',
+            'from sklearn.datasets import make_classification',
+            'from sklearn.linear_model import LogisticRegression',
+            'from buildml import Session',
+            '',
+            'x, y = make_classification(n_samples=240, n_features=6, n_informative=4, random_state=0)',
+            "frame = pd.DataFrame(x, columns=[f'x{i}' for i in range(6)])",
+            "frame['target'] = y",
+            "session = Session.ingest(frame).set_roles({**{f'x{i}': 'feature' for i in range(6)}, 'target': 'target'})",
+            'session.split(test_size=0.2, validation_size=0.2, stratify=True, random_state=0)',
+            "session.synthetic.fit(method='gaussian_copula', random_state=0)",
+            "session.synthetic.sample(n=100, merge_mode='extend_train', provenance_column='_synthetic', random_state=1)",
+            "session.fit(LogisticRegression(max_iter=500), task='classification')",
+            "print(session.evaluate(partition='test').metrics)",
         ),
         check=(
             "What fraction of your training rows are now synthetic?",
@@ -207,21 +219,13 @@ SYNTHETIC_BEGINNER: dict[str, BeginnerLayer] = _index(
     _layer(
         "synthetic-privacy-limits",
         plain=(
-            "Synthetic does not mean anonymous. BuildML's synthesizers are built for utility, not privacy. "
-            "Bootstrap sampling in particular can reproduce training rows almost exactly, and copulas and "
-            "SMOTE can memorize structure that identifies individuals."
+            "Synthetic does not mean anonymous. BuildML's synthesizers are built for utility, not privacy. Bootstrap sampling can reproduce training rows exactly, and copulas and SMOTE can memorize structure that identifies individuals."
         ),
         analogy=(
             "Changing everyone's name in a report does not anonymize it when the report still says 'the "
             "only left-handed pilot in the Reykjavik office'."
         ),
-        steps=(
-            "Understand what your method does: bootstrap resamples real rows, so outputs can be near-duplicates.",
-            "Copulas and SMOTE build from real values and can still reproduce rare combinations.",
-            "None of these provide a formal privacy guarantee: no calibrated noise, no privacy accounting.",
-            "Read the disclosures attached to fitting, sampling, and the bundle.",
-            "Before sharing anything outside your organization, run an actual privacy review.",
-        ),
+        steps=('Understand what your method does: bootstrap resamples real rows, so outputs can be exact duplicates.', 'Copulas and SMOTE build from real values and can still reproduce rare combinations.', 'None of these provide a formal privacy guarantee: no calibrated noise, no privacy accounting.', 'Read the disclosures attached to fitting, sampling, and the bundle.', 'Before sharing anything outside your organization, run an actual privacy review.'),
         use=(
             "Synthetic data for augmentation, testing, and internal development.",
             "A dedicated differential-privacy tool when you need a real privacy guarantee.",
@@ -241,9 +245,22 @@ SYNTHETIC_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "plan = session.synthetic.fit(method='bootstrap')",
-            "for note in plan.disclosures: print(note)",
-            "# keep real identifiers out of anything you share",
+            'import pandas as pd',
+            'from sklearn.datasets import make_classification',
+            'from sklearn.linear_model import LogisticRegression',
+            'from buildml import Session',
+            '',
+            'x, y = make_classification(n_samples=240, n_features=6, n_informative=4, random_state=0)',
+            "frame = pd.DataFrame(x, columns=[f'x{i}' for i in range(6)])",
+            "frame['target'] = y",
+            "session = Session.ingest(frame).set_roles({**{f'x{i}': 'feature' for i in range(6)}, 'target': 'target'})",
+            'session.split(test_size=0.2, validation_size=0.2, stratify=True, random_state=0)',
+            "result = session.synthetic.fit(method='bootstrap', smooth_sigma=0.0, random_state=0)",
+            'for note in result.disclosures:',
+            '    print(note)',
+            'sample = session.synthetic.sample(n=10, random_state=1)',
+            'print(sample.frame.shape)',
+            '# With zero smoothing, bootstrap copies training rows; it does not anonymize them.',
         ),
         check=(
             "Would any generated row be recognizable to someone who knows the underlying population?",
@@ -289,10 +306,27 @@ SYNTHETIC_BEGINNER: dict[str, BeginnerLayer] = _index(
             ),
         ),
         example=(
-            "session.synthetic.fit(method='gaussian_copula')",
-            "session.synthetic.save_bundle('artifacts/customer-gen')",
-            "other = Session().synthetic.load_bundle('artifacts/customer-gen', trusted=True)",
-            "other.synthetic.sample(n=1000)",
+            'import pandas as pd',
+            'from sklearn.datasets import make_classification',
+            'from sklearn.linear_model import LogisticRegression',
+            'from buildml import Session',
+            '',
+            'x, y = make_classification(n_samples=240, n_features=6, n_informative=4, random_state=0)',
+            "frame = pd.DataFrame(x, columns=[f'x{i}' for i in range(6)])",
+            "frame['target'] = y",
+            "session = Session.ingest(frame).set_roles({**{f'x{i}': 'feature' for i in range(6)}, 'target': 'target'})",
+            'session.split(test_size=0.2, validation_size=0.2, stratify=True, random_state=0)',
+            "session.synthetic.fit(method='gaussian_copula', random_state=0)",
+            'from tempfile import TemporaryDirectory',
+            '',
+            'with TemporaryDirectory() as directory:',
+            "    session.synthetic.save_bundle(directory + '/generator')",
+            '    other = Session.ingest(frame).set_roles(session.dataset.roles)',
+            '    other.inject_split(train_indices=session.split_plan.train_indices,',
+            '                       test_indices=session.split_plan.test_indices,',
+            '                       validation_indices=session.split_plan.validation_indices)',
+            "    other.synthetic.load_bundle(directory + '/generator', trusted=True)",
+            '    print(other.synthetic.sample(n=50, random_state=1).frame.shape)',
         ),
         check=(
             "Does the bundle directory contain both the metadata and the generator state?",

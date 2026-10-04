@@ -4,12 +4,9 @@ The supporting layer between raw frames and case memory: resolving which columns
 are features, building the numeric matrix, encoding labels, fitting the scaling
 statistics, and computing the holdout metrics.
 
-Two rules run through all of it. Anything fitted is fitted on training rows and
-applied everywhere else: standardisation, ranges, label encodings: because a
-statistic recomputed on holdout data would let that data shape the notion of
-similarity. And nulls are refused rather than imputed or dropped. There is no
-defensible distance between a missing value and a present one, and silently
-dropping rows changes what a metric's denominator means without saying so.
+Scaling statistics and label encodings are fitted on training rows and reused
+for other partitions. Numeric feature validation rejects nulls, so callers
+must choose and apply a missing-data strategy before fitting.
 
 See Also
 --------
@@ -79,10 +76,8 @@ def matrix_from_frame(frame: pd.DataFrame, columns: list[str]) -> np.ndarray:
 
     Notes
     -----
-    **Nulls are refused rather than filled.** A missing value has no distance to
-    anything, and substituting a mean would place the row at the centre of the
-    data: where it would retrieve neighbours it has no relationship to. Impute
-    deliberately, before fitting.
+    This helper does not impute or drop rows. Choose a missing-data strategy
+    before fitting; imputation changes the distances used to retrieve cases.
     """
     try:
         return _matrix_from_frame(frame, columns)
@@ -99,6 +94,7 @@ def resolve_cbr_columns(
     reduce_plan: Any | None = None,
     prefer_reduce_components: bool = True,
     target_column: str,
+    allow_empty: bool = False,
 ) -> tuple[list[str], bool, list[str]]:
     """Decide which numeric columns define similarity.
 
@@ -107,12 +103,11 @@ def resolve_cbr_columns(
     available and preferred, its components are used instead of the raw
     features.
 
-    That last choice is worth understanding rather than accepting. Distance
-    degrades badly in high dimensions: as columns multiply, every pair of
-    points drifts toward the same distance and "nearest" stops meaning much.
-    Reducing first restores a useful geometry, at the cost that neighbours are
-    now neighbours under the projection, and the components are not columns
-    anyone can interpret.
+    In high-dimensional data, distances can become less distinguishable.
+    Reduction changes the geometry used for retrieval and may discard useful
+    information. Compare retrieval quality on validation data before choosing
+    a projection; its components do not generally correspond to single input
+    columns.
 
     Parameters
     ----------
@@ -128,6 +123,8 @@ def resolve_cbr_columns(
         Whether to prefer those components when available.
     target_column:
         Excluded from features.
+    allow_empty:
+        Permit text-only embedding retrieval when no numeric features are inferred.
 
     Returns
     -------
@@ -149,6 +146,7 @@ def resolve_cbr_columns(
         reduce_plan=reduce_plan,
         prefer_reduce_components=prefer_reduce_components,
         target_column=target_column,
+        allow_empty=allow_empty,
     )
     out = [note.replace("semi-supervised", "case-based reasoning") for note in disclosures]
     return cols, used_reduce, out
@@ -537,6 +535,7 @@ def standardize_fit(x: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     --------
     A wide-ranging column and a narrow one end up comparable:
 
+    >>> from buildml.cbr.features import standardize_fit
     >>> import numpy as np
     >>> x = np.array([[10.0, 1.0], [20.0, 2.0], [30.0, 3.0]])
     >>> z, mean, scale = standardize_fit(x)
@@ -596,6 +595,8 @@ def standardize_apply(
     A query at the training mean lands at the origin; one beyond the training
     range lands outside it:
 
+    >>> from buildml.cbr.features import standardize_apply
+    >>> from buildml.cbr.features import standardize_fit
     >>> import numpy as np
     >>> _, mean, scale = standardize_fit(np.array([[10.0], [20.0], [30.0]]))
     >>> standardize_apply(np.array([[20.0], [50.0]]), mean, scale).round(4).tolist()
@@ -643,6 +644,7 @@ def numeric_ranges(x: np.ndarray) -> np.ndarray:
 
     Examples
     --------
+    >>> from buildml.cbr.features import numeric_ranges
     >>> import numpy as np
     >>> numeric_ranges(np.array([[1.0, 100.0], [4.0, 700.0]])).tolist()
     [3.0, 600.0]

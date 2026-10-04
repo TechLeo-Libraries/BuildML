@@ -106,6 +106,7 @@ def rl_capability_matrix() -> dict[str, Any]:
 
     Examples
     --------
+    >>> from buildml.rl.catalog import rl_capability_matrix
     >>> matrix = rl_capability_matrix()
     >>> matrix["rl_backends"]["sklearn"]["available"]
     True
@@ -178,7 +179,7 @@ def rl_capability_matrix() -> dict[str, Any]:
                 "algorithms": list(SB3_ALGORITHMS),
                 "modality": "gymnasium",
                 "notes": (
-                    "Stable-Baselines3 PPO/DQN/A2C on honest small Gymnasium sims "
+                    "Stable-Baselines3 PPO/DQN/A2C on small Gymnasium environments "
                     "(buildml[rl-industry]). Not robotics/AV/multi-agent."
                 ),
             },
@@ -299,6 +300,7 @@ def list_imitation_methods(
 
     Examples
     --------
+    >>> from buildml.rl.catalog import list_imitation_methods
     >>> list_imitation_methods(backend="sklearn")
     ['logistic_regression', 'hist_gradient_boosting', 'ridge', 'hist_gradient_boosting_regressor']
 
@@ -349,6 +351,7 @@ def list_rl_algorithms(
 
     Examples
     --------
+    >>> from buildml.rl.catalog import list_rl_algorithms
     >>> list_rl_algorithms(backend="sklearn")
     ['linucb', 'epsilon_greedy', 'softmax']
     >>> list_rl_algorithms(backend="sklearn", mode="gym_reinforce")

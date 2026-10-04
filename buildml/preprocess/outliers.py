@@ -214,11 +214,15 @@ def fit_outlier_plan(
 
     Examples
     --------
-    >>> plan = fit_outlier_plan(  # doctest: +SKIP
-    ...     dataset, split_plan, method="iqr", action="detect"
-    ... )
-    >>> plan.n_flagged_train  # doctest: +SKIP
-    17
+    >>> import numpy as np
+    >>> import pandas as pd
+    >>> from buildml import Session
+    >>> frame = pd.DataFrame({"age": np.arange(40, dtype=float), "income": np.arange(40, dtype=float) ** 2, "target": [0, 1] * 20})
+    >>> session = Session.ingest(frame).set_roles({"target": "target"})
+    >>> _ = session.split(test_size=0.25, stratify=True, random_state=42)
+    >>> dataset, split_plan = session.dataset, session.split_plan
+    >>> from buildml.preprocess.outliers import fit_outlier_plan
+    >>> plan = fit_outlier_plan(dataset, split_plan, method="iqr", action="detect")
 
     See Also
     --------
