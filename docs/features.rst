@@ -1,7 +1,7 @@
 Current capabilities
 ====================
 
-BuildML 2.6.3 centers on :class:`buildml.Session`. Classical classification and regression
+BuildML 2.6.4 centers on :class:`buildml.Session`. Classical classification and regression
 are available in the core installation. Other domains use the same Session
 and operation history, with additional dependencies where required.
 
