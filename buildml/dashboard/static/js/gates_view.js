@@ -294,7 +294,7 @@ export function renderGatesView(root, data, opts = {}) {
       : `${groups.reduce((n, g) => n + g.rows.length, 0)} of ${counts.total ?? 0} gates`;
 
   root.innerHTML = `
-    <p class="lead">The cockpit reports what this frame contains and the academy explains why it matters. This sheet is the second pass: every question that must be settled before the frame is modelled, with the status the session's own numbers support — and, deliberately, the questions no dataset can answer for you. Click a gate to open the learning sidebar.</p>
+    <p class="lead">Review these data and modelling checks alongside the cockpit findings. Statuses reflect the available report evidence, and some checks require human judgment. This list does not cover every requirement for your project. Click a gate for its explanation and next steps.</p>
     <div class="gate-notice">${escapeHtml(
       data.ephemeral_notice ||
         "Human marks stay in this browser tab only and are discarded on refresh.",
@@ -307,22 +307,22 @@ export function renderGatesView(root, data, opts = {}) {
         <div class="om-kick" style="margin-top:var(--space-2)">settled by the frame</div>
         <div class="kpi__note" style="margin-top:4px">${escapeHtml(data.settled_pct)} of ${escapeHtml(
           counts.answerable,
-        )} gates this dataset can answer on its own.</div>
+        )} applicable gates, including those requiring human judgment.</div>
       </div>
       <div class="kpi">
         <div class="kpi__value">${escapeHtml(counts.open)}</div>
         <div class="om-kick" style="margin-top:var(--space-2)">open and measurable</div>
-        <div class="kpi__note" style="margin-top:4px">Each one names the number that would close it.</div>
+        <div class="kpi__note" style="margin-top:4px">Review the evidence and the check needed to resolve each gate.</div>
       </div>
       <div class="kpi">
         <div class="kpi__value">${escapeHtml(counts.human)}</div>
         <div class="om-kick" style="margin-top:var(--space-2)">needs a human judgment</div>
-        <div class="kpi__note" style="margin-top:4px">No dataset answers these; a person must write the answer down.</div>
+        <div class="kpi__note" style="margin-top:4px">These require context or decisions beyond this report. Record the outcome separately.</div>
       </div>
       <div class="kpi">
         <div class="kpi__value">${escapeHtml(counts.na)}</div>
         <div class="om-kick" style="margin-top:var(--space-2)">not applicable here</div>
-        <div class="kpi__note" style="margin-top:4px">Kept visible so the next frame does not inherit the silence.</div>
+        <div class="kpi__note" style="margin-top:4px">Review applicability again when the data or modelling task changes.</div>
       </div>
     </section>
 

@@ -27,6 +27,11 @@ from the current release; use the installation guide for current requirements.
   and boolean features as discrete variables.
 - Giotto retains requested homology dimensions when their diagrams are empty,
   keeping feature values and names aligned between training and prediction.
+- PuLP optimization accepts both legacy status codes and PuLP 4 solver results,
+  while continuing to require a proven optimal solution.
+- Dashboard tables identify missing-value percentages, role charts account for
+  undeclared columns, and navigation safely handles charts still loading.
+  Readiness gates distinguish sampling from unrelated report warnings.
 - Text-only CBR embeddings no longer require an unrelated numeric feature.
   Embedding and Torch retrieval use exact search when ANN is disabled on Windows.
 - SDMetrics accepts SDV metadata objects, and CTGAN rejects invalid batch sizes

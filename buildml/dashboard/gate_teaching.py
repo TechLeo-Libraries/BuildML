@@ -28,8 +28,8 @@ STATUS_MEANINGS: dict[str, str] = {
     ),
     "na": (
         "Not applicable - the question does not arise for this frame (for "
-        "example no target, no time column, or no gappy columns). Kept visible "
-        "so the next extract does not inherit silence."
+        "example no target, no time column, or no missing values). Review "
+        "applicability again when the data or modelling task changes."
     ),
     "session_mark": (
         "“Mark for this session” is a local reminder in this browser tab. "

@@ -446,7 +446,7 @@ def build_gate_context(report: dict[str, Any]) -> dict[str, Any]:
         "rows": analysis_rows,
         "rowsTotal": n_rows,
         "colCount": len(columns) or int(overview.get("n_columns") or 0),
-        "sampled": analysis_rows < n_rows or bool(warnings),
+        "sampled": analysis_rows < n_rows,
         "idLike": [str(x) for x in (quality.get("id_like_columns") or [])],
         "missingCells": int(quality.get("missing_cell_count") or 0),
         "missing": missing_list,
@@ -559,7 +559,7 @@ def _r00_3(c: dict[str, Any]) -> dict[str, str]:
         "status": HUMAN,
         "evidence": (
             f"{_fmt_n(c['rows'])} of {_fmt_n(c['rowsTotal'])} rows examined{sampled}; "
-            "upstream filters are invisible here."
+            "filters applied before ingestion are not recorded in this report."
         ),
         "closes": "The extract query, the window, and what was excluded.",
     }

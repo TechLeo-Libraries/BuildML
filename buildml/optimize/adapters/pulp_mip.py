@@ -37,6 +37,22 @@ def _pulp_selected(pulp: Any, variable: Any) -> bool:
     return raw is not None and float(raw) > 0.5
 
 
+def _require_optimal_status(pulp: Any, result: Any) -> str:
+    """Validate legacy integer statuses or PuLP 4 solve statistics."""
+    if hasattr(pulp, "LpSolveStatus"):
+        status = result.status
+        label = status.name
+        if label == "NotSolved":
+            label = "Not Solved"
+        optimal = status == pulp.LpSolveStatus.Optimal and result.has_solution
+    else:
+        label = pulp.LpStatus.get(result, f"Unknown ({result})")
+        optimal = result == pulp.LpStatusOptimal
+    if not optimal:
+        raise ValidationError(f"PuLP knapsack MIP failed with status {label!r}.")
+    return label
+
+
 def select_knapsack_pulp(
     values: np.ndarray,
     costs: np.ndarray,
@@ -122,11 +138,7 @@ def select_knapsack_pulp(
         pulp.lpSum(float(costs[i]) * x_vars[int(i)] for i in eligible.tolist())
         <= float(budget)
     )
-    status = prob.solve(_cbc_solver(pulp))
-    if pulp.LpStatus[status] != "Optimal":
-        raise ValidationError(
-            f"PuLP knapsack MIP failed with status {pulp.LpStatus[status]!r}."
-        )
+    status = _require_optimal_status(pulp, prob.solve(_cbc_solver(pulp)))
 
     chosen = [
         int(i)
@@ -145,5 +157,5 @@ def select_knapsack_pulp(
         "solver_used": "pulp_mip",
         "approximate": False,
         "backend": "pulp",
-        "status": pulp.LpStatus[status],
+        "status": status,
     }
