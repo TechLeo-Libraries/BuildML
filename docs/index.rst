@@ -13,7 +13,7 @@ Cross-validation can fit preprocessing separately within each fold. Teaching
 methods and reports explain the operations recorded in the Session.
 
 Install with ``pip install buildml`` (Python 3.10 through 3.13). This repo
-contains BuildML 2.6.3. The install command selects the latest published
+contains BuildML 2.6.4. The install command selects the latest published
 stable release from PyPI.
 
 Start here

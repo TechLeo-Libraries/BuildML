@@ -1,7 +1,7 @@
 # BuildML 2.x API stability policy
 
-BuildML **2.6.3** continues the stable Session 2.x line (first stable was
-**2.4.0**). This repo is **2.6.3**. `pip install buildml` selects the latest
+BuildML **2.6.4** continues the stable Session 2.x line (first stable was
+**2.4.0**). This repo is **2.6.4**. `pip install buildml` selects the latest
 published stable release on [PyPI](https://pypi.org/project/buildml/). Wheels
 **2.4.0a3–2.6.0** omit `operation_index.json` and cannot import; install
 **2.6.1 or later**. This policy describes supported APIs,
