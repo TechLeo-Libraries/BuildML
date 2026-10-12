@@ -20,11 +20,14 @@ def _frame(labels):
 
 @pytest.mark.parametrize('labels', [(3, 7), ('negative', 'positive')])
 @pytest.mark.parametrize('method', ['fedavg', 'fedprox'])
-def test_native_federated_classification_decodes_noncanonical_labels(labels, method):
+@pytest.mark.parametrize("backend", ["native", "flower"])
+def test_federated_classification_decodes_noncanonical_labels(labels, method, backend):
+    if backend == "flower":
+        pytest.importorskip("flwr")
     frame = _frame(labels)
     session = Session.ingest(frame).set_roles({'x': 'feature', 'z': 'feature', 'y': 'target', 'client': 'group'}).split(test_size=.2, validation_size=.2, random_state=5)
     before = session.partition('test').copy()
-    session.federated.fit(backend='native', method=method, mu=.05 if method == 'fedprox' else 0, n_rounds=2, local_epochs=1, client_column='client', prefer_reduce_components=False)
+    session.federated.fit(backend=backend, method=method, mu=.05 if method == 'fedprox' else 0, n_rounds=2, local_epochs=1, client_column='client', prefer_reduce_components=False)
     result = session.federated.evaluate(partition='test')
     assert result.metrics['accuracy'] >= .9
     prediction = session.federated.predict(partition='test')

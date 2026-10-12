@@ -347,10 +347,10 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Install package with rag + lean test deps
+      - name: Install package with rag/ssl + lean test deps
         run: |
           python -m pip install --upgrade pip
-          pip install -e ".[rag]"
+          pip install -e ".[rag,ssl]"
           pip install pytest pytest-cov ruff
 
       - name: Core import smoke without relying on RAG internals
@@ -365,6 +365,13 @@ jobs:
             tests/integration/test_rag_smoke.py \
             tests/integration/test_rag_alpha_smoke.py \
             -q
+
+      - name: Real local encoder checkpoints without downloads
+        env:
+          HF_HUB_OFFLINE: "1"
+          TRANSFORMERS_OFFLINE: "1"
+          TOKENIZERS_PARALLELISM: "false"
+        run: pytest tests/unit/test_offline_local_encoder_contracts.py -q
 
       - name: RAG alpha-gate smoke (explicit)
         run: pytest tests/integration/test_rag_alpha_smoke.py -q

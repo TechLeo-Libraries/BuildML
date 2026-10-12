@@ -54,7 +54,7 @@ automl-industry = [
   "catboost>=1.2",
 ]
 torch = ["torch>=2.2", "pillow>=9.0", "soundfile>=0.12"]
-ssl = ["buildml[torch]", "sentence-transformers>=2.2", "transformers>=4.36"]
+ssl = ["buildml[torch]", "sentence-transformers[train]>=2.2", "transformers>=4.36"]
 dl = ["buildml[torch]"]
 audio = ["buildml[torch]"]
 speech = ["buildml[torch]", "transformers>=4.36"]
@@ -252,7 +252,8 @@ all-classical = ["buildml[engines,imbalanced,eda,excel,dashboard,optuna,automl]"
 docs = ["sphinx", "sphinx-rtd-theme", "myst-parser"]
 dev = [
   "pytest>=7.4",
-  "pytest-cov>=4.1",
+  "pytest-cov>=7.0",
+  "coverage[toml]>=7.10",
   "ruff>=0.4",
   "mypy>=1.8",
   "build>=1.0",
@@ -302,6 +303,9 @@ addopts = "--basetemp=tests/.pytest_tmp"
 # lower to silence a regression. Measure with scripts/run_full_coverage.py
 # or the Linux CI pytest --cov=buildml job. Omit legacy and generated teaching artifacts.
 [tool.coverage.run]
+patch = ["subprocess", "_exit"]
+concurrency = ["multiprocessing"]
+sigterm = true
 branch = false
 source = ["buildml"]
 omit = [

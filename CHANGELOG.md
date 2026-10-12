@@ -14,6 +14,11 @@ from the current release; use the installation guide for current requirements.
 
 ### Fixed
 
+- AutoML leaderboards rank loss metrics in ascending order and unavailable
+  scores last, with score gaps measured in the correct direction.
+- Text SSL installs training dependencies, respects the requested device and
+  leaves unavailable final training losses unset instead of reporting zero.
+
 - Federated classification retains encoded training classes and decodes arbitrary
   original labels correctly. Client evaluation restores classifier metadata.
 - Ensemble contribution reports decode internally encoded base labels; binary
@@ -57,6 +62,13 @@ from the current release; use the installation guide for current requirements.
 - BM25 retrieval reuses its sparse index until the corpus or parameters change.
 
 ### Added
+
+- Real locally generated transformer checkpoints verify pooling, embedding
+  widths, persistence and weight updates without model downloads.
+- Independent graph-ranking and adjacency oracles and evolutionary search
+  budget checks cover frozen prediction and held-out data boundaries.
+- Coverage measures spawned Python and multiprocessing workers using the
+  supported coverage.py instrumentation, with existing exclusions retained.
 
 - Agent/direct workflow parity, holdout-preservation and bundle-trust regression
   checks across native fitting domains; bounded latency sampling for longer soaks.
