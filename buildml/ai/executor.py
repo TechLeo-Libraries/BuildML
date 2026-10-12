@@ -531,6 +531,13 @@ def _dispatch_tool(
 ) -> tuple[Any, tuple[str, ...]]:
     """Dispatch a tool call to the appropriate Session method."""
     state_changes: list[str] = []
+    # Truthiness coercion must not turn JSON strings such as "false" into
+    # permission to deserialize a bundle or tune on the test partition.
+    properties = (getattr(spec, "parameters", {}) or {}).get("properties", {})
+    for key, schema in properties.items():
+        if schema.get("type") == "boolean" and key in call.arguments:
+            if not isinstance(call.arguments[key], bool):
+                raise ValidationError(f"{key} must be a JSON boolean, not {type(call.arguments[key]).__name__}.")
 
     if call.tool_name == "set_roles":
         mapping = call.arguments.get("mapping", {})
@@ -833,6 +840,8 @@ def _dispatch_tool(
             "random_state": 0,
         }
         families = call.arguments.get("families")
+        if "backend" in call.arguments:
+            kwargs["backend"] = call.arguments["backend"]
         if families is not None:
             kwargs["families"] = list(families)
         result = session.run_automl(**kwargs)
@@ -1626,6 +1635,7 @@ def _dispatch_tool(
         kwargs = {
             key: call.arguments[key]
             for key in (
+                "backend",
                 "source",
                 "task",
                 "max_depth",
@@ -1665,6 +1675,7 @@ def _dispatch_tool(
         kwargs = {
             key: call.arguments[key]
             for key in (
+                "backend",
                 "mode",
                 "base_estimator",
                 "task",
@@ -2017,6 +2028,7 @@ def _dispatch_tool(
         kwargs = {
             key: call.arguments[key]
             for key in (
+                "backend",
                 "task",
                 "estimator",
                 "action_column",
@@ -2220,6 +2232,7 @@ def _dispatch_tool(
         kwargs = {
             key: call.arguments[key]
             for key in (
+                "backend",
                 "method",
                 "user_column",
                 "item_column",
@@ -2280,6 +2293,7 @@ def _dispatch_tool(
         kwargs = {
             key: call.arguments[key]
             for key in (
+                "backend",
                 "method",
                 "query_column",
                 "item_column",
@@ -2306,7 +2320,7 @@ def _dispatch_tool(
     elif call.tool_name == "rank":
         kwargs = {
             key: call.arguments[key]
-            for key in ("partition", "k")
+            for key in ("partition", "k", "backend")
             if key in call.arguments
         }
         result = session.rank(**kwargs)
@@ -2315,7 +2329,7 @@ def _dispatch_tool(
     elif call.tool_name == "evaluate_ranker":
         kwargs = {
             key: call.arguments[key]
-            for key in ("partition", "k")
+            for key in ("partition", "k", "backend")
             if key in call.arguments
         }
         result = session.evaluate_ranker(**kwargs)

@@ -5,6 +5,7 @@ import argparse
 import concurrent.futures
 import json
 import os
+import random
 import subprocess
 import sys
 import tempfile
@@ -141,8 +142,9 @@ def soak_probe(seconds: float) -> dict:
         before = memory_mib()
         deadline = time.monotonic() + seconds
 
-        def requests():
-            count, errors, latencies = 0, [], []
+        def requests(worker_id):
+            count, error_count, errors, latencies = 0, 0, [], []
+            sampler = random.Random(42 + worker_id)
             with TestClient(app) as client:
                 assert client.post("/predict", json=payload).status_code == 401
                 while time.monotonic() < deadline:
@@ -150,18 +152,32 @@ def soak_probe(seconds: float) -> dict:
                     response = client.post("/predict", json=payload, headers=headers)
                     body = response.json()
                     if response.status_code != 200 or body.get("predictions") != expected:
-                        errors.append({"code": response.status_code, "body": body})
+                        error_count += 1
+                        if len(errors) < 10:
+                            errors.append({"code": response.status_code, "body": body})
                     count += 1
-                    latencies.append(time.perf_counter() - started)
-            return count, errors, latencies
+                    latency = time.perf_counter() - started
+                    if len(latencies) < 2048:
+                        latencies.append(latency)
+                    else:
+                        position = sampler.randrange(count)
+                        if position < 2048:
+                            latencies[position] = latency
+                    if count % 5000 == 0:
+                        print(f"soak worker={worker_id} requests={count} errors={error_count} "
+                              f"peak_rss_mib={memory_mib()}", file=sys.stderr, flush=True)
+            return count, error_count, errors, latencies
 
         try:
             with concurrent.futures.ThreadPoolExecutor(max_workers=4) as pool:
-                outcomes = list(pool.map(lambda _: requests(), range(4)))
-            latencies = [v for _, _, values in outcomes for v in values]
-            errors = [v for _, values, _ in outcomes for v in values]
-            return {"status": "passed" if not errors else "failed", "seconds": seconds,
+                outcomes = list(pool.map(requests, range(4)))
+            latencies = [v for _, _, _, values in outcomes for v in values]
+            errors = [v for _, _, values, _ in outcomes for v in values]
+            error_count = sum(r[1] for r in outcomes)
+            return {"status": "passed" if not error_count else "failed", "seconds": seconds,
                     "workers": 4, "requests": sum(r[0] for r in outcomes), "errors": errors[:10],
+                    "error_count": error_count, "latency_samples": len(latencies),
+                    "latency_sampling": "uniform reservoir of at most 2048 per worker",
                     "latency_p95_ms": float(np.quantile(latencies, .95) * 1000),
                     "peak_rss_before_mib": before, "peak_rss_after_mib": memory_mib(),
                     "scope": "concurrent ASGI in-process soak; not an internet deployment or long-term SLA"}

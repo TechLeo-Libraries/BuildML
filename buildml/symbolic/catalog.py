@@ -390,6 +390,9 @@ def resolve_neuro_symbolic_backend(
     """
     from buildml.core.errors import MissingExtraError, ValidationError
 
+    if backend is not None and backend not in ("sklearn", "torch"):
+        raise ValidationError(f"Unknown neuro-symbolic backend={backend!r}; choose sklearn or torch.")
+
     base_key = str(base_estimator).lower().replace("-", "_")
     torch_key = (
         str(torch_method or base_key).lower().replace("-", "_")

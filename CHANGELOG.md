@@ -14,6 +14,11 @@ from the current release; use the installation guide for current requirements.
 
 ### Fixed
 
+- Agent tool execution preserves explicit backend and online drift settings.
+  Non-boolean permission values cannot enable bundle trust or test-set tuning.
+- Invalid neuro-symbolic backend names fail explicitly rather than selecting
+  a different model implementation.
+
 - The breast-cancer example now encodes `malignant=1`, so positive-class
   probabilities and threshold costs refer to malignancy.
 - Session conformal fitting rejects previously fitted Session preprocessing,
@@ -24,6 +29,9 @@ from the current release; use the installation guide for current requirements.
 - BM25 retrieval reuses its sparse index until the corpus or parameters change.
 
 ### Added
+
+- Agent/direct workflow parity, holdout-preservation and bundle-trust regression
+  checks across native fitting domains; bounded latency sampling for longer soaks.
 
 - EDA interpretation metadata and full-family Benjamini–Hochberg q-values for
   target tests and numeric drift screens.
