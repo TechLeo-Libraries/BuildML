@@ -5,6 +5,12 @@ Use the reproducible runners below to generate evidence for your environment.
 Missing dependencies, crashes, timeouts and skipped tests remain visible; they
 are not counted as successful backend verification.
 
+The optimization extra constrains HiGHS below 1.15. HiGHS 1.15.1 conflicts with
+OR-Tools 9.15 native symbols after CVXPY import. Linux checks with HiGHS 1.14.0,
+CVXPY 1.9.3 and OR-Tools 9.15.6755 passed both import orders and native solver
+construction. CI exercises those import orders before the solve contracts.
+See the [upstream OR-Tools report](https://github.com/google/or-tools/issues/5246).
+
 ## Real public-data evaluation
 
 ```bash

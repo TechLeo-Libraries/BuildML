@@ -52,7 +52,13 @@ def select_knapsack_ortools(
         available, or the solve terminates without a feasible/optimal status.
     """
     require_ortools()
-    from ortools.linear_solver import pywraplp
+    try:
+        from ortools.linear_solver import pywraplp
+    except (ImportError, OSError) as exc:
+        raise ValidationError(
+            "OR-Tools native solver could not be loaded. Reinstall "
+            "buildml[optimize-industry] for a compatible HiGHS/OR-Tools dependency set."
+        ) from exc
 
     values = np.asarray(values, dtype=float)
     costs = np.asarray(costs, dtype=float)
@@ -72,7 +78,7 @@ def select_knapsack_ortools(
     if min_score is not None:
         mask &= values >= float(min_score)
     eligible = np.where(mask)[0]
-    if eligible.size == 0 or budget == 0:
+    if eligible.size == 0:
         return {
             "selected_indices": (),
             "selected_ids": (),

@@ -236,7 +236,10 @@ jobs:
       - name: Install real optimization backends
         run: python -m pip install --no-cache-dir -e ".[dev,optimize-industry]"
       - name: Require optimization dependencies
-        run: python -c "import pulp, ortools, cvxpy; assert pulp.COIN_CMD().available()"
+        run: |
+          python -m pip check
+          python -c "import pulp, cvxpy; from ortools.linear_solver import pywraplp; assert pulp.COIN_CMD().available(); assert pywraplp.Solver.CreateSolver('SCIP') is not None"
+          python -c "from ortools.linear_solver import pywraplp; import cvxpy; assert pywraplp.Solver.CreateSolver('SCIP') is not None"
       - name: Proven optimality and budget contracts
         run: >
           python -m pytest

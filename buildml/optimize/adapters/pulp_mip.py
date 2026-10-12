@@ -113,7 +113,7 @@ def select_knapsack_pulp(
     if min_score is not None:
         mask &= values >= float(min_score)
     eligible = np.where(mask)[0]
-    if eligible.size == 0 or budget == 0:
+    if eligible.size == 0:
         return {
             "selected_indices": (),
             "selected_ids": (),

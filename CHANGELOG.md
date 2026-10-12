@@ -14,6 +14,14 @@ from the current release; use the installation guide for current requirements.
 
 ### Fixed
 
+- Federated classification retains encoded training classes and decodes arbitrary
+  original labels correctly. Client evaluation restores classifier metadata.
+- Ensemble contribution reports decode internally encoded base labels; binary
+  average precision uses the fitted positive class instead of assuming label 1.
+- Zero-budget knapsack allocation keeps eligible positive-value zero-cost items.
+- The optimization extra uses HiGHS below 1.15 to avoid its native symbol conflict
+  with OR-Tools after CVXPY import; CI checks both import orders.
+
 - DuckDB lazy row masks retain independent sidecars, so later filters cannot
   replace the row selection of earlier unmaterialized relations.
 - Deserialization requires literal `trusted=True`; serving APIs reject non-boolean

@@ -40,3 +40,19 @@ def test_feasible_solver_status_does_not_claim_proven_optimality(monkeypatch):
     assert result['selected_cost'] <= 2
     assert result['approximate'] is True
     assert result['status'] == pywraplp.Solver.FEASIBLE
+
+
+
+def test_broken_native_solver_has_an_actionable_error(monkeypatch):
+    import builtins
+
+    monkeypatch.setattr("buildml.optimize.adapters.ortools_mip.require_ortools", lambda: None)
+    original = builtins.__import__
+    def importer(name, *args, **kwargs):
+        if name == "ortools.linear_solver":
+            raise ImportError("undefined symbol from incompatible native library")
+        return original(name, *args, **kwargs)
+    monkeypatch.setattr(builtins, "__import__", importer)
+    from buildml.core.errors import ValidationError
+    with pytest.raises(ValidationError, match=r"buildml\[optimize-industry\]"):
+        select_knapsack_ortools(np.array([3.]), np.array([1.]), budget=2.)
