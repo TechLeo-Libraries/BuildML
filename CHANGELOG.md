@@ -14,6 +14,11 @@ from the current release; use the installation guide for current requirements.
 
 ### Fixed
 
+- Retrieval-grounded advisors now use the actual retrieval entry point and
+  retain document IDs in source evidence instead of silently omitting context.
+- Single-node DDP no longer serializes an unused training-loader random
+  generator; rank samplers still use the configured seed and caller state is preserved.
+
 - Coverage enforcement rises to 67% from a passing Linux CI monolith at
   68.33% (1,540 passed, 256 skipped). The broader local CUDA environment
   remains a separate measurement; 90% is still a target.

@@ -47,6 +47,19 @@ def _session(*, forecast=False, domain=None):
         session.time_split(test_size=.2, validation_size=.2)
     else:
         session.split(test_size=.2, validation_size=.2, random_state=31)
+    if domain in {"semisupervised", "active_learning"}:
+        from buildml.data.dataset import Dataset
+        from buildml.ingest.detect import schema_from_dataframe
+
+        partially_labeled = session.to_pandas().copy()
+        partially_labeled.loc[list(session.split_plan.train_indices)[::3], "y"] = np.nan
+        session._dataset = Dataset.from_transformed(
+            session.dataset, partially_labeled,
+            schema=schema_from_dataframe(partially_labeled), roles=dict(session.dataset.roles),
+        )
+    if domain == "tda":
+        pytest.importorskip("ripser")
+        pytest.importorskip("persim")
     if domain == "graph":
         ordered = np.argsort(x)
         session.set_graph(np.column_stack([ordered[:-1], ordered[1:]]), node_id_col="node")
@@ -85,7 +98,16 @@ WORKFLOWS = [
     ("causal", "fit_causal", {"backend": "native", "method": "t_learner", "bootstrap_samples": 20}, "evaluate_causal"),
     ("graph", "fit_graph", {"method": "classical", "include_graph_metrics": True}, "evaluate_graph"),
     ("imitation", "fit_imitation", {"backend": "sklearn", "action_column": "y", "task": "classification"}, "evaluate_imitation"),
+    ("tda", "fit_tda", {"backend": "native", "vectorization": "persistence_image", "knn": 8, "n_bins": 8, "head": "logistic_regression"}, "evaluate_tda"),
 ]
+WORKFLOWS.extend([
+    ("semisupervised", "fit_semisupervised", {"backend": "sklearn", "method": method, "base_estimator": "logistic_regression", "n_neighbors": 5}, "evaluate_semisupervised")
+    for method in ("self_training", "label_propagation", "label_spreading")
+])
+WORKFLOWS.extend([
+    ("active_learning", "fit_active_learner", {"backend": "sklearn", "strategy": strategy, "base_estimator": "logistic_regression", "batch_size": 4, "label_budget": 16}, "evaluate_active_learning")
+    for strategy in ("margin", "entropy", "least_confidence", "expected_model_change_lite")
+])
 WORKFLOWS.extend([
     ("forecast", "fit_forecast", {"method": method, "horizon": 5, "seasonal_period": 7}, "evaluate_forecast")
     for method in ("naive", "mean", "drift", "seasonal_naive", "lag_hgb")

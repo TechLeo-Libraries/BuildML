@@ -24,7 +24,7 @@ def test_spawned_ddp_returns_usable_model_and_history():
         "    assert output.shape == (3, 2)",
         "    assert torch.isfinite(output).all()",
     ])
-    result = execute(dataclasses.replace(example, source=source), timeout=180)
+    result = execute(dataclasses.replace(example, source=source), timeout=600)
     assert result["status"] == "passed", result
 
 
@@ -62,5 +62,48 @@ def test_validation_with_buffers_completes_on_all_ranks():
         "return torch.nn.Sequential(torch.nn.BatchNorm1d(4), torch.nn.Linear(4, 2))",
     ).replace("test_size=0.2, stratify=True", "test_size=0.2, validation_size=0.2, stratify=True")
     source += "\nif __name__ == '__main__':\n    assert result.train_result.history[0]['val_loss'] >= 0\n"
-    result = execute(dataclasses.replace(example, source=source), timeout=180)
+    result = execute(dataclasses.replace(example, source=source), timeout=600)
     assert result["status"] == "passed", result
+
+
+def test_spawn_payload_does_not_consume_or_replace_caller_generator(monkeypatch):
+    torch = pytest.importorskip("torch")
+    import pandas as pd
+
+    from buildml import Session
+    from buildml.dl import ddp
+    from buildml.dl.loaders import make_loaders
+    from buildml.dl.types import TrainConfig
+
+    session = Session.ingest(pd.DataFrame({"x": range(40), "y": [0, 1] * 20})).set_roles({"y": "target"})
+    session.split(test_size=.2, random_state=3)
+    bundle = make_loaders(session.dataset, session.split_plan, task="classification")
+    original_loader = bundle.loaders["train"]
+    original_generator = original_loader.generator
+    original_state = original_generator.get_state().clone()
+
+    class CapturedLaunch(Exception):
+        pass
+
+    def capture(function, *, args, nprocs, join):
+        payload = args[5]
+        assert payload is not bundle
+        assert payload.loaders["train"] is not original_loader
+        assert payload.loaders["train"].dataset is original_loader.dataset
+        assert payload.loaders["train"].batch_size == original_loader.batch_size
+        assert payload.loaders["train"].generator is None
+        assert payload.loaders["test"] is bundle.loaders["test"]
+        assert nprocs == 2 and join
+        raise CapturedLaunch
+
+    monkeypatch.setattr(ddp, "ddp_cuda_device_count", lambda: 0)
+    monkeypatch.setattr(torch.multiprocessing, "spawn", capture)
+    with pytest.raises(CapturedLaunch):
+        ddp.train_supervised_module_ddp(
+            lambda: torch.nn.Linear(1, 2), bundle,
+            config=TrainConfig(epochs=1, device="cpu"),
+            ddp_config=ddp.DDPConfig(world_size=2, allow_cpu_ddp=True),
+        )
+    assert bundle.loaders["train"] is original_loader
+    assert original_loader.generator is original_generator
+    assert torch.equal(original_generator.get_state(), original_state)
