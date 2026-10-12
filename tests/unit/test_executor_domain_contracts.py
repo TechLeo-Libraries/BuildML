@@ -1,6 +1,8 @@
 """Agent-driven native workflows must produce the same results as direct Session use."""
 from __future__ import annotations
 
+import json
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -13,8 +15,9 @@ from buildml.core.errors import ValidationError
 
 def _session(*, forecast=False, domain=None):
     rng = np.random.default_rng(491)
-    x = rng.normal(size=180)
-    frame = pd.DataFrame({"x": x, "z": rng.normal(size=180)})
+    n_rows = 600 if domain == "metalearning" else 180
+    x = rng.normal(size=n_rows)
+    frame = pd.DataFrame({"x": x, "z": rng.normal(size=n_rows)})
     frame["y"] = (frame.x + .3 * frame.z > 0).astype(int)
     if forecast:
         frame["clock"] = pd.date_range("2024-01-01", periods=len(frame), freq="D")
@@ -159,6 +162,7 @@ def test_agent_fit_and_evaluate_match_direct_api(domain, fit_tool, args, evaluat
         getattr(direct, fit_tool)(**args)
     agent_result = _run(via_agent, evaluate_tool, {"partition": "test"})
     expected = getattr(direct, evaluate_tool)(partition="test")
+    assert agent_result.metrics, "Parity must compare an evaluable held-out workload"
     assert agent_result.metrics.keys() == expected.metrics.keys()
     for metric, value in expected.metrics.items():
         if isinstance(value, (int, float)) and np.isfinite(value):
@@ -187,6 +191,29 @@ def test_agent_domain_save_round_trip_requires_explicit_trust(
     for metric, value in before.metrics.items():
         if isinstance(value, (int, float)) and np.isfinite(value):
             assert after.metrics[metric] == pytest.approx(value)
+
+
+@pytest.mark.parametrize("domain,fit_tool,args,evaluate_tool", WORKFLOWS)
+def test_evaluation_reports_are_portable_json_without_nonfinite_values(domain, fit_tool, args, evaluate_tool):
+    session = _session(forecast=domain == "forecast", domain="ranking" if domain == "ranker" else domain)
+    _run(session, fit_tool, args)
+    result = _run(session, evaluate_tool, {"partition": "test"})
+    payload = result.to_dict()
+    encoded = json.dumps(payload, allow_nan=False)
+    restored = json.loads(encoded)
+    assert restored["metrics"] == payload["metrics"]
+    assert restored["metrics"]
+
+
+@pytest.mark.parametrize("strategy", ["margin", "entropy", "least_confidence", "expected_model_change_lite"])
+def test_agent_queries_only_unlabelled_training_rows(strategy):
+    session = _session(domain="active_learning")
+    _run(session, "fit_active_learner", {"backend": "sklearn", "strategy": strategy, "label_budget": 16})
+    query = _run(session, "suggest_query", {"batch_size": 4, "strategy": strategy})
+    assert len(query.indices) == 4
+    assert len(set(query.indices)) == 4
+    assert set(query.indices).issubset(session.split_plan.train_indices)
+    assert session.to_pandas().loc[list(query.indices), "y"].isna().all()
 
 
 def test_agent_online_honors_disabled_drift_and_buffer_budget():
