@@ -76,7 +76,7 @@ def test_windows_default_backend_stays_sklearn(monkeypatch: pytest.MonkeyPatch) 
     assert resolve_backend_metric(backend="industry", metric="euclidean")[0] == "industry"
 
 
-@pytest.mark.skipif(sys.platform != "win32", reason="Windows-only refuse")
+@pytest.mark.skipif(sys.platform != "win32", reason="Windows-only isolation routing contract")
 def test_windows_explicit_industry_uses_isolation_without_opt_in(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

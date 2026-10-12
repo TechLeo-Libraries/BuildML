@@ -19,8 +19,8 @@ from the current release; use the installation guide for current requirements.
 - Single-node DDP no longer serializes an unused training-loader random
   generator; rank samplers still use the configured seed and caller state is preserved.
 
-- Coverage enforcement rises to 67% from a passing Linux CI monolith at
-  68.33% (1,540 passed, 256 skipped). The broader local CUDA environment
+- Coverage enforcement rises to 69% from a passing Linux CI monolith at
+  70.04–70.05% across Python 3.10–3.13 (1,645 passed, 261 skipped). The broader local CUDA environment
   remains a separate measurement; 90% is still a target.
 
 - Agent tool execution preserves explicit backend and online drift settings.

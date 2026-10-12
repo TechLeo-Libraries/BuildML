@@ -308,9 +308,9 @@ omit = [
 ]
 
 [tool.coverage.report]
-# Active floor 67 (2026-10-12 Linux CI monolith measured 68.33%). The prior 70
+# Active floor 69 (2026-10-12 Linux CI monolith measured >=70.04%). The prior 70
 # floor came from a Windows isolated combine, not this gate.
-fail_under = 67
+fail_under = 69
 precision = 1
 skip_empty = true
 show_missing = true

@@ -1,7 +1,7 @@
 {
   "policy": "Coverage fail_under is a one-way ratchet on the Linux CI monolith (pytest --cov=buildml). Raise when that gate improves; never lower to silence a regression. Floors must be set from that gate or scripts/run_full_coverage.py in monolith mode, never from a tiny subset or from a Windows isolated combine that skips crashed modules.",
   "source": "pyproject.toml [tool.coverage.report] fail_under",
-  "current": 67,
+  "current": 69,
   "schedule": [
     {
       "target": 27,
@@ -36,8 +36,14 @@
     {
       "target": 67,
       "release": "unreleased",
-      "status": "active",
+      "status": "superseded",
       "notes": "Passing Linux CI monolith measured 68.33% on 2026-10-12, run 38213125336, commit 6369eeb; 1540 passed, 256 skipped."
+    },
+    {
+      "target": 69,
+      "release": "unreleased",
+      "status": "active",
+      "notes": "Passing Linux CI monolith measured 70.04-70.05% across Python3.10-3.13 on 2026-10-12, run38219062877, commitf94dff0; 1645 passed,261 skipped per configuration."
     }
   ],
   "how_to_raise": [
@@ -48,13 +54,15 @@
     "Update CONTRIBUTING.md ratchet note, docs/stability.md, and CHANGELOG"
   ],
   "measured": {
-    "percent_covered": 68.33,
+    "percent_covered": 70.04,
     "platform": "linux",
     "python": "3.12",
     "mode": "monolith",
     "command": "pytest --cov=buildml --cov-report=term-missing",
-    "notes": "GitHub Actions run 38213125336, commit 6369eeb; 1540 passed, 256 skipped"
+    "notes": "GitHub Actions run38219062877, commitf94dff0; 1645 passed,261 skipped. All Python3.10-3.13 core gates exceeded70.04%.",
+    "covered_lines": 43010,
+    "num_statements": 61405
   },
-  "last_full_suite_percent": 68.33,
-  "suggested_fail_under": 67
+  "last_full_suite_percent": 70.04,
+  "suggested_fail_under": 69
 }

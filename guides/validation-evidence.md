@@ -40,9 +40,9 @@ Follow-up assessment, 2026-10-12, review branch `codex/coverage-cuda-ci-20261012
 
 | Configuration | Outcome | Qualification |
 |---|---|---|
-| Remote core Linux, Python 3.12 | 1,540 passed, 256 skipped; 68.33% line coverage | [CI run 38213125336](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38213125336), commit `6369eeb`; enforced floor raised to 67% with over one percentage point of headroom |
-| Remote backend Windows/Linux matrix | Passed | [Backend run 38213125400](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38213125400); configuration-specific skips remain in artifacts |
-| Remote release acceptance | Passed | [Acceptance run 38213125296](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38213125296); this is verification, not a published release |
+| Remote core Linux, Python 3.10–3.13 | 1,645 passed, 261 skipped per configuration; 70.04–70.05% line coverage | [CI run 38219062877](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38219062877), commit `f94dff0`; enforced floor raised to 69% with over one percentage point of headroom |
+| Remote backend Windows/Linux matrix | Linux 121 passed / 10 skipped; Windows 122 passed / nine skipped | [Backend run 38219062822](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38219062822); nine required groups, configuration-specific skips remain in artifacts |
+| Remote release acceptance | Passed | [Acceptance run 38219062891](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38219062891); this is verification, not a published release |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
 | Concurrent ASGI soak | 358,036 requests in 30 minutes, zero errors | Four workers; sampled p95 29.21 ms; peak RSS 205.49 to 210.80 MiB; bounded latency sampling; in-process evidence, not a deployment SLA |
 | Linux targeted repairs | Five DDP tests passed; PDF, TorchScript and DEC/IDEC checks passed | Distributed CPU/Gloo checks use the CUDA-capable Torch installation; multi-GPU throughput is unmeasured |
