@@ -14,6 +14,14 @@ from the current release; use the installation guide for current requirements.
 
 ### Fixed
 
+- EDA CSV exports preserve fields from later heterogeneous rows, including
+  drift statistics and multivariate anomaly measurements. Dashboard JSON maps
+  undefined nonfinite measurements to null instead of failing serialization.
+- Segment error diagnostics reject unknown partition names instead of silently
+  analyzing the test set.
+- Managed serving refuses startup timeouts, stops the unready worker and uses
+  a monotonic readiness deadline.
+
 - AutoML leaderboards rank loss metrics in ascending order and unavailable
   scores last, with score gaps measured in the correct direction.
 - Text SSL installs training dependencies, respects the requested device and

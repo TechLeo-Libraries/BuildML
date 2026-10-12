@@ -27,7 +27,8 @@ GROUPS = {
                          "tests/unit/test_executor_domain_contracts.py::test_agent_probabilistic_honors_requested_real_mapie_backend"]),
     "ann": (["hnswlib"], ["tests/unit/test_isolated_ann.py", "tests/unit/test_cbr_industry_depth.py"]),
     "serving": (["fastapi", "httpx"], ["tests/unit/test_serving_production.py", "tests/unit/test_schema_contract.py",
-                                      "tests/integration/test_real_http_serving.py", "tests/unit/test_trust_boundary_contracts.py"]),
+                                      "tests/integration/test_real_http_serving.py", "tests/integration/test_serving_lifecycle_contracts.py",
+                                      "tests/unit/test_trust_boundary_contracts.py"]),
 }
 
 

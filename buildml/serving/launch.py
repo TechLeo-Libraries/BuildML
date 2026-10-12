@@ -576,12 +576,15 @@ def serve_bundle(
             clear_serving_state()
         return handle
     thread.start()
-    deadline = time.time() + 10.0
-    while time.time() < deadline:
+    deadline = time.monotonic() + 10.0
+    while time.monotonic() < deadline:
         if getattr(server, "started", False):
             break
         if not thread.is_alive():
             clear_serving_state()
             raise ServingLaunchError("Managed serving thread exited during startup")
         time.sleep(0.05)
+    else:
+        handle.stop()
+        raise ServingLaunchError("Managed serving did not become ready within 10 seconds")
     return handle

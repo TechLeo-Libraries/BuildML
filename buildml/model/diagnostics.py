@@ -1238,6 +1238,8 @@ def segment_error_report(
     """
     if split_plan is None:
         raise ValidationError("Split required for segment error analysis")
+    if partition not in {"train", "validation", "test"}:
+        raise ValidationError("partition must be train, validation, or test")
     by_columns = _normalize_segment_columns(by, dataset.columns)
     if max_segments < 1:
         raise ValidationError("max_segments must be >= 1")

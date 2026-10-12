@@ -437,10 +437,14 @@ jobs:
             extra: dashboard
             tests: >-
               tests/unit/test_eda_dashboard.py
+              tests/unit/test_dashboard_export_integrity.py
+              tests/unit/test_dashboard_json_integrity.py
           - python-version: "3.12"
             extra: dashboard
             tests: >-
               tests/unit/test_eda_dashboard.py
+              tests/unit/test_dashboard_export_integrity.py
+              tests/unit/test_dashboard_json_integrity.py
           - python-version: "3.11"
             extra: serve
             tests: >-

@@ -46,13 +46,13 @@ Follow-up assessment, 2026-10-12, review branch `codex/coverage-cuda-ci-20261012
 
 | Configuration | Outcome | Qualification |
 |---|---|---|
-| Remote core Linux, Python 3.10–3.13 | 1,645 passed, 261 skipped per configuration; 70.04–70.05% line coverage | [CI run 38219062877](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38219062877), commit `f94dff0`; enforced floor raised to 69% with over one percentage point of headroom |
-| Remote backend Windows/Linux matrix | Linux 121 passed / 10 skipped; Windows 122 passed / nine skipped | [Backend run 38219062822](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38219062822); nine required groups, configuration-specific skips remain in artifacts |
-| Remote release acceptance | Passed | [Acceptance run 38219062891](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38219062891); this is verification, not a published release |
+| Remote core Linux, Python 3.10–3.13 | All configurations passed; Python 3.12: 1,886 passed, 301 skipped, 70.19% line coverage (43,123 / 61,437 statements) | [CI run 38314965748](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38314965748), commit `3b4df47`; enforced floor remains 69%. Other Python configurations are not represented by the quoted Python 3.12 measurement |
+| Remote backend Windows/Linux matrix | Linux 156 passed / 10 skipped; Windows 157 passed / nine skipped | [Backend run 38314965754](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38314965754), commit `3b4df47`; nine required groups, configuration-specific skips remain in artifacts |
+| Remote release acceptance | Passed | [Acceptance run 38314965734](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38314965734), commit `3b4df47`; this is verification, not a published release |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
 | Concurrent ASGI soak | 358,036 requests in 30 minutes, zero errors | Four workers; sampled p95 29.21 ms; peak RSS 205.49 to 210.80 MiB; bounded latency sampling; in-process evidence, not a deployment SLA |
 | Linux targeted repairs | Five DDP tests passed; PDF, TorchScript and DEC/IDEC checks passed | Distributed CPU/Gloo checks use the CUDA-capable Torch installation; multi-GPU throughput is unmeasured |
-| Expanded local Linux suite with CUDA/extras | 81.14% line coverage; 1,859 passed, 45 skipped, seven failed | Commit `c267c37`; diagnostic evidence, not a passing gate. Five failures reflect missing CBC in this verification environment; the other two exposed symbolic backend validation and RuleFit feature mapping defects. Repairs and added regression contracts are undergoing verification. The 90% target remains outstanding |
+| Expanded local Linux suite with CUDA/extras | 81.74% line coverage; 2,058 passed, 45 skipped, six failed | Commit `505cc55`; diagnostic evidence, not a passing gate. All six failures were the HiGHS/OR-Tools native symbol conflict described above. The compatible dependency repair passed targeted checks; a fresh whole-package measurement on `3b4df47` is running. The 90% target remains outstanding |
 
 Exact local measurements are preserved in `reports/coverage90-gpu-linux.json`,
 `reports/coverage90-soak-30min.json` and `reports/coverage90-linux-full.json`.
