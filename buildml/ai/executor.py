@@ -428,6 +428,12 @@ def execute_tool(
     """
     call = proposal.tool_call
 
+    if not isinstance(confirmed, bool):
+        return ExecutorResult(
+            tool_call=call, confirmed=False, executed=False,
+            error="confirmed must be a boolean; explicit confirmation cannot use truthy strings or numbers.",
+        )
+
     if proposal.requires_confirmation and not confirmed:
         return ExecutorResult(
             tool_call=call,
@@ -444,6 +450,12 @@ def execute_tool(
             confirmed=False,
             executed=False,
             error="Destructive operations always require explicit confirmation.",
+        )
+
+    if spec.confirm_policy != ConfirmPolicy.AUTO and not confirmed:
+        return ExecutorResult(
+            tool_call=call, confirmed=False, executed=False,
+            error="The current tool policy requires explicit confirmation.",
         )
 
     try:

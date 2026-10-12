@@ -37,6 +37,7 @@ def _session(*, forecast=False, domain=None):
         frame["y"] = 1.6 * frame.t + .6 * frame.x - .3 * frame.z + rng.normal(0, .15, len(frame))
         roles["t"] = "feature"
     if domain == "graph":
+        pytest.importorskip("networkx", reason="native graph extra required")
         frame["node"] = np.arange(len(frame))
         roles["node"] = "id"
     if forecast:
@@ -85,6 +86,35 @@ WORKFLOWS = [
     ("graph", "fit_graph", {"method": "classical", "include_graph_metrics": True}, "evaluate_graph"),
     ("imitation", "fit_imitation", {"backend": "sklearn", "action_column": "y", "task": "classification"}, "evaluate_imitation"),
 ]
+WORKFLOWS.extend([
+    ("forecast", "fit_forecast", {"method": method, "horizon": 5, "seasonal_period": 7}, "evaluate_forecast")
+    for method in ("naive", "mean", "drift", "seasonal_naive", "lag_hgb")
+])
+WORKFLOWS.extend([
+    ("anomaly", "fit_anomaly", {"backend": "sklearn", "method": method, "contamination": .1}, "evaluate_anomaly")
+    for method in ("lof", "one_class_svm")
+])
+WORKFLOWS.extend([
+    ("unsupervised", "fit_clusters", {"method": method, "n_clusters": 2}, "evaluate_clusters")
+    for method in ("gmm", "agglomerative")
+])
+
+
+@pytest.mark.parametrize("method", ["naive", "mean", "drift", "seasonal_naive"])
+def test_agent_forecast_uses_only_training_history_and_matches_independent_formula(method):
+    session = _session(forecast=True)
+    history = session.partition("train").y.to_numpy()
+    _run(session, "fit_forecast", {"method": method, "horizon": 5, "seasonal_period": 7})
+    forecast = _run(session, "generate_forecast", {"horizon": 5, "origin": "train_end"})
+    if method == "naive":
+        expected = np.repeat(history[-1], 5)
+    elif method == "mean":
+        expected = np.repeat(np.mean(history), 5)
+    elif method == "drift":
+        expected = history[-1] + np.arange(1, 6) * (history[-1] - history[0]) / (len(history) - 1)
+    else:
+        expected = history[-7:][:5]
+    np.testing.assert_allclose(forecast.predictions, expected)
 
 
 @pytest.mark.parametrize("domain,fit_tool,args,evaluate_tool", WORKFLOWS)

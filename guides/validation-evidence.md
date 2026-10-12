@@ -75,6 +75,7 @@ python scripts/backend_support_report.py --groups engines forecasting mapie ann
 | Resampling | imbalanced-learn | Training-only resampling and lineage |
 | RL | Gymnasium | Tabular state/action and environment behavior |
 | TDA | ripser, persim | Persistence/feature and domain behavior |
+| Graph | NetworkX | Graph structure, classical node fitting and graph bundle contracts; optional GCN skips remain visible |
 | MAPIE | MAPIE | Real split/CV+/jackknife+ methods, alpha, persistence |
 | ANN | hnswlib | Persistent worker, neighbour parity, retention, restore, fault containment |
 | Serving | FastAPI, httpx | Authentication configuration and scoring schema |

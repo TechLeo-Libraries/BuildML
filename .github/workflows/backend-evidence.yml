@@ -17,7 +17,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: Install tested backend groups
-        run: python -m pip install -e ".[dev,engines,timeseries,imbalanced,rl,tda,probabilistic-industry,cbr-industry,serve]"
+        run: python -m pip install -e ".[dev,engines,timeseries,imbalanced,rl,tda,graph,probabilistic-industry,cbr-industry,serve]"
       - name: Dependency consistency
         run: python -m pip check
       - name: Require and exercise real backends

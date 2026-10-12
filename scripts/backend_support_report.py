@@ -21,6 +21,8 @@ GROUPS = {
     "resampling": (["imblearn"], ["tests/unit/test_imbalance_harden.py"]),
     "rl": (["gymnasium"], ["tests/unit/test_rl_tabular.py"]),
     "tda": (["ripser", "persim"], ["tests/unit/test_tda_slice.py", "tests/unit/test_tda_m2_depth.py"]),
+    "graph": (["networkx"], ["tests/unit/test_graph_catalog.py", "tests/unit/test_graph_slice.py",
+                              "tests/unit/test_graph_m2_depth.py"]),
     "mapie": (["mapie"], ["tests/unit/test_mapie_real_contract.py", "tests/unit/test_mapie_alpha_contract.py",
                          "tests/unit/test_executor_domain_contracts.py::test_agent_probabilistic_honors_requested_real_mapie_backend"]),
     "ann": (["hnswlib"], ["tests/unit/test_isolated_ann.py", "tests/unit/test_cbr_industry_depth.py"]),
