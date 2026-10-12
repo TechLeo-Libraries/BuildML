@@ -402,6 +402,8 @@ def create_serving_app(
     buildml.serving.launch.serve_bundle : Doing this and starting a server.
     buildml.serving.config.ServeConfig : Declarative YAML/env/CLI config.
     """
+    if not isinstance(trusted, bool):
+        raise ValidationError("trusted must be a boolean; pass trusted=True only for trusted artifacts.")
     _require_fastapi()
     if config is not None:
         from buildml.serving.config import ServeConfig

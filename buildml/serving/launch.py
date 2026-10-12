@@ -432,6 +432,10 @@ def serve_bundle(
     buildml.serving.app.create_serving_app : Building the app without serving.
     buildml.serving.config.ServeConfig : Declarative YAML/env/CLI config.
     """
+    if not isinstance(trusted, bool):
+        raise ValidationError("trusted must be a boolean; pass trusted=True only for trusted artifacts.")
+    if not isinstance(allow_insecure_public_bind, bool):
+        raise ValidationError("allow_insecure_public_bind must be a boolean.")
     if config is not None:
         from buildml.serving.config import ServeConfig
 

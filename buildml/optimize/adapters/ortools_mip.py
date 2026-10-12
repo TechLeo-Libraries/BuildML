@@ -120,7 +120,7 @@ def select_knapsack_ortools(
         "selected_value": float(values[sel].sum()) if chosen else 0.0,
         "selected_cost": float(costs[sel].sum()) if chosen else 0.0,
         "solver_used": "ortools_mip",
-        "approximate": False,
+        "approximate": status != pywraplp.Solver.OPTIMAL,
         "backend": "ortools",
         "status": int(status),
     }

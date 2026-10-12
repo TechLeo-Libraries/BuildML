@@ -14,6 +14,16 @@ from the current release; use the installation guide for current requirements.
 
 ### Fixed
 
+- DuckDB lazy row masks retain independent sidecars, so later filters cannot
+  replace the row selection of earlier unmaterialized relations.
+- Deserialization requires literal `trusted=True`; serving APIs reject non-boolean
+  permissions, and provider error tracebacks suppress secret-bearing exceptions.
+- RuleFit indexed features map to the fitted input columns and zero coefficients
+  remain zero; unknown online, probabilistic, symbolic and RL backends fail clearly.
+- DDP preserves requested shuffle behavior. Torch consistency inference disables
+  dropout, and concept-bottleneck predictions follow the fitted model device.
+- OR-Tools feasible-only knapsack solutions disclose that optimality is unproven.
+
 - Retrieval-grounded advisors now use the actual retrieval entry point and
   retain document IDs in source evidence instead of silently omitting context.
 - Single-node DDP no longer serializes an unused training-loader random

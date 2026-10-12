@@ -593,6 +593,9 @@ def resolve_rl_backend_mode_algorithm(
     """
     from buildml.core.errors import MissingExtraError, ValidationError
 
+    if backend is not None and backend not in ('sklearn', 'native', 'industry'):
+        raise ValidationError(f"Unknown backend {backend!r}; choose from ('sklearn', 'native', 'industry').")
+
     resolved_backend: RlBackendName
     algo_key = str(algorithm or "linucb").lower().replace("-", "_")
     if backend is None:

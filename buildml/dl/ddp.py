@@ -408,7 +408,10 @@ def _shard_loader(loader: Any, *, rank: int, world_size: int, seed: int) -> Any:
         dataset,
         num_replicas=world_size,
         rank=rank,
-        shuffle=getattr(loader, "shuffle", True) or True,
+        shuffle=getattr(
+            loader, "_buildml_ddp_shuffle",
+            isinstance(loader.sampler, torch.utils.data.RandomSampler),
+        ),
         seed=seed,
     )
     return torch.utils.data.DataLoader(
@@ -579,6 +582,9 @@ def _train_single_node(
         num_workers=getattr(train_loader, "num_workers", 0),
         pin_memory=getattr(train_loader, "pin_memory", False),
         drop_last=getattr(train_loader, "drop_last", False),
+    )
+    spawn_train_loader._buildml_ddp_shuffle = isinstance(
+        train_loader.sampler, torch.utils.data.RandomSampler
     )
     spawn_bundle = replace(
         loader_bundle, loaders={**loader_bundle.loaders, "train": spawn_train_loader}

@@ -23,7 +23,8 @@ buildml.data.dataset.Dataset : The caller.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
+from uuid import uuid4
 
 import pandas as pd
 
@@ -488,9 +489,9 @@ class DuckDBEngine:
         """
         rel = _as_relation(table)
         try:
-            return _relation_to_arrow_table(rel).to_pandas()
+            return cast(pd.DataFrame, _relation_to_arrow_table(rel).to_pandas())
         except Exception:  # noqa: BLE001
-            return rel.df()
+            return cast(pd.DataFrame, rel.df())
 
     def to_arrow(self, table: Any) -> Any:
         """Execute the plan and return the result as Arrow.
@@ -611,9 +612,9 @@ class DuckDBEngine:
         rel = _as_relation(table)
         limited = rel.limit(n)
         try:
-            return _relation_to_arrow_table(limited).to_pandas()
+            return cast(pd.DataFrame, _relation_to_arrow_table(limited).to_pandas())
         except Exception:  # noqa: BLE001
-            return limited.df()
+            return cast(pd.DataFrame, limited.df())
 
     def select_columns(self, table: Any, columns: list[str]) -> Any:
         """Add a projection to the plan.
@@ -835,14 +836,18 @@ class DuckDBEngine:
 
             # Only the keep-index sidecar is materialized: not the source table.
             idx_table = pa.table({"_bml_rn": pa.array(keep_rn, type=pa.int64())})
-            con.register("_bml_keep_rn", idx_table)
+            # Relations are lazy: each mask must retain its own registered
+            # sidecar until the shared connection is closed. Reusing a name
+            # changes older relations when a later mask replaces the view.
+            mask_view = f"_bml_keep_rn_{uuid4().hex}"
+            con.register(mask_view, idx_table)
             filtered = rel.query(
                 "s",
-                """
+                f"""
                 SELECT * EXCLUDE (_bml_rn) FROM (
                   SELECT *, row_number() OVER () AS _bml_rn FROM s
                 ) t
-                WHERE _bml_rn IN (SELECT _bml_rn FROM _bml_keep_rn)
+                WHERE _bml_rn IN (SELECT _bml_rn FROM {mask_view})
                 """,
             )
             self._bridge = "sql"

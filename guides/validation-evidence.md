@@ -46,7 +46,7 @@ Follow-up assessment, 2026-10-12, review branch `codex/coverage-cuda-ci-20261012
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
 | Concurrent ASGI soak | 358,036 requests in 30 minutes, zero errors | Four workers; sampled p95 29.21 ms; peak RSS 205.49 to 210.80 MiB; bounded latency sampling; in-process evidence, not a deployment SLA |
 | Linux targeted repairs | Five DDP tests passed; PDF, TorchScript and DEC/IDEC checks passed | Distributed CPU/Gloo checks use the CUDA-capable Torch installation; multi-GPU throughput is unmeasured |
-| Broad local Linux suite with CUDA/extras | 77.69% line coverage; 1,696 passed, 79 skipped, four failed | Failed run is diagnostic evidence, not a passing gate. TorchScript source-path portability, DDP loader IPC and PDF fallback repairs are being verified. The 90% target remains outstanding |
+| Expanded local Linux suite with CUDA/extras | 81.14% line coverage; 1,859 passed, 45 skipped, seven failed | Commit `c267c37`; diagnostic evidence, not a passing gate. Five failures reflect missing CBC in this verification environment; the other two exposed symbolic backend validation and RuleFit feature mapping defects. Repairs and added regression contracts are undergoing verification. The 90% target remains outstanding |
 
 Exact local measurements are preserved in `reports/coverage90-gpu-linux.json`,
 `reports/coverage90-soak-30min.json` and `reports/coverage90-linux-full.json`.

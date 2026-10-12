@@ -180,6 +180,8 @@ class ServeConfig:
     map_location: str = "cpu"
 
     def __post_init__(self) -> None:
+        for field_name in ("trusted", "allow_insecure_public_bind"):
+            object.__setattr__(self, field_name, _parse_bool(getattr(self, field_name), field_name=field_name))
         object.__setattr__(self, "host", str(self.host).strip() if self.host else "")
         object.__setattr__(self, "port", _parse_port(self.port))
         if self.bundle is not None:

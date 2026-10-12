@@ -310,6 +310,8 @@ def resolve_symbolic_backend_method(
     """
     from buildml.core.errors import MissingExtraError, ValidationError
 
+    if backend is not None and (not isinstance(backend, str) or backend not in {"sklearn", "industry"}):
+        raise ValidationError(f"Unknown symbolic backend {backend!r}; expected 'sklearn' or 'industry'.")
     source_key = str(source or "decision_tree").lower().replace("-", "_")
     method_key = str(method or "").lower().replace("-", "_") if method else ""
 
