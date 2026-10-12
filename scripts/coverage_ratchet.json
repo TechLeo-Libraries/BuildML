@@ -1,7 +1,7 @@
 {
   "policy": "Coverage fail_under is a one-way ratchet on the Linux CI monolith (pytest --cov=buildml). Raise when that gate improves; never lower to silence a regression. Floors must be set from that gate or scripts/run_full_coverage.py in monolith mode, never from a tiny subset or from a Windows isolated combine that skips crashed modules.",
   "source": "pyproject.toml [tool.coverage.report] fail_under",
-  "current": 66,
+  "current": 67,
   "schedule": [
     {
       "target": 27,
@@ -30,8 +30,14 @@
     {
       "target": 66,
       "release": "2.6.0",
-      "status": "active",
+      "status": "superseded",
       "notes": "Linux CI monolith (pytest --cov=buildml) measured 66.67% (40630/60938) on the 2.6.0 cut. That job is the coverage gate."
+    },
+    {
+      "target": 67,
+      "release": "unreleased",
+      "status": "active",
+      "notes": "Passing Linux CI monolith measured 68.33% on 2026-10-12, run 38213125336, commit 6369eeb; 1540 passed, 256 skipped."
     }
   ],
   "how_to_raise": [
@@ -42,15 +48,13 @@
     "Update CONTRIBUTING.md ratchet note, docs/stability.md, and CHANGELOG"
   ],
   "measured": {
-    "percent_covered": 66.67,
-    "covered_lines": 40630,
-    "num_statements": 60938,
+    "percent_covered": 68.33,
     "platform": "linux",
-    "python": "3.11",
+    "python": "3.12",
     "mode": "monolith",
     "command": "pytest --cov=buildml --cov-report=term-missing",
-    "notes": "GitHub Actions test (3.11) on 2.6.0 cut commit cf981e3; 1120 passed, 228 skipped"
+    "notes": "GitHub Actions run 38213125336, commit 6369eeb; 1540 passed, 256 skipped"
   },
-  "last_full_suite_percent": 66.67,
-  "suggested_fail_under": 66
+  "last_full_suite_percent": 68.33,
+  "suggested_fail_under": 67
 }

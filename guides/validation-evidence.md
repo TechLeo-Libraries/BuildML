@@ -36,6 +36,24 @@ Sources: [M4 official data](https://github.com/Mcompetitions/M4-methods),
 
 ## Backend/platform evidence table
 
+Follow-up assessment, 2026-10-12, review branch `codex/coverage-cuda-ci-20261012`:
+
+| Configuration | Outcome | Qualification |
+|---|---|---|
+| Remote core Linux, Python 3.12 | 1,540 passed, 256 skipped; 68.33% line coverage | [CI run 38213125336](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38213125336), commit `6369eeb`; enforced floor raised to 67% with over one percentage point of headroom |
+| Remote backend Windows/Linux matrix | Passed | [Backend run 38213125400](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38213125400); configuration-specific skips remain in artifacts |
+| Remote release acceptance | Passed | [Acceptance run 38213125296](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38213125296); this is verification, not a published release |
+| Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
+| Concurrent ASGI soak | 358,036 requests in 30 minutes, zero errors | Four workers; sampled p95 29.21 ms; peak RSS 205.49 to 210.80 MiB; bounded latency sampling; in-process evidence, not a deployment SLA |
+| Broad local Linux suite with CUDA/extras | 77.69% line coverage; 1,696 passed, 79 skipped, four failed | Failed run is diagnostic evidence, not a passing gate. Source-path portability and PDF assertion repairs are being verified. The 90% target remains outstanding |
+
+Exact local measurements are preserved in `reports/coverage90-gpu-linux.json`,
+`reports/coverage90-soak-30min.json` and `reports/coverage90-linux-full.json`.
+The broader local environment and the remote core environment have different
+dependencies; their percentages are not interchangeable.
+
+Earlier snapshot:
+
 Local assessment, 2026-10-11, modified 2.6.4 source, Windows 11 / Python 3.12.8:
 
 | Configuration | Outcome | Qualification |
@@ -59,8 +77,8 @@ the workflow below are the ongoing platform evidence. Adding a workflow alone
 does not establish that its configurations pass.
 
 The local full Windows suite passed 1,418 tests with 167 skips and measured
-72.87% line coverage. The Linux coverage ratchet is unchanged: a Windows
-measurement cannot justify raising its Linux floor. Additional targeted checks
+72.87% line coverage. That Windows measurement did not justify raising the Linux
+floor; the follow-up above records subsequent Linux evidence. Additional targeted checks
 cover final worker and persisted-index compatibility refinements.
 
 ```bash
@@ -78,7 +96,7 @@ python scripts/backend_support_report.py --groups engines forecasting mapie ann
 | Graph | NetworkX | Graph structure, classical node fitting and graph bundle contracts; optional GCN skips remain visible |
 | MAPIE | MAPIE | Real split/CV+/jackknife+ methods, alpha, persistence |
 | ANN | hnswlib | Persistent worker, neighbour parity, retention, restore, fault containment |
-| Serving | FastAPI, httpx | Authentication configuration and scoring schema |
+| Serving | FastAPI, httpx, Uvicorn | Authentication configuration, scoring schema, real loopback HTTP predictions and shutdown |
 
 The runner writes `support.json`, `support.md`, logs and JUnit XML with exact
 versions, tested counts and every skip reason. Requesting a missing or failed

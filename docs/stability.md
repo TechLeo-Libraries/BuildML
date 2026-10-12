@@ -49,6 +49,7 @@ deprecation rules, and dependency availability.
 ## Coverage requirements
 
 See `scripts/coverage_ratchet.json` and `pyproject.toml` `fail_under`.
-Active floor **66** (Linux CI monolith measured 66.67% on the 2.6.0 cut).
+Active floor **67** (Linux CI monolith measured 68.33% on 2026-10-12,
+GitHub Actions run 38213125336, commit 6369eeb).
 Measure the complete suite with `python scripts/run_full_coverage.py`; subset
 runs are not comparable to the project coverage threshold.

@@ -26,7 +26,8 @@ GROUPS = {
     "mapie": (["mapie"], ["tests/unit/test_mapie_real_contract.py", "tests/unit/test_mapie_alpha_contract.py",
                          "tests/unit/test_executor_domain_contracts.py::test_agent_probabilistic_honors_requested_real_mapie_backend"]),
     "ann": (["hnswlib"], ["tests/unit/test_isolated_ann.py", "tests/unit/test_cbr_industry_depth.py"]),
-    "serving": (["fastapi", "httpx"], ["tests/unit/test_serving_production.py", "tests/unit/test_schema_contract.py"]),
+    "serving": (["fastapi", "httpx"], ["tests/unit/test_serving_production.py", "tests/unit/test_schema_contract.py",
+                                      "tests/integration/test_real_http_serving.py"]),
 }
 
 

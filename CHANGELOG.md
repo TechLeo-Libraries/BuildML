@@ -14,6 +14,10 @@ from the current release; use the installation guide for current requirements.
 
 ### Fixed
 
+- Coverage enforcement rises to 67% from a passing Linux CI monolith at
+  68.33% (1,540 passed, 256 skipped). The broader local CUDA environment
+  remains a separate measurement; 90% is still a target.
+
 - Agent tool execution preserves explicit backend and online drift settings.
   Non-boolean permission values cannot enable bundle trust or test-set tuning.
 - Invalid neuro-symbolic backend names fail explicitly rather than selecting
