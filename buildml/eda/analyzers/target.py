@@ -108,7 +108,7 @@ def analyze_target(
 
     Notes
     -----
-    **The p-values are unadjusted.** Twenty features tested at the 0.05 level
+    **Raw p-values are retained alongside BH-adjusted q-values.** Twenty features tested at the 0.05 level
     will produce about one significant result by chance. Treat the ranking as a
     reading order, not as evidence.
 
@@ -173,6 +173,7 @@ def analyze_target(
                     )
                 except Exception:  # noqa: BLE001
                     pass
+        _adjust_pvalues(cat_effects)
         cat_effects.sort(key=lambda item: item.get("pvalue", 1.0))
         return {
             "column": target,
@@ -186,6 +187,7 @@ def analyze_target(
             "categorical_effect_tests": cat_effects[:15],
             "n_rows": int(len(frame)),
             "non_missing_target_rows": int(y.notna().sum()),
+            "interpretation": _interpretation(len(cat_effects)),
         }
 
     observed = y.dropna()
@@ -212,6 +214,7 @@ def analyze_target(
                     )
                 except Exception:  # noqa: BLE001
                     pass
+        _adjust_pvalues(separation)
         separation.sort(key=lambda item: item.get("pvalue", 1.0))
 
     return {
@@ -228,9 +231,42 @@ def analyze_target(
         "numeric_separation_tests": separation[:20],
         "n_rows": int(len(frame)),
         "non_missing_target_rows": int(y.notna().sum()),
+        "interpretation": _interpretation(len(separation)),
     }
 
 
 def _optional_float(value: Any) -> float | None:
     """Keep unavailable small-sample statistics null across pandas dtypes."""
     return None if pd.isna(value) else float(value)
+
+
+def _adjust_pvalues(tests: list[dict[str, Any]]) -> None:
+    """Adjust the entire tested family before display truncation (Benjamini–Hochberg)."""
+    import numpy as np
+
+    valid = [(i, float(row["pvalue"])) for i, row in enumerate(tests)
+             if np.isfinite(row["pvalue"]) and 0 <= row["pvalue"] <= 1]
+    ordered = sorted(valid, key=lambda item: item[1])
+    m = len(ordered)
+    previous = 1.0
+    for rank in range(m, 0, -1):
+        i, p = ordered[rank - 1]
+        previous = min(previous, p * m / rank)
+        tests[i]["qvalue_bh"] = previous
+        tests[i]["multiple_testing_method"] = "benjamini_hochberg"
+        tests[i]["tested_family_size"] = m
+
+
+def _interpretation(n_tests: int) -> dict[str, Any]:
+    """Expose the analysis scope next to its statistics in every export."""
+    return {
+        "purpose": "exploratory",
+        "task_source": "observed-label heuristic; verify against the modelling objective",
+        "multiple_testing_method": "benjamini_hochberg",
+        "tested_family_size": n_tests,
+        "limitations": [
+            "Association does not establish causation or out-of-sample predictive value.",
+            "BH correction assumes independent or suitably positively dependent tests; "
+            "repeated units and sampling design require separate review.",
+        ],
+    }

@@ -12,6 +12,25 @@ from the current release; use the installation guide for current requirements.
 
 ## [Unreleased]
 
+### Fixed
+
+- The breast-cancer example now encodes `malignant=1`, so positive-class
+  probabilities and threshold costs refer to malignancy.
+- Session conformal fitting rejects previously fitted Session preprocessing,
+  which may have used future calibration rows. Calibration carving no longer
+  stratifies on labels; unsupported fit/calibration class combinations fail clearly.
+- Explicit Windows industry ANN runs in a persistent isolated worker with
+  bounded waits, fault containment, retention and lazy restoration.
+- BM25 retrieval reuses its sparse index until the corpus or parameters change.
+
+### Added
+
+- EDA interpretation metadata and full-family Benjamini–Hochberg q-values for
+  target tests and numeric drift screens.
+- Real M4 hourly and BEIR SciFact comparative benchmarks, conformal simulation,
+  backend evidence reports, and bounded scale, serving and CUDA verification tools.
+- Windows/Linux backend evidence CI and a maintained validation evidence guide.
+
 ## [2.6.4] - 2026-10-04
 
 ### Fixed

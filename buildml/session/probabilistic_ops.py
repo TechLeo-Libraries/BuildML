@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Any, Literal, cast
 if TYPE_CHECKING:
     from buildml.session.session import Session
 
-from buildml.core.errors import ValidationError
+from buildml.core.errors import LeakageError, ValidationError
 from buildml.data.splits import PartitionName
 from buildml.probabilistic.checkpoint import (
     load_probabilistic_bundle,
@@ -93,6 +93,12 @@ def fit_probabilistic_op(
     ProbabilisticFitResult
         Serializable fit summary including backend and conformal disclosures.
 
+    Raises
+    ------
+    LeakageError
+        If Session-fitted preprocessing has already used future calibration
+        rows. Re-ingest unprocessed numeric features before conformal fitting.
+
     Notes
     -----
     **Backends:** ``native`` (sklearn + in-tree conformal), ``mapie`` and
@@ -104,6 +110,22 @@ def fit_probabilistic_op(
     Classical ``Session.calibration()`` is unchanged.
     """
     session.assert_can_fit("train")
+    # MAPIE calibrates even when the native conformal overlay is disabled.
+    estimator_key = str(estimator).lower().replace("-", "_")
+    calibrates = conformal or backend == "mapie" or estimator_key in {
+        "split", "cv_plus", "jackknife_plus"
+    }
+    if calibrates and session._session_preprocess_applied():
+        raise LeakageError(
+            "Conformal fitting refuses Session-global fitted preprocessing: "
+            "the future calibration rows have already influenced its parameters. "
+            "Re-ingest the raw numeric features and split before probabilistic.fit; "
+            "do not run Session impute/encode/scale/select/reduce before calibration. "
+            "For native/NGBoost posterior uncertainty without conformal calibration, "
+            "set conformal=False and choose interval_method='posterior_std'. "
+            "Exchangeability of calibration and future observations still requires "
+            "a suitable sampling design."
+        )
     plan, result = fit_probabilistic(
         session.dataset,
         session._split_plan,

@@ -32,7 +32,6 @@ def main() -> None:
         Session.ingest(frame)
         .set_roles({**{f"f{i}": "feature" for i in range(4)}, "loss": "target"})
         .split(test_size=0.2, validation_size=0.2, random_state=ctx.seed)
-        .scale(method="standard")
     )
     fit = session.probabilistic.fit(
         estimator="bayesian_ridge",
