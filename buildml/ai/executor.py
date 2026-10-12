@@ -919,6 +919,8 @@ def _dispatch_tool(
             "mode": call.arguments.get("mode", "unsupervised"),
             "random_state": 0,
         }
+        if "backend" in call.arguments:
+            kwargs["backend"] = call.arguments["backend"]
         if "contamination" in call.arguments and call.arguments["contamination"] is not None:
             kwargs["contamination"] = float(call.arguments["contamination"])
         if "threshold_policy" in call.arguments and call.arguments["threshold_policy"] is not None:
@@ -1140,12 +1142,17 @@ def _dispatch_tool(
         kwargs = {
             key: call.arguments[key]
             for key in (
+                "backend",
                 "estimator",
                 "chunk_size",
                 "n_init",
                 "prefer_reduce_components",
                 "allow_refit_fallback",
                 "drift_disclose",
+                "drift_detector",
+                "buffer_size",
+                "epochs_per_update",
+                "device",
             )
             if key in call.arguments
         }
@@ -1388,6 +1395,7 @@ def _dispatch_tool(
         kwargs = {
             key: call.arguments[key]
             for key in (
+                "backend",
                 "estimator",
                 "task",
                 "alpha",

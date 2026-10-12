@@ -68,6 +68,7 @@ def test_windows_default_backend_stays_sklearn(monkeypatch: pytest.MonkeyPatch) 
         "buildml.cbr.catalog.windows_industry_ann_refused", lambda: True
     )
     monkeypatch.setattr("buildml.cbr.catalog.cbr_industry_available", lambda: True)
+    monkeypatch.setattr("buildml.cbr.extras.cbr_industry_available", lambda: True)
     assert _default_backend_when_installed() == "sklearn"
     backend, metric = resolve_backend_metric(backend=None, metric="euclidean")
     assert backend == "sklearn"
