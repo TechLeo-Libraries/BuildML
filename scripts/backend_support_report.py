@@ -16,7 +16,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 GROUPS = {
-    "engines": (["polars", "duckdb"], ["tests/unit/test_engines.py", "tests/unit/test_duckdb_connection_lifecycle.py"]),
+    "engines": (["polars", "duckdb"], ["tests/unit/test_engines.py", "tests/unit/test_duckdb_connection_lifecycle.py", "tests/unit/test_engine_persistence_contracts.py"]),
     "forecasting": (["statsmodels"], ["tests/unit/test_forecasting_r3_depth.py"]),
     "resampling": (["imblearn"], ["tests/unit/test_imbalance_harden.py"]),
     "rl": (["gymnasium"], ["tests/unit/test_rl_tabular.py"]),
@@ -27,7 +27,7 @@ GROUPS = {
                          "tests/unit/test_executor_domain_contracts.py::test_agent_probabilistic_honors_requested_real_mapie_backend"]),
     "ann": (["hnswlib"], ["tests/unit/test_isolated_ann.py", "tests/unit/test_cbr_industry_depth.py"]),
     "serving": (["fastapi", "httpx"], ["tests/unit/test_serving_production.py", "tests/unit/test_schema_contract.py",
-                                      "tests/integration/test_real_http_serving.py"]),
+                                      "tests/integration/test_real_http_serving.py", "tests/unit/test_trust_boundary_contracts.py"]),
 }
 
 

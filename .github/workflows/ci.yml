@@ -211,6 +211,7 @@ jobs:
         run: |
           pytest \
             tests/unit/test_engines.py \
+            tests/unit/test_engine_persistence_contracts.py \
             tests/unit/test_engine_aggregate.py \
             tests/unit/test_duckdb_pushdown.py \
             tests/unit/test_duckdb_arrow_ipc.py \
@@ -281,6 +282,10 @@ jobs:
         run: |
           pytest \
             tests/unit/test_dl_torch_slice.py \
+            tests/unit/test_ddp_sampling_contracts.py \
+            tests/unit/test_ddp_result_transfer.py \
+            tests/unit/test_tabular_torch_prediction_contracts.py \
+            tests/unit/test_meta_adaptation_contracts.py \
             tests/unit/test_dl_m2_depth.py \
             tests/unit/test_dl_phase_c.py \
             tests/unit/test_pass_g_dl_depth.py \
