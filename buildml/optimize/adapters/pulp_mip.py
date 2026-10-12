@@ -11,15 +11,15 @@ from buildml.optimize.extras import require_pulp
 
 
 def _cbc_solver(pulp: Any) -> Any:
-    """Find CBC via modern discovery or an older PuLP bundled executable."""
-    solver = pulp.COIN_CMD(msg=False)
+    """Find CBC with zero-gap tolerances via modern or legacy discovery."""
+    solver = pulp.COIN_CMD(msg=False, gapRel=0.0, gapAbs=0.0)
     if solver.available():
         return solver
     # PuLP 2.x/3.x shipped CBC; passing its path avoids constructing the
     # deprecated PULP_CBC_CMD wrapper. PuLP 4 discovers pulp[cbc] directly.
     bundled_path = getattr(getattr(pulp, "PULP_CBC_CMD", None), "pulp_cbc_path", None)
     if bundled_path:
-        solver = pulp.COIN_CMD(path=bundled_path, msg=False)
+        solver = pulp.COIN_CMD(path=bundled_path, msg=False, gapRel=0.0, gapAbs=0.0)
         if solver.available():
             return solver
     raise ValidationError(

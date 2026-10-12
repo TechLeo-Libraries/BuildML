@@ -226,6 +226,28 @@ jobs:
             tests/unit/test_lazy_native_ingest.py \
             -q
 
+  optimization-contracts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install real optimization backends
+        run: python -m pip install --no-cache-dir -e ".[dev,optimize-industry]"
+      - name: Require optimization dependencies
+        run: python -c "import pulp, ortools, cvxpy; assert pulp.COIN_CMD().available()"
+      - name: Proven optimality and budget contracts
+        run: >
+          python -m pytest
+          tests/unit/test_pulp_compatibility.py
+          tests/unit/test_ortools_optimality_contracts.py
+          tests/unit/test_optimize_industry_depth.py
+          tests/unit/test_optimize_cvxpy_adapter.py
+          tests/unit/test_optimize_slice.py
+          tests/integration/test_optimize_alpha_smoke.py
+          -q
+
   optuna:
     runs-on: ubuntu-latest
     strategy:

@@ -23,6 +23,7 @@ from the current release; use the installation guide for current requirements.
 - DDP preserves requested shuffle behavior. Torch consistency inference disables
   dropout, and concept-bottleneck predictions follow the fitted model device.
 - OR-Tools feasible-only knapsack solutions disclose that optimality is unproven.
+  The exact PuLP/CBC path explicitly requests zero relative and absolute gaps.
 
 - Retrieval-grounded advisors now use the actual retrieval entry point and
   retain document IDs in source evidence instead of silently omitting context.
