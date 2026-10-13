@@ -14,6 +14,9 @@ from the current release; use the installation guide for current requirements.
 
 ### Fixed
 
+- EconML policy-tree fitting uses the observed-outcome API of DRPolicyTree,
+  learning treatment rewards through cross-fitted nuisance models. The existing
+  unadjusted mean-difference summary remains explicitly distinguished from an ATE.
 - Fold-local model selection clones caller-supplied estimators and rejects null
   string labels before factorization. Outlier fences and bin edges learn only
   from finite training values, refusing columns with no finite observations.

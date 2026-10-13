@@ -332,6 +332,35 @@ jobs:
           python -c "import torch"
           python -m pytest tests/unit/test_anomaly_industry_depth.py::test_torch_autoencoder_fit -q
 
+  econml-contracts:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install real EconML backend
+        run: python -m pip install -e ".[dev]" econml==0.17.0
+      - name: Require usable policy and effect estimators
+        run: |
+          python -m pip check
+          python -c "from econml.policy import DRPolicyTree; from econml.dml import LinearDML, CausalForestDML"
+      - name: Known-effect and policy contracts
+        run: >-
+          pytest tests/unit/test_econml_policy_contracts.py
+          tests/unit/test_causal_industry_depth.py::test_econml_dml_recovers_ate
+          tests/unit/test_causal_industry_depth.py::test_econml_causal_forest_cate_std
+          -q --junitxml=artifacts/econml-contracts.xml
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: econml-contracts-${{ matrix.os }}
+          path: artifacts/econml-contracts.xml
+
   rag:
     runs-on: ubuntu-latest
     strategy:

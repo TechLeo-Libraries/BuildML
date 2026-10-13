@@ -78,7 +78,7 @@ def fit_econml(
     """
     require_econml(feature="EconML causal backend")
     from econml.dml import CausalForestDML, LinearDML
-    from econml.policy import PolicyTree
+    from econml.policy import DRPolicyTree
 
     assert_fit_partition(split_plan, "train")
     assert split_plan is not None
@@ -126,13 +126,21 @@ def fit_econml(
             n_estimators=100,
         )
     else:
-        estimator = PolicyTree(
+        # PolicyTree.fit expects per-treatment rewards, not observed Y/T.
+        # DRPolicyTree estimates those rewards using cross-fitted nuisance
+        # models and accepts the observed-outcome API used below.
+        from sklearn.ensemble import GradientBoostingRegressor
+
+        estimator = DRPolicyTree(
+            model_regression=GradientBoostingRegressor(random_state=random_state, n_estimators=100),
+            model_propensity=model_t,
             random_state=random_state,
         )
 
     if method_key == "policy_tree":
         estimator.fit(y, t_codes, X=x)
-        # PolicyTree reports value; approximate ATE via implied treatment effects.
+        # The learned assignment rule and the disclosed unadjusted mean
+        # difference are separate outputs; this is not an adjusted ATE.
         policy = estimator.predict(x)
         treated_effect = float(np.mean(y[t_codes == 1])) if n_treated else 0.0
         control_effect = float(np.mean(y[t_codes == 0])) if n_control else 0.0
