@@ -52,7 +52,7 @@ Follow-up assessment, 2026-10-12, review branch `codex/coverage-cuda-ci-20261012
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
 | Concurrent ASGI soak | 358,036 requests in 30 minutes, zero errors | Four workers; sampled p95 29.21 ms; peak RSS 205.49 to 210.80 MiB; bounded latency sampling; in-process evidence, not a deployment SLA |
 | Linux targeted repairs | Five DDP tests passed; PDF, TorchScript and DEC/IDEC checks passed | Distributed CPU/Gloo checks use the CUDA-capable Torch installation; multi-GPU throughput is unmeasured |
-| Expanded local Linux suite with CUDA/extras | 81.74% line coverage; 2,058 passed, 45 skipped, six failed | Commit `505cc55`; diagnostic evidence, not a passing gate. All six failures were the HiGHS/OR-Tools native symbol conflict described above. The compatible dependency repair passed targeted checks; a fresh whole-package measurement on `3b4df47` is running. The 90% target remains outstanding |
+| Expanded local Linux suite with CUDA/extras | Passed: 82.25% line coverage (50,530 / 61,437 statements); 2,147 passed, 45 skipped | Commit `3b4df47`, measured 2026-10-12; whole-package monolith completed in 26 minutes. HiGHS compatibility, actual local encoder and Flower configurations, and subprocess coverage were exercised. The 90% target remains outstanding |
 
 Exact local measurements are preserved in `reports/coverage90-gpu-linux.json`,
 `reports/coverage90-soak-30min.json` and `reports/coverage90-linux-full.json`.

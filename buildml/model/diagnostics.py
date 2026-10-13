@@ -347,13 +347,23 @@ def calibration_report(
             y_true, prob_pos, n_bins=n_bins_eff, strategy="quantile"
         )
         brier = float(brier_score_loss(y_true, prob_pos))
-        ece = float(np.mean(np.abs(np.asarray(frac_pos) - np.asarray(mean_pred))))
+        # Quantile bins can have very unequal sizes when probabilities tie.
+        # Weight nonempty bins by their actual sample counts, matching the
+        # bin assignment used by sklearn.calibration_curve.
+        edges = np.percentile(prob_pos, np.linspace(0, 100, n_bins_eff + 1))
+        bin_ids = np.searchsorted(edges[1:-1], prob_pos)
+        counts = np.bincount(bin_ids, minlength=len(edges))
+        nonempty_counts = counts[counts > 0]
+        gaps = np.abs(np.asarray(frac_pos) - np.asarray(mean_pred))
+        ece = float(np.average(gaps, weights=nonempty_counts))
         max_gap = float(np.max(np.abs(np.asarray(frac_pos) - np.asarray(mean_pred))))
         payload["positive_class"] = positive
         payload["brier_score"] = brier
         payload["ece"] = ece
         payload["max_reliability_gap"] = max_gap
         payload["n_bins"] = int(n_bins_eff)
+        payload["bin_counts"] = [int(value) for value in nonempty_counts]
+        payload["ece_method"] = "sample-weighted mean absolute bin gap"
         payload["prevalence"] = float(y_true.mean())
         payload["calibration_curve"] = {
             "fraction_positives": [float(v) for v in frac_pos],

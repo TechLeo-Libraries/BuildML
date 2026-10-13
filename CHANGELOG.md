@@ -14,6 +14,8 @@ from the current release; use the installation guide for current requirements.
 
 ### Fixed
 
+- Calibration ECE weights quantile bins by their actual sample counts when
+  probability ties produce unequal bin sizes, and reports bin counts and method.
 - EDA CSV exports preserve fields from later heterogeneous rows, including
   drift statistics and multivariate anomaly measurements. Dashboard JSON maps
   undefined nonfinite measurements to null instead of failing serialization.
