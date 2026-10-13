@@ -2,6 +2,21 @@
   "policy": "Coverage fail_under is a one-way ratchet on the Linux CI monolith (pytest --cov=buildml). Raise when that gate improves; never lower to silence a regression. Floors must be set from that gate or scripts/run_full_coverage.py in monolith mode, never from a tiny subset or from a Windows isolated combine that skips crashed modules.",
   "source": "pyproject.toml [tool.coverage.report] fail_under",
   "current": 69,
+  "expanded": {
+    "current": 81,
+    "source": ".github/workflows/ci.yml expanded-coverage job --cov-fail-under",
+    "profile": "requirements-expanded-coverage.txt",
+    "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
+    "seed_measurement": {
+      "percent_covered": 82.69421622061336,
+      "covered_lines": 50828,
+      "num_statements": 61465,
+      "source_revision": "1518598",
+      "platform": "local Linux, CUDA-capable Torch",
+      "result": "2235 passed, 42 skipped, no failures",
+      "notes": "The new remote CPU profile must pass independently; this local result does not establish that outcome. The 90 percent target remains outstanding."
+    }
+  },
   "schedule": [
     {
       "target": 27,

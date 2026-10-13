@@ -1,0 +1,11 @@
+# Reproduce the expanded Linux assessment; CPU Torch is installed first in CI.
+-c requirements-expanded-coverage-constraints.txt
+-e .[dev,engines,pretrained,rag,ssl,graph,timeseries,imbalanced,rl,tda,unsupervised,cbr-industry,probabilistic-industry,optimize-industry,online-industry,federated-industry,synthetic-industry,recommenders-industry,onnx,shap,excel,optuna]
+econml==0.17.0
+imodels==3.0.4
+flaml==2.7.0
+pyod==3.6.7
+lightgbm==4.7.0
+xgboost==3.0.5
+z3-solver==5.1.0.0
+langdetect==1.0.9

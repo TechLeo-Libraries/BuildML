@@ -50,15 +50,23 @@ Follow-up assessment, 2026-10-12, review branch `codex/coverage-cuda-ci-20261012
 | Remote backend Windows/Linux matrix | Linux 156 passed / 10 skipped; Windows 157 passed / nine skipped | [Backend run 38314965754](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38314965754), commit `3b4df47`; nine required groups, configuration-specific skips remain in artifacts |
 | Remote release acceptance | Passed | [Acceptance run 38314965734](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38314965734), commit `3b4df47`; this is verification, not a published release |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
-| Local Linux EconML 0.17.0 policy learner | Four known-benefit contracts passed | Continuous/binary outcomes and numeric/string treatment labels; the repaired adapter uses DRPolicyTree. Windows/Linux remote jobs are being added; these local results do not establish their outcomes |
+| Local Linux EconML 0.17.0 policy learner | Sixteen known-benefit and reporting contracts passed | Continuous/binary outcomes, numeric/string treatment labels, two simulation seeds and requested bootstrap counts; adjusted population summaries and omitted intervals are explicit. Remote Windows revealed noisy-leaf instability in the earlier unbounded version; its repaired outcome must be verified |
+| Isolated Linux DoWhy 0.14 | Estimation/refutation passed; four name and bundle contracts passed | NumPy 2.4.1 / SciPy 1.15.3 / scikit-learn 1.9.1 / pandas 3.0.6; declared graph node names retain spaces, punctuation, quotes and Unicode. This compatible profile is separate from expanded NumPy 2.5 / SciPy 1.18; remote platform outcomes remain pending |
 | Concurrent ASGI soak | 358,036 requests in 30 minutes, zero errors | Four workers; sampled p95 29.21 ms; peak RSS 205.49 to 210.80 MiB; bounded latency sampling; in-process evidence, not a deployment SLA |
 | Linux targeted repairs | Five DDP tests passed; PDF, TorchScript and DEC/IDEC checks passed | Distributed CPU/Gloo checks use the CUDA-capable Torch installation; multi-GPU throughput is unmeasured |
-| Expanded local Linux suite with CUDA/extras | Passed: 82.25% line coverage (50,530 / 61,437 statements); 2,147 passed, 45 skipped | Commit `3b4df47`, measured 2026-10-12; whole-package monolith completed in 26 minutes. HiGHS compatibility, actual local encoder and Flower configurations, and subprocess coverage were exercised. The 90% target remains outstanding |
+| Expanded local Linux suite with CUDA/extras | Passed: 82.69% line coverage (50,828 / 61,465 statements); 2,235 passed, 42 skipped | Commit `1518598`, measured 2026-10-13; whole-package monolith completed in 26 minutes. HiGHS compatibility, actual local encoders, Flower, EconML, and subprocess coverage were exercised. The 90% target remains outstanding |
 
 Exact local measurements are preserved in `reports/coverage90-gpu-linux.json`,
 `reports/coverage90-soak-30min.json` and `reports/coverage90-linux-full.json`.
 The broader local environment and the remote core environment have different
 dependencies; their percentages are not interchangeable.
+
+The `expanded-coverage` CI job reproduces the assessed dependency profile using
+`requirements-expanded-coverage.txt` and its dated constraints. It runs all
+tests against all BuildML modules, with an initial 81% floor, and uploads source,
+installed package, coverage and test-result artifacts. CPU Torch replaces local
+CUDA Torch in that job; its outcome must be verified independently. The core
+floor remains 69%, and the 90% target remains outstanding.
 
 Earlier snapshot:
 

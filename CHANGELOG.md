@@ -14,12 +14,16 @@ from the current release; use the installation guide for current requirements.
 
 ### Fixed
 
+- DoWhy causal graphs preserve dataframe names containing spaces, quotes,
+  punctuation and Unicode by passing native node IDs rather than interpolated DOT.
+- Doubly robust policy trees bound depth and leaf size to reduce unstable rules
+  from small noisy leaves; their numerical profile is shared across platform CI.
 - Evolutionary search rejects missing, nonfinite, boolean, and fractional integer
   bounds before fitting; logarithmic domains require positive bounds and a
   boolean flag. Invalid declarations raise actionable ValidationError messages.
-- EconML policy-tree fitting uses the observed-outcome API of DRPolicyTree,
-  learning treatment rewards through cross-fitted nuisance models. The existing
-  unadjusted mean-difference summary remains explicitly distinguished from an ATE.
+- EconML policy-tree fitting uses the observed-outcome API of DRPolicyTree.
+  ATE and neighborhood effect dispersion come from cross-fitted reward estimates;
+  reports disclose omitted bootstrap intervals and the actual refit count.
 - Fold-local model selection clones caller-supplied estimators and rejects null
   string labels before factorization. Outlier fences and bin edges learn only
   from finite training values, refusing columns with no finite observations.

@@ -53,3 +53,8 @@ Active floor **69** (Linux CI monolith measured 70.04–70.05% across Python
 3.10–3.13 on 2026-10-12, GitHub Actions run 38219062877, commit f94dff0).
 Measure the complete suite with `python scripts/run_full_coverage.py`; subset
 runs are not comparable to the project coverage threshold.
+The separate expanded Linux job runs the same complete test directory with
+`requirements-expanded-coverage.txt` and an **81%** initial floor, seeded by
+the passing local 82.69% measurement. Remote CPU results are recorded separately
+with their source revision and installed package list. The requested 90% coverage
+target remains open.

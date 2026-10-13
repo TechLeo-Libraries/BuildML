@@ -120,6 +120,11 @@ monolith** (**69** active after the 2026-10-12 CI measurement of at least 70.04%
 combine, not this gate): raise only from a full-suite measure
 (`python scripts/run_full_coverage.py --update-ratchet` or CI
 `pytest tests --cov=buildml`); do not lower it to silence a regression.
+The separate `expanded-coverage` CI job installs
+`requirements-expanded-coverage.txt` and runs the entire suite with an **81%**
+floor. Its seed measurement was a passing 82.69% expanded local Linux run;
+the remote CPU configuration must pass independently. Keep core and expanded
+results identified by their dependency profile when reporting coverage.
 `requirements.txt` / `requirements-dev.txt` are convenience mirrors of
 `pyproject.toml` ranges; prefer `pip install -e ".[dev]"`.
 
