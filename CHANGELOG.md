@@ -14,6 +14,9 @@ from the current release; use the installation guide for current requirements.
 
 ### Fixed
 
+- Fold-local model selection clones caller-supplied estimators and rejects null
+  string labels before factorization. Outlier fences and bin edges learn only
+  from finite training values, refusing columns with no finite observations.
 - Calibration ECE weights quantile bins by their actual sample counts when
   probability ties produce unequal bin sizes, and reports bin counts and method.
 - EDA CSV exports preserve fields from later heterogeneous rows, including

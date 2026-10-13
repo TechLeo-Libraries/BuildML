@@ -7,7 +7,7 @@ from typing import Any, Literal
 
 import numpy as np
 import pandas as pd
-from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn.base import BaseEstimator, TransformerMixin, clone
 from sklearn.decomposition import PCA
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.feature_selection import (
@@ -804,7 +804,7 @@ class FoldLocalPreprocessor(TransformerMixin, BaseEstimator):
         lower: dict[str, float] = {}
         upper: dict[str, float] = {}
         for column in cols:
-            series = pd.to_numeric(x_train[column], errors="coerce").dropna()
+            series = pd.to_numeric(x_train[column], errors="coerce").replace([np.inf, -np.inf], np.nan).dropna()
             if series.empty:
                 raise ValidationError(
                     f"Column '{column}' has no finite fold-train values for outlier fences"
@@ -912,7 +912,7 @@ class FoldLocalPreprocessor(TransformerMixin, BaseEstimator):
             self._selector = selector
             return
         # model-based: fit estimator on fold-train only, then SelectFromModel.
-        model = recipe.select_estimator
+        model = clone(recipe.select_estimator) if recipe.select_estimator is not None else None
         if model is None:
             n_classes = int(pd.Series(y).nunique())
             if n_classes > 20:
@@ -1025,7 +1025,7 @@ class FoldLocalPreprocessor(TransformerMixin, BaseEstimator):
         edges: dict[str, list[float]] = {}
         labels: dict[str, list[str]] = {}
         for column in cols:
-            series = pd.to_numeric(x_train[column], errors="coerce").dropna()
+            series = pd.to_numeric(x_train[column], errors="coerce").replace([np.inf, -np.inf], np.nan).dropna()
             if series.empty:
                 raise ValidationError(
                     f"Column '{column}' has no finite fold-train values for binning"
@@ -1299,6 +1299,8 @@ def _frequency_threshold(min_frequency: float | int, n_rows: int) -> float:
 
 
 def _numeric_target(series: pd.Series) -> np.ndarray:
+    if series.isna().any():
+        raise ValidationError("Fold-local target steps require a non-null target")
     if pd.api.types.is_numeric_dtype(series):
         values = pd.to_numeric(series, errors="coerce")
         if values.isna().any():

@@ -371,7 +371,7 @@ jobs:
           HF_HUB_OFFLINE: "1"
           TRANSFORMERS_OFFLINE: "1"
           TOKENIZERS_PARALLELISM: "false"
-        run: pytest tests/unit/test_offline_local_encoder_contracts.py -q
+        run: pytest tests/unit/test_offline_local_encoder_contracts.py tests/unit/test_ai_runtime_workflow_contracts.py -q
 
       - name: RAG alpha-gate smoke (explicit)
         run: pytest tests/integration/test_rag_alpha_smoke.py -q
