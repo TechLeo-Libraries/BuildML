@@ -3082,24 +3082,36 @@ def _gene_from_spec(name: str, spec: Any) -> _GeneSpec:
             f"Evolutionary space entry '{name}' must be a dict spec or a list of choices"
         )
     kind = str(spec.get("type", "")).lower()
-    if kind == "float":
-        low = float(spec["low"])
-        high = float(spec["high"])
+    if kind in {"float", "int"}:
+        try:
+            raw_low, raw_high = spec["low"], spec["high"]
+            if isinstance(raw_low, bool) or isinstance(raw_high, bool):
+                raise ValueError("boolean bounds are not numeric domains")
+            low, high = float(raw_low), float(raw_high)
+        except (KeyError, TypeError, ValueError, OverflowError) as exc:
+            raise ValidationError(
+                f"Evolutionary {kind} space '{name}' requires numeric low and high bounds"
+            ) from exc
+        if not np.isfinite(low) or not np.isfinite(high):
+            raise ValidationError(f"Evolutionary {kind} space '{name}' requires finite bounds")
         if high < low:
-            raise ValidationError(f"Evolutionary float space '{name}' has high < low")
+            raise ValidationError(f"Evolutionary {kind} space '{name}' has high < low")
+        if kind == "int":
+            if not low.is_integer() or not high.is_integer():
+                raise ValidationError(f"Evolutionary int space '{name}' requires integer bounds")
+            return _GeneSpec(name=name, kind="int", low=low, high=high)
+        log = spec.get("log", False)
+        if not isinstance(log, bool):
+            raise ValidationError(f"Evolutionary float space '{name}' log must be a boolean")
+        if log and low <= 0:
+            raise ValidationError(f"Evolutionary log space '{name}' requires positive bounds")
         return _GeneSpec(
             name=name,
             kind="float",
             low=low,
             high=high,
-            log=bool(spec.get("log", False)),
+            log=log,
         )
-    if kind == "int":
-        low_i = int(spec["low"])
-        high_i = int(spec["high"])
-        if high_i < low_i:
-            raise ValidationError(f"Evolutionary int space '{name}' has high < low")
-        return _GeneSpec(name=name, kind="int", low=float(low_i), high=float(high_i))
     if kind == "categorical":
         choices = tuple(spec.get("choices") or [])
         if not choices:

@@ -14,6 +14,9 @@ from the current release; use the installation guide for current requirements.
 
 ### Fixed
 
+- Evolutionary search rejects missing, nonfinite, boolean, and fractional integer
+  bounds before fitting; logarithmic domains require positive bounds and a
+  boolean flag. Invalid declarations raise actionable ValidationError messages.
 - EconML policy-tree fitting uses the observed-outcome API of DRPolicyTree,
   learning treatment rewards through cross-fitted nuisance models. The existing
   unadjusted mean-difference summary remains explicitly distinguished from an ATE.
