@@ -55,6 +55,6 @@ Measure the complete suite with `python scripts/run_full_coverage.py`; subset
 runs are not comparable to the project coverage threshold.
 The separate expanded Linux job runs the same complete test directory with
 `requirements-expanded-coverage.txt` and an **82%** floor, raised after passing
-remote CPU coverage above 83%; latest measurement is 83.32% at `fa7b678`. Remote CPU results are recorded separately
+remote CPU coverage above 83%; latest measurement is 83.79% at `2837fb3` with thread/process tracing. Remote CPU results are recorded separately
 with their source revision and installed package list. The requested 90% coverage
 target remains open.

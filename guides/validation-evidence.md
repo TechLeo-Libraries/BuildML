@@ -109,19 +109,19 @@ Follow-up assessment, 2026-10-14, review branch `codex/coverage-cuda-ci-20261012
 | Configuration | Outcome | Qualification |
 |---|---|---|
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
-| Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38568104949](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38568104949), `fa7b678`; real backend groups and bounded allocation checks; skips remain visible |
-| Remote release acceptance | Passed | [Acceptance run 38568105076](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38568105076), `fa7b678`; verification does not publish a release |
-| Remote expanded CPU whole-package gate | Passed: 83.32% (51,337 / 61,613 lines); 2,492 passed, 74 skipped | [CI run 38568104646](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38568104646); tested merge `c2a480c` has the same Git tree as `fa7b678`; floor remains 82% |
-| Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38568104646](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38568104646), `fa7b678`; real estimation/refutation, graph-name, policy and persistence contracts |
+| Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
+| Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
+| Remote expanded CPU whole-package gate | Passed: 83.79% (51,627 / 61,613 lines); 2,498 passed, 77 skipped | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544); tested merge `8cfb287` has the same Git tree as `2837fb3`; floor remains 82% |
+| Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
 | Local Linux EconML 0.17.0 policy learner | Sixteen known-benefit and reporting contracts passed | Continuous/binary outcomes, numeric/string treatment labels, two simulation seeds and requested bootstrap counts; adjusted population summaries and omitted intervals are explicit. Repaired behavior also passed remote Windows/Linux jobs |
 | Isolated Linux DoWhy 0.14 | Estimation/refutation passed; four name and bundle contracts passed | NumPy 2.4.1 / SciPy 1.15.3 / scikit-learn 1.9.1 / pandas 3.0.6; graph node names retain spaces, punctuation, quotes and Unicode. This compatible profile is separate from expanded NumPy 2.5 / SciPy 1.18; remote Windows/Linux jobs also passed |
 | Isolated Linux giotto 0.6.2 | Fifteen real topology tests passed | NumPy 1.26.4 / SciPy 1.11.4 / scikit-learn 1.3.2 / Arrow 20; real Arrow execution, diagram-axis integrity, bounded Mapper sampling and true igraph node/edge counts. This is a separate compatible profile, not a full-suite measurement |
 | Concurrent ASGI soak | 358,036 requests in 30 minutes, zero errors | Four workers; sampled p95 29.21 ms; peak RSS 205.49 to 210.80 MiB; bounded latency sampling; in-process evidence, not a deployment SLA |
 | Real Windows HTTP recovery assessment | 1,022,102 requests in one hour, no unexpected failures | Immutable `e3f7b93` source hash unchanged; three 20-minute process lifetimes at 1/4/8 clients and 1/16/64 rows. Sampled p95 4.89/18.58/35.79 ms; graceful/forced restart startup 6.50/17.80 seconds. Deliberate downtime is separate from scored requests |
-| Isolated RL/imitation profile | Seventeen tests passed locally; both remote Windows/Linux jobs passed | [CI run 38568104646](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38568104646), `fa7b678`; real PPO/BC/GAIL and trusted persistence on a separate compatible CPU stack |
+| Isolated RL/imitation profile | Seventeen tests passed locally; both remote Windows/Linux jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real PPO/BC/GAIL and trusted persistence on a separate compatible CPU stack |
 | Linux targeted repairs | Five DDP tests passed; PDF, TorchScript and DEC/IDEC checks passed | Distributed CPU/Gloo checks use the CUDA-capable Torch installation; multi-GPU throughput is unmeasured |
-| Expanded local Linux suite with CUDA/extras | Passed: 83.38% (51,372 / 61,613 lines); 2,506 passed, 60 skipped | Immutable `fa7b678` suite completed in 30:24; CUDA probe passed. Exclusions remain 564. The 90% target is outstanding |
+| Expanded local Linux suite with CUDA/extras | Passed: 83.85% (51,664 / 61,613 lines); 2,515 passed, 60 skipped | Immutable `2837fb3` suite completed in 27:39; CUDA probe passed. Exclusions remain 564. The 90% target is outstanding |
 
 Exact local measurements are preserved in `reports/coverage90-gpu-linux.json`,
 `reports/coverage90-soak-30min.json` and `reports/coverage90-linux-full.json`.
@@ -217,18 +217,19 @@ errors, and process RSS 204.77 to 208.65 MiB. Sampled p95 latencies were
 latencies are not a controlled Windows/Linux comparison. Longer operation,
 other models and deployment populations remain separate evidence requirements.
 
-The passing remote expanded coverage job at `fa7b678` measured 83.32%
-(51,337 of 61,613 executable lines), with 2,492 tests passed and 74 skipped.
-The entire `fa7b678` matrix passed. Those figures used multiprocessing-only
-collection. Corrected thread/process measurements at `2837fb3` are separate:
-core gates passed at 71.28-71.29%; expanded/local results are pending. Do not
-add a subset tracing delta to an earlier full-suite percentage. The 90% goal
-remains open until a complete corrected measurement establishes it.
+Corrected thread/process collection at `2837fb3` passed remotely at 83.79%
+(51,627 of 61,613 executable lines), with 2,498 tests passed and 77 skipped.
+The tested merge tree equals the source tree, and the entire CI matrix passed.
+Core gates passed at 71.28-71.29%. Expanded floor 82% retains the required
+headroom. Earlier measurements used multiprocessing-only collection; subset
+tracing deltas must not be added to full-suite percentages.
 
-Fresh local Linux coverage at `fa7b678` passed with 83.38%
-(51,372 of 61,613 executable lines), 2,506 tests passed and 60 skipped.
-The corresponding actual CUDA probe passed five BuildML training epochs and
-held-out evaluation. Dependency-specific skips remain visible in the artifacts.
+Fresh local Linux coverage at the same revision passed at 83.85%
+(51,664 of 61,613 lines), with 2,515 tests passed and 60 skipped in 27:39.
+The actual CUDA probe passed five BuildML training epochs and held-out
+evaluation. Coverage exclusions remain 564. The 90% target still requires
+3,788 additional covered lines locally at this denominator. Dependency-specific
+skips remain visible; these results do not establish long-term reliability.
 
 Serving configuration supplies omitted arguments. Explicit arguments override
 it, including `trusted=False`, a loopback host and CPU placement. Permission

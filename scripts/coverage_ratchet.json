@@ -8,17 +8,18 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 83.32170158895039,
-      "covered_lines": 51337,
+      "percent_covered": 83.79238147793485,
+      "covered_lines": 51627,
       "num_statements": 61613,
-      "source_revision": "fa7b6784b72960408d903eca18fd6e9713d063e6",
-      "tested_revision": "c2a480c7c74b77705127780ed7d619e0a4c6ddb6",
+      "source_revision": "2837fb36428b7691e4ee7cb57c6d1b148803af73",
+      "tested_revision": "8cfb2878c6a0757514a46a4445e5adbda114f7a1",
       "platform": "remote Linux, CPU expanded profile",
-      "run_id": 38568104646,
-      "result": "2492 passed,74 skipped,no failures",
-      "notes": "The tested merge tree equals the branch tree. All CI jobs passed, including compatible causal, topology and RL profiles. Floor82 retains >=1pp headroom; 90 remains outstanding.",
+      "run_id": 38589015544,
+      "result": "2498 passed, 77 skipped, no failures",
+      "notes": "Tested merge tree equals source tree. Entire CI passed. Floor 82 retains at least one percentage point of headroom; 90 remains outstanding.",
       "trace_concurrency": [
-        "multiprocessing"
+        "multiprocessing",
+        "thread"
       ]
     },
     "seed_measurement": {
