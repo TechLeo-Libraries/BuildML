@@ -33,6 +33,11 @@ from the current release; use the installation guide for current requirements.
   rejects duplicates and invalid minimum sizes. Null-target evaluation retains
   calibrated MAPIE intervals/sets on the same labeled population.
 - Giotto Mapper summaries count the real igraph vertices and edges.
+- The RL extra's SB3 minimum matches imitation's supported series. Real BC
+  uses the trainer's constructor/optimizer API; GAIL uses a vectorized environment,
+  seeds its reward network, and archives models without live environment state.
+  Variable horizons require an explicit choice and retain risk disclosures.
+  Agent imitation requests preserve the selected method and training budget.
 
 - DoWhy causal graphs preserve dataframe names containing spaces, quotes,
   punctuation and Unicode by passing native node IDs rather than interpolated DOT.

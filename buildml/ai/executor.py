@@ -365,6 +365,11 @@ def propose_tool_execution(
         warnings.append("This is a destructive operation that cannot be undone.")
     if not spec.read_only:
         warnings.append("This operation will modify Session state.")
+    if tool_name == "fit_imitation" and arguments.get("allow_variable_horizon") is True:
+        warnings.append(
+            "Variable-horizon GAIL can leak reward information through episode termination. "
+            "This request explicitly accepts that risk."
+        )
 
     return ExecutorProposal(
         tool_call=call,
@@ -2043,7 +2048,13 @@ def _dispatch_tool(
                 "backend",
                 "task",
                 "estimator",
+                "method",
+                "columns",
                 "action_column",
+                "env_id",
+                "n_epochs",
+                "total_timesteps",
+                "allow_variable_horizon",
                 "random_state",
                 "prefer_reduce_components",
             )

@@ -20,14 +20,28 @@ and `psutil`, then run:
 
 ```bash
 python scripts/verify_http_reliability.py --seconds 3600 --out artifacts/http-reliability.json
+python scripts/verify_http_reliability.py --seconds 3600 --continuous --out artifacts/http-continuous.json
 ```
 
 The runner checks predictions against a known linear function, authentication,
 malformed requests, RSS samples and sampled latency at three client/batch loads.
 It restarts after graceful shutdown and a forced process termination. Traffic
 pauses during these deliberate failures; startup and shutdown times are recorded.
-The result describes this loopback configuration and duration, not uninterrupted
-availability or long-term production reliability.
+Each recovery-run process handles one third of the requested load duration.
+The continuous mode keeps one process through all three loads. Results record
+source hashes and dependency versions and reject source changes during the run.
+They describe this loopback configuration and duration, not an availability SLA
+or long-term production reliability.
+
+The isolated RL profile pins imitation 1.0.1, SB3 2.2.1, Gymnasium 0.29.1,
+Torch 2.7.1 CPU and Arrow 21 with NumPy 1.26. The earlier declared SB3 minimum
+contradicted imitation's upper bound. BC now uses the installed trainer's
+constructor/optimizer API, and GAIL uses a vectorized environment. GAIL refuses
+variable horizons by default; accepting them requires an explicit boolean and
+discloses possible reward leakage before agent execution and in the fit result.
+Seeded CPU policies repeat, and trusted GAIL bundles use SB3's archive format
+instead of pickling live environment internals. These contracts establish
+interoperation on bounded workloads, not control performance on difficult tasks.
 
 The serving follow-up also reproduced cross-app model contamination: two
 servers in one process returned the most recently loaded model's predictions.
@@ -89,6 +103,8 @@ Follow-up assessment, 2026-10-14, review branch `codex/coverage-cuda-ci-20261012
 | Isolated Linux DoWhy 0.14 | Estimation/refutation passed; four name and bundle contracts passed | NumPy 2.4.1 / SciPy 1.15.3 / scikit-learn 1.9.1 / pandas 3.0.6; graph node names retain spaces, punctuation, quotes and Unicode. This compatible profile is separate from expanded NumPy 2.5 / SciPy 1.18; remote Windows/Linux jobs also passed |
 | Isolated Linux giotto 0.6.2 | Fifteen real topology tests passed | NumPy 1.26.4 / SciPy 1.11.4 / scikit-learn 1.3.2 / Arrow 20; real Arrow execution, diagram-axis integrity, bounded Mapper sampling and true igraph node/edge counts. This is a separate compatible profile, not a full-suite measurement |
 | Concurrent ASGI soak | 358,036 requests in 30 minutes, zero errors | Four workers; sampled p95 29.21 ms; peak RSS 205.49 to 210.80 MiB; bounded latency sampling; in-process evidence, not a deployment SLA |
+| Real Windows HTTP recovery assessment | 1,022,102 requests in one hour, no unexpected failures | Immutable `e3f7b93` source hash unchanged; three 20-minute process lifetimes at 1/4/8 clients and 1/16/64 rows. Sampled p95 4.89/18.58/35.79 ms; graceful/forced restart startup 6.50/17.80 seconds. Deliberate downtime is separate from scored requests |
+| Isolated Linux RL/imitation profile | Seventeen tests passed, one intentional absence-test skip | Real PPO, BC holdout behavior at two seeds, GAIL horizon guard, seeded repeatability, agent parameters and trusted bundle parity. Separate CPU profile; remote Windows/Linux results require their CI jobs |
 | Linux targeted repairs | Five DDP tests passed; PDF, TorchScript and DEC/IDEC checks passed | Distributed CPU/Gloo checks use the CUDA-capable Torch installation; multi-GPU throughput is unmeasured |
 | Expanded local Linux suite with CUDA/extras | Passed: 83.00% line coverage (51,022 / 61,472 statements); 2,327 passed, 46 skipped | Commit `c3bd24a`, measured 2026-10-14; immutable whole-package monolith completed in 30 minutes. The CUDA probe also passed. The 90% target remains outstanding |
 

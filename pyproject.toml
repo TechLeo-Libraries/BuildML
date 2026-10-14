@@ -68,7 +68,7 @@ graph-pyg = ["buildml[torch]", "torch-geometric>=2.5"]
 rl = ["gymnasium>=0.29"]
 rl-industry = [
   "buildml[rl]",
-  "stable-baselines3>=2.3",
+  "stable-baselines3>=2.2.1",
   "imitation>=1.0",
   "torch>=2.2",
 ]

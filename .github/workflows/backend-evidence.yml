@@ -28,6 +28,7 @@ jobs:
         run: |
           python -m pip install psutil==7.2.2
           python scripts/verify_http_reliability.py --seconds 60 --out artifacts/http-reliability.json
+          python scripts/verify_http_reliability.py --seconds 60 --continuous --out artifacts/http-continuous.json
       - name: Bounded allocation failure containment
         run: python scripts/verify_operational_limits.py --rows 100000 1000000 --soak-seconds 1 --memory-budget-mib 512 --out artifacts/memory-pressure.json
       - uses: actions/upload-artifact@v4
@@ -38,6 +39,7 @@ jobs:
             artifacts/backend-support/
             artifacts/operational-limits.json
             artifacts/http-reliability.json
+            artifacts/http-continuous.json
             artifacts/memory-pressure.json
   public-benchmarks:
     runs-on: ubuntu-latest

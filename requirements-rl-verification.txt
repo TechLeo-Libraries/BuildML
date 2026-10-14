@@ -1,0 +1,13 @@
+# Imitation 1.0.1 requires SB3 2.2.x and Gymnasium 0.29.x.
+-e .[rl,rl-industry]
+pytest>=7.4
+pytest-cov>=7.0
+numpy==1.26.4
+pandas==2.3.3
+scipy==1.15.3
+scikit-learn==1.7.2
+pyarrow==21.0.0
+torch==2.7.1
+gymnasium==0.29.1
+stable-baselines3==2.2.1
+imitation==1.0.1

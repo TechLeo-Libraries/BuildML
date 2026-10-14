@@ -42,7 +42,7 @@ def worker(bundle, port, stop_file):
         handle.stop()
 
 
-def verify(seconds, out):
+def verify(seconds, out, *, continuous=False):
     import httpx
     import numpy as np
     import pandas as pd
@@ -62,7 +62,9 @@ def verify(seconds, out):
         return digest.hexdigest()
 
     result = {"status": "running", "requested_load_seconds": seconds,
-              "scope": "real loopback HTTP; traffic paused during deliberate recovery; no deployment SLA",
+              "scope": ("continuous real loopback HTTP across three loads; no deployment SLA" if continuous
+                        else "real loopback HTTP; traffic paused during deliberate recovery; no deployment SLA"),
+              "continuous_process": continuous,
               "source_sha256_at_start": source_digest(),
               "source_revision": ((ROOT / ".source-revision").read_text().strip()
                                   if (ROOT / ".source-revision").exists() else None),
@@ -87,13 +89,15 @@ def verify(seconds, out):
         process = None
         try:
             for epoch, (clients, batch) in enumerate([(1, 1), (4, 16), (8, 64)]):
-                stop_file = Path(tmp) / f"stop-{epoch}"
+                if not continuous or epoch == 0:
+                    stop_file = Path(tmp) / f"stop-{epoch}"
                 launch_started = time.monotonic()
-                process = subprocess.Popen(
-                    [sys.executable, str(Path(__file__).resolve()), "--worker", "--bundle", str(bundle),
-                     "--port", str(port), "--stop-file", str(stop_file)],
-                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-                )
+                if not continuous or epoch == 0:
+                    process = subprocess.Popen(
+                        [sys.executable, str(Path(__file__).resolve()), "--worker", "--bundle", str(bundle),
+                         "--port", str(port), "--stop-file", str(stop_file)],
+                        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                    )
                 with httpx.Client(timeout=2) as client:
                     deadline = launch_started + 60
                     while True:
@@ -109,7 +113,7 @@ def verify(seconds, out):
                             raise TimeoutError("server did not become healthy within 60 seconds")
                         time.sleep(.05)
                 recovery = time.monotonic() - launch_started
-                if epoch:
+                if epoch and not continuous:
                     result["recoveries"].append({"after": "graceful" if epoch == 1 else "forced",
                                                  "startup_seconds": recovery})
                 deadline = time.monotonic() + seconds / 3
@@ -168,6 +172,7 @@ def verify(seconds, out):
                 errors = [error for item in outcomes for error in item["errors"]]
                 samples = [value for item in outcomes for value in item["samples"]]
                 result["epochs"].append({"clients": clients, "batch_size": batch,
+                                          "server_pid": process.pid,
                                           "requests": sum(item["requests"] for item in outcomes),
                                           "latency_p95_ms": float(np.percentile(samples, 95)) if samples else None,
                                           "latency_sampling": "reservoir of up to 2048 requests per client",
@@ -176,6 +181,8 @@ def verify(seconds, out):
                 save()
                 if errors:
                     raise RuntimeError("HTTP scoring or request-contract failure")
+                if continuous and epoch < 2:
+                    continue
                 stop_started = time.monotonic()
                 if epoch == 1:
                     # Windows venv launchers can have a separate interpreter child.
@@ -225,6 +232,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--seconds", type=float, default=3600)
     parser.add_argument("--out", default="artifacts/http-reliability.json")
+    parser.add_argument("--continuous", action="store_true", help="Keep one server process through all load phases")
     parser.add_argument("--worker", action="store_true")
     parser.add_argument("--bundle")
     parser.add_argument("--port", type=int)
@@ -233,7 +241,7 @@ if __name__ == "__main__":
     if args.worker:
         worker(args.bundle, args.port, args.stop_file)
     else:
-        result = verify(args.seconds, args.out)
+        result = verify(args.seconds, args.out, continuous=args.continuous)
         print(json.dumps({"status": result["status"], "elapsed_seconds": result["elapsed_seconds"],
                           "requests": sum(e["requests"] for e in result["epochs"]),
                           "recoveries": result["recoveries"], "evidence": args.out}, allow_nan=False))
