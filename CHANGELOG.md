@@ -14,6 +14,9 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Coverage records both worker threads and multiprocessing. A matching six-test
+  HTTP comparison confirmed omitted threaded execution; fresh whole-suite results
+  must qualify this measurement change separately from earlier percentages.
 - Expanded whole-package CI coverage floor raised from 81% to 82%, following
   a passing 83.02% remote CPU measurement; the 90% target remains outstanding.
 - Real HTTP load/recovery runner records source identity, dependencies, sampled

@@ -304,7 +304,7 @@ addopts = "--basetemp=tests/.pytest_tmp"
 # or the Linux CI pytest --cov=buildml job. Omit legacy and generated teaching artifacts.
 [tool.coverage.run]
 patch = ["subprocess", "_exit"]
-concurrency = ["multiprocessing"]
+concurrency = ["multiprocessing", "thread"]
 sigterm = true
 branch = false
 source = ["buildml"]
