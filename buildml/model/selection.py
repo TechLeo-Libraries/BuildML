@@ -1087,6 +1087,8 @@ def cv_score(
     )
 
     for fold_id, (train_pos, eval_pos) in enumerate(split_iter):
+        train_pos = _validated_fold_positions(train_pos, len(x_reset))
+        eval_pos = _validated_fold_positions(eval_pos, len(x_reset))
         if set(train_pos) & set(eval_pos):
             raise LeakageError("CV fold train/eval indices overlap")
         x_fold_train = x_reset.iloc[list(train_pos)]
@@ -2363,6 +2365,8 @@ def nested_cv_score(
     shared_study: Any | None = None
 
     for fold_id, (outer_train_pos, outer_eval_pos) in enumerate(split_iter):
+        outer_train_pos = _validated_fold_positions(outer_train_pos, len(x_reset))
+        outer_eval_pos = _validated_fold_positions(outer_eval_pos, len(x_reset))
         if set(outer_train_pos) & set(outer_eval_pos):
             raise LeakageError("Nested CV outer fold train/eval indices overlap")
         outer_train_idx = tuple(int(i) for i in position_map[list(outer_train_pos)])
@@ -3302,6 +3306,18 @@ def _expand_randomized_trials(
             joint[f"recipe__{key}"] = values
     sampler = ParameterSampler(joint, n_iter=n_iter, random_state=random_state)
     return [_split_trial_params(dict(params)) for params in sampler]
+
+
+def _validated_fold_positions(positions: Any, n_rows: int) -> np.ndarray:
+    """Reject ambiguous indexing before iloc can alias or repeat observations."""
+    values = np.asarray(positions)
+    if values.ndim != 1 or values.size == 0 or values.dtype.kind not in "iu":
+        raise ValidationError("CV fold indices must be a non-empty one-dimensional integer array")
+    if np.any(values < 0) or np.any(values >= n_rows):
+        raise ValidationError("CV fold indices must lie within the training population")
+    if len(np.unique(values)) != len(values):
+        raise ValidationError("CV fold indices must not repeat observations")
+    return values
 
 
 def _resolve_splitter(
