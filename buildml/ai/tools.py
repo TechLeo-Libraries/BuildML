@@ -2507,15 +2507,17 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
         ToolSpec(
             name="fit_ssl_pretext",
             description=(
-                "Fit a self-supervised masked tabular pretext on the train partition "
-                "(labels ignored). Not BERT-from-scratch. Write operation."
+                "Fit a self-supervised tabular pretext on training rows, ignoring labels. "
+                "Torch methods accept explicit epoch, batch and device budgets; "
+                "masked_tabular retains the legacy sklearn path."
             ),
             parameters={
                 "type": "object",
                 "properties": {
                     "method": {
                         "type": "string",
-                        "enum": ["masked_tabular"],
+                        "enum": ["masked_tabular", "simclr_tabular", "byol_tabular",
+                                 "vicreg_tabular", "mae_tabular", "vae_tabular"],
                     },
                     "latent_dim": {
                         "type": "integer",
@@ -2526,6 +2528,13 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
                         "description": "Fraction of features masked per view.",
                     },
                     "prefer_reduce_components": {"type": "boolean"},
+                    "columns": {"type": "array", "items": {"type": "string"}},
+                    "epochs": {"type": "integer"},
+                    "batch_size": {"type": "integer"},
+                    "learning_rate": {"type": "number"},
+                    "max_iter": {"type": "integer"},
+                    "random_state": {"type": "integer"},
+                    "device": {"type": "string", "enum": ["cpu", "cuda"]},
                 },
                 "required": [],
             },

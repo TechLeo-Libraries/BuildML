@@ -121,10 +121,11 @@ monolith** (**70** active after corrected thread/process tracing measured at lea
 (`python scripts/run_full_coverage.py --update-ratchet` or CI
 `pytest tests --cov=buildml`); do not lower it to silence a regression.
 The separate `expanded-coverage` CI job installs
-`requirements-expanded-coverage.txt` and runs the entire suite with an **82%**
-floor. Corrected thread/process collection at `2837fb3` passed at 83.79%
-remotely and 83.85% locally with CUDA. The 90% target remains outstanding. Keep core and expanded
-results identified by their dependency profile when reporting coverage.
+`requirements-expanded-coverage.txt` and runs the entire suite with an **83%**
+floor. Corrected thread/process collection at `a6ebf04` passed at 84.02%
+remotely and 84.08% locally with CPU/CUDA contracts. The expanded job passed,
+but the overall matrix failed Torch diagnostic repetitions. The 90% target
+remains outstanding. Identify core and expanded results by dependency profile.
 `requirements.txt` / `requirements-dev.txt` are convenience mirrors of
 `pyproject.toml` ranges; prefer `pip install -e ".[dev]"`.
 

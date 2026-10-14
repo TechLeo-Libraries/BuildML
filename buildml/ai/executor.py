@@ -1069,6 +1069,13 @@ def _dispatch_tool(
                 "latent_dim",
                 "mask_ratio",
                 "prefer_reduce_components",
+                "columns",
+                "epochs",
+                "batch_size",
+                "learning_rate",
+                "max_iter",
+                "random_state",
+                "device",
             )
             if key in call.arguments
         }

@@ -111,7 +111,7 @@ Follow-up assessment, 2026-10-14, review branch `codex/coverage-cuda-ci-20261012
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Remote expanded CPU whole-package gate | Passed: 83.79% (51,627 / 61,613 lines); 2,498 passed, 77 skipped | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544); tested merge `8cfb287` has the same Git tree as `2837fb3`; floor remains 82% |
+| Remote expanded CPU whole-package gate | Passed: 84.02% (51,781 / 61,631 lines); 2,677 passed, 77 skipped | [CI run 38614442365](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38614442365); merge `d21d863` tree equals `a6ebf04`; floor 83%; overall matrix failed separate Torch diagnostics |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
 | Local Linux EconML 0.17.0 policy learner | Sixteen known-benefit and reporting contracts passed | Continuous/binary outcomes, numeric/string treatment labels, two simulation seeds and requested bootstrap counts; adjusted population summaries and omitted intervals are explicit. Repaired behavior also passed remote Windows/Linux jobs |
@@ -121,7 +121,7 @@ Follow-up assessment, 2026-10-14, review branch `codex/coverage-cuda-ci-20261012
 | Real Windows HTTP recovery assessment | 1,022,102 requests in one hour, no unexpected failures | Immutable `e3f7b93` source hash unchanged; three 20-minute process lifetimes at 1/4/8 clients and 1/16/64 rows. Sampled p95 4.89/18.58/35.79 ms; graceful/forced restart startup 6.50/17.80 seconds. Deliberate downtime is separate from scored requests |
 | Isolated RL/imitation profile | Seventeen tests passed locally; both remote Windows/Linux jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real PPO/BC/GAIL and trusted persistence on a separate compatible CPU stack |
 | Linux targeted repairs | Five DDP tests passed; PDF, TorchScript and DEC/IDEC checks passed | Distributed CPU/Gloo checks use the CUDA-capable Torch installation; multi-GPU throughput is unmeasured |
-| Expanded local Linux suite with CUDA/extras | Passed: 83.85% (51,664 / 61,613 lines); 2,515 passed, 60 skipped | Immutable `2837fb3` suite completed in 27:39; CUDA probe passed. Exclusions remain 564. The 90% target is outstanding |
+| Expanded local Linux suite with CUDA/extras | Passed: 84.08% (51,819 / 61,631 lines); 2,694 passed, 60 skipped | Immutable `a6ebf04` suite completed in 27:37; CPU/CUDA contracts passed. Exclusions remain 564. The 90% target is outstanding |
 
 Exact local measurements are preserved in `reports/coverage90-gpu-linux.json`,
 `reports/coverage90-soak-30min.json` and `reports/coverage90-linux-full.json`.
@@ -130,7 +130,7 @@ dependencies; their percentages are not interchangeable.
 
 The `expanded-coverage` CI job reproduces the assessed dependency profile using
 `requirements-expanded-coverage.txt` and its dated constraints. It runs all
-tests against all BuildML modules, with an 82% floor, and uploads source,
+tests against all BuildML modules, with an 83% floor, and uploads source,
 installed package, coverage and test-result artifacts. CPU Torch replaces local
 CUDA Torch in that job; its outcome must be verified independently. The core
 floor remains 69%, and the 90% target remains outstanding.
@@ -217,19 +217,19 @@ errors, and process RSS 204.77 to 208.65 MiB. Sampled p95 latencies were
 latencies are not a controlled Windows/Linux comparison. Longer operation,
 other models and deployment populations remain separate evidence requirements.
 
-Corrected thread/process collection at `2837fb3` passed remotely at 83.79%
-(51,627 of 61,613 executable lines), with 2,498 tests passed and 77 skipped.
-The tested merge tree equals the source tree, and the entire CI matrix passed.
-Core gates passed at 71.28-71.29%. Expanded floor 82% retains the required
-headroom. Earlier measurements used multiprocessing-only collection; subset
-tracing deltas must not be added to full-suite percentages.
+Corrected thread/process collection at `a6ebf04` passed remotely at 84.02%
+(51,781 of 61,631 executable lines), with 2,677 tests passed and 77 skipped.
+The tested merge tree equals the source tree. The expanded job passed, while
+the overall matrix failed separate Torch diagnostic repetitions. Expanded floor
+83% retains at least one percentage point of headroom. The core floor remains
+70%, based on its independently measured profile.
 
-Fresh local Linux coverage at the same revision passed at 83.85%
-(51,664 of 61,613 lines), with 2,515 tests passed and 60 skipped in 27:39.
-The actual CUDA probe passed five BuildML training epochs and held-out
-evaluation. Coverage exclusions remain 564. The 90% target still requires
-3,788 additional covered lines locally at this denominator. Dependency-specific
-skips remain visible; these results do not establish long-term reliability.
+Fresh local Linux coverage at the same revision passed at 84.08%
+(51,819 of 61,631 lines), with 2,694 tests passed and 60 skipped in 27:37.
+CPU/CUDA contracts passed in this full suite. Coverage exclusions remain 564.
+The 90% target still requires 3,649 additional covered lines locally at this
+denominator. Earlier subset results must not be added to these percentages.
+Dependency-specific skips remain visible; this is not long-term reliability proof.
 
 Serving configuration supplies omitted arguments. Explicit arguments override
 it, including `trusted=False`, a loopback host and CPU placement. Permission
@@ -254,6 +254,17 @@ Torch 2.14.1 segmentation fault while constructing DDP, including in a minimal
 Torch-only program. `INFO` passed that independent probe. `--distributed-debug
 DETAIL` remains available to reproduce the diagnostic-mode failure. This does
 not establish the cause of the older intermittent abort without that setting.
+The corrected `INFO` check passed ten fresh attempts locally on Torch
+2.14.1 CPU and ten each remotely on Python 3.11/3.12 with Torch 2.14.1 CUDA-build
+wheels (CPU Gloo execution). These are bounded reproductions, not a general
+distributed-training reliability claim.
+
+Tabular SSL tools expose native Torch methods and explicit training budgets.
+With a fixed random_state, Torch initialization and augmentation noise are
+seeded as well as NumPy shuffling. Invalid budgets and non-finite training
+matrices are refused before model construction. Real tests compare encoders
+after changing only held-out rows, on CPU and CUDA. They do not establish
+that every method improves prediction accuracy on every population.
 
 ```bash
 python scripts/verify_operational_limits.py --rows 100000 1000000 --soak-seconds 120

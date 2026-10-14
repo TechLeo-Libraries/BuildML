@@ -3,24 +3,24 @@
   "source": "pyproject.toml [tool.coverage.report] fail_under",
   "current": 70,
   "expanded": {
-    "current": 82,
+    "current": 83,
     "source": ".github/workflows/ci.yml expanded-coverage job --cov-fail-under",
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 83.79238147793485,
-      "covered_lines": 51627,
-      "num_statements": 61613,
-      "source_revision": "2837fb36428b7691e4ee7cb57c6d1b148803af73",
-      "tested_revision": "8cfb2878c6a0757514a46a4445e5adbda114f7a1",
+      "percent_covered": 84.01778325842514,
+      "covered_lines": 51781,
+      "num_statements": 61631,
+      "source_revision": "a6ebf04a9b979e02a1ba97f56cccd5106bc3e123",
+      "tested_revision": "d21d8637fd7eaa62c9a76a3851448a67dfca39d2",
       "platform": "remote Linux, CPU expanded profile",
-      "run_id": 38589015544,
-      "result": "2498 passed, 77 skipped, no failures",
-      "notes": "Tested merge tree equals source tree. Entire CI passed. Floor 82 retains at least one percentage point of headroom; 90 remains outstanding.",
+      "run_id": 38614442365,
+      "result": "2677 passed, 77 skipped, no failures",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
-      ]
+      ],
+      "notes": "Expanded whole-suite job passed and tested tree equals source tree. Floor83 retains >=1pp headroom. Overall CI failed Torch DETAIL-mode repetitions; do not describe the matrix as all-green. Target90 remains open."
     },
     "seed_measurement": {
       "percent_covered": 82.69421622061336,

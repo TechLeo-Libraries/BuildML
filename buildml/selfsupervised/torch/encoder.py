@@ -8,7 +8,12 @@ import numpy as np
 
 from buildml.core.errors import ValidationError
 from buildml.dl.extras import require_torch
-from buildml.selfsupervised.torch.trainer import SSLTrainConfig, SSLTrainResult, train_tabular_ssl
+from buildml.selfsupervised.torch.trainer import (
+    SSLTrainConfig,
+    SSLTrainResult,
+    _validate_training_settings,
+    train_tabular_ssl,
+)
 
 
 class TorchTabularSSLEncoder:
@@ -49,10 +54,13 @@ class TorchTabularSSLEncoder:
         epochs, batch_size, learning_rate, temperature, mask_ratio:
             Training hyperparameters forwarded to the Torch trainer.
         random_state:
-            Seed for augmentations and minibatch shuffling.
+            Seed for Torch initialization, augmentations and minibatch shuffling.
+            A specified seed resets the process Torch RNG before training.
         device:
             Torch device string (for example ``cpu`` or ``cuda``).
         """
+        _validate_training_settings(epochs=epochs, batch_size=batch_size, latent_dim=latent_dim,
+                                    learning_rate=learning_rate, temperature=temperature)
         self.method = method
         self.latent_dim = int(latent_dim)
         self.hidden = tuple(int(h) for h in hidden)

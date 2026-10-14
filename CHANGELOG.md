@@ -14,6 +14,9 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Expanded Linux coverage floor raised to 83% after its full remote suite passed
+  at 84.02%; local CPU/CUDA coverage passed at 84.08%. The overall matrix still
+  failed separate Torch DETAIL-mode diagnostics; this is not an all-green claim.
 - Torch CI repeats buffered two-rank validation on each Python stack, recording
   the installed Torch version, every attempt and native failure diagnostics.
   A failed or skipped attempt fails the check; repetitions are not retries.
@@ -31,6 +34,10 @@ from the current release; use the installation guide for current requirements.
 
 ### Fixed
 
+- Tabular SSL agent tools expose native methods and forward training budgets.
+  SSL random_state now seeds Torch initialization and stochastic augmentations,
+  in addition to NumPy shuffling, for repeatable fits on the same backend.
+  Invalid budgets and non-finite feature matrices fail before model construction.
 - Agent integer arguments and checkpoint partition sizes reject malformed values
   before mutation. DuckDB Parquet fallbacks use unique temporary registrations
   and release them after SQL failures as well as successful writes.
