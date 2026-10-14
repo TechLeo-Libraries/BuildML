@@ -662,12 +662,26 @@ def _predict_torchscript(state: ServingState, payload: dict[str, Any]) -> dict[s
             "POST /predict for torchscript expects JSON "
             '{"inputs": [[...], ...]}  (batched float features)'
         )
-    tensor = torch.as_tensor(raw, dtype=torch.float32)
     module = state.torchscript_module
     assert module is not None
+    placement = next(module.parameters(), None)
+    if placement is None:
+        placement = next(module.buffers(), None)
+    dtype = placement.dtype if placement is not None and placement.is_floating_point() else torch.float32
+    device = placement.device if placement is not None else "cpu"
+    try:
+        tensor = torch.as_tensor(raw, dtype=dtype, device=device)
+    except (TypeError, ValueError, RuntimeError) as exc:
+        raise ValidationError("inputs must be a rectangular numeric batch") from exc
+    if tensor.ndim < 2 or tensor.numel() == 0:
+        raise ValidationError("inputs must include a non-empty batch dimension and feature dimensions")
+    if not bool(torch.isfinite(tensor).all()):
+        raise ValidationError("inputs must contain finite numeric values")
     with torch.no_grad():
         out = module(tensor)
     if hasattr(out, "detach"):
+        if not bool(torch.isfinite(out).all()):
+            raise RuntimeError("TorchScript produced non-finite outputs")
         values = out.detach().cpu().tolist()
     else:
         values = out

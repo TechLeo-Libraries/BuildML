@@ -72,6 +72,21 @@ per-origin sMAPE/seasonal MASE, time, and independent seasonal-naive parity.
 The default is a reproducible 24-series subset; `--series 414` evaluates all
 hourly series. It is not the full M4 competition across every frequency.
 
+The `3647366` comparison added `--methods naive seasonal_naive lag_ridge ets arima`
+on the same 24 hourly series and three origins (72 evaluations per method).
+Lower values are better:
+
+| Method | Mean sMAPE | Mean seasonal MASE |
+|---|---:|---:|
+| Independent seasonal naive / BuildML seasonal naive | 21.56 | 1.307 |
+| Lag ridge | 17.61 | 1.026 |
+| ETS with fixed defaults | 31.87 | 2.002 |
+| ARIMA with fixed defaults | 65.56 | 15.419 |
+
+The default industry configurations did not beat seasonal naive on this subset.
+Tune configurations using historical validation before judging them on a fresh
+holdout; these results do not establish general superiority for any method.
+
 SciFact uses BEIR's full corpus and official test relevance judgments, with
 document-level nDCG/recall/MRR at 10, per-query latency, actual retrieval mode,
 and an independent TF-IDF baseline. Only document titles/abstracts are indexed;
@@ -189,8 +204,14 @@ loads used 1/4/8 clients with batch sizes 1/16/64; sampled p95 latencies were
 for the tested local service and linear model; a matching Linux continuous
 assessment and longer operation remain separate evidence requirements.
 
-The passing remote expanded coverage job at `0985654` measured 83.10%
-(51,108 of 61,503 executable lines). The 90% whole-package goal remains open.
+The passing remote expanded coverage job at `9e6e039` measured 83.14%
+(51,163 of 61,537 executable lines), with 2,434 tests passed and 66 skipped.
+The entire matrix passed. The 90% whole-package goal remains open.
+
+Fresh local Linux coverage at `9e6e039` passed with 83.20%
+(51,199 of 61,537 executable lines), 2,440 tests passed and 60 skipped.
+The corresponding actual CUDA probe passed five BuildML training epochs and
+held-out evaluation. Dependency-specific skips remain visible in the artifacts.
 
 Serving configuration supplies omitted arguments. Explicit arguments override
 it, including `trusted=False`, a loopback host and CPU placement. Permission
@@ -217,6 +238,13 @@ exercised for a claim about its GPU workflow. Device memory and throughput are
 specific to the recorded hardware/configuration.
 
 ## Statistical interpretation
+
+Cost-sensitive threshold tuning minimizes empirical policy cost across all
+observed probability breakpoints and all-positive/all-negative policies. It
+retains the estimator's positive class identity; FP/FN counts and supplied
+benefits are checked against independent policy enumeration, including tied
+scores. This is a validation-partition optimum, not a guarantee of future cost.
+Confirm the selected fixed policy on untouched test data and monitor prevalence.
 
 Conformal fitting refuses Session-global fitted preprocessing because it has
 already used future calibration rows. The fitting/calibration carve does not

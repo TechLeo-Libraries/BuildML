@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+from dataclasses import asdict, is_dataclass
 
 import numpy as np
 import pandas as pd
@@ -270,3 +271,53 @@ def test_agent_causal_estimate_recovers_known_randomized_treatment_effect():
     _run(session, "fit_causal", {"backend": "native", "method": "t_learner", "bootstrap_samples": 20})
     effect = _run(session, "estimate_causal", {"partition": "test", "bootstrap_samples": 20})
     assert effect.ate == pytest.approx(1.6, abs=.3)
+
+
+def _plain_prediction(value):
+    if hasattr(value, "to_dict"):
+        value = value.to_dict()
+    elif is_dataclass(value):
+        value = asdict(value)
+    if isinstance(value, dict):
+        return {str(key): _plain_prediction(item) for key, item in value.items()}
+    if isinstance(value, (np.ndarray, pd.Series)):
+        return _plain_prediction(value.tolist())
+    if isinstance(value, (tuple, list)):
+        return [_plain_prediction(item) for item in value]
+    if isinstance(value, np.generic):
+        return value.item()
+    return value
+
+
+@pytest.mark.parametrize("domain,predict_tool,options", [
+    ("unsupervised", "assign_clusters", {"attach": False}),
+    ("anomaly", "score_anomalies", {}),
+    ("federated", "predict_federated", {}),
+    ("probabilistic", "predict_probabilistic", {"return_proba": True}),
+    ("symbolic", "predict_symbolic", {"return_traces": True}),
+    ("cbr", "predict_cbr", {"k": 3, "return_traces": True}),
+    ("nlp", "predict_text", {"return_probabilities": True}),
+    ("graph", "predict_graph", {}),
+    ("imitation", "predict_imitation_action", {}),
+    ("tda", "transform_tda", {}),
+    ("tda", "predict_tda", {}),
+])
+def test_read_only_agent_predictions_preserve_partition_and_match_direct_domain_api(domain, predict_tool, options):
+    _, fit_tool, fit_options, _ = next(row for row in WORKFLOWS if row[0] == domain)
+    session = _session(domain=domain)
+    _run(session, fit_tool, fit_options)
+    before = session.partition("test").copy(deep=True)
+    train_ids = tuple(session.split_plan.train_indices)
+    call_options = {"partition": "test", **options}
+    registry = build_default_registry()
+    proposal = propose_tool_execution(predict_tool, call_options, registry)
+    outcome = execute_tool(session, proposal, confirmed=False, registry=registry)
+    assert outcome.executed, outcome.error
+    assert not outcome.state_changes
+    direct = getattr(session, predict_tool)(**call_options)
+    actual, expected = _plain_prediction(outcome.result), _plain_prediction(direct)
+    assert actual == expected
+    assert actual
+    json.dumps(actual, allow_nan=False)
+    pd.testing.assert_frame_equal(session.partition("test"), before)
+    assert tuple(session.split_plan.train_indices) == train_ids

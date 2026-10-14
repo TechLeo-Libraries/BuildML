@@ -23,6 +23,12 @@ from the current release; use the installation guide for current requirements.
 
 ### Fixed
 
+- TorchScript serving places inputs on the model's parameter/buffer device and
+  floating-point dtype. Empty, ragged, unbatched and non-finite inputs return
+  client errors; non-finite model outputs return a sanitized server error.
+- Cost-sensitive threshold tuning considers every observed probability breakpoint
+  and all-positive/all-negative policies, including optima below 0.05 or above
+  0.95. Sorted prefix counts avoid quadratic rescoring of the partition.
 - Statsmodels rolling forecasts condition on prior observed history with fixed
   parameters, instead of repeating the forecast from the training endpoint.
   Exogenous history remains aligned across validation and rolling windows.
