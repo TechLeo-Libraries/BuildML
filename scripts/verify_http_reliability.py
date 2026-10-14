@@ -18,6 +18,7 @@ import socket
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 from pathlib import Path
 
@@ -125,14 +126,15 @@ def verify(seconds, out, *, continuous=False, requests_per_second=None, rss_samp
                     result["recoveries"].append({"after": "graceful" if epoch == 1 else "forced",
                                                  "startup_seconds": recovery})
                 deadline = time.monotonic() + seconds / 3
+                abort = threading.Event()
 
-                def traffic(worker_id, epoch=epoch, batch=batch, deadline=deadline, clients=clients):
+                def traffic(worker_id, epoch=epoch, batch=batch, deadline=deadline, clients=clients, abort=abort):
                     rng = random.Random(epoch * 100 + worker_id)
                     samples, errors, count = [], [], 0
                     rows = [{"x": float(i - batch // 2)} for i in range(batch)]
                     expected = [2 * row["x"] + 3 for row in rows]
                     with httpx.Client(base_url=url, timeout=10) as client:
-                        while time.monotonic() < deadline:
+                        while time.monotonic() < deadline and not abort.is_set():
                             t0 = time.perf_counter()
                             try:
                                 if count % 101 == 0:
@@ -149,6 +151,7 @@ def verify(seconds, out, *, continuous=False, requests_per_second=None, rss_samp
                                     np.testing.assert_allclose(response.json()["predictions"], expected,
                                                                rtol=1e-10, atol=1e-10)
                             except Exception as exc:
+                                abort.set()
                                 if len(errors) < 20:
                                     errors.append(f"{type(exc).__name__}: {str(exc)[:200]}")
                                 # Fail quickly instead of masking failures with a success rate.
@@ -166,7 +169,7 @@ def verify(seconds, out, *, continuous=False, requests_per_second=None, rss_samp
                                 # exclude deliberate pacing sleeps.
                                 delay = clients / requests_per_second - elapsed / 1000
                                 if delay > 0:
-                                    time.sleep(min(delay, max(0, deadline - time.monotonic())))
+                                    abort.wait(min(delay, max(0, deadline - time.monotonic())))
                     return {"requests": count, "samples": samples, "errors": errors}
 
                 rss = []
@@ -175,6 +178,8 @@ def verify(seconds, out, *, continuous=False, requests_per_second=None, rss_samp
                     next_progress = time.monotonic()
                     next_rss_sample = time.monotonic()
                     while not all(f.done() for f in futures):
+                        if any(f.done() and f.exception() is not None for f in futures):
+                            abort.set()
                         if time.monotonic() >= next_rss_sample:
                             server = psutil.Process(process.pid)
                             tree = [server, *server.children(recursive=True)]
