@@ -30,6 +30,7 @@ import pandas as pd
 
 from buildml.core.errors import MissingExtraError
 from buildml.core.types import EngineName
+from buildml.data.engines.aggregate import _quote_identifier
 
 
 class DuckDBTable:
@@ -360,8 +361,8 @@ class DuckDBEngine:
         about column names or types fail at execution, not here: the error
         surfaces on the first materialisation.
 
-        **The path is interpolated into SQL for directory reads.** Directory
-        names containing quotes will not work.
+        Directory globs are passed directly to DuckDB's Parquet reader, so
+        quotes in directory names retain their literal meaning.
 
         See Also
         --------
@@ -372,7 +373,7 @@ class DuckDBEngine:
         con = connection if connection is not None else self._new_connection()
         if target.is_dir():
             pattern = str(target / "*.parquet").replace("\\", "/")
-            rel = con.sql(f"SELECT * FROM read_parquet('{pattern}')")
+            rel = con.read_parquet(pattern)
         else:
             rel = con.read_parquet(str(target))
         self._bridge = "parquet"
@@ -650,7 +651,7 @@ class DuckDBEngine:
         con = _connection_of(table, None)
         if con is None:
             raise RuntimeError("DuckDB select_columns requires a DuckDBTable with connection")
-        exprs = ", ".join(f'"{c}"' for c in columns)
+        exprs = ", ".join(_quote_identifier(c) for c in columns)
         self._last_pushdown = "project"
         return _wrap(rel.project(exprs), con)
 
@@ -721,7 +722,7 @@ class DuckDBEngine:
                 return _wrap(rel.order("random()").limit(take), con)
         seed = int(random_state)
         order_exprs = ", ".join(
-            f"hash(CAST(\"{c}\" AS VARCHAR) || '{seed}')" for c in self.columns(table)[:3]
+            f"hash(CAST({_quote_identifier(c)} AS VARCHAR) || '{seed}')" for c in self.columns(table)[:3]
         )
         if not order_exprs:
             self._last_pushdown = "limit"
@@ -937,7 +938,7 @@ class DuckDBEngine:
             raise RuntimeError("DuckDB aggregate requires a DuckDBTable with connection")
         select_list = sql_aggregate_select(pairs, by=by)
         if by:
-            group_list = ", ".join(f'"{c}"' for c in by)
+            group_list = ", ".join(_quote_identifier(c) for c in by)
             sql = f"SELECT {select_list} FROM s GROUP BY {group_list}"
         else:
             sql = f"SELECT {select_list} FROM s"

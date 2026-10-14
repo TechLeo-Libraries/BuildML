@@ -81,6 +81,7 @@ def generate_forecast(
     history: list[float] | tuple[float, ...] | np.ndarray | None = None,
     future_exog: np.ndarray | pd.DataFrame | None = None,
     origin: str = "train_end",
+    history_exog: np.ndarray | None = None,
 ) -> ForecastGenerateResult:
     """Generate an H-step forecast from a frozen plan without refit.
 
@@ -100,6 +101,8 @@ def generate_forecast(
         Required when the plan has exogenous columns: shape ``(horizon, n_exog)``.
     origin:
         Label recorded in the result (e.g. ``train_end``, ``validation_end``).
+    history_exog:
+        Prior exogenous rows for conditioning an industry model at a new origin.
 
     Returns
     -------
@@ -137,7 +140,7 @@ def generate_forecast(
                 )
             exog_mat_ind = np.asarray(
                 future_exog if not isinstance(future_exog, pd.DataFrame)
-                else future_exog.loc[:, list(plan.exog_columns)].to_numpy(),
+                else future_exog[list(plan.exog_columns)].to_numpy(),
                 dtype=float,
             )
             if exog_mat_ind.ndim == 1:
@@ -147,6 +150,7 @@ def generate_forecast(
             steps=h,
             history=hist,
             exog_future=exog_mat_ind,
+            history_exog=history_exog,
         )
         disclosures = [
             f"Industry horizon generate (backend={plan.backend}, method={plan.method}); no refit.",
@@ -182,7 +186,7 @@ def generate_forecast(
             missing = [c for c in plan.exog_columns if c not in future_exog.columns]
             if missing:
                 raise ValidationError(f"future_exog missing columns: {missing}")
-            exog_mat = future_exog.loc[:, list(plan.exog_columns)].to_numpy(dtype=float)
+            exog_mat = future_exog[list(plan.exog_columns)].to_numpy(dtype=float)
         else:
             exog_mat = np.asarray(future_exog, dtype=float)
         if exog_mat.ndim == 1:
@@ -288,6 +292,7 @@ def rolling_one_step_predictions(
     actuals: np.ndarray,
     *,
     exog: np.ndarray | None = None,
+    history_exog: np.ndarray | None = None,
 ) -> tuple[tuple[float, ...], tuple[float, ...]]:
     """Walk holdout actuals with one-step predictions using prior actuals.
 
@@ -304,6 +309,8 @@ def rolling_one_step_predictions(
         Holdout actual target values in chronological order.
     exog:
         Optional holdout exogenous matrix with one row per actual.
+    history_exog:
+        Exogenous rows aligned with the history before holdout scoring.
 
     Returns
     -------
@@ -327,6 +334,8 @@ def rolling_one_step_predictions(
             exog = exog.reshape(-1, 1)
         if exog.shape[0] != actuals.shape[0]:
             raise ValidationError("exog rows must match holdout actuals length")
+    if history_exog is not None and exog is None:
+        raise ValidationError("history_exog requires holdout exog rows.")
 
     working = list(float(v) for v in history)
     preds: list[float] = []
@@ -353,8 +362,13 @@ def rolling_one_step_predictions(
         elif plan.method in {"lag_ridge", "lag_hgb"}:
             yhat = _predict_next(plan, working, step=1, exog_row=row)
         elif plan.industry_estimator_ is not None:
+            prior_exog = history_exog
+            if history_exog is not None:
+                assert exog is not None
+                prior_exog = np.vstack([history_exog, exog[:i]])
             yhat = industry_one_step(
-                plan.industry_estimator_, working, exog_row=row
+                plan.industry_estimator_, working, exog_row=row,
+                history_exog=prior_exog
             )
         else:
             yhat = _predict_next(plan, working, step=1, exog_row=row)
@@ -369,6 +383,7 @@ def origin_predictions(
     n_points: int,
     *,
     future_exog: np.ndarray | None = None,
+    history_exog: np.ndarray | None = None,
 ) -> tuple[tuple[float, ...], Any]:
     """Generate a fixed-origin multi-step forecast over holdout steps.
 
@@ -385,6 +400,8 @@ def origin_predictions(
         Number of holdout steps to forecast in one recursive pass.
     future_exog:
         Optional future exogenous rows for exog-aware plans.
+    history_exog:
+        Exogenous observations aligned with the prior target history.
 
     Returns
     -------
@@ -404,5 +421,6 @@ def origin_predictions(
         history=history,
         future_exog=future_exog,
         origin="eval_origin",
+        history_exog=history_exog,
     )
     return generated.predictions, generated

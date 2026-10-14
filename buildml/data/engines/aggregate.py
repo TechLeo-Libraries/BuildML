@@ -422,6 +422,10 @@ def aggregate_pandas(
     return out.loc[:, ordered].copy()
 
 
+def _quote_identifier(name: str) -> str:
+    return '"' + str(name).replace('"', '""') + '"'
+
+
 def sql_aggregate_select(
     pairs: Sequence[tuple[str, str]],
     *,
@@ -461,20 +465,20 @@ def sql_aggregate_select(
     """
     parts: list[str] = []
     if by:
-        parts.extend(f'"{c}"' for c in by)
+        parts.extend(_quote_identifier(c) for c in by)
     for column, func in pairs:
         alias = output_name(column, func)
         if column == "*":
-            parts.append(f'COUNT(*) AS "{alias}"')
+            parts.append(f'COUNT(*) AS {_quote_identifier(alias)}')
             continue
-        expr = f'"{column}"'
+        expr = _quote_identifier(column)
         q = quantile_level(func)
         if q is not None:
-            parts.append(f'quantile_cont({expr}, {q}) AS "{alias}"')
+            parts.append(f'quantile_cont({expr}, {q}) AS {_quote_identifier(alias)}')
             continue
         template = _SQL_AGG[func]
         if "{expr}" in template:
-            parts.append(f'{template.format(expr=expr)} AS "{alias}"')
+            parts.append(f'{template.format(expr=expr)} AS {_quote_identifier(alias)}')
         else:
-            parts.append(f'{template}({expr}) AS "{alias}"')
+            parts.append(f'{template}({expr}) AS {_quote_identifier(alias)}')
     return ", ".join(parts)

@@ -174,6 +174,14 @@ matrix. A successful job does not certify unexecuted optional methods.
 
 ## Scale, memory and bounded operational reliability
 
+Statsmodels rolling evaluation updates filtered/smoothed states from prior
+observations while preserving the originally fitted parameters. Historical
+exogenous values stay aligned across validation and scoring windows. Tests
+compare random-walk ARIMA/SARIMAX with independent origin formulas and ETS with
+fixed-coefficient Holt/seasonal recurrences; future holdout changes cannot alter
+earlier predictions. The M4 runner also accepts `--methods` to compare installed
+industry methods on the same series/origins, with strict forecast alignment.
+
 The local Windows continuous HTTP assessment at `ab968bc` completed one hour
 with one server process, 1,057,585 requests and no unexpected errors. The three
 loads used 1/4/8 clients with batch sizes 1/16/64; sampled p95 latencies were

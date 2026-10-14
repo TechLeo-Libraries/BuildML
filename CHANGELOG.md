@@ -23,6 +23,13 @@ from the current release; use the installation guide for current requirements.
 
 ### Fixed
 
+- Statsmodels rolling forecasts condition on prior observed history with fixed
+  parameters, instead of repeating the forecast from the training endpoint.
+  Exogenous history remains aligned across validation and rolling windows.
+- DuckDB preserves embedded quotes in projected, sampled and aggregated column
+  names, and reads Parquet directories containing apostrophes.
+- SHAP attribution rejects invalid sample budgets and malformed/non-finite
+  output dimensions rather than producing empty or misleading summaries.
 - Explicit serving arguments take precedence over configuration, including
   `trusted=False`, loopback binding and CPU placement. Omitted arguments inherit
   configuration; permission flags still reject non-boolean values.

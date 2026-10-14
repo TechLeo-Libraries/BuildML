@@ -27,6 +27,8 @@ def read_series(path: Path) -> dict[str, np.ndarray]:
 
 def scores(actual: np.ndarray, prediction: np.ndarray, train: np.ndarray, season: int) -> dict:
     """Report sMAPE and seasonal MASE without substituting a scale for constant series."""
+    if actual.shape != prediction.shape or not np.isfinite(prediction).all():
+        raise ValueError("Forecasts must be finite and aligned with every holdout timestamp")
     absolute = np.abs(actual - prediction)
     denominator = np.abs(actual) + np.abs(prediction)
     smape = float(np.mean(np.divide(200 * absolute, denominator,
@@ -43,6 +45,8 @@ def main() -> int:
     parser.add_argument("--cache", type=Path, default=Path("artifacts/public-data/m4"))
     parser.add_argument("--series", type=int, default=24)
     parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--methods", nargs="+", default=["naive", "seasonal_naive", "lag_ridge"],
+                        choices=["naive", "seasonal_naive", "lag_ridge", "lag_hgb", "ets", "arima", "sarimax"])
     parser.add_argument("--out", type=Path, default=Path("artifacts/benchmarks/m4-real.json"))
     args = parser.parse_args()
     sources = [public_file(f"{SOURCE}/{part}/Hourly-{part.lower()}.csv",
@@ -68,7 +72,7 @@ def main() -> int:
             # Session requires test membership. This unlabeled sentinel is never fitted or scored.
             frame.loc[len(frame)] = [frame["time"].iloc[-1] + pd.Timedelta(hours=1), np.nan]
             direct = np.resize(history[-24:], horizon)
-            for method in ("naive", "seasonal_naive", "lag_ridge"):
+            for method in dict.fromkeys(args.methods):
                 started = time.perf_counter()
                 session = Session.ingest(frame).set_roles({"time": "time", "value": "target"})
                 # All available origin history is fitting data; no test values ingested.
@@ -91,6 +95,7 @@ def main() -> int:
         summary[method] = {metric: float(np.mean([r[metric] for r in rows if r[metric] is not None]))
                            for metric in ("mae", "smape", "mase")}
     payload = {"dataset": "M4 Hourly", "sources": sources, "seed": args.seed,
+               "methods": list(dict.fromkeys(args.methods)),
                "series_ids": [str(v) for v in selected], "n_available_series": len(ids),
                "protocol": "Fixed-origin recursive forecasts; two historical origins plus official test; no test tuning",
                "season": 24, "results": results, "summary": summary,

@@ -138,8 +138,14 @@ def evaluate_forecast(
     recommendations: list[str] = []
 
     exog = None
+    history_exog = None
     if plan.exog_columns:
-        exog = holdout.loc[:, list(plan.exog_columns)].to_numpy(dtype=float)
+        prior_parts = ["train"] + (["validation"] if through == "validation" else [])
+        history_exog = np.vstack([
+            ordered_frame(dataset, split_plan, name, time_column=plan.time_column)
+            [list(plan.exog_columns)].to_numpy(dtype=float) for name in prior_parts
+        ])
+        exog = holdout[list(plan.exog_columns)].to_numpy(dtype=float)
         if np.isnan(exog).any():
             raise ValidationError(
                 "Holdout exogenous columns contain nulls; impute before evaluate_forecast"
@@ -151,7 +157,7 @@ def evaluate_forecast(
 
     if strategy == "rolling_one_step":
         preds, acts = rolling_one_step_predictions(
-            plan, history, actuals, exog=exog
+            plan, history, actuals, exog=exog, history_exog=history_exog
         )
         disclosures.append(
             "rolling_one_step appends holdout *actuals* into history after each "
@@ -159,7 +165,7 @@ def evaluate_forecast(
         )
     elif strategy == "origin":
         preds, _gen = origin_predictions(
-            plan, history, int(actuals.shape[0]), future_exog=exog
+            plan, history, int(actuals.shape[0]), future_exog=exog, history_exog=history_exog
         )
         acts = tuple(float(v) for v in actuals.tolist())
         disclosures.append(
@@ -172,7 +178,7 @@ def evaluate_forecast(
         )
     elif strategy == "rolling_origin":
         preds, acts = _rolling_origin_predictions(
-            plan, history, actuals, exog=exog, window=int(plan.horizon)
+            plan, history, actuals, exog=exog, window=int(plan.horizon), history_exog=history_exog
         )
         disclosures.append(
             "rolling_origin scores consecutive horizon-sized windows from "
@@ -220,11 +226,14 @@ def _rolling_origin_predictions(
     *,
     exog: np.ndarray | None = None,
     window: int = 1,
+    history_exog: np.ndarray | None = None,
 ) -> tuple[tuple[float, ...], tuple[float, ...]]:
     """Rolling-origin windows over the holdout partition."""
     actuals = np.asarray(actuals, dtype=float).reshape(-1)
     window = max(1, int(window))
     working = list(float(v) for v in history)
+    if history_exog is not None and exog is None:
+        raise ValidationError("history_exog requires holdout exog rows.")
     all_preds: list[float] = []
     all_acts: list[float] = []
     i = 0
@@ -234,7 +243,12 @@ def _rolling_origin_predictions(
         exog_slice = None
         if exog is not None:
             exog_slice = exog[i : i + w]
-        gen = origin_predictions(plan, working, w, future_exog=exog_slice)
+        prior_exog = history_exog
+        if history_exog is not None:
+            assert exog is not None
+            prior_exog = np.vstack([history_exog, exog[:i]])
+        gen = origin_predictions(plan, working, w, future_exog=exog_slice,
+                                 history_exog=prior_exog)
         preds, _ = gen
         acts = actuals[i : i + w]
         all_preds.extend(float(v) for v in preds[:w])
