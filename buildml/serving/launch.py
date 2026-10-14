@@ -30,6 +30,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Literal
 
+from buildml.core._defaults import _INHERIT_PERMISSION
 from buildml.core.errors import BuildMLError, MissingExtraError, ValidationError
 from buildml.serving.app import BundleKind, clear_serving_state, create_serving_app
 
@@ -166,7 +167,7 @@ class ServeHandle:
 def _validate_bind_target(host: str, port: int) -> None:
     if not host or not str(host).strip():
         raise ValidationError("host must be non-empty")
-    if not isinstance(port, int) or port < 1 or port > 65535:
+    if isinstance(port, bool) or not isinstance(port, int) or port < 1 or port > 65535:
         raise ValidationError("port must be an integer in 1..65535")
 
 
@@ -285,12 +286,12 @@ def _ensure_port_available(host: str, port: int) -> None:
 def serve_bundle(
     path: str | Path | None = None,
     *,
-    kind: BundleKind | Literal["pipeline", "torchscript"] = "pipeline",
-    host: str = "127.0.0.1",
-    port: int = 8080,
-    title: str = "BuildML Serve",
+    kind: BundleKind | Literal["pipeline", "torchscript"] | None = None,
+    host: str | None = None,
+    port: int | None = None,
+    title: str | None = None,
     blocking: bool = False,
-    map_location: str = "cpu",
+    map_location: str | None = None,
     api_keys: str | list[str] | tuple[str, ...] | None = None,
     basic_auth: str
     | tuple[str, str]
@@ -298,10 +299,10 @@ def serve_bundle(
     | dict[str, str]
     | None = None,
     docs_enabled: bool | None = None,
-    allow_insecure_public_bind: bool = False,
+    allow_insecure_public_bind: bool = _INHERIT_PERMISSION,
     ssl_certfile: str | Path | None = None,
     ssl_keyfile: str | Path | None = None,
-    trusted: bool = False,
+    trusted: bool = _INHERIT_PERMISSION,
     config: Any | None = None,
 ) -> ServeHandle:
     """Load a bundle and start serving it, refusing the unsafe configurations.
@@ -349,15 +350,19 @@ def serve_bundle(
         Bind a public address with no auth at all. Named at length because it
         should be conspicuous in review. Only defensible when something in front
         (a proxy, a service mesh) is doing the authentication.
+        Omission inherits config; explicit ``False`` revokes its override.
     ssl_certfile:
         A PEM certificate for local HTTPS. Must be paired with ``ssl_keyfile``.
     ssl_keyfile:
         The matching PEM private key. Must be paired with ``ssl_certfile``.
     trusted:
         Must be ``True`` to deserialize the artifact (pickle/joblib/TorchScript).
+        Omission inherits config trust, or refuses loads without a config.
+        Explicit ``False`` revokes configured trust; nonboolean values are rejected.
     config:
         Optional :class:`~buildml.serving.config.ServeConfig` base. Explicit
-        kwargs overlay it.
+        kwargs overlay it, even values equal to the usual defaults. Omitted
+        settings inherit this config; without one, localhost/pipeline/CPU defaults apply.
 
     Returns
     -------
@@ -433,9 +438,9 @@ def serve_bundle(
     buildml.serving.app.create_serving_app : Building the app without serving.
     buildml.serving.config.ServeConfig : Declarative YAML/env/CLI config.
     """
-    if not isinstance(trusted, bool):
+    if trusted is not _INHERIT_PERMISSION and not isinstance(trusted, bool):
         raise ValidationError("trusted must be a boolean; pass trusted=True only for trusted artifacts.")
-    if not isinstance(allow_insecure_public_bind, bool):
+    if allow_insecure_public_bind is not _INHERIT_PERMISSION and not isinstance(allow_insecure_public_bind, bool):
         raise ValidationError("allow_insecure_public_bind must be a boolean.")
     if config is not None:
         from buildml.serving.config import ServeConfig
@@ -445,15 +450,15 @@ def serve_bundle(
         overlay: dict[str, Any] = {}
         if path is not None:
             overlay["bundle"] = str(path)
-        if kind != "pipeline" or config.kind == "pipeline":
+        if kind is not None:
             overlay["kind"] = kind
-        if host != "127.0.0.1" or config.host == "127.0.0.1":
+        if host is not None:
             overlay["host"] = host
-        if port != 8080 or config.port == 8080:
+        if port is not None:
             overlay["port"] = port
-        if title != "BuildML Serve" or config.title == "BuildML Serve":
+        if title is not None:
             overlay["title"] = title
-        if map_location != "cpu" or config.map_location == "cpu":
+        if map_location is not None:
             overlay["map_location"] = map_location
         if api_keys is not None:
             overlay["api_keys"] = api_keys
@@ -461,40 +466,15 @@ def serve_bundle(
             overlay["basic_auth"] = basic_auth
         if docs_enabled is not None:
             overlay["docs_enabled"] = docs_enabled
-        if allow_insecure_public_bind:
-            overlay["allow_insecure_public_bind"] = True
+        if allow_insecure_public_bind is not _INHERIT_PERMISSION:
+            overlay["allow_insecure_public_bind"] = allow_insecure_public_bind
         if ssl_certfile is not None:
             overlay["ssl_certfile"] = str(ssl_certfile)
         if ssl_keyfile is not None:
             overlay["ssl_keyfile"] = str(ssl_keyfile)
-        if trusted:
-            overlay["trusted"] = True
-        elif config.trusted:
-            overlay["trusted"] = True
-        # Prefer config host/port/title/kind when kwargs left at defaults.
+        if trusted is not _INHERIT_PERMISSION:
+            overlay["trusted"] = trusted
         cfg = config.merge(**overlay)
-        if host == "127.0.0.1" and config.host != "127.0.0.1":
-            cfg = cfg.merge(host=config.host)
-        if port == 8080 and config.port != 8080:
-            cfg = cfg.merge(port=config.port)
-        if title == "BuildML Serve" and config.title != "BuildML Serve":
-            cfg = cfg.merge(title=config.title)
-        if kind == "pipeline" and config.kind != "pipeline":
-            cfg = cfg.merge(kind=config.kind)
-        if map_location == "cpu" and config.map_location != "cpu":
-            cfg = cfg.merge(map_location=config.map_location)
-        if not allow_insecure_public_bind and config.allow_insecure_public_bind:
-            cfg = cfg.merge(allow_insecure_public_bind=True)
-        if ssl_certfile is None and config.ssl_certfile:
-            cfg = cfg.merge(ssl_certfile=config.ssl_certfile)
-        if ssl_keyfile is None and config.ssl_keyfile:
-            cfg = cfg.merge(ssl_keyfile=config.ssl_keyfile)
-        if docs_enabled is None and config.docs_enabled is not None:
-            cfg = cfg.merge(docs_enabled=config.docs_enabled)
-        if api_keys is None and config.api_keys:
-            cfg = cfg.merge(api_keys=list(config.api_keys))
-        if basic_auth is None and config.basic_auth is not None:
-            cfg = cfg.merge(basic_auth=config.basic_auth)
         path = cfg.require_bundle()
         kind = cfg.kind  # type: ignore[assignment]
         host = cfg.host
@@ -508,7 +488,15 @@ def serve_bundle(
         ssl_certfile = cfg.ssl_certfile
         ssl_keyfile = cfg.ssl_keyfile
         trusted = cfg.trusted
-    elif path is None:
+
+    kind = "pipeline" if kind is None else kind
+    host = "127.0.0.1" if host is None else host
+    port = 8080 if port is None else port
+    title = "BuildML Serve" if title is None else title
+    map_location = "cpu" if map_location is None else map_location
+    allow_insecure_public_bind = False if allow_insecure_public_bind is _INHERIT_PERMISSION else allow_insecure_public_bind
+    trusted = False if trusted is _INHERIT_PERMISSION else trusted
+    if path is None:
         raise ValidationError(
             "serve_bundle requires path= or a ServeConfig with bundle set"
         )

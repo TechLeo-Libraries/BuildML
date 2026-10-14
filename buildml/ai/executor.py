@@ -861,6 +861,9 @@ def _dispatch_tool(
             kwargs["backend"] = call.arguments["backend"]
         if families is not None:
             kwargs["families"] = list(families)
+        for key in ("time_budget", "ensemble_mode", "include_industry_families"):
+            if key in call.arguments:
+                kwargs[key] = call.arguments[key]
         result = session.run_automl(**kwargs)
         state_changes.append(
             f"AutoML selected family={result.best_family} "
@@ -1430,6 +1433,8 @@ def _dispatch_tool(
                 "interval_method",
                 "prefer_reduce_components",
                 "n_restarts_optimizer",
+                "n_estimators",
+                "learning_rate",
             )
             if key in call.arguments
         }
@@ -1654,6 +1659,8 @@ def _dispatch_tool(
             for key in (
                 "backend",
                 "source",
+                "method",
+                "verify_constraints",
                 "task",
                 "max_depth",
                 "min_samples_leaf",
@@ -1701,6 +1708,9 @@ def _dispatch_tool(
                 "max_depth",
                 "max_rules",
                 "random_state",
+                "torch_method",
+                "torch_epochs",
+                "device",
             )
             if key in call.arguments
         }
@@ -2263,6 +2273,9 @@ def _dispatch_tool(
                 "feedback",
                 "n_neighbors",
                 "n_factors",
+                "n_iterations",
+                "lightfm_epochs",
+                "user_feature_columns",
                 "min_rating",
                 "item_feature_columns",
                 "cold_start",
@@ -2329,6 +2342,11 @@ def _dispatch_tool(
                 "alpha",
                 "C",
                 "random_state",
+                "n_estimators",
+                "epochs",
+                "hidden_dim",
+                "learning_rate",
+                "device",
             )
             if key in call.arguments
         }

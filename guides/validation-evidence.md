@@ -174,6 +174,21 @@ matrix. A successful job does not certify unexecuted optional methods.
 
 ## Scale, memory and bounded operational reliability
 
+The local Windows continuous HTTP assessment at `ab968bc` completed one hour
+with one server process, 1,057,585 requests and no unexpected errors. The three
+loads used 1/4/8 clients with batch sizes 1/16/64; sampled p95 latencies were
+4.72/17.47/33.54 ms. Source hashes matched before and after. This is evidence
+for the tested local service and linear model; a matching Linux continuous
+assessment and longer operation remain separate evidence requirements.
+
+The passing remote expanded coverage job at `0985654` measured 83.10%
+(51,108 of 61,503 executable lines). The 90% whole-package goal remains open.
+
+Serving configuration supplies omitted arguments. Explicit arguments override
+it, including `trusted=False`, a loopback host and CPU placement. Permission
+flags accept booleans only. Agent training options are checked at the dispatch
+boundary, with real NGBoost and Torch fitting checks for numerical/device paths.
+
 ```bash
 python scripts/verify_operational_limits.py --rows 100000 1000000 --soak-seconds 120
 # Bounded child: Linux address space or Windows Job Object allocation limit:

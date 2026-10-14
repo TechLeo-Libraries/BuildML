@@ -23,6 +23,11 @@ from the current release; use the installation guide for current requirements.
 
 ### Fixed
 
+- Explicit serving arguments take precedence over configuration, including
+  `trusted=False`, loopback binding and CPU placement. Omitted arguments inherit
+  configuration; permission flags still reject non-boolean values.
+- Agent training requests preserve registered AutoML, probabilistic, symbolic,
+  neuro-symbolic, recommender and ranker options instead of silently dropping them.
 - Native ANN capability probes contain interpreter crashes on every platform;
   expanded CI requires a portable source-built hnswlib and a real ANN contract.
 - Concurrent serving apps retain independent models through either shutdown

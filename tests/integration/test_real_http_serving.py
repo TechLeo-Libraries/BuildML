@@ -52,7 +52,7 @@ def test_real_http_prediction_authentication_schema_and_shutdown(tmp_path):
 
 
 @pytest.mark.parametrize("options", [
-    {"port": 0}, {"port": 65536}, {"host": ""},
+    {"port": 0}, {"port": 65536}, {"port": True}, {"port": 8080.5}, {"host": ""},
     {"host": "0.0.0.0"}, {"ssl_certfile": "missing.pem"},
 ])
 def test_invalid_launch_rejected_before_artifact_deserialization(options, tmp_path):

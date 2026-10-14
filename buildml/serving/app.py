@@ -31,6 +31,7 @@ from typing import Any, Literal
 
 import pandas as pd
 
+from buildml.core._defaults import _INHERIT_PERMISSION
 from buildml.core.errors import MissingExtraError, ValidationError
 
 BundleKind = Literal["pipeline", "torchscript"]
@@ -289,9 +290,9 @@ def load_serving_bundle(
 def create_serving_app(
     path: str | Path,
     *,
-    kind: BundleKind = "pipeline",
-    title: str = "BuildML Serve",
-    map_location: str = "cpu",
+    kind: BundleKind | None = None,
+    title: str | None = None,
+    map_location: str | None = None,
     api_keys: str | list[str] | tuple[str, ...] | None = None,
     basic_auth: str
     | tuple[str, str]
@@ -299,7 +300,7 @@ def create_serving_app(
     | dict[str, str]
     | None = None,
     docs_enabled: bool | None = None,
-    trusted: bool = False,
+    trusted: bool = _INHERIT_PERMISSION,
     config: Any | None = None,
 ) -> Any:
     """Load a bundle and wrap it in a FastAPI app with predict endpoints.
@@ -320,6 +321,9 @@ def create_serving_app(
     applied server-side. TorchScript takes ``{"inputs": [[...], ...]}``: a
     batch of numeric vectors, already in the order and scale the module expects,
     because a TorchScript module carries no preprocessing.
+
+    Omitted scalar settings inherit the config, or use the usual defaults when
+    no config is supplied. Explicit values always win, including ``trusted=False``.
 
     Parameters
     ----------
@@ -343,7 +347,8 @@ def create_serving_app(
         on, open otherwise.
     trusted:
         Must be ``True`` to deserialize the served artifact. Operators own this
-        opt-in; the default refuses pickle/joblib/TorchScript loads.
+        opt-in. Omission inherits config trust, or refuses loads without a config.
+        Explicit ``False`` revokes configured trust; nonboolean values are rejected.
     config:
         Optional :class:`~buildml.serving.config.ServeConfig`. When provided,
         supplies defaults for the kwargs above; explicit kwargs still win.
@@ -414,7 +419,7 @@ def create_serving_app(
     buildml.serving.launch.serve_bundle : Doing this and starting a server.
     buildml.serving.config.ServeConfig : Declarative YAML/env/CLI config.
     """
-    if not isinstance(trusted, bool):
+    if trusted is not _INHERIT_PERMISSION and not isinstance(trusted, bool):
         raise ValidationError("trusted must be a boolean; pass trusted=True only for trusted artifacts.")
     _require_fastapi()
     if config is not None:
@@ -422,15 +427,15 @@ def create_serving_app(
 
         if not isinstance(config, ServeConfig):
             raise ValidationError("config must be a ServeConfig instance")
-        # Config is the base; kwargs overlay when not None (auth/docs) or always
-        # for path/kind/title/map_location/trusted so call-site stays explicit.
+        # None means inherit. Explicit False and default-valued strings override.
         overlay: dict[str, Any] = {
             "bundle": str(path),
             "kind": kind,
             "title": title,
             "map_location": map_location,
-            "trusted": trusted,
         }
+        if trusted is not _INHERIT_PERMISSION:
+            overlay["trusted"] = trusted
         if api_keys is not None:
             overlay["api_keys"] = api_keys
         if basic_auth is not None:
@@ -438,21 +443,6 @@ def create_serving_app(
         if docs_enabled is not None:
             overlay["docs_enabled"] = docs_enabled
         merged = config.merge(**overlay)
-        # Preserve config auth/docs/trusted when kwargs left at "unset" defaults.
-        if api_keys is None and merged.api_keys:
-            pass  # already from config
-        if basic_auth is None and config.basic_auth is not None:
-            merged = merged.merge(basic_auth=config.basic_auth)
-        if docs_enabled is None and config.docs_enabled is not None:
-            merged = merged.merge(docs_enabled=config.docs_enabled)
-        if not trusted and config.trusted:
-            merged = merged.merge(trusted=True)
-        if title == "BuildML Serve" and config.title != "BuildML Serve":
-            merged = merged.merge(title=config.title)
-        if kind == "pipeline" and config.kind != "pipeline":
-            merged = merged.merge(kind=config.kind)
-        if map_location == "cpu" and config.map_location != "cpu":
-            merged = merged.merge(map_location=config.map_location)
         path = merged.require_bundle()
         kind = merged.kind  # type: ignore[assignment]
         title = merged.title
@@ -461,6 +451,11 @@ def create_serving_app(
         basic_auth = merged.basic_auth
         docs_enabled = merged.docs_enabled
         trusted = merged.trusted
+
+    kind = "pipeline" if kind is None else kind
+    title = "BuildML Serve" if title is None else title
+    map_location = "cpu" if map_location is None else map_location
+    trusted = False if trusted is _INHERIT_PERMISSION else trusted
 
     state = load_serving_bundle(
         path, kind=kind, map_location=map_location, trusted=trusted
