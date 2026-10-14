@@ -5,6 +5,27 @@ Use the reproducible runners below to generate evidence for your environment.
 Missing dependencies, crashes, timeouts and skipped tests remain visible; they
 are not counted as successful backend verification.
 
+The expanded job at `b9b9e48` terminated with an illegal instruction while
+importing hnswlib during test collection. It produced no new coverage result.
+ANN availability probes now run in a subprocess on every platform. The expanded
+CI profile rebuilds hnswlib without `-march=native`, bypasses cached wheels, and
+requires a real ANN fit/predict/evaluate contract before the coverage suite.
+These changes must pass remotely before the failed job is considered resolved.
+
+For bounded real HTTP and process recovery evidence, install `buildml[serve]`
+and `psutil`, then run:
+
+```bash
+python scripts/verify_http_reliability.py --seconds 3600 --out artifacts/http-reliability.json
+```
+
+The runner checks predictions against a known linear function, authentication,
+malformed requests, RSS samples and sampled latency at three client/batch loads.
+It restarts after graceful shutdown and a forced process termination. Traffic
+pauses during these deliberate failures; startup and shutdown times are recorded.
+The result describes this loopback configuration and duration, not uninterrupted
+availability or long-term production reliability.
+
 The optimization extra constrains HiGHS below 1.15. HiGHS 1.15.1 conflicts with
 OR-Tools 9.15 native symbols after CVXPY import. Linux checks with HiGHS 1.14.0,
 CVXPY 1.9.3 and OR-Tools 9.15.6755 passed both import orders and native solver
