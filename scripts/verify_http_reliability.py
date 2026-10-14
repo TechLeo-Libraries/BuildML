@@ -11,6 +11,7 @@ import hashlib
 import importlib.metadata
 import json
 import logging
+import math
 import platform
 import random
 import socket
@@ -42,7 +43,13 @@ def worker(bundle, port, stop_file):
         handle.stop()
 
 
-def verify(seconds, out, *, continuous=False):
+def verify(seconds, out, *, continuous=False, requests_per_second=None, rss_sample_seconds=1):
+    for name, value in (("seconds", seconds), ("rss_sample_seconds", rss_sample_seconds),
+                        ("requests_per_second", requests_per_second)):
+        if value is None and name == "requests_per_second":
+            continue
+        if isinstance(value, bool) or not math.isfinite(value) or value <= 0:
+            raise ValueError(f"{name} must be finite and positive")
     import httpx
     import numpy as np
     import pandas as pd
@@ -51,8 +58,6 @@ def verify(seconds, out, *, continuous=False):
 
     from buildml import Session
 
-    if seconds <= 0:
-        raise ValueError("seconds must be positive")
     started = time.monotonic()
     def source_digest():
         digest = hashlib.sha256()
@@ -65,6 +70,8 @@ def verify(seconds, out, *, continuous=False):
               "scope": ("continuous real loopback HTTP across three loads; no deployment SLA" if continuous
                         else "real loopback HTTP; traffic paused during deliberate recovery; no deployment SLA"),
               "continuous_process": continuous,
+              "target_requests_per_second": requests_per_second,
+              "rss_sample_seconds": rss_sample_seconds,
               "source_sha256_at_start": source_digest(),
               "source_revision": ((ROOT / ".source-revision").read_text().strip()
                                   if (ROOT / ".source-revision").exists() else None),
@@ -78,6 +85,7 @@ def verify(seconds, out, *, continuous=False):
     def save():
         out.write_text(json.dumps(result, indent=2, allow_nan=False))
 
+    save()
     with tempfile.TemporaryDirectory(prefix="buildml-http-reliability-") as tmp:
         frame = pd.DataFrame({"x": np.arange(80, dtype=float)})
         frame["y"] = 2 * frame.x + 3
@@ -118,7 +126,7 @@ def verify(seconds, out, *, continuous=False):
                                                  "startup_seconds": recovery})
                 deadline = time.monotonic() + seconds / 3
 
-                def traffic(worker_id, epoch=epoch, batch=batch, deadline=deadline):
+                def traffic(worker_id, epoch=epoch, batch=batch, deadline=deadline, clients=clients):
                     rng = random.Random(epoch * 100 + worker_id)
                     samples, errors, count = [], [], 0
                     rows = [{"x": float(i - batch // 2)} for i in range(batch)]
@@ -153,19 +161,33 @@ def verify(seconds, out, *, continuous=False):
                                 index = rng.randrange(count)
                                 if index < len(samples):
                                     samples[index] = elapsed
+                            if requests_per_second is not None:
+                                # Share the target rate across clients. Latency samples
+                                # exclude deliberate pacing sleeps.
+                                delay = clients / requests_per_second - elapsed / 1000
+                                if delay > 0:
+                                    time.sleep(min(delay, max(0, deadline - time.monotonic())))
                     return {"requests": count, "samples": samples, "errors": errors}
 
                 rss = []
                 with concurrent.futures.ThreadPoolExecutor(max_workers=clients) as executor:
                     futures = [executor.submit(traffic, i) for i in range(clients)]
                     next_progress = time.monotonic()
+                    next_rss_sample = time.monotonic()
                     while not all(f.done() for f in futures):
-                        server = psutil.Process(process.pid)
-                        tree = [server, *server.children(recursive=True)]
-                        rss.append({"elapsed_seconds": time.monotonic() - started,
-                                    "mib": sum(p.memory_info().rss for p in tree) / 1024 ** 2})
+                        if time.monotonic() >= next_rss_sample:
+                            server = psutil.Process(process.pid)
+                            tree = [server, *server.children(recursive=True)]
+                            rss.append({"elapsed_seconds": time.monotonic() - started,
+                                        "mib": sum(p.memory_info().rss for p in tree) / 1024 ** 2})
+                            next_rss_sample = time.monotonic() + rss_sample_seconds
                         if time.monotonic() >= next_progress:
                             print(f"HTTP epoch={epoch} clients={clients} batch={batch} RSS={rss[-1]['mib']:.2f}MiB", flush=True)
+                            result["progress"] = {"clients": clients, "batch_size": batch,
+                                                  "server_pid": process.pid,
+                                                  "elapsed_seconds": time.monotonic() - started,
+                                                  "sampled_rss_mib": rss[-1]["mib"]}
+                            save()
                             next_progress = time.monotonic() + 60
                         time.sleep(min(1, max(.01, seconds / 30)))
                     outcomes = [f.result() for f in futures]
@@ -233,6 +255,8 @@ if __name__ == "__main__":
     parser.add_argument("--seconds", type=float, default=3600)
     parser.add_argument("--out", default="artifacts/http-reliability.json")
     parser.add_argument("--continuous", action="store_true", help="Keep one server process through all load phases")
+    parser.add_argument("--requests-per-second", type=float, help="Paced total target rate shared by all clients")
+    parser.add_argument("--rss-sample-seconds", type=float, default=1, help="Interval between process RSS samples")
     parser.add_argument("--worker", action="store_true")
     parser.add_argument("--bundle")
     parser.add_argument("--port", type=int)
@@ -241,7 +265,8 @@ if __name__ == "__main__":
     if args.worker:
         worker(args.bundle, args.port, args.stop_file)
     else:
-        result = verify(args.seconds, args.out, continuous=args.continuous)
+        result = verify(args.seconds, args.out, continuous=args.continuous,
+                        requests_per_second=args.requests_per_second, rss_sample_seconds=args.rss_sample_seconds)
         print(json.dumps({"status": result["status"], "elapsed_seconds": result["elapsed_seconds"],
                           "requests": sum(e["requests"] for e in result["epochs"]),
                           "recoveries": result["recoveries"], "evidence": args.out}, allow_nan=False))

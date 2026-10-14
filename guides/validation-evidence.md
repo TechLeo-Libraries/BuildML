@@ -229,7 +229,14 @@ python scripts/verify_operational_limits.py --rows 100000 1000000 --soak-seconds
 # Bounded child: Linux address space or Windows Job Object allocation limit:
 python scripts/verify_operational_limits.py --memory-budget-mib 2048
 python scripts/verify_operational_limits.py --gpu
+# Longer local-service check with limited traffic and memory sampling:
+python scripts/verify_http_reliability.py --continuous --seconds 86400 --requests-per-second 10 --rss-sample-seconds 60
 ```
+
+The paced rate is shared across clients, with small scheduling bursts possible.
+Latency samples exclude pacing sleeps. A 24-hour run keeps the same process
+through three eight-hour loads; its progress is saved each minute. Use an
+immutable source snapshot so ongoing development cannot alter the assessment.
 
 Classical fitting is in memory. The scale runner compares predictions with an
 independent sklearn pipeline, records peak process RSS and elapsed time, and
