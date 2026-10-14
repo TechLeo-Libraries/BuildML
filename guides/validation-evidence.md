@@ -187,6 +187,13 @@ group returns nonzero. `.github/workflows/backend-evidence.yml` runs these
 contracts on Windows/Linux Python 3.12, independently of the broader core
 matrix. A successful job does not certify unexecuted optional methods.
 
+Import preflights isolate native crashes, log each module's start/completion,
+and limit numerical-library threads. A 30-second import timeout permits one
+bounded retry with a 90-second limit, with both attempts recorded. Missing or
+crashed imports still fail, and numerical contract failures are never retried
+into passing support. This addresses the observed Windows TDA import timeout;
+the next remote run must verify the adjusted preflight independently.
+
 ## Scale, memory and bounded operational reliability
 
 Statsmodels rolling evaluation updates filtered/smoothed states from prior

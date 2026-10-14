@@ -5,6 +5,7 @@ import argparse
 import importlib.metadata
 import importlib.util
 import json
+import os
 import platform
 import subprocess
 import sys
@@ -40,16 +41,47 @@ def run_group(name: str, directory: Path) -> dict:
         return {"group": name, "status": "missing_dependency", "missing": missing}
     # Import in a child: a discoverable wheel can still be broken or lack its
     # transitive dependencies, and a native import can crash the process.
-    probe_code = "import importlib,sys;[importlib.import_module(name) for name in sys.argv[1:]]"
-    try:
-        probe = subprocess.run([sys.executable, "-c", probe_code, *modules], cwd=ROOT,
-                               capture_output=True, text=True, timeout=30)
-    except subprocess.TimeoutExpired:
-        return {"group": name, "status": "dependency_import_timeout"}
-    (directory / f"{name}-dependency-import.log").write_text(probe.stdout + probe.stderr, encoding="utf-8")
+    probe_code = """import importlib,sys,time
+for name in sys.argv[1:]:
+    started=time.perf_counter()
+    print('import started: '+name, flush=True)
+    importlib.import_module(name)
+    print('import completed: '+name+' '+str(time.perf_counter()-started)+'s', flush=True)
+"""
+    probe_env = os.environ.copy()
+    probe_env.update(OPENBLAS_NUM_THREADS="1", OMP_NUM_THREADS="1", MKL_NUM_THREADS="1", MPLBACKEND="Agg")
+    import_log = directory / f"{name}-dependency-import.log"
+    attempts = []
+    log_parts = []
+    for attempt, timeout in enumerate((30, 90), start=1):
+        started_import = time.perf_counter()
+        try:
+            probe = subprocess.run([sys.executable, "-c", probe_code, *modules], cwd=ROOT,
+                                   env=probe_env, capture_output=True, text=True, timeout=timeout)
+        except subprocess.TimeoutExpired as exc:
+            attempts.append({"attempt": attempt, "status": "timeout", "limit_seconds": timeout,
+                             "seconds": time.perf_counter() - started_import})
+            partial = exc.stdout or ""
+            if isinstance(partial, bytes):
+                partial = partial.decode("utf-8", errors="replace")
+            errors = exc.stderr or ""
+            if isinstance(errors, bytes):
+                errors = errors.decode("utf-8", errors="replace")
+            log_parts.append(f"Attempt {attempt} timed out after {timeout}s\n{partial}{errors}\n")
+            import_log.write_text("".join(log_parts), encoding="utf-8")
+            if attempt == 2:
+                return {"group": name, "status": "dependency_import_timeout",
+                        "dependency_import_attempts": attempts, "import_log": str(import_log)}
+            continue
+        attempts.append({"attempt": attempt, "status": "passed" if probe.returncode == 0 else "failed",
+                         "seconds": time.perf_counter() - started_import})
+        log_parts.append(f"Attempt {attempt}\n{probe.stdout}{probe.stderr}\n")
+        import_log.write_text("".join(log_parts), encoding="utf-8")
+        break
     if probe.returncode:
         return {"group": name, "status": "dependency_import_failed", "returncode": probe.returncode,
-                "reason": probe.stderr[-2000:]}
+                "reason": probe.stderr[-2000:], "dependency_import_attempts": attempts,
+                "import_log": str(import_log)}
     xml_path = directory / f"{name}.xml"
     command = [sys.executable, "-m", "pytest", *tests, "-q", "-rs", "-o", "addopts=",
                "--basetemp", str(directory / f"temp-{name}"), "--junitxml", str(xml_path)]
@@ -76,7 +108,8 @@ def run_group(name: str, directory: Path) -> dict:
             status = "no_executed_tests"
         return {"group": name, "status": status, "passed": passed, "failed": failed,
                 "skipped": skipped, "seconds": time.perf_counter() - started,
-                "command": command, "log": str(directory / f"{name}.log")}
+                "command": command, "log": str(directory / f"{name}.log"),
+                "dependency_import_attempts": attempts, "import_log": str(import_log)}
     except subprocess.TimeoutExpired:
         return {"group": name, "status": "timeout", "seconds": time.perf_counter() - started}
 
