@@ -26,6 +26,15 @@ pauses during these deliberate failures; startup and shutdown times are recorded
 The result describes this loopback configuration and duration, not uninterrupted
 availability or long-term production reliability.
 
+The serving follow-up also reproduced cross-app model contamination: two
+servers in one process returned the most recently loaded model's predictions.
+Apps now own independent bundle state, and each handle clears only its own app
+on shutdown. Two concurrent real HTTP servers are tested against different
+known linear functions, including both shutdown orders. The module-global
+state accessor remains a compatibility view; clearing it without an app only
+resets that view. Boolean and fractional port configuration is also rejected
+instead of silently selecting another endpoint.
+
 The optimization extra constrains HiGHS below 1.15. HiGHS 1.15.1 conflicts with
 OR-Tools 9.15 native symbols after CVXPY import. Linux checks with HiGHS 1.14.0,
 CVXPY 1.9.3 and OR-Tools 9.15.6755 passed both import orders and native solver

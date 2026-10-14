@@ -7,8 +7,11 @@ from __future__ import annotations
 
 import argparse
 import concurrent.futures
+import hashlib
+import importlib.metadata
 import json
 import logging
+import platform
 import random
 import socket
 import subprocess
@@ -51,8 +54,21 @@ def verify(seconds, out):
     if seconds <= 0:
         raise ValueError("seconds must be positive")
     started = time.monotonic()
+    def source_digest():
+        digest = hashlib.sha256()
+        for path in sorted((ROOT / "buildml").rglob("*.py")):
+            digest.update(path.relative_to(ROOT).as_posix().encode())
+            digest.update(path.read_bytes())
+        return digest.hexdigest()
+
     result = {"status": "running", "requested_load_seconds": seconds,
               "scope": "real loopback HTTP; traffic paused during deliberate recovery; no deployment SLA",
+              "source_sha256_at_start": source_digest(),
+              "source_revision": ((ROOT / ".source-revision").read_text().strip()
+                                  if (ROOT / ".source-revision").exists() else None),
+              "platform": platform.platform(), "python": sys.version,
+              "dependencies": {name: importlib.metadata.version(name) for name in
+                               ("numpy", "pandas", "scikit-learn", "fastapi", "uvicorn", "httpx", "psutil")},
               "epochs": [], "recoveries": [], "errors": []}
     out = Path(out)
     out.parent.mkdir(parents=True, exist_ok=True)
@@ -185,6 +201,10 @@ def verify(seconds, out):
                     time.sleep(.05)
                 result["epochs"][-1]["shutdown_seconds"] = time.monotonic() - stop_started
                 result["epochs"][-1]["shutdown"] = "forced" if epoch == 1 else "graceful"
+            result["source_sha256_at_end"] = source_digest()
+            result["source_unchanged"] = result["source_sha256_at_start"] == result["source_sha256_at_end"]
+            if not result["source_unchanged"]:
+                raise RuntimeError("BuildML source changed during the reliability run")
             result["status"] = "passed"
         except Exception as exc:
             result["status"] = "failed"

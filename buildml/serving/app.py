@@ -69,9 +69,9 @@ class ServingState:
 
     Notes
     -----
-    **The state is module-global and therefore per process.** This is what makes
-    the app importable by an ASGI server, and it also means a worker pool loads
-    the bundle once per worker. Size the memory accordingly.
+    Each app owns its state. A worker pool loads the bundle once per worker;
+    multiple apps in one process retain independent models. The module-global
+    accessor is a compatibility view of the most recently loaded state.
 
     See Also
     --------
@@ -161,19 +161,25 @@ def set_serving_state(state: ServingState) -> None:
     _STATE = state
 
 
-def clear_serving_state() -> None:
-    """Drop the loaded bundle, so the next request fails rather than guessing.
+def clear_serving_state(app: Any | None = None) -> None:
+    """Drop an app's loaded bundle or reset the legacy module-global view.
 
     Primarily for tests, which need each case to start from a known-empty
     process. Also releases the reference to a large model.
 
     Notes
     -----
-    **The app object remains valid after clearing**, but every request will
-    raise until a new state is installed.
+    When an app is supplied, its state is cleared without affecting other
+    apps. Without an app, only the compatibility module-global view is cleared.
     """
     global _STATE
-    _STATE = None
+    if app is None:
+        _STATE = None
+    else:
+        state = getattr(app.state, "buildml_serving_state", None)
+        app.state.buildml_serving_state = None
+        if _STATE is state:
+            _STATE = None
 
 
 def _require_fastapi() -> None:
@@ -500,6 +506,7 @@ def create_serving_app(
             "non-local exposure."
         ),
     )
+    app.state.buildml_serving_state = state
     if auth_enabled:
         open_paths = (
             DEFAULT_OPEN_PATHS_WITH_DOCS if docs_on else DEFAULT_OPEN_PATHS_HEALTH_ONLY
@@ -511,15 +518,21 @@ def create_serving_app(
             open_paths=open_paths,
         )
 
+    def _app_state() -> ServingState:
+        loaded = app.state.buildml_serving_state
+        if loaded is None:
+            raise ValidationError("Serving app state has been cleared")
+        return loaded
+
     def _run_predict(payload: dict[str, Any]) -> dict[str, Any]:
-        st = get_serving_state()
+        st = _app_state()
         if st.kind == "pipeline":
             return _predict_pipeline(st, payload)
         return _predict_torchscript(st, payload)
 
     @app.get("/health")
     def health() -> dict[str, Any]:
-        st = get_serving_state()
+        st = _app_state()
         return {
             "ok": True,
             "product": "buildml-serve",
@@ -542,7 +555,7 @@ def create_serving_app(
 
     @app.get("/metadata")
     def metadata() -> dict[str, Any]:
-        st = get_serving_state()
+        st = _app_state()
         body: dict[str, Any] = {
             "ok": True,
             "kind": st.kind,

@@ -118,13 +118,14 @@ class ServeHandle:
     _server: Any
     _thread: threading.Thread
     tls: bool = False
+    _app: Any | None = None
 
     def stop(self) -> None:
         """Ask the server to exit, wait briefly, and release the loaded bundle.
 
         Signals uvicorn to stop accepting connections and finish what it is
         handling, then joins the thread with a five-second timeout and clears
-        the process-global serving state so the model can be collected.
+        this app's serving state so the model can be collected.
 
         Notes
         -----
@@ -141,7 +142,7 @@ class ServeHandle:
             server.should_exit = True
         if self._thread.is_alive():
             self._thread.join(timeout=5)
-        clear_serving_state()
+        clear_serving_state(self._app)
 
     @property
     def is_running(self) -> bool:
@@ -568,12 +569,13 @@ def serve_bundle(
         _server=server,
         _thread=thread,
         tls=tls,
+        _app=app,
     )
     if blocking:
         try:
             server.run()
         finally:
-            clear_serving_state()
+            clear_serving_state(app)
         return handle
     thread.start()
     deadline = time.monotonic() + 10.0
@@ -581,7 +583,7 @@ def serve_bundle(
         if getattr(server, "started", False):
             break
         if not thread.is_alive():
-            clear_serving_state()
+            clear_serving_state(app)
             raise ServingLaunchError("Managed serving thread exited during startup")
         time.sleep(0.05)
     else:
