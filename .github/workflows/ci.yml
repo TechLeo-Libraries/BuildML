@@ -281,6 +281,9 @@ jobs:
 
   torch:
     runs-on: ubuntu-latest
+    env:
+      PYTHONFAULTHANDLER: "1"
+      TORCH_SHOW_CPP_STACKTRACES: "1"
     strategy:
       fail-fast: false
       matrix:

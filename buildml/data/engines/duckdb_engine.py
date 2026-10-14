@@ -390,8 +390,9 @@ class DuckDBEngine:
     ) -> Path:
         """Write a relation to Parquet without going through pandas.
 
-        Executes the plan and streams the result to disk. Because pandas is not
-        involved, the whole table never has to exist in memory at once.
+        The native relation writer executes the plan without pandas. If it is
+        unavailable, the SQL and Arrow fallbacks materialise the whole relation
+        as Arrow data before writing it.
 
         Parameters
         ----------
