@@ -34,6 +34,7 @@ import json
 import logging
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
+from numbers import Integral
 from pathlib import Path
 from typing import Any, Literal
 
@@ -506,6 +507,10 @@ def _resolve_sidecar_options(
     if not resolved_compression:
         raise ValidationError("sidecar_compression must be a non-empty codec name")
 
+    if partition_rows is not None and (
+        isinstance(partition_rows, bool) or not isinstance(partition_rows, Integral)
+    ):
+        raise ValidationError("sidecar_partition_rows must be a positive integer")
     rows_per = (
         SIDECAR_ROWS_PER_PARTITION if partition_rows is None else int(partition_rows)
     )

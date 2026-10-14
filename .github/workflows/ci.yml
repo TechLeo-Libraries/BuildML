@@ -327,6 +327,18 @@ jobs:
       - name: DL alpha-gate smoke (explicit)
         run: pytest tests/integration/test_dl_alpha_smoke.py -q
 
+      - name: Repeated buffered DDP validation on this Torch/Python stack
+        timeout-minutes: 15
+        run: python scripts/verify_ddp_reliability.py --repetitions 10 --output artifacts/ddp-reliability
+
+      - name: Preserve DDP repetitions and native failure diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ddp-reliability-python-${{ matrix.python-version }}
+          path: artifacts/ddp-reliability
+          if-no-files-found: warn
+
       - name: Torch anomaly autoencoder acceptance
         run: |
           python -c "import torch"

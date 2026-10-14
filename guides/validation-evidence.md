@@ -236,6 +236,20 @@ it, including `trusted=False`, a loopback host and CPU placement. Permission
 flags accept booleans only. Agent training options are checked at the dispatch
 boundary, with real NGBoost and Torch fitting checks for numerical/device paths.
 
+Agent integer fields refuse boolean, fractional and non-finite arguments before
+Session mutation. Checkpoint partition sizes follow the same rule. Fault-injected
+sidecar writes verify canonical data, role and split recovery; missing agent
+bundle paths are checked across every registered save/load bundle tool.
+DuckDB fallback writes release unique temporary registrations after SQL failure
+and preserve caller registrations. Both Parquet fallback paths materialize Arrow
+data; they do not establish bounded-memory streaming.
+
+One older Torch CI job aborted in native code during buffered two-rank validation.
+Ten local repetitions passed on Torch 2.7.1, whereas the failed CI stack used
+2.14.1. This mismatch does not establish a repair. Torch CI now repeats the real
+check on each installed Python/Torch stack, retains every attempt and records
+native diagnostics. A failed or skipped attempt fails the check without retries.
+
 ```bash
 python scripts/verify_operational_limits.py --rows 100000 1000000 --soak-seconds 120
 # Bounded child: Linux address space or Windows Job Object allocation limit:

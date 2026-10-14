@@ -31,6 +31,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime, timezone
+from numbers import Integral
 from typing import Any
 
 from buildml.ai.privacy import EgressManifest
@@ -552,6 +553,10 @@ def _dispatch_tool(
     # permission to deserialize a bundle or tune on the test partition.
     properties = (getattr(spec, "parameters", {}) or {}).get("properties", {})
     for key, schema in properties.items():
+        if schema.get("type") == "integer" and key in call.arguments:
+            value = call.arguments[key]
+            if isinstance(value, bool) or not isinstance(value, Integral):
+                raise ValidationError(f"{key} must be an integer, not {type(value).__name__}.")
         if schema.get("type") == "boolean" and key in call.arguments:
             if not isinstance(call.arguments[key], bool):
                 raise ValidationError(f"{key} must be a JSON boolean, not {type(call.arguments[key]).__name__}.")

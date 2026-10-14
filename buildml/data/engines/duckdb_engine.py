@@ -414,8 +414,8 @@ class DuckDBEngine:
         Notes
         -----
         **Three paths are tried in order**: the relation's own writer, a SQL
-        ``COPY``, then an Arrow write. Only the last materialises the whole
-        table, and it is reached only when the first two are unavailable.
+        ``COPY`` of an Arrow registration, then an Arrow write. Both fallback
+        paths materialise the relation; only the native writer can stream it.
 
         **``row_group_size`` is honoured only on the SQL path.** The relation
         writer does not accept it.
@@ -438,23 +438,28 @@ class DuckDBEngine:
             self._last_pushdown = "write_parquet"
             return destination
         if con is not None:
+            source_name = f"_bml_write_{uuid4().hex}"
+            registered = False
             try:
                 arrow_table = _relation_to_arrow_table(rel)
-                con.register("_bml_write_src", arrow_table)
+                con.register(source_name, arrow_table)
+                registered = True
                 opts = ["FORMAT PARQUET", f"COMPRESSION {codec}"]
                 if row_group_size is not None:
                     opts.append(f"ROW_GROUP_SIZE {int(row_group_size)}")
                 dest_sql = str(destination).replace("'", "''")
-                con.execute(f"COPY _bml_write_src TO '{dest_sql}' ({', '.join(opts)})")
-                try:
-                    con.unregister("_bml_write_src")
-                except Exception:  # noqa: BLE001
-                    pass
+                con.execute(f"COPY {source_name} TO '{dest_sql}' ({', '.join(opts)})")
                 self._bridge = "sql"
                 self._last_pushdown = "copy_parquet"
                 return destination
             except Exception:  # noqa: BLE001
                 pass
+            finally:
+                if registered:
+                    try:
+                        con.unregister(source_name)
+                    except Exception:  # noqa: BLE001
+                        pass
         import pyarrow.parquet as pq
 
         kwargs: dict[str, Any] = {"compression": compression}

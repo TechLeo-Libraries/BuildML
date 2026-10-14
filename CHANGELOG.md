@@ -14,6 +14,9 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Torch CI repeats buffered two-rank validation on each Python stack, recording
+  the installed Torch version, every attempt and native failure diagnostics.
+  A failed or skipped attempt fails the check; repetitions are not retries.
 - Core Linux coverage floor raised from 69% to 70% after all four Python
   configurations passed at 71.28-71.29% with corrected thread/process tracing.
 - Coverage records both worker threads and multiprocessing. A matching six-test
@@ -28,6 +31,9 @@ from the current release; use the installation guide for current requirements.
 
 ### Fixed
 
+- Agent integer arguments and checkpoint partition sizes reject malformed values
+  before mutation. DuckDB Parquet fallbacks use unique temporary registrations
+  and release them after SQL failures as well as successful writes.
 - Evolutionary search rejects boolean, fractional and non-finite budgets before
   fitting, instead of truncating evaluation limits or raising low-level errors.
   NumPy integer budgets remain supported.
