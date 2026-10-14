@@ -28,6 +28,9 @@ from the current release; use the installation guide for current requirements.
 
 ### Fixed
 
+- Evolutionary search rejects boolean, fractional and non-finite budgets before
+  fitting, instead of truncating evaluation limits or raising low-level errors.
+  NumPy integer budgets remain supported.
 - TorchScript serving places inputs on the model's parameter/buffer device and
   floating-point dtype. Empty, ragged, unbatched and non-finite inputs return
   client errors; non-finite model outputs return a sanitized server error.

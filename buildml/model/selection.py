@@ -49,6 +49,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from itertools import product
+from numbers import Integral
 from typing import Any, Literal
 
 import numpy as np
@@ -1866,6 +1867,17 @@ def evolutionary_search(
     optuna_search : Usually stronger when parameters act independently.
     randomized_search : The simplest baseline worth beating.
     """
+    for name, value in (
+        ("population_size", population_size),
+        ("n_generations", n_generations),
+        ("elite_size", elite_size),
+        ("tournament_size", tournament_size),
+        ("max_evaluations", max_evaluations),
+    ):
+        if value is None and name == "max_evaluations":
+            continue
+        if isinstance(value, (bool, np.bool_)) or not isinstance(value, Integral):
+            raise ValidationError(f"{name} must be an integer")
     if population_size < 2:
         raise ValidationError("population_size must be >= 2")
     if n_generations < 1:
