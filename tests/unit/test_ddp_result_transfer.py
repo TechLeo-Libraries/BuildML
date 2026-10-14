@@ -24,8 +24,9 @@ def test_spawned_ddp_returns_usable_model_and_history():
         "    assert output.shape == (3, 2)",
         "    assert torch.isfinite(output).all()",
     ])
-    result = execute(dataclasses.replace(example, source=source), timeout=600)
-    assert result["status"] == "passed", result
+    result = execute(dataclasses.replace(example, source=source), timeout=600, max_output_chars=64000)
+    if result["status"] != "passed":
+        pytest.fail(str(result), pytrace=False)
 
 
 @pytest.mark.parametrize("settings", [
@@ -62,8 +63,9 @@ def test_validation_with_buffers_completes_on_all_ranks():
         "return torch.nn.Sequential(torch.nn.BatchNorm1d(4), torch.nn.Linear(4, 2))",
     ).replace("test_size=0.2, stratify=True", "test_size=0.2, validation_size=0.2, stratify=True")
     source += "\nif __name__ == '__main__':\n    assert result.train_result.history[0]['val_loss'] >= 0\n"
-    result = execute(dataclasses.replace(example, source=source), timeout=600)
-    assert result["status"] == "passed", result
+    result = execute(dataclasses.replace(example, source=source), timeout=600, max_output_chars=64000)
+    if result["status"] != "passed":
+        pytest.fail(str(result), pytrace=False)
 
 
 def test_spawn_payload_does_not_consume_or_replace_caller_generator(monkeypatch):

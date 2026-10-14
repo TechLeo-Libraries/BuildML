@@ -249,6 +249,11 @@ Ten local repetitions passed on Torch 2.7.1, whereas the failed CI stack used
 2.14.1. This mismatch does not establish a repair. Torch CI now repeats the real
 check on each installed Python/Torch stack, retains every attempt and records
 native diagnostics. A failed or skipped attempt fails the check without retries.
+The reporter defaults to `INFO` diagnostics: `DETAIL` reproduced a native
+Torch 2.14.1 segmentation fault while constructing DDP, including in a minimal
+Torch-only program. `INFO` passed that independent probe. `--distributed-debug
+DETAIL` remains available to reproduce the diagnostic-mode failure. This does
+not establish the cause of the older intermittent abort without that setting.
 
 ```bash
 python scripts/verify_operational_limits.py --rows 100000 1000000 --soak-seconds 120

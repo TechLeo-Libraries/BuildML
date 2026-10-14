@@ -16,6 +16,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--repetitions', type=int, default=10)
     parser.add_argument('--output', type=Path, required=True)
+    parser.add_argument('--distributed-debug', choices=('OFF', 'INFO', 'DETAIL'), default='INFO')
     args = parser.parse_args()
     if args.repetitions < 1:
         parser.error('--repetitions must be positive')
@@ -29,9 +30,10 @@ def main() -> int:
         'source_revision': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=root, text=True).strip(),
         'scope': 'two CPU Gloo ranks, BatchNorm buffers, train/validation forwards; no deployment SLA',
         'requested_repetitions': args.repetitions, 'attempts': [],
+        'distributed_debug': args.distributed_debug,
     }
     environment = {**os.environ, 'PYTHONFAULTHANDLER': '1',
-                   'TORCH_SHOW_CPP_STACKTRACES': '1', 'TORCH_DISTRIBUTED_DEBUG': 'DETAIL'}
+                   'TORCH_SHOW_CPP_STACKTRACES': '1', 'TORCH_DISTRIBUTED_DEBUG': args.distributed_debug}
     (args.output / 'report.json').write_text(json.dumps(report, indent=2), encoding='utf-8')
     for iteration in range(1, args.repetitions + 1):
         started = time.monotonic()
