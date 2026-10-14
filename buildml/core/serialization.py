@@ -72,9 +72,10 @@ def require_trusted_deserialize(
     Raises
     ------
     ValidationError
-        When ``trusted`` is false. Nothing is read from disk in that case.
+        When ``trusted`` is not the literal boolean ``True``. Nothing is
+        read from disk in that case.
     """
-    if trusted:
+    if trusted is True:
         return
     resolved = Path(path)
     raise ValidationError(

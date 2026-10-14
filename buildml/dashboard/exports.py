@@ -107,8 +107,9 @@ def export_csv(report: dict[str, Any], section: str) -> tuple[str, str]:
 
     Notes
     -----
-    **Columns come from the first row.** Sections build uniform rows, so this
-    holds; a section whose later rows carried extra keys would lose them.
+    **Columns include every row's fields**, in first-seen order. Mixed
+    univariate and multivariate evidence therefore retains its distinct
+    measurements; a field absent from a row is exported as an empty cell.
 
     **The text is returned, not written.** The caller decides where it goes.
 
@@ -122,7 +123,8 @@ def export_csv(report: dict[str, Any], section: str) -> tuple[str, str]:
     if not rows:
         raise KeyError(f"CSV section '{section}' has no rows for this report.")
     buffer = io.StringIO()
-    writer = csv.DictWriter(buffer, fieldnames=list(rows[0].keys()), extrasaction="ignore")
+    fields = list(dict.fromkeys(key for row in rows for key in row))
+    writer = csv.DictWriter(buffer, fieldnames=fields)
     writer.writeheader()
     writer.writerows(rows)
     return f"buildml_eda_{section}.csv", buffer.getvalue()

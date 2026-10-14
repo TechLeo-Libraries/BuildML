@@ -16,6 +16,8 @@ from buildml import Session
 def _wisconsin_table() -> pd.DataFrame:
     bunch = load_breast_cancer(as_frame=True)
     frame = bunch.frame.copy()
+    # sklearn encodes malignant=0 and benign=1; make the named event positive.
+    frame["target"] = (frame["target"] == 0).astype(int)
     frame = frame.rename(columns={"target": "malignant"})
     rename = {c: c.replace(" ", "_") for c in frame.columns if c != "malignant"}
     return frame.rename(columns=rename)

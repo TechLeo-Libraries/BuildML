@@ -23,12 +23,14 @@ buildml.data.dataset.Dataset : The caller.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
+from uuid import uuid4
 
 import pandas as pd
 
 from buildml.core.errors import MissingExtraError
 from buildml.core.types import EngineName
+from buildml.data.engines.aggregate import _quote_identifier
 
 
 class DuckDBTable:
@@ -359,8 +361,8 @@ class DuckDBEngine:
         about column names or types fail at execution, not here: the error
         surfaces on the first materialisation.
 
-        **The path is interpolated into SQL for directory reads.** Directory
-        names containing quotes will not work.
+        Directory globs are passed directly to DuckDB's Parquet reader, so
+        quotes in directory names retain their literal meaning.
 
         See Also
         --------
@@ -371,7 +373,7 @@ class DuckDBEngine:
         con = connection if connection is not None else self._new_connection()
         if target.is_dir():
             pattern = str(target / "*.parquet").replace("\\", "/")
-            rel = con.sql(f"SELECT * FROM read_parquet('{pattern}')")
+            rel = con.read_parquet(pattern)
         else:
             rel = con.read_parquet(str(target))
         self._bridge = "parquet"
@@ -388,8 +390,9 @@ class DuckDBEngine:
     ) -> Path:
         """Write a relation to Parquet without going through pandas.
 
-        Executes the plan and streams the result to disk. Because pandas is not
-        involved, the whole table never has to exist in memory at once.
+        The native relation writer executes the plan without pandas. If it is
+        unavailable, the SQL and Arrow fallbacks materialise the whole relation
+        as Arrow data before writing it.
 
         Parameters
         ----------
@@ -412,8 +415,8 @@ class DuckDBEngine:
         Notes
         -----
         **Three paths are tried in order**: the relation's own writer, a SQL
-        ``COPY``, then an Arrow write. Only the last materialises the whole
-        table, and it is reached only when the first two are unavailable.
+        ``COPY`` of an Arrow registration, then an Arrow write. Both fallback
+        paths materialise the relation; only the native writer can stream it.
 
         **``row_group_size`` is honoured only on the SQL path.** The relation
         writer does not accept it.
@@ -436,23 +439,28 @@ class DuckDBEngine:
             self._last_pushdown = "write_parquet"
             return destination
         if con is not None:
+            source_name = f"_bml_write_{uuid4().hex}"
+            registered = False
             try:
                 arrow_table = _relation_to_arrow_table(rel)
-                con.register("_bml_write_src", arrow_table)
+                con.register(source_name, arrow_table)
+                registered = True
                 opts = ["FORMAT PARQUET", f"COMPRESSION {codec}"]
                 if row_group_size is not None:
                     opts.append(f"ROW_GROUP_SIZE {int(row_group_size)}")
                 dest_sql = str(destination).replace("'", "''")
-                con.execute(f"COPY _bml_write_src TO '{dest_sql}' ({', '.join(opts)})")
-                try:
-                    con.unregister("_bml_write_src")
-                except Exception:  # noqa: BLE001
-                    pass
+                con.execute(f"COPY {source_name} TO '{dest_sql}' ({', '.join(opts)})")
                 self._bridge = "sql"
                 self._last_pushdown = "copy_parquet"
                 return destination
             except Exception:  # noqa: BLE001
                 pass
+            finally:
+                if registered:
+                    try:
+                        con.unregister(source_name)
+                    except Exception:  # noqa: BLE001
+                        pass
         import pyarrow.parquet as pq
 
         kwargs: dict[str, Any] = {"compression": compression}
@@ -488,9 +496,9 @@ class DuckDBEngine:
         """
         rel = _as_relation(table)
         try:
-            return _relation_to_arrow_table(rel).to_pandas()
+            return cast(pd.DataFrame, _relation_to_arrow_table(rel).to_pandas())
         except Exception:  # noqa: BLE001
-            return rel.df()
+            return cast(pd.DataFrame, rel.df())
 
     def to_arrow(self, table: Any) -> Any:
         """Execute the plan and return the result as Arrow.
@@ -611,9 +619,9 @@ class DuckDBEngine:
         rel = _as_relation(table)
         limited = rel.limit(n)
         try:
-            return _relation_to_arrow_table(limited).to_pandas()
+            return cast(pd.DataFrame, _relation_to_arrow_table(limited).to_pandas())
         except Exception:  # noqa: BLE001
-            return limited.df()
+            return cast(pd.DataFrame, limited.df())
 
     def select_columns(self, table: Any, columns: list[str]) -> Any:
         """Add a projection to the plan.
@@ -649,7 +657,7 @@ class DuckDBEngine:
         con = _connection_of(table, None)
         if con is None:
             raise RuntimeError("DuckDB select_columns requires a DuckDBTable with connection")
-        exprs = ", ".join(f'"{c}"' for c in columns)
+        exprs = ", ".join(_quote_identifier(c) for c in columns)
         self._last_pushdown = "project"
         return _wrap(rel.project(exprs), con)
 
@@ -720,7 +728,7 @@ class DuckDBEngine:
                 return _wrap(rel.order("random()").limit(take), con)
         seed = int(random_state)
         order_exprs = ", ".join(
-            f"hash(CAST(\"{c}\" AS VARCHAR) || '{seed}')" for c in self.columns(table)[:3]
+            f"hash(CAST({_quote_identifier(c)} AS VARCHAR) || '{seed}')" for c in self.columns(table)[:3]
         )
         if not order_exprs:
             self._last_pushdown = "limit"
@@ -835,14 +843,18 @@ class DuckDBEngine:
 
             # Only the keep-index sidecar is materialized: not the source table.
             idx_table = pa.table({"_bml_rn": pa.array(keep_rn, type=pa.int64())})
-            con.register("_bml_keep_rn", idx_table)
+            # Relations are lazy: each mask must retain its own registered
+            # sidecar until the shared connection is closed. Reusing a name
+            # changes older relations when a later mask replaces the view.
+            mask_view = f"_bml_keep_rn_{uuid4().hex}"
+            con.register(mask_view, idx_table)
             filtered = rel.query(
                 "s",
-                """
+                f"""
                 SELECT * EXCLUDE (_bml_rn) FROM (
                   SELECT *, row_number() OVER () AS _bml_rn FROM s
                 ) t
-                WHERE _bml_rn IN (SELECT _bml_rn FROM _bml_keep_rn)
+                WHERE _bml_rn IN (SELECT _bml_rn FROM {mask_view})
                 """,
             )
             self._bridge = "sql"
@@ -932,7 +944,7 @@ class DuckDBEngine:
             raise RuntimeError("DuckDB aggregate requires a DuckDBTable with connection")
         select_list = sql_aggregate_select(pairs, by=by)
         if by:
-            group_list = ", ".join(f'"{c}"' for c in by)
+            group_list = ", ".join(_quote_identifier(c) for c in by)
             sql = f"SELECT {select_list} FROM s GROUP BY {group_list}"
         else:
             sql = f"SELECT {select_list} FROM s"

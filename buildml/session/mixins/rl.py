@@ -35,6 +35,8 @@ class RlSessionMixin:
         action_column: str | None = None,
         env_id: str | None = None,
         n_epochs: int = 40,
+        total_timesteps: int = 8_000,
+        allow_variable_horizon: bool = False,
         random_state: int | None = 0,
         prefer_reduce_components: bool = True,
     ) -> ImitationFitResult:
@@ -62,6 +64,8 @@ class RlSessionMixin:
             action_column=action_column,
             env_id=env_id,
             n_epochs=n_epochs,
+            total_timesteps=total_timesteps,
+            allow_variable_horizon=allow_variable_horizon,
             random_state=random_state,
             prefer_reduce_components=prefer_reduce_components,
         ))

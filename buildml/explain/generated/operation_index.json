@@ -4798,6 +4798,20 @@
           "required": false
         },
         {
+          "annotation": "int",
+          "default": "8000",
+          "kind": "KEYWORD_ONLY",
+          "name": "total_timesteps",
+          "required": false
+        },
+        {
+          "annotation": "bool",
+          "default": "False",
+          "kind": "KEYWORD_ONLY",
+          "name": "allow_variable_horizon",
+          "required": false
+        },
+        {
           "annotation": "int | None",
           "default": "0",
           "kind": "KEYWORD_ONLY",
@@ -12263,29 +12277,29 @@
           "required": false
         },
         {
-          "annotation": "Literal['pipeline', 'torchscript']",
-          "default": "'pipeline'",
+          "annotation": "Literal['pipeline', 'torchscript'] | None",
+          "default": "None",
           "kind": "KEYWORD_ONLY",
           "name": "kind",
           "required": false
         },
         {
-          "annotation": "str",
-          "default": "'127.0.0.1'",
+          "annotation": "str | None",
+          "default": "None",
           "kind": "KEYWORD_ONLY",
           "name": "host",
           "required": false
         },
         {
-          "annotation": "int",
-          "default": "8080",
+          "annotation": "int | None",
+          "default": "None",
           "kind": "KEYWORD_ONLY",
           "name": "port",
           "required": false
         },
         {
-          "annotation": "str",
-          "default": "'BuildML Serve'",
+          "annotation": "str | None",
+          "default": "None",
           "kind": "KEYWORD_ONLY",
           "name": "title",
           "required": false
@@ -12320,7 +12334,7 @@
         },
         {
           "annotation": "bool",
-          "default": "False",
+          "default": "UNSET",
           "kind": "KEYWORD_ONLY",
           "name": "allow_insecure_public_bind",
           "required": false
@@ -12341,7 +12355,7 @@
         },
         {
           "annotation": "bool",
-          "default": "False",
+          "default": "UNSET",
           "kind": "KEYWORD_ONLY",
           "name": "trusted",
           "required": false
@@ -12417,7 +12431,7 @@
       "qualname": "DataSessionMixin.set_roles"
     },
     "split": {
-      "doc_summary": "Randomly hold back rows so you can measure honest performance.",
+      "doc_summary": "Randomly hold back rows so you can measure performance on held-out data.",
       "is_classmethod": false,
       "is_staticmethod": false,
       "name": "split",

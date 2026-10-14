@@ -316,8 +316,9 @@ def _optional_mapper_summary(
         clusterer=DBSCAN(eps=0.8, min_samples=3),
     )
     graph = pipeline.fit_transform(sample)
-    n_nodes = len(getattr(graph, "nodes", lambda: {})())
-    n_edges = len(getattr(graph, "edges", lambda: {})())
+    # Giotto returns an igraph.Graph, whose count API differs from NetworkX.
+    n_nodes = graph.vcount()
+    n_edges = graph.ecount()
     summary: dict[str, Any] = {
         "n_train_mapper_points": int(len(sample)),
         "n_mapper_nodes": int(n_nodes),

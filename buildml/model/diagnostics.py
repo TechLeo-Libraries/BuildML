@@ -347,13 +347,23 @@ def calibration_report(
             y_true, prob_pos, n_bins=n_bins_eff, strategy="quantile"
         )
         brier = float(brier_score_loss(y_true, prob_pos))
-        ece = float(np.mean(np.abs(np.asarray(frac_pos) - np.asarray(mean_pred))))
+        # Quantile bins can have very unequal sizes when probabilities tie.
+        # Weight nonempty bins by their actual sample counts, matching the
+        # bin assignment used by sklearn.calibration_curve.
+        edges = np.percentile(prob_pos, np.linspace(0, 100, n_bins_eff + 1))
+        bin_ids = np.searchsorted(edges[1:-1], prob_pos)
+        counts = np.bincount(bin_ids, minlength=len(edges))
+        nonempty_counts = counts[counts > 0]
+        gaps = np.abs(np.asarray(frac_pos) - np.asarray(mean_pred))
+        ece = float(np.average(gaps, weights=nonempty_counts))
         max_gap = float(np.max(np.abs(np.asarray(frac_pos) - np.asarray(mean_pred))))
         payload["positive_class"] = positive
         payload["brier_score"] = brier
         payload["ece"] = ece
         payload["max_reliability_gap"] = max_gap
         payload["n_bins"] = int(n_bins_eff)
+        payload["bin_counts"] = [int(value) for value in nonempty_counts]
+        payload["ece_method"] = "sample-weighted mean absolute bin gap"
         payload["prevalence"] = float(y_true.mean())
         payload["calibration_curve"] = {
             "fraction_positives": [float(v) for v in frac_pos],
@@ -465,7 +475,8 @@ def threshold_report(
     reverse. There is no setting that improves both.
 
     When ``fp_cost`` and ``fn_cost`` are supplied the guesswork disappears: the
-    threshold that minimises expected cost is computed directly. This is the
+    threshold that minimises empirical cost over every distinct observed
+    probability and the all-positive/all-negative policies is computed. This is the
     right way to use the function whenever the costs can be estimated at all,
     even roughly: a rough ratio beats an arbitrary 0.5.
 
@@ -599,19 +610,28 @@ def threshold_report(
     ap = float(average_precision_score(y_true, prob))
     n_rows = int(len(y_true))
 
+    thresholds = np.linspace(0.05, 0.95, 19)
+    if cost_mode:
+        thresholds = np.unique(np.r_[thresholds, 0., prob, np.nextafter(prob.max(), np.inf)])
+    # Prefix counts evaluate all observed score breakpoints in O(n log n),
+    # avoiding a full prediction vector and metric passes per threshold.
+    order = np.argsort(prob, kind="stable")
+    sorted_prob = prob[order]
+    positive_prefix = np.r_[0, np.cumsum(y_true[order])]
+    positives = int(positive_prefix[-1])
     rows: list[dict[str, Any]] = []
-    for t in np.linspace(0.05, 0.95, 19):
-        pred = (prob >= t).astype(int)
-        tp = int(((pred == 1) & (y_true == 1)).sum())
-        fp = int(((pred == 1) & (y_true == 0)).sum())
-        tn = int(((pred == 0) & (y_true == 0)).sum())
-        fn = int(((pred == 0) & (y_true == 1)).sum())
+    for t in thresholds:
+        below = int(np.searchsorted(sorted_prob, t, side="left"))
+        fn = int(positive_prefix[below])
+        tp = positives - fn
+        tn = below - fn
+        fp = n_rows - below - tp
         row: dict[str, Any] = {
             "threshold": float(t),
-            "precision": float(precision_score(y_true, pred, zero_division=0)),
-            "recall": float(recall_score(y_true, pred, zero_division=0)),
-            "f1": float(f1_score(y_true, pred, zero_division=0)),
-            "predicted_positive_rate": float(pred.mean()),
+            "precision": float(tp / (tp + fp)) if tp + fp else 0.,
+            "recall": float(tp / positives) if positives else 0.,
+            "f1": float(2 * tp / (2 * tp + fp + fn)) if 2 * tp + fp + fn else 0.,
+            "predicted_positive_rate": float((tp + fp) / n_rows),
             "tp": tp,
             "fp": fp,
             "tn": tn,
@@ -738,6 +758,10 @@ def threshold_report(
             "roc_auc": roc_auc,
             "average_precision": ap,
             "rows": rows,
+            "threshold_search": (
+                "observed probability breakpoints, display grid and all-positive/all-negative policies"
+                if cost_mode else "display grid from 0.05 to 0.95"
+            ),
             "operating_points": operating_points,
             "recommended_threshold": recommended,
             "recommendation_basis": recommendation_basis,
@@ -1238,6 +1262,8 @@ def segment_error_report(
     """
     if split_plan is None:
         raise ValidationError("Split required for segment error analysis")
+    if partition not in {"train", "validation", "test"}:
+        raise ValidationError("partition must be train, validation, or test")
     by_columns = _normalize_segment_columns(by, dataset.columns)
     if max_segments < 1:
         raise ValidationError("max_segments must be >= 1")

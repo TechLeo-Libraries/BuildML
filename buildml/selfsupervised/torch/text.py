@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, cast
 
 import numpy as np
 
@@ -108,7 +108,10 @@ class HFTextSSLEncoder:
         else:
             model_name = self.model_name
         self._model = st.SentenceTransformer(model_name, device=self.device)
-        native_dim = int(self._model.get_sentence_embedding_dimension())
+        dimension = getattr(self._model, "get_embedding_dimension", None)
+        if dimension is None:
+            dimension = self._model.get_sentence_embedding_dimension
+        native_dim = int(dimension())
         self.latent_dim = int(self.latent_dim or native_dim)
         if self.epochs > 0 and self.weight_mode != "mock":
             # Lightweight contrastive-style finetune via ST's built-in training API
@@ -118,16 +121,21 @@ class HFTextSSLEncoder:
             examples = [
                 InputExample(texts=[s, s]) for s in samples[: min(len(samples), 512)]
             ]
-            loader = DataLoader(examples, shuffle=True, batch_size=self.batch_size)
+            loader: Any = DataLoader(cast(Any, examples), shuffle=True, batch_size=self.batch_size)
             train_loss = losses.MultipleNegativesRankingLoss(self._model)
-            self._model.fit(
+            # The compatibility trainer respects the model's requested
+            # device; the newer Trainer wrapper auto-selects CUDA instead.
+            train = getattr(self._model, "old_fit", self._model.fit)
+            train(
                 train_objectives=[(loader, train_loss)],
                 epochs=self.epochs,
                 warmup_steps=0,
                 optimizer_params={"lr": self.learning_rate},
                 show_progress_bar=False,
             )
-        self.pretext_loss_ = 0.0
+        # The SDK fit API does not return a final loss; do not report a
+        # placeholder zero as a measured training result.
+        self.pretext_loss_ = None
         self.n_features_in_ = 1  # text column count
         return self
 

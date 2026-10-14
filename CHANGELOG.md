@@ -12,6 +12,160 @@ from the current release; use the installation guide for current requirements.
 
 ## [Unreleased]
 
+### Validation
+
+- Expanded Linux coverage floor raised to 83% after its full remote suite passed
+  at 84.02%; local CPU/CUDA coverage passed at 84.08%. The overall matrix still
+  failed separate Torch DETAIL-mode diagnostics; this is not an all-green claim.
+- Torch CI repeats buffered two-rank validation on each Python stack, recording
+  the installed Torch version, every attempt and native failure diagnostics.
+  A failed or skipped attempt fails the check; repetitions are not retries.
+- Core Linux coverage floor raised from 69% to 70% after all four Python
+  configurations passed at 71.28-71.29% with corrected thread/process tracing.
+- Coverage records both worker threads and multiprocessing. A matching six-test
+  HTTP comparison confirmed omitted threaded execution; fresh whole-suite results
+  must qualify this measurement change separately from earlier percentages.
+- Expanded whole-package CI coverage floor raised from 81% to 82%, following
+  a passing 83.02% remote CPU measurement; the 90% target remains outstanding.
+- Real HTTP load/recovery runner records source identity, dependencies, sampled
+  latency and process-tree RSS; it distinguishes deliberate downtime from load.
+- Isolated giotto profile verifies the compatible numerical stack and real graph
+  contracts separately from the newer expanded stack.
+
+### Fixed
+
+- Tabular SSL agent tools expose native methods and forward training budgets.
+  SSL random_state now seeds Torch initialization and stochastic augmentations,
+  in addition to NumPy shuffling, for repeatable fits on the same backend.
+  Invalid budgets and non-finite feature matrices fail before model construction.
+- Agent integer arguments and checkpoint partition sizes reject malformed values
+  before mutation. DuckDB Parquet fallbacks use unique temporary registrations
+  and release them after SQL failures as well as successful writes.
+- Evolutionary search rejects boolean, fractional and non-finite budgets before
+  fitting, instead of truncating evaluation limits or raising low-level errors.
+  NumPy integer budgets remain supported.
+- TorchScript serving places inputs on the model's parameter/buffer device and
+  floating-point dtype. Empty, ragged, unbatched and non-finite inputs return
+  client errors; non-finite model outputs return a sanitized server error.
+- Cost-sensitive threshold tuning considers every observed probability breakpoint
+  and all-positive/all-negative policies, including optima below 0.05 or above
+  0.95. Sorted prefix counts avoid quadratic rescoring of the partition.
+- Statsmodels rolling forecasts condition on prior observed history with fixed
+  parameters, instead of repeating the forecast from the training endpoint.
+  Exogenous history remains aligned across validation and rolling windows.
+- DuckDB preserves embedded quotes in projected, sampled and aggregated column
+  names, and reads Parquet directories containing apostrophes.
+- SHAP attribution rejects invalid sample budgets and malformed/non-finite
+  output dimensions rather than producing empty or misleading summaries.
+- Explicit serving arguments take precedence over configuration, including
+  `trusted=False`, loopback binding and CPU placement. Omitted arguments inherit
+  configuration; permission flags still reject non-boolean values.
+- Agent training requests preserve registered AutoML, probabilistic, symbolic,
+  neuro-symbolic, recommender and ranker options instead of silently dropping them.
+- Native ANN capability probes contain interpreter crashes on every platform;
+  expanded CI requires a portable source-built hnswlib and a real ANN contract.
+- Concurrent serving apps retain independent models through either shutdown
+  order. Unicode Basic credentials no longer fail during secret comparison;
+  boolean and fractional ports are rejected instead of coerced.
+- Custom CV splitters reject repeated, negative, fractional and out-of-range
+  positions before fitting. Conformal carving preserves observation IDs and
+  rejects duplicates and invalid minimum sizes. Null-target evaluation retains
+  calibrated MAPIE intervals/sets on the same labeled population.
+- Giotto Mapper summaries count the real igraph vertices and edges.
+- The RL extra's SB3 minimum matches imitation's supported series. Real BC
+  uses the trainer's constructor/optimizer API; GAIL uses a vectorized environment,
+  seeds its reward network, and archives models without live environment state.
+  Variable horizons require an explicit choice and retain risk disclosures.
+  Agent imitation requests preserve the selected method and training budget.
+
+- DoWhy causal graphs preserve dataframe names containing spaces, quotes,
+  punctuation and Unicode by passing native node IDs rather than interpolated DOT.
+- Doubly robust policy trees bound depth and leaf size to reduce unstable rules
+  from small noisy leaves; their numerical profile is shared across platform CI.
+- Evolutionary search rejects missing, nonfinite, boolean, and fractional integer
+  bounds before fitting; logarithmic domains require positive bounds and a
+  boolean flag. Invalid declarations raise actionable ValidationError messages.
+- EconML policy-tree fitting uses the observed-outcome API of DRPolicyTree.
+  ATE and neighborhood effect dispersion come from cross-fitted reward estimates;
+  reports disclose omitted bootstrap intervals and the actual refit count.
+- Fold-local model selection clones caller-supplied estimators and rejects null
+  string labels before factorization. Outlier fences and bin edges learn only
+  from finite training values, refusing columns with no finite observations.
+- Calibration ECE weights quantile bins by their actual sample counts when
+  probability ties produce unequal bin sizes, and reports bin counts and method.
+- EDA CSV exports preserve fields from later heterogeneous rows, including
+  drift statistics and multivariate anomaly measurements. Dashboard JSON maps
+  undefined nonfinite measurements to null instead of failing serialization.
+- Segment error diagnostics reject unknown partition names instead of silently
+  analyzing the test set.
+- Managed serving refuses startup timeouts, stops the unready worker and uses
+  a monotonic readiness deadline.
+
+- AutoML leaderboards rank loss metrics in ascending order and unavailable
+  scores last, with score gaps measured in the correct direction.
+- Text SSL installs training dependencies, respects the requested device and
+  leaves unavailable final training losses unset instead of reporting zero.
+
+- Federated classification retains encoded training classes and decodes arbitrary
+  original labels correctly. Client evaluation restores classifier metadata.
+- Ensemble contribution reports decode internally encoded base labels; binary
+  average precision uses the fitted positive class instead of assuming label 1.
+- Zero-budget knapsack allocation keeps eligible positive-value zero-cost items.
+- The optimization extra uses HiGHS below 1.15 to avoid its native symbol conflict
+  with OR-Tools after CVXPY import; CI checks both import orders.
+
+- DuckDB lazy row masks retain independent sidecars, so later filters cannot
+  replace the row selection of earlier unmaterialized relations.
+- Deserialization requires literal `trusted=True`; serving APIs reject non-boolean
+  permissions, and provider error tracebacks suppress secret-bearing exceptions.
+- RuleFit indexed features map to the fitted input columns and zero coefficients
+  remain zero; unknown online, probabilistic, symbolic and RL backends fail clearly.
+- DDP preserves requested shuffle behavior. Torch consistency inference disables
+  dropout, and concept-bottleneck predictions follow the fitted model device.
+- OR-Tools feasible-only knapsack solutions disclose that optimality is unproven.
+  The exact PuLP/CBC path explicitly requests zero relative and absolute gaps.
+
+- Retrieval-grounded advisors now use the actual retrieval entry point and
+  retain document IDs in source evidence instead of silently omitting context.
+- Single-node DDP no longer serializes an unused training-loader random
+  generator; rank samplers still use the configured seed and caller state is preserved.
+
+- Coverage enforcement rises to 69% from a passing Linux CI monolith at
+  70.04–70.05% across Python 3.10–3.13 (1,645 passed, 261 skipped). The broader local CUDA environment
+  remains a separate measurement; 90% is still a target.
+
+- Agent tool execution preserves explicit backend and online drift settings.
+  Non-boolean permission values cannot enable bundle trust or test-set tuning.
+- Invalid neuro-symbolic backend names fail explicitly rather than selecting
+  a different model implementation.
+
+- The breast-cancer example now encodes `malignant=1`, so positive-class
+  probabilities and threshold costs refer to malignancy.
+- Session conformal fitting rejects previously fitted Session preprocessing,
+  which may have used future calibration rows. Calibration carving no longer
+  stratifies on labels; unsupported fit/calibration class combinations fail clearly.
+- Explicit Windows industry ANN runs in a persistent isolated worker with
+  bounded waits, fault containment, retention and lazy restoration.
+- BM25 retrieval reuses its sparse index until the corpus or parameters change.
+
+### Added
+
+- Real locally generated transformer checkpoints verify pooling, embedding
+  widths, persistence and weight updates without model downloads.
+- Independent graph-ranking and adjacency oracles and evolutionary search
+  budget checks cover frozen prediction and held-out data boundaries.
+- Coverage measures spawned Python and multiprocessing workers using the
+  supported coverage.py instrumentation, with existing exclusions retained.
+
+- Agent/direct workflow parity, holdout-preservation and bundle-trust regression
+  checks across native fitting domains; bounded latency sampling for longer soaks.
+
+- EDA interpretation metadata and full-family Benjamini–Hochberg q-values for
+  target tests and numeric drift screens.
+- Real M4 hourly and BEIR SciFact comparative benchmarks, conformal simulation,
+  backend evidence reports, and bounded scale, serving and CUDA verification tools.
+- Windows/Linux backend evidence CI and a maintained validation evidence guide.
+
 ## [2.6.4] - 2026-10-04
 
 ### Fixed

@@ -31,6 +31,7 @@ from typing import Any, Literal
 
 import pandas as pd
 
+from buildml.core._defaults import _INHERIT_PERMISSION
 from buildml.core.errors import MissingExtraError, ValidationError
 
 BundleKind = Literal["pipeline", "torchscript"]
@@ -69,9 +70,9 @@ class ServingState:
 
     Notes
     -----
-    **The state is module-global and therefore per process.** This is what makes
-    the app importable by an ASGI server, and it also means a worker pool loads
-    the bundle once per worker. Size the memory accordingly.
+    Each app owns its state. A worker pool loads the bundle once per worker;
+    multiple apps in one process retain independent models. The module-global
+    accessor is a compatibility view of the most recently loaded state.
 
     See Also
     --------
@@ -161,19 +162,31 @@ def set_serving_state(state: ServingState) -> None:
     _STATE = state
 
 
-def clear_serving_state() -> None:
-    """Drop the loaded bundle, so the next request fails rather than guessing.
+def clear_serving_state(app: Any | None = None) -> None:
+    """Drop an app's loaded bundle or reset the legacy module-global view.
 
     Primarily for tests, which need each case to start from a known-empty
     process. Also releases the reference to a large model.
 
+    Parameters
+    ----------
+    app:
+        App whose model should be released. ``None`` resets only the legacy
+        module-global view of the last loaded state.
+
     Notes
     -----
-    **The app object remains valid after clearing**, but every request will
-    raise until a new state is installed.
+    When an app is supplied, its state is cleared without affecting other
+    apps. Without an app, only the compatibility module-global view is cleared.
     """
     global _STATE
-    _STATE = None
+    if app is None:
+        _STATE = None
+    else:
+        state = getattr(app.state, "buildml_serving_state", None)
+        app.state.buildml_serving_state = None
+        if _STATE is state:
+            _STATE = None
 
 
 def _require_fastapi() -> None:
@@ -277,9 +290,9 @@ def load_serving_bundle(
 def create_serving_app(
     path: str | Path,
     *,
-    kind: BundleKind = "pipeline",
-    title: str = "BuildML Serve",
-    map_location: str = "cpu",
+    kind: BundleKind | None = None,
+    title: str | None = None,
+    map_location: str | None = None,
     api_keys: str | list[str] | tuple[str, ...] | None = None,
     basic_auth: str
     | tuple[str, str]
@@ -287,7 +300,7 @@ def create_serving_app(
     | dict[str, str]
     | None = None,
     docs_enabled: bool | None = None,
-    trusted: bool = False,
+    trusted: bool = _INHERIT_PERMISSION,
     config: Any | None = None,
 ) -> Any:
     """Load a bundle and wrap it in a FastAPI app with predict endpoints.
@@ -308,6 +321,9 @@ def create_serving_app(
     applied server-side. TorchScript takes ``{"inputs": [[...], ...]}``: a
     batch of numeric vectors, already in the order and scale the module expects,
     because a TorchScript module carries no preprocessing.
+
+    Omitted scalar settings inherit the config, or use the usual defaults when
+    no config is supplied. Explicit values always win, including ``trusted=False``.
 
     Parameters
     ----------
@@ -331,7 +347,8 @@ def create_serving_app(
         on, open otherwise.
     trusted:
         Must be ``True`` to deserialize the served artifact. Operators own this
-        opt-in; the default refuses pickle/joblib/TorchScript loads.
+        opt-in. Omission inherits config trust, or refuses loads without a config.
+        Explicit ``False`` revokes configured trust; nonboolean values are rejected.
     config:
         Optional :class:`~buildml.serving.config.ServeConfig`. When provided,
         supplies defaults for the kwargs above; explicit kwargs still win.
@@ -402,21 +419,23 @@ def create_serving_app(
     buildml.serving.launch.serve_bundle : Doing this and starting a server.
     buildml.serving.config.ServeConfig : Declarative YAML/env/CLI config.
     """
+    if trusted is not _INHERIT_PERMISSION and not isinstance(trusted, bool):
+        raise ValidationError("trusted must be a boolean; pass trusted=True only for trusted artifacts.")
     _require_fastapi()
     if config is not None:
         from buildml.serving.config import ServeConfig
 
         if not isinstance(config, ServeConfig):
             raise ValidationError("config must be a ServeConfig instance")
-        # Config is the base; kwargs overlay when not None (auth/docs) or always
-        # for path/kind/title/map_location/trusted so call-site stays explicit.
+        # None means inherit. Explicit False and default-valued strings override.
         overlay: dict[str, Any] = {
             "bundle": str(path),
             "kind": kind,
             "title": title,
             "map_location": map_location,
-            "trusted": trusted,
         }
+        if trusted is not _INHERIT_PERMISSION:
+            overlay["trusted"] = trusted
         if api_keys is not None:
             overlay["api_keys"] = api_keys
         if basic_auth is not None:
@@ -424,21 +443,6 @@ def create_serving_app(
         if docs_enabled is not None:
             overlay["docs_enabled"] = docs_enabled
         merged = config.merge(**overlay)
-        # Preserve config auth/docs/trusted when kwargs left at "unset" defaults.
-        if api_keys is None and merged.api_keys:
-            pass  # already from config
-        if basic_auth is None and config.basic_auth is not None:
-            merged = merged.merge(basic_auth=config.basic_auth)
-        if docs_enabled is None and config.docs_enabled is not None:
-            merged = merged.merge(docs_enabled=config.docs_enabled)
-        if not trusted and config.trusted:
-            merged = merged.merge(trusted=True)
-        if title == "BuildML Serve" and config.title != "BuildML Serve":
-            merged = merged.merge(title=config.title)
-        if kind == "pipeline" and config.kind != "pipeline":
-            merged = merged.merge(kind=config.kind)
-        if map_location == "cpu" and config.map_location != "cpu":
-            merged = merged.merge(map_location=config.map_location)
         path = merged.require_bundle()
         kind = merged.kind  # type: ignore[assignment]
         title = merged.title
@@ -447,6 +451,11 @@ def create_serving_app(
         basic_auth = merged.basic_auth
         docs_enabled = merged.docs_enabled
         trusted = merged.trusted
+
+    kind = "pipeline" if kind is None else kind
+    title = "BuildML Serve" if title is None else title
+    map_location = "cpu" if map_location is None else map_location
+    trusted = False if trusted is _INHERIT_PERMISSION else trusted
 
     state = load_serving_bundle(
         path, kind=kind, map_location=map_location, trusted=trusted
@@ -498,6 +507,7 @@ def create_serving_app(
             "non-local exposure."
         ),
     )
+    app.state.buildml_serving_state = state
     if auth_enabled:
         open_paths = (
             DEFAULT_OPEN_PATHS_WITH_DOCS if docs_on else DEFAULT_OPEN_PATHS_HEALTH_ONLY
@@ -509,15 +519,21 @@ def create_serving_app(
             open_paths=open_paths,
         )
 
+    def _app_state() -> ServingState:
+        loaded = app.state.buildml_serving_state
+        if not isinstance(loaded, ServingState):
+            raise ValidationError("Serving app state has been cleared")
+        return loaded
+
     def _run_predict(payload: dict[str, Any]) -> dict[str, Any]:
-        st = get_serving_state()
+        st = _app_state()
         if st.kind == "pipeline":
             return _predict_pipeline(st, payload)
         return _predict_torchscript(st, payload)
 
     @app.get("/health")
     def health() -> dict[str, Any]:
-        st = get_serving_state()
+        st = _app_state()
         return {
             "ok": True,
             "product": "buildml-serve",
@@ -540,7 +556,7 @@ def create_serving_app(
 
     @app.get("/metadata")
     def metadata() -> dict[str, Any]:
-        st = get_serving_state()
+        st = _app_state()
         body: dict[str, Any] = {
             "ok": True,
             "kind": st.kind,
@@ -646,12 +662,26 @@ def _predict_torchscript(state: ServingState, payload: dict[str, Any]) -> dict[s
             "POST /predict for torchscript expects JSON "
             '{"inputs": [[...], ...]}  (batched float features)'
         )
-    tensor = torch.as_tensor(raw, dtype=torch.float32)
     module = state.torchscript_module
     assert module is not None
+    placement = next(module.parameters(), None)
+    if placement is None:
+        placement = next(module.buffers(), None)
+    dtype = placement.dtype if placement is not None and placement.is_floating_point() else torch.float32
+    device = placement.device if placement is not None else "cpu"
+    try:
+        tensor = torch.as_tensor(raw, dtype=dtype, device=device)
+    except (TypeError, ValueError, RuntimeError) as exc:
+        raise ValidationError("inputs must be a rectangular numeric batch") from exc
+    if tensor.ndim < 2 or tensor.numel() == 0:
+        raise ValidationError("inputs must include a non-empty batch dimension and feature dimensions")
+    if not bool(torch.isfinite(tensor).all()):
+        raise ValidationError("inputs must contain finite numeric values")
     with torch.no_grad():
         out = module(tensor)
     if hasattr(out, "detach"):
+        if not bool(torch.isfinite(out).all()):
+            raise RuntimeError("TorchScript produced non-finite outputs")
         values = out.detach().cpu().tolist()
     else:
         values = out

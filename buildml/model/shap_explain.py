@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import importlib.util
 from dataclasses import asdict, dataclass
+from numbers import Integral
 from typing import Any
 
 import numpy as np
@@ -64,9 +65,11 @@ def explain_with_shap(
 
     Prefers TreeExplainer; falls back to generic Explainer. Caps rows for cost.
     """
-    shap = require_shap(feature="explain_with_shap")
+    if isinstance(max_samples, bool) or not isinstance(max_samples, Integral) or max_samples < 1:
+        raise ValidationError("max_samples must be a positive integer.")
     if frame.empty:
         raise ValidationError("explain_with_shap requires a non-empty feature frame.")
+    shap = require_shap(feature="explain_with_shap")
     n = int(len(frame))
     take = min(int(max_samples), n)
     if take < n:
@@ -85,6 +88,8 @@ def explain_with_shap(
     values = explainer(x)
     raw = getattr(values, "values", values)
     arr = np.asarray(raw)
+    if arr.ndim not in (2, 3) or arr.shape[:2] != x.shape or not np.isfinite(arr).all():
+        raise ValidationError("SHAP returned invalid or non-finite attribution dimensions.")
     if arr.ndim == 3:
         # (rows, features, classes) → mean over classes
         arr = np.mean(np.abs(arr), axis=2)
@@ -93,7 +98,7 @@ def explain_with_shap(
     mean_abs = arr.mean(axis=0)
     names = tuple(str(c) for c in sampled.columns)
     mapping = {
-        name: float(mean_abs[i]) if i < len(mean_abs) else float("nan")
+        name: float(mean_abs[i])
         for i, name in enumerate(names)
     }
     return ShapExplainResult(

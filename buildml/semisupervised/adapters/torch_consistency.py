@@ -180,7 +180,8 @@ ValidationError
         torch = require_torch_semisupervised()
         if self.module_ is None:
             raise ValidationError("TabularConsistencyClassifier is not fitted.")
-        device = torch.device(self.device)
+        self.module_.eval()
+        device = next(self.module_.parameters()).device
         x_arr = np.asarray(x, dtype=np.float32)
         with torch.no_grad():
             logits = self.module_(torch.as_tensor(x_arr, device=device))
@@ -208,7 +209,8 @@ ValidationError
         torch = require_torch_semisupervised()
         if self.module_ is None:
             raise ValidationError("TabularConsistencyClassifier is not fitted.")
-        device = torch.device(self.device)
+        self.module_.eval()
+        device = next(self.module_.parameters()).device
         x_arr = np.asarray(x, dtype=np.float32)
         with torch.no_grad():
             probs = torch.softmax(

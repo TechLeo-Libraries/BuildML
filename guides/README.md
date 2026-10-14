@@ -108,6 +108,7 @@ additional workflows, validation checks, and limitations. Method lists live on `
 | [Graph deep](graph-deep.md) | Node classify: NetworkX classical + pure-Torch GCN + PyG GCN/SAGE/GAT, inductive/transductive, graph bundles |
 | [Symbolic deep](symbolic-deep.md) | Declared/tree/list rules, traces, neuro-symbolic overlay/features/repair, symbolic bundles |
 | [CBR deep](cbr-deep.md) | Train-only case memory, metrics/reuse/retain, CBR≠RAG, CBR bundles |
+| [Validation evidence](validation-evidence.md) | Real benchmarks, backend/platform evidence, scale and statistical limits |
 | [Imitation + RL deep](imitation-rl-deep.md) | BC, bandits, offline DM/IPS, tabular TD control, REINFORCE-lite, SB3 industry, capability matrix |
 | [TDA deep](tda-deep.md) | Local VR (ripser), images/landscapes/silhouettes, train-only head, TDA bundles |
 | [Recommenders deep](recommenders-deep.md) | Train-only CF/content, known-item protocol, Precision@K/Recall@K/nDCG@K/MAP@K, bundles |

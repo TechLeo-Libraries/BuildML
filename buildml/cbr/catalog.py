@@ -24,7 +24,6 @@ from typing import Any, Literal
 
 from buildml.cbr.extras import (
     WINDOWS_CBR_TORCH_ENV,
-    WINDOWS_INDUSTRY_ANN_ENV,
     cbr_industry_available,
     faiss_available,
     faiss_spec_present,
@@ -121,9 +120,9 @@ def cbr_capability_matrix() -> dict[str, Any]:
                     "Fast approximate retrieval on standardized numeric features "
                     "using hnswlib (buildml[cbr-industry]) or faiss-cpu "
                     "(buildml[cbr-faiss]) when installed. On Windows, "
-                    "backend=None stays sklearn and backend='industry' raises "
-                    f"unless {WINDOWS_INDUSTRY_ANN_ENV}=1, because in-process "
-                    "ANN wheels can crash the interpreter."
+                    "backend=None stays sklearn. Explicit industry retrieval runs "
+                    "in a persistent isolated worker by default, keeping native "
+                    "crashes outside the Session process."
                 ),
             },
             "embedding": {
@@ -407,13 +406,6 @@ def resolve_backend_metric(
     if resolved_backend == "industry":
         from buildml.cbr.extras import cbr_industry_available
 
-        if windows_industry_ann_refused():
-            raise ValidationError(
-                "backend='industry' is refused on Windows because hnswlib and "
-                "faiss can hard-crash the process even when a subprocess probe "
-                f"succeeds. Set {WINDOWS_INDUSTRY_ANN_ENV}=1 if you accept that "
-                "risk, or use backend='sklearn'."
-            )
         if metric_key not in INDUSTRY_METRICS:
             raise ValidationError(
                 f"metric='{metric}' is not valid for backend='industry'. "

@@ -152,7 +152,6 @@ def main() -> None:
             .split(test_size=0.2, validation_size=0.2, random_state=ctx.seed)
         )
         prob_session.impute(strategy="median")
-        prob_session.scale(method="standard")
         p_fit = prob_session.probabilistic.fit(
             estimator="bayesian_ridge",
             conformal=True,

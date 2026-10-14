@@ -270,10 +270,39 @@ def test_csv_and_pdf_exports(tmp_path: Path) -> None:
     out = tmp_path / "briefing.pdf"
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_bytes(pdf)
-    # Chart stills are embedded when kaleido is available.
-    pytest.importorskip("kaleido")
-    assert b"/Image" in pdf
-    assert len(pdf) > 20_000
+
+
+def test_pdf_embeds_successfully_rendered_chart(monkeypatch) -> None:
+    import io
+
+    from PIL import Image
+
+    image = io.BytesIO()
+    Image.new("RGB", (20, 20), color="blue").save(image, format="PNG")
+    # Exercise PDF image embedding separately from browser availability.
+    monkeypatch.setattr("buildml.dashboard.charts.render_chart_png", lambda *args, **kwargs: image.getvalue())
+    pdf = export_pdf(_session().eda(include_plots=False, show=False).to_dict(), view="features")
+    assert b"/Subtype /Image" in pdf
+
+
+def test_pdf_discloses_unavailable_chart_renderer(monkeypatch) -> None:
+    import re
+    import zlib
+
+    monkeypatch.setattr("buildml.dashboard.charts.render_chart_png", lambda *args, **kwargs: None)
+    pdf = export_pdf(_session().eda(include_plots=False, show=False).to_dict(), view="features")
+    assert b"/Subtype /Image" not in pdf
+    streams = []
+    for match in re.finditer(rb"stream\r?\n(.*?)endstream", pdf, re.DOTALL):
+        data = match.group(1).strip()
+        try:
+            # ReportLab's default page streams use ASCII85 followed by Flate.
+            import base64
+            data = zlib.decompress(base64.a85decode(data, adobe=True))
+        except (ValueError, zlib.error):
+            continue
+        streams.append(data)
+    assert b"could not be rasterized" in b"\n".join(streams)
 
 
 def test_fastapi_routes_and_launch_smoke() -> None:

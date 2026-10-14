@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from numbers import Integral, Real
 from typing import Any
 
 import numpy as np
@@ -58,6 +59,20 @@ class SSLTrainResult:
     history: tuple[float, ...] = ()
 
 
+def _validate_training_settings(
+    *, epochs: int, batch_size: int, latent_dim: int,
+    learning_rate: float, temperature: float,
+) -> None:
+    for name, value, minimum in (
+        ("epochs", epochs, 1), ("batch_size", batch_size, 2), ("latent_dim", latent_dim, 1),
+    ):
+        if isinstance(value, bool) or not isinstance(value, Integral) or value < minimum:
+            raise ValidationError(f"{name} must be an integer >= {minimum}")
+    for name, numeric_value in (("learning_rate", learning_rate), ("temperature", temperature)):
+        if isinstance(numeric_value, bool) or not isinstance(numeric_value, Real) or not np.isfinite(numeric_value) or numeric_value <= 0:
+            raise ValidationError(f"{name} must be finite and positive")
+
+
 def train_tabular_ssl(
     x: np.ndarray,
     *,
@@ -101,15 +116,22 @@ def train_tabular_ssl(
     """
     require_torch(feature="SSL training")
     x_arr = np.asarray(x, dtype=np.float32)
-    if x_arr.ndim != 2 or x_arr.shape[0] < 4:
+    if x_arr.ndim != 2 or x_arr.shape[0] < 4 or x_arr.shape[1] < 1:
         raise ValidationError(
             f"Tabular SSL requires at least 4 train rows (got shape={x_arr.shape})."
         )
     n_features = int(x_arr.shape[1])
     cfg = config or SSLTrainConfig(method=method)
+    _validate_training_settings(epochs=cfg.epochs, batch_size=cfg.batch_size,
+                                latent_dim=latent_dim, learning_rate=cfg.learning_rate,
+                                temperature=cfg.temperature)
+    if not np.isfinite(x_arr).all():
+        raise ValidationError("Tabular SSL training features must be finite")
     cfg.method = method
     rng = np.random.default_rng(cfg.random_state)
     torch = require_torch(feature="SSL training")
+    if cfg.random_state is not None:
+        torch.manual_seed(int(cfg.random_state))
     device = torch.device(cfg.device)
     tensor_x = torch.as_tensor(x_arr, device=device)
 

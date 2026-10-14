@@ -22,7 +22,7 @@ buildml.rag.rerank : The cross-encoder pass.
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, cast
 
 from buildml.core.errors import ValidationError
 from buildml.rag.hybrid import BM25Index, filter_chunks, rrf_fuse, weighted_fuse
@@ -60,7 +60,15 @@ def _bm25_hits(
     chunks = filter_chunks(index.chunks, filters)
     if not chunks:
         return []
-    bm25 = BM25Index.build(chunks, k1=cfg.bm25_k1, b=cfg.bm25_b)
+    # Older persisted indexes predate this transient cache field.
+    cached = getattr(index, "_bm25_cache", None)
+    if not filters and cached is not None and cached[0] is index.store and cached[1:3] == (cfg.bm25_k1, cfg.bm25_b):
+        bm25 = cast(BM25Index, cached[3])
+    else:
+        bm25 = BM25Index.build(chunks, k1=cfg.bm25_k1, b=cfg.bm25_b)
+        if not filters:
+            # Mutations replace the store; identity invalidates the cached corpus.
+            index._bm25_cache = (index.store, cfg.bm25_k1, cfg.bm25_b, bm25)
     return bm25.query(query, k=k)
 
 

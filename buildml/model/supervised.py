@@ -1123,11 +1123,12 @@ def evaluate_estimator(
                     )
                 )
                 if len(fit_result.estimator.classes_) == 2:
+                    y_positive = np.asarray(y_true) == fit_result.estimator.classes_[1]
                     metrics["roc_auc"] = float(
-                        roc_auc_score(y_true, proba[:, 1], sample_weight=sw)
+                        roc_auc_score(y_positive, proba[:, 1], sample_weight=sw)
                     )
                     metrics["average_precision"] = float(
-                        average_precision_score(y_true, proba[:, 1], sample_weight=sw)
+                        average_precision_score(y_positive, proba[:, 1], sample_weight=sw)
                     )
                 else:
                     metrics["roc_auc_ovr_weighted"] = float(

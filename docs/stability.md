@@ -49,6 +49,14 @@ deprecation rules, and dependency availability.
 ## Coverage requirements
 
 See `scripts/coverage_ratchet.json` and `pyproject.toml` `fail_under`.
-Active floor **66** (Linux CI monolith measured 66.67% on the 2.6.0 cut).
+Active floor **70** (corrected thread/process tracing measured 71.28-71.29%
+across Linux Python 3.10-3.13, run 38589015544, commit 2837fb3).
 Measure the complete suite with `python scripts/run_full_coverage.py`; subset
 runs are not comparable to the project coverage threshold.
+The separate expanded Linux job runs the same complete test directory with
+`requirements-expanded-coverage.txt` and an **83%** floor, raised after passing
+remote CPU coverage of 84.02% at `a6ebf04`. The expanded job passed; separate
+Torch diagnostic checks failed, so the overall matrix was not all-green.
+Remote CPU results are recorded separately
+with their source revision and installed package list. The requested 90% coverage
+target remains open.

@@ -116,10 +116,16 @@ python scripts/probe_industry_extras.py --artifact industry-probe.json
 
 Coverage `fail_under` lives in `pyproject.toml` (`[tool.coverage.report]`) and
 `scripts/coverage_ratchet.json`. It is a one-way ratchet on the **Linux CI
-monolith** (**66** active since `2.6.0`; prior 70 was a Windows isolated
-combine, not this gate): raise only from a full-suite measure
+monolith** (**70** active after corrected thread/process tracing measured at least
+71.28% across Linux Python 3.10-3.13 at `2837fb3`): raise only from a full-suite measure
 (`python scripts/run_full_coverage.py --update-ratchet` or CI
 `pytest tests --cov=buildml`); do not lower it to silence a regression.
+The separate `expanded-coverage` CI job installs
+`requirements-expanded-coverage.txt` and runs the entire suite with an **83%**
+floor. Corrected thread/process collection at `a6ebf04` passed at 84.02%
+remotely and 84.08% locally with CPU/CUDA contracts. The expanded job passed,
+but the overall matrix failed Torch diagnostic repetitions. The 90% target
+remains outstanding. Identify core and expanded results by dependency profile.
 `requirements.txt` / `requirements-dev.txt` are convenience mirrors of
 `pyproject.toml` ranges; prefer `pip install -e ".[dev]"`.
 

@@ -180,27 +180,20 @@ def fit_probabilistic(
             raise ValidationError(
                 "Probabilistic classification requires at least 2 classes."
             )
-        disclosures.append(
-            "Classifier classes_ discovered from the full train target "
-            "vocabulary (labels only) before the optional conformal carve."
-        )
 
     fit_indices: list[Any]
     calib_indices: list[Any]
     if use_conformal or (use_mapie and resolved_estimator == "split"):
-        stratify = None
-        if resolved_task == "classification":
-            stratify = train.loc[list(split_plan.train_indices), target].astype(str)
         fit_indices, calib_indices = split_train_for_conformal(
             split_plan.train_indices,
             calibration_fraction=conformal_calibration_fraction,
             random_state=random_state,
-            stratify_labels=None if stratify is None else list(stratify),
         )
         disclosures.append(
             f"Split conformal calibration carved from train only: "
             f"n_fit={len(fit_indices)}, n_calib={len(calib_indices)} "
             f"(fraction≈{conformal_calibration_fraction}). "
+            "Membership was sampled without consulting labels. "
             "Validation/test were never used for conformal calibration."
         )
     else:
@@ -219,10 +212,23 @@ def fit_probabilistic(
     classes_tuple: tuple[Any, ...] | None = None
     y_fit: np.ndarray
     if resolved_task == "classification":
+        fit_classes = tuple(sorted(fit_frame[target].astype(str).unique().tolist()))
+        if len(fit_classes) < 2:
+            raise ValidationError(
+                "The label-independent calibration carve left fewer than two "
+                "classes in the fitting subset; collect more training examples."
+            )
+        if calib_indices and not set(full.loc[calib_indices, target].astype(str)).issubset(fit_classes):
+            raise ValidationError(
+                "Calibration contains a class absent from the fitting subset. "
+                "Collect more examples of rare classes; calibration is not "
+                "reassigned using labels."
+            )
         y_fit, label_encoder, classes_tuple = encode_classification_targets(
             fit_frame[target],
-            classes=class_vocab,
+            classes=fit_classes,
         )
+        disclosures.append("Classifier vocabulary learned from the fitting subset only.")
     else:
         y_fit = regression_targets(fit_frame[target])
 

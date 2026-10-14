@@ -1,0 +1,9 @@
+# Isolated compatible causal profile; separate from expanded NumPy 2.5/SciPy 1.18.
+-e .[dev,graph,causal-industry]
+numpy==2.4.1
+scipy==1.15.3
+scikit-learn==1.9.1
+pandas==3.0.6
+networkx==3.7
+dowhy==0.14
+econml==0.17.0

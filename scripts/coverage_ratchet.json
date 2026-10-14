@@ -1,7 +1,37 @@
 {
   "policy": "Coverage fail_under is a one-way ratchet on the Linux CI monolith (pytest --cov=buildml). Raise when that gate improves; never lower to silence a regression. Floors must be set from that gate or scripts/run_full_coverage.py in monolith mode, never from a tiny subset or from a Windows isolated combine that skips crashed modules.",
   "source": "pyproject.toml [tool.coverage.report] fail_under",
-  "current": 66,
+  "current": 70,
+  "expanded": {
+    "current": 83,
+    "source": ".github/workflows/ci.yml expanded-coverage job --cov-fail-under",
+    "profile": "requirements-expanded-coverage.txt",
+    "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
+    "latest_measurement": {
+      "percent_covered": 84.01778325842514,
+      "covered_lines": 51781,
+      "num_statements": 61631,
+      "source_revision": "a6ebf04a9b979e02a1ba97f56cccd5106bc3e123",
+      "tested_revision": "d21d8637fd7eaa62c9a76a3851448a67dfca39d2",
+      "platform": "remote Linux, CPU expanded profile",
+      "run_id": 38614442365,
+      "result": "2677 passed, 77 skipped, no failures",
+      "trace_concurrency": [
+        "multiprocessing",
+        "thread"
+      ],
+      "notes": "Expanded whole-suite job passed and tested tree equals source tree. Floor83 retains >=1pp headroom. Overall CI failed Torch DETAIL-mode repetitions; do not describe the matrix as all-green. Target90 remains open."
+    },
+    "seed_measurement": {
+      "percent_covered": 82.69421622061336,
+      "covered_lines": 50828,
+      "num_statements": 61465,
+      "source_revision": "1518598",
+      "platform": "local Linux, CUDA-capable Torch",
+      "result": "2235 passed, 42 skipped, no failures",
+      "notes": "The new remote CPU profile must pass independently; this local result does not establish that outcome. The 90 percent target remains outstanding."
+    }
+  },
   "schedule": [
     {
       "target": 27,
@@ -30,8 +60,26 @@
     {
       "target": 66,
       "release": "2.6.0",
-      "status": "active",
+      "status": "superseded",
       "notes": "Linux CI monolith (pytest --cov=buildml) measured 66.67% (40630/60938) on the 2.6.0 cut. That job is the coverage gate."
+    },
+    {
+      "target": 67,
+      "release": "unreleased",
+      "status": "superseded",
+      "notes": "Passing Linux CI monolith measured 68.33% on 2026-10-12, run 38213125336, commit 6369eeb; 1540 passed, 256 skipped."
+    },
+    {
+      "target": 69,
+      "release": "unreleased",
+      "status": "superseded",
+      "notes": "Passing Linux CI monolith measured 70.04-70.05% across Python3.10-3.13 on 2026-10-12, run38219062877, commitf94dff0; 1645 passed,261 skipped per configuration."
+    },
+    {
+      "target": 70,
+      "release": "unreleased",
+      "status": "active",
+      "notes": "Corrected thread/process collection; Linux Python3.10-3.13 monoliths passed71.28-71.29%,2172passed398skipped,run38589015544,commit2837fb3. Package scope and exclusions unchanged."
     }
   ],
   "how_to_raise": [
@@ -42,15 +90,19 @@
     "Update CONTRIBUTING.md ratchet note, docs/stability.md, and CHANGELOG"
   ],
   "measured": {
-    "percent_covered": 66.67,
-    "covered_lines": 40630,
-    "num_statements": 60938,
+    "percent_covered": 71.2820346355477,
     "platform": "linux",
-    "python": "3.11",
+    "python": "3.12",
     "mode": "monolith",
     "command": "pytest --cov=buildml --cov-report=term-missing",
-    "notes": "GitHub Actions test (3.11) on 2.6.0 cut commit cf981e3; 1120 passed, 228 skipped"
+    "notes": "Linux Python3.12 run38589015544,source2837fb3,2172passed398skipped. All four core configurations passed with>=1ppheadroom above70.",
+    "covered_lines": 43919,
+    "num_statements": 61613,
+    "trace_concurrency": [
+      "multiprocessing",
+      "thread"
+    ]
   },
-  "last_full_suite_percent": 66.67,
-  "suggested_fail_under": 66
+  "last_full_suite_percent": 71.2820346355477,
+  "suggested_fail_under": 70
 }

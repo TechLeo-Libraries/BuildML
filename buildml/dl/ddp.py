@@ -33,7 +33,7 @@ from __future__ import annotations
 import os
 import pickle
 from collections.abc import Callable, Mapping
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import Any, Literal
@@ -408,7 +408,10 @@ def _shard_loader(loader: Any, *, rank: int, world_size: int, seed: int) -> Any:
         dataset,
         num_replicas=world_size,
         rank=rank,
-        shuffle=getattr(loader, "shuffle", True) or True,
+        shuffle=getattr(
+            loader, "_buildml_ddp_shuffle",
+            isinstance(loader.sampler, torch.utils.data.RandomSampler),
+        ),
         seed=seed,
     )
     return torch.utils.data.DataLoader(
@@ -567,6 +570,25 @@ def _train_single_node(
             "(not a throughput optimization)."
         )
 
+    train_loader = loader_bundle.loaders.get("train")
+    if train_loader is None:
+        raise ValidationError("DDP requires a train loader")
+    # Each rank builds its own DistributedSampler from config.seed. Sending
+    # the unused RandomSampler generator can fail during Torch IPC unpickling.
+    # Rebuild only the launch payload; preserve the caller's loader and RNG.
+    spawn_train_loader = torch.utils.data.DataLoader(
+        train_loader.dataset,
+        batch_size=train_loader.batch_size,
+        num_workers=getattr(train_loader, "num_workers", 0),
+        pin_memory=getattr(train_loader, "pin_memory", False),
+        drop_last=getattr(train_loader, "drop_last", False),
+    )
+    spawn_train_loader._buildml_ddp_shuffle = isinstance(
+        train_loader.sampler, torch.utils.data.RandomSampler
+    )
+    spawn_bundle = replace(
+        loader_bundle, loaders={**loader_bundle.loaders, "train": spawn_train_loader}
+    )
     with TemporaryDirectory(prefix="buildml-ddp-result-") as directory:
         result_path = Path(directory) / "rank-zero.pkl"
         torch.multiprocessing.spawn(
@@ -577,7 +599,7 @@ def _train_single_node(
                 dcfg.master_addr,
                 dcfg.master_port,
                 module_factory,
-                loader_bundle,
+                spawn_bundle,
                 config,
                 dcfg.find_unused_parameters,
                 str(result_path),
