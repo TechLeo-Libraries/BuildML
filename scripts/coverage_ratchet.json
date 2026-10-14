@@ -8,15 +8,15 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 83.01619828259173,
-      "covered_lines": 51045,
-      "num_statements": 61488,
-      "source_revision": "e3f7b93",
-      "tested_revision": "c28427c6f80543770971f983419a5206849838b3",
+      "percent_covered": 83.32170158895039,
+      "covered_lines": 51337,
+      "num_statements": 61613,
+      "source_revision": "fa7b6784b72960408d903eca18fd6e9713d063e6",
+      "tested_revision": "c2a480c7c74b77705127780ed7d619e0a4c6ddb6",
       "platform": "remote Linux, CPU expanded profile",
-      "run_id": 38543420905,
-      "result": "2386 passed, 50 skipped, no failures in expanded-coverage",
-      "notes": "Passing whole-package expanded gate has over one percentage point of headroom above 82. Other core jobs in this run failed the serving docstring budget, repaired separately without raising that budget. The 90 percent target remains outstanding."
+      "run_id": 38568104646,
+      "result": "2492 passed,74 skipped,no failures",
+      "notes": "The tested merge tree equals the branch tree. All CI jobs passed, including compatible causal, topology and RL profiles. Floor82 retains >=1pp headroom; 90 remains outstanding."
     },
     "seed_measurement": {
       "percent_covered": 82.69421622061336,
@@ -80,15 +80,15 @@
     "Update CONTRIBUTING.md ratchet note, docs/stability.md, and CHANGELOG"
   ],
   "measured": {
-    "percent_covered": 70.04,
+    "percent_covered": 70.86329183776151,
     "platform": "linux",
     "python": "3.12",
     "mode": "monolith",
     "command": "pytest --cov=buildml --cov-report=term-missing",
-    "notes": "GitHub Actions run38219062877, commitf94dff0; 1645 passed,261 skipped. All Python3.10-3.13 core gates exceeded70.04%.",
-    "covered_lines": 43010,
-    "num_statements": 61405
+    "notes": "GitHub Actions run38568104646, commitfa7b678, Python3.12 core; 2167 passed,394 skipped. All core matrix jobs passed. The >=1pp headroom rule does not yet permit raising the core floor to70.",
+    "covered_lines": 43661,
+    "num_statements": 61613
   },
-  "last_full_suite_percent": 70.04,
+  "last_full_suite_percent": 70.86329183776151,
   "suggested_fail_under": 69
 }
