@@ -49,8 +49,8 @@ deprecation rules, and dependency availability.
 ## Coverage requirements
 
 See `scripts/coverage_ratchet.json` and `pyproject.toml` `fail_under`.
-Active floor **69** (latest Linux core Python 3.12 measurement: 70.86%,
-GitHub Actions run 38568104646, commit fa7b678; all core matrix jobs passed).
+Active floor **70** (corrected thread/process tracing measured 71.28-71.29%
+across Linux Python 3.10-3.13, run 38589015544, commit 2837fb3).
 Measure the complete suite with `python scripts/run_full_coverage.py`; subset
 runs are not comparable to the project coverage threshold.
 The separate expanded Linux job runs the same complete test directory with

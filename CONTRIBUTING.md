@@ -116,8 +116,8 @@ python scripts/probe_industry_extras.py --artifact industry-probe.json
 
 Coverage `fail_under` lives in `pyproject.toml` (`[tool.coverage.report]`) and
 `scripts/coverage_ratchet.json`. It is a one-way ratchet on the **Linux CI
-monolith** (**69** active after the 2026-10-12 CI measurement of at least 70.04%; prior 70 was a Windows isolated
-combine, not this gate): raise only from a full-suite measure
+monolith** (**70** active after corrected thread/process tracing measured at least
+71.28% across Linux Python 3.10-3.13 at `2837fb3`): raise only from a full-suite measure
 (`python scripts/run_full_coverage.py --update-ratchet` or CI
 `pytest tests --cov=buildml`); do not lower it to silence a regression.
 The separate `expanded-coverage` CI job installs

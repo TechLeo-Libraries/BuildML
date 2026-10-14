@@ -108,7 +108,7 @@ Follow-up assessment, 2026-10-14, review branch `codex/coverage-cuda-ci-20261012
 
 | Configuration | Outcome | Qualification |
 |---|---|---|
-| Remote core Linux, Python 3.10-3.13 | All jobs passed; Python 3.12: 2,167 passed, 394 skipped, 70.86% coverage | [CI run 38568104646](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38568104646), `fa7b678`; floor remains 69% under the one-point headroom rule |
+| Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38568104949](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38568104949), `fa7b678`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38568105076](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38568105076), `fa7b678`; verification does not publish a release |
 | Remote expanded CPU whole-package gate | Passed: 83.32% (51,337 / 61,613 lines); 2,492 passed, 74 skipped | [CI run 38568104646](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38568104646); tested merge `c2a480c` has the same Git tree as `fa7b678`; floor remains 82% |
@@ -219,7 +219,11 @@ other models and deployment populations remain separate evidence requirements.
 
 The passing remote expanded coverage job at `fa7b678` measured 83.32%
 (51,337 of 61,613 executable lines), with 2,492 tests passed and 74 skipped.
-The entire matrix passed. The 90% whole-package goal remains open.
+The entire `fa7b678` matrix passed. Those figures used multiprocessing-only
+collection. Corrected thread/process measurements at `2837fb3` are separate:
+core gates passed at 71.28-71.29%; expanded/local results are pending. Do not
+add a subset tracing delta to an earlier full-suite percentage. The 90% goal
+remains open until a complete corrected measurement establishes it.
 
 Fresh local Linux coverage at `fa7b678` passed with 83.38%
 (51,372 of 61,613 executable lines), 2,506 tests passed and 60 skipped.

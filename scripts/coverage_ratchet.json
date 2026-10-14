@@ -1,7 +1,7 @@
 {
   "policy": "Coverage fail_under is a one-way ratchet on the Linux CI monolith (pytest --cov=buildml). Raise when that gate improves; never lower to silence a regression. Floors must be set from that gate or scripts/run_full_coverage.py in monolith mode, never from a tiny subset or from a Windows isolated combine that skips crashed modules.",
   "source": "pyproject.toml [tool.coverage.report] fail_under",
-  "current": 69,
+  "current": 70,
   "expanded": {
     "current": 82,
     "source": ".github/workflows/ci.yml expanded-coverage job --cov-fail-under",
@@ -16,7 +16,10 @@
       "platform": "remote Linux, CPU expanded profile",
       "run_id": 38568104646,
       "result": "2492 passed,74 skipped,no failures",
-      "notes": "The tested merge tree equals the branch tree. All CI jobs passed, including compatible causal, topology and RL profiles. Floor82 retains >=1pp headroom; 90 remains outstanding."
+      "notes": "The tested merge tree equals the branch tree. All CI jobs passed, including compatible causal, topology and RL profiles. Floor82 retains >=1pp headroom; 90 remains outstanding.",
+      "trace_concurrency": [
+        "multiprocessing"
+      ]
     },
     "seed_measurement": {
       "percent_covered": 82.69421622061336,
@@ -68,8 +71,14 @@
     {
       "target": 69,
       "release": "unreleased",
-      "status": "active",
+      "status": "superseded",
       "notes": "Passing Linux CI monolith measured 70.04-70.05% across Python3.10-3.13 on 2026-10-12, run38219062877, commitf94dff0; 1645 passed,261 skipped per configuration."
+    },
+    {
+      "target": 70,
+      "release": "unreleased",
+      "status": "active",
+      "notes": "Corrected thread/process collection; Linux Python3.10-3.13 monoliths passed71.28-71.29%,2172passed398skipped,run38589015544,commit2837fb3. Package scope and exclusions unchanged."
     }
   ],
   "how_to_raise": [
@@ -80,15 +89,19 @@
     "Update CONTRIBUTING.md ratchet note, docs/stability.md, and CHANGELOG"
   ],
   "measured": {
-    "percent_covered": 70.86329183776151,
+    "percent_covered": 71.2820346355477,
     "platform": "linux",
     "python": "3.12",
     "mode": "monolith",
     "command": "pytest --cov=buildml --cov-report=term-missing",
-    "notes": "GitHub Actions run38568104646, commitfa7b678, Python3.12 core; 2167 passed,394 skipped. All core matrix jobs passed. The >=1pp headroom rule does not yet permit raising the core floor to70.",
-    "covered_lines": 43661,
-    "num_statements": 61613
+    "notes": "Linux Python3.12 run38589015544,source2837fb3,2172passed398skipped. All four core configurations passed with>=1ppheadroom above70.",
+    "covered_lines": 43919,
+    "num_statements": 61613,
+    "trace_concurrency": [
+      "multiprocessing",
+      "thread"
+    ]
   },
-  "last_full_suite_percent": 70.86329183776151,
-  "suggested_fail_under": 69
+  "last_full_suite_percent": 71.2820346355477,
+  "suggested_fail_under": 70
 }

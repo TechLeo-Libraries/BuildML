@@ -14,6 +14,8 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Core Linux coverage floor raised from 69% to 70% after all four Python
+  configurations passed at 71.28-71.29% with corrected thread/process tracing.
 - Coverage records both worker threads and multiprocessing. A matching six-test
   HTTP comparison confirmed omitted threaded execution; fresh whole-suite results
   must qualify this measurement change separately from earlier percentages.

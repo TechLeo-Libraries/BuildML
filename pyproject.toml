@@ -314,9 +314,9 @@ omit = [
 ]
 
 [tool.coverage.report]
-# Active floor 69 (2026-10-12 Linux CI monolith measured >=70.04%). The prior 70
-# floor came from a Windows isolated combine, not this gate.
-fail_under = 69
+# Active floor 70: corrected thread/process tracing measured >=71.28% across
+# Linux Python 3.10-3.13 at 2837fb3. Whole-package scope is unchanged.
+fail_under = 70
 precision = 1
 skip_empty = true
 show_missing = true
