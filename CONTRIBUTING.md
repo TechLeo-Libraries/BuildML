@@ -121,9 +121,9 @@ combine, not this gate): raise only from a full-suite measure
 (`python scripts/run_full_coverage.py --update-ratchet` or CI
 `pytest tests --cov=buildml`); do not lower it to silence a regression.
 The separate `expanded-coverage` CI job installs
-`requirements-expanded-coverage.txt` and runs the entire suite with an **81%**
-floor. Its seed measurement was a passing 82.69% expanded local Linux run;
-the remote CPU configuration must pass independently. Keep core and expanded
+`requirements-expanded-coverage.txt` and runs the entire suite with an **82%**
+floor, raised after passing remote CPU coverage of 83.02% at `e3f7b93`.
+The local CUDA profile passed at 83.00% at `c3bd24a`. Keep core and expanded
 results identified by their dependency profile when reporting coverage.
 `requirements.txt` / `requirements-dev.txt` are convenience mirrors of
 `pyproject.toml` ranges; prefer `pip install -e ".[dev]"`.

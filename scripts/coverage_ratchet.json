@@ -3,10 +3,21 @@
   "source": "pyproject.toml [tool.coverage.report] fail_under",
   "current": 69,
   "expanded": {
-    "current": 81,
+    "current": 82,
     "source": ".github/workflows/ci.yml expanded-coverage job --cov-fail-under",
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
+    "latest_measurement": {
+      "percent_covered": 83.01619828259173,
+      "covered_lines": 51045,
+      "num_statements": 61488,
+      "source_revision": "e3f7b93",
+      "tested_revision": "c28427c6f80543770971f983419a5206849838b3",
+      "platform": "remote Linux, CPU expanded profile",
+      "run_id": 38543420905,
+      "result": "2386 passed, 50 skipped, no failures in expanded-coverage",
+      "notes": "Passing whole-package expanded gate has over one percentage point of headroom above 82. Other core jobs in this run failed the serving docstring budget, repaired separately without raising that budget. The 90 percent target remains outstanding."
+    },
     "seed_measurement": {
       "percent_covered": 82.69421622061336,
       "covered_lines": 50828,

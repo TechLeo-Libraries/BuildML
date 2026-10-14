@@ -54,7 +54,7 @@ Active floor **69** (Linux CI monolith measured 70.04–70.05% across Python
 Measure the complete suite with `python scripts/run_full_coverage.py`; subset
 runs are not comparable to the project coverage threshold.
 The separate expanded Linux job runs the same complete test directory with
-`requirements-expanded-coverage.txt` and an **81%** initial floor, seeded by
-the passing local 82.69% measurement. Remote CPU results are recorded separately
+`requirements-expanded-coverage.txt` and an **82%** floor, raised after passing
+remote CPU coverage of 83.02% at `e3f7b93`. Remote CPU results are recorded separately
 with their source revision and installed package list. The requested 90% coverage
 target remains open.

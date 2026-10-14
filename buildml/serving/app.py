@@ -167,6 +167,12 @@ def clear_serving_state(app: Any | None = None) -> None:
     Primarily for tests, which need each case to start from a known-empty
     process. Also releases the reference to a large model.
 
+    Parameters
+    ----------
+    app:
+        App whose model should be released. ``None`` resets only the legacy
+        module-global view of the last loaded state.
+
     Notes
     -----
     When an app is supplied, its state is cleared without affecting other
@@ -520,7 +526,7 @@ def create_serving_app(
 
     def _app_state() -> ServingState:
         loaded = app.state.buildml_serving_state
-        if loaded is None:
+        if not isinstance(loaded, ServingState):
             raise ValidationError("Serving app state has been cleared")
         return loaded
 

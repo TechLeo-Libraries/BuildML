@@ -276,6 +276,15 @@ def split_train_for_conformal(
         When train is too small, fraction is invalid, or stratified carve fails.
     """
     indices = list(train_indices)
+    for name, minimum in (("min_fit", min_fit), ("min_calib", min_calib)):
+        if isinstance(minimum, bool) or not isinstance(minimum, (int, np.integer)) or minimum < 1:
+            raise ValidationError(f"{name} must be a positive integer")
+    try:
+        unique_count = len(set(indices))
+    except TypeError as exc:
+        raise ValidationError("Conformal train indices must be unique hashable observation identities") from exc
+    if unique_count != len(indices):
+        raise ValidationError("Conformal train indices must be unique; repeated observations cannot be carved independently")
     n = len(indices)
     if n < min_fit + min_calib:
         raise ValidationError(
@@ -283,7 +292,10 @@ def split_train_for_conformal(
             f"subset (need >= {min_fit + min_calib}, found {n}). "
             "Disable conformal=False or grow the train partition."
         )
-    frac = float(calibration_fraction)
+    try:
+        frac = float(calibration_fraction)
+    except (TypeError, ValueError, OverflowError) as exc:
+        raise ValidationError("conformal_calibration_fraction must be a number in [0.05, 0.5]") from exc
     if not 0.05 <= frac <= 0.5:
         raise ValidationError(
             "conformal_calibration_fraction must be in [0.05, 0.5]."
@@ -353,7 +365,9 @@ def _stratified_conformal_split(
         by_label[label] = rest
 
     remaining = [idx for rows in by_label.values() for idx in rows]
-    remaining = list(rng.permutation(remaining))
+    # Permute positions: coercing heterogeneous/tuple row IDs into a NumPy
+    # array can change their identity or produce unhashable array-valued IDs.
+    remaining = [remaining[int(i)] for i in rng.permutation(len(remaining))]
     need_calib = max(0, n_calib - len(calib))
     if need_calib > len(remaining):
         need_calib = len(remaining)

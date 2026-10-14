@@ -12,7 +12,27 @@ from the current release; use the installation guide for current requirements.
 
 ## [Unreleased]
 
+### Validation
+
+- Expanded whole-package CI coverage floor raised from 81% to 82%, following
+  a passing 83.02% remote CPU measurement; the 90% target remains outstanding.
+- Real HTTP load/recovery runner records source identity, dependencies, sampled
+  latency and process-tree RSS; it distinguishes deliberate downtime from load.
+- Isolated giotto profile verifies the compatible numerical stack and real graph
+  contracts separately from the newer expanded stack.
+
 ### Fixed
+
+- Native ANN capability probes contain interpreter crashes on every platform;
+  expanded CI requires a portable source-built hnswlib and a real ANN contract.
+- Concurrent serving apps retain independent models through either shutdown
+  order. Unicode Basic credentials no longer fail during secret comparison;
+  boolean and fractional ports are rejected instead of coerced.
+- Custom CV splitters reject repeated, negative, fractional and out-of-range
+  positions before fitting. Conformal carving preserves observation IDs and
+  rejects duplicates and invalid minimum sizes. Null-target evaluation retains
+  calibrated MAPIE intervals/sets on the same labeled population.
+- Giotto Mapper summaries count the real igraph vertices and edges.
 
 - DoWhy causal graphs preserve dataframe names containing spaces, quotes,
   punctuation and Unicode by passing native node IDs rather than interpolated DOT.

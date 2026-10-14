@@ -368,7 +368,7 @@ jobs:
           python -m pip list --format=json > artifacts/expanded-environment.json
       - name: Whole-package expanded coverage gate
         run: >-
-          pytest tests -q --cov=buildml --cov-fail-under=81
+          pytest tests -q --cov=buildml --cov-fail-under=82
           --cov-report=term --cov-report=json:artifacts/expanded-coverage.json
           --junitxml=artifacts/expanded-tests.xml --tb=short
       - uses: actions/upload-artifact@v4
@@ -379,6 +379,35 @@ jobs:
           path: |
             artifacts/expanded-*
             .coverage
+
+  topology-compatible-contracts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      OMP_NUM_THREADS: "1"
+      OPENBLAS_NUM_THREADS: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install the compatible topology profile
+        run: python -m pip install -r requirements-topology-verification.txt
+      - name: Require real topology dependencies
+        run: |
+          python -m pip check
+          python -c "import gtda, igraph, pyarrow, sklearn; print(gtda.__version__, igraph.__version__); assert pyarrow.table({'x': [1]}).to_pandas().shape == (1, 1)"
+      - name: Exercise real topology shape and graph contracts
+        run: >-
+          pytest tests/unit/test_giotto_vector_shapes.py
+          tests/unit/test_tda_giotto_padding.py tests/unit/test_tda_r5_industry.py
+          tests/unit/test_giotto_mapper_semantics.py -q
+          --junitxml=artifacts/topology-contracts.xml
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: topology-compatible-contracts
+          path: artifacts/topology-contracts.xml
 
   causal-compatible-contracts:
     strategy:
