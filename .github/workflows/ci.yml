@@ -306,8 +306,16 @@ jobs:
       - name: Core import smoke without relying on classical extras
         run: python -c "import buildml; print(buildml.__version__)"
 
+      - name: Enable bounded native crash diagnostics
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq gdb
+          mkdir -p artifacts/native-cores artifacts/native-backtraces
+          sudo sysctl -w "kernel.core_pattern=$PWD/artifacts/native-cores/core.%p"
+
       - name: Torch DL slice + M2 depth + Phase C + Pass G/J/L/O/Q/R + DL alpha-gate smoke
         run: |
+          ulimit -c 524288
           pytest \
             tests/unit/test_dl_torch_slice.py \
             tests/unit/test_ddp_sampling_contracts.py \
@@ -332,14 +340,27 @@ jobs:
 
       - name: Repeated buffered DDP validation on this Torch/Python stack
         timeout-minutes: 15
-        run: python scripts/verify_ddp_reliability.py --repetitions 10 --output artifacts/ddp-reliability
+        run: |
+          ulimit -c 524288
+          python scripts/verify_ddp_reliability.py --repetitions 10 --output artifacts/ddp-reliability
+
+      - name: Extract native crash backtraces
+        if: always()
+        run: |
+          shopt -s nullglob
+          for core in artifacts/native-cores/core.*; do
+            gdb --batch -ex "set pagination off" -ex "thread apply all bt" \
+              "$(command -v python)" "$core" > "artifacts/native-backtraces/$(basename "$core").txt" 2>&1 || true
+          done
 
       - name: Preserve DDP repetitions and native failure diagnostics
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: ddp-reliability-python-${{ matrix.python-version }}
-          path: artifacts/ddp-reliability
+          path: |
+            artifacts/ddp-reliability
+            artifacts/native-backtraces
           if-no-files-found: warn
 
       - name: Torch anomaly autoencoder acceptance
