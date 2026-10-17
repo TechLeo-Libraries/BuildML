@@ -1,4 +1,7 @@
 """AutoGluon metrics retain BuildML meaning and selection uses held-out scores."""
+import json
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -92,3 +95,33 @@ def test_real_autogluon_selection_preserves_train_boundary_and_metric(
     assert np.isfinite(evaluation.metrics[metric])
     if task == 'classification':
         assert list(session.automl_plan.estimator_.classes_) == predictor.class_labels
+    if classes == 2:
+        from buildml.automl.checkpoint import load_automl_bundle
+        features = session.partition('test')[list(session.automl_plan.feature_columns)]
+        expected = session.automl_plan.estimator_.predict_proba(features)
+        bundle = session.automl.save_bundle(tmp_path/'bundle')
+        original_path = Path(predictor.path).resolve()
+        assert original_path.is_relative_to(tmp_path.resolve())
+        nested = original_path/'nested-bundle'
+        with pytest.raises(ValidationError, match='outside'):
+            session.automl.save_bundle(nested)
+        assert not nested.exists()
+        meta_path = Path(bundle)/'meta.json'
+        original_meta = meta_path.read_text()
+        meta = json.loads(original_meta)
+        for invalid in ('../outside', str(tmp_path.resolve()), '.', 42):
+            meta['autogluon_assets'] = invalid
+            meta_path.write_text(json.dumps(meta))
+            with pytest.raises(ValidationError, match='assets'):
+                load_automl_bundle(bundle, trusted=True)
+        meta_path.write_text(original_meta)
+        retired = (tmp_path/'retired-original').resolve()
+        assert retired.is_relative_to(tmp_path.resolve()) and not retired.exists()
+        original_path.rename(retired)
+        relocated = (tmp_path/'relocated-bundle').resolve()
+        assert relocated.is_relative_to(tmp_path.resolve()) and not relocated.exists()
+        Path(bundle).rename(relocated)
+        with pytest.raises(ValidationError, match='trusted'):
+            load_automl_bundle(relocated)
+        loaded, _ = load_automl_bundle(relocated, trusted=True)
+        np.testing.assert_allclose(loaded.estimator_.predict_proba(features), expected)

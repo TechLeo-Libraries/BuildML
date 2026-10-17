@@ -14,6 +14,11 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- AutoGluon probability outputs follow the NumPy estimator contract. AutoML
+  bundles clone backend model assets into a relative directory and can load
+  after relocation without the original training directory; trust and path
+  containment checks remain mandatory.
+
 - DDP workers release serialized training state and collect reducer cycles before
   process-group teardown. Linux exit checks require zero Gloo run-loop threads;
   repeated Python 3.11/Torch 2.14 verification remains required for the observed

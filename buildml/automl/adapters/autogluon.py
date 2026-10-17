@@ -393,7 +393,7 @@ class _AutoGluonSklearnWrapper:
             Predictions from ``TabularPredictor.predict``.
         """
         frame = X[self._feature_cols].copy()
-        return self._predictor.predict(frame)
+        return np.asarray(self._predictor.predict(frame))
 
     def predict_proba(self, X: pd.DataFrame) -> Any:
         """Predict class probabilities when the underlying model supports them.
@@ -418,5 +418,5 @@ class _AutoGluonSklearnWrapper:
         """
         frame = X[self._feature_cols].copy()
         if hasattr(self._predictor, "predict_proba"):
-            return self._predictor.predict_proba(frame)
+            return np.asarray(self._predictor.predict_proba(frame), dtype=float)
         raise AttributeError("Underlying TabularPredictor has no predict_proba.")

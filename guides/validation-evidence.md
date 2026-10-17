@@ -310,6 +310,18 @@ is uncorrected for finite-sample bias and remains an exploratory effect size,
 not a significance test or causal claim. Degenerate tables yield no effect
 estimate; the documented eight-column screening cap is tested explicitly.
 
+The isolated AutoGluon 1.6.0/PyArrow 24 CPU profile passed eleven real contracts:
+binary and multiclass classification, regression, train-only model fitting,
+weighted F1, signed-loss normalization and internal validation score reporting.
+GBM seed hints reach the backend. This adapter limits base models to LightGBM;
+it does not exercise the full AutoGluon model zoo. The compatible CI job uses
+`requirements-autogluon-verification.txt` and refuses skipped contracts.
+
+AutoGluon bundle checks relocate the bundle and remove the original model
+directory before comparing probabilities. Bundles include the backend's model
+files and cached training artifacts. Untrusted deserialization, escaped asset
+paths and recursive destinations inside the predictor directory are refused.
+
 Tabular SSL tools expose native Torch methods and explicit training budgets.
 With a fixed random_state, Torch initialization and augmentation noise are
 seeded as well as NumPy shuffling. Invalid budgets and non-finite training

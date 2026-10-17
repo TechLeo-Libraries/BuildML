@@ -3,8 +3,11 @@
 from __future__ import annotations
 
 import json
+from copy import copy
+from dataclasses import replace
 from pathlib import Path
 from typing import Any
+from uuid import uuid4
 
 import joblib
 
@@ -28,6 +31,8 @@ CHECKPOINT_BOUNDARY = (
     "Prefer save_pipeline when Session-global preprocess plans must travel with "
     "the estimator; use save_automl_bundle when AutoML search disclosures and "
     "AutoMLPlan matter."
+    " AutoGluon bundles include the backend's saved model files and cached "
+    "training artifacts in a relocatable asset directory."
 )
 
 def save_automl_bundle(
@@ -40,7 +45,10 @@ def save_automl_bundle(
     """Write an AutoML bundle directory (``buildml.automl_bundle.v1``).
 
     Persists the plan and optional classical fit / search summaries as joblib +
-    JSON metadata. Distinct from Session checkpoints.
+    JSON metadata. AutoGluon model files are cloned into a relative asset
+    directory so the original training directory is not required. These files
+    can include the backend's cached training artifacts. Distinct from Session
+    checkpoints.
 
     Parameters
     ----------
@@ -67,10 +75,30 @@ def save_automl_bundle(
     if plan is None:
         raise ValidationError("No AutoMLPlan to save.")
     destination = Path(path)
+    persisted_plan, persisted_fit = plan, fit_result
+    assets_name = None
+    from buildml.automl.adapters.autogluon import _AutoGluonSklearnWrapper
+
+    if isinstance(plan.estimator_, _AutoGluonSklearnWrapper):
+        predictor = plan.estimator_._predictor
+        if destination.resolve().is_relative_to(Path(predictor.path).resolve()):
+            raise ValidationError("AutoML bundle destination must be outside the AutoGluon predictor directory.")
+        if fit_result is not None and fit_result.estimator is not plan.estimator_:
+            raise ValidationError("AutoGluon plan and FitResult must refer to the same estimator.")
     destination.mkdir(parents=True, exist_ok=True)
+    if isinstance(plan.estimator_, _AutoGluonSklearnWrapper):
+        # Clone into a fresh sidecar, leaving an existing bundle's assets intact
+        # if cloning fails. The live Session predictor is never relocated.
+        assets_name = "autogluon-" + uuid4().hex
+        predictor.clone(str((destination / assets_name).resolve()))
+        wrapper = copy(plan.estimator_)
+        wrapper._predictor = None
+        persisted_plan = replace(plan, estimator_=wrapper)
+        if fit_result is not None:
+            persisted_fit = replace(fit_result, estimator=wrapper)
     payload = {
-        "plan": plan,
-        "fit_result": fit_result,
+        "plan": persisted_plan,
+        "fit_result": persisted_fit,
     }
     joblib.dump(payload, destination / "automl_plan.joblib")
     meta: dict[str, Any] = {
@@ -81,6 +109,8 @@ def save_automl_bundle(
         "fit": None if fit_result is None else fit_result.to_dict(),
         "automl": None if automl_result is None else automl_result.to_dict(),
     }
+    if assets_name is not None:
+        meta["autogluon_assets"] = assets_name
     (destination / "meta.json").write_text(json.dumps(meta, indent=2), encoding="utf-8")
     return destination
 
@@ -140,4 +170,23 @@ def load_automl_bundle(path: str | Path, *, trusted: bool = False) -> tuple[Auto
         fit_result = fit_result_from_plan(plan)
     elif fit_result is None:
         fit_result = fit_result_from_plan(plan)
+    assets_name = meta.get("autogluon_assets")
+    if assets_name is not None:
+        if not isinstance(assets_name, str) or not assets_name or Path(assets_name).is_absolute():
+            raise ValidationError("AutoGluon assets must name a relative directory inside the bundle.")
+        bundle_root = root.resolve()
+        assets_root = (bundle_root / assets_name).resolve()
+        if assets_root == bundle_root or not assets_root.is_relative_to(bundle_root) or not assets_root.is_dir():
+            raise ValidationError("AutoGluon assets must exist inside the bundle directory.")
+        from buildml.automl.adapters.autogluon import _AutoGluonSklearnWrapper
+        from buildml.automl.extras import require_autogluon
+
+        if not isinstance(plan.estimator_, _AutoGluonSklearnWrapper):
+            raise ValidationError("AutoGluon asset metadata requires an AutoGluon estimator.")
+        predictor = require_autogluon(feature="AutoGluon bundle loading").load(str(assets_root))
+        wrapper = _AutoGluonSklearnWrapper(predictor, target=plan.target_column,
+                                          feature_cols=list(plan.feature_columns))
+        plan.estimator_ = wrapper
+        if fit_result is not None:
+            fit_result.estimator = wrapper
     return plan, fit_result
