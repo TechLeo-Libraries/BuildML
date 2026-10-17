@@ -14,6 +14,12 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Session import no longer probes optional HDBSCAN/UMAP runtimes. Clustering
+  defaults resolve on use, including the existing constant and wildcard imports.
+- Knowledge-graph queries reject fractional, boolean and string hop limits;
+  graph oracles cover bounded shortest paths, cycles, direction and vocabulary
+  failures.
+
 - TDA subsampling maps global split positions to train-frame positions instead
   of using them as Pandas labels or indexing a reduced Series twice. Custom
   indices, stratification, holdout membership and cap validation have regression

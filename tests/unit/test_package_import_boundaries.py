@@ -46,3 +46,18 @@ def test_lazy_session_is_the_original_public_class():
     namespace = {}
     exec('from buildml import *', namespace)
     assert namespace['Session'] is Session
+
+
+def test_session_import_does_not_probe_optional_clustering_backends():
+    code = '''
+from buildml.unsupervised import extras
+def unexpected():
+    raise AssertionError('Session startup probed an unrelated optional backend')
+extras.hdbscan_available = unexpected
+extras.umap_available = unexpected
+from buildml import Session
+assert Session.__name__ == 'Session'
+'''
+    result = subprocess.run([sys.executable, '-c', code], capture_output=True,
+                            text=True, timeout=60)
+    assert result.returncode == 0, result.stderr
