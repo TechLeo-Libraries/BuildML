@@ -267,6 +267,12 @@ The corrected `INFO` check passed ten fresh attempts locally on Torch
 wheels (CPU Gloo execution). These are bounded reproductions, not a general
 distributed-training reliability claim.
 
+A subsequent Python 3.11 CI repetition again aborted natively on attempt three
+(`39067808325`). The intermittent failure remains unresolved. The repeat checker
+now enables `BUILDML_DDP_TRACE=1`, recording each worker's initialization,
+training, result persistence and process-group teardown in its attempt log.
+These traces help locate failures; they do not suppress them or establish a fix.
+
 Tabular SSL tools expose native Torch methods and explicit training budgets.
 With a fixed random_state, Torch initialization and augmentation noise are
 seeded as well as NumPy shuffling. Invalid budgets and non-finite training

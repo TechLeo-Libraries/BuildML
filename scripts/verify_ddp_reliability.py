@@ -33,6 +33,7 @@ def main() -> int:
         'distributed_debug': args.distributed_debug,
     }
     environment = {**os.environ, 'PYTHONFAULTHANDLER': '1',
+                   'BUILDML_DDP_TRACE': '1',
                    'TORCH_SHOW_CPP_STACKTRACES': '1', 'TORCH_DISTRIBUTED_DEBUG': args.distributed_debug}
     (args.output / 'report.json').write_text(json.dumps(report, indent=2), encoding='utf-8')
     for iteration in range(1, args.repetitions + 1):
@@ -43,7 +44,7 @@ def main() -> int:
                 result = subprocess.run([
                     sys.executable, '-m', 'pytest',
                     'tests/unit/test_ddp_result_transfer.py::test_validation_with_buffers_completes_on_all_ranks',
-                    '-q', '--no-cov', '--tb=long', '--junitxml=' + str(xml),
+                    '-q', '-rP', '--no-cov', '--tb=long', '--junitxml=' + str(xml),
                 ], cwd=root, env=environment, stdout=log, stderr=subprocess.STDOUT, timeout=660)
                 code = result.returncode
             except subprocess.TimeoutExpired:

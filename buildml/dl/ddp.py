@@ -504,6 +504,12 @@ def _worker(
     torch = require_torch(feature="DDP worker")
     import torch.distributed as dist
 
+    def phase(name: str) -> None:
+        if os.environ.get("BUILDML_DDP_TRACE") == "1":
+            # One short write keeps records from concurrent ranks intact.
+            os.write(2, f"BuildML DDP rank={rank} phase={name}\n".encode("ascii"))
+
+    phase("initializing")
     os.environ["MASTER_ADDR"] = master_addr
     os.environ["MASTER_PORT"] = master_port
     use_cuda = backend == "nccl" and torch.cuda.is_available()
@@ -512,7 +518,9 @@ def _worker(
     else:
         dist.init_process_group(backend=backend, rank=rank, world_size=world_size)
 
+    phase("initialized")
     try:
+        phase("training")
         train_result = _run_rank_training(
             rank=rank,
             local_rank=rank,
@@ -524,15 +532,20 @@ def _worker(
             find_unused_parameters=find_unused_parameters,
             use_cuda=use_cuda,
         )
+        phase("trained")
         if rank == 0:
             # A multiprocessing queue can transfer tensor storage handles that
             # expire when this worker exits. Persist the result by value before
             # the parent joins the workers instead.
             with open(result_path, "wb") as stream:
                 pickle.dump(train_result, stream, protocol=pickle.HIGHEST_PROTOCOL)
+            phase("result_saved")
     finally:
         if dist.is_initialized():
+            phase("destroying_process_group")
             dist.destroy_process_group()
+            phase("process_group_destroyed")
+    phase("returning")
 
 
 def _train_single_node(

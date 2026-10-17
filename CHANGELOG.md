@@ -14,6 +14,10 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Repeated DDP checks retain opt-in rank lifecycle traces, including successful
+  process-group teardown. Native worker aborts remain failures without retries;
+  the intermittent CI abort is still under investigation.
+
 - The immutable `58e4309` suite passed at 84.12% locally and 84.06% remotely;
   its complete CI, backend matrix and release acceptance passed. Windows/Linux
   paced 24-hour HTTP assessments completed with zero recorded errors and

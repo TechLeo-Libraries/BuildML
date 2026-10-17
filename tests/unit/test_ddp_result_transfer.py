@@ -50,7 +50,8 @@ def test_adaptive_ddp_rejected_before_launch(monkeypatch, settings):
                 ddp_config=ddp.DDPConfig(multi_node=multi_node),
             )
 
-def test_validation_with_buffers_completes_on_all_ranks():
+def test_validation_with_buffers_completes_on_all_ranks(monkeypatch):
+    monkeypatch.setenv("BUILDML_DDP_TRACE", "1")
     torch = pytest.importorskip("torch")
     if not torch.distributed.is_available() or not torch.distributed.is_gloo_available():
         pytest.skip("This Torch build has no Gloo backend")
@@ -66,6 +67,15 @@ def test_validation_with_buffers_completes_on_all_ranks():
     result = execute(dataclasses.replace(example, source=source), timeout=600, max_output_chars=64000)
     if result["status"] != "passed":
         pytest.fail(str(result), pytrace=False)
+    for rank in (0, 1):
+        phases = [line.rsplit("phase=", 1)[1] for line in result["stderr"].splitlines()
+                  if line.startswith(f"BuildML DDP rank={rank} phase=")]
+        expected = ["initializing", "initialized", "training", "trained"]
+        if rank == 0:
+            expected.append("result_saved")
+        expected.extend(["destroying_process_group", "process_group_destroyed", "returning"])
+        assert phases == expected
+    print(result["stderr"])
 
 
 def test_spawn_payload_does_not_consume_or_replace_caller_generator(monkeypatch):
