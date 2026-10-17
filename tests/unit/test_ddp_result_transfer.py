@@ -80,6 +80,8 @@ def _report_gloo_threads():
           file=sys.stderr, flush=True)
 ''' + source
     source += "\nif __name__ == '__main__':\n    assert result.train_result.history[0]['val_loss'] >= 0\n"
+    source += "    assert result.meta['start_method'] == ('forkserver' if sys.platform.startswith('linux') else 'spawn')\n"
+    source += "    assert not torch.multiprocessing.active_children()\n"
     result = execute(dataclasses.replace(example, source=source), timeout=600, max_output_chars=64000)
     if result["status"] != "passed":
         pytest.fail(str(result), pytrace=False)
@@ -95,7 +97,10 @@ def _report_gloo_threads():
     if sys.platform.startswith('linux'):
         exits = [line for line in result['stderr'].splitlines()
                  if line.startswith('BuildML Gloo exit threads=')]
-        assert exits == ['BuildML Gloo exit threads=0']*2, result['stderr']
+        # Forkserver workers use multiprocessing's normal exit path, without
+        # CPython atexit finalization. The main-script assertions above verify
+        # the launcher choice and that every worker was joined.
+        assert exits == [], result['stderr']
     print(result["stderr"])
 
 
@@ -118,7 +123,7 @@ def test_spawn_payload_does_not_consume_or_replace_caller_generator(monkeypatch)
     class CapturedLaunch(Exception):
         pass
 
-    def capture(function, *, args, nprocs, join):
+    def capture(function, *, args, nprocs, join, start_method):
         payload = args[5]
         assert payload is not bundle
         assert payload.loaders["train"] is not original_loader
@@ -127,10 +132,11 @@ def test_spawn_payload_does_not_consume_or_replace_caller_generator(monkeypatch)
         assert payload.loaders["train"].generator is None
         assert payload.loaders["test"] is bundle.loaders["test"]
         assert nprocs == 2 and join
+        assert start_method == ('forkserver' if sys.platform.startswith('linux') else 'spawn')
         raise CapturedLaunch
 
     monkeypatch.setattr(ddp, "ddp_cuda_device_count", lambda: 0)
-    monkeypatch.setattr(torch.multiprocessing, "spawn", capture)
+    monkeypatch.setattr(torch.multiprocessing, "start_processes", capture)
     with pytest.raises(CapturedLaunch):
         ddp.train_supervised_module_ddp(
             lambda: torch.nn.Linear(1, 2), bundle,
@@ -140,3 +146,16 @@ def test_spawn_payload_does_not_consume_or_replace_caller_generator(monkeypatch)
     assert bundle.loaders["train"] is original_loader
     assert original_loader.generator is original_generator
     assert torch.equal(original_generator.get_state(), original_state)
+
+
+def test_worker_factory_failure_is_not_reported_as_success():
+    torch = pytest.importorskip('torch')
+    if not torch.distributed.is_available() or not torch.distributed.is_gloo_available():
+        pytest.skip('This Torch build has no Gloo backend')
+    example = next(example for example in inventory([ROOT/'buildml/dl/ddp.py'])
+                   if 'result = train_supervised_module_ddp(' in example.source)
+    source = example.source.replace('return torch.nn.Linear(4, 2)',
+        "raise RuntimeError('deliberate rank factory failure')")
+    result = execute(dataclasses.replace(example, source=source), timeout=600, max_output_chars=64000)
+    assert result['status'] == 'failed' and result['exit_code'] != 0
+    assert 'deliberate rank factory failure' in result['stderr']

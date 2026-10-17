@@ -21,6 +21,9 @@ mode most worth avoiding.
 This API is experimental. Configure process-group connectivity and use a
 picklable module factory when spawning workers. The CPU Gloo path supports
 functional checks; GPU training uses NCCL when available.
+Single-node Linux Gloo workers use ``forkserver`` to avoid native Gloo cleanup
+racing CPython finalization. Every worker is joined before the parent reads
+the serialized result; worker exceptions remain failures.
 
 See Also
 --------
@@ -33,6 +36,7 @@ from __future__ import annotations
 import gc
 import os
 import pickle
+import sys
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field, replace
 from pathlib import Path
@@ -586,6 +590,13 @@ def _train_single_node(
             f"Requested world_size={world_size} exceeds CUDA device count={n_cuda}"
         )
     backend = resolve_ddp_backend(dcfg.backend, use_cuda=use_cuda)
+    # Gloo in newer Torch releases can retain native workers past
+    # destroy_process_group(). Forkserver's standard worker exit avoids racing
+    # those threads against CPython finalization; training failures still
+    # propagate through start_processes and the parent joins every rank.
+    start_method = "forkserver" if backend == "gloo" and sys.platform.startswith("linux") else "spawn"
+    if start_method not in torch.multiprocessing.get_all_start_methods():
+        raise ValidationError(f"DDP requires multiprocessing start method {start_method!r} on this platform.")
     warnings: list[str] = []
     if not use_cuda:
         warnings.append(
@@ -614,7 +625,7 @@ def _train_single_node(
     )
     with TemporaryDirectory(prefix="buildml-ddp-result-") as directory:
         result_path = Path(directory) / "rank-zero.pkl"
-        torch.multiprocessing.spawn(
+        torch.multiprocessing.start_processes(
             _worker,
             args=(
                 world_size,
@@ -629,6 +640,7 @@ def _train_single_node(
             ),
             nprocs=world_size,
             join=True,
+            start_method=start_method,
         )
         if not result_path.is_file():
             raise ValidationError("DDP training produced no rank-0 result")
@@ -652,7 +664,7 @@ def _train_single_node(
             "Alpha quality: prefer single-process fit_torch unless you need multi-GPU scale.",
         ),
         warnings=tuple(warnings),
-        meta={"use_cuda": use_cuda, "n_cuda": n_cuda, "mode": "single_node"},
+        meta={"use_cuda": use_cuda, "n_cuda": n_cuda, "mode": "single_node", "start_method": start_method},
     )
 
 

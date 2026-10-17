@@ -19,10 +19,10 @@ from the current release; use the installation guide for current requirements.
   after relocation without the original training directory; trust and path
   containment checks remain mandatory.
 
-- DDP workers release serialized training state and collect reducer cycles before
-  process-group teardown. Linux exit checks require zero Gloo run-loop threads;
-  repeated Python 3.11/Torch 2.14 verification remains required for the observed
-  native finalization abort.
+- Single-node Linux Gloo workers use forkserver to avoid native cleanup racing
+  Python finalization. All workers are joined before loading the serialized
+  result; injected worker failures must propagate. Repeated Python 3.11/Torch
+  2.14 verification remains required for the observed native abort.
 
 - AutoGluon classification distinguishes binary and multiclass targets, preserves
   weighted F1, normalizes signed loss scores before ranking, and reports internal

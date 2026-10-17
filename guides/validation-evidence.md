@@ -289,13 +289,19 @@ targeted result does not replace a whole-package coverage measurement.
 
 Native cores from subsequent Python 3.11 failures locate the abort in
 `ProcessGroupGloo::AsyncBroadcastWork` destruction: a Torch tensor decrement
-tries to acquire the GIL after CPython finalization begins. The worker cleanup
-now releases its already serialized result and collects DDP/reducer cycles
-before destroying the process group. Five local real contracts pass, including
-an exit check requiring zero Gloo run-loop threads on both ranks. Repeated
-validation on the failing Python 3.11/Torch 2.14 stack is still required before
-calling that intermittent failure repaired. Historical passing streaks alone
-did not establish a fix.
+tries to acquire the GIL after CPython finalization begins. A Torch-only probe
+confirms that Torch 2.14 can retain Gloo threads even after model deletion,
+garbage collection and `destroy_process_group()`.
+
+Single-node Linux Gloo now uses PyTorch's supported forkserver launcher. Its
+normal worker exit path avoids CPython finalization; the parent joins every
+rank before reading the serialized result. Deliberate rank-factory failures
+must still fail, without retries. Six local contracts pass on both Torch 2.7.1
+and Python 3.11.17/Torch 2.14.1 CPU, including numerical model use, validation
+with buffers, caller RNG preservation and worker failure propagation. Repeated
+remote verification on the originally failing stack is pending. This is a
+launcher workaround for the observed native lifetime issue, not an upstream
+Torch repair or a general distributed-training reliability guarantee.
 
 Follow-up runtime repairs at `f8de1ea` passed 224 Linux contracts with coverage
 instrumentation (one Giotto-profile skip). They include all previous failed cases,
