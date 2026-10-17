@@ -281,6 +281,7 @@ jobs:
 
   torch:
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     env:
       PYTHONFAULTHANDLER: "1"
       TORCH_SHOW_CPP_STACKTRACES: "1"
@@ -315,7 +316,7 @@ jobs:
 
       - name: Torch DL slice + M2 depth + Phase C + Pass G/J/L/O/Q/R + DL alpha-gate smoke
         run: |
-          ulimit -c 524288
+          ulimit -c 2097152
           pytest \
             tests/unit/test_dl_torch_slice.py \
             tests/unit/test_ddp_sampling_contracts.py \
@@ -339,10 +340,10 @@ jobs:
         run: pytest tests/integration/test_dl_alpha_smoke.py -q
 
       - name: Repeated buffered DDP validation on this Torch/Python stack
-        timeout-minutes: 15
+        timeout-minutes: 25
         run: |
-          ulimit -c 524288
-          python scripts/verify_ddp_reliability.py --repetitions 10 --output artifacts/ddp-reliability
+          ulimit -c 2097152
+          python scripts/verify_ddp_reliability.py --repetitions 50 --output artifacts/ddp-reliability
 
       - name: Extract native crash backtraces
         if: always()
