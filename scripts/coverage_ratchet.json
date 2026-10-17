@@ -8,19 +8,19 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 84.05710114364507,
-      "covered_lines": 51817,
-      "num_statements": 61645,
-      "source_revision": "58e43090e762b73ce339e0006c132832a0d71167",
-      "tested_revision": "550f3bbcb8db69c930bd4a46ee02ad659fd87e48",
+      "percent_covered": 84.0888081607499,
+      "covered_lines": 51850,
+      "num_statements": 61661,
+      "source_revision": "95566fbf26faeee700eb02c6be70d6cc75edd717",
+      "tested_revision": "edc10a9672e11a29f24178a4941df041ca6494b6",
       "platform": "remote Linux, CPU expanded profile",
-      "run_id": 38622118315,
-      "result": "2723 passed, 82 skipped, no failures",
+      "run_id": 39069774130,
+      "result": "2749 passed, 82 skipped, no failures in expanded whole-package job",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
-      "notes": "Tested merge tree equals source tree. Entire CI, backend matrix and release acceptance passed. Expanded floor83 retains >=1pp headroom; target90 remains open."
+      "notes": "Tested merge tree equals source tree. Expanded job passed; complete workflow failed in Python3.11 Torch native worker exit. Backend and release acceptance passed. Expanded floor83 retains >=1pp headroom; target90 remains open."
     },
     "seed_measurement": {
       "percent_covered": 82.69421622061336,

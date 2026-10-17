@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
+import numpy as np
 import pandas as pd
 
 from buildml.automl.extras import require_autogluon
@@ -133,15 +134,17 @@ def run_autogluon_adapter(
 
     predictor = TabularPredictor(
         label=target,
-        problem_type=_autogluon_problem_type(resolved_task),
+        problem_type=_autogluon_problem_type(resolved_task, n_classes=int(y_train.nunique())),
         eval_metric=ag_metric,
     )
     fit_kwargs: dict[str, Any] = {
         "time_limit": int(seconds),
         "presets": presets,
     }
+    gbm: dict[str, Any] = {"ag_args_fit": {"num_cpus": 1}}
     if random_state is not None:
-        fit_kwargs["hyperparameters"] = {"GBM": {"ag_args_fit": {"num_cpus": 1}}}
+        gbm["seed"] = int(random_state)
+    fit_kwargs["hyperparameters"] = {"GBM": gbm}
 
     predictor.fit(train_frame, **fit_kwargs)
 
@@ -149,8 +152,10 @@ def run_autogluon_adapter(
     trials = _leaderboard_trials(leaderboard, metric=metric, higher_is_better=higher_is_better)
 
     best_model_name = _best_model_name(predictor)
-    train_eval = predictor.evaluate(train_frame, silent=True)
-    best_score = float(train_eval.get(ag_metric, float("nan")))
+    selected = next((trial for trial in trials if trial.params.get("model") == best_model_name), None)
+    if selected is None or not np.isfinite(selected.mean_score):
+        raise ValidationError("AutoGluon did not provide a finite internal validation score for its selected model.")
+    best_score = selected.mean_score
 
     wrapper = _AutoGluonSklearnWrapper(predictor, target=target, feature_cols=feature_cols)
     fit_result: FitResult | None = None
@@ -199,10 +204,12 @@ def run_autogluon_adapter(
         "backend=autogluon (buildml[automl-industry]); AutoGluon internal stacking on train only.",
         "Fold-local PreprocessRecipe search bypassed: AutoGluon handles featurization internally.",
         "Session test never entered AutoGluon fit or selection scoring.",
+        "Scores use AutoGluon internal validation; selection='cv' is not BuildML fold-local cross-validation.",
         f"time_limit={int(seconds)}s; eval_metric={ag_metric}; best_model={best_model_name}.",
     ]
     limitations = [
         "AutoGluon adapter does not support nested CV or fold-local recipe strategy search.",
+        "The adapter restricts base models to LightGBM; it does not search the full AutoGluon model zoo.",
         "Saved estimator is a thin sklearn wrapper around TabularPredictor: use save_automl_bundle.",
     ]
 
@@ -258,15 +265,17 @@ def run_autogluon_adapter(
     return plan, result, fit_result
 
 
-def _autogluon_problem_type(task: Literal["classification", "regression"]) -> str:
-    return "binary" if task == "classification" else "regression"
+def _autogluon_problem_type(task: Literal["classification", "regression"], *, n_classes: int = 2) -> str:
+    if task == "classification":
+        return "multiclass" if n_classes > 2 else "binary"
+    return "regression"
 
 
 def _autogluon_metric(metric: str, *, task: Literal["classification", "regression"]) -> str:
     mapping = {
         "accuracy": "accuracy",
         "f1": "f1",
-        "f1_weighted": "f1",
+        "f1_weighted": "f1_weighted",
         "f1_macro": "f1_macro",
         "roc_auc": "roc_auc",
         "log_loss": "log_loss",
@@ -277,7 +286,7 @@ def _autogluon_metric(metric: str, *, task: Literal["classification", "regressio
     }
     if metric in mapping:
         return mapping[metric]
-    return "f1" if task == "classification" else "r2"
+    raise ValidationError(f"Unsupported AutoGluon ranking_metric={metric!r}; choose one of {sorted(mapping)}.")
 
 
 def _leaderboard_trials(
@@ -289,15 +298,13 @@ def _leaderboard_trials(
     rows: list[AutoMLTrial] = []
     if leaderboard is None or leaderboard.empty:
         return rows
-    score_col = None
-    for col in leaderboard.columns:
-        if "score" in col.lower() or col in {"score_val", "score_test"}:
-            score_col = col
-            break
-    if score_col is None:
-        score_col = leaderboard.columns[-1]
+    score_col = "score_val"
+    if score_col not in leaderboard.columns:
+        raise ValidationError("AutoGluon leaderboard is missing internal validation scores (score_val).")
     for i, row in leaderboard.reset_index(drop=True).iterrows():
         score = float(row.get(score_col, float("nan")))
+        if not higher_is_better:
+            score = -score
         model = str(row.get("model", f"model_{i}"))
         rows.append(
             AutoMLTrial(
@@ -343,6 +350,8 @@ class _AutoGluonSklearnWrapper:
         self._predictor = predictor
         self._target = target
         self._feature_cols = list(feature_cols)
+        if getattr(predictor, "problem_type", None) in {"binary", "multiclass"}:
+            self.classes_ = np.asarray(predictor.class_labels)
 
     def fit(self, X: pd.DataFrame, y: pd.Series, **kwargs: Any) -> _AutoGluonSklearnWrapper:
         """No-op fit for sklearn compatibility; predictor is already trained.

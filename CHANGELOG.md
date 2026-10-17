@@ -14,6 +14,11 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- AutoGluon classification distinguishes binary and multiclass targets, preserves
+  weighted F1, normalizes signed loss scores before ranking, and reports internal
+  validation scores instead of training scores. GBM seed hints and class labels
+  are retained. A separate compatible profile exercises actual CPU fits.
+
 - Categorical EDA effect sizes are checked against independent SciPy reference
   values, including degenerate tables and the documented pair cap. Guidance
   explicitly identifies uncorrected Cramér's V as an exploratory effect size.
