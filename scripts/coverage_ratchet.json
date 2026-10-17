@@ -22,6 +22,16 @@
       ],
       "notes": "Tested merge tree equals source tree. Expanded job passed; complete workflow failed in Python3.11 Torch native worker exit. Backend and release acceptance passed. Expanded floor83 retains >=1pp headroom; target90 remains open."
     },
+    "latest_local_measurement": {
+      "percent_covered": 84.52039476882688,
+      "covered_lines": 52155,
+      "num_statements": 61707,
+      "excluded_lines": 566,
+      "source_revision": "a294b8ce7b2296807989c82642cfb400e535987d",
+      "platform": "local Linux, expanded CUDA-capable profile",
+      "result": "2858 passed, 60 skipped, no failures",
+      "notes": "Whole tests directory. Two new type-only lines match the existing TYPE_CHECKING exclusion; no exclusion pattern was added. This local result does not replace the independent remote gate. Target90 needs3382 additional covered lines at this denominator."
+    },
     "seed_measurement": {
       "percent_covered": 82.69421622061336,
       "covered_lines": 50828,

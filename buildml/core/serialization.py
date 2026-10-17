@@ -79,9 +79,9 @@ def require_trusted_deserialize(
         return
     resolved = Path(path)
     raise ValidationError(
-        f"Refusing to deserialize {artifact} at '{resolved}'. "
+        f"Refusing to deserialize {artifact}. "
         "Pass trusted=True only for artifacts you created or fully trust "
-        "(pickle/joblib/torch can execute code on load)."
+        f"(pickle/joblib/torch can execute code on load). Path: '{resolved}'."
     )
 
 

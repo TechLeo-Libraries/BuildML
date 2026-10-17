@@ -121,7 +121,7 @@ Follow-up assessment, 2026-10-14, review branch `codex/coverage-cuda-ci-20261012
 | Real Windows HTTP recovery assessment | 1,022,102 requests in one hour, no unexpected failures | Immutable `e3f7b93` source hash unchanged; three 20-minute process lifetimes at 1/4/8 clients and 1/16/64 rows. Sampled p95 4.89/18.58/35.79 ms; graceful/forced restart startup 6.50/17.80 seconds. Deliberate downtime is separate from scored requests |
 | Isolated RL/imitation profile | Seventeen tests passed locally; both remote Windows/Linux jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real PPO/BC/GAIL and trusted persistence on a separate compatible CPU stack |
 | Linux targeted repairs | Five DDP tests passed; PDF, TorchScript and DEC/IDEC checks passed | Distributed CPU/Gloo checks use the CUDA-capable Torch installation; multi-GPU throughput is unmeasured |
-| Expanded local Linux suite with CUDA/extras | Passed: 84.12% (51,854 / 61,645 lines); 2,745 passed, 60 skipped | Immutable `58e4309` suite completed in 27:30; CPU/CUDA contracts passed. Exclusions remain 564. The 90% target is outstanding |
+| Expanded local Linux suite with CUDA/extras | Passed: 84.52% (52,155 / 61,707 lines); 2,858 passed, 60 skipped | Immutable `a294b8c` suite completed in 19:02; CPU/CUDA contracts passed. Exclusions are 566, including two new type-only lines under the existing TYPE_CHECKING rule. No exclusion pattern was added. The 90% target needs 3,382 additional covered lines at this denominator |
 
 Exact local measurements are preserved in `reports/coverage90-gpu-linux.json`,
 `reports/coverage90-soak-30min.json` and `reports/coverage90-linux-full.json`.

@@ -14,6 +14,10 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- The immutable `a294b8c` whole Linux suite passed at 84.52% (2,858 passed,
+  60 skipped). Trust instructions precede long paths so agent error limits do
+  not remove the required action. The 90% goal remains open.
+
 - AutoGluon probability outputs follow the NumPy estimator contract. AutoML
   bundles clone backend model assets into a relative directory and can load
   after relocation without the original training directory; trust and path

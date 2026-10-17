@@ -55,8 +55,10 @@ Measure the complete suite with `python scripts/run_full_coverage.py`; subset
 runs are not comparable to the project coverage threshold.
 The separate expanded Linux job runs the same complete test directory with
 `requirements-expanded-coverage.txt` and an **83%** floor, raised after passing
-remote CPU coverage above 84%. Latest `58e4309` passed at 84.06% remotely
-and 84.12% locally; its complete CI, backend and acceptance workflows passed.
+remote CPU coverage above 84%. Local `a294b8c` passed at 84.52% with 2,858
+passed and 60 skipped. The remote expanded job at `95566fb` passed at 84.09%;
+its complete workflow failed in distributed worker exit. The Linux Gloo
+launcher workaround is undergoing repeated verification on the failing stack.
 Remote CPU results are recorded separately
 with their source revision and installed package list. The requested 90% coverage
 target remains open.
