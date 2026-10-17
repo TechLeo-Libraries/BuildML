@@ -14,6 +14,12 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- TDA subsampling maps global split positions to train-frame positions instead
+  of using them as Pandas labels or indexing a reduced Series twice. Custom
+  indices, stratification, holdout membership and cap validation have regression
+  contracts. Transient import-probe failures can recover after a bounded cooldown;
+  scientific probes retain bounded cold-start allowances.
+
 - Blending no longer retries internal weighted-fit `TypeError` failures without
   weights. The unweighted fallback applies only when the fit signature rejects
   `sample_weight`. Public export checks now include seven additional domains
