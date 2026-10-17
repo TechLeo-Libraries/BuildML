@@ -8,19 +8,19 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 84.01778325842514,
-      "covered_lines": 51781,
-      "num_statements": 61631,
-      "source_revision": "a6ebf04a9b979e02a1ba97f56cccd5106bc3e123",
-      "tested_revision": "d21d8637fd7eaa62c9a76a3851448a67dfca39d2",
+      "percent_covered": 84.05710114364507,
+      "covered_lines": 51817,
+      "num_statements": 61645,
+      "source_revision": "58e43090e762b73ce339e0006c132832a0d71167",
+      "tested_revision": "550f3bbcb8db69c930bd4a46ee02ad659fd87e48",
       "platform": "remote Linux, CPU expanded profile",
-      "run_id": 38614442365,
-      "result": "2677 passed, 77 skipped, no failures",
+      "run_id": 38622118315,
+      "result": "2723 passed, 82 skipped, no failures",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
-      "notes": "Expanded whole-suite job passed and tested tree equals source tree. Floor83 retains >=1pp headroom. Overall CI failed Torch DETAIL-mode repetitions; do not describe the matrix as all-green. Target90 remains open."
+      "notes": "Tested merge tree equals source tree. Entire CI, backend matrix and release acceptance passed. Expanded floor83 retains >=1pp headroom; target90 remains open."
     },
     "seed_measurement": {
       "percent_covered": 82.69421622061336,

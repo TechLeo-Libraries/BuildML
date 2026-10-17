@@ -122,10 +122,9 @@ monolith** (**70** active after corrected thread/process tracing measured at lea
 `pytest tests --cov=buildml`); do not lower it to silence a regression.
 The separate `expanded-coverage` CI job installs
 `requirements-expanded-coverage.txt` and runs the entire suite with an **83%**
-floor. Corrected thread/process collection at `a6ebf04` passed at 84.02%
-remotely and 84.08% locally with CPU/CUDA contracts. The expanded job passed,
-but the overall matrix failed Torch diagnostic repetitions. The 90% target
-remains outstanding. Identify core and expanded results by dependency profile.
+floor. Corrected thread/process collection at `58e4309` passed at 84.06%
+remotely and 84.12% locally with CPU/CUDA contracts. Its entire CI, backend
+matrix and release acceptance passed. The 90% target remains outstanding. Identify core and expanded results by dependency profile.
 `requirements.txt` / `requirements-dev.txt` are convenience mirrors of
 `pyproject.toml` ranges; prefer `pip install -e ".[dev]"`.
 

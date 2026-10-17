@@ -111,7 +111,7 @@ Follow-up assessment, 2026-10-14, review branch `codex/coverage-cuda-ci-20261012
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Remote expanded CPU whole-package gate | Passed: 84.02% (51,781 / 61,631 lines); 2,677 passed, 77 skipped | [CI run 38614442365](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38614442365); merge `d21d863` tree equals `a6ebf04`; floor 83%; overall matrix failed separate Torch diagnostics |
+| Remote expanded CPU whole-package gate | Passed: 84.06% (51,817 / 61,645 lines); 2,723 passed, 82 skipped | [CI run 38622118315](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38622118315); merge `550f3bbc` tree equals `58e4309`; entire matrix passed; floor 83% |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
 | Local Linux EconML 0.17.0 policy learner | Sixteen known-benefit and reporting contracts passed | Continuous/binary outcomes, numeric/string treatment labels, two simulation seeds and requested bootstrap counts; adjusted population summaries and omitted intervals are explicit. Repaired behavior also passed remote Windows/Linux jobs |
@@ -121,7 +121,7 @@ Follow-up assessment, 2026-10-14, review branch `codex/coverage-cuda-ci-20261012
 | Real Windows HTTP recovery assessment | 1,022,102 requests in one hour, no unexpected failures | Immutable `e3f7b93` source hash unchanged; three 20-minute process lifetimes at 1/4/8 clients and 1/16/64 rows. Sampled p95 4.89/18.58/35.79 ms; graceful/forced restart startup 6.50/17.80 seconds. Deliberate downtime is separate from scored requests |
 | Isolated RL/imitation profile | Seventeen tests passed locally; both remote Windows/Linux jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real PPO/BC/GAIL and trusted persistence on a separate compatible CPU stack |
 | Linux targeted repairs | Five DDP tests passed; PDF, TorchScript and DEC/IDEC checks passed | Distributed CPU/Gloo checks use the CUDA-capable Torch installation; multi-GPU throughput is unmeasured |
-| Expanded local Linux suite with CUDA/extras | Passed: 84.08% (51,819 / 61,631 lines); 2,694 passed, 60 skipped | Immutable `a6ebf04` suite completed in 27:37; CPU/CUDA contracts passed. Exclusions remain 564. The 90% target is outstanding |
+| Expanded local Linux suite with CUDA/extras | Passed: 84.12% (51,854 / 61,645 lines); 2,745 passed, 60 skipped | Immutable `58e4309` suite completed in 27:30; CPU/CUDA contracts passed. Exclusions remain 564. The 90% target is outstanding |
 
 Exact local measurements are preserved in `reports/coverage90-gpu-linux.json`,
 `reports/coverage90-soak-30min.json` and `reports/coverage90-linux-full.json`.
@@ -217,19 +217,27 @@ errors, and process RSS 204.77 to 208.65 MiB. Sampled p95 latencies were
 latencies are not a controlled Windows/Linux comparison. Longer operation,
 other models and deployment populations remain separate evidence requirements.
 
-Corrected thread/process collection at `a6ebf04` passed remotely at 84.02%
-(51,781 of 61,631 executable lines), with 2,677 tests passed and 77 skipped.
-The tested merge tree equals the source tree. The expanded job passed, while
-the overall matrix failed separate Torch diagnostic repetitions. Expanded floor
-83% retains at least one percentage point of headroom. The core floor remains
-70%, based on its independently measured profile.
+The requested 24-hour paced HTTP checks at immutable `bc4bb17` completed
+successfully on Windows and Linux (Ubuntu under WSL2). Each retained one server
+process through three eight-hour loads: 1/4/8 clients with 1/16/64 rows per batch,
+targeting ten requests per second per platform. Windows completed 861,372
+requests; Linux completed 862,328. Both recorded zero errors, matching source
+hashes before/after and graceful final shutdowns. Sampled RSS was 204.78 to
+212.77 MiB on Windows (213.02 maximum), and 202.30 to 206.80 MiB on Linux.
+These are local linear-model service results for the recorded dependency stacks,
+not a months-long SLA or evidence for every deployment and model.
 
-Fresh local Linux coverage at the same revision passed at 84.08%
-(51,819 of 61,631 lines), with 2,694 tests passed and 60 skipped in 27:37.
-CPU/CUDA contracts passed in this full suite. Coverage exclusions remain 564.
-The 90% target still requires 3,649 additional covered lines locally at this
-denominator. Earlier subset results must not be added to these percentages.
-Dependency-specific skips remain visible; this is not long-term reliability proof.
+Corrected thread/process collection at `58e4309` passed remotely at 84.06%
+(51,817 of 61,645 executable lines), with 2,723 tests passed and 82 skipped.
+The merge tree equals the source tree. Its entire CI, backend matrix and release
+acceptance passed. Expanded floor 83% retains the required headroom; the core
+floor remains 70%, based on its separately measured profile.
+
+The same immutable source passed locally on Linux at 84.12%
+(51,854 of 61,645 lines), with 2,745 tests passed and 60 skipped in 27:30.
+CPU/CUDA contracts passed. Coverage exclusions remain 564. Reaching 90% still
+requires 3,627 additional covered lines at this measured denominator. Subset
+coverage gains must not be added to these complete measurements.
 
 Serving configuration supplies omitted arguments. Explicit arguments override
 it, including `trusted=False`, a loopback host and CPU placement. Permission
@@ -315,3 +323,10 @@ correction does not turn exploration into causal evidence or repair dependent
 sampling. Categorical/boolean mutual information already uses discrete-feature
 estimation. Target-type inference is a heuristic, and univariate drift cannot
 exclude joint-distribution changes.
+
+Fold-local selectors now use the training target type rather than a cardinality
+cutoff. Explicit F-test scorers are honored, including many-class classification.
+The default scorer is `auto`; integer outcomes are treated as discrete, so use
+`f_regression` and a regression estimator when integers represent a continuous
+quantity. A selector retaining one feature after all importances vanish remains
+serializable. Non-finite numeric targets are refused before supervised selection.

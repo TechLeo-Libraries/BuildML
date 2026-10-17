@@ -20,6 +20,7 @@ from sklearn.feature_selection import (
 from sklearn.impute import SimpleImputer
 from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import MinMaxScaler, OneHotEncoder, OrdinalEncoder, StandardScaler
+from sklearn.utils.multiclass import type_of_target
 
 from buildml.core.errors import ValidationError
 from buildml.preprocess.encode import INFREQUENT_LABEL, _smoothed_means
@@ -139,7 +140,10 @@ class PreprocessRecipe:
     select_threshold / select_k / select_score_func / select_estimator:
         Feature-selection controls. ``select_estimator`` is used only for
         ``select='model'``; when omitted, a small default classifier/regressor
-        is chosen from fold-train label cardinality.
+        is chosen from the fold-train target type. ``select_score_func='auto'``
+        follows the same type; explicit scorers are always honored. Integer
+        outcomes are classified as discrete; choose a regressor/scorer explicitly
+        when those integers represent a continuous quantity.
     outlier_action / iqr_multiplier / zscore_threshold:
         Outlier controls (``outlier_action`` defaults to ``cap``).
     n_bins / binning_encode_as:
@@ -189,7 +193,7 @@ class PreprocessRecipe:
     min_frequency: float | int = 0.05
     select_threshold: float = 0.0
     select_k: int = 10
-    select_score_func: Literal["f_classif", "f_regression"] = "f_classif"
+    select_score_func: Literal["auto", "f_classif", "f_regression"] = "auto"
     select_estimator: Any | None = None
     outlier_action: OutlierAction = "cap"
     iqr_multiplier: float = 1.5
@@ -899,13 +903,15 @@ class FoldLocalPreprocessor(TransformerMixin, BaseEstimator):
             return
         assert y_train is not None
         y = _numeric_target(y_train)
+        target_kind = type_of_target(y_train)
+        regression = target_kind == "continuous"
         if recipe.select == "univariate":
-            score_func = f_regression if recipe.select_score_func == "f_regression" else f_classif
-            # Heuristic: discrete few-level targets prefer classification scores.
-            if recipe.select_score_func == "f_classif":
-                unique = pd.unique(y)
-                if len(unique) > 20:
-                    score_func = f_regression
+            if recipe.select_score_func not in {"auto", "f_classif", "f_regression"}:
+                raise ValidationError("select_score_func must be auto, f_classif, or f_regression")
+            use_regression = recipe.select_score_func == "f_regression" or (
+                recipe.select_score_func == "auto" and regression
+            )
+            score_func = f_regression if use_regression else f_classif
             k_eff = min(max(1, recipe.select_k), frame.shape[1])
             selector = SelectKBest(score_func=score_func, k=k_eff)
             selector.fit(frame, y)
@@ -915,7 +921,7 @@ class FoldLocalPreprocessor(TransformerMixin, BaseEstimator):
         model = clone(recipe.select_estimator) if recipe.select_estimator is not None else None
         if model is None:
             n_classes = int(pd.Series(y).nunique())
-            if n_classes > 20:
+            if regression:
                 model = RandomForestRegressor(n_estimators=40, random_state=0)
             elif n_classes > 2:
                 model = RandomForestClassifier(n_estimators=40, random_state=0)
@@ -923,24 +929,9 @@ class FoldLocalPreprocessor(TransformerMixin, BaseEstimator):
                 model = LogisticRegression(max_iter=400)
         model.fit(frame, y_train if y_train is not None else y)
         selector = SelectFromModel(model, prefit=True)
-        # Ensure get_support works even when all features are below threshold.
+        # Keep the strongest feature using a serializable sklearn selector.
         if not any(selector.get_support()):
-            if hasattr(model, "feature_importances_"):
-                importances = np.asarray(model.feature_importances_, dtype=float)
-            elif hasattr(model, "coef_"):
-                coef = np.asarray(model.coef_, dtype=float)
-                importances = np.mean(np.abs(coef), axis=0) if coef.ndim > 1 else np.abs(coef)
-            else:
-                importances = np.ones(frame.shape[1], dtype=float)
-            keep = np.zeros(frame.shape[1], dtype=bool)
-            keep[int(np.argmax(importances))] = True
-
-            class _Support:
-                def get_support(self_inner) -> np.ndarray:
-                    return keep
-
-            self._selector = _Support()
-            return
+            selector = SelectFromModel(model, prefit=True, threshold=-np.inf, max_features=1)
         self._selector = selector
 
     def _fit_dates(self, x_train: pd.DataFrame) -> None:
@@ -1305,7 +1296,10 @@ def _numeric_target(series: pd.Series) -> np.ndarray:
         values = pd.to_numeric(series, errors="coerce")
         if values.isna().any():
             raise ValidationError("Fold-local target steps require a non-null target")
-        return values.to_numpy(dtype=float)
+        numeric = values.to_numpy(dtype=float)
+        if not np.isfinite(numeric).all():
+            raise ValidationError("Fold-local target steps require finite target values")
+        return numeric
     codes, _ = pd.factorize(series.astype(str), sort=True)
     if (codes < 0).any():
         raise ValidationError("Fold-local target steps cannot proceed with null labels")

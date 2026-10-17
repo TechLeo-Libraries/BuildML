@@ -14,6 +14,10 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- The immutable `58e4309` suite passed at 84.12% locally and 84.06% remotely;
+  its complete CI, backend matrix and release acceptance passed. Windows/Linux
+  paced 24-hour HTTP assessments completed with zero recorded errors and
+  unchanged source hashes, on the documented local workload.
 - Expanded Linux coverage floor raised to 83% after its full remote suite passed
   at 84.02%; local CPU/CUDA coverage passed at 84.08%. The overall matrix still
   failed separate Torch DETAIL-mode diagnostics; this is not an all-green claim.
@@ -34,6 +38,10 @@ from the current release; use the installation guide for current requirements.
 
 ### Fixed
 
+- Fold-local supervised selection uses target type rather than a cardinality
+  cutoff, honors explicit F-test scorers, refuses infinite numeric targets,
+  and retains a serializable fallback when all model importances vanish.
+  The default univariate scorer is now `auto`; explicit choices remain supported.
 - Tabular SSL agent tools expose native methods and forward training budgets.
   SSL random_state now seeds Torch initialization and stochastic augmentations,
   in addition to NumPy shuffling, for repeatable fits on the same backend.
