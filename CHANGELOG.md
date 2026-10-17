@@ -14,6 +14,10 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Categorical EDA effect sizes are checked against independent SciPy reference
+  values, including degenerate tables and the documented pair cap. Guidance
+  explicitly identifies uncorrected Cramér's V as an exploratory effect size.
+
 - Session import no longer probes optional HDBSCAN/UMAP runtimes. Clustering
   defaults resolve on use, including the existing constant and wildcard imports.
 - Knowledge-graph queries reject fractional, boolean and string hop limits;

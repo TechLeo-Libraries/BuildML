@@ -287,6 +287,19 @@ passed in the subsequent 22-test immutable Linux repair suite at `0d51d53`,
 including ANN fault containment, NGBoost, TDA and the anomaly example. This
 targeted result does not replace a whole-package coverage measurement.
 
+Follow-up runtime repairs at `f8de1ea` passed 224 Linux contracts with coverage
+instrumentation (one Giotto-profile skip). They include all previous failed cases,
+weighted blending and error propagation, public exports, TDA row identity and
+holdout isolation, probe recovery and bounded graph queries. Session no longer
+probes optional clustering backends on import; one local import measured 5.28
+seconds versus the earlier 16.68-second profile during concurrent coverage work.
+These timings describe those local runs, not a general throughput benchmark.
+
+Categorical EDA checks use independent SciPy association values. Cramér's V
+is uncorrected for finite-sample bias and remains an exploratory effect size,
+not a significance test or causal claim. Degenerate tables yield no effect
+estimate; the documented eight-column screening cap is tested explicitly.
+
 Tabular SSL tools expose native Torch methods and explicit training budgets.
 With a fixed random_state, Torch initialization and augmentation noise are
 seeded as well as NumPy shuffling. Invalid budgets and non-finite training
