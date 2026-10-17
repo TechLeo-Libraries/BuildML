@@ -1,6 +1,7 @@
 """The parent can use trained tensors after spawned DDP workers exit."""
 
 import dataclasses
+import sys
 
 import pytest
 
@@ -61,8 +62,23 @@ def test_validation_with_buffers_completes_on_all_ranks(monkeypatch):
     )
     source = example.source.replace(
         "return torch.nn.Linear(4, 2)",
-        "return torch.nn.Sequential(torch.nn.BatchNorm1d(4), torch.nn.Linear(4, 2))",
+        "atexit.register(_report_gloo_threads)\n    return torch.nn.Sequential(torch.nn.BatchNorm1d(4), torch.nn.Linear(4, 2))",
     ).replace("test_size=0.2, stratify=True", "test_size=0.2, validation_size=0.2, stratify=True")
+    source = '''import atexit
+import sys
+from pathlib import Path
+def _report_gloo_threads():
+    if not sys.platform.startswith('linux'):
+        return
+    names = []
+    for path in Path('/proc/self/task').glob('*/comm'):
+        try:
+            names.append(path.read_text().strip())
+        except OSError:
+            pass
+    print('BuildML Gloo exit threads='+str(sum(name.startswith('pt_gloo') for name in names)),
+          file=sys.stderr, flush=True)
+''' + source
     source += "\nif __name__ == '__main__':\n    assert result.train_result.history[0]['val_loss'] >= 0\n"
     result = execute(dataclasses.replace(example, source=source), timeout=600, max_output_chars=64000)
     if result["status"] != "passed":
@@ -73,8 +89,13 @@ def test_validation_with_buffers_completes_on_all_ranks(monkeypatch):
         expected = ["initializing", "initialized", "training", "trained"]
         if rank == 0:
             expected.append("result_saved")
-        expected.extend(["destroying_process_group", "process_group_destroyed", "returning"])
+        expected.extend(["releasing_training_state", "training_state_released",
+                         "destroying_process_group", "process_group_destroyed", "returning"])
         assert phases == expected
+    if sys.platform.startswith('linux'):
+        exits = [line for line in result['stderr'].splitlines()
+                 if line.startswith('BuildML Gloo exit threads=')]
+        assert exits == ['BuildML Gloo exit threads=0']*2, result['stderr']
     print(result["stderr"])
 
 

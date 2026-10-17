@@ -287,6 +287,16 @@ passed in the subsequent 22-test immutable Linux repair suite at `0d51d53`,
 including ANN fault containment, NGBoost, TDA and the anomaly example. This
 targeted result does not replace a whole-package coverage measurement.
 
+Native cores from subsequent Python 3.11 failures locate the abort in
+`ProcessGroupGloo::AsyncBroadcastWork` destruction: a Torch tensor decrement
+tries to acquire the GIL after CPython finalization begins. The worker cleanup
+now releases its already serialized result and collects DDP/reducer cycles
+before destroying the process group. Five local real contracts pass, including
+an exit check requiring zero Gloo run-loop threads on both ranks. Repeated
+validation on the failing Python 3.11/Torch 2.14 stack is still required before
+calling that intermittent failure repaired. Historical passing streaks alone
+did not establish a fix.
+
 Follow-up runtime repairs at `f8de1ea` passed 224 Linux contracts with coverage
 instrumentation (one Giotto-profile skip). They include all previous failed cases,
 weighted blending and error propagation, public exports, TDA row identity and

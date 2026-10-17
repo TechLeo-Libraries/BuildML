@@ -14,6 +14,11 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- DDP workers release serialized training state and collect reducer cycles before
+  process-group teardown. Linux exit checks require zero Gloo run-loop threads;
+  repeated Python 3.11/Torch 2.14 verification remains required for the observed
+  native finalization abort.
+
 - AutoGluon classification distinguishes binary and multiclass targets, preserves
   weighted F1, normalizes signed loss scores before ranking, and reports internal
   validation scores instead of training scores. GBM seed hints and class labels

@@ -30,6 +30,7 @@ buildml.dl.k8s : Manifests for running this under Kubernetes.
 
 from __future__ import annotations
 
+import gc
 import os
 import pickle
 from collections.abc import Callable, Mapping
@@ -519,6 +520,7 @@ def _worker(
         dist.init_process_group(backend=backend, rank=rank, world_size=world_size)
 
     phase("initialized")
+    train_result = None
     try:
         phase("training")
         train_result = _run_rank_training(
@@ -541,9 +543,17 @@ def _worker(
                 pickle.dump(train_result, stream, protocol=pickle.HIGHEST_PROTOCOL)
             phase("result_saved")
     finally:
+        # The parent receives an independent serialized result. Drop this
+        # worker's module and collect DDP/reducer cycles while Python is alive,
+        # before the process group joins its native Gloo worker threads.
+        phase("releasing_training_state")
+        train_result = None
+        gc.collect()
+        phase("training_state_released")
         if dist.is_initialized():
             phase("destroying_process_group")
             dist.destroy_process_group()
+            gc.collect()
             phase("process_group_destroyed")
     phase("returning")
 
