@@ -273,6 +273,20 @@ now enables `BUILDML_DDP_TRACE=1`, recording each worker's initialization,
 training, result persistence and process-group teardown in its attempt log.
 These traces help locate failures; they do not suppress them or establish a fix.
 
+The traces at `95566fb` show both ranks returning after successful training and
+process-group destruction before a native abort. Torch CI now captures bounded
+native cores and extracts debugger backtraces to identify the failing library.
+The expanded whole-package job at that source passed independently at 84.09%
+(51,850 / 61,661 lines; 2,749 passed, 82 skipped), but its complete workflow failed
+in the Python 3.11 Torch job. Its tested merge `edc10a96` has the same source tree.
+
+Local cold startup exposed another boundary: importing capability workers loaded
+the full Session API. Package-level Session loading is now lazy, preserving
+`from buildml import Session`. All 14 previously failing/erroring local cases
+passed in the subsequent 22-test immutable Linux repair suite at `0d51d53`,
+including ANN fault containment, NGBoost, TDA and the anomaly example. This
+targeted result does not replace a whole-package coverage measurement.
+
 Tabular SSL tools expose native Torch methods and explicit training budgets.
 With a fixed random_state, Torch initialization and augmentation noise are
 seeded as well as NumPy shuffling. Invalid budgets and non-finite training

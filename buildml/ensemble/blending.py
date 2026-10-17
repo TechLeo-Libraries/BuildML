@@ -354,6 +354,7 @@ class HoldoutBlendClassifier(ClassifierMixin, BaseEstimator):
         blend of four models is roughly four times the latency of one, which is
         the trade a blend makes.
         """
+        check_is_fitted(self, ["estimators_", "final_estimator_"])
         return self.final_estimator_.predict(self._transform_meta(X))
 
     def predict_proba(self, X: Any) -> np.ndarray:
@@ -388,6 +389,7 @@ class HoldoutBlendClassifier(ClassifierMixin, BaseEstimator):
         :func:`buildml.model.diagnostics.calibration_report` before treating
         them as probabilities rather than scores.
         """
+        check_is_fitted(self, ["estimators_", "final_estimator_"])
         if not hasattr(self.final_estimator_, "predict_proba"):
             raise AttributeError(
                 f"{type(self.final_estimator_).__name__} does not implement predict_proba"
@@ -600,4 +602,5 @@ class HoldoutBlendRegressor(RegressorMixin, BaseEstimator):
         has a physical floor: a count, a price, a duration. Clip afterwards if
         the domain requires it.
         """
+        check_is_fitted(self, ["estimators_", "final_estimator_"])
         return self.final_estimator_.predict(self._transform_meta(X))

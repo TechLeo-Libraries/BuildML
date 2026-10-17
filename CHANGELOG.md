@@ -14,6 +14,10 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Weighted holdout blending is checked against independent sklearn fits across
+  refitting, passthrough and pandas/NumPy inputs. Unfitted prediction now raises
+  the documented `NotFittedError` for both blend classes.
+
 - Capability-worker imports no longer construct the complete Session API.
   Session loads on first access while preserving the public class and import
   syntax; import-boundary contracts protect lightweight dependency probes.
