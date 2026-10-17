@@ -14,6 +14,11 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Blending no longer retries internal weighted-fit `TypeError` failures without
+  weights. The unweighted fallback applies only when the fit signature rejects
+  `sample_weight`. Public export checks now include seven additional domains
+  and verify star-import identities.
+
 - Weighted holdout blending is checked against independent sklearn fits across
   refitting, passthrough and pandas/NumPy inputs. Unfitted prediction now raises
   the documented `NotFittedError` for both blend classes.

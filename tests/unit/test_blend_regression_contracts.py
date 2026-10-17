@@ -77,3 +77,22 @@ def test_blend_requires_multiple_bases_and_fitting_before_prediction():
 def test_unfitted_classifier_reports_not_fitted(method):
     with pytest.raises(NotFittedError):
         getattr(HoldoutBlendClassifier(), method)(np.ones((2, 2)))
+
+
+class _FailingWeightedRidge(Ridge):
+    def fit(self, X, y, sample_weight=None):
+        if sample_weight is not None:
+            raise TypeError('weighted backend failed internally')
+        return super().fit(X, y)
+
+
+@pytest.mark.parametrize('placement', ['base', 'meta'])
+def test_internal_weighted_fit_errors_are_not_retried_without_weights(placement):
+    base = _FailingWeightedRidge() if placement == 'base' else Ridge()
+    final = _FailingWeightedRidge() if placement == 'meta' else Ridge()
+    blend = HoldoutBlendRegressor(estimators=[('a', base), ('b', Ridge())],
+                                 final_estimator=final, random_state=4)
+    with pytest.raises(TypeError, match='weighted backend failed internally'):
+        blend.fit(np.arange(120).reshape(40, 3), np.arange(40),
+                  sample_weight=np.ones(40))
+    assert not hasattr(blend, 'estimators_')

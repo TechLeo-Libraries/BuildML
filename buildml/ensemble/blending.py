@@ -32,6 +32,7 @@ sklearn.ensemble.StackingClassifier : Out-of-fold meta-features instead.
 from __future__ import annotations
 
 import logging
+from inspect import signature
 from typing import Any, Literal
 
 import numpy as np
@@ -80,14 +81,20 @@ def _fit_one(est: Any, X: Any, y: Any, sample_weight: Any | None) -> Any:
     model = clone(est)
     if sample_weight is not None:
         try:
-            model.fit(X, y, sample_weight=sample_weight)
-            return model
-        except TypeError:
-            # Estimator rejects sample_weight; refit without it (sklearn-compatible fallback).
-            logger.debug(
-                "blending: estimator rejected sample_weight; fitting without weights",
-                exc_info=True,
-            )
+            fit_signature = signature(model.fit)
+        except (TypeError, ValueError):
+            # Unknown signatures must not turn internal failures into an
+            # apparently successful, unweighted fit.
+            fit_signature = None
+        if fit_signature is not None:
+            try:
+                fit_signature.bind(X, y, sample_weight=sample_weight)
+            except TypeError:
+                logger.debug("blending: estimator has no sample_weight parameter; fitting unweighted")
+                model.fit(X, y)
+                return model
+        model.fit(X, y, sample_weight=sample_weight)
+        return model
     model.fit(X, y)
     return model
 
