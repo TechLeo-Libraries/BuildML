@@ -40,8 +40,11 @@ from the current release; use the installation guide for current requirements.
 
 - Fold-local supervised selection uses target type rather than a cardinality
   cutoff, honors explicit F-test scorers, refuses infinite numeric targets,
-  and retains a serializable fallback when all model importances vanish.
+  and retains a serializable fallback when thresholding would discard all features.
   The default univariate scorer is now `auto`; explicit choices remain supported.
+- CV and search propagate the resolved task into automatic feature selection,
+  including integer-valued regression. Fold-local date parsing handles valid
+  mixed formats consistently across batches and rejects mixed timezones clearly.
 - Tabular SSL agent tools expose native methods and forward training budgets.
   SSL random_state now seeds Torch initialization and stochastic augmentations,
   in addition to NumPy shuffling, for repeatable fits on the same backend.

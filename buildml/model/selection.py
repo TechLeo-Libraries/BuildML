@@ -47,7 +47,7 @@ buildml.model.compare : Comparing estimators once configured.
 from __future__ import annotations
 
 from collections.abc import Callable
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from itertools import product
 from numbers import Integral
 from typing import Any, Literal
@@ -55,6 +55,7 @@ from typing import Any, Literal
 import numpy as np
 import pandas as pd
 from sklearn.base import clone
+from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import (
     accuracy_score,
     balanced_accuracy_score,
@@ -1048,7 +1049,7 @@ def cv_score(
                 f"Unsupported recipe knobs: {unknown}. Allowed: {sorted(SAFE_RECIPE_KNOBS)}"
             )
         knob_params = {**knob_params, **dict(recipe_knobs)}
-    active_recipe = _recipe_with_knobs(preprocess, knob_params)
+    active_recipe = _recipe_with_knobs(preprocess, knob_params, task=resolved_task)
 
     model = clone(estimator)
     if est_params:
@@ -2504,7 +2505,7 @@ def nested_cv_score(
         model = clone(estimator)
         if fold_search.best_params:
             model.set_params(**fold_search.best_params)
-        active_recipe = _recipe_with_knobs(preprocess, fold_search.best_recipe_knobs)
+        active_recipe = _recipe_with_knobs(preprocess, fold_search.best_recipe_knobs, task=resolved_task)
         base = dataset._ensure_pandas()
         x_outer_train = base.iloc[list(outer_train_idx)][list(_feature_cols)]
         y_outer_train = base.iloc[list(outer_train_idx)][_target]
@@ -2819,7 +2820,7 @@ def _finalize_search_result(
         model = clone(estimator)
         if best.params:
             model.set_params(**best.params)
-        active_recipe = _recipe_with_knobs(preprocess, best.recipe_knobs)
+        active_recipe = _recipe_with_knobs(preprocess, best.recipe_knobs, task=resolved_task)
         if active_recipe is not None and not active_recipe.is_empty():
             x_train, y_train, feature_cols, target, sample_weight = _feature_target_frames(
                 dataset,
@@ -2987,14 +2988,21 @@ def _split_trial_params(params: dict[str, Any]) -> tuple[dict[str, Any], dict[st
 def _recipe_with_knobs(
     preprocess: PreprocessRecipe | None,
     knobs: dict[str, Any] | None,
+    *,
+    task: str | None = None,
 ) -> PreprocessRecipe | None:
     if preprocess is None:
         if knobs:
             raise ValidationError("recipe knobs require a base PreprocessRecipe")
         return None
-    if not knobs:
-        return preprocess
-    return preprocess.with_knobs(knobs)
+    recipe = preprocess.with_knobs(knobs) if knobs else preprocess
+    # CV already knows the estimator/task semantics, including integer-valued
+    # regression outcomes. Preserve explicit selector/scorer overrides.
+    if recipe.select == "univariate" and recipe.select_score_func == "auto" and task is not None:
+        recipe = replace(recipe, select_score_func="f_regression" if task == "regression" else "f_classif")
+    if recipe.select == "model" and recipe.select_estimator is None and task == "regression":
+        recipe = replace(recipe, select_estimator=RandomForestRegressor(n_estimators=40, random_state=0))
+    return recipe
 
 
 def _resolve_inner_search(

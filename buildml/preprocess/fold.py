@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, fields, replace
-from typing import Any, Literal
+from typing import Any, Literal, cast
 
 import numpy as np
 import pandas as pd
@@ -906,7 +906,9 @@ class FoldLocalPreprocessor(TransformerMixin, BaseEstimator):
         target_kind = type_of_target(y_train)
         regression = target_kind == "continuous"
         if recipe.select == "univariate":
-            if recipe.select_score_func not in {"auto", "f_classif", "f_regression"}:
+            if not isinstance(recipe.select_score_func, str) or recipe.select_score_func not in {
+                "auto", "f_classif", "f_regression",
+            }:
                 raise ValidationError("select_score_func must be auto, f_classif, or f_regression")
             use_regression = recipe.select_score_func == "f_regression" or (
                 recipe.select_score_func == "auto" and regression
@@ -965,7 +967,7 @@ class FoldLocalPreprocessor(TransformerMixin, BaseEstimator):
             raise ValidationError(f"Fold-local date columns missing: {missing}")
         out = frame.copy()
         for col in self._date_columns:
-            parsed = pd.to_datetime(out[col], errors="coerce", utc=False)
+            parsed = _parse_fold_datetimes(out[col], col)
             out[f"{col}_year"] = parsed.dt.year
             out[f"{col}_month"] = parsed.dt.month
             out[f"{col}_day"] = parsed.dt.day
@@ -1230,6 +1232,20 @@ def _remap_scaled_columns(
     return resolved
 
 
+def _parse_fold_datetimes(values: pd.Series, column: str) -> pd.Series:
+    try:
+        parsed = pd.to_datetime(values, errors="coerce", format="mixed", utc=False)
+    except (ValueError, TypeError) as exc:
+        raise ValidationError(
+            f"Could not parse fold-local date column '{column}'; normalize date formats and timezone explicitly"
+        ) from exc
+    if not pd.api.types.is_datetime64_any_dtype(parsed.dtype):
+        raise ValidationError(
+            f"Fold-local date column '{column}' must use a consistent timezone; normalize it before preprocessing"
+        )
+    return cast(pd.Series, parsed)
+
+
 def _resolve_datetime(frame: pd.DataFrame, columns: tuple[str, ...] | None) -> list[str]:
     if columns is not None:
         missing = [c for c in columns if c not in frame.columns]
@@ -1245,7 +1261,7 @@ def _resolve_datetime(frame: pd.DataFrame, columns: tuple[str, ...] | None) -> l
         if pd.api.types.is_object_dtype(frame[column]) or pd.api.types.is_string_dtype(
             frame[column]
         ):
-            parsed = pd.to_datetime(frame[column], errors="coerce")
+            parsed = _parse_fold_datetimes(frame[column], name)
             if parsed.notna().mean() >= 0.8:
                 resolved.append(name)
     return resolved

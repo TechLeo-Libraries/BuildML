@@ -48,6 +48,19 @@ def test_default_univariate_routes_continuous_targets_to_regression():
     np.testing.assert_allclose(processor._selector.scores_, expected)
 
 
+@pytest.mark.parametrize('score', ['unknown', '', None, [], {}])
+def test_invalid_scorer_is_refused_before_fitting(score, monkeypatch):
+    from sklearn.feature_selection import SelectKBest
+
+    def unexpected_fit(*args, **kwargs):
+        pytest.fail('Invalid scorer started feature fitting')
+
+    monkeypatch.setattr(SelectKBest, 'fit', unexpected_fit)
+    with pytest.raises(ValidationError, match='select_score_func'):
+        build_fold_preprocessor(_frame(), PreprocessRecipe(
+            impute=None, select='univariate', select_score_func=score), pd.Series([0, 1] * 60))
+
+
 def test_zero_importance_fallback_remains_serializable_and_preserves_input(tmp_path):
     frame = _frame()
     target = pd.Series([0, 1] * 60)
@@ -83,3 +96,43 @@ def test_regression_cv_refits_the_fixed_selector_inside_each_fold():
                               preprocess=PreprocessRecipe(impute=None, select='model'))
     assert np.isfinite(result.mean_metrics['r2'])
     pd.testing.assert_frame_equal(session.partition('test'), held_out)
+
+
+@pytest.mark.parametrize('method', ['cv_score', 'grid_search', 'nested_cv_score'])
+@pytest.mark.parametrize('selection', ['univariate', 'model'])
+def test_declared_regression_task_controls_integer_target_selection(method, selection, monkeypatch):
+    from sklearn.linear_model import Ridge
+
+    from buildml.model import selection as api
+
+    frame = _frame()
+    frame['target'] = np.round(15 * frame.signal).astype(int) + 100
+    session = Session.ingest(frame).set_roles({'target': 'target'}).split(test_size=.2, random_state=4)
+    recipe = PreprocessRecipe(impute=None, select=selection, select_k=1)
+    observed = []
+    real = api.build_fold_preprocessor
+
+    def capture(*args, **kwargs):
+        processor = real(*args, **kwargs)
+        observed.append(processor._selector)
+        return processor
+
+    monkeypatch.setattr(api, 'build_fold_preprocessor', capture)
+    options = dict(task='regression', preprocess=recipe)
+    if method == 'nested_cv_score':
+        options.update(outer_cv=3, inner_cv=2, param_grid={'alpha': [1.]})
+    elif method == 'grid_search':
+        options.update(cv=3, param_grid={'alpha': [1.]})
+    else:
+        options.update(cv=3)
+    result = getattr(session, method)(Ridge(), **options)
+    assert observed
+    for selector in observed:
+        if selection == 'model':
+            assert isinstance(selector.estimator, RandomForestRegressor)
+        else:
+            assert selector.score_func is f_regression
+    assert recipe.select_estimator is None
+    assert recipe.select_score_func == 'auto'
+    if method == 'cv_score':
+        assert result.mean_metrics['r2'] > .9

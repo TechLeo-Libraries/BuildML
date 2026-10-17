@@ -326,7 +326,15 @@ exclude joint-distribution changes.
 
 Fold-local selectors now use the training target type rather than a cardinality
 cutoff. Explicit F-test scorers are honored, including many-class classification.
-The default scorer is `auto`; integer outcomes are treated as discrete, so use
-`f_regression` and a regression estimator when integers represent a continuous
-quantity. A selector retaining one feature after all importances vanish remains
-serializable. Non-finite numeric targets are refused before supervised selection.
+The default scorer is `auto`. CV and search carry their resolved task into
+automatic selection, including regression with integer outcomes. Direct
+preprocessing treats integers as discrete; choose `f_regression` and a regression
+estimator when those integers represent a continuous quantity. Explicit choices
+are preserved, including values stored in older recipes. A selector retaining
+one feature when thresholding would discard all features remains serializable.
+Non-finite numeric targets are refused before supervised selection.
+
+Fold-local date extraction parses valid mixed formats consistently per value,
+so a row's calendar features do not depend on other rows in the prediction
+batch. Mixed timezone offsets require explicit normalization. Ambiguous numeric
+date formats still require the caller to choose a date convention.
