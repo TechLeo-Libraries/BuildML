@@ -14,6 +14,10 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Capability-worker imports no longer construct the complete Session API.
+  Session loads on first access while preserving the public class and import
+  syntax; import-boundary contracts protect lightweight dependency probes.
+
 - Repeated DDP checks retain opt-in rank lifecycle traces, including successful
   process-group teardown. Native worker aborts remain failures without retries;
   the intermittent CI abort is still under investigation.
