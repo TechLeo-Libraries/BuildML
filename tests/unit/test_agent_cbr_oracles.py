@@ -114,7 +114,7 @@ def test_agent_neural_case_memory_honors_platform_guard_and_epoch_budget(monkeyp
     assert len(steps) == 2
     assert session.cbr_plan.backend == "torch"
     assert session.cbr_plan.config["device"] == "cpu"
-    assert session.cbr_plan.case_base.torch_encoder_.device == "cpu"
+    assert {p.device.type for p in session.cbr_plan.case_base.torch_encoder_.parameters()} == {"cpu"}
     predicted = _run(session, "predict_cbr", {"partition": "test", "return_traces": True})
     assert predicted.executed, predicted.error
     assert len(predicted.result.predictions) == len(session.partition("test"))

@@ -133,7 +133,7 @@ The `expanded-coverage` CI job reproduces the assessed dependency profile using
 tests against all BuildML modules, with an 83% floor, and uploads source,
 installed package, coverage and test-result artifacts. CPU Torch replaces local
 CUDA Torch in that job; its outcome must be verified independently. The core
-floor remains 69%, and the 90% target remains outstanding.
+floor remains 70%, and the 90% target remains outstanding.
 
 Earlier snapshot:
 
@@ -268,7 +268,7 @@ wheels (CPU Gloo execution). These are bounded reproductions, not a general
 distributed-training reliability claim.
 
 A subsequent Python 3.11 CI repetition again aborted natively on attempt three
-(`39067808325`). The intermittent failure remains unresolved. The repeat checker
+(`39067808325`). The intermittent failure remained unresolved at that source. The repeat checker
 now enables `BUILDML_DDP_TRACE=1`, recording each worker's initialization,
 training, result persistence and process-group teardown in its attempt log.
 These traces help locate failures; they do not suppress them or establish a fix.
