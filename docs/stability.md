@@ -55,10 +55,10 @@ Measure the complete suite with `python scripts/run_full_coverage.py`; subset
 runs are not comparable to the project coverage threshold.
 The separate expanded Linux job runs the same complete test directory with
 `requirements-expanded-coverage.txt` and an **83%** floor, raised after passing
-remote CPU coverage above 84%. Local Linux at `eab8448` passed at 84.87%
-(52,427 / 61,773 lines; 2,965 passed, 63 skipped). Required imodels integration
-now skips only when the package is absent. Remote CPU at `e6ce386`
-passed at 84.80% (52,385 / 61,774; 2,975 passed, 85 skipped).
+remote CPU coverage above 84%. Local Linux at `bd5d3d3` passed at 84.95%
+(52,480 / 61,778 lines; 3,028 passed, 63 skipped). Required imodels integration
+now skips only when the package is absent. Remote CPU at `bd5d3d3`
+passed at 84.86% (52,425 / 61,778; 3,006 passed, 85 skipped).
 The complete CI, backend
 evidence and release acceptance workflows passed. The Linux Gloo forkserver
 workaround passed 50 repetitions on each remote Python 3.11/3.12 stack and

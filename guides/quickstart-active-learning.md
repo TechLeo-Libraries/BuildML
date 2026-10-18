@@ -40,7 +40,7 @@ session = (
 full = session.to_pandas().copy()
 train_idx = list(session.split_plan.train_indices)
 blank = rng.choice(train_idx, size=int(0.85 * len(train_idx)), replace=False)
-full.loc[blank, "label"] = np.nan
+full.iloc[blank, full.columns.get_loc("label")] = np.nan
 # Re-ingest the masked table while preserving the original row assignments.
 session = (Session.ingest(full)
     .set_roles(dict(session.dataset.roles))
@@ -61,7 +61,7 @@ for round_i in range(3):
     if not q.indices:
         break
     # Example-only simulated oracle: production code must use a human labeler.
-    human_labels = [int(truth.loc[i]) for i in q.indices]
+    human_labels = [int(truth.iloc[i]) for i in q.indices]
     labeled = session.active_learning.label_rows(indices=q.indices, labels=human_labels)
     print(round_i, labeled.n_newly_labeled, labeled.n_labeled_now, labeled.budget_remaining)
 

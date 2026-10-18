@@ -8,29 +8,29 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 84.80104898500987,
-      "covered_lines": 52385,
-      "num_statements": 61774,
-      "source_revision": "e6ce38650774a80c43bdbed90f6dffa566d479ca",
-      "tested_revision": "04cbbf88531a0d97d9eac18bcf7212af1380b612",
+      "percent_covered": 84.86030625789115,
+      "covered_lines": 52425,
+      "num_statements": 61778,
+      "source_revision": "bd5d3d3a1f2c717b5df35579c6c90b39be385a3a",
+      "tested_revision": "c157aeffdf03818e019f0f5a09620b8a9d5d87e6",
       "platform": "remote Linux, CPU expanded profile",
-      "run_id": 39124900943,
-      "result": "2975 passed, 85 skipped, no failures in expanded whole-package job",
+      "run_id": 39127011990,
+      "result": "3006 passed, 85 skipped, no failures in expanded whole-package job",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
-      "notes": "Tested merge tree equals source tree. Complete CI, backend evidence and release acceptance passed. Scope/exclusion rules unchanged. Expanded floor83 retains >=1pp headroom; target90 needs3212 additional covered lines at this denominator."
+      "notes": "Tested merge tree equals source tree. Complete CI, backend evidence and release acceptance passed. Scope/exclusion rules unchanged. Expanded floor83 retains >=1pp headroom; target90 needs3176 additional covered lines at this denominator."
     },
     "latest_local_measurement": {
-      "percent_covered": 84.87041263982645,
-      "covered_lines": 52427,
-      "num_statements": 61773,
+      "percent_covered": 84.94933471462333,
+      "covered_lines": 52480,
+      "num_statements": 61778,
       "excluded_lines": 566,
-      "source_revision": "eab8448308c1c9a133173c37e12b584c1e555dae",
+      "source_revision": "bd5d3d3a1f2c717b5df35579c6c90b39be385a3a",
       "platform": "local Linux, expanded CUDA-capable profile",
-      "result": "2965 passed, 63 skipped, no failures",
-      "notes": "Whole tests directory completed in 34:05; unchanged scope/exclusion rules. Required imodels test skips only when the package is absent. Target90 needs3169 additional covered lines at this local denominator."
+      "result": "3028 passed, 63 skipped, no failures",
+      "notes": "Whole tests directory completed in 17:47; unchanged scope/exclusion rules. Target90 needs3121 additional covered lines at this local denominator."
     },
     "seed_measurement": {
       "percent_covered": 82.69421622061336,

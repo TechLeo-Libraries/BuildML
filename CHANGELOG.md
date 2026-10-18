@@ -14,10 +14,17 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
-- Remote whole-package Linux coverage at `e6ce386` passed at 84.80% (2,975
+- Remote whole-package Linux coverage at `bd5d3d3` passed at 84.86% (3,006
   passed, 85 skipped), with the complete CI, backend evidence and release
-  acceptance workflows passing. Local Linux passed at 84.87% (2,965 passed,
+  acceptance workflows passing. Local Linux at `bd5d3d3` passed at 84.95% (3,028 passed,
   63 skipped). The 90% goal remains open.
+
+- Active-learning annotations use dataset row positions rather than pandas
+  index labels, reject duplicate positions and missing/marker labels, and
+  publish budget/history changes only after successful refit. Failed model or
+  committee refits leave the Session unchanged; new classes remain supported.
+  Acquisition scores and holdout isolation match independent probability/vote
+  calculations. The broader Linux active-learning group passed all 56 tests.
 
 - Federated evaluation identifies its requested partition without claiming
   verified exclusion from original training data. Training/all-data scores
