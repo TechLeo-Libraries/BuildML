@@ -14,9 +14,19 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
-- Remote whole-package Linux coverage at `0c28c21` passed at 84.64% (2,884
+- Remote whole-package Linux coverage at `eab8448` passed at 84.78% (2,943
   passed, 85 skipped), with the complete CI, backend evidence and release
-  acceptance workflows passing. The 90% goal remains open.
+  acceptance workflows passing. Local Linux passed at 84.87% (2,965 passed,
+  63 skipped). The 90% goal remains open.
+
+- Probabilistic fitting and calibration select SplitPlan row positions rather
+  than pandas index labels. Offset and duplicate labels no longer cause missing-row
+  errors; permuted integer labels cannot substitute other rows. Real native,
+  MAPIE split and NGBoost regression contracts check index and holdout isolation.
+  Independent grouped/time-ordered nested-CV oracles and frozen probabilistic
+  evaluation checks cover scaling, missing labels, empty populations and schema
+  failures. The combined Linux regression run passed 101 tests with one expected
+  dependency-state skip; this subset is not a coverage measurement.
 
 - Polars Parquet/IPC previews pass row limits to the reader before table
   materialization. Design-frame preparation materializes repeated requested

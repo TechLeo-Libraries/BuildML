@@ -76,6 +76,11 @@ sampling design. The guard cannot detect feature engineering performed outside
 BuildML, or make dependent groups/time series exchangeable. Evaluate marginal
 coverage and interval width on representative held-out observations; subgroup
 coverage and shifted populations require their own assessment.
+Split membership follows row positions, including when pandas index labels are
+offset, permuted or duplicated. Native, MAPIE split and NGBoost regression
+contracts check that relabeling the index or changing holdout targets cannot
+alter fitted predictions or calibration. These isolation checks do not establish
+coverage for a deployment population.
 The native cutoff rejects nonfinite scores and calibration samples too small
 to support a finite interval at the requested alpha; add calibration rows or
 choose a supported alpha.
