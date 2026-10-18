@@ -111,7 +111,7 @@ Follow-up assessment, 2026-10-14, review branch `codex/coverage-cuda-ci-20261012
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Remote expanded CPU whole-package gate | Expanded job passed: 84.09% (51,850 / 61,661 lines); 2,749 passed, 82 skipped | [CI run 39069774130](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39069774130); merge `edc10a96` tree equals `95566fb`; complete workflow failed in Torch 3.11; floor 83% |
+| Remote expanded CPU whole-package gate | Passed: 84.46% (52,163 / 61,764 lines); 2,857 passed, 85 skipped | [CI run 39079847470](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39079847470); merge `f0d3db4a` tree equals `7eec279`; entire CI, backend evidence and release acceptance passed; floor 83% |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
 | Local Linux EconML 0.17.0 policy learner | Sixteen known-benefit and reporting contracts passed | Continuous/binary outcomes, numeric/string treatment labels, two simulation seeds and requested bootstrap counts; adjusted population summaries and omitted intervals are explicit. Repaired behavior also passed remote Windows/Linux jobs |
@@ -121,7 +121,7 @@ Follow-up assessment, 2026-10-14, review branch `codex/coverage-cuda-ci-20261012
 | Real Windows HTTP recovery assessment | 1,022,102 requests in one hour, no unexpected failures | Immutable `e3f7b93` source hash unchanged; three 20-minute process lifetimes at 1/4/8 clients and 1/16/64 rows. Sampled p95 4.89/18.58/35.79 ms; graceful/forced restart startup 6.50/17.80 seconds. Deliberate downtime is separate from scored requests |
 | Isolated RL/imitation profile | Seventeen tests passed locally; both remote Windows/Linux jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real PPO/BC/GAIL and trusted persistence on a separate compatible CPU stack |
 | Linux targeted repairs | Five DDP tests passed; PDF, TorchScript and DEC/IDEC checks passed | Distributed CPU/Gloo checks use the CUDA-capable Torch installation; multi-GPU throughput is unmeasured |
-| Expanded local Linux suite with CUDA/extras | Passed: 84.52% (52,155 / 61,707 lines); 2,858 passed, 60 skipped | Immutable `a294b8c` suite completed in 19:02; CPU/CUDA contracts passed. Exclusions are 566, including two new type-only lines under the existing TYPE_CHECKING rule. No exclusion pattern was added. The 90% target needs 3,382 additional covered lines at this denominator |
+| Expanded local Linux suite with CUDA/extras | Passed: 84.54% (52,217 / 61,764 lines); 2,879 passed, 63 skipped | Immutable `7eec279` suite completed in 18:25; exclusions remain 566 with unchanged rules. The 90% target needs 3,371 additional covered lines at this denominator |
 
 Exact local measurements are preserved in `reports/coverage90-gpu-linux.json`,
 `reports/coverage90-soak-30min.json` and `reports/coverage90-linux-full.json`.
@@ -299,7 +299,9 @@ rank before reading the serialized result. Deliberate rank-factory failures
 must still fail, without retries. Six local contracts pass on both Torch 2.7.1
 and Python 3.11.17/Torch 2.14.1 CPU, including numerical model use, validation
 with buffers, caller RNG preservation and worker failure propagation. Repeated
-remote verification on the originally failing stack is pending. This is a
+verification passed 50 attempts locally on Python 3.11.17/Torch 2.14.1 CPU
+and 50 on each remote Python 3.11/3.12 stack in CI run `39079847470`,
+without retries or skipped attempts. The complete workflow passed. This is a
 launcher workaround for the observed native lifetime issue, not an upstream
 Torch repair or a general distributed-training reliability guarantee.
 

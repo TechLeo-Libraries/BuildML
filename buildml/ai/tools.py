@@ -3972,6 +3972,8 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
                     "distance_eps": {"type": "number"},
                     "random_state": {"type": "integer"},
                     "prefer_reduce_components": {"type": "boolean"},
+                    "torch_epochs": {"type": "integer", "minimum": 1},
+                    "device": {"type": "string"},
                 },
                 "required": [],
             },
@@ -4056,8 +4058,8 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
         ToolSpec(
             name="retain_cbr",
             description=(
-                "Retain newly labeled cases into case memory. Requires "
-                "source_disclosure. Refuses Session validation/test indices. "
+                "Retain labeled dataset rows into case memory. Requires "
+                "row_indices and source_disclosure. Refuses Session validation/test indices. "
                 "Write operation."
             ),
             parameters={
@@ -4068,9 +4070,15 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
                         "description": "Required provenance for new labels.",
                     },
                     "solution_column": {"type": "string"},
+                    "row_indices": {
+                        "type": "array",
+                        "minItems": 1,
+                        "items": {"anyOf": [{"type": "integer"}, {"type": "string"}]},
+                        "description": "Dataset index labels, not positional row offsets.",
+                    },
                     "allow_overlap_with_train": {"type": "boolean"},
                 },
-                "required": ["source_disclosure"],
+                "required": ["source_disclosure", "row_indices"],
             },
             confirm_policy=ConfirmPolicy.CONFIRM,
             session_method="retain_cbr",

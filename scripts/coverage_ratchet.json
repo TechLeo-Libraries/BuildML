@@ -8,29 +8,29 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 84.0888081607499,
-      "covered_lines": 51850,
-      "num_statements": 61661,
-      "source_revision": "95566fbf26faeee700eb02c6be70d6cc75edd717",
-      "tested_revision": "edc10a9672e11a29f24178a4941df041ca6494b6",
+      "percent_covered": 84.45534615633703,
+      "covered_lines": 52163,
+      "num_statements": 61764,
+      "source_revision": "7eec2790e0434066c9e90a09dd7ca66452615441",
+      "tested_revision": "f0d3db4a9175c65ea91bbd2a99983de2fbdcfe1f",
       "platform": "remote Linux, CPU expanded profile",
-      "run_id": 39069774130,
-      "result": "2749 passed, 82 skipped, no failures in expanded whole-package job",
+      "run_id": 39079847470,
+      "result": "2857 passed, 85 skipped, no failures in expanded whole-package job",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
-      "notes": "Tested merge tree equals source tree. Expanded job passed; complete workflow failed in Python3.11 Torch native worker exit. Backend and release acceptance passed. Expanded floor83 retains >=1pp headroom; target90 remains open."
+      "notes": "Tested merge tree equals source tree. Complete CI, backend evidence and release acceptance workflows passed. Both Python Torch jobs passed50 repetitions without retries. Expanded floor83 retains >=1pp headroom; target90 remains open."
     },
     "latest_local_measurement": {
-      "percent_covered": 84.52039476882688,
-      "covered_lines": 52155,
-      "num_statements": 61707,
+      "percent_covered": 84.54277572696068,
+      "covered_lines": 52217,
+      "num_statements": 61764,
       "excluded_lines": 566,
-      "source_revision": "a294b8ce7b2296807989c82642cfb400e535987d",
+      "source_revision": "7eec2790e0434066c9e90a09dd7ca66452615441",
       "platform": "local Linux, expanded CUDA-capable profile",
-      "result": "2858 passed, 60 skipped, no failures",
-      "notes": "Whole tests directory. Two new type-only lines match the existing TYPE_CHECKING exclusion; no exclusion pattern was added. This local result does not replace the independent remote gate. Target90 needs3382 additional covered lines at this denominator."
+      "result": "2879 passed, 63 skipped, no failures",
+      "notes": "Whole tests directory; unchanged package scope and exclusion rules. Target90 needs3371 additional covered lines at this denominator."
     },
     "seed_measurement": {
       "percent_covered": 82.69421622061336,
