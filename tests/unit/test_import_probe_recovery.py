@@ -14,7 +14,8 @@ def clean_cache():
 
 
 @pytest.mark.parametrize('failure', [subprocess.TimeoutExpired('probe', 12), OSError('busy')])
-def test_transient_probe_failure_can_recover_after_bounded_cooldown(monkeypatch, failure):
+@pytest.mark.parametrize('module', ['ngboost', 'imodels'])
+def test_transient_probe_failure_can_recover_after_bounded_cooldown(monkeypatch, failure, module):
     clock = [100.]
     monkeypatch.setattr(extras, 'monotonic', lambda:clock[0])
     attempts = []
@@ -24,15 +25,15 @@ def test_transient_probe_failure_can_recover_after_bounded_cooldown(monkeypatch,
             raise failure
         return subprocess.CompletedProcess(args, 0)
     monkeypatch.setattr(extras.subprocess, 'run', run)
-    assert not extras._subprocess_import_ok('ngboost')
+    assert not extras._subprocess_import_ok(module)
     clock[0] = 159.
-    assert not extras._subprocess_import_ok('ngboost')
+    assert not extras._subprocess_import_ok(module)
     assert attempts == [90.]
     clock[0] = 160.
-    assert extras._subprocess_import_ok('ngboost')
+    assert extras._subprocess_import_ok(module)
     assert attempts == [90., 90.]
     clock[0] = 1000.
-    assert extras._subprocess_import_ok('ngboost')
+    assert extras._subprocess_import_ok(module)
     assert len(attempts) == 2
 
 

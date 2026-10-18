@@ -294,8 +294,8 @@ def cross_validate_torch(
     normalize:
         Standardise features using each fold's training statistics.
     seed:
-        Controls fold assignment and shuffling, so the same seed reproduces the
-        same folds.
+        Controls fold assignment, shuffling, Torch model initialization and Torch
+        training randomness. External randomness in custom factories is caller-owned.
     stratify:
         Keep class proportions roughly equal across folds. Applies to
         classification only, and matters most when a class is rare: without
@@ -434,6 +434,7 @@ def cross_validate_torch(
         else:
             class_labels = ()
             n_classes = 1
+        torch.manual_seed(int(seed) + fold_i)
         module = factory(len(feature_cols), resolved_task, n_classes)
         contract = FeatureContract(
             feature_columns=tuple(feature_cols),

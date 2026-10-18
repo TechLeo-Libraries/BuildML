@@ -14,9 +14,21 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
-- The immutable `a294b8c` whole Linux suite passed at 84.52% (2,858 passed,
-  60 skipped). Trust instructions precede long paths so agent error limits do
-  not remove the required action. The 90% goal remains open.
+- Remote whole-package Linux coverage at `0c28c21` passed at 84.64% (2,884
+  passed, 85 skipped), with the complete CI, backend evidence and release
+  acceptance workflows passing. The 90% goal remains open.
+
+- Polars Parquet/IPC previews pass row limits to the reader before table
+  materialization. Design-frame preparation materializes repeated requested
+  columns once, preserving first-occurrence order across engines.
+
+- Torch search and cross-validation seed model construction for every fold.
+  Malformed CUDA indices are refused even without CUDA. A seeded sampler's
+  internal failure propagates instead of triggering an unseeded retry.
+
+- The required imodels integration skips only when the package is absent,
+  making installed-backend failures visible. Its scientific import probe uses
+  the existing bounded 90-second heavy-import policy.
 
 - AutoGluon probability outputs follow the NumPy estimator contract. AutoML
   bundles clone backend model assets into a relative directory and can load
@@ -25,8 +37,9 @@ from the current release; use the installation guide for current requirements.
 
 - Single-node Linux Gloo workers use forkserver to avoid native cleanup racing
   Python finalization. All workers are joined before loading the serialized
-  result; injected worker failures must propagate. Repeated Python 3.11/Torch
-  2.14 verification remains required for the observed native abort.
+  result; injected worker failures must propagate. Fifty repeated checks passed
+  locally on Python 3.11/Torch 2.14 CPU and on each remote Python 3.11/3.12 stack
+  at `7eec279`. This is a tested launcher workaround, not an upstream Torch repair.
 
 - AutoGluon classification distinguishes binary and multiclass targets, preserves
   weighted F1, normalizes signed loss scores before ranking, and reports internal

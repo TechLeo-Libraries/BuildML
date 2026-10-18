@@ -43,6 +43,7 @@ _SLOW_IMPORT_TIMEOUTS: dict[str, float] = {
     "mapie": 90.0,
     "ripser": 90.0,
     "persim": 90.0,
+    "imodels": 90.0,
 }
 
 

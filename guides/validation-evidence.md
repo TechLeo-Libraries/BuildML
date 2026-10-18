@@ -111,7 +111,7 @@ Follow-up assessment, 2026-10-14, review branch `codex/coverage-cuda-ci-20261012
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Remote expanded CPU whole-package gate | Passed: 84.46% (52,163 / 61,764 lines); 2,857 passed, 85 skipped | [CI run 39079847470](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39079847470); merge `f0d3db4a` tree equals `7eec279`; entire CI, backend evidence and release acceptance passed; floor 83% |
+| Remote expanded CPU whole-package gate | Passed: 84.64% (52,278 / 61,764 lines); 2,884 passed, 85 skipped | [CI run 39113520924](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39113520924); merge `98b4f20b` tree equals `0c28c21`; entire CI, backend evidence and release acceptance passed; unchanged scope/exclusion rules; floor 83%; target 90% needs 3,310 further lines |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
 | Local Linux EconML 0.17.0 policy learner | Sixteen known-benefit and reporting contracts passed | Continuous/binary outcomes, numeric/string treatment labels, two simulation seeds and requested bootstrap counts; adjusted population summaries and omitted intervals are explicit. Repaired behavior also passed remote Windows/Linux jobs |
@@ -121,7 +121,7 @@ Follow-up assessment, 2026-10-14, review branch `codex/coverage-cuda-ci-20261012
 | Real Windows HTTP recovery assessment | 1,022,102 requests in one hour, no unexpected failures | Immutable `e3f7b93` source hash unchanged; three 20-minute process lifetimes at 1/4/8 clients and 1/16/64 rows. Sampled p95 4.89/18.58/35.79 ms; graceful/forced restart startup 6.50/17.80 seconds. Deliberate downtime is separate from scored requests |
 | Isolated RL/imitation profile | Seventeen tests passed locally; both remote Windows/Linux jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real PPO/BC/GAIL and trusted persistence on a separate compatible CPU stack |
 | Linux targeted repairs | Five DDP tests passed; PDF, TorchScript and DEC/IDEC checks passed | Distributed CPU/Gloo checks use the CUDA-capable Torch installation; multi-GPU throughput is unmeasured |
-| Expanded local Linux suite with CUDA/extras | Passed: 84.54% (52,217 / 61,764 lines); 2,879 passed, 63 skipped | Immutable `7eec279` suite completed in 18:25; exclusions remain 566 with unchanged rules. The 90% target needs 3,371 additional covered lines at this denominator |
+| Expanded local Linux suite with CUDA/extras | Passed: 84.52% (52,202 / 61,764 lines); 2,892 passed, 63 skipped | Immutable `fc4a5f7` suite completed in 53:34; exclusions remain 566 with unchanged rules. The required installed imodels integration skipped following a failed availability probe; stricter gating is in the next repair. The local 90% gap is 3,386 lines |
 
 Exact local measurements are preserved in `reports/coverage90-gpu-linux.json`,
 `reports/coverage90-soak-30min.json` and `reports/coverage90-linux-full.json`.
@@ -401,3 +401,19 @@ Fold-local date extraction parses valid mixed formats consistently per value,
 so a row's calendar features do not depend on other rows in the prediction
 batch. Mixed timezone offsets require explicit normalization. Ambiguous numeric
 date formats still require the caller to choose a date convention.
+
+Native columnar previews pass their row budgets into Polars Parquet/IPC readers,
+rather than reading the full table and trimming it afterward. Design preparation
+converts only requested columns and materializes repeated names once, preserving
+first-occurrence order. Sampling still changes the fitted population, and classical
+training still requires an in-memory Pandas/NumPy matrix. A configured hard memory
+gate refuses the materialized frame; it is not a guarantee against allocation-time OOM.
+
+Torch search and cross-validation seed model construction before each fold's
+training. CPU tests compare initial weights and scores after changing the ambient
+Torch RNG, including dropout. Custom factories' external randomness and GPU
+bitwise determinism are separate concerns. Device-string validation precedes
+hardware fallback, and internal seeded-sampler failures propagate. The combined
+Linux repair check passed 115 tests with three expected dependency-state skips,
+including actual imodels RuleFit execution under installation-based test gating;
+this targeted check does not replace a complete-suite coverage measurement.

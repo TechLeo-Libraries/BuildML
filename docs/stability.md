@@ -55,9 +55,12 @@ Measure the complete suite with `python scripts/run_full_coverage.py`; subset
 runs are not comparable to the project coverage threshold.
 The separate expanded Linux job runs the same complete test directory with
 `requirements-expanded-coverage.txt` and an **83%** floor, raised after passing
-remote CPU coverage above 84%. At `7eec279`, local Linux passed at 84.54%
-(52,217 / 61,764 lines; 2,879 passed, 63 skipped), and remote CPU passed at
-84.46% (52,163 / 61,764; 2,857 passed, 85 skipped). The complete CI, backend
+remote CPU coverage above 84%. Local Linux at `fc4a5f7` passed at 84.52%
+(52,202 / 61,764 lines; 2,892 passed, 63 skipped). Its imodels integration
+skipped after an availability probe failed; the next repair makes installed-backend
+failures visible rather than skipping that case. Remote CPU at `0c28c21`
+passed at 84.64% (52,278 / 61,764; 2,884 passed, 85 skipped).
+The complete CI, backend
 evidence and release acceptance workflows passed. The Linux Gloo forkserver
 workaround passed 50 repetitions on each remote Python 3.11/3.12 stack and
 50 locally on Python 3.11.17/Torch 2.14.1 CPU, without retries.
