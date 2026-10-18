@@ -8,19 +8,19 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 84.7829958072297,
-      "covered_lines": 52373,
-      "num_statements": 61773,
-      "source_revision": "eab8448308c1c9a133173c37e12b584c1e555dae",
-      "tested_revision": "690b0655655b6dc1dc8775ec3db2a1ba4acc7b5c",
+      "percent_covered": 84.80104898500987,
+      "covered_lines": 52385,
+      "num_statements": 61774,
+      "source_revision": "e6ce38650774a80c43bdbed90f6dffa566d479ca",
+      "tested_revision": "04cbbf88531a0d97d9eac18bcf7212af1380b612",
       "platform": "remote Linux, CPU expanded profile",
-      "run_id": 39117188606,
-      "result": "2943 passed, 85 skipped, no failures in expanded whole-package job",
+      "run_id": 39124900943,
+      "result": "2975 passed, 85 skipped, no failures in expanded whole-package job",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
-      "notes": "Tested merge tree equals source tree. Complete CI, backend evidence and release acceptance passed. Scope/exclusion rules unchanged. Expanded floor83 retains >=1pp headroom; target90 needs3223 additional covered lines at this denominator."
+      "notes": "Tested merge tree equals source tree. Complete CI, backend evidence and release acceptance passed. Scope/exclusion rules unchanged. Expanded floor83 retains >=1pp headroom; target90 needs3212 additional covered lines at this denominator."
     },
     "latest_local_measurement": {
       "percent_covered": 84.87041263982645,

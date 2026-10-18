@@ -14,10 +14,17 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
-- Remote whole-package Linux coverage at `eab8448` passed at 84.78% (2,943
+- Remote whole-package Linux coverage at `e6ce386` passed at 84.80% (2,975
   passed, 85 skipped), with the complete CI, backend evidence and release
   acceptance workflows passing. Local Linux passed at 84.87% (2,965 passed,
   63 skipped). The 90% goal remains open.
+
+- Federated evaluation identifies its requested partition without claiming
+  verified exclusion from original training data. Training/all-data scores
+  warn about possible training overlap. Distinct client ids with colliding
+  string report keys are refused instead of silently overwriting metrics.
+  New frozen-population and binary causal numerical contracts passed alongside
+  existing Linux federation/Flower/causal checks: 75 passed, one expected skip.
 
 - Probabilistic fitting and calibration select SplitPlan row positions rather
   than pandas index labels. Offset and duplicate labels no longer cause missing-row
