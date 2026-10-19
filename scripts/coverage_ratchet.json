@@ -8,29 +8,29 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 84.89115481103828,
-      "covered_lines": 52450,
-      "num_statements": 61785,
-      "source_revision": "41087e51586b113ef1ee9b1bd95055de33ad5731",
-      "tested_revision": "fc6798cb616eddb5d08c55f76c0fe8f2a89cce3b",
+      "percent_covered": 84.96376811594203,
+      "covered_lines": 52528,
+      "num_statements": 61824,
+      "source_revision": "18f0199d889ea52c3fe2cc7f70251801753a64d8",
+      "tested_revision": "69ddcd56779170293313e9e0c72181e6cde57fa9",
       "platform": "remote Linux, CPU expanded profile",
-      "run_id": 39129812171,
-      "result": "3037 passed, 85 skipped, no failures in expanded whole-package job",
+      "run_id": 39319249119,
+      "result": "3104 passed, 85 skipped, no failures in expanded whole-package job",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
-      "notes": "Tested merge tree equals source tree. Complete CI, backend evidence and release acceptance passed. Scope/exclusion rules unchanged. Expanded floor83 retains >=1pp headroom; target90 needs3157 additional covered lines at this denominator."
+      "notes": "Tested merge tree equals source tree. Complete CI, backend evidence and release acceptance passed. Scope/exclusion rules unchanged. Expanded floor83 retains >=1pp headroom; target90 needs3114 additional covered lines at this denominator."
     },
     "latest_local_measurement": {
-      "percent_covered": 84.97855466537186,
-      "covered_lines": 52504,
-      "num_statements": 61785,
+      "percent_covered": 84.87830139823926,
+      "covered_lines": 52448,
+      "num_statements": 61792,
       "excluded_lines": 566,
-      "source_revision": "41087e51586b113ef1ee9b1bd95055de33ad5731",
+      "source_revision": "d9af9b6284e3f7f1c4107679c1343b2a3d9dc2e8",
       "platform": "local Linux, expanded CUDA-capable profile",
-      "result": "3059 passed, 63 skipped, no failures",
-      "notes": "Whole tests directory completed in 17:27; unchanged scope/exclusion rules. Target90 needs3103 additional covered lines at this local denominator. Exact coverage remains below85 despite rounded display."
+      "result": "3096 passed, 64 skipped, no test failures; installed FLAML integration skipped",
+      "notes": "Qualified evidence, not used to adjust floors: installed FLAML skipped after an availability probe and an unreadable worker coverage-file warning occurred. Original causes unestablished. Whole suite45:43; unchanged scope/exclusions566. Installation-based FLAML gating and90sec heavy-import policy are new repairs."
     },
     "seed_measurement": {
       "percent_covered": 82.69421622061336,

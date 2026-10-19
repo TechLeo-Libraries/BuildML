@@ -14,7 +14,7 @@ def clean_cache():
 
 
 @pytest.mark.parametrize('failure', [subprocess.TimeoutExpired('probe', 12), OSError('busy')])
-@pytest.mark.parametrize('module', ['ngboost', 'imodels'])
+@pytest.mark.parametrize('module', ['ngboost', 'imodels', 'flaml'])
 def test_transient_probe_failure_can_recover_after_bounded_cooldown(monkeypatch, failure, module):
     clock = [100.]
     monkeypatch.setattr(extras, 'monotonic', lambda:clock[0])

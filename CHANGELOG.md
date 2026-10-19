@@ -14,6 +14,18 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Export/serving hand-off checks consume real relocated TorchScript/ONNX models.
+  Generated handlers preserve request groups, packaging references remain relative,
+  and recipes quote filenames. Serving model selectors are isolated; Indexed DDP
+  pods have the matching DNS subdomain and quoted script paths. Invalid scripting
+  methods are refused and multi-output dynamic-axis metadata covers every output.
+  A reusable reach report maps unchanged source lines against a full-suite baseline;
+  the 25-case Linux workflow exercised 54 previously missing production lines.
+
+- Required FLAML integration skips only when the package is absent. Its bounded
+  import probe now uses the 90-second scientific-import policy. Actual fitting
+  and recovery checks passed; the prior skipped probe's cause remains unestablished.
+
 - Torch continual initialization honors its seed without consuming ambient CPU
   Torch RNG state. EWC consolidates learned first-buffer weights and estimates
   empirical Fisher diagonals from per-example squared gradients. Invalid stream
@@ -22,10 +34,11 @@ from the current release; use the installation guide for current requirements.
   Linux checks passed all 56 tests, while Windows passed 55 with one River-absence
   skip. Full-suite coverage is measured separately.
 
-- Remote whole-package Linux coverage at `41087e5` passed at 84.89% (3,037
+- Remote whole-package Linux coverage at `18f0199` passed at 84.96% (3,104
   passed, 85 skipped), with the complete CI, backend evidence and release
-  acceptance workflows passing. Local Linux at `41087e5` passed at 84.98% (3,059 passed,
-  63 skipped). The 90% goal remains open.
+  acceptance workflows passing. The newer local `d9af9b6` run passed its tests
+  at 84.88% but skipped installed FLAML and reported an unreadable worker coverage
+  file. That qualified local result does not set floors. The 90% goal remains open.
 
 - Meta-learning adaptation reports classes actually present in support and
   rejects missing support targets before per-class sampling. Explicit task

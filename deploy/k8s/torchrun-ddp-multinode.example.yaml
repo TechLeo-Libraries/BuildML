@@ -38,6 +38,7 @@ spec:
       labels:
         app.kubernetes.io/name: buildml-torchrun-ddp
     spec:
+      subdomain: buildml-torchrun-ddp
       restartPolicy: Never
       containers:
         - name: trainer

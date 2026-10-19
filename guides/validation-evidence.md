@@ -104,14 +104,14 @@ Sources: [M4 official data](https://github.com/Mcompetitions/M4-methods),
 
 ## Backend/platform evidence table
 
-Follow-up assessment, 2026-10-14, review branch `codex/coverage-cuda-ci-20261012`:
+Maintained assessment, updated 2026-10-19, review branch `codex/coverage-cuda-ci-20261012`:
 
 | Configuration | Outcome | Qualification |
 |---|---|---|
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Remote expanded CPU whole-package gate | Passed: 84.89% (52,450 / 61,785 lines); 3,037 passed, 85 skipped | [CI run 39129812171](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39129812171); merge `fc6798cb` tree equals `41087e5`; entire CI, backend evidence and release acceptance passed; unchanged scope/exclusion rules; floor 83%; target 90% needs 3,157 further lines |
+| Remote expanded CPU whole-package gate | Passed: 84.96% (52,528 / 61,824 lines); 3,104 passed, 85 skipped | [CI run 39319249119](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39319249119); merge `69ddcd56` tree equals `18f0199`; entire CI, backend evidence and release acceptance passed; unchanged scope/exclusion rules; floor 83%; target 90% needs 3,114 further lines |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
 | Local Linux EconML 0.17.0 policy learner | Sixteen known-benefit and reporting contracts passed | Continuous/binary outcomes, numeric/string treatment labels, two simulation seeds and requested bootstrap counts; adjusted population summaries and omitted intervals are explicit. Repaired behavior also passed remote Windows/Linux jobs |
@@ -121,7 +121,7 @@ Follow-up assessment, 2026-10-14, review branch `codex/coverage-cuda-ci-20261012
 | Real Windows HTTP recovery assessment | 1,022,102 requests in one hour, no unexpected failures | Immutable `e3f7b93` source hash unchanged; three 20-minute process lifetimes at 1/4/8 clients and 1/16/64 rows. Sampled p95 4.89/18.58/35.79 ms; graceful/forced restart startup 6.50/17.80 seconds. Deliberate downtime is separate from scored requests |
 | Isolated RL/imitation profile | Seventeen tests passed locally; both remote Windows/Linux jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real PPO/BC/GAIL and trusted persistence on a separate compatible CPU stack |
 | Linux targeted repairs | Five DDP tests passed; PDF, TorchScript and DEC/IDEC checks passed | Distributed CPU/Gloo checks use the CUDA-capable Torch installation; multi-GPU throughput is unmeasured |
-| Expanded local Linux suite with CUDA/extras | Passed: 84.98% (52,504 / 61,785 lines); 3,059 passed, 63 skipped | Immutable `41087e5` suite completed in 17:27; exclusions remain 566 with unchanged rules. Required imodels integration skips only when the package is absent. The local 90% gap is 3,103 lines |
+| Expanded local Linux suite with CUDA/extras | Tests passed, coverage qualified: 84.88% (52,448 / 61,792 lines); 3,096 passed, 64 skipped | Immutable `d9af9b6` completed in 45:43. Installed FLAML integration skipped following an availability probe; an unreadable worker coverage-file warning also occurred. Not used to adjust floors. Strict installation-based FLAML gating and a bounded 90-second heavy-import probe are new repairs; the original probe failure's cause is unestablished. Exclusions remain 566 |
 
 Exact local measurements are preserved in `reports/coverage90-gpu-linux.json`,
 `reports/coverage90-soak-30min.json` and `reports/coverage90-linux-full.json`.
@@ -134,6 +134,26 @@ tests against all BuildML modules, with an 83% floor, and uploads source,
 installed package, coverage and test-result artifacts. CPU Torch replaces local
 CUDA Torch in that job; its outcome must be verified independently. The core
 floor remains 70%, and the 90% target remains outstanding.
+
+## Correctness and coverage reach
+
+Use coverage gaps to select workflows, then verify their outputs with independent
+numerical or consumer checks. A subset percentage is not a whole-suite result.
+The artifact hand-off batch ran 25 real-consumer cases on Linux and exercised
+54 unchanged production lines missing from the passing `18f0199` remote baseline.
+Changed/new executed lines are counted separately, with source hashes and line
+mapping in the report. This does not project the next full-suite percentage.
+
+```bash
+python scripts/measure_coverage_reach.py baseline.json observed.json \
+  --baseline-ref BASELINE_COMMIT --current-root EXACT_OBSERVED_SOURCE \
+  --output coverage-reach.json
+```
+
+`EXACT_OBSERVED_SOURCE` must match the measured run, preferably an immutable
+archive. The script reads the baseline from Git once and maps unchanged source
+lines across edits. It neither combines coverage databases nor changes floors.
+Profile differences and unmapped files must be reviewed before interpreting reach.
 
 Earlier snapshot:
 

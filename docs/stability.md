@@ -55,10 +55,13 @@ Measure the complete suite with `python scripts/run_full_coverage.py`; subset
 runs are not comparable to the project coverage threshold.
 The separate expanded Linux job runs the same complete test directory with
 `requirements-expanded-coverage.txt` and an **83%** floor, raised after passing
-remote CPU coverage above 84%. Local Linux at `41087e5` passed at 84.98%
-(52,504 / 61,785 lines; 3,059 passed, 63 skipped). Required imodels integration
-now skips only when the package is absent. Remote CPU at `41087e5`
-passed at 84.89% (52,450 / 61,785; 3,037 passed, 85 skipped).
+remote CPU coverage above 84%. Remote CPU at `18f0199` passed at 84.96%
+(52,528 / 61,824 lines; 3,104 passed, 85 skipped). Local Linux at `d9af9b6`
+completed with 3,096 passed and 64 skipped, measuring 84.88% (52,448 / 61,792).
+That local result is qualified: installed FLAML skipped after an availability
+probe, and an unreadable child coverage-file warning occurred. It does not set
+floors. Strict installation-based FLAML gating and a bounded 90-second scientific
+import probe are new repairs; the original probe failure's cause is unestablished.
 The complete CI, backend
 evidence and release acceptance workflows passed. The Linux Gloo forkserver
 workaround passed 50 repetitions on each remote Python 3.11/3.12 stack and

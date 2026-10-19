@@ -181,6 +181,11 @@ After exporting a TorchScript model, `session.dl.pack_torchserve` writes
 TorchServe packaging inputs to an output directory. Supply the export via
 `torchscript_path` and choose a `model_name`. Review the generated files
 and run TorchServe separately; this helper does not deploy a service.
+Run the archive commands from the package directory. The generated model store
+is relative, so the directory can be moved after packaging. The handler groups
+outputs by incoming request, including multiple instances within a request.
+Consumer tests run these handler methods with a BaseHandler protocol shim and
+real TorchScript models; they do not start or validate a TorchServe server.
 
 Repo recipe for a local compose loop (operator-run; not a managed cloud):
 
@@ -199,6 +204,10 @@ After exporting ONNX, `session.dl.prepare_tensorrt` creates a build plan
 using `onnx_path`, an output directory, and an `engine_name`. The helper
 does not run TensorRT. Building the engine requires a compatible TensorRT
 installation and GPU; inspect the generated command before running it.
+The plan's `onnx_path` is relative to its directory; `source_onnx_path` records
+the original location for provenance. The ONNX copy and quoted command arguments
+remain usable after relocation, including filenames containing spaces. Numerical
+checks use ONNX Runtime on CPU; no TensorRT engine is built in those tests.
 
 ---
 
@@ -261,6 +270,11 @@ session.dl.emit_k8s_ddp(
 ```
 
 Static multi-node example: `deploy/k8s/torchrun-ddp-multinode.example.yaml`.
+The Indexed Job's pod subdomain matches its headless Service, as required for
+[pod-to-pod DNS](https://kubernetes.io/docs/tasks/job/job-with-pod-to-pod-communication/).
+Training-script paths are quoted as a single shell argument. Generated serving
+Deployments and Services use an instance label to keep different named models'
+pod selectors separate. These are offline structural checks, not cluster runs.
 
 ---
 
