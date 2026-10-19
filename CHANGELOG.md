@@ -14,6 +14,10 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Autonomous runs now validate boolean permission/policy flags and positive
+  integer step caps before any planning or mutation. Truthy strings and numeric
+  permissions cannot grant autonomy; NumPy integer caps remain supported.
+
 - Raise expanded Linux coverage floor to 84% from passing whole-suite CI at
   85.0410% (3,125 passed, 91 skipped), source `3d35017`. Local Linux passed
   at 85.1397% (3,153 passed, 63 skipped), without collection warnings.
