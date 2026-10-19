@@ -14,6 +14,14 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Torch continual initialization honors its seed without consuming ambient CPU
+  Torch RNG state. EWC consolidates learned first-buffer weights and estimates
+  empirical Fisher diagonals from per-example squared gradients. Invalid stream
+  updates are rejected before buffer/model contract changes; replay copies and
+  row/label alignment have numerical checks. The batch adds 29 cases; broader
+  Linux checks passed all 56 tests, while Windows passed 55 with one River-absence
+  skip. Full-suite coverage is measured separately.
+
 - Remote whole-package Linux coverage at `41087e5` passed at 84.89% (3,037
   passed, 85 skipped), with the complete CI, backend evidence and release
   acceptance workflows passing. Local Linux at `41087e5` passed at 84.98% (3,059 passed,

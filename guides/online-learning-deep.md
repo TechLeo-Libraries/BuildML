@@ -26,6 +26,16 @@ yourself, and whether to opt into a disclosed full-refit fallback.
 Quickstart: [online quickstart](quickstart-online-learning.md).
 Proof: [stream-fraud-online](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/stream-fraud-online).
 
+For Torch continual classifiers, `random_state` controls CPU MLP initialization
+and replay shuffling without consuming the caller's Torch initialization RNG.
+EWC learns the first usable retained buffer before consolidating its weights.
+It estimates a diagonal empirical Fisher from individual-example gradients on
+that bounded buffer, then keeps this reference fixed for later updates.
+Invalid feature dimensions, nonfinite features, noninteger labels and changed
+class vocabularies are refused before modifying fitted state. Buffers and
+minibatches require at least two rows, with positive epochs and learning rate.
+These CPU numerical contracts do not measure forgetting on a deployment stream.
+
 ## A first stream
 
 `chunk_size` defaults to 50. `n_init` defaults to that same size when

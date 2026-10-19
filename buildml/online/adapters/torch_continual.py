@@ -16,6 +16,21 @@ from buildml.online.types import OnlineTask, TorchContinualMethod
 _TORCH_CLASSIFIERS = {"replay_mlp", "ewc_mlp"}
 
 
+def _integer_codes(values: Any) -> np.ndarray:
+    raw = np.asarray(values)
+    if raw.ndim != 1 or (raw.dtype.kind == "f" and not np.isfinite(raw).all()):
+        raise ValidationError(
+            "Continual class codes must be a finite one-dimensional integer array."
+        )
+    try:
+        codes = raw.astype(np.int64)
+    except (TypeError, ValueError, OverflowError) as exc:
+        raise ValidationError("Continual labels must be integer class codes.") from exc
+    if not np.array_equal(raw, codes):
+        raise ValidationError("Continual labels must be integer class codes without truncation.")
+    return codes
+
+
 def resolve_torch_task(estimator: str, task: OnlineTask | None) -> OnlineTask:
     """Resolve the task type for a torch continual tabular estimator.
 
@@ -46,8 +61,7 @@ def resolve_torch_task(estimator: str, task: OnlineTask | None) -> OnlineTask:
             )
         return "classification"
     raise ValidationError(
-        f"Unknown torch continual estimator={estimator!r}. "
-        f"Supported: {sorted(_TORCH_CLASSIFIERS)}"
+        f"Unknown torch continual estimator={estimator!r}. Supported: {sorted(_TORCH_CLASSIFIERS)}"
     )
 
 
@@ -136,8 +150,8 @@ class ContinualTabularClassifier:
     ) -> ContinualTabularClassifier:
         """Append a chunk to the replay buffer and train the MLP.
 
-        For ``ewc_mlp``, captures Fisher information on the first update for
-        elastic-weight consolidation.
+        For ``ewc_mlp``, captures empirical per-example Fisher information
+        after the first usable update for subsequent elastic consolidation.
 
         Parameters
         ----------
@@ -161,27 +175,83 @@ class ContinualTabularClassifier:
             When torch is not installed.
         """
         torch = require_torch_continual()
-        x_arr = np.asarray(x, dtype=np.float32)
-        y_arr = np.asarray(y, dtype=int)
-        if classes is not None and len(self.classes_) == 0:
-            self.classes_ = np.asarray(classes, dtype=int)
-        if len(self.classes_) == 0:
-            self.classes_ = np.unique(y_arr)
-        if len(self.classes_) < 2:
+        if self.method not in _TORCH_CLASSIFIERS:
+            raise ValidationError(f"Unknown continual method={self.method!r}.")
+        if self.random_state is not None and (
+            not isinstance(self.random_state, (int, np.integer))
+            or not 0 <= self.random_state < 2**64
+        ):
+            raise ValidationError("random_state must be a nonnegative 64-bit integer or None.")
+        if (
+            self.buffer_size < 2
+            or self.epochs_per_update < 1
+            or self.batch_size < 2
+            or self.hidden_dim < 1
+        ):
             raise ValidationError(
-                "Torch continual classifier needs at least 2 classes on init."
+                "Continual training needs buffer_size/batch_size >=2 and positive epochs/hidden_dim."
             )
-        code_map = {int(c): i for i, c in enumerate(self.classes_)}
-        y_codes = np.vectorize(code_map.get)(y_arr).astype(int)
+        if (
+            not np.isfinite(self.learning_rate)
+            or self.learning_rate <= 0
+            or not np.isfinite(self.ewc_lambda)
+            or self.ewc_lambda < 0
+        ):
+            raise ValidationError(
+                "learning_rate must be positive and ewc_lambda nonnegative, both finite."
+            )
+        try:
+            x_arr = np.asarray(x, dtype=np.float32)
+        except (TypeError, ValueError) as exc:
+            raise ValidationError("Continual features must be a finite numeric matrix.") from exc
+        y_arr = _integer_codes(y)
+        if (
+            x_arr.ndim != 2
+            or not x_arr.shape[0]
+            or not x_arr.shape[1]
+            or not np.isfinite(x_arr).all()
+        ):
+            raise ValidationError(
+                "Continual features must be a nonempty finite two-dimensional matrix."
+            )
+        if len(x_arr) != len(y_arr):
+            raise ValidationError("Continual feature and label row counts must match.")
+        if self.module_ is not None and x_arr.shape[1] != self.n_features_:
+            raise ValidationError("Continual feature count changed after initialization.")
+        vocabulary = (
+            _integer_codes(classes)
+            if classes is not None
+            else (self.classes_ if len(self.classes_) else np.unique(y_arr))
+        )
+        if len(vocabulary) < 2 or len(np.unique(vocabulary)) != len(vocabulary):
+            raise ValidationError(
+                "Torch continual classifier needs at least 2 distinct classes on init."
+            )
+        if len(self.classes_) and not np.array_equal(vocabulary, self.classes_):
+            raise ValidationError("Continual class vocabulary cannot change after initialization.")
+        if not np.isin(y_arr, vocabulary).all():
+            raise ValidationError(
+                "Continual labels contain class codes outside the fitted vocabulary."
+            )
+        code_map = {int(c): i for i, c in enumerate(vocabulary)}
+        y_codes = np.asarray([code_map[int(label)] for label in y_arr], dtype=int)
 
-        self.n_features_ = int(x_arr.shape[1])
         device = torch.device(self.device)
         if self.module_ is None:
-            self.module_ = _build_mlp(
-                self.n_features_,
-                len(self.classes_),
-                hidden_dim=int(self.hidden_dim),
-            ).to(device)
+            if self.random_state is None:
+                module = _build_mlp(
+                    x_arr.shape[1], len(vocabulary), hidden_dim=int(self.hidden_dim)
+                )
+            else:
+                # Initialization runs on CPU; preserve caller and CUDA RNG states.
+                with torch.random.fork_rng(devices=[]):
+                    torch.random.default_generator.manual_seed(int(self.random_state))
+                    module = _build_mlp(
+                        x_arr.shape[1], len(vocabulary), hidden_dim=int(self.hidden_dim)
+                    )
+            self.module_ = module.to(device)
+        self.classes_ = vocabulary.copy()
+        self.n_features_ = int(x_arr.shape[1])
 
         for i in range(len(x_arr)):
             self.buffer_x_.append(x_arr[i].copy())
@@ -190,10 +260,9 @@ class ContinualTabularClassifier:
                 self.buffer_x_.popleft()
                 self.buffer_y_.popleft()
 
-        if self.method == "ewc_mlp" and self.n_updates_ == 0:
-            self._capture_ewc_anchor(torch, device)
-
         self._train_on_buffer(torch, device)
+        if self.method == "ewc_mlp" and self.fisher_diag_ is None:
+            self._capture_ewc_anchor(torch, device)
         self.n_updates_ += 1
         return self
 
@@ -204,42 +273,34 @@ class ContinualTabularClassifier:
         y_stack = np.asarray(list(self.buffer_y_), dtype=int)
         tensor_x = torch.as_tensor(x_stack, device=device)
         tensor_y = torch.as_tensor(y_stack, device=device, dtype=torch.long)
+        params = [p for p in self.module_.parameters() if p.requires_grad]
+        self.anchor_params_ = [p.detach().clone() for p in params]
+        fisher = [torch.zeros_like(p) for p in params]
+        was_training = self.module_.training
         self.module_.eval()
-        self.anchor_params_ = [
-            p.detach().clone() for p in self.module_.parameters() if p.requires_grad
-        ]
-        fisher = [
-            torch.zeros_like(p) for p in self.module_.parameters() if p.requires_grad
-        ]
-        logits = self.module_(tensor_x)
-        log_probs = torch.log_softmax(logits, dim=-1)
-        selected = log_probs.gather(1, tensor_y.unsqueeze(1)).squeeze(1)
-        loss = -selected.mean()
-        self.module_.zero_grad()
-        loss.backward()
-        idx = 0
-        for p in self.module_.parameters():
-            if not p.requires_grad:
-                continue
-            fisher[idx] = p.grad.detach().pow(2).clone()
-            idx += 1
+        try:
+            for row, target in zip(tensor_x, tensor_y):
+                loss = torch.nn.functional.cross_entropy(
+                    self.module_(row.unsqueeze(0)), target.unsqueeze(0)
+                )
+                gradients = torch.autograd.grad(loss, params)
+                for diagonal, gradient in zip(fisher, gradients):
+                    diagonal.add_(gradient.detach().pow(2) / len(tensor_x))
+        finally:
+            self.module_.train(was_training)
         self.fisher_diag_ = fisher
 
     def _ewc_penalty(self, torch: Any) -> Any:
-        if (
-            self.method != "ewc_mlp"
-            or self.fisher_diag_ is None
-            or not self.anchor_params_
-        ):
+        if self.method != "ewc_mlp" or self.fisher_diag_ is None or not self.anchor_params_:
             return torch.zeros((), device=self.module_.parameters().__next__().device)
         penalty = torch.zeros((), device=self.module_.parameters().__next__().device)
         idx = 0
         for p in self.module_.parameters():
             if not p.requires_grad:
                 continue
-            penalty = penalty + (
-                self.fisher_diag_[idx] * (p - self.anchor_params_[idx]).pow(2)
-            ).sum()
+            penalty = (
+                penalty + (self.fisher_diag_[idx] * (p - self.anchor_params_[idx]).pow(2)).sum()
+            )
             idx += 1
         return float(self.ewc_lambda) * penalty
 
