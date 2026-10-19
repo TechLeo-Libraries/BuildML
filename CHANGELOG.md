@@ -14,6 +14,11 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Raise expanded Linux coverage floor to 84% from passing whole-suite CI at
+  85.0410% (3,125 passed, 91 skipped), source `3d35017`. Local Linux passed
+  at 85.1397% (3,153 passed, 63 skipped), without collection warnings.
+  Package scope and exclusions remain unchanged; the 90% target stays open.
+
 - Export/serving hand-off checks consume real relocated TorchScript/ONNX models.
   Generated handlers preserve request groups, packaging references remain relative,
   and recipes quote filenames. Serving model selectors are isolated; Indexed DDP

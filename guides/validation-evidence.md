@@ -130,7 +130,7 @@ dependencies; their percentages are not interchangeable.
 
 The `expanded-coverage` CI job reproduces the assessed dependency profile using
 `requirements-expanded-coverage.txt` and its dated constraints. It runs all
-tests against all BuildML modules, with an 83% floor, and uploads source,
+tests against all BuildML modules, with an 84% floor, and uploads source,
 installed package, coverage and test-result artifacts. CPU Torch replaces local
 CUDA Torch in that job; its outcome must be verified independently. The core
 floor remains 70%, and the 90% target remains outstanding.
@@ -437,3 +437,17 @@ hardware fallback, and internal seeded-sampler failures propagate. The combined
 Linux repair check passed 115 tests with three expected dependency-state skips,
 including actual imodels RuleFit execution under installation-based test gating;
 this targeted check does not replace a complete-suite coverage measurement.
+
+Current expanded coverage evidence (2026-10-19, source `3d35017`): remote Linux
+passed at **85.0410%** (52,580 / 61,829 lines), with 3,125 passed and 91 skipped.
+[CI run 39326055971](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39326055971)
+passed, as did backend evidence and release acceptance. Tested merge `a75c6d26`
+and source trees are equal. This supports expanded floor **84%** with the required
+one-point headroom. Scope and 566 excluded lines are unchanged; core floor stays 70%.
+Local Linux at the same source passed at **85.1397%** (52,641 / 61,829 lines),
+3,153 passed and 63 skipped in 24:29, without coverage collection warnings.
+Installed FLAML integration passed. Six new ONNX consumer cases skip remotely
+because that profile lacks their dependencies; they pass locally. These records
+supersede earlier latest-measurement statements above; historical results retain
+their original floors and qualifications. Reaching 90% requires 3,067 further
+covered lines at the current remote denominator; subset percentages are not added.

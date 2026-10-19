@@ -121,7 +121,7 @@ monolith** (**70** active after corrected thread/process tracing measured at lea
 (`python scripts/run_full_coverage.py --update-ratchet` or CI
 `pytest tests --cov=buildml`); do not lower it to silence a regression.
 The separate `expanded-coverage` CI job installs
-`requirements-expanded-coverage.txt` and runs the entire suite with an **83%**
+`requirements-expanded-coverage.txt` and runs the entire suite with an **84%**
 floor. Corrected thread/process collection at `58e4309` passed at 84.06%
 remotely and 84.12% locally with CPU/CUDA contracts. Its entire CI, backend
 matrix and release acceptance passed. The 90% target remains outstanding. Identify core and expanded results by dependency profile.
@@ -224,3 +224,17 @@ and pick the next target, and `--path buildml/<pkg>` to audit work in progress.
 - Describe supported behavior, dependency requirements, and known limitations accurately.
 - Write public documentation for library users. Keep implementation instructions,
   release actions, and work plans in clearly labeled contributor material.
+
+Current expanded coverage evidence (2026-10-19, source `3d35017`): remote Linux
+passed at **85.0410%** (52,580 / 61,829 lines), with 3,125 passed and 91 skipped.
+[CI run 39326055971](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39326055971)
+passed, as did backend evidence and release acceptance. Tested merge `a75c6d26`
+and source trees are equal. This supports expanded floor **84%** with the required
+one-point headroom. Scope and 566 excluded lines are unchanged; core floor stays 70%.
+Local Linux at the same source passed at **85.1397%** (52,641 / 61,829 lines),
+3,153 passed and 63 skipped in 24:29, without coverage collection warnings.
+Installed FLAML integration passed. Six new ONNX consumer cases skip remotely
+because that profile lacks their dependencies; they pass locally. These records
+supersede earlier latest-measurement statements above; historical results retain
+their original floors and qualifications. Reaching 90% requires 3,067 further
+covered lines at the current remote denominator; subset percentages are not added.

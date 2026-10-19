@@ -3,34 +3,35 @@
   "source": "pyproject.toml [tool.coverage.report] fail_under",
   "current": 70,
   "expanded": {
-    "current": 83,
+    "current": 84,
     "source": ".github/workflows/ci.yml expanded-coverage job --cov-fail-under",
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 84.96376811594203,
-      "covered_lines": 52528,
-      "num_statements": 61824,
-      "source_revision": "18f0199d889ea52c3fe2cc7f70251801753a64d8",
-      "tested_revision": "69ddcd56779170293313e9e0c72181e6cde57fa9",
+      "percent_covered": 85.04100017791004,
+      "covered_lines": 52580,
+      "num_statements": 61829,
+      "excluded_lines": 566,
+      "source_revision": "3d35017df5612569346f11e3fec4f02e05fec01d",
+      "tested_revision": "a75c6d26c16ce577371af92dbd0380bf482ff14c",
       "platform": "remote Linux, CPU expanded profile",
-      "run_id": 39319249119,
-      "result": "3104 passed, 85 skipped, no failures in expanded whole-package job",
+      "run_id": 39326055971,
+      "result": "3125 passed, 91 skipped, zero failures/errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
-      "notes": "Tested merge tree equals source tree. Complete CI, backend evidence and release acceptance passed. Scope/exclusion rules unchanged. Expanded floor83 retains >=1pp headroom; target90 needs3114 additional covered lines at this denominator."
+      "notes": "Merge and source trees verified equal. Entire CI, backend evidence and release acceptance passed. Six added ONNX consumer cases skip in this profile; all pass in local expanded profile. Scope/exclusions unchanged. Floor84 retains 1.041 percentage points headroom. Target90 needs3067 additional covered lines at this denominator."
     },
     "latest_local_measurement": {
-      "percent_covered": 84.87830139823926,
-      "covered_lines": 52448,
-      "num_statements": 61792,
+      "percent_covered": 85.13965938313736,
+      "covered_lines": 52641,
+      "num_statements": 61829,
       "excluded_lines": 566,
-      "source_revision": "d9af9b6284e3f7f1c4107679c1343b2a3d9dc2e8",
+      "source_revision": "3d35017df5612569346f11e3fec4f02e05fec01d",
       "platform": "local Linux, expanded CUDA-capable profile",
-      "result": "3096 passed, 64 skipped, no test failures; installed FLAML integration skipped",
-      "notes": "Qualified evidence, not used to adjust floors: installed FLAML skipped after an availability probe and an unreadable worker coverage-file warning occurred. Original causes unestablished. Whole suite45:43; unchanged scope/exclusions566. Installation-based FLAML gating and90sec heavy-import policy are new repairs."
+      "result": "3153 passed, 63 skipped, zero failures; no coverage collection warnings",
+      "notes": "Immutable source archive6ee62b075598cbd4546f00f6d27743f6e9e247b3f914bba2e0d759425dccaa19; full suite24:29. Installed FLAML positive integration passed. No isolated subset combination."
     },
     "seed_measurement": {
       "percent_covered": 82.69421622061336,
