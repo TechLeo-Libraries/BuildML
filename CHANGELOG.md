@@ -14,10 +14,18 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
-- Remote whole-package Linux coverage at `bd5d3d3` passed at 84.86% (3,006
+- Remote whole-package Linux coverage at `41087e5` passed at 84.89% (3,037
   passed, 85 skipped), with the complete CI, backend evidence and release
-  acceptance workflows passing. Local Linux at `bd5d3d3` passed at 84.95% (3,028 passed,
+  acceptance workflows passing. Local Linux at `41087e5` passed at 84.98% (3,059 passed,
   63 skipped). The 90% goal remains open.
+
+- Meta-learning adaptation reports classes actually present in support and
+  rejects missing support targets before per-class sampling. Explicit task
+  columns must identify one consistent task. Episode sampling preserves user
+  feature columns, including `__y_code__`, without temporary-column collisions.
+  Independent support centroid/refit and row-integrity checks passed with the
+  existing meta-learning backend group: 54 passed and one expected dependency
+  skip on each of Windows and Linux; subset results are not coverage figures.
 
 - Active-learning annotations use dataset row positions rather than pandas
   index labels, reject duplicate positions and missing/marker labels, and

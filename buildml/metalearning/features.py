@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import Any
+from typing import Any, cast
 
 import numpy as np
 import pandas as pd
@@ -350,7 +350,7 @@ def frame_for_task(frame: pd.DataFrame, task_column: str, task_id: Any) -> pd.Da
     pandas.DataFrame
         Copy of rows where ``task_column == task_id``.
     """
-    return frame.loc[frame[task_column] == task_id].copy()
+    return cast(pd.DataFrame, frame.loc[frame[task_column] == task_id].copy())
 
 
 def sample_support_query(
@@ -395,8 +395,6 @@ def sample_support_query(
         infeasible.
     """
     y_codes, _, classes = encode_labels(frame[target_column], label_encoder=label_encoder)
-    work = frame.copy()
-    work["__y_code__"] = y_codes
     present = sorted(int(c) for c in np.unique(y_codes))
     if n_way is not None:
         if len(present) < n_way:
@@ -410,7 +408,7 @@ def sample_support_query(
     support_parts: list[pd.DataFrame] = []
     query_parts: list[pd.DataFrame] = []
     for code in chosen:
-        subset = work.loc[work["__y_code__"] == code]
+        subset = frame.iloc[np.flatnonzero(y_codes == code)]
         need = int(k_shot) + max(1, int(n_query) // max(len(chosen), 1))
         if len(subset) < need:
             # Relax query size if the class has at least k_shot + 1 rows.
@@ -422,8 +420,8 @@ def sample_support_query(
         support_parts.append(picked.iloc[: int(k_shot)])
         query_parts.append(picked.iloc[int(k_shot) :])
 
-    support = pd.concat(support_parts, axis=0).drop(columns=["__y_code__"])
-    query = pd.concat(query_parts, axis=0).drop(columns=["__y_code__"])
+    support = pd.concat(support_parts, axis=0)
+    query = pd.concat(query_parts, axis=0)
     if len(query) < 1:
         return None
     # Ensure feature columns exist / non-null via matrix build later.

@@ -45,6 +45,12 @@ query rows. Defaults: `k_shot=5`, `n_query=10`, `n_episodes=20`.
 support set. **Evaluate** prefers novel task ids on holdout partitions
 (`prefer_novel_tasks=True`) and lists `overlapping_task_ids` when a
 random row split put the same id in more than one partition.
+An explicit support frame must describe one task when a task column is present;
+missing, mixed or contradictory task ids are refused. Missing support targets
+are rejected before per-class capping. Adaptation reports the classes actually
+present in support, which may be fewer than the meta-train vocabulary. Episode
+sampling preserves feature names and keeps support/query rows disjoint by row
+position, including when pandas index labels repeat.
 
 ```python
 import numpy as np

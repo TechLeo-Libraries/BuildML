@@ -34,8 +34,8 @@ def adapt_to_task(
 
     Provide either ``support_frame`` (explicit rows) or ``task_id`` to pull
     rows for that task from ``partition``. Holdout partitions may supply
-    support for novel-task adaptation; the meta-train plan itself is never
-    Holdout rows are never used for meta-training.
+    support for novel-task adaptation; the meta-train plan remains unchanged.
+    Support adaptation is separate from evaluation on query rows.
 
     Parameters
     ----------
@@ -79,9 +79,15 @@ def adapt_to_task(
     if support_frame is not None:
         support = support_frame.copy()
         resolved_task = task_id
-        if resolved_task is None and plan.task_column in support.columns:
-            ids = support[plan.task_column].dropna().unique().tolist()
+        if plan.task_column in support.columns:
+            if support[plan.task_column].isna().any():
+                raise ValidationError("Explicit support contains missing task ids.")
+            ids = support[plan.task_column].unique().tolist()
+            if len(ids) > 1:
+                raise ValidationError("Explicit support must contain rows for only one task.")
             if len(ids) == 1:
+                if resolved_task is not None and resolved_task != ids[0]:
+                    raise ValidationError("task_id conflicts with the explicit support task id.")
                 resolved_task = ids[0]
         disclosures.append(
             f"Support taken from explicit support_frame (n={len(support)})."
@@ -118,6 +124,8 @@ def adapt_to_task(
         raise ValidationError(
             f"Support frame missing target column {plan.target_column!r}."
         )
+    if support[plan.target_column].isna().any():
+        raise ValidationError("Meta-learning support target contains null labels.")
 
     if max_support_per_class is not None:
         if int(max_support_per_class) < 1:
@@ -144,6 +152,7 @@ def adapt_to_task(
     y_codes, _, classes = encode_labels(
         support[plan.target_column], label_encoder=plan.label_encoder_
     )
+    classes = tuple(classes[code] for code in sorted(set(y_codes.tolist())))
 
     prototypes: dict[Any, tuple[float, ...]] | None = None
     adapted_estimator: Any = None
