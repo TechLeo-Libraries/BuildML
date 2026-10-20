@@ -8,20 +8,20 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 85.5918525452726,
-      "covered_lines": 53031,
-      "num_statements": 61958,
+      "percent_covered": 85.61769831536823,
+      "covered_lines": 53059,
+      "num_statements": 61972,
       "excluded_lines": 566,
-      "source_revision": "a87e8e67810c2edea726f53418a81de77402ac32",
-      "tested_revision": "c9c522ed9c7e37e742d4bba00b9ad31419c16546",
+      "source_revision": "50e0cd9e8906b6043850343214d2bc95db945b33",
+      "tested_revision": "a528a3eccef3295d4d7a6ec8fc3e06da08d8b279",
       "platform": "remote Linux, CPU expanded profile",
-      "run_id": 39462402101,
-      "result": "3483 passed, 80 skipped, zero failures/errors",
+      "run_id": 39471468802,
+      "result": "3510 passed, 80 skipped, zero failures/errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
-      "notes": "Expanded scikit-activeml1.0.1 profile accepted. Merge/source trees equalf2ebc210; all three workflows passed.566 exclusions unchanged;90 percent requires2732 further covered lines. Floor84 retained."
+      "notes": "Multi-task batch accepted. Merge/source trees equal697b7fc5; all three workflows passed.566 exclusions unchanged;90 percent requires2716 further covered lines. Floor84 retained."
     },
     "latest_local_measurement": {
       "percent_covered": 85.51916984547746,

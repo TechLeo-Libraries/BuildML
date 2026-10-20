@@ -14,6 +14,10 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- EconML policy-tree refutation now uses the doubly robust policy learner
+  and mean adjusted training effects, matching policy fitting rather than
+  calling the incompatible raw PolicyTree API and reporting an arm contrast.
+
 - Multi-task decoding preserves numeric-looking string classes rather than
   parsing them as numbers. Mixed targets reject nulls/invalid head metadata,
   regression targets require finite values, and train/all evaluation identifies

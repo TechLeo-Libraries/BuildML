@@ -227,7 +227,7 @@ def _refute_econml(
 
     require_econml(feature="EconML refutation")
     from econml.dml import CausalForestDML, LinearDML
-    from econml.policy import PolicyTree
+    from econml.policy import DRPolicyTree
 
     assert_fit_partition(split_plan, "train")
     assert split_plan is not None
@@ -267,7 +267,15 @@ def _refute_econml(
             n_estimators=100,
         )
     elif method == "policy_tree":
-        estimator = PolicyTree(random_state=random_state)
+        from sklearn.ensemble import GradientBoostingRegressor
+
+        estimator = DRPolicyTree(
+            model_regression=GradientBoostingRegressor(random_state=random_state, n_estimators=100),
+            model_propensity=model_t,
+            max_depth=3,
+            min_samples_leaf=20,
+            random_state=random_state,
+        )
     else:
         estimator = LinearDML(
             model_y=model_y,
@@ -278,9 +286,10 @@ def _refute_econml(
 
     if method == "policy_tree":
         estimator.fit(y, t_ref, X=x_ref)
-        treated = float(np.mean(y[t_ref == 1])) if int(t_ref.sum()) else 0.0
-        control = float(np.mean(y[t_ref == 0])) if int((1 - t_ref).sum()) else 0.0
-        refute_ate = treated - control
+        # Match the fitted policy estimand: mean doubly robust effects over
+        # the refutation's training population, not an unadjusted arm contrast.
+        refute_ate = float(np.mean(np.asarray(estimator.predict_value(x_ref), dtype=float)))
+        disclosures.append("Policy refutation averages doubly robust train effects after refitting.")
     else:
         estimator.fit(y, t_ref, X=x_ref)
         refute_ate = float(np.asarray(estimator.ate(x_ref)).reshape(-1)[0])
