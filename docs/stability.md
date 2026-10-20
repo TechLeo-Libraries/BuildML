@@ -77,4 +77,11 @@ target remains open.
 The subsequent DuckDB correction passed all three workflows at `38e6d5a`:
 85.4298% whole-package coverage (52,858/61,873), 3,328 passed and80 skipped.
 The tested merge/source trees match. This is the current accepted measurement;
-90% requires2,852 more covered lines at that source. Floors remain70/84.
+90% requires2,828 more covered lines at that source. Floors remain70/84.
+
+
+At `a862a5b`, subsequent complete remote CI passed85.4312% (52,893/61,913),
+3,350 passed and80 skipped. All three workflows passed; tested merge/source
+trees match. This supersedes the earlier measurements above. The exact90% gap
+is2,829 lines; scope/exclusions and floors remain unchanged. Diagnostic-population
+repairs submitted afterwards need a new complete measurement.

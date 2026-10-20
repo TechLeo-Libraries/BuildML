@@ -459,7 +459,7 @@ The paired full runs used the same immutable `4fcceb2` archive and unchanged
 statement/exclusion sets (61,868 statements; 566 exclusions). Coverage databases
 were not combined. Only the dependency profile changed. The original runtime
 inventory stayed unchanged; changed packages ran in a separate overlay.
-The latest remote result is85.4319% on the broadened profile (52,855/61,868; 3,316 passed,80 skipped), CI39396524174. The remote90% gap is2,850 lines. The
+The latest remote result is85.4319% on the broadened profile (52,855/61,868; 3,316 passed,80 skipped), CI39396524174. The remote90% gap is2,827 lines. The
 broader local result is 85.5192%; reaching 90% still needs 2,773 covered lines at
 that local denominator. Core 70% and expanded 84% floors stay unchanged: this
 result does not provide the one-point headroom required for an 85% floor.
@@ -478,6 +478,25 @@ train-only Session path with a separately fitted training population.
 
 Latest accepted remote whole-package measurement: `38e6d5a`, 85.4298%
 (52,858 /61,873), 3,328 passed and80 skipped, CI39403400421. All three
-workflows passed; merge/source trees match. The90% gap is2,852 lines at this
+workflows passed; merge/source trees match. The90% gap is2,828 lines at this
 source; floors70/84 and566 exclusions remain unchanged. The semi-supervised
 changes above require their own subsequent full CI measurement.
+
+
+### Diagnostic populations and segment identity
+
+Calibration and threshold reports refuse scored target labels that are missing
+or absent from the classifier's fitted classes. They retain numeric class
+equality across equivalent integer/float dtypes; formatting a class for display
+does not define positive membership. Segment accuracy and positive counts use
+the same class identity. Segment labels quote reserved values and delimiters,
+keeping missing values separate from the literal `<NA>` and preventing compound
+slice values from collapsing into one group. These are observational diagnostics;
+they retain the existing small-sample and multiple-slicing disclosures.
+
+Latest accepted full-suite result is `a862a5b`:85.4312% (52,893/61,913),
+3,350 passed,80 skipped. [CI39410559363](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39410559363), backend evidence and release acceptance all passed.
+Tested merge `e524f780` and source trees match. The exact90% gap is2,829 lines
+(`ceil(0.9*61913)-52893`). Earlier handwritten remote gaps for `0b31402` and
+`38e6d5a` were corrected to2,827 and2,828 respectively; percentages were unchanged.
+Diagnostic changes require a fresh whole-suite measurement.

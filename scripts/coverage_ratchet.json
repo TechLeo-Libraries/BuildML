@@ -8,20 +8,20 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 85.42983207538022,
-      "covered_lines": 52858,
-      "num_statements": 61873,
+      "percent_covered": 85.43116954436063,
+      "covered_lines": 52893,
+      "num_statements": 61913,
       "excluded_lines": 566,
-      "source_revision": "38e6d5a52b8002cf2c4792d9c8304214eec697b2",
-      "tested_revision": "d4f397796c34e7afe5f35a2e437df029863f7272",
+      "source_revision": "a862a5bd68bb4cd707ef381dff81f222e50e8084",
+      "tested_revision": "e524f780b2fa41a5c0a7ae1e1e36313b0391ea7f",
       "platform": "remote Linux, CPU expanded profile",
-      "run_id": 39403400421,
-      "result": "3328 passed, 80 skipped, zero failures/errors",
+      "run_id": 39410559363,
+      "result": "3350 passed, 80 skipped, zero failures/errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
-      "notes": "DuckDB fix accepted. Merge/source trees equalb0072a3d. All three workflows passed.566 exclusions unchanged;90 percent requires2852 further covered lines. Floor84 retained."
+      "notes": "Semi-supervised batch accepted. Merge/source trees equalf73198ff. All three workflows passed.566 exclusions unchanged;90 percent requires2829 further covered lines, calculated ceil(0.9*num_statements)-covered_lines. Floor84 retained."
     },
     "latest_local_measurement": {
       "percent_covered": 85.51916984547746,
