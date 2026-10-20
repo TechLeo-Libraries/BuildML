@@ -173,14 +173,14 @@ def rl_capability_matrix() -> dict[str, Any]:
                 ),
             },
             "industry": {
-                "available": rl_industry_available(),
+                "available": gymnasium_available() and stable_baselines3_available(),
                 "extra": "rl-industry",
                 "modes": list(INDUSTRY_RL_MODES),
                 "algorithms": list(SB3_ALGORITHMS),
                 "modality": "gymnasium",
                 "notes": (
                     "Stable-Baselines3 PPO/DQN/A2C on small Gymnasium environments "
-                    "(buildml[rl-industry]). Not robotics/AV/multi-agent."
+                    "(Gymnasium + SB3; imitation is a separate capability). Not robotics/AV/multi-agent."
                 ),
             },
         },

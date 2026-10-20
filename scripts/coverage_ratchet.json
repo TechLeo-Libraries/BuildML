@@ -8,20 +8,20 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 85.61769831536823,
-      "covered_lines": 53059,
+      "percent_covered": 85.68062996191829,
+      "covered_lines": 53098,
       "num_statements": 61972,
       "excluded_lines": 566,
-      "source_revision": "50e0cd9e8906b6043850343214d2bc95db945b33",
-      "tested_revision": "a528a3eccef3295d4d7a6ec8fc3e06da08d8b279",
+      "source_revision": "6631e2f321337f3b8e62366b635fd120511b305b",
+      "tested_revision": "8fce000bd57d381b0897b204c994b2534ac2e2c3",
       "platform": "remote Linux, CPU expanded profile",
-      "run_id": 39471468802,
-      "result": "3510 passed, 80 skipped, zero failures/errors",
+      "run_id": 39479317259,
+      "result": "3522 passed, 80 skipped, zero failures/errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
-      "notes": "Multi-task batch accepted. Merge/source trees equal697b7fc5; all three workflows passed.566 exclusions unchanged;90 percent requires2716 further covered lines. Floor84 retained."
+      "notes": "EconML refutation batch accepted; merge/source trees equalce3c84ca and all three workflows passed.566 exclusions unchanged;90 percent requires2677 further covered lines. Pre-SB3 profile; new SB3 candidate needs independent full CI acceptance. Floor84 retained."
     },
     "latest_local_measurement": {
       "percent_covered": 85.51916984547746,

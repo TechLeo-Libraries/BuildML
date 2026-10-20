@@ -16,3 +16,6 @@ onnxruntime==1.31.0
 
 # Require real optional active-learning host consumers in the full assessment.
 scikit-activeml==1.0.1
+
+# Modern SB3 is independent of the separately compatible imitation profile.
+stable-baselines3==2.7.0

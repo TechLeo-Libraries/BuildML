@@ -31,6 +31,7 @@ _SUBPROCESS_IMPORT_TRANSIENT_UNTIL: dict[str, float] = {}
 # retaining a bounded probe.
 _SLOW_IMPORT_TIMEOUTS: dict[str, float] = {
     "torch": 90.0,
+    "stable_baselines3": 90.0,
     "torch_geometric": 90.0,
     "dowhy": 90.0,
     "sdv": 90.0,

@@ -14,6 +14,11 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- SB3 online training reports actual executed interactions and requested counts
+  separately, disclosing rollout overruns. Invalid training/evaluation counts
+  are refused. SB3 readiness no longer requires the separate imitation runtime.
+  The candidate expanded profile includes SB32.7.0 for full CI verification.
+
 - EconML policy-tree refutation now uses the doubly robust policy learner
   and mean adjusted training effects, matching policy fitting rather than
   calling the incompatible raw PolicyTree API and reporting an arm contrast.
