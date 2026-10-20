@@ -62,7 +62,7 @@ A same-source local comparison passed both complete suites: original profile
 59 skipped), with no coverage collection warnings. The broader profile gained
 80 lines and lost 3, net 77; five DoWhy cases run and its absence check skips.
 The checked-in profile now uses NumPy 2.4.1/SciPy 1.15.3/mlxtend 0.23.4 with
-DoWhy 0.14 and ONNX Runtime 1.31.0. New remote acceptance remains pending.
+DoWhy 0.14 and ONNX Runtime 1.31.0. Remote acceptance passed at `0b31402`: 85.4319% (52,855 / 61,868), 3,316 passed and 80 skipped. All three workflows passed.
 Scope and 566 excluded lines are unchanged; the broader local90% gap is2,773
 lines. The core 70% and expanded 84% floors remain unchanged.
 The pre-expansion CI, backend

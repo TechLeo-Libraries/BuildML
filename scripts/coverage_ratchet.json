@@ -8,20 +8,20 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 85.29934699683197,
-      "covered_lines": 52773,
+      "percent_covered": 85.4318872438094,
+      "covered_lines": 52855,
       "num_statements": 61868,
       "excluded_lines": 566,
-      "source_revision": "4fcceb2d1b68b843b7611019f45c00ed11a797d8",
-      "tested_revision": "a373d1fec27d4903cea33fcc14cea3e95289130f",
+      "source_revision": "0b314024bec0ce7c3c4c5ab1c34aeae2243ec524",
+      "tested_revision": "e3ba8876d7ddda531b700251bf59422a819d4155",
       "platform": "remote Linux, CPU expanded profile",
-      "run_id": 39376275463,
-      "result": "3305 passed, 91 skipped, zero failures/errors",
+      "run_id": 39396524174,
+      "result": "3316 passed, 80 skipped, zero failures/errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
-      "notes": "Pre-expansion CPU profile, NumPy2.5.4/SciPy1.18.1. Source/merge trees equal bd95374a. All three workflows passed. Broader DoWhy/ONNX Runtime profile remote verification is pending. Floors and scope unchanged; original remote90gap2909lines."
+      "notes": "Broadened DoWhy/ONNX Runtime CPU profile accepted. Merge/source trees equal85cc6ec4. All three workflows passed. Scope/exclusions unchanged; 90 percent requires2850 further covered lines. Floor84 retained."
     },
     "latest_local_measurement": {
       "percent_covered": 85.51916984547746,
@@ -52,7 +52,7 @@
       "added_lines": 80,
       "lost_lines": 3,
       "net_covered_change": 77,
-      "qualification": "Separate complete measurements; no coverage database combination. Remote acceptance of the broader profile pending."
+      "qualification": "Separate complete local measurements; no database combination. Broader profile subsequently passed remote CPU CI at85.4319 percent."
     }
   },
   "schedule": [

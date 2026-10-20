@@ -842,7 +842,14 @@ class DuckDBEngine:
             import pyarrow as pa
 
             # Only the keep-index sidecar is materialized: not the source table.
-            idx_table = pa.table({"_bml_rn": pa.array(keep_rn, type=pa.int64())})
+            # A user column may already be named _bml_rn (case-insensitively).
+            # Use a distinct identifier for the positional sidecar and projection.
+            occupied = {str(name).casefold() for name in rel.columns}
+            row_name = f"_bml_rn_{uuid4().hex}"
+            while row_name.casefold() in occupied:
+                row_name = f"_bml_rn_{uuid4().hex}"
+            row_sql = _quote_identifier(row_name)
+            idx_table = pa.table({row_name: pa.array(keep_rn, type=pa.int64())})
             # Relations are lazy: each mask must retain its own registered
             # sidecar until the shared connection is closed. Reusing a name
             # changes older relations when a later mask replaces the view.
@@ -851,10 +858,10 @@ class DuckDBEngine:
             filtered = rel.query(
                 "s",
                 f"""
-                SELECT * EXCLUDE (_bml_rn) FROM (
-                  SELECT *, row_number() OVER () AS _bml_rn FROM s
+                SELECT * EXCLUDE ({row_sql}) FROM (
+                  SELECT *, row_number() OVER () AS {row_sql} FROM s
                 ) t
-                WHERE _bml_rn IN (SELECT _bml_rn FROM {mask_view})
+                WHERE {row_sql} IN (SELECT {row_sql} FROM {mask_view})
                 """,
             )
             self._bridge = "sql"
