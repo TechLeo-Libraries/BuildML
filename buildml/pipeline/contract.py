@@ -1037,6 +1037,7 @@ def coerce_score_frame(
 
     out = frame.copy()
     coerced: list[str] = []
+    conversion_errors: dict[str, str] = {}
     expected = (
         list(contract.columns)
         if stage == "input" and contract.columns
@@ -1056,7 +1057,9 @@ def coerce_score_frame(
         try:
             if family == "numeric":
                 converted = pd.to_numeric(series, errors="coerce")
-                # Only accept when at least one non-null value converted or all null.
+                if (series.notna() & converted.isna()).any():
+                    conversion_errors[column] = "numeric conversion would discard non-null values"
+                    continue
                 if converted.notna().any() or series.isna().all():
                     out[column] = converted
                     coerced.append(column)
@@ -1064,11 +1067,16 @@ def coerce_score_frame(
                 if pd.api.types.is_bool_dtype(series):
                     continue
                 numeric = pd.to_numeric(series, errors="coerce")
-                if numeric.dropna().isin([0, 1]).all():
-                    out[column] = numeric.astype("boolean")
-                    coerced.append(column)
+                if (series.notna() & numeric.isna()).any() or not numeric.dropna().isin([0, 1]).all():
+                    conversion_errors[column] = "boolean values must be 0, 1, or null"
+                    continue
+                out[column] = numeric.astype("boolean")
+                coerced.append(column)
             elif family == "datetime":
                 converted = pd.to_datetime(series, errors="coerce")
+                if (series.notna() & converted.isna()).any():
+                    conversion_errors[column] = "datetime conversion would discard non-null values"
+                    continue
                 if converted.notna().any() or series.isna().all():
                     out[column] = converted
                     coerced.append(column)
@@ -1079,6 +1087,19 @@ def coerce_score_frame(
             continue
 
     result = validate_score_frame(out, contract, stage=stage, strict_types=True)
+    if conversion_errors:
+        result.ok = False
+        already_wrong = {item["column"] for item in result.wrong_type_columns}
+        for column, reason in conversion_errors.items():
+            if column not in already_wrong:
+                result.wrong_type_columns.append({
+                    "column": column,
+                    "expected_family": contract.dtype_families.get(column, "other"),
+                    "actual_family": dtype_family(out[column].dtype),
+                    "actual_dtype": str(out[column].dtype),
+                    "reason": reason,
+                })
+        result.warnings.append(f"Refused lossy or invalid coercion: {conversion_errors}")
     result.coerced_columns = coerced
     if coerced:
         result.warnings.append(f"Coerced columns toward contract families: {coerced}")

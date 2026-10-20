@@ -14,6 +14,11 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Scoring-contract coercion refuses numeric/datetime conversions that would
+  discard non-null values and rejects boolean inputs outside0/1/null. Invalid
+  columns remain intact, while valid conversions preserve existing nulls and
+  row indexes. Persisted pipeline scoring tests cover null-capable estimators.
+
 - Recommendation exclusions are enforced as catalog eligibility before ranking
   and fallback. Seen training items cannot reappear with zero backend scores,
   including oversized kNN requests and degenerate content profiles. Real agent

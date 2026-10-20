@@ -55,12 +55,12 @@ Measure the complete suite with `python scripts/run_full_coverage.py`; subset
 runs are not comparable to the project coverage threshold.
 The separate expanded Linux job runs the same complete test directory with
 `requirements-expanded-coverage.txt` and an **84%** floor. Remote CPU at
-`8d787ba` passed at 85.2544% (52,729 / 61,849 lines; 3,247 passed, 91 skipped).
+`ee52338` passed at 85.2761% (52,745 / 61,852 lines; 3,278 passed, 91 skipped).
 Latest local Linux at `6e072fd` passed at 85.3207% (52,770 / 61,849;
 3,233 passed, 63 skipped in 24:54), without coverage collection warnings.
 The tested merge tree equals the source tree; dependency profiles remain
 separately reported. Scope and 566 excluded lines are unchanged. The 90% target
-needs 2,936 additional covered lines at the current remote denominator.
+needs 2,922 additional covered lines at the current remote denominator.
 The complete CI, backend
 evidence and release acceptance workflows passed. The Linux Gloo forkserver
 workaround passed 50 repetitions on each remote Python 3.11/3.12 stack and
