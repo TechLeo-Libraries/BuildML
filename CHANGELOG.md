@@ -14,6 +14,11 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Multi-task decoding preserves numeric-looking string classes rather than
+  parsing them as numbers. Mixed targets reject nulls/invalid head metadata,
+  regression targets require finite values, and train/all evaluation identifies
+  in-sample metrics. Incompatible class-label types are refused explicitly.
+
 - Repair real scikit-activeml host execution: compatible missing labels,
   fitted committee wrappers and pool-only utility mapping. Pin host1.0.1 in
   the candidate expanded CI profile and require real imports. Numerical host

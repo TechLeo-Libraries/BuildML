@@ -55,14 +55,14 @@ Measure the complete suite with `python scripts/run_full_coverage.py`; subset
 runs are not comparable to the project coverage threshold.
 The separate expanded Linux job runs the same complete test directory with
 `requirements-expanded-coverage.txt` and an **84%** floor. Latest accepted
-remote CPU source `4066e7f` passed **85.5506%** (53,002/61,954 lines), with
-3,467 passed and80 skipped. CI39452402855, backend evidence39452402358 and
-release acceptance39452402341 all passed. Tested merge `32f195f3` and source
-trees match. The exact90% gap is2,757 covered lines at this source. Core70,
-expanded84 floors and566 excluded lines remain unchanged; active-learning host changes/profile expansion
+remote CPU source `a87e8e6` passed **85.5919%** (53,031/61,958 lines), with
+3,483 passed and80 skipped. CI39462402101, backend evidence39462402027 and
+release acceptance39462402106 all passed. Tested merge `c9c522ed` and source
+trees match. The exact90% gap is2,732 covered lines at this source. Core70,
+expanded84 floors and566 excluded lines remain unchanged; multi-task target changes
 submitted subsequently need their own complete measurement.
 
-The expanded profile includes DoWhy0.14 and ONNX Runtime1.31.0 using
+The accepted expanded profile includes scikit-activeml1.0.1, DoWhy0.14 and ONNX Runtime1.31.0 using
 NumPy2.4.1/SciPy1.15.3/mlxtend0.23.4. A prior same-source local comparison
 passed85.3947% (original) and85.5192% (broader), gained80/lost3 lines, net77,
 without combining databases or collection warnings. Local and remote results
