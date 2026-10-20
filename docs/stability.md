@@ -54,40 +54,21 @@ across Linux Python 3.10-3.13, run 38589015544, commit 2837fb3).
 Measure the complete suite with `python scripts/run_full_coverage.py`; subset
 runs are not comparable to the project coverage threshold.
 The separate expanded Linux job runs the same complete test directory with
-`requirements-expanded-coverage.txt` and an **84%** floor. Before the DoWhy
-expansion, remote CPU at `4fcceb2` passed 85.2993% (52,773 / 61,868 lines;
-3,305 passed, 91 skipped). The tested merge tree equals the source tree.
-A same-source local comparison passed both complete suites: original profile
-85.3947% (3,333 passed, 63 skipped), broader profile 85.5192% (3,337 passed,
-59 skipped), with no coverage collection warnings. The broader profile gained
-80 lines and lost 3, net 77; five DoWhy cases run and its absence check skips.
-The checked-in profile now uses NumPy 2.4.1/SciPy 1.15.3/mlxtend 0.23.4 with
-DoWhy 0.14 and ONNX Runtime 1.31.0. Remote acceptance passed at `0b31402`: 85.4319% (52,855 / 61,868), 3,316 passed and 80 skipped. All three workflows passed.
-Scope and 566 excluded lines are unchanged; the broader local90% gap is2,773
-lines. The core 70% and expanded 84% floors remain unchanged.
-The pre-expansion CI, backend
-evidence and release acceptance workflows passed. The Linux Gloo forkserver
-workaround passed 50 repetitions on each remote Python 3.11/3.12 stack and
-50 locally on Python 3.11.17/Torch 2.14.1 CPU, without retries.
-Remote CPU results are recorded separately
-with their source revision and installed package list. The requested 90% coverage
-target remains open.
+`requirements-expanded-coverage.txt` and an **84%** floor. Latest accepted
+remote CPU source `8fbfe07` passed **85.4852%** (52,941/61,930 lines), with
+3,394 passed and80 skipped. CI39425921732, backend evidence39425921716 and
+release acceptance39425921750 all passed. Tested merge `07f92563` and source
+trees match. The exact90% gap is2,796 covered lines at this source. Core70,
+expanded84 floors and566 excluded lines remain unchanged; outlier changes
+submitted subsequently need their own complete measurement.
 
+The expanded profile includes DoWhy0.14 and ONNX Runtime1.31.0 using
+NumPy2.4.1/SciPy1.15.3/mlxtend0.23.4. A prior same-source local comparison
+passed85.3947% (original) and85.5192% (broader), gained80/lost3 lines, net77,
+without combining databases or collection warnings. Local and remote results
+are recorded separately; they do not establish coverage for every backend.
 
-The subsequent DuckDB correction passed all three workflows at `38e6d5a`:
-85.4298% whole-package coverage (52,858/61,873), 3,328 passed and80 skipped.
-The tested merge/source trees match. This is the current accepted measurement;
-90% requires2,828 more covered lines at that source. Floors remain70/84.
-
-
-At `a862a5b`, subsequent complete remote CI passed85.4312% (52,893/61,913),
-3,350 passed and80 skipped. All three workflows passed; tested merge/source
-trees match. This supersedes the earlier measurements above. The exact90% gap
-is2,829 lines; scope/exclusions and floors remain unchanged. Diagnostic-population
-repairs submitted afterwards need a new complete measurement.
-
-
-Latest complete remote gate at `e507442` passed85.4582% (52,926/61,932),
-3,365 passed and80 skipped; all three workflows passed and tested/source trees
-match. Exact90% gap:2,813 lines. The resampling provenance changes submitted
-subsequently require fresh CI evidence; floors and exclusions remain unchanged.
+The Linux Gloo forkserver workaround passed50 repetitions on each remote
+Python3.11/3.12 stack and50 locally on Python3.11.17/Torch2.14.1 CPU, without
+retries. This bounded evidence does not establish multi-GPU/NCCL reliability
+or a long-term production SLA. The requested90% coverage target remains open.

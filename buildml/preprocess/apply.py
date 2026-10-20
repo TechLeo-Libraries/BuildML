@@ -18,7 +18,11 @@ from buildml.preprocess.dates import DateFeaturePlan, extract_date_features
 from buildml.preprocess.encode import EncodePlan, transform_encoder
 from buildml.preprocess.imbalance import ResamplePlan
 from buildml.preprocess.impute import SimpleImputePlan, transform_simple_imputer
-from buildml.preprocess.outliers import OutlierPlan, apply_outlier_plan
+from buildml.preprocess.outliers import (
+    OutlierPlan,
+    _numeric_outlier_values,
+    apply_outlier_plan,
+)
 from buildml.preprocess.reduce import ReducePlan, transform_reducer
 from buildml.preprocess.scale import ScalePlan, transform_scaler
 from buildml.preprocess.select import FeatureSelectPlan, transform_feature_selector
@@ -438,7 +442,7 @@ def _apply_outliers(
             return dataset, None, warnings
         frame = dataset._ensure_pandas().copy()
         for column in working.columns:
-            values = pd.to_numeric(frame[column], errors="coerce")
+            values = _numeric_outlier_values(frame[column], column)
             frame[column] = values.clip(
                 lower=working.lower_[column],
                 upper=working.upper_[column],

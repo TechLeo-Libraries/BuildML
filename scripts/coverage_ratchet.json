@@ -8,20 +8,20 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 85.4582445262546,
-      "covered_lines": 52926,
-      "num_statements": 61932,
+      "percent_covered": 85.48522525431939,
+      "covered_lines": 52941,
+      "num_statements": 61930,
       "excluded_lines": 566,
-      "source_revision": "e507442275599e66d76786473b1da3d34073853b",
-      "tested_revision": "b9e53433bb3d4e50b6d9f5577117caf056e86339",
+      "source_revision": "8fbfe075b8c6a56ab7546d6bab3dece2a1c5a963",
+      "tested_revision": "07f92563168c21b2f9947b3104fd8db60958e1d2",
       "platform": "remote Linux, CPU expanded profile",
-      "run_id": 39417610204,
-      "result": "3365 passed, 80 skipped, zero failures/errors",
+      "run_id": 39425921732,
+      "result": "3394 passed, 80 skipped, zero failures/errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
-      "notes": "Diagnostic batch accepted. Merge/source trees equal27c95f06. All three workflows passed.566 exclusions unchanged;90 percent requires2813 further covered lines (ceil(.9*61932)-52926). Floor84 retained."
+      "notes": "Resampling batch accepted. Merge/source trees equal20e798fc. All three workflows passed.566 exclusions unchanged;90 percent requires2796 further covered lines (ceil(.9*61930)-52941). Floor84 retained."
     },
     "latest_local_measurement": {
       "percent_covered": 85.51916984547746,
