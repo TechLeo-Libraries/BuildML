@@ -8,20 +8,20 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 85.53302770065216,
-      "covered_lines": 52986,
-      "num_statements": 61948,
+      "percent_covered": 85.55056977757691,
+      "covered_lines": 53002,
+      "num_statements": 61954,
       "excluded_lines": 566,
-      "source_revision": "d0aec87a7564c839bc7d0c461bc22d98160dc604",
-      "tested_revision": "2f916d45f527618ceb827eb462d32b83e61118f8",
+      "source_revision": "4066e7f30a076966434f7fbcc83b5c5e6a228c2f",
+      "tested_revision": "32f195f35942bf2d28371160d3e54f1680ccc12f",
       "platform": "remote Linux, CPU expanded profile",
-      "run_id": 39443629954,
-      "result": "3443 passed, 80 skipped, zero failures/errors",
+      "run_id": 39452402855,
+      "result": "3467 passed, 80 skipped, zero failures/errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
-      "notes": "Feature-selection batch accepted. Merge/source trees equalf4d8b6b4. All three workflows passed.566 exclusions unchanged;90 percent requires2768 further covered lines (ceil(.9*61948)-52986). Floor84 retained."
+      "notes": "Binning batch accepted. Merge/source trees equal9fbf39ec. All three workflows passed.566 exclusions unchanged;90 percent requires2757 further covered lines. This pre-host profile excludes scikit-activeml; the newly broadened profile needs independent full CI acceptance. Floor84 retained."
     },
     "latest_local_measurement": {
       "percent_covered": 85.51916984547746,

@@ -1,6 +1,6 @@
 # Reproduce the expanded Linux assessment; CPU Torch is installed first in CI.
 -c requirements-expanded-coverage-constraints.txt
--e .[dev,engines,pretrained,rag,ssl,graph,timeseries,imbalanced,rl,tda,unsupervised,cbr-industry,probabilistic-industry,optimize-industry,online-industry,federated-industry,synthetic-industry,recommenders-industry,onnx,shap,excel,optuna,viz,graph-pyg,kg-industry,causal-industry]
+-e .[dev,engines,pretrained,rag,ssl,graph,timeseries,imbalanced,rl,tda,unsupervised,cbr-industry,probabilistic-industry,optimize-industry,online-industry,federated-industry,synthetic-industry,recommenders-industry,onnx,shap,excel,optuna,viz,graph-pyg,kg-industry,causal-industry,activelearning-industry]
 econml==0.17.0
 dowhy==0.14
 imodels==3.0.4
@@ -13,3 +13,6 @@ langdetect==1.0.9
 
 # Execute ONNX consumer checks rather than skipping their runtime dependency.
 onnxruntime==1.31.0
+
+# Require real optional active-learning host consumers in the full assessment.
+scikit-activeml==1.0.1

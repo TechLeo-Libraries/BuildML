@@ -14,6 +14,11 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Repair real scikit-activeml host execution: compatible missing labels,
+  fitted committee wrappers and pool-only utility mapping. Pin host1.0.1 in
+  the candidate expanded CI profile and require real imports. Numerical host
+  consumers passed on Windows; the expanded Linux profile needs full CI acceptance.
+
 - Binning refuses generated-column overwrites, preserves missing values in
   every one-hot indicator, and learns edges from finite training values only.
   Bin counts must be integers of at least two; scoring keeps frozen edge bounds.
