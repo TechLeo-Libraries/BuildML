@@ -14,6 +14,12 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Real knowledge-graph agent consumer checks cover native TransE L1/L2 and
+  DistMult fitting, frozen triple scores, candidate ranks, train-only queries,
+  independently calculated filtered metrics and bundle trust boundaries.
+- Same-source whole-suite coverage at `6e072fd`: remote85.2237% and local
+  Linux85.3207%; no test failures or local coverage collection warnings.
+
 - Dashboard CSV exports choose the highest-count top category and preserve
   target summary statistics plus exploratory interpretation and limitations.
   Consumer checks independently verify correlations, missingness, PCA curves

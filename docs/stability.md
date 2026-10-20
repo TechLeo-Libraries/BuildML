@@ -54,14 +54,13 @@ across Linux Python 3.10-3.13, run 38589015544, commit 2837fb3).
 Measure the complete suite with `python scripts/run_full_coverage.py`; subset
 runs are not comparable to the project coverage threshold.
 The separate expanded Linux job runs the same complete test directory with
-`requirements-expanded-coverage.txt` and an **84%** floor, raised after passing
-remote CPU coverage above 84%. Remote CPU at `18f0199` passed at 84.96%
-(52,528 / 61,824 lines; 3,104 passed, 85 skipped). Local Linux at `d9af9b6`
-completed with 3,096 passed and 64 skipped, measuring 84.88% (52,448 / 61,792).
-That local result is qualified: installed FLAML skipped after an availability
-probe, and an unreadable child coverage-file warning occurred. It does not set
-floors. Strict installation-based FLAML gating and a bounded 90-second scientific
-import probe are new repairs; the original probe failure's cause is unestablished.
+`requirements-expanded-coverage.txt` and an **84%** floor. Remote CPU at
+`6e072fd` passed at 85.2237% (52,710 / 61,849 lines; 3,205 passed, 91 skipped).
+Local Linux at the same immutable source passed at 85.3207% (52,770 / 61,849;
+3,233 passed, 63 skipped in 24:54), without coverage collection warnings.
+The tested merge tree equals the source tree; dependency profiles remain
+separately reported. Scope and 566 excluded lines are unchanged. The 90% target
+needs 2,955 additional covered lines at the current remote denominator.
 The complete CI, backend
 evidence and release acceptance workflows passed. The Linux Gloo forkserver
 workaround passed 50 repetitions on each remote Python 3.11/3.12 stack and
@@ -69,17 +68,3 @@ workaround passed 50 repetitions on each remote Python 3.11/3.12 stack and
 Remote CPU results are recorded separately
 with their source revision and installed package list. The requested 90% coverage
 target remains open.
-
-Current expanded coverage evidence (2026-10-19, source `3d35017`): remote Linux
-passed at **85.0410%** (52,580 / 61,829 lines), with 3,125 passed and 91 skipped.
-[CI run 39326055971](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39326055971)
-passed, as did backend evidence and release acceptance. Tested merge `a75c6d26`
-and source trees are equal. This supports expanded floor **84%** with the required
-one-point headroom. Scope and 566 excluded lines are unchanged; core floor stays 70%.
-Local Linux at the same source passed at **85.1397%** (52,641 / 61,829 lines),
-3,153 passed and 63 skipped in 24:29, without coverage collection warnings.
-Installed FLAML integration passed. Six new ONNX consumer cases skip remotely
-because that profile lacks their dependencies; they pass locally. These records
-supersede earlier latest-measurement statements above; historical results retain
-their original floors and qualifications. Reaching 90% requires 3,067 further
-covered lines at the current remote denominator; subset percentages are not added.

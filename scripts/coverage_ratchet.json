@@ -8,30 +8,30 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 85.120144885353,
-      "covered_lines": 52640,
-      "num_statements": 61842,
+      "percent_covered": 85.22368995456677,
+      "covered_lines": 52710,
+      "num_statements": 61849,
       "excluded_lines": 566,
-      "source_revision": "02a93376b6908037f223c0484ec44213c1a8405a",
-      "tested_revision": "8eec7730a19e04f785b1e6d9c2054620ebb3691e",
+      "source_revision": "6e072fded0565a4933a68bd7fbbdd614e314e2ea",
+      "tested_revision": "8a77f5b05a48677d2525842c8b253339c55f762b",
       "platform": "remote Linux, CPU expanded profile",
-      "run_id": 39354834562,
-      "result": "3185 passed, 91 skipped, zero failures/errors",
+      "run_id": 39360517341,
+      "result": "3205 passed, 91 skipped, zero failures/errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
-      "notes": "Tested merge/source trees equal e07e37ae. All three workflows passed. Scope/exclusions unchanged. Expanded floor84 retains >1pp headroom. Target90 needs3018 additional covered lines at this denominator; local measurement stays separately at3d35017."
+      "notes": "Tested merge/source trees equal7ed55b64. All three workflows passed. Scope/exclusions unchanged. Expanded floor84 retains >1pp headroom. Target90 needs2955 additional covered lines at this denominator."
     },
     "latest_local_measurement": {
-      "percent_covered": 85.13965938313736,
-      "covered_lines": 52641,
-      "num_statements": 61829,
+      "percent_covered": 85.32070041552814,
+      "covered_lines": 52770,
+      "num_statements": 61849,
       "excluded_lines": 566,
-      "source_revision": "3d35017df5612569346f11e3fec4f02e05fec01d",
+      "source_revision": "6e072fded0565a4933a68bd7fbbdd614e314e2ea",
       "platform": "local Linux, expanded CUDA-capable profile",
-      "result": "3153 passed, 63 skipped, zero failures; no coverage collection warnings",
-      "notes": "Immutable source archive6ee62b075598cbd4546f00f6d27743f6e9e247b3f914bba2e0d759425dccaa19; full suite24:29. Installed FLAML positive integration passed. No isolated subset combination."
+      "result": "3233 passed, 63 skipped, no failures or coverage collection warnings",
+      "notes": "Immutable archive d38cf9d3478c155ff6850f124603ab9da55fc1294241478c5398bed32faba095; full suite24:54. Metadata eligible_for_floor=true. Profile remains separately reported; not combined with subsets."
     },
     "seed_measurement": {
       "percent_covered": 82.69421622061336,
