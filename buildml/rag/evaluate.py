@@ -95,13 +95,20 @@ def _normalize_qrels(
     **IDs are stringified**, so integer document IDs in the labels match string
     IDs from the corpus.
     """
+    def relevant_ids(value: Any) -> set[str]:
+        if isinstance(value, (str, bytes)) or not isinstance(value, Sequence):
+            raise ValidationError("qrels relevant ids must be a sequence of ids, not a scalar.")
+        return {str(item) for item in value}
+
     pairs: list[tuple[str, set[str]]] = []
     if isinstance(qrels, Mapping):
-        for query, docs in qrels.items():
-            relevant = {str(d) for d in docs}
+        for mapping_query, docs in qrels.items():
+            relevant = relevant_ids(docs)
             if not relevant:
-                raise ValidationError(f"qrels entry for {query!r} has no relevant ids.")
-            pairs.append((str(query), relevant))
+                raise ValidationError(f"qrels entry for {mapping_query!r} has no relevant ids.")
+            pairs.append((str(mapping_query), relevant))
+        if not pairs:
+            raise ValidationError("qrels is empty.")
         return pairs
     for i, row in enumerate(qrels):
         if not isinstance(row, Mapping):
@@ -109,12 +116,11 @@ def _normalize_qrels(
         query = row.get("query")
         if query is None:
             raise ValidationError(f"qrels[{i}] is missing 'query'.")
-        relevant: set[str]
         if relevance_mode == "chunk":
             if "relevant_chunk_ids" in row:
-                relevant = {str(d) for d in row["relevant_chunk_ids"]}
+                relevant = relevant_ids(row["relevant_chunk_ids"])
             elif "relevant_chunks" in row:
-                relevant = {str(d) for d in row["relevant_chunks"]}
+                relevant = relevant_ids(row["relevant_chunks"])
             elif "chunk_id" in row:
                 relevant = {str(row["chunk_id"])}
             else:
@@ -123,9 +129,9 @@ def _normalize_qrels(
                     "chunk_id when relevance_mode='chunk'."
                 )
         elif "relevant_doc_ids" in row:
-            relevant = {str(d) for d in row["relevant_doc_ids"]}
+            relevant = relevant_ids(row["relevant_doc_ids"])
         elif "relevant_docs" in row:
-            relevant = {str(d) for d in row["relevant_docs"]}
+            relevant = relevant_ids(row["relevant_docs"])
         elif "doc_id" in row:
             relevant = {str(row["doc_id"])}
         else:

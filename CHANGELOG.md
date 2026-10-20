@@ -14,6 +14,11 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- RAG directory ingest ignores matching folders. Retrieval evaluation rejects
+  empty mapping labels and scalar relevance collections with domain errors,
+  instead of splitting strings into characters or leaking TypeError. Real
+  local index tests verify all document/chunk label forms and rank metrics.
+
 - Autonomous runs now validate boolean permission/policy flags and positive
   integer step caps before any planning or mutation. Truthy strings and numeric
   permissions cannot grant autonomy; NumPy integer caps remain supported.
