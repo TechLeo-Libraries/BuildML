@@ -451,3 +451,17 @@ because that profile lacks their dependencies; they pass locally. These records
 supersede earlier latest-measurement statements above; historical results retain
 their original floors and qualifications. Reaching 90% requires 3,067 further
 covered lines at the current remote denominator; subset percentages are not added.
+
+Latest remote whole-package result at `bee4a4d`: **85.1000%** (52,625 / 61,839),
+3,171 passed and 91 skipped. [CI run 39348893853](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39348893853)
+and both companion workflows passed. Tested merge `82db673e` and source trees
+are equal. Core/expanded floors remain 70%/84%, exclusions remain 566; 90%
+requires 3,031 additional covered lines at this denominator. The latest local
+whole-package measurement remains the separately recorded `3d35017` result.
+
+RAG bundle restoration now requires a reconstructable hashing or named
+sentence-transformer embedding space. Callable, unknown or absent backend
+identities are refused rather than replaced with hashing. Rebuild older bundles
+marked callable with the original embedder. Explicit built-in HashingEmbedder
+objects now record the hashing backend. Loading also checks stored vector width
+against metadata and refuses non-finite values before normalizing vectors.

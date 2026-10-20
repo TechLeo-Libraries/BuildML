@@ -8,20 +8,20 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 85.04100017791004,
-      "covered_lines": 52580,
-      "num_statements": 61829,
+      "percent_covered": 85.10001778812723,
+      "covered_lines": 52625,
+      "num_statements": 61839,
       "excluded_lines": 566,
-      "source_revision": "3d35017df5612569346f11e3fec4f02e05fec01d",
-      "tested_revision": "a75c6d26c16ce577371af92dbd0380bf482ff14c",
+      "source_revision": "bee4a4dc94749702911fb4ae2188de1b3930ec22",
+      "tested_revision": "82db673e77f259a6c9e3de113ac5f3e4914f5c98",
       "platform": "remote Linux, CPU expanded profile",
-      "run_id": 39326055971,
-      "result": "3125 passed, 91 skipped, zero failures/errors",
+      "run_id": 39348893853,
+      "result": "3171 passed, 91 skipped, zero failures/errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
-      "notes": "Merge and source trees verified equal. Entire CI, backend evidence and release acceptance passed. Six added ONNX consumer cases skip in this profile; all pass in local expanded profile. Scope/exclusions unchanged. Floor84 retains 1.041 percentage points headroom. Target90 needs3067 additional covered lines at this denominator."
+      "notes": "Merge and source trees verified equal (4a521066). All three workflows passed. Scope/exclusions unchanged. Expanded floor84 retains >1pp headroom. Target90 needs3031 additional covered lines at this denominator. Local measurement remains separately recorded at3d35017."
     },
     "latest_local_measurement": {
       "percent_covered": 85.13965938313736,

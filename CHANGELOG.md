@@ -14,6 +14,12 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- RAG bundle restore refuses unreconstructable embedding backends, incompatible
+  vector dimensions and non-finite vectors. It no longer silently substitutes
+  hashing for arbitrary embedding spaces. Explicit HashingEmbedder instances
+  now record the reconstructable hashing backend rather than callable. Old
+  bundles recorded as callable require rebuilding with their original embedder.
+
 - RAG directory ingest ignores matching folders. Retrieval evaluation rejects
   empty mapping labels and scalar relevance collections with domain errors,
   instead of splitting strings into characters or leaking TypeError. Real
