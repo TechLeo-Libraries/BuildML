@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-10-19, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Remote expanded CPU whole-package gate | Passed: 84.96% (52,528 / 61,824 lines); 3,104 passed, 85 skipped | [CI run 39319249119](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39319249119); merge `69ddcd56` tree equals `18f0199`; entire CI, backend evidence and release acceptance passed; unchanged scope/exclusion rules; floor 83%; target 90% needs 3,114 further lines |
+| Remote expanded CPU whole-package gate | Passed: 85.1201% (52,640 / 61,842); 3,185 passed, 91 skipped | [CI run 39354834562](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39354834562); tested merge `8eec7730` tree equals `02a9337`; all three workflows passed; scope/exclusions unchanged; floor84%; target90 needs3,018 further lines |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
 | Local Linux EconML 0.17.0 policy learner | Sixteen known-benefit and reporting contracts passed | Continuous/binary outcomes, numeric/string treatment labels, two simulation seeds and requested bootstrap counts; adjusted population summaries and omitted intervals are explicit. Repaired behavior also passed remote Windows/Linux jobs |
@@ -452,11 +452,11 @@ supersede earlier latest-measurement statements above; historical results retain
 their original floors and qualifications. Reaching 90% requires 3,067 further
 covered lines at the current remote denominator; subset percentages are not added.
 
-Latest remote whole-package result at `bee4a4d`: **85.1000%** (52,625 / 61,839),
-3,171 passed and 91 skipped. [CI run 39348893853](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39348893853)
-and both companion workflows passed. Tested merge `82db673e` and source trees
+Latest remote whole-package result at `02a9337`: **85.1201%** (52,640 / 61,842),
+3,185 passed and 91 skipped. [CI run 39354834562](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39354834562)
+and both companion workflows passed. Tested merge `8eec7730` and source trees
 are equal. Core/expanded floors remain 70%/84%, exclusions remain 566; 90%
-requires 3,031 additional covered lines at this denominator. The latest local
+requires 3,018 additional covered lines at this denominator. The latest local
 whole-package measurement remains the separately recorded `3d35017` result.
 
 RAG bundle restoration now requires a reconstructable hashing or named

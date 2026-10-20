@@ -8,20 +8,20 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 85.10001778812723,
-      "covered_lines": 52625,
-      "num_statements": 61839,
+      "percent_covered": 85.120144885353,
+      "covered_lines": 52640,
+      "num_statements": 61842,
       "excluded_lines": 566,
-      "source_revision": "bee4a4dc94749702911fb4ae2188de1b3930ec22",
-      "tested_revision": "82db673e77f259a6c9e3de113ac5f3e4914f5c98",
+      "source_revision": "02a93376b6908037f223c0484ec44213c1a8405a",
+      "tested_revision": "8eec7730a19e04f785b1e6d9c2054620ebb3691e",
       "platform": "remote Linux, CPU expanded profile",
-      "run_id": 39348893853,
-      "result": "3171 passed, 91 skipped, zero failures/errors",
+      "run_id": 39354834562,
+      "result": "3185 passed, 91 skipped, zero failures/errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
-      "notes": "Merge and source trees verified equal (4a521066). All three workflows passed. Scope/exclusions unchanged. Expanded floor84 retains >1pp headroom. Target90 needs3031 additional covered lines at this denominator. Local measurement remains separately recorded at3d35017."
+      "notes": "Tested merge/source trees equal e07e37ae. All three workflows passed. Scope/exclusions unchanged. Expanded floor84 retains >1pp headroom. Target90 needs3018 additional covered lines at this denominator; local measurement stays separately at3d35017."
     },
     "latest_local_measurement": {
       "percent_covered": 85.13965938313736,

@@ -14,6 +14,11 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Dashboard CSV exports choose the highest-count top category and preserve
+  target summary statistics plus exploratory interpretation and limitations.
+  Consumer checks independently verify correlations, missingness, PCA curves
+  and categorical association charts across supported report layouts/themes.
+
 - RAG bundle restore refuses unreconstructable embedding backends, incompatible
   vector dimensions and non-finite vectors. It no longer silently substitutes
   hashing for arbitrary embedding spaces. Explicit HashingEmbedder instances
