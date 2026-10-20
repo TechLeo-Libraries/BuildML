@@ -14,6 +14,11 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Recommendation exclusions are enforced as catalog eligibility before ranking
+  and fallback. Seen training items cannot reappear with zero backend scores,
+  including oversized kNN requests and degenerate content profiles. Real agent
+  checks cover five native methods, independent scores/metrics and bundle trust.
+
 - Real knowledge-graph agent consumer checks cover native TransE L1/L2 and
   DistMult fitting, frozen triple scores, candidate ranks, train-only queries,
   independently calculated filtered metrics and bundle trust boundaries.

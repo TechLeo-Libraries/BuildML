@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-10-19, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Remote expanded CPU whole-package gate | Passed: 85.2237% (52,710 / 61,849); 3,205 passed, 91 skipped | [CI run 39360517341](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39360517341); tested merge `8a77f5b0` tree equals `6e072fd`; all three workflows passed; scope/exclusions unchanged; floor84%; target90 needs2,955 further lines |
+| Remote expanded CPU whole-package gate | Passed: 85.2544% (52,729 / 61,849); 3,247 passed, 91 skipped | [CI run 39365262841](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39365262841); tested merge `c193e286` tree equals `8d787ba`; all three workflows passed; scope/exclusions unchanged; floor84%; target90 needs2,936 further lines |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
 | Local Linux EconML 0.17.0 policy learner | Sixteen known-benefit and reporting contracts passed | Continuous/binary outcomes, numeric/string treatment labels, two simulation seeds and requested bootstrap counts; adjusted population summaries and omitted intervals are explicit. Repaired behavior also passed remote Windows/Linux jobs |
@@ -466,9 +466,14 @@ marked callable with the original embedder. Explicit built-in HashingEmbedder
 objects now record the hashing backend. Loading also checks stored vector width
 against metadata and refuses non-finite values before normalizing vectors.
 
-Current same-source whole-suite verification at `6e072fd`: remote **85.2237%**
+Completed same-source whole-suite verification at `6e072fd`: remote **85.2237%**
 (52,710 / 61,849; 3,205 passed, 91 skipped), local Linux **85.3207%**
 (52,770 / 61,849; 3,233 passed, 63 skipped in 24:54). The local collector
 reported no coverage warnings. Both results supersede older latest-measurement
 statements above. All remote workflows passed; source/merge trees match.
 Scope, exclusions566 and core70/expanded84 floors remain unchanged.
+
+The current remote result is `8d787ba`, **85.2544%** (52,729 / 61,849;
+3,247 passed, 91 skipped), as recorded in the evidence table. Latest local
+whole-suite evidence remains `6e072fd`, independently reported above. The remote
+gap to90 is2,936 lines at this denominator; no subset results are combined.
