@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-10-19, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current remote expanded CPU whole-package gate | Passed:85.4852% (52,941/61,930);3,394 passed,80 skipped | [CI39425921732](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39425921732), source `8fbfe07`, tested merge `07f92563`; trees match and all three workflows passed.566 exclusions/floor84 unchanged;90% gap2,796 lines. Subsequent outlier changes need a fresh measurement |
+| Current remote expanded CPU whole-package gate | Passed:85.5030% (52,958/61,937);3,421 passed,80 skipped | [CI39434737704](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39434737704), source `e4470e6`, tested merge `8ea1a020`; trees match and all three workflows passed.566 exclusions/floor84 unchanged;90% gap2,786 lines. Subsequent feature-selection changes need a fresh measurement |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -538,3 +538,19 @@ Numerical consumers independently compute IQR and population-standard-deviation
 fences from train positions, inspect duplicate-index partition remapping,
 and compare score-only clipping with NumPy. The outlier changes have targeted
 evidence; they need a new full-suite measurement beyond accepted `8fbfe07`.
+
+
+### Feature-selection estimator ownership and controls
+
+Model-based selection fits a clone of a caller-supplied sklearn estimator.
+Pre-existing fitted state remains unchanged, and an unfitted caller remains
+unfitted. Variance cutoffs must be finite nonnegative numbers, univariate
+feature counts must be positive integers, and score-function names must be
+recognized. Protected-only candidate lists are refused before sklearn fitting.
+
+Train-only consumers compare population variances and correlation-derived F
+statistics with independent NumPy calculations, and exercise multiclass and
+regression model importances, coefficient handling, zero-coefficient fallback,
+mutual-information task dispatch and protected-column replay. This does not
+establish that selected features are causal or that task-type heuristics fit
+every population. Tune selection within the appropriate training CV folds.
