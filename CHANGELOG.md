@@ -14,6 +14,12 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Random over/undersampling preserves complete donor rows, including IDs,
+  groups, timestamps, weights and ignored columns, using positional sampler
+  provenance. Synthetic resampling refuses auxiliary metadata instead of
+  inventing mode values. Resampling also refuses datasets with no feature
+  columns rather than falling back to ID/ignored columns.
+
 - Expand the full Linux assessment to include DoWhy 0.14 using a compatible
   NumPy 2.4.1/SciPy 1.15.3/mlxtend 0.23.4 stack. Same-source complete local runs
   passed at 85.5192% (broader profile) and85.3947% (original):80 gained lines,

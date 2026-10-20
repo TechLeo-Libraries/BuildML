@@ -85,3 +85,9 @@ At `a862a5b`, subsequent complete remote CI passed85.4312% (52,893/61,913),
 trees match. This supersedes the earlier measurements above. The exact90% gap
 is2,829 lines; scope/exclusions and floors remain unchanged. Diagnostic-population
 repairs submitted afterwards need a new complete measurement.
+
+
+Latest complete remote gate at `e507442` passed85.4582% (52,926/61,932),
+3,365 passed and80 skipped; all three workflows passed and tested/source trees
+match. Exact90% gap:2,813 lines. The resampling provenance changes submitted
+subsequently require fresh CI evidence; floors and exclusions remain unchanged.

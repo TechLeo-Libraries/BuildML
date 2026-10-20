@@ -500,3 +500,25 @@ Tested merge `e524f780` and source trees match. The exact90% gap is2,829 lines
 (`ceil(0.9*61913)-52893`). Earlier handwritten remote gaps for `0b31402` and
 `38e6d5a` were corrected to2,827 and2,828 respectively; percentages were unchanged.
 Diagnostic changes require a fresh whole-suite measurement.
+
+
+### Resampling provenance
+
+Random over/undersampling gathers complete donor rows using imbalanced-learn's
+positional sample indices. Repeated or non-range pandas index labels do not
+alter row selection. Auxiliary identifiers, groups, timestamps, weights,
+ignored columns and their dtypes travel with the selected donor; validation
+and test remain unchanged. Weighted-classifier consumers compare the resulting
+fit with a separate sklearn fit on the actual donor rows and weights.
+
+SMOTE, ADASYN and Borderline-SMOTE now require a feature/target-only dataset.
+They refuse auxiliary metadata because interpolated feature vectors do not
+supply justified identifiers, group membership, timestamps or weights. Choose
+random resampling to retain complete donor records, or deliberately prepare a
+feature/target-only dataset for synthesis. No-feature datasets are refused.
+
+Latest accepted remote full-suite source `e507442`:85.4582% (52,926/61,932),
+3,365 passed,80 skipped. [CI39417610204](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39417610204), backend evidence and release acceptance passed;
+tested merge `b9e53433` and source trees match. Exact90% gap:2,813 lines.
+The resampling changes need their own subsequent whole-package measurement;
+core70/expanded84 floors and566 exclusions remain unchanged.
