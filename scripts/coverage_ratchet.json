@@ -8,20 +8,20 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 85.4318872438094,
-      "covered_lines": 52855,
-      "num_statements": 61868,
+      "percent_covered": 85.42983207538022,
+      "covered_lines": 52858,
+      "num_statements": 61873,
       "excluded_lines": 566,
-      "source_revision": "0b314024bec0ce7c3c4c5ab1c34aeae2243ec524",
-      "tested_revision": "e3ba8876d7ddda531b700251bf59422a819d4155",
+      "source_revision": "38e6d5a52b8002cf2c4792d9c8304214eec697b2",
+      "tested_revision": "d4f397796c34e7afe5f35a2e437df029863f7272",
       "platform": "remote Linux, CPU expanded profile",
-      "run_id": 39396524174,
-      "result": "3316 passed, 80 skipped, zero failures/errors",
+      "run_id": 39403400421,
+      "result": "3328 passed, 80 skipped, zero failures/errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
-      "notes": "Broadened DoWhy/ONNX Runtime CPU profile accepted. Merge/source trees equal85cc6ec4. All three workflows passed. Scope/exclusions unchanged; 90 percent requires2850 further covered lines. Floor84 retained."
+      "notes": "DuckDB fix accepted. Merge/source trees equalb0072a3d. All three workflows passed.566 exclusions unchanged;90 percent requires2852 further covered lines. Floor84 retained."
     },
     "latest_local_measurement": {
       "percent_covered": 85.51916984547746,

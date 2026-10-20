@@ -72,3 +72,9 @@ workaround passed 50 repetitions on each remote Python 3.11/3.12 stack and
 Remote CPU results are recorded separately
 with their source revision and installed package list. The requested 90% coverage
 target remains open.
+
+
+The subsequent DuckDB correction passed all three workflows at `38e6d5a`:
+85.4298% whole-package coverage (52,858/61,873), 3,328 passed and80 skipped.
+The tested merge/source trees match. This is the current accepted measurement;
+90% requires2,852 more covered lines at that source. Floors remain70/84.

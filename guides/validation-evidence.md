@@ -463,3 +463,21 @@ The latest remote result is85.4319% on the broadened profile (52,855/61,868; 3,3
 broader local result is 85.5192%; reaching 90% still needs 2,773 covered lines at
 that local denominator. Core 70% and expanded 84% floors stay unchanged: this
 result does not provide the one-point headroom required for an 85% floor.
+
+
+### Seeded Torch semi-supervised refits
+
+The FixMatch/MixMatch-style tabular adapter validates finite feature matrices,
+aligned integer action codes, and training controls before fitting. Seeded runs
+isolate Torch initialization and stochastic training from ambient RNG state;
+NumPy shuffling/augmentation use the same requested seed. Fitted module, class
+mapping, feature width and pseudo-label count publish together after success.
+This promises repeatability on the tested CPU stack, not bitwise equality across
+Torch releases, devices or CUDA kernels. Poisoned-holdout checks compare the
+train-only Session path with a separately fitted training population.
+
+Latest accepted remote whole-package measurement: `38e6d5a`, 85.4298%
+(52,858 /61,873), 3,328 passed and80 skipped, CI39403400421. All three
+workflows passed; merge/source trees match. The90% gap is2,852 lines at this
+source; floors70/84 and566 exclusions remain unchanged. The semi-supervised
+changes above require their own subsequent full CI measurement.

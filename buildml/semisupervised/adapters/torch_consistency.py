@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from numbers import Integral, Real
 from typing import Any
 
 import numpy as np
@@ -32,6 +33,53 @@ class TabularConsistencyClassifier:
     n_pseudo_labels_: int = 0
 
     def fit(self, x: np.ndarray, y: np.ndarray) -> TabularConsistencyClassifier:
+        """Validate before refitting and isolate seeded Torch initialization/training."""
+        if self.method not in {"fixmatch_tabular", "mixmatch_tabular"}:
+            raise ValidationError(f"Unsupported torch method '{self.method}'")
+        for name, minimum in (("epochs", 1), ("batch_size", 2)):
+            value = getattr(self, name)
+            if isinstance(value, bool) or not isinstance(value, Integral) or value < minimum:
+                raise ValidationError(f"{name} must be an integer >= {minimum}")
+        for name in ("learning_rate", "weight_decay", "mixup_alpha", "consistency_weight", "threshold"):
+            value = getattr(self, name)
+            if isinstance(value, bool) or not isinstance(value, Real) or not np.isfinite(value):
+                raise ValidationError(f"{name} must be finite")
+            numeric_value = float(value)
+            minimum_ok = numeric_value > 0 if name in {"learning_rate", "mixup_alpha"} else numeric_value >= 0
+            if not minimum_ok or (name == "threshold" and numeric_value > 1):
+                raise ValidationError(f"Invalid {name}: {value}")
+        if self.random_state is not None and (
+            isinstance(self.random_state, bool)
+            or not isinstance(self.random_state, Integral)
+            or not 0 <= self.random_state < 2**64
+        ):
+            raise ValidationError("random_state must be a nonnegative integer below 2**64 or None")
+        try:
+            x_arr = np.asarray(x, dtype=np.float32)
+            raw_y = np.asarray(y)
+            numeric_y = np.asarray(y, dtype=np.float64)
+        except (TypeError, ValueError, OverflowError) as exc:
+            raise ValidationError("Torch consistency requires numeric features and integer labels") from exc
+        if x_arr.ndim != 2 or x_arr.shape[1] == 0 or not np.isfinite(x_arr).all():
+            raise ValidationError("Features must be a finite two-dimensional matrix with nonzero width")
+        if (raw_y.ndim != 1 or len(raw_y) != len(x_arr)
+                or not np.isfinite(numeric_y).all()
+                or not np.equal(numeric_y, np.floor(numeric_y)).all()
+                or (numeric_y < -1).any() or (numeric_y >= 2**63).any()):
+            raise ValidationError("Labels must be aligned integer codes >= -1")
+        torch = require_torch_semisupervised()
+        device = torch.device(self.device)
+        if self.random_state is None:
+            return self._fit_impl(x_arr, numeric_y.astype(np.int64))
+        devices = [device.index if device.index is not None else torch.cuda.current_device()] if device.type == "cuda" else []
+        with torch.random.fork_rng(devices=devices):
+            torch.random.default_generator.manual_seed(int(self.random_state))
+            if devices:
+                with torch.cuda.device(devices[0]):
+                    torch.cuda.manual_seed(int(self.random_state))
+            return self._fit_impl(x_arr, numeric_y.astype(np.int64))
+
+    def _fit_impl(self, x: np.ndarray, y: np.ndarray) -> TabularConsistencyClassifier:
         """Run fit on input data using the fitted internal state.
 
 Parameters
@@ -64,15 +112,14 @@ ValidationError
             raise ValidationError(
                 "Torch consistency semi-supervised needs ≥2 classes among labeled rows."
             )
-        self.classes_ = classes
-        self.n_features_ = int(x_arr.shape[1])
+        n_features = int(x_arr.shape[1])
         n_classes = int(len(classes))
         code_map = {int(c): i for i, c in enumerate(classes)}
         y_codes = np.full(shape=len(y_arr), fill_value=-1, dtype=int)
         y_codes[labeled] = np.vectorize(code_map.get)(y_arr[labeled])
 
         device = torch.device(self.device)
-        module = _build_mlp(self.n_features_, n_classes).to(device)
+        module = _build_mlp(n_features, n_classes).to(device)
         optimizer = torch.optim.AdamW(
             module.parameters(),
             lr=float(self.learning_rate),
@@ -155,6 +202,8 @@ ValidationError
                     loss.backward()
                     optimizer.step()
 
+        self.classes_ = classes
+        self.n_features_ = n_features
         self.module_ = module
         self.n_pseudo_labels_ = n_pseudo
         return self
@@ -291,12 +340,12 @@ TabularConsistencyClassifier
     """
     return TabularConsistencyClassifier(
         method=method,
-        threshold=float(threshold),
-        epochs=int(epochs),
-        batch_size=int(batch_size),
-        learning_rate=float(learning_rate),
-        consistency_weight=float(consistency_weight),
-        mixup_alpha=float(mixup_alpha),
+        threshold=threshold,
+        epochs=epochs,
+        batch_size=batch_size,
+        learning_rate=learning_rate,
+        consistency_weight=consistency_weight,
+        mixup_alpha=mixup_alpha,
         random_state=random_state,
         device=device,
     )
