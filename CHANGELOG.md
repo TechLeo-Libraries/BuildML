@@ -14,6 +14,10 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Binning refuses generated-column overwrites, preserves missing values in
+  every one-hot indicator, and learns edges from finite training values only.
+  Bin counts must be integers of at least two; scoring keeps frozen edge bounds.
+
 - Random over/undersampling preserves complete donor rows, including IDs,
   groups, timestamps, weights and ignored columns, using positional sampler
   provenance. Synthetic resampling refuses auxiliary metadata instead of

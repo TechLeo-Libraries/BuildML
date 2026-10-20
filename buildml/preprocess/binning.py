@@ -26,6 +26,7 @@ rather than becoming missing.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from numbers import Integral
 from typing import Any, Literal
 
 import numpy as np
@@ -182,8 +183,8 @@ def fit_binning(
     distinct values than ``n_bins`` is capped at that count. Check
     ``len(plan.edges_[column]) - 1`` for what you actually got.
 
-    **Non-numeric entries are treated as missing** while learning edges, and
-    a constant column gets a degenerate two-edge span rather than failing.
+    **Non-numeric and non-finite entries are excluded** while learning edges.
+    A constant column gets a degenerate two-edge span rather than failing.
 
     Examples
     --------
@@ -203,8 +204,8 @@ def fit_binning(
     """
     assert_fit_partition(split_plan, "train")
     assert split_plan is not None
-    if n_bins < 2:
-        raise ValidationError("n_bins must be at least 2")
+    if isinstance(n_bins, bool) or not isinstance(n_bins, Integral) or n_bins < 2:
+        raise ValidationError("n_bins must be an integer at least 2")
     if strategy not in {"quantile", "uniform"}:
         raise ValidationError(f"Unsupported binning strategy '{strategy}'")
     if encode_as not in {"ordinal", "onehot"}:
@@ -225,6 +226,7 @@ def fit_binning(
     labels: dict[str, list[str]] = {}
     for column in cols:
         series = pd.to_numeric(train[column], errors="coerce").dropna()
+        series = series[np.isfinite(series)]
         if series.empty:
             raise ValidationError(f"Column '{column}' has no finite train values for binning")
         unique = series.nunique(dropna=True)
@@ -298,6 +300,8 @@ def transform_binning(dataset: Dataset, plan: BinningPlan) -> tuple[Dataset, Pre
 
     With ``encode_as='onehot'`` the source column is replaced by its indicator
     columns, and the frame gets wider by roughly ``n_bins`` per column binned.
+    Missing inputs leave all indicators missing. Generated output names must
+    not already exist in the input frame; collisions are refused before mutation.
 
     See Also
     --------
@@ -306,6 +310,17 @@ def transform_binning(dataset: Dataset, plan: BinningPlan) -> tuple[Dataset, Pre
     missing = [c for c in plan.columns if c not in dataset.columns]
     if missing:
         raise ValidationError(f"Binning plan columns missing from dataset: {missing}")
+
+    output_names = [
+        name
+        for column in plan.columns
+        for name in ([f"{column}_bin"] if plan.encode_as == "ordinal" else plan.labels_[column])
+    ]
+    collisions = sorted(set(output_names) & set(dataset.columns))
+    if collisions or len(set(output_names)) != len(output_names):
+        raise ValidationError(
+            f"Binning output column collision; refusing to overwrite existing columns: {collisions}"
+        )
 
     frame = dataset._ensure_pandas().copy()
     roles = dict(dataset.roles)
@@ -330,7 +345,7 @@ def transform_binning(dataset: Dataset, plan: BinningPlan) -> tuple[Dataset, Pre
             n_levels = len(edges) - 1
             for level in range(n_levels):
                 out_name = plan.labels_[column][level]
-                frame[out_name] = (codes == level).astype("float")
+                frame[out_name] = (codes == level).astype("float").where(codes.notna())
                 roles[out_name] = ColumnRole.FEATURE
         del frame[column]
         roles.pop(column, None)
