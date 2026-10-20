@@ -1,4 +1,4 @@
-# Isolated compatible causal profile; separate from expanded NumPy 2.5/SciPy 1.18.
+# Smaller causal-only verification profile; the expanded profile also includes DoWhy.
 -e .[dev,graph,causal-industry]
 numpy==2.4.1
 scipy==1.15.3

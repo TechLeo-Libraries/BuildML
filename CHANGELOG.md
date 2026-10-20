@@ -14,6 +14,15 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Expand the full Linux assessment to include DoWhy 0.14 using a compatible
+  NumPy 2.4.1/SciPy 1.15.3/mlxtend 0.23.4 stack. Same-source complete local runs
+  passed at 85.5192% (broader profile) and85.3947% (original):80 gained lines,
+  three lost, net 77. Five DoWhy positive cases execute; its missing-package
+  case skips. Scope, exclusions and coverage floors remain unchanged. Remote
+  acceptance of the broadened profile is verified separately.
+- Require ONNX Runtime 1.31.0 in the expanded assessment, matching the passing
+  local full profile so its real ONNX consumer checks also execute remotely.
+
 - Scoring-contract coercion refuses numeric/datetime conversions that would
   discard non-null values and rejects boolean inputs outside0/1/null. Invalid
   columns remain intact, while valid conversions preserve existing nulls and

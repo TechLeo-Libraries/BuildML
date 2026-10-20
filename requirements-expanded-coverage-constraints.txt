@@ -1,8 +1,8 @@
-# Assessment profile dated 2026-10-13. Local CUDA and CI CPU builds share APIs.
-numpy==2.5.4
+# Expanded profile: verified with DoWhy on 2026-10-20; local CUDA and CI CPU share APIs.
+numpy==2.4.1
 pandas==2.3.3
 scikit-learn==1.9.1
-scipy==1.18.1
+scipy==1.15.3
 torch==2.7.1
 torchvision==0.22.1
 transformers==5.19.0
@@ -43,3 +43,9 @@ matplotlib==3.11.2
 seaborn==0.13.2
 torch-geometric==2.8.0.post1
 pykeen==1.11.1
+
+# Compatible causal stack; verified with all expanded dependencies and tests.
+mlxtend==0.23.4
+causal-learn==0.1.4.8
+momentchi2==0.1.8
+pydot==4.0.1

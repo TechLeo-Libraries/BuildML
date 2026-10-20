@@ -122,9 +122,12 @@ monolith** (**70** active after corrected thread/process tracing measured at lea
 `pytest tests --cov=buildml`); do not lower it to silence a regression.
 The separate `expanded-coverage` CI job installs
 `requirements-expanded-coverage.txt` and runs the entire suite with an **84%**
-floor. Corrected thread/process collection at `58e4309` passed at 84.06%
-remotely and 84.12% locally with CPU/CUDA contracts. Its entire CI, backend
-matrix and release acceptance passed. The 90% target remains outstanding. Identify core and expanded results by dependency profile.
+floor. The broadened profile includes DoWhy and ONNX Runtime, using a compatible
+NumPy 2.4.1/SciPy 1.15.3/mlxtend 0.23.4 stack. Same-source complete local suites
+passed 85.5192% for this profile and85.3947% for its original-profile control;
+remote acceptance is tracked separately. Keep the package-wide scope, audit
+skip changes, and never add percentages from different profiles. The 90% target
+remains outstanding;85.52% does not support an 85% floor under the headroom rule.
 `requirements.txt` / `requirements-dev.txt` are convenience mirrors of
 `pyproject.toml` ranges; prefer `pip install -e ".[dev]"`.
 

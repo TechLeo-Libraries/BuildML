@@ -111,17 +111,19 @@ Maintained assessment, updated 2026-10-19, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Remote expanded CPU whole-package gate | Passed: 85.2761% (52,745 / 61,852); 3,278 passed, 91 skipped | [CI run 39371187497](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39371187497); tested merge `69307d4b` tree equals `ee52338`; all three workflows passed; scope/exclusions unchanged; floor84%; target90 needs2,922 further lines |
+| Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile remote acceptance is pending; scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
 | Local Linux EconML 0.17.0 policy learner | Sixteen known-benefit and reporting contracts passed | Continuous/binary outcomes, numeric/string treatment labels, two simulation seeds and requested bootstrap counts; adjusted population summaries and omitted intervals are explicit. Repaired behavior also passed remote Windows/Linux jobs |
-| Isolated Linux DoWhy 0.14 | Estimation/refutation passed; four name and bundle contracts passed | NumPy 2.4.1 / SciPy 1.15.3 / scikit-learn 1.9.1 / pandas 3.0.6; graph node names retain spaces, punctuation, quotes and Unicode. This compatible profile is separate from expanded NumPy 2.5 / SciPy 1.18; remote Windows/Linux jobs also passed |
+| Isolated Linux DoWhy 0.14 | Estimation/refutation passed; four name and bundle contracts passed | NumPy 2.4.1 / SciPy 1.15.3 / scikit-learn 1.9.1 / pandas 3.0.6; graph node names retain spaces, punctuation, quotes and Unicode. This smaller causal-only profile passed remote Windows/Linux jobs; DoWhy is now also included in the broadened full expanded profile, whose remote acceptance is pending |
 | Isolated Linux giotto 0.6.2 | Fifteen real topology tests passed | NumPy 1.26.4 / SciPy 1.11.4 / scikit-learn 1.3.2 / Arrow 20; real Arrow execution, diagram-axis integrity, bounded Mapper sampling and true igraph node/edge counts. This is a separate compatible profile, not a full-suite measurement |
 | Concurrent ASGI soak | 358,036 requests in 30 minutes, zero errors | Four workers; sampled p95 29.21 ms; peak RSS 205.49 to 210.80 MiB; bounded latency sampling; in-process evidence, not a deployment SLA |
 | Real Windows HTTP recovery assessment | 1,022,102 requests in one hour, no unexpected failures | Immutable `e3f7b93` source hash unchanged; three 20-minute process lifetimes at 1/4/8 clients and 1/16/64 rows. Sampled p95 4.89/18.58/35.79 ms; graceful/forced restart startup 6.50/17.80 seconds. Deliberate downtime is separate from scored requests |
 | Isolated RL/imitation profile | Seventeen tests passed locally; both remote Windows/Linux jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real PPO/BC/GAIL and trusted persistence on a separate compatible CPU stack |
 | Linux targeted repairs | Five DDP tests passed; PDF, TorchScript and DEC/IDEC checks passed | Distributed CPU/Gloo checks use the CUDA-capable Torch installation; multi-GPU throughput is unmeasured |
-| Expanded local Linux suite with CUDA/extras | Tests passed, coverage qualified: 84.88% (52,448 / 61,792 lines); 3,096 passed, 64 skipped | Immutable `d9af9b6` completed in 45:43. Installed FLAML integration skipped following an availability probe; an unreadable worker coverage-file warning also occurred. Not used to adjust floors. Strict installation-based FLAML gating and a bounded 90-second heavy-import probe are new repairs; the original probe failure's cause is unestablished. Exclusions remain 566 |
+| Historical qualified local Linux run | Tests passed, coverage qualified: 84.88% (52,448 / 61,792 lines); 3,096 passed, 64 skipped | Immutable `d9af9b6` completed in 45:43. Installed FLAML integration skipped following an availability probe; an unreadable worker coverage-file warning also occurred. Not used to adjust floors. Strict installation-based FLAML gating and a bounded 90-second heavy-import probe are new repairs; the original probe failure's cause is unestablished. Exclusions remain 566 |
+| Local Linux original-profile whole suite | Passed: 85.3947% (52,832 / 61,868); 3,333 passed, 63 skipped | Immutable `4fcceb2`, 25:31; no coverage collection warnings; same source and package scope as the broadened-profile comparison |
+| Local Linux broadened-profile whole suite | Passed: 85.5192% (52,909 / 61,868); 3,337 passed, 59 skipped | Immutable `4fcceb2`, 24:50; no coverage collection warnings. NumPy 2.4.1/SciPy 1.15.3/mlxtend 0.23.4 with DoWhy 0.14; 80 lines gained, 3 lost, net 77. Five positive DoWhy cases execute; its missing-package case skips |
 
 Exact local measurements are preserved in `reports/coverage90-gpu-linux.json`,
 `reports/coverage90-soak-30min.json` and `reports/coverage90-linux-full.json`.
@@ -438,26 +440,7 @@ Linux repair check passed 115 tests with three expected dependency-state skips,
 including actual imodels RuleFit execution under installation-based test gating;
 this targeted check does not replace a complete-suite coverage measurement.
 
-Current expanded coverage evidence (2026-10-19, source `3d35017`): remote Linux
-passed at **85.0410%** (52,580 / 61,829 lines), with 3,125 passed and 91 skipped.
-[CI run 39326055971](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39326055971)
-passed, as did backend evidence and release acceptance. Tested merge `a75c6d26`
-and source trees are equal. This supports expanded floor **84%** with the required
-one-point headroom. Scope and 566 excluded lines are unchanged; core floor stays 70%.
-Local Linux at the same source passed at **85.1397%** (52,641 / 61,829 lines),
-3,153 passed and 63 skipped in 24:29, without coverage collection warnings.
-Installed FLAML integration passed. Six new ONNX consumer cases skip remotely
-because that profile lacks their dependencies; they pass locally. These records
-supersede earlier latest-measurement statements above; historical results retain
-their original floors and qualifications. Reaching 90% requires 3,067 further
-covered lines at the current remote denominator; subset percentages are not added.
 
-Latest remote whole-package result at `02a9337`: **85.1201%** (52,640 / 61,842),
-3,185 passed and 91 skipped. [CI run 39354834562](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39354834562)
-and both companion workflows passed. Tested merge `8eec7730` and source trees
-are equal. Core/expanded floors remain 70%/84%, exclusions remain 566; 90%
-requires 3,018 additional covered lines at this denominator. The latest local
-whole-package measurement remains the separately recorded `3d35017` result.
 
 RAG bundle restoration now requires a reconstructable hashing or named
 sentence-transformer embedding space. Callable, unknown or absent backend
@@ -466,14 +449,17 @@ marked callable with the original embedder. Explicit built-in HashingEmbedder
 objects now record the hashing backend. Loading also checks stored vector width
 against metadata and refuses non-finite values before normalizing vectors.
 
-Completed same-source whole-suite verification at `6e072fd`: remote **85.2237%**
-(52,710 / 61,849; 3,205 passed, 91 skipped), local Linux **85.3207%**
-(52,770 / 61,849; 3,233 passed, 63 skipped in 24:54). The local collector
-reported no coverage warnings. Both results supersede older latest-measurement
-statements above. All remote workflows passed; source/merge trees match.
-Scope, exclusions566 and core70/expanded84 floors remain unchanged.
 
-The current remote result is `ee52338`, **85.2761%** (52,745 / 61,852;
-3,278 passed, 91 skipped), as recorded in the evidence table. Latest local
-whole-suite evidence remains `6e072fd`, independently reported above. The remote
-gap to90 is2,922 lines at this denominator; no subset results are combined.
+The broadened expanded manifest matches the recorded passing local environment:
+124 selected requirement/constraint checks pass. It includes ONNX Runtime 1.31.0,
+which was already used by the passing local ONNX consumers, so those checks can
+execute remotely. This does not assert that the new remote job has passed.
+
+The paired full runs used the same immutable `4fcceb2` archive and unchanged
+statement/exclusion sets (61,868 statements; 566 exclusions). Coverage databases
+were not combined. Only the dependency profile changed. The original runtime
+inventory stayed unchanged; changed packages ran in a separate overlay.
+The latest remote result remains85.2993% on the pre-expansion profile. The
+broader local result is 85.5192%; reaching 90% still needs 2,773 covered lines at
+that local denominator. Core 70% and expanded 84% floors stay unchanged: this
+result does not provide the one-point headroom required for an 85% floor.

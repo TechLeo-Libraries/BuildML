@@ -8,30 +8,30 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 85.27614305115436,
-      "covered_lines": 52745,
-      "num_statements": 61852,
+      "percent_covered": 85.29934699683197,
+      "covered_lines": 52773,
+      "num_statements": 61868,
       "excluded_lines": 566,
-      "source_revision": "ee523387984367e9df08ef9217d681a3ae05f422",
-      "tested_revision": "69307d4be8e8c3d720eaa373c87840306cdc2467",
+      "source_revision": "4fcceb2d1b68b843b7611019f45c00ed11a797d8",
+      "tested_revision": "a373d1fec27d4903cea33fcc14cea3e95289130f",
       "platform": "remote Linux, CPU expanded profile",
-      "run_id": 39371187497,
-      "result": "3278 passed, 91 skipped, zero failures/errors",
+      "run_id": 39376275463,
+      "result": "3305 passed, 91 skipped, zero failures/errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
-      "notes": "Source/merge trees match. All three workflows passed. Scope/exclusions unchanged. Expanded floor84 retains >1pp headroom. Target90 needs2922 additional covered lines at this denominator. Local whole-suite result remains independently at6e072fd."
+      "notes": "Pre-expansion CPU profile, NumPy2.5.4/SciPy1.18.1. Source/merge trees equal bd95374a. All three workflows passed. Broader DoWhy/ONNX Runtime profile remote verification is pending. Floors and scope unchanged; original remote90gap2909lines."
     },
     "latest_local_measurement": {
-      "percent_covered": 85.32070041552814,
-      "covered_lines": 52770,
-      "num_statements": 61849,
+      "percent_covered": 85.51916984547746,
+      "covered_lines": 52909,
+      "num_statements": 61868,
       "excluded_lines": 566,
-      "source_revision": "6e072fded0565a4933a68bd7fbbdd614e314e2ea",
-      "platform": "local Linux, expanded CUDA-capable profile",
-      "result": "3233 passed, 63 skipped, no failures or coverage collection warnings",
-      "notes": "Immutable archive d38cf9d3478c155ff6850f124603ab9da55fc1294241478c5398bed32faba095; full suite24:54. Metadata eligible_for_floor=true. Profile remains separately reported; not combined with subsets."
+      "source_revision": "4fcceb2d1b68b843b7611019f45c00ed11a797d8",
+      "platform": "local Linux, broadened expanded profile with DoWhy and CUDA-capable Torch",
+      "result": "3337 passed, 59 skipped, zero failures; no coverage collection warnings",
+      "notes": "Full suite24:50. Same-source paired control passed85.3947%,3333passed63skipped. Candidate gained80lines/lost3,net77. Exactly five DoWhy positive tests replace skips; one missing-package test now skips. Both source archives hash5c9edd06ac1d18a93a55adc2c04295a72bd9026d6c49fd41a64c6ae5420782a2. Profile usesNumPy2.4.1/SciPy1.15.3/mlxtend0.23.4/DoWhy0.14 and ONNXRuntime1.31.0. Not remote CI acceptance."
     },
     "seed_measurement": {
       "percent_covered": 82.69421622061336,
@@ -41,6 +41,18 @@
       "platform": "local Linux, CUDA-capable Torch",
       "result": "2235 passed, 42 skipped, no failures",
       "notes": "The new remote CPU profile must pass independently; this local result does not establish that outcome. The 90 percent target remains outstanding."
+    },
+    "same_source_profile_comparison": {
+      "source_revision": "4fcceb2d1b68b843b7611019f45c00ed11a797d8",
+      "original_percent": 85.39471132087671,
+      "original_covered_lines": 52832,
+      "candidate_percent": 85.51916984547746,
+      "candidate_covered_lines": 52909,
+      "num_statements": 61868,
+      "added_lines": 80,
+      "lost_lines": 3,
+      "net_covered_change": 77,
+      "qualification": "Separate complete measurements; no coverage database combination. Remote acceptance of the broader profile pending."
     }
   },
   "schedule": [
