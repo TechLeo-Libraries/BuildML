@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from numbers import Integral
 from typing import Any
 
 import numpy as np
@@ -168,6 +169,10 @@ def estimate_causal(
     """
     if plan is None:
         raise ValidationError("No CausalPlan. Call fit_causal first.")
+    n_boot = plan.bootstrap_samples if bootstrap_samples is None else bootstrap_samples
+    if isinstance(n_boot, bool) or not isinstance(n_boot, Integral) or n_boot < 0:
+        raise ValidationError("bootstrap_samples must be a non-negative integer.")
+    n_boot = int(n_boot)
     frame = partition_frame(dataset, split_plan, partition)
     validate_columns_present(frame, plan.assumptions)
 
@@ -222,7 +227,6 @@ def estimate_causal(
             clip_propensity=plan.clip_propensity,
         )
 
-    n_boot = plan.bootstrap_samples if bootstrap_samples is None else int(bootstrap_samples)
     seed = plan.config.get("random_state") if random_state is None else random_state
     ate_std = ate_ci_low = ate_ci_high = None
     disclosures = [
@@ -237,6 +241,12 @@ def estimate_causal(
             "DoWhy ATE is a fresh backdoor estimate on the requested partition, "
             "not the train ATE copied forward."
         )
+    if n_boot > 0 and backend != "native":
+        warnings.append(
+            f"Partition bootstrap requested={n_boot} but not performed for "
+            f"backend={backend!r}; uncertainty intervals are unavailable."
+        )
+        n_boot = 0
     if n_boot and n_boot > 0 and backend == "native":
         boots = _bootstrap_scores(
             x,

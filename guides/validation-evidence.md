@@ -637,6 +637,15 @@ and sensitivity checks remain diagnostics under declared assumptions; they do
 not establish identification or valid effects for arbitrary deployments.
 
 
+### Causal partition bootstrap accounting
+
+Causal partition `bootstrap_samples` reports performed resamples. Native
+fixed-nuisance bootstrap quantiles and standard deviation are checked against
+independent NumPy resampling at zero, one and twenty draws. DoWhy and EconML
+partition bootstraps are unavailable: positive requests produce an explicit
+warning, zero performed samples and no interval. This does not add uncertainty
+support or establish nominal coverage for those backends.
+
 ### DoWhy partition effect consumers
 
 DoWhy holdout consumers assign different treatment effects to train, validation

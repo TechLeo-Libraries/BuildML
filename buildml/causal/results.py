@@ -152,7 +152,11 @@ class CausalFitResult:
 
 @dataclass(slots=True)
 class CausalEstimateResult:
-    """Effect estimate on a chosen partition using fitted nuisances."""
+    """Partition effect; ``bootstrap_samples`` counts performed resamples.
+
+    Unsupported partition-bootstrap backends report zero and disclose the
+    unperformed request in warnings, rather than advertising an unused budget.
+    """
 
     partition: str
     method: str

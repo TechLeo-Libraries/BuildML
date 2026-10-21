@@ -14,6 +14,11 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Causal partition bootstrap counts now describe performed resamples. DoWhy
+  and EconML disclose unsupported requests and report zero with no interval.
+  Invalid negative, boolean, fractional and non-finite budgets are refused.
+  Native bootstrap quantiles and spread match independent NumPy resampling.
+
 - DoWhy partition estimation now returns a fresh effect for the requested rows.
   Evaluation no longer overwrites that holdout effect with the stored training
   ATE. Native/EconML evaluation still reuses fitted nuisances; the differing
