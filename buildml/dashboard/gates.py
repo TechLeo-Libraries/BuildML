@@ -268,6 +268,11 @@ def build_gates_payload(report: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _coalesce(*values: Any) -> Any:
+    """Choose an available measurement without treating an observed zero as missing."""
+    return next((value for value in values if value is not None), None)
+
+
 def build_gate_context(report: dict[str, Any]) -> dict[str, Any]:
     """Flatten an EDA report dict into the resolver context used by gate rules."""
     overview = report.get("overview") or {}
@@ -280,8 +285,8 @@ def build_gate_context(report: dict[str, Any]) -> dict[str, Any]:
     outliers = report.get("outliers") or {}
     warnings = list(report.get("warnings") or [])
 
-    n_rows = int(overview.get("n_rows") or overview.get("analysis_rows") or 0)
-    analysis_rows = int(overview.get("analysis_rows") or n_rows)
+    n_rows = int(_coalesce(overview.get("n_rows"), overview.get("analysis_rows"), 0))
+    analysis_rows = int(_coalesce(overview.get("analysis_rows"), n_rows))
     columns = list(overview.get("columns") or overview.get("analysis_columns") or [])
     dtypes = overview.get("dtypes") or {}
     per_column = univariate.get("per_column") or {}
@@ -411,7 +416,7 @@ def build_gate_context(report: dict[str, Any]) -> dict[str, Any]:
         stats = None
         if task == "regression":
             stats = {
-                "median": target_summary.get("median") or target_summary.get("p50"),
+                "median": _coalesce(target_summary.get("median"), target_summary.get("p50")),
             }
         target_payload = {
             "name": str(target.get("column")),
@@ -422,11 +427,11 @@ def build_gate_context(report: dict[str, Any]) -> dict[str, Any]:
 
     mv = outliers.get("multivariate") or {}
     anomalies = None
-    if isinstance(mv, dict) and (mv.get("flagged_count") or mv.get("n_flagged") is not None):
+    if isinstance(mv, dict) and _coalesce(mv.get("flagged_count"), mv.get("n_flagged")) is not None:
         anomalies = {
-            "flagged": int(mv.get("flagged_count") or mv.get("n_flagged") or 0),
-            "scored": int(mv.get("n_scored") or mv.get("scored") or analysis_rows),
-            "contamination": float(mv.get("contamination") or 0.05),
+            "flagged": int(_coalesce(mv.get("flagged_count"), mv.get("n_flagged"), 0)),
+            "scored": int(_coalesce(mv.get("n_scored"), mv.get("scored"), analysis_rows)),
+            "contamination": float(_coalesce(mv.get("contamination"), 0.05)),
         }
 
     dup_count = quality.get("duplicate_row_count")
@@ -467,7 +472,7 @@ def build_gate_context(report: dict[str, Any]) -> dict[str, Any]:
         "vif": vif_rows,
         "vifThreshold": 5.0,
         "eligible": len(overview.get("eligible_feature_columns") or []),
-        "completeRows": int(multivariate.get("complete_case_rows") or analysis_rows),
+        "completeRows": int(_coalesce(multivariate.get("complete_case_rows"), analysis_rows)),
         "categorical": [str(x) for x in (overview.get("categorical_columns") or [])],
         "target": target_payload,
         "leakage": [],

@@ -14,6 +14,11 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Expanded Linux coverage passed86.0131%; its floor rises to85% under the
+  one-point headroom policy, preserving package scope and exclusions.
+- Dashboard readiness context preserves measured zero complete cases, target
+  median, anomaly counts and scored rows instead of substituting defaults.
+
 - LangChain generation applies the positive integer passage budget to actual
   chain input, recorded context and citations consistently. Offline framework
   consumers check prompts without contacting a model service. A pinned
