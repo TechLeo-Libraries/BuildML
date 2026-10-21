@@ -8,20 +8,20 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 86.0699084225461,
-      "covered_lines": 53384,
+      "percent_covered": 86.10537856313685,
+      "covered_lines": 53406,
       "num_statements": 62024,
       "excluded_lines": 566,
-      "source_revision": "e2987df73fee0be8907cf90c15aa3840172f71b2",
-      "tested_revision": "e300e16e593af3ebc3a9936809542cf1ded9206c",
+      "source_revision": "68f33f8a38e115f1a76ad928b91da01fee71d3bf",
+      "tested_revision": "9d59aed168c8a2d9021de325e783369b41c08459",
       "platform": "remote Linux, CPU expanded profile",
-      "run_id": 39666172759,
-      "result": "3676 passed, 78 skipped, zero failures/errors",
+      "run_id": 39674562256,
+      "result": "3679 passed, 78 skipped, zero failures/errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
-      "notes": "Causal bootstrap accounting accepted; merge/source trees equal63f51436f7d46001470db9f67d073ee5e4bdd98c. All three workflows passed.566 exclusions unchanged;90 percent requires2438 further covered lines.1899 pytest warnings, no coverage collection warnings. Core70/expanded85 retained."
+      "notes": "ARIMA consumers accepted; merge/source trees equalb1f6734bded722052fd4578fb8003a3e81980b42. All three workflows passed; acceptance attempt2 recovered a pre-step macOS runner capacity cancellation, no test retry failure.566 exclusions unchanged;90 percent requires2416 further covered lines.1899 pytest warnings, no coverage collection warnings. Core70/expanded85 retained."
     },
     "latest_local_measurement": {
       "percent_covered": 85.51916984547746,
