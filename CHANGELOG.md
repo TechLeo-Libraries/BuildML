@@ -14,6 +14,11 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Recommender bundles rebuild missing catalog indexes for both direct legacy
+  plans and separate-state payloads. Invalid JSON metadata is refused with a
+  validation error before pickle loading. Real fitted model restoration checks
+  preserve recommendation scores and train-item exclusions.
+
 - SB3 online training reports actual executed interactions and requested counts
   separately, disclosing rollout overruns. Invalid training/evaluation counts
   are refused. SB3 readiness no longer requires the separate imitation runtime.

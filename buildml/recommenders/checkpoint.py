@@ -156,7 +156,12 @@ def load_recommender_bundle(path: str | Path, *, trusted: bool = False) -> Recom
             f"Incomplete recommender bundle at {root}. "
             f"Expected meta.json and recommender_plan.joblib ({BUNDLE_FORMAT})."
         )
-    meta = json.loads(meta_path.read_text(encoding="utf-8"))
+    try:
+        meta = json.loads(meta_path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, UnicodeDecodeError) as exc:
+        raise ValidationError("Invalid recommender bundle metadata: expected UTF-8 JSON.") from exc
+    if not isinstance(meta, dict):
+        raise ValidationError("Invalid recommender bundle metadata: expected a JSON object.")
     fmt = meta.get("format")
     if fmt != BUNDLE_FORMAT:
         raise ValidationError(
@@ -164,7 +169,8 @@ def load_recommender_bundle(path: str | Path, *, trusted: bool = False) -> Recom
         )
     loaded = joblib_load_trusted(plan_path, trusted=trusted, artifact="joblib plan")
     if isinstance(loaded, RecommenderPlan):
-        return loaded
+        # Direct legacy plans need the same catalog-index restoration as dict payloads.
+        loaded = {"plan": loaded}
     if not isinstance(loaded, dict) or "plan" not in loaded:
         raise ValidationError(
             "recommender_plan.joblib must contain a RecommenderPlan or a payload "

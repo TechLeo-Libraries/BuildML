@@ -637,6 +637,16 @@ and sensitivity checks remain diagnostics under declared assumptions; they do
 not establish identification or valid effects for arbitrary deployments.
 
 
+### Recommender bundle restoration
+
+Direct legacy recommender plans and separate-state payloads both rebuild absent
+user/item indexes from stored catalog order. Real fitted item/user KNN, SVD,
+NMF and content models are checked after restoration, including cold users and
+train-item exclusion. Factorization scores also match independent NumPy dot
+products. Malformed or non-object metadata raises a validation error before
+deserialization. This does not grant trust to pickle artifacts: loading still
+requires explicit `trusted=True`.
+
 ### SB3 interaction accounting and partial runtime readiness
 
 SB32.7.0 with Gymnasium1.2.3 supports the accepted expanded NumPy2/Torch2.7
