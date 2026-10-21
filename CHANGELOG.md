@@ -14,6 +14,11 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Disclosed online batch-refit fallback fits a fresh estimator on cumulative
+  Session train rows. It refuses external-frame refits whose complete history
+  cannot be reconstructed, rather than silently dropping earlier stream data.
+  Native incremental estimators continue to support external updates.
+
 - Recommender bundles rebuild missing catalog indexes for both direct legacy
   plans and separate-state payloads. Invalid JSON metadata is refused with a
   validation error before pickle loading. Real fitted model restoration checks

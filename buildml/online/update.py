@@ -7,6 +7,7 @@ from typing import Any
 
 import numpy as np
 import pandas as pd
+from sklearn.base import clone
 
 from buildml.core.errors import ValidationError
 from buildml.data.dataset import Dataset
@@ -41,6 +42,8 @@ def partial_fit_online(
 
     Validation/test are never used for updates. Silent full refits are refused
     unless the plan was created with ``allow_refit_fallback=True`` (disclosed).
+    Refit fallback requires reconstructable Session train rows; external frames
+    are supported only by estimators with native ``partial_fit``.
 
     Parameters
     ----------
@@ -284,6 +287,12 @@ def _refit_cumulative(
             warnings=warnings,
             disclosures=disclosures,
         )
+    if external or any(h.get("kind") == "external_frame" for h in plan.update_history):
+        raise ValidationError(
+            "Cumulative refit cannot reconstruct external frame history. "
+            "Use an estimator with partial_fit for external updates, or fit a "
+            "batch model on an explicitly retained complete training dataset."
+        )
     frames: list[pd.DataFrame] = []
     if split_plan is not None and plan.seen_train_indices:
         full = dataset._ensure_pandas()
@@ -301,7 +310,8 @@ def _refit_cumulative(
         )
     else:
         y = regression_targets(combined[plan.target_column])
-    plan.estimator_.fit(x, y)
+    estimator = clone(plan.estimator_)
+    estimator.fit(x, y)
     msg = (
         f"REFIT FALLBACK (disclosed): estimator={plan.estimator_name!r} lacks "
         f"partial_fit; full .fit on n={len(combined)} cumulative rows "
@@ -309,4 +319,4 @@ def _refit_cumulative(
     )
     warnings.append(msg)
     disclosures.append(msg)
-    return True, "refit_fallback", plan.estimator_
+    return True, "refit_fallback", estimator

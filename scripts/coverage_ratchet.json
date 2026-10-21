@@ -8,20 +8,20 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 85.77858802271554,
-      "covered_lines": 53169,
-      "num_statements": 61984,
+      "percent_covered": 85.81683847134168,
+      "covered_lines": 53197,
+      "num_statements": 61989,
       "excluded_lines": 566,
-      "source_revision": "b8335547ebf34f91e411bd759453204eec4761bb",
-      "tested_revision": "fbd424251524154c9ed34f87ee64071a830b97f5",
+      "source_revision": "81cf125ed28d19db05b6f3a3328652c5d65cd161",
+      "tested_revision": "601888ac0babb6a49a0d5cd687ebf69aa320e5c4",
       "platform": "remote Linux, CPU expanded profile",
-      "run_id": 39490465704,
-      "result": "3560 passed, 80 skipped, zero failures/errors",
+      "run_id": 39586583484,
+      "result": "3573 passed, 80 skipped, zero failures/errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
-      "notes": "SB3 2.7.0 expanded profile accepted; tested merge/source trees equal76da4eaa26824b7028d90a348e8c928c8dd2a5b1. All three workflows passed.566 exclusions unchanged;90 percent requires2617 further covered lines.1897 pytest warnings, no coverage collection warnings. Floor84 retained."
+      "notes": "Recommender restoration accepted; merge/source trees equalffce3ff8ae7e956030a23fb50a8e549bd6293af1. All three workflows passed.566 exclusions unchanged;90 percent requires2594 further covered lines.1897 pytest warnings, no coverage collection warnings. Floor84 retained."
     },
     "latest_local_measurement": {
       "percent_covered": 85.51916984547746,
