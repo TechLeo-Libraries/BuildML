@@ -14,6 +14,11 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- DoWhy partition estimation now returns a fresh effect for the requested rows.
+  Evaluation no longer overwrites that holdout effect with the stored training
+  ATE. Native/EconML evaluation still reuses fitted nuisances; the differing
+  DoWhy procedure is disclosed explicitly.
+
 - Expanded Linux coverage passed86.0131%; its floor rises to85% under the
   one-point headroom policy, preserving package scope and exclusions.
 - Dashboard readiness context preserves measured zero complete cases, target

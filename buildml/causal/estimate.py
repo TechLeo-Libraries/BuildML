@@ -127,9 +127,9 @@ def estimate_causal(
 ) -> CausalEstimateResult:
     """Estimate ATE on a partition with the fitted nuisance models.
 
-    Reuses train-fitted nuisances (or the EconML/DoWhy backend artifact) to
-    score the requested partition without refitting. Optional bootstrap resamples
-    partition rows while keeping nuisances fixed.
+    Native and EconML backends reuse train-fitted nuisances. DoWhy instead
+    identifies and estimates a fresh backdoor effect on the requested partition.
+    Optional native bootstrap resamples partition rows with fixed nuisances.
 
     Notes
     -----
@@ -204,11 +204,11 @@ def estimate_causal(
 
         ate, extras = score_econml_partition(plan, x, t, y)
     elif backend == "dowhy":
-        ate = float(plan.ate)
-        extras = {}
-        warnings.append(
-            "DoWhy backend reports train-identified ATE; partition re-estimation "
-            "is not performed: use native/econml for holdout ATE scoring."
+        from buildml.causal.adapters.dowhy import estimate_dowhy_partition
+
+        ate, extras = estimate_dowhy_partition(
+            plan, dataset, split_plan, partition=partition,
+            random_state=plan.config.get("random_state") if random_state is None else random_state,
         )
     else:
         ate, extras = estimate_ate_from_models(
@@ -232,6 +232,11 @@ def estimate_causal(
         "caller-declared backdoor adjustment.",
         "EDA / association screens are not used here.",
     ]
+    if backend == "dowhy":
+        disclosures.append(
+            "DoWhy ATE is a fresh backdoor estimate on the requested partition, "
+            "not the train ATE copied forward."
+        )
     if n_boot and n_boot > 0 and backend == "native":
         boots = _bootstrap_scores(
             x,
