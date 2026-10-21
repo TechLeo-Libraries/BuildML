@@ -187,7 +187,9 @@ def _fit_statsmodels(
         model = ARIMA(y, order=ord_)
         fitted = model.fit()
         disclosures.append(
-            f"auto_arima: selected ARIMA{ord_} via AIC grid search on low orders."
+            f"auto_arima: using explicit ARIMA{ord_}; no order search performed."
+            if order is not None
+            else f"auto_arima: selected ARIMA{ord_} via AIC grid search on low orders."
         )
         warnings.append(
             "auto_arima is a lightweight AIC search: not pmdarima; "

@@ -14,6 +14,10 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Automatic ARIMA disclosures distinguish an explicitly supplied order from a
+  completed AIC grid search. Real statsmodels consumers verify the restricted
+  AIC winner and resulting forecasts against independent direct fits.
+
 - Causal partition bootstrap counts now describe performed resamples. DoWhy
   and EconML disclose unsupported requests and report zero with no interval.
   Invalid negative, boolean, fractional and non-finite budgets are refused.

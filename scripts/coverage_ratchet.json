@@ -8,20 +8,20 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 86.06027379589467,
-      "covered_lines": 53372,
-      "num_statements": 62017,
+      "percent_covered": 86.0699084225461,
+      "covered_lines": 53384,
+      "num_statements": 62024,
       "excluded_lines": 566,
-      "source_revision": "90b2f53b5f3e243617b26b4b84f919bdf5e23171",
-      "tested_revision": "aa00adba3431508b87b81ee1b8a85e638bb415a3",
+      "source_revision": "e2987df73fee0be8907cf90c15aa3840172f71b2",
+      "tested_revision": "e300e16e593af3ebc3a9936809542cf1ded9206c",
       "platform": "remote Linux, CPU expanded profile",
-      "run_id": 39648704760,
-      "result": "3665 passed, 78 skipped, zero failures/errors",
+      "run_id": 39666172759,
+      "result": "3676 passed, 78 skipped, zero failures/errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
-      "notes": "DoWhy holdout fix accepted; merge/source trees equal1f579f102bf2df4a54e10460445fcdd777dedfb3. All three workflows passed.566 exclusions unchanged;90 percent requires2444 further covered lines.1899 pytest warnings, no coverage collection warnings. Core70/expanded85 retained."
+      "notes": "Causal bootstrap accounting accepted; merge/source trees equal63f51436f7d46001470db9f67d073ee5e4bdd98c. All three workflows passed.566 exclusions unchanged;90 percent requires2438 further covered lines.1899 pytest warnings, no coverage collection warnings. Core70/expanded85 retained."
     },
     "latest_local_measurement": {
       "percent_covered": 85.51916984547746,
