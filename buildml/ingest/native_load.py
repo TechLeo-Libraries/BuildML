@@ -247,6 +247,7 @@ def _load_duckdb(
     details: dict[str, Any] = {
         "native_loader": "duckdb",
         "lazy_scan": True,
+        "lazy_handle": True,
         "pandas_first": False,
     }
     path_sql = str(path).replace("'", "''")
@@ -272,8 +273,10 @@ def _load_duckdb(
         if nrows is not None and format_name != "arrow":
             rel = rel.limit(int(nrows))
     except IngestError:
+        con.close()
         raise
     except Exception as exc:  # noqa: BLE001
+        con.close()
         raise IngestError(f"DuckDB native load failed for '{path}': {exc}") from exc
 
     # Wrap so the connection stays alive (relations no longer accept ad-hoc attrs).

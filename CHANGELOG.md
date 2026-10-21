@@ -14,6 +14,10 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- DuckDB native readers explicitly disclose their lazy relation handle and
+  close the owned connection when reading fails. Real multi-format previews
+  check row limits, quoted paths, values and connection ownership.
+
 - Synthetic sample validation explicitly fails unparseable, non-finite and
   complex numeric values and fractional integer values. Summary metrics use
   finite observations. Tolerances require valid finite bounds, and duplicate
