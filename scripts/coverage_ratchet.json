@@ -8,20 +8,20 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 85.87463110193681,
-      "covered_lines": 53250,
-      "num_statements": 62009,
+      "percent_covered": 85.88798761510054,
+      "covered_lines": 53260,
+      "num_statements": 62011,
       "excluded_lines": 566,
-      "source_revision": "2f14c58d2a4ec067adb5fcc01c03c2c893e95a65",
-      "tested_revision": "85dc71769b7eff6a0db33571f03c13745410a0a4",
+      "source_revision": "7b88a3fcc8ea26e77de0108bee261b20c5ff7986",
+      "tested_revision": "4a0ddee2cfc3feec260414647dba062f28bd0178",
       "platform": "remote Linux, CPU expanded profile",
-      "run_id": 39601962962,
-      "result": "3606 passed, 80 skipped, zero failures/errors",
+      "run_id": 39611552738,
+      "result": "3625 passed, 80 skipped, zero failures/errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
-      "notes": "Synthetic validation batch accepted; merge/source trees equal73c9b68a88d7d66f81d2d94ae7c7bf9f42c8a698. All three workflows passed.566 exclusions unchanged;90 percent requires2559 further covered lines.1897 pytest warnings, no coverage collection warnings. Floor84 retained."
+      "notes": "DuckDB reader batch accepted; merge/source trees equal884810d00256ba622a4061f3042bb29211c88864. All three workflows passed.566 exclusions unchanged;90 percent requires2550 further covered lines.1897 pytest warnings, no coverage collection warnings. Floor84 retained."
     },
     "latest_local_measurement": {
       "percent_covered": 85.51916984547746,

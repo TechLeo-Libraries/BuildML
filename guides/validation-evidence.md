@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-10-19, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed:85.8746% (53,250/62,009);3,606 passed,80 skipped | [CI39601962962](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39601962962), source `2f14c58`, tested merge `85dc7176`; trees match and all three workflows passed.566 exclusions/floor84 unchanged;90% gap2,559 lines. SB3 profile accepted;1897 pytest warnings, no coverage collection warnings |
+| Current accepted remote expanded CPU whole-package gate | Passed:85.8880% (53,260/62,011);3,625 passed,80 skipped | [CI39611552738](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39611552738), source `7b88a3f`, tested merge `4a0ddee2`; trees match and all three workflows passed.566 exclusions/floor84 unchanged;90% gap2,550 lines. SB3 profile accepted;1897 pytest warnings, no coverage collection warnings |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -636,6 +636,15 @@ the true effect, so recovering the adjusted effect is consequential. Placebo
 and sensitivity checks remain diagnostics under declared assumptions; they do
 not establish identification or valid effects for arbitrary deployments.
 
+
+### Session SHAP attribution consumers
+
+Session-level SHAP consumers independently select train, validation and test
+rows, reproduce capped sampling, and verify feature order and importances.
+Linear-model attributions match known coefficients times centered feature
+values; tree attributions also reconstruct predictions from base values plus
+feature contributions. Duplicate input index labels are included. These tests
+verify model attribution, not causal interpretation or feature-policy effects.
 
 ### DuckDB native-reader ownership and previews
 

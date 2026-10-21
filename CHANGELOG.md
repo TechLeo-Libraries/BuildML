@@ -14,6 +14,10 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Real Session SHAP consumers verify train/validation/test selection, capped
+  sampling and feature order against known linear effects and tree prediction
+  additivity, including duplicate input index labels.
+
 - DuckDB native readers explicitly disclose their lazy relation handle and
   close the owned connection when reading fails. Real multi-format previews
   check row limits, quoted paths, values and connection ownership.
