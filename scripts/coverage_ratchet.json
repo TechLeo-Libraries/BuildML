@@ -8,20 +8,20 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 85.81683847134168,
-      "covered_lines": 53197,
-      "num_statements": 61989,
+      "percent_covered": 85.86453309244592,
+      "covered_lines": 53230,
+      "num_statements": 61993,
       "excluded_lines": 566,
-      "source_revision": "81cf125ed28d19db05b6f3a3328652c5d65cd161",
-      "tested_revision": "601888ac0babb6a49a0d5cd687ebf69aa320e5c4",
+      "source_revision": "94afec61a239ca2983b0bf41eb6ebe60898546b9",
+      "tested_revision": "5cf14fc20750b9938cb2645a173fd1454afdf152",
       "platform": "remote Linux, CPU expanded profile",
-      "run_id": 39586583484,
-      "result": "3573 passed, 80 skipped, zero failures/errors",
+      "run_id": 39594175315,
+      "result": "3581 passed, 80 skipped, zero failures/errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
-      "notes": "Recommender restoration accepted; merge/source trees equalffce3ff8ae7e956030a23fb50a8e549bd6293af1. All three workflows passed.566 exclusions unchanged;90 percent requires2594 further covered lines.1897 pytest warnings, no coverage collection warnings. Floor84 retained."
+      "notes": "Online refit batch accepted; merge/source trees equal1149d7eb8709c57a9f5e16998071ced7dac9237a. All three workflows passed.566 exclusions unchanged;90 percent requires2564 further covered lines.1897 pytest warnings, no coverage collection warnings. Floor84 retained."
     },
     "latest_local_measurement": {
       "percent_covered": 85.51916984547746,

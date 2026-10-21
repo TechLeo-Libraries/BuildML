@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-10-19, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed:85.8168% (53,197/61,989);3,573 passed,80 skipped | [CI39586583484](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39586583484), source `81cf125`, tested merge `601888ac`; trees match and all three workflows passed.566 exclusions/floor84 unchanged;90% gap2,594 lines. SB3 profile accepted;1897 pytest warnings, no coverage collection warnings |
+| Current accepted remote expanded CPU whole-package gate | Passed:85.8645% (53,230/61,993);3,581 passed,80 skipped | [CI39594175315](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39594175315), source `94afec6`, tested merge `5cf14fc2`; trees match and all three workflows passed.566 exclusions/floor84 unchanged;90% gap2,564 lines. SB3 profile accepted;1897 pytest warnings, no coverage collection warnings |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -637,7 +637,17 @@ and sensitivity checks remain diagnostics under declared assumptions; they do
 not establish identification or valid effects for arbitrary deployments.
 
 
-### Recommender bundle restoration
+### Synthetic sample quality validation
+
+Synthetic sample quality checks explicitly detect invalid numeric values and
+fractional values in modeled integer columns. Missing values remain subject
+to the separate null-rate check; coercion failures cannot silently pass as
+missing observations. Means use finite observations. Rate tolerances are
+bounded to [0,1], range slack is finite and non-negative, and duplicate columns
+are refused. Independent frequency counts verify OOV, range and null metrics.
+These are schema and sample-quality screens, not privacy or leakage audits.
+
+### Online cumulative refit
 
 Disclosed online refit fallback is limited to reconstructable Session train
 rows. It fits a fresh batch estimator and preserves the prior plan's estimator.
@@ -646,6 +656,8 @@ retained for full retraining; use native `partial_fit` or retain an explicit
 complete batch dataset. Independent Ridge and logistic-regression fits verify
 cumulative train updates, overlap handling and holdout exclusion. This does
 not establish transactional behavior for every native incremental backend.
+
+### Recommender bundle restoration
 
 Direct legacy recommender plans and separate-state payloads both rebuild absent
 user/item indexes from stored catalog order. Real fitted item/user KNN, SVD,

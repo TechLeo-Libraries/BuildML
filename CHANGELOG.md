@@ -14,6 +14,11 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Synthetic sample validation explicitly fails unparseable, non-finite and
+  complex numeric values and fractional integer values. Summary metrics use
+  finite observations. Tolerances require valid finite bounds, and duplicate
+  sample columns are refused before validation.
+
 - Disclosed online batch-refit fallback fits a fresh estimator on cumulative
   Session train rows. It refuses external-frame refits whose complete history
   cannot be reconstructed, rather than silently dropping earlier stream data.
