@@ -435,6 +435,7 @@ jobs:
           python -c "from dowhy import CausalModel; import onnxruntime as ort; assert 'CPUExecutionProvider' in ort.get_available_providers(); print(ort.__version__)"
           python -c "from skactiveml.pool import GreedySamplingX, QueryByCommittee; print('active-learning host imports passed')"
           python -c "from stable_baselines3 import PPO, DQN, A2C; print('SB3 runtimes imported')"
+          python -c "from langchain_classic.chains.question_answering import load_qa_chain; from langchain_core.language_models.fake import FakeListLLM; import langchain_community; print('LangChain offline consumers ready')"
       - name: Preserve source and actual dependency evidence
         run: |
           mkdir -p artifacts

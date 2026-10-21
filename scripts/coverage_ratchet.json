@@ -8,20 +8,20 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 85.88798761510054,
-      "covered_lines": 53260,
+      "percent_covered": 85.92023995742692,
+      "covered_lines": 53280,
       "num_statements": 62011,
       "excluded_lines": 566,
-      "source_revision": "7b88a3fcc8ea26e77de0108bee261b20c5ff7986",
-      "tested_revision": "4a0ddee2cfc3feec260414647dba062f28bd0178",
+      "source_revision": "71adc9e73c928a90a91f0d1d21ca62d602fabbd1",
+      "tested_revision": "95678b866964fd0f43c3dee14a7f4d2a107f8803",
       "platform": "remote Linux, CPU expanded profile",
-      "run_id": 39611552738,
-      "result": "3625 passed, 80 skipped, zero failures/errors",
+      "run_id": 39620892194,
+      "result": "3639 passed, 80 skipped, zero failures/errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
-      "notes": "DuckDB reader batch accepted; merge/source trees equal884810d00256ba622a4061f3042bb29211c88864. All three workflows passed.566 exclusions unchanged;90 percent requires2550 further covered lines.1897 pytest warnings, no coverage collection warnings. Floor84 retained."
+      "notes": "Session SHAP consumers accepted; merge/source trees equalebfc71a317e958703fe4717ad64804382117e8a0. All three workflows passed.566 exclusions unchanged;90 percent requires2530 further covered lines.1897 pytest warnings, no coverage collection warnings. Candidate LangChain profile requires independent full CI acceptance. Floor84 retained."
     },
     "latest_local_measurement": {
       "percent_covered": 85.51916984547746,

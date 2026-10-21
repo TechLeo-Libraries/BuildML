@@ -14,6 +14,11 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- LangChain generation applies the positive integer passage budget to actual
+  chain input, recorded context and citations consistently. Offline framework
+  consumers check prompts without contacting a model service. A pinned
+  LangChain profile is submitted for independent expanded Linux validation.
+
 - Real Session SHAP consumers verify train/validation/test selection, capped
   sampling and feature order against known linear effects and tree prediction
   additivity, including duplicate input index labels.

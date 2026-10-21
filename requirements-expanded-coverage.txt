@@ -19,3 +19,8 @@ scikit-activeml==1.0.1
 
 # Modern SB3 is independent of the separately compatible imitation profile.
 stable-baselines3==2.7.0
+
+# Real offline LangChain adapter consumers (no provider account required).
+langchain-classic==1.0.8
+langchain-community==0.4.2
+langchain-core==1.6.12
