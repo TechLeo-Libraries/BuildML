@@ -14,6 +14,10 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Real blocking serving CLI consumers verify linear-model HTTP predictions,
+  API-key/Basic authentication, credential-free startup logs and graceful
+  shutdown with released loopback ports.
+
 - Automatic ARIMA disclosures distinguish an explicitly supplied order from a
   completed AIC grid search. Real statsmodels consumers verify the restricted
   AIC winner and resulting forecasts against independent direct fits.

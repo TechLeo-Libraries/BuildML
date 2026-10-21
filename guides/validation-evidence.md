@@ -637,6 +637,16 @@ and sensitivity checks remain diagnostics under declared assumptions; they do
 not establish identification or valid effects for arbitrary deployments.
 
 
+### Real serving CLI consumers
+
+Real serving CLI consumers launch a fitted linear-model bundle on temporary
+loopback ports and compare HTTP predictions to the known function `2*x+3`.
+Unauthenticated, API-key and Basic-auth configurations exercise the actual
+blocking CLI, HTTP authorization and graceful shutdown. Tests observe the real
+Uvicorn server solely to stop their owned instance; transport and prediction
+are not mocked. Startup logs must omit credentials and the port must close.
+This bounded integration check does not establish a long-term service SLA.
+
 ### Automatic ARIMA selection consumers
 
 Automatic ARIMA selection is checked against an independently enumerated
