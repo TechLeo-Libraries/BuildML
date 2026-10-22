@@ -809,7 +809,8 @@ class DuckDBEngine:
         Raises
         ------
         ValueError
-            If the mask length does not match the row count.
+            If the mask length does not match the row count, or any element
+            is not a Python or NumPy boolean.
         RuntimeError
             If the handle carries no connection.
 
@@ -827,6 +828,8 @@ class DuckDBEngine:
         **There are two fallbacks, and both materialise the source**: an Arrow
         filter, then a pandas one. They run only when the SQL path fails.
         """
+        if any(not pd.api.types.is_bool(flag) for flag in mask):
+            raise ValueError("filter mask must contain only boolean values")
         n = int(self.n_rows(table))
         if len(mask) != n:
             raise ValueError(f"filter mask length {len(mask)} does not match table rows {n}")
@@ -855,11 +858,14 @@ class DuckDBEngine:
             # changes older relations when a later mask replaces the view.
             mask_view = f"_bml_keep_rn_{uuid4().hex}"
             con.register(mask_view, idx_table)
+            # query() registers its source alias on the shared connection.
+            # Reusing it for a derived relation makes that view self-referential.
+            source_view = f"_bml_mask_source_{uuid4().hex}"
             filtered = rel.query(
-                "s",
+                source_view,
                 f"""
                 SELECT * EXCLUDE ({row_sql}) FROM (
-                  SELECT *, row_number() OVER () AS {row_sql} FROM s
+                  SELECT *, row_number() OVER () AS {row_sql} FROM {source_view}
                 ) t
                 WHERE {row_sql} IN (SELECT {row_sql} FROM {mask_view})
                 """,

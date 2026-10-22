@@ -14,6 +14,10 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- DuckDB positional filters use distinct source views so chained masks do not
+  create recursive views. Non-boolean masks are refused before row selection;
+  real SQL and injected Arrow-import-failure consumers match positional oracles.
+
 - SkopeRules uses the maintained imodels implementation when available. Exported
   predicates preserve positional feature aliases and reject unsupported conjuncts
   instead of silently broadening rules; independent real-consumer masks verify this.
