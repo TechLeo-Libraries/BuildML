@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-10-19, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed:86.5883% (53,806/62,140);3,921 passed,77 skipped | [CI39841023535](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39841023535), source `b95cb80`, tested merge `875457e3`; trees match and all three workflows passed.566 exclusions unchanged;floor85 set from this passing86.5883% gate;90% gap2,120 lines. Anomaly tuning controls/population metadata accepted with coverage7.16.2;1900 pytest warnings, no coverage collection warnings |
+| Current accepted remote expanded CPU whole-package gate | Passed:86.6575% (53,849/62,140);3,937 passed,77 skipped | [CI39850348884](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39850348884), source `958b390`, tested merge `a54169fc`; trees match and all three workflows passed.566 exclusions unchanged;floor85 set from this passing86.6575% gate;90% gap2,077 lines. Native committee KL invariance accepted with coverage7.16.2;1900 pytest warnings, no coverage collection warnings |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -1206,3 +1206,44 @@ package absence. Ruff and scoped mypy pass. Reach against verifiedb95cb80:
 availability guard), and one changed/new executed scorer line. Scope and
 566 exclusions remain unchanged under coverage7.16.2; full-suite aggregate
 acceptance remains pending.
+
+The subsequent958b390 gate accepted native KL invariance at53849/62140=
+86.6575%,3937 passed,77 skipped. All three workflows passed; tested merge
+a54169fc matched source tree5e189439de15194100d1490bf357e04fc172fe71.
+Full14:26,1900 warnings, no collection warnings. Coverage7.16.2/566 exclusions
+and core70/expanded85 unchanged; exact90% gap2077 lines.
+
+### Stateful online class identities and evaluation populations
+
+New online encoders retain raw class labels and mark that representation in
+persisted encoder state. Previously class stringification plus numeric guessing
+turned code "001" into integer1 and booleans into text; numeric updates could
+impersonate trained string classes. Discovery and explicit classes now retain
+their raw values; incompatible mixed numeric/string labels are refused. New
+evaluation compares encoded identities, and unseen typed classes are refused
+before updating weights. NumPy class scalars are normalized for JSON summaries.
+
+Twenty real classifier cases cross SGD/BernoulliNB, discovered/explicit vocabularies,
+and string codes, decimal strings, integer, float and boolean domains. Independent
+raw LabelEncoders and fresh coded estimators match successive partial_fit chunks,
+typed predictions, holdout accuracy and continuation after trusted reload. Model
+frames remain unchanged. Metadata retains raw classes and serializes as JSON.
+Four actual unmarked legacy bundle fixtures retain their original decode behavior
+and disclose refitting. Old weights/string ordering are preserved; loading does
+not recover lost original types. Refit old classifiers for raw identity behavior.
+
+Evaluation of train/all previously described those rows as never used in training;
+it now identifies training-row inclusion and avoids claiming independent holdout
+evidence. Partially/all-null holdout targets are excluded or return empty metrics,
+with coefficients and update counters unchanged. Initial18 failures included one
+Pandas string-dtype assignment fixture failure;17 reached the intended product
+contracts. The corrected typed-holdout fixture passes, and the archived legacy
+helper independently confirmed accepting numeric1.0 as string-class"1.0" code0.
+Final broader run:94 passed, one River-not-installed skip, no warnings in71.51s.
+Ruff passes. Scoped mypy retains the same three baseline follow-imports=skip
+errors: feature DataFrame Any-return444->453 and predict/evaluate alias21/31.
+Subset reach against verified958b390:18 unchanged missing lines (9 evaluation,
+4 sklearn compatibility and5 optional availability paths) plus28 changed/new
+executed lines. Compatibility/availability paths are not projected remote gains.
+Scope, coverage7.16.2/566 exclusions and core70/expanded85 remain unchanged;
+new full-suite aggregate acceptance remains pending.

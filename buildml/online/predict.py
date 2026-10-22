@@ -82,5 +82,11 @@ def predict_online(
             f"Predictions from estimator={plan.estimator_name} after "
             f"n_updates={plan.n_updates}.",
         ),
-        warnings=(),
+        warnings=(
+            ("Legacy online class encoding may lose label identities; refit "
+             "the classifier to preserve raw class labels.",)
+            if plan.task == "classification"
+            and not getattr(plan.label_encoder_, "_buildml_raw_class_labels_", False)
+            else ()
+        ),
     )

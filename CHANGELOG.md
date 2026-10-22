@@ -14,6 +14,12 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- New online classifiers preserve raw class labels through incremental updates,
+  evaluation and trusted bundles. Numeric-looking strings and booleans retain
+  their identities; incompatible mixed labels and typed impersonation are refused.
+  Legacy plans retain old behavior with refit notices. Train/all evaluations no
+  longer claim their rows were untouched holdouts.
+
 - Native query-by-committee KL scoring averages both divergence directions,
   preventing committee member order from changing labeling priorities. Real
   fitted ensembles match scalar acquisition oracles and permutation checks.

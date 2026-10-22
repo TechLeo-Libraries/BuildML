@@ -192,7 +192,7 @@ def fit_online(
                     "discover classes= (or pass classes= explicitly). "
                     "NaN targets belong to active/semi-supervised pools."
                 )
-            class_vocab = tuple(sorted(train_y.astype(str).unique().tolist()))
+            class_vocab = tuple(train_y.unique().tolist())
             disclosures.append(
                 "Classifier classes_ discovered from the full train target "
                 "vocabulary before streaming chunks (labels only; features from "
