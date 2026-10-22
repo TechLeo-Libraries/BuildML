@@ -28,7 +28,7 @@ def test_mask_bridge_matches_independent_positions(monkeypatch, without_arrow, m
 
             def import_without_adapter_arrow(name, globals=None, *args, **kwargs):
                 caller = inspect.currentframe().f_back
-                direct_import = dis.opname[caller.f_code.co_code[caller.f_lasti]] == "IMPORT_NAME"
+                direct_import = caller is not None and dis.opname[caller.f_code.co_code[caller.f_lasti]] == "IMPORT_NAME"
                 if name == "pyarrow" and direct_import and (globals or {}).get("__name__") == "buildml.data.engines.duckdb_engine":
                     raise ImportError("Injected adapter Arrow import failure")
                 return original_import(name, globals, *args, **kwargs)
