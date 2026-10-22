@@ -8,20 +8,20 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 86.65754747344705,
-      "covered_lines": 53849,
-      "num_statements": 62140,
+      "percent_covered": 86.67985970331756,
+      "covered_lines": 53875,
+      "num_statements": 62154,
       "excluded_lines": 566,
-      "source_revision": "958b3905435d2f0f16210193d8f7bcbc4a2e9d34",
-      "tested_revision": "a54169fc4750d4d664a0d73ea8057e17cb400b40",
+      "source_revision": "3f9acc9aba3c4b0e684c3763a512ec2ff0c74c6d",
+      "tested_revision": "39db7a39ae70f7de0c1c8bff274b657b4962f09c",
       "platform": "remote Linux, CPU expanded profile",
-      "run_id": 39850348884,
-      "result": "3937 passed, 77 skipped, zero failures/errors",
+      "run_id": 39858733259,
+      "result": "3968 passed, 77 skipped, zero failures/errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
-      "notes": "Native committee KL invariance accepted with coverage7.16.2; source/merge trees equal5e189439de15194100d1490bf357e04fc172fe71. All three workflows passed.566 exclusions unchanged;90 percent requires2077 further covered lines.1900 pytest warnings,no coverage collection warnings. Core70/expanded85 retained.",
+      "notes": "Online raw class identity accepted with coverage7.16.2; source/merge trees equal88b7ac47e0fc8df79864946ce33f514da6396f12. All three workflows passed.566 exclusions unchanged;90 percent requires2064 further covered lines.1900 pytest warnings,no coverage collection warnings. Core70/expanded85 retained.",
       "coverage_version": "7.16.2"
     },
     "latest_local_measurement": {

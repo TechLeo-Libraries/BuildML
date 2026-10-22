@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-10-19, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed:86.6575% (53,849/62,140);3,937 passed,77 skipped | [CI39850348884](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39850348884), source `958b390`, tested merge `a54169fc`; trees match and all three workflows passed.566 exclusions unchanged;floor85 set from this passing86.6575% gate;90% gap2,077 lines. Native committee KL invariance accepted with coverage7.16.2;1900 pytest warnings, no coverage collection warnings |
+| Current accepted remote expanded CPU whole-package gate | Passed:86.6799% (53,875/62,154);3,968 passed,77 skipped | [CI39858733259](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39858733259), source `3f9acc9`, tested merge `39db7a39`; trees match and all three workflows passed.566 exclusions unchanged;floor85 set from this passing86.6799% gate;90% gap2,064 lines. Online raw class identity accepted with coverage7.16.2;1900 pytest warnings, no coverage collection warnings |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -1247,3 +1247,19 @@ Subset reach against verified958b390:18 unchanged missing lines (9 evaluation,
 executed lines. Compatibility/availability paths are not projected remote gains.
 Scope, coverage7.16.2/566 exclusions and core70/expanded85 remain unchanged;
 new full-suite aggregate acceptance remains pending.
+
+### Synthetic sampling budget boundary (2026-10-22)
+
+Public synthetic sampling now refuses boolean, fractional, string and non-finite
+row budgets before drawing or merging; None still uses the fitted train count
+and NumPy integer counts remain supported. Thirty-two invalid-budget cases
+exercise native bootstrap/copula with and without train appends; six independent
+NumPy bootstrap consumers verify exact sampled rows, train appends and unchanged
+ validation/test frames. Rejected calls preserve dataset/split/plan.
+Baseline24 failed/14 passed11.16s; final106 passed,1 absent-SDV skip,2 existing
+flat-alias deprecation warnings53.58s. Ruff and scoped mypy pass. Reach against
+verified3f9acc9:0 unchanged sampling lines,5 changed/new sampling lines;6 unchanged
+missing availability/catalog lines are local-profile differences, not projected
+remote gains. Coverage7.16.2/566 exclusions. No aggregate percentage projected.
+Internal generator direct-call coercion is unchanged; public Session sampling
+is the repaired boundary. New whole-suite acceptance pending.

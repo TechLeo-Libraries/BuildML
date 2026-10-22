@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from numbers import Integral
 from typing import Any
 
 import pandas as pd
@@ -37,7 +38,8 @@ Parameters
 plan:
     Fitted plan object carrying model state and feature contract.
 n:
-    n (int | None).
+    Positive integer row count, or None to use the fitted training row count.
+    Booleans, strings and fractional counts are refused.
 random_state:
     Seed for stochastic steps (sampling, initialization, bagging).
 condition:
@@ -55,9 +57,10 @@ ValidationError
     """
     if plan is None or plan.generator_ is None:
         raise ValidationError("No fitted synthesizer. Call fit_synthesizer(...) first.")
-    n_rows = int(plan.n_rows_fitted if n is None else n)
-    if n_rows < 1:
-        raise ValidationError("n must be >= 1.")
+    requested = plan.n_rows_fitted if n is None else n
+    if isinstance(requested, bool) or not isinstance(requested, Integral) or requested < 1:
+        raise ValidationError("n must be a positive integer (booleans are not row counts).")
+    n_rows = int(requested)
     if condition and plan.method != "gaussian_copula":
         raise ValidationError(
             "condition= is currently supported for method='gaussian_copula' only."

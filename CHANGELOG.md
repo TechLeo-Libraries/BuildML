@@ -14,6 +14,10 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Public synthetic sampling refuses lossy or non-finite row budgets before
+  drawing or merging. Independent NumPy resampling checks verify exact row
+  counts, train-only appends and preserved validation/test values.
+
 - New online classifiers preserve raw class labels through incremental updates,
   evaluation and trusted bundles. Numeric-looking strings and booleans retain
   their identities; incompatible mixed labels and typed impersonation are refused.
