@@ -14,6 +14,10 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Persisted pipeline scoring passes schema-coerced data to estimators even
+  without replayable preprocessing plans. Real categorical pipelines verify
+  labels, probabilities, indices and unchanged caller data across public input forms.
+
 - EDA list-format mutual-information ledgers preserve measured zero values and
   primary-field priority. Shared, static HTML and cockpit consumers agree with
   dictionary-format reports instead of showing zero as unavailable.
