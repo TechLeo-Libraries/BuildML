@@ -14,6 +14,10 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- SkopeRules uses the maintained imodels implementation when available. Exported
+  predicates preserve positional feature aliases and reject unsupported conjuncts
+  instead of silently broadening rules; independent real-consumer masks verify this.
+
 - LightFM side-feature preparation refuses missing, non-finite and complex
   inputs before sparse conversion. Real SciPy consumers verify entity means,
   catalog ordering, constant-feature scaling and matrix-vector products.

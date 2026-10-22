@@ -8,20 +8,20 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 86.14997743245857,
-      "covered_lines": 53444,
-      "num_statements": 62036,
+      "percent_covered": 86.1826622392727,
+      "covered_lines": 53466,
+      "num_statements": 62038,
       "excluded_lines": 566,
-      "source_revision": "347f69f546b0d5297b1abff3b40e95195a88e3ee",
-      "tested_revision": "167c1c303efefd8f9128e74e631420cc459b31c5",
+      "source_revision": "1c3a427df9502c928d8d99f9da0ac758ee01102c",
+      "tested_revision": "7c242513060ba68f8dec15f7776b2580b69505e9",
       "platform": "remote Linux, CPU expanded profile",
-      "run_id": 39703920555,
-      "result": "3691 passed, 78 skipped, zero failures/errors",
+      "run_id": 39709653459,
+      "result": "3700 passed, 78 skipped, zero failures/errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
-      "notes": "SSL raw class identity and persistence accepted; merge/source trees equalb220fc2b466e5f8b40155d0059f2dbc0ba3c1d52. All three workflows passed.566 exclusions unchanged;90 percent requires2389 further covered lines.1899 pytest warnings, no coverage collection warnings. Core70/expanded85 retained."
+      "notes": "LightFM sparse feature validation accepted; source/merge trees equal ea4a1c0cb218e09f148f2e05b6d9112283e89573. All three workflows passed. 566 exclusions unchanged; 90 percent requires 2369 further covered lines. 1899 pytest warnings, no coverage collection warnings. Core70/expanded85 retained."
     },
     "latest_local_measurement": {
       "percent_covered": 85.51916984547746,

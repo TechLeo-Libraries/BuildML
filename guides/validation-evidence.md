@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-10-19, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed:86.1500% (53,444/62,036);3,691 passed,78 skipped | [CI39703920555](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39703920555), source `347f69f`, tested merge `167c1c30`; trees match and all three workflows passed.566 exclusions unchanged;floor85 set from this passing86.1500% gate;90% gap2,389 lines. LangChain profile accepted;1899 pytest warnings, no coverage collection warnings |
+| Current accepted remote expanded CPU whole-package gate | Passed:86.1827% (53,466/62,038);3,700 passed,78 skipped | [CI39709653459](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39709653459), source `1c3a427`, tested merge `7c242513`; trees match and all three workflows passed.566 exclusions unchanged;floor85 set from this passing86.1827% gate;90% gap2,369 lines. LightFM feature validation accepted;1899 pytest warnings, no coverage collection warnings |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -805,3 +805,20 @@ coverage took19.34s, beyond the former12s generic probe; SB3 now shares the90s
 bounded scientific-import policy, with import failures and transient negative
 caching still preserved. Direct uninstrumented import measured10.55s; these are
 observations from this machine rather than universal startup expectations.
+
+
+### Maintained SkopeRules consumer verification
+
+The adapter prefers imodels 3.0.4 SkopeRulesClassifier, already present in the
+expanded profile; legacy skrules remains a fallback whose runtime was not verified
+in this batch. The expanded job now requires the maintained class import. Four
+real consumer cases use two seeds and feature names containing spaces, `and`,
+and reversed positional aliases. Every exported positive-class mask matches an
+independent Pandas query of the original miner rule; confidence matches its
+reported precision. Unsupported or unknown conjuncts raise ValidationError.
+RuleFit positional aliases remain covered by existing real-consumer tests.
+Local targeted result: 23 passed, one expected missing-extra guard skip, 786
+warnings (784 upstream sklearn RuleFit warnings and two flat API deprecations).
+Subset reach against source 1c3a427: 39 previously missing unchanged production
+lines and 16 changed/new executed lines. This is not aggregate coverage or
+predictive superiority evidence; remote whole-suite acceptance remains pending.
