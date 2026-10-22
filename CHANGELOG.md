@@ -14,6 +14,10 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Native query-by-committee KL scoring averages both divergence directions,
+  preventing committee member order from changing labeling priorities. Real
+  fitted ensembles match scalar acquisition oracles and permutation checks.
+
 - Anomaly threshold tuning refuses unknown metrics and invalid F-beta values.
   Exploratory test tuning discloses its optimistic metrics, and stored policy
   names distinguish train, validation and test tuning. Independent confusion-count

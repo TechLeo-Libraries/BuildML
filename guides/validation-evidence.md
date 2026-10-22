@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-10-19, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed:86.5584% (53,777/62,128);3,894 passed,77 skipped | [CI39831643184](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39831643184), source `d90a0e5`, tested merge `b5caaa5f`; trees match and all three workflows passed.566 exclusions unchanged;floor85 set from this passing86.5584% gate;90% gap2,139 lines. Frozen synthetic utility task/budget repair accepted with coverage7.16.2;1900 pytest warnings, no coverage collection warnings |
+| Current accepted remote expanded CPU whole-package gate | Passed:86.5883% (53,806/62,140);3,921 passed,77 skipped | [CI39841023535](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39841023535), source `b95cb80`, tested merge `875457e3`; trees match and all three workflows passed.566 exclusions unchanged;floor85 set from this passing86.5883% gate;90% gap2,120 lines. Anomaly tuning controls/population metadata accepted with coverage7.16.2;1900 pytest warnings, no coverage collection warnings |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -1167,3 +1167,42 @@ unchanged missing lines:16 threshold, one post-fit guard and six optional
 catalog/import availability paths;14 changed/new lines executed. Host availability
 paths are not projected remote gains. Coverage7.16.2/566 exclusions and
 core70/expanded85 floors are unchanged; full-suite acceptance remains pending.
+
+The subsequent b95cb80 gate accepted the anomaly repair:53806/62140=86.5883%,
+3921 passed,77 skipped. All three workflows passed; tested merge875457e3
+matched source tree e7c8ae6494233e2c3308dae81f26c1a5f96fc34b. Full11:22,
+1900 warnings, no collection warnings; coverage7.16.2/566 exclusions unchanged.
+Exact90% gap2120 lines; core70/expanded85 retained.
+
+### Native committee acquisition invariance
+
+Native qbc_kl previously averaged only KL(P_i||P_j) for i<j. Since KL is
+directional, merely reordering an unchanged fitted committee changed its scores
+and could change labeling priorities. It now averages both directions for each
+pair, equivalent to the mean over all ordered distinct member pairs. Three real
+multiclass logistic BaggingClassifiers match independent scalar logarithmic
+calculations and retain scores/rankings when member order is reversed. Native
+variation ratios match scalar vote counts; core-set scores match nearest labeled
+Euclidean distances. Empty pools, the empty-label normalized-norm seed heuristic,
+single-member zero disagreement and invalid committee protocols are also checked.
+The native core-set batch scores are static priorities, not an independently
+verified iterative k-center optimization guarantee.
+
+This repair affects the native industry scoring path, including fallback when
+the optional host backend cannot run. The separate installed host backend can
+use different acquisition mathematics; these checks do not claim backend
+equivalence or better learning efficiency. Existing fitted committees need no
+retraining. Future native KL queries may change after the correction; historical
+query choices and labels are not rewritten.
+
+Initial16-case reproduction:7 failed,9 passed, including one test fixture
+accessing estimator_ on an unfitted bagger before reaching the adapter. Corrected
+baseline:6 failed,10 passed in16.50s, all remaining failures in KL scalar or
+permutation checks. Final broader verification:88 passed, no skips or warnings
+in223.51s, including existing public query/annotation flows, Torch consumers and
+installed host-backend checks. The direct native numerical checks do not fake
+package absence. Ruff and scoped mypy pass. Reach against verifiedb95cb80:
+43 unchanged missing production lines (42 native scorer, one optional Torch
+availability guard), and one changed/new executed scorer line. Scope and
+566 exclusions remain unchanged under coverage7.16.2; full-suite aggregate
+acceptance remains pending.
