@@ -14,6 +14,11 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- New SSL heads preserve raw class labels and JSON-safe summaries; evaluation
+  compares encoded identities and refuses unseen labels instead of conflating
+  numeric and textual classes. Older stored string-label heads retain their
+  legacy evaluation contract with an explicit refit warning.
+
 - Cost-matrix policy fit summaries report probability-weighted expected total
   loss as expected cost. Observed-label realized costs remain separate metrics;
   independent multiclass oracles verify reordered cost axes and held-out loss.

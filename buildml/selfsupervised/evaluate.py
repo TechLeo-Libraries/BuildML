@@ -126,12 +126,21 @@ def evaluate_ssl(
         )
 
     label_encoder = getattr(head_plan.estimator_, "_buildml_label_encoder_", None)
-    y_true = frame.loc[~unlabeled, target].astype(str).to_numpy()
+    raw_target = frame.loc[~unlabeled, target]
     pred_codes = head_plan.estimator_.predict(emb[~unlabeled])
-    if label_encoder is not None:
+    if label_encoder is not None and getattr(head_plan.estimator_, "_buildml_raw_class_labels_", False):
+        if not raw_target.isin(label_encoder.classes_).all():
+            raise ValidationError("Evaluation class labels are outside the SSL head classes.")
+        y_true = label_encoder.transform(raw_target.to_numpy())
+        y_pred_s = np.asarray(pred_codes)
+    elif label_encoder is not None:
+        # Older serialized heads stored string labels; preserve that contract.
+        y_true = raw_target.astype(str).to_numpy()
         y_pred = label_encoder.inverse_transform(np.asarray(pred_codes, dtype=int))
         y_pred_s = np.asarray([str(v) for v in y_pred])
+        warnings.append("Legacy SSL head uses stored string labels; refit to preserve raw class types.")
     else:
+        y_true = raw_target.astype(str).to_numpy()
         y_pred_s = np.asarray([str(v) for v in pred_codes])
 
     metrics["accuracy"] = float(accuracy_score(y_true, y_pred_s))
