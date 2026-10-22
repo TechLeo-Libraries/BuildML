@@ -14,6 +14,10 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- EDA list-format mutual-information ledgers preserve measured zero values and
+  primary-field priority. Shared, static HTML and cockpit consumers agree with
+  dictionary-format reports instead of showing zero as unavailable.
+
 - Binary segmentation now uses the documented penalty instead of forcing a
   length-based break count. Changepoint inputs require finite real vectors
   and finite non-negative numeric penalties; real ruptures consumers verify
