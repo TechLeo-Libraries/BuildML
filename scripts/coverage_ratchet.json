@@ -8,20 +8,20 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 86.4634519647489,
-      "covered_lines": 53667,
+      "percent_covered": 86.46828529539707,
+      "covered_lines": 53670,
       "num_statements": 62069,
       "excluded_lines": 566,
-      "source_revision": "51eeff2abb23b0cbf940c76bdf4c1224d6d298e5",
-      "tested_revision": "4ae425fa36ea380d9ba1a00e5052ba225e685655",
+      "source_revision": "5ac9580f054682a82713729dbba7f6642688e4ac",
+      "tested_revision": "4e94716294a766ff9c91d62a628e3a15d8e6ec23",
       "platform": "remote Linux, CPU expanded profile",
-      "run_id": 39776661795,
-      "result": "3769 passed, 77 skipped, zero failures/errors",
+      "run_id": 39785508443,
+      "result": "3777 passed, 77 skipped, zero failures/errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
-      "notes": "EDA measured-zero ledger accepted; source/merge trees equal 320c62f7314967daafb634eb6d8d12aa3cb0f057. All three workflows passed. 566 exclusions unchanged; 90 percent requires 2196 further covered lines. 1900 pytest warnings, no coverage collection warnings. Core70/expanded85 retained."
+      "notes": "Persisted scoring coercion accepted; source/merge trees equal cf4e1e5a7450088fe6a206a2eb96dd562004098b. All three workflows passed. 566 exclusions unchanged; 90 percent requires 2193 further covered lines. 1900 pytest warnings, no coverage collection warnings. Core70/expanded85 retained."
     },
     "latest_local_measurement": {
       "percent_covered": 85.51916984547746,

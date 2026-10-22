@@ -14,6 +14,11 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- New semi-supervised plans preserve raw class labels instead of stringifying
+  and guessing numeric types. Mixed incompatible labels and unseen holdout
+  identities are refused. Older bundles retain legacy behavior with a refit
+  notice; refitting is required to obtain preserved raw identities.
+
 - Persisted pipeline scoring passes schema-coerced data to estimators even
   without replayable preprocessing plans. Real categorical pipelines verify
   labels, probabilities, indices and unchanged caller data across public input forms.

@@ -115,7 +115,7 @@ def test_train_partition_matches_independent_fit_despite_poisoned_holdout(method
         plan, result = fit_semisupervised(dataset, session.split_plan, **options)
         assert result.n_train_rows == len(train)
         assert result.n_unlabeled_train == len(train[2::3])
-        assert set(result.classes) == {'0.0', '1.0'}
+        assert set(result.classes) == {0.0, 1.0}
         plans.append(plan)
     direct_y = frame.iloc[train]['y'].to_numpy()
     direct_y = np.where(np.isnan(direct_y), -1, direct_y).astype(int)
