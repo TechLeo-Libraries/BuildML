@@ -14,6 +14,10 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- LightFM side-feature preparation refuses missing, non-finite and complex
+  inputs before sparse conversion. Real SciPy consumers verify entity means,
+  catalog ordering, constant-feature scaling and matrix-vector products.
+
 - New SSL heads preserve raw class labels and JSON-safe summaries; evaluation
   compares encoded identities and refuses unseen labels instead of conflating
   numeric and textual classes. Older stored string-label heads retain their

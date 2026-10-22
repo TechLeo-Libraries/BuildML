@@ -8,20 +8,20 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 86.14729782019863,
-      "covered_lines": 53432,
-      "num_statements": 62024,
+      "percent_covered": 86.14997743245857,
+      "covered_lines": 53444,
+      "num_statements": 62036,
       "excluded_lines": 566,
-      "source_revision": "de78b3b4574585128d5f75a38d0e65592055048d",
-      "tested_revision": "7f2c65ebddf1c3b1d657f05bddf9e25f32ab9282",
+      "source_revision": "347f69f546b0d5297b1abff3b40e95195a88e3ee",
+      "tested_revision": "167c1c303efefd8f9128e74e631420cc459b31c5",
       "platform": "remote Linux, CPU expanded profile",
-      "run_id": 39697719369,
-      "result": "3685 passed, 78 skipped, zero failures/errors",
+      "run_id": 39703920555,
+      "result": "3691 passed, 78 skipped, zero failures/errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
-      "notes": "Decision cost accounting accepted; merge/source trees equala5e3c746f87a15489658fcd1631b97eba316fe06. All three workflows passed.566 exclusions unchanged;90 percent requires2390 further covered lines.1899 pytest warnings, no coverage collection warnings. Core70/expanded85 retained."
+      "notes": "SSL raw class identity and persistence accepted; merge/source trees equalb220fc2b466e5f8b40155d0059f2dbc0ba3c1d52. All three workflows passed.566 exclusions unchanged;90 percent requires2389 further covered lines.1899 pytest warnings, no coverage collection warnings. Core70/expanded85 retained."
     },
     "latest_local_measurement": {
       "percent_covered": 85.51916984547746,
