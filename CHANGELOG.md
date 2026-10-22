@@ -14,6 +14,10 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Real autonomous Session consumers verify failure audits, stop/continue policy,
+  skipped-step iteration limits and destructive-step refusal. Continued fits
+  match independent sklearn models; no new product defect was found.
+
 - DuckDB positional filters use distinct source views so chained masks do not
   create recursive views. Non-boolean masks are refused before row selection;
   real SQL and injected Arrow-import-failure consumers match positional oracles.

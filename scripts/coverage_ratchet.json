@@ -8,20 +8,20 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 86.23462858800586,
-      "covered_lines": 53506,
-      "num_statements": 62047,
+      "percent_covered": 86.25785656728445,
+      "covered_lines": 53523,
+      "num_statements": 62050,
       "excluded_lines": 566,
-      "source_revision": "c4adda9e2242341fb4bdf9cc9bd092cce6c43e69",
-      "tested_revision": "e84fdf927294547739f7078ad0c679f77350bf08",
+      "source_revision": "a3fd9e76e27f76898d6c8d136de51526fa64f4b6",
+      "tested_revision": "8bd54a31d76a24bb4a8619c0acaaa2ceb060c468",
       "platform": "remote Linux, CPU expanded profile",
-      "run_id": 39716357898,
-      "result": "3707 passed, 77 skipped, zero failures/errors",
+      "run_id": 39720693964,
+      "result": "3718 passed, 77 skipped, zero failures/errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
-      "notes": "Maintained SkopeRules accepted; source/merge trees equal 266e9aa49b848c17e803c16f202e7569d7907925. All three workflows passed. 566 exclusions unchanged; 90 percent requires 2337 further covered lines. 1900 pytest warnings, no coverage collection warnings. Core70/expanded85 retained."
+      "notes": "DuckDB chained masks accepted; source/merge trees equal 934462b46523e371eb95f00a887e9c9575a19cc7. All three workflows passed. 566 exclusions unchanged; 90 percent requires 2322 further covered lines. 1900 pytest warnings, no coverage collection warnings. Core70/expanded85 retained."
     },
     "latest_local_measurement": {
       "percent_covered": 85.51916984547746,

@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-10-19, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed:86.2346% (53,506/62,047);3,707 passed,77 skipped | [CI39716357898](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39716357898), source `c4adda9`, tested merge `e84fdf92`; trees match and all three workflows passed.566 exclusions unchanged;floor85 set from this passing86.2346% gate;90% gap2,337 lines. Maintained SkopeRules accepted;1900 pytest warnings, no coverage collection warnings |
+| Current accepted remote expanded CPU whole-package gate | Passed:86.2579% (53,523/62,050);3,718 passed,77 skipped | [CI39720693964](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39720693964), source `a3fd9e7`, tested merge `8bd54a31`; trees match and all three workflows passed.566 exclusions unchanged;floor85 set from this passing86.2579% gate;90% gap2,322 lines. DuckDB chained masks accepted;1900 pytest warnings, no coverage collection warnings |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -840,4 +840,24 @@ its real Pandas fallback. DuckDB and Arrow remain installed; this is not a
 verification of an environment without Arrow or the separate Arrow-filter fallback.
 Subset reach against verified c4adda9 is 14 previously missing unchanged lines
 and three changed/new executed lines. Scoped mypy and Ruff pass. Full remote
-whole-package coverage for this DuckDB batch remains pending.
+whole-package coverage for this DuckDB batch passed at a3fd9e7.
+
+
+### Autonomous failure and recovery consumers
+
+Eight new real Session cases exercise missing estimator arguments, invalid split
+values and fitting before splitting with stop_on_error both enabled and disabled.
+Each failure has one audit error; stopped runs leave split/model state untouched.
+Continued runs split and fit a real linear model whose holdout predictions match
+an independent sklearn LinearRegression fit on the same training partition.
+Skipped steps consume the iteration budget, preventing a later fit, and an
+allowlisted destructive step is blocked before changing the dataset.
+No product defect was found. An initial test incorrectly treated argument
+validation as pre-confirmation schema enforcement; the registry resolves tool
+names, while these argument errors are reported by execution.
+Combined new and existing autonomy tests: 42 passed, no skips, one upstream
+LangChain community maintenance warning. Ruff passed. Subset reach against
+verified a3fd9e7 is 15 previously missing unchanged production lines, zero
+changed/new lines. Production source is unchanged; this does not establish
+planner quality, a complete sandbox or long-term service reliability.
+Whole-package remote acceptance of the new tests is pending.
