@@ -14,6 +14,10 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Semi-supervised text inference accepts Pandas string feature columns. Offline
+  tiny-encoder consumers verify self-training probabilities, pseudo-labels,
+  holdout isolation and trusted bundle reloads against independent calculations.
+
 - Real autonomous Session consumers verify failure audits, stop/continue policy,
   skipped-step iteration limits and destructive-step refusal. Continued fits
   match independent sklearn models; no new product defect was found.

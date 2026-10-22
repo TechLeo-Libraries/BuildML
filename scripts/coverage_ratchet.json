@@ -8,20 +8,20 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 86.25785656728445,
-      "covered_lines": 53523,
+      "percent_covered": 86.27880741337631,
+      "covered_lines": 53536,
       "num_statements": 62050,
       "excluded_lines": 566,
-      "source_revision": "a3fd9e76e27f76898d6c8d136de51526fa64f4b6",
-      "tested_revision": "8bd54a31d76a24bb4a8619c0acaaa2ceb060c468",
+      "source_revision": "8e8d38a26019a54989613a56db2c84ebee10b7d6",
+      "tested_revision": "b24b365e14cad64dca2bc340b6aa787748e1c987",
       "platform": "remote Linux, CPU expanded profile",
-      "run_id": 39720693964,
-      "result": "3718 passed, 77 skipped, zero failures/errors",
+      "run_id": 39725985528,
+      "result": "3726 passed, 77 skipped, zero failures/errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
-      "notes": "DuckDB chained masks accepted; source/merge trees equal 934462b46523e371eb95f00a887e9c9575a19cc7. All three workflows passed. 566 exclusions unchanged; 90 percent requires 2322 further covered lines. 1900 pytest warnings, no coverage collection warnings. Core70/expanded85 retained."
+      "notes": "Autonomy failure consumers accepted; source/merge trees equal 381ecef8db446a82746208accd5e697796ede02c. All three workflows passed. 566 exclusions unchanged; 90 percent requires 2309 further covered lines. 1900 pytest warnings, no coverage collection warnings. Core70/expanded85 retained."
     },
     "latest_local_measurement": {
       "percent_covered": 85.51916984547746,

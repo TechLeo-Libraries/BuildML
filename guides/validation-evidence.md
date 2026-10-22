@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-10-19, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed:86.2579% (53,523/62,050);3,718 passed,77 skipped | [CI39720693964](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39720693964), source `a3fd9e7`, tested merge `8bd54a31`; trees match and all three workflows passed.566 exclusions unchanged;floor85 set from this passing86.2579% gate;90% gap2,322 lines. DuckDB chained masks accepted;1900 pytest warnings, no coverage collection warnings |
+| Current accepted remote expanded CPU whole-package gate | Passed:86.2788% (53,536/62,050);3,726 passed,77 skipped | [CI39725985528](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39725985528), source `8e8d38a`, tested merge `b24b365e`; trees match and all three workflows passed.566 exclusions unchanged;floor85 set from this passing86.2788% gate;90% gap2,309 lines. Autonomy consumers accepted;1900 pytest warnings, no coverage collection warnings |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -860,4 +860,26 @@ LangChain community maintenance warning. Ruff passed. Subset reach against
 verified a3fd9e7 is 15 previously missing unchanged production lines, zero
 changed/new lines. Production source is unchanged; this does not establish
 planner quality, a complete sandbox or long-term service reliability.
-Whole-package remote acceptance of the new tests is pending.
+Whole-package remote acceptance of these autonomy tests passed at 8e8d38a.
+
+
+### Offline semi-supervised text consumers
+
+Automatic HF text selection now accepts Pandas object and string dtypes; explicit
+text_column selection remains supported. Six new cases cover both missing labels
+and an explicit unknown marker. A locally initialized tiny BERT/SentenceTransformer
+encoder is saved and reloaded; no model weights or datasets are downloaded.
+Independent float64 embeddings plus sklearn SelfTrainingClassifier and logistic
+regression reproduce probabilities, accepted pseudo-labels and holdout accuracy.
+Replacing only held-out text and labels leaves coefficients and transduction
+unchanged. Trusted bundles created by the tests preserve holdout predictions.
+The Session target remains unchanged throughout. This verifies plumbing and
+partition isolation, not useful embedding quality or superiority on real text.
+The six new and eight existing semi-supervised tests passed locally:14 passed,
+no skips or warnings. Ruff, scoped mypy, dependency and YAML checks passed.
+Nine text-runtime dependencies were installed locally without replacing existing
+packages; the expanded Linux profile already pins sentence-transformers6.1.0
+and transformers5.19.0. CI now requires a usable SentenceTransformer import.
+Subset reach against verified 8e8d38a:47 previously missing unchanged production
+lines and one changed/new executed line. Remote whole-suite acceptance of this
+text batch remains pending.
