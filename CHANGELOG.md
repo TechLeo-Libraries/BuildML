@@ -14,6 +14,10 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Cost-matrix policy fit summaries report probability-weighted expected total
+  loss as expected cost. Observed-label realized costs remain separate metrics;
+  independent multiclass oracles verify reordered cost axes and held-out loss.
+
 - Real blocking serving CLI consumers verify linear-model HTTP predictions,
   API-key/Basic authentication, credential-free startup logs and graceful
   shutdown with released loopback ports.
