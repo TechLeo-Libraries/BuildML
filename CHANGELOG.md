@@ -14,6 +14,13 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Z3 bound verification preserves exact integer, decimal and rational values;
+  categorical or unsupported predicates are skipped with partial-check notices
+  instead of conversion crashes. Real solver cases verify exact SAT outcomes.
+- Pin development coverage.py to7.16.2: the7.17.0 upgrade changed TYPE_CHECKING
+  exclusion accounting. Its successful but noncomparable gate is recorded
+  separately rather than promoted as a coverage gain.
+
 - Fairness threshold helpers reject non-finite/complex scores and thresholds,
   non-vector inputs and fractional grid sizes instead of silently selecting
   negative labels or leaking array errors. Independent scalar calculations

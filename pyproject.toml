@@ -253,7 +253,8 @@ docs = ["sphinx", "sphinx-rtd-theme", "myst-parser"]
 dev = [
   "pytest>=7.4",
   "pytest-cov>=7.0",
-  "coverage[toml]>=7.10",
+  # Preserve the accepted line/exclusion accounting across coverage gates.
+  "coverage[toml]==7.16.2",
   "ruff>=0.4",
   "mypy>=1.8",
   "build>=1.0",

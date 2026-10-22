@@ -64,6 +64,11 @@ excluded lines remain unchanged. The expanded profile
 passed the complete suite in18:42 with1900 pytest warnings
 and no coverage collection warnings.
 
+The subsequent `8594200` gate passed its tests, but coverage.py upgraded from
+7.16.2 to7.17.0 and reported607 excluded lines instead of566. Its raw86.5151%
+is not accepted as a comparable coverage gain. Development coverage tooling is
+now pinned to7.16.2 to retain the accepted accounting; a fresh gate is required.
+
 The accepted expanded profile includes scikit-activeml1.0.1, DoWhy0.14 and ONNX Runtime1.31.0 using
 NumPy2.4.1/SciPy1.15.3/mlxtend0.23.4. A prior same-source local comparison
 passed85.3947% (original) and85.5192% (broader), gained80/lost3 lines, net77,

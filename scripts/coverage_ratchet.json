@@ -53,6 +53,19 @@
       "lost_lines": 3,
       "net_covered_change": 77,
       "qualification": "Separate complete local measurements; no database combination. Broader profile subsequently passed remote CPU CI at85.4319 percent."
+    },
+    "noncomparable_measurement": {
+      "source_revision": "8594200dc8a6e5bdde35aac3c0919fa123b600b0",
+      "tested_revision": "ff016ce979856a60088da57f69623e052dac5543",
+      "run_id": 39812389575,
+      "result": "3834 passed, 77 skipped, zero failures/errors; all three workflows passed",
+      "coverage_version": "7.17.0",
+      "percent_covered": 86.51511736484528,
+      "covered_lines": 53738,
+      "num_statements": 62114,
+      "excluded_lines": 607,
+      "eligible_for_floor": false,
+      "notes": "Not promoted: automatic coverage.py upgrade from7.16.2 changed TYPE_CHECKING exclusion accounting across40 files (+41 excluded lines). Source/merge trees equal fbacba31e290aee2038d5d45c3216171a93ca80b. Full12:47,1900 warnings,no coverage collection warnings. Development coverage pinned to7.16.2; static package exclusions restored566. Fresh whole-suite gate required. Latest accepted4c06bd3 remains86.4734%."
     }
   },
   "schedule": [

@@ -1061,3 +1061,37 @@ selection_rates_from_scores (baseline372/current409 under --follow-imports=skip)
 Reach against verified4c06bd3:23 previously missing unchanged production lines
 and39 changed/new executed lines, all in fairness mitigation. This is subset
 evidence; a new whole-suite gate must pass before accepting an aggregate gain.
+
+### Exact Z3 bounds and coverage measurement reproducibility
+
+The optional Z3 verifier now constructs numeric bounds without converting through
+float. Real solver checks show why this matters: neighboring integers above2^53
+and narrow Decimal/Fraction intervals previously collapsed, reversing SAT/unsat
+results. Thirty scalar comparison cases cover all six operators, including
+Python/NumPy boolean bounds. Two exact rational midpoint checks prove nonempty
+intervals independently of Z3. Unsupported/category/non-finite predicates are
+skipped rather than raising conversion errors. Partial numeric SAT checks now
+warn about unchecked predicates; a real public Session fit carries the warning
+through without changing rule predictions. This remains a numeric antecedent
+check, not a complete rule-set consistency proof.
+
+Initial real-solver reproduction:16 failed,12 passed. Final broader run:61 passed,
+one installed-backend missing-extra guard skipped,786 existing warnings in89.27s
+(784 sklearn RuleFit deprecations and two flat-API notices). Ruff and scoped mypy
+pass. Against verified4c06bd3, subset reach is17 unchanged missing lines:13 in
+the verifier, three in rule consumers and one optional Torch guard. Of14 changed
+or added executed lines,11 belong to this verifier repair; three are imports from
+the preceding fairness repair. No combined percentage is claimed.
+
+The fairness source8594200 passed all three workflows (3834 passed,77 skipped,
+1900 warnings,12:47; no collection warnings). Its mergeff016ce9 matched source
+treefbacba31e290aee2038d5d45c3216171a93ca80b. However, automatic coverage.py
+upgrade7.16.2 to7.17.0 changed exclusion accounting:41 additional TYPE_CHECKING
+lines across40 existing files were excluded. Raw86.5151% (53738/62114,607 excluded)
+is recorded as noncomparable and is not the accepted baseline or a ratchet input.
+Development coverage is now pinned7.16.2. Both static package analysis and the
+final targeted report confirm566 exclusions again. Latest accepted whole-suite
+coverage remains86.4734% at4c06bd3; a new complete gate must verify the pin and
+both correctness repairs. Scope, exclusion rules and core70/expanded85 floors
+are unchanged. Z3-solver5.1.0.0 was already pinned in the expanded profile;
+local verification installed only that backend and changed only coverage tooling.
