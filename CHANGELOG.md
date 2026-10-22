@@ -14,6 +14,11 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Native first-order MAML transfers adapted query gradients to its base model.
+  Previously the outer optimizer silently left the initialization unchanged.
+  Independent SGD/Adam calculations verify updates; existing native MAML plans
+  need refitting to benefit. The learn2learn path is unchanged.
+
 - Semi-supervised text inference accepts Pandas string feature columns. Offline
   tiny-encoder consumers verify self-training probabilities, pseudo-labels,
   holdout isolation and trusted bundle reloads against independent calculations.
