@@ -14,6 +14,11 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Synthetic utility evaluation infers its task from frozen training metadata,
+  preventing holdout size or label cardinality from switching metric families.
+  Independent Ridge normal equations and classification probes verify TSTR/TRTR.
+  Explicit synthetic sample budgets must be positive integers.
+
 - Z3 bound verification preserves exact integer, decimal and rational values;
   categorical or unsupported predicates are skipped with partial-check notices
   instead of conversion crashes. Real solver cases verify exact SAT outcomes.

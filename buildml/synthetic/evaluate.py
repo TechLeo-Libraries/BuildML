@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from numbers import Integral
 from typing import Any
 
 import numpy as np
@@ -62,17 +63,18 @@ split_plan:
 plan:
     Fitted plan object carrying model state and feature contract.
 mode:
-    Anomaly detection mode (``unsupervised`` or ``supervised``).
+    ``fidelity`` compares distributions; ``tstr`` measures held-out utility.
 eval_backend:
     eval backend (EvalBackend).
 partition:
     Holdout partition name or ``all`` for the full frame.
 n_synthetic:
-    n synthetic (int | None).
+    Positive integer sample budget, or None for the automatic row count.
 random_state:
     Seed for stochastic steps (sampling, initialization, bagging).
 estimator:
-    Fitted model object used for scoring or prediction.
+    Classification probe: ``auto`` selects logistic or ridge classification;
+    ``ridge`` forces ridge classification. Regression uses ridge regression.
 
 Returns
 -------
@@ -99,7 +101,13 @@ ValidationError
     if not cols:
         raise ValidationError("No overlapping columns between plan and evaluation frame.")
     real_sub = real[cols].copy()
-    n_syn = int(n_synthetic or max(len(real_sub), plan.n_rows_fitted))
+    if n_synthetic is not None and (
+        isinstance(n_synthetic, (bool, np.bool_))
+        or not isinstance(n_synthetic, Integral)
+        or n_synthetic < 1
+    ):
+        raise ValidationError("n_synthetic must be a positive integer or None.")
+    n_syn = int(max(len(real_sub), plan.n_rows_fitted) if n_synthetic is None else n_synthetic)
     sample = sample_synthetic(plan, n=n_syn, random_state=random_state)
     assert sample.frame is not None
     syn_sub = sample.frame[[c for c in cols if c in sample.frame.columns]].copy()
@@ -174,8 +182,12 @@ ValidationError
     if not feature_cols:
         raise ValidationError("mode='tstr' needs ≥1 feature column.")
 
-    y_real = real_sub[target]
-    task = _infer_task(y_real)
+    task = _infer_task(plan, target)
+    disclosures.append(
+        f"TSTR task={task!r} inferred from frozen train target schema: numeric "
+        "with more than20 distinct training values means regression. "
+        "This is a heuristic; review numeric class codes and target semantics."
+    )
     metrics, warn = _tstr_metrics(
         syn_sub,
         real_sub,
@@ -307,8 +319,11 @@ def _plan_sdv_metadata(plan: SynthesizerPlan) -> Any | None:
     return None
 
 
-def _infer_task(y: pd.Series) -> str:
-    if pd.api.types.is_numeric_dtype(y) and y.nunique(dropna=True) > 20:
+def _infer_task(plan: SynthesizerPlan, target: str) -> str:
+    spec = next((column for column in plan.column_specs if column.name == target), None)
+    if spec is None:
+        raise ValidationError("TSTR target missing from frozen training schema; refit the synthesizer.")
+    if spec.kind in {"continuous", "integer"} and spec.n_unique > 20:
         return "regression"
     return "classification"
 

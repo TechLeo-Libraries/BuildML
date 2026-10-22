@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-10-19, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed:86.4734% (53,687/62,085);3,801 passed,77 skipped | [CI39804246676](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39804246676), source `4c06bd3`, tested merge `414d33ee`; trees match and all three workflows passed.566 exclusions unchanged;floor85 set from this passing86.4734% gate;90% gap2,190 lines. Evolutionary nested numerical audit accepted;1900 pytest warnings, no coverage collection warnings |
+| Current accepted remote expanded CPU whole-package gate | Passed:86.5426% (53,762/62,122);3,875 passed,77 skipped | [CI39822742189](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39822742189), source `91b34d6`, tested merge `abb82ccd`; trees match and all three workflows passed.566 exclusions unchanged;floor85 set from this passing86.5426% gate;90% gap2,148 lines. Fairness/exact-Z3 repairs and pinned coverage7.16.2 accepted;1900 pytest warnings, no coverage collection warnings |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -1095,3 +1095,38 @@ coverage remains86.4734% at4c06bd3; a new complete gate must verify the pin and
 both correctness repairs. Scope, exclusion rules and core70/expanded85 floors
 are unchanged. Z3-solver5.1.0.0 was already pinned in the expanded profile;
 local verification installed only that backend and changed only coverage tooling.
+
+The fresh91b34d6 gate subsequently passed with coverage.py7.16.2 and566
+exclusions:53762/62122=86.5426%,3875 passed,77 skipped. All three workflows
+passed; tested mergeabb82ccd matched source tree64feecb0527523dd3f145345dd78e369dc7a4246.
+Full14:20,1900 warnings, no collection warnings. This is the accepted comparable
+measurement for both fairness and exact-Z3 repairs. Exact90% gap:2148 lines.
+
+### Frozen task semantics for synthetic utility
+
+TSTR previously inferred classification/regression from holdout target cardinality.
+A small regression holdout could therefore report accuracy, while new labels in
+a classification holdout could switch evaluation to regression. Task inference
+now uses the fitted plan's frozen target column specification. The existing
+heuristic remains explicit: numeric targets with more than20 distinct training
+values imply regression; review numeric class codes and target semantics. Valid
+existing plans already contain these specifications and need no generator refit.
+Malformed plans missing target metadata request refitting instead of falling back
+to holdout inference. Explicit n_synthetic budgets must be positive integers;
+zero, negative, fractional, boolean and non-finite budgets no longer default,
+truncate or leak conversion errors. NumPy integers and automatic None remain valid.
+
+Independent bootstrap row draws and Ridge normal equations verify TSTR and TRTR
+R², median imputation, training-only scaling and utility gaps across two seeds
+and test/validation. Reducing holdout targets to two values keeps the same task;
+generator frames and caller data remain unchanged. Independent logistic/ridge
+classification probes also agree when holdout labels introduce new classes.
+Initial18 checks failed (including missing task disclosures); final43 passed,
+one SDV-not-installed skip and two existing flat-API warnings in51.49s. Ruff
+passes; scoped mypy retains the verified pre-existing Any-return alias error
+in _resolve_eval_backend (baseline300/current312 under follow-imports=skip).
+Subset reach against verified91b34d6:15 unchanged missing lines, comprising9
+evaluation lines and6 local absent-backend catalog/import paths;11 changed/new
+evaluation lines executed. Those6 host absence paths are not a projected remote
+gain. Whole-suite acceptance of this batch remains pending. Coverage scope,
+566 exclusions, pinned7.16.2 and core70/expanded85 floors remain unchanged.
