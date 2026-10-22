@@ -156,9 +156,9 @@ ValidationError
     _validate_names(flag_column, score_column)
     if not 0.0 < float(contamination) < 0.5:
         raise ValidationError("contamination must be in (0, 0.5)")
-    if threshold_policy == "validation_tuned":
+    if threshold_policy in {"validation_tuned", "train_tuned", "test_tuned"}:
         raise ValidationError(
-            "threshold_policy='validation_tuned' is set by tune_anomaly_threshold "
+            f"threshold_policy={threshold_policy!r} is set by tune_anomaly_threshold "
             "after fit. Fit with contamination/quantile/score_threshold first."
         )
 

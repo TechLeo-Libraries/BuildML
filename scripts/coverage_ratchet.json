@@ -8,20 +8,20 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 86.54260970348669,
-      "covered_lines": 53762,
-      "num_statements": 62122,
+      "percent_covered": 86.55839557043522,
+      "covered_lines": 53777,
+      "num_statements": 62128,
       "excluded_lines": 566,
-      "source_revision": "91b34d6b63f5998abbfa1b9a2917705e350af6ae",
-      "tested_revision": "abb82ccd706c56dcfb601ed4cdba6ddf821c5a0f",
+      "source_revision": "d90a0e5fcd97d4c3a7a7f0095fc77b4c095c8b26",
+      "tested_revision": "b5caaa5f92bb022a85b89979f37af6f2f6ea621d",
       "platform": "remote Linux, CPU expanded profile",
-      "run_id": 39822742189,
-      "result": "3875 passed, 77 skipped, zero failures/errors",
+      "run_id": 39831643184,
+      "result": "3894 passed, 77 skipped, zero failures/errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
-      "notes": "Fairness and exact Z3 repairs accepted with restored coverage7.16.2 accounting; source/merge trees equal64feecb0527523dd3f145345dd78e369dc7a4246. All three workflows passed. 566 exclusions unchanged; 90 percent requires2148 further covered lines. 1900 pytest warnings, no coverage collection warnings. Core70/expanded85 retained.",
+      "notes": "Frozen synthetic utility task/budget repairs accepted with coverage7.16.2; source/merge trees equal76fb48249b4d1a56abc94ea00ee4b0c15d3c8993. All three workflows passed. 566 exclusions unchanged;90 percent requires2139 further covered lines.1900 pytest warnings,no coverage collection warnings. Core70/expanded85 retained.",
       "coverage_version": "7.16.2"
     },
     "latest_local_measurement": {

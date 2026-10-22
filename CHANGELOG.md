@@ -14,6 +14,11 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Anomaly threshold tuning refuses unknown metrics and invalid F-beta values.
+  Exploratory test tuning discloses its optimistic metrics, and stored policy
+  names distinguish train, validation and test tuning. Independent confusion-count
+  oracles verify all four methods and the resulting applied flags.
+
 - Synthetic utility evaluation infers its task from frozen training metadata,
   preventing holdout size or label cardinality from switching metric families.
   Independent Ridge normal equations and classification probes verify TSTR/TRTR.

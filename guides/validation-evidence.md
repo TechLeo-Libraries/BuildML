@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-10-19, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed:86.5426% (53,762/62,122);3,875 passed,77 skipped | [CI39822742189](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39822742189), source `91b34d6`, tested merge `abb82ccd`; trees match and all three workflows passed.566 exclusions unchanged;floor85 set from this passing86.5426% gate;90% gap2,148 lines. Fairness/exact-Z3 repairs and pinned coverage7.16.2 accepted;1900 pytest warnings, no coverage collection warnings |
+| Current accepted remote expanded CPU whole-package gate | Passed:86.5584% (53,777/62,128);3,894 passed,77 skipped | [CI39831643184](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39831643184), source `d90a0e5`, tested merge `b5caaa5f`; trees match and all three workflows passed.566 exclusions unchanged;floor85 set from this passing86.5584% gate;90% gap2,139 lines. Frozen synthetic utility task/budget repair accepted with coverage7.16.2;1900 pytest warnings, no coverage collection warnings |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -1130,3 +1130,40 @@ evaluation lines and6 local absent-backend catalog/import paths;11 changed/new
 evaluation lines executed. Those6 host absence paths are not a projected remote
 gain. Whole-suite acceptance of this batch remains pending. Coverage scope,
 566 exclusions, pinned7.16.2 and core70/expanded85 floors remain unchanged.
+
+The subsequent d90a0e5 gate accepted the frozen utility repair:53777/62128=
+86.5584%,3894 passed,77 skipped; all three workflows passed. Tested merge
+b5caaa5f matched source tree76fb48249b4d1a56abc94ea00ee4b0c15d3c8993.
+Full17:36,1900 warnings, no collection warnings. Coverage7.16.2/566 exclusions
+and core70/expanded85 floors were unchanged; exact90% gap2139 lines.
+
+### Anomaly threshold selection and honest partition metadata
+
+All four threshold methods are checked against independent scalar confusion
+counts on real IsolationForest scores, including a manually interpolated
+contamination quantile. Validation tuning ignores poisoned test labels. Applied
+thresholds produce the expected real test-set scores and flags; update_plan=False
+leaves the detector threshold unchanged. Zero beta remains valid (precision),
+and NumPy fractional beta values retain the scalar optimum.
+
+Unknown metric names previously silently selected F-beta. Invalid beta values
+either reached sklearn errors or were accepted without a clear numeric contract;
+they now raise BuildML ValidationError before scoring. F-beta requires a finite
+nonnegative real number excluding booleans. Exploratory allow_test_tuning=True
+previously emitted 'test was not used'; it now explicitly discloses optimistic
+test-selected metrics. Stored policies also previously said validation_tuned
+for train/test selections; they now record train_tuned or test_tuned. These
+post-fit names are catalogued but cannot be requested directly during detector
+fitting. Validation policy names remain unchanged. Older non-validation plans
+with incorrect metadata should be retuned to record their actual population;
+loading alone does not reconstruct past threshold selection.
+
+Initial reproduction:10 failed,8 passed; all eight numerical oracles passed
+before the repair. Final broader verification:43 passed, three PyOD-absent
+skips, no warnings in83.93s. Ruff passes. Scoped mypy retains two verified
+pre-existing follow-imports=skip errors (TuningPartition alias27->28 and
+label-column Any-return219->237). Subset reach against verifiedd90a0e5 is23
+unchanged missing lines:16 threshold, one post-fit guard and six optional
+catalog/import availability paths;14 changed/new lines executed. Host availability
+paths are not projected remote gains. Coverage7.16.2/566 exclusions and
+core70/expanded85 floors are unchanged; full-suite acceptance remains pending.

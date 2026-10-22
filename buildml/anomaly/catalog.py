@@ -85,6 +85,8 @@ dict[str, Any]
             "score_threshold",
             "decision_zero",
             "validation_tuned",
+            "train_tuned",
+            "test_tuned",
         ],
         "default_backend_when_installed": _default_backend_when_installed(),
         "default_supervised_when_installed": _default_supervised_when_installed(),

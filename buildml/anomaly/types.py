@@ -21,6 +21,8 @@ ThresholdPolicy = Literal[
     "score_threshold",
     "decision_zero",
     "validation_tuned",
+    "train_tuned",
+    "test_tuned",
 ]
 ThresholdTuningMetric = Literal["f1", "fbeta", "precision_at_contamination", "youden"]
 
