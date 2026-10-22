@@ -8,20 +8,20 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 86.47177256986389,
-      "covered_lines": 53686,
+      "percent_covered": 86.47338326487879,
+      "covered_lines": 53687,
       "num_statements": 62085,
       "excluded_lines": 566,
-      "source_revision": "603a4f9143c9ea987e98c8b6b83ac72ad709f2fe",
-      "tested_revision": "712a22ea2cea4c3b27a793438a4765a8b6283ac3",
+      "source_revision": "4c06bd3940368e282c8918515a22201569e39b57",
+      "tested_revision": "414d33ee549de3924dea54ac010db49a5e84b23d",
       "platform": "remote Linux, CPU expanded profile",
-      "run_id": 39794829008,
-      "result": "3797 passed, 77 skipped, zero failures/errors",
+      "run_id": 39804246676,
+      "result": "3801 passed, 77 skipped, zero failures/errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
-      "notes": "Raw semi-supervised class identity accepted; source/merge trees equal 538d72b47a3ef26bfb64a7e1be3857ec4d1077bc. All three workflows passed. 566 exclusions unchanged; 90 percent requires 2191 further covered lines. 1900 pytest warnings, no coverage collection warnings. Core70/expanded85 retained."
+      "notes": "Evolutionary nested numerical audit accepted; source/merge trees equal a676e8d50f08ae117151d9089f8ec957377260c7. All three workflows passed. 566 exclusions unchanged; 90 percent requires 2190 further covered lines. 1900 pytest warnings, no coverage collection warnings. Core70/expanded85 retained."
     },
     "latest_local_measurement": {
       "percent_covered": 85.51916984547746,

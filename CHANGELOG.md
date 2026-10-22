@@ -14,6 +14,11 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Fairness threshold helpers reject non-finite/complex scores and thresholds,
+  non-vector inputs and fractional grid sizes instead of silently selecting
+  negative labels or leaking array errors. Independent scalar calculations
+  verify valid threshold policies and normalized reweighing weights.
+
 - Evolutionary nested cross-validation now has independent numerical checks
   for every sampled candidate, selected parameters and outer-fold scores under
   group and time splits, with and without fold-local scaling. Held-out target

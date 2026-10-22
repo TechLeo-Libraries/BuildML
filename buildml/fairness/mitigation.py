@@ -8,6 +8,7 @@ are **not** legal certification or proof that bias has been removed.
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field
+from numbers import Integral
 from typing import Any, Literal
 
 import numpy as np
@@ -16,6 +17,29 @@ from buildml.core.errors import ValidationError
 from buildml.fairness.metrics import _as_bool_pred, group_selection_rates
 
 ThresholdTarget = Literal["demographic_parity", "equal_opportunity"]
+
+
+def _vector(values: Any, name: str) -> np.ndarray:
+    try:
+        array = np.asarray(values)
+    except (TypeError, ValueError) as exc:
+        raise ValidationError(f"{name} must be a one-dimensional vector.") from exc
+    if array.ndim != 1:
+        raise ValidationError(f"{name} must be a one-dimensional vector.")
+    return array
+
+
+def _finite_scores(values: Any) -> np.ndarray:
+    array = _vector(values, "y_score")
+    try:
+        if np.iscomplexobj(array):
+            raise ValueError("complex scores")
+        scores = np.asarray(array, dtype=float)
+    except (TypeError, ValueError, OverflowError) as exc:
+        raise ValidationError("y_score must contain finite real numbers.") from exc
+    if not np.all(np.isfinite(scores)):
+        raise ValidationError("y_score must contain finite real numbers.")
+    return scores
 
 
 @dataclass(slots=True)
@@ -82,7 +106,8 @@ def suggest_group_thresholds(
     y_true:
         Ground-truth labels (needed for equal-opportunity / support checks).
     y_score:
-        Positive-class scores in ``[0, 1]`` (or any comparable ranking).
+        Finite real score vector. The search grid and global midpoint use
+        ``[0, 1]``; map other ranking scales onto that interval before tuning.
     sensitive:
         Group keys (already composed if intersectional).
     positive_label:
@@ -91,7 +116,7 @@ def suggest_group_thresholds(
         ``demographic_parity`` equalizes selection rates toward the global
         mean rate; ``equal_opportunity`` equalizes TPR toward the global TPR.
     grid_size:
-        Threshold grid resolution over ``[0, 1]``.
+        Integer threshold grid resolution over ``[0, 1]``, at least five.
 
     Returns
     -------
@@ -101,24 +126,23 @@ def suggest_group_thresholds(
     Raises
     ------
     ValidationError
-        On length mismatch, empty inputs, or unknown target.
+        On non-vector or non-finite inputs, length mismatch, empty inputs,
+        invalid grid resolution, or unknown target.
     """
     if target not in ("demographic_parity", "equal_opportunity"):
         raise ValidationError(
             f"Unknown threshold target {target!r}; "
             "use 'demographic_parity' or 'equal_opportunity'."
         )
-    yt = np.asarray(y_true)
-    scores = np.asarray(y_score, dtype=float)
-    sens = np.asarray(sensitive)
+    yt = _vector(y_true, "y_true")
+    scores = _finite_scores(y_score)
+    sens = _vector(sensitive, "sensitive")
     if len(yt) != len(scores) or len(yt) != len(sens):
         raise ValidationError("y_true, y_score, and sensitive must have equal length.")
     if len(yt) == 0:
         raise ValidationError("Threshold suggestion requires at least one row.")
-    if grid_size < 5:
-        raise ValidationError("grid_size must be >= 5.")
-    if not np.all(np.isfinite(scores)):
-        raise ValidationError("y_score must be finite.")
+    if isinstance(grid_size, (bool, np.bool_)) or not isinstance(grid_size, Integral) or grid_size < 5:
+        raise ValidationError("grid_size must be an integer >= 5.")
 
     yt_pos = _as_bool_pred(yt, positive_label)
     grid = np.linspace(0.0, 1.0, int(grid_size))
@@ -221,8 +245,9 @@ def suggest_reweighing_weights(
     """Suggest Kamiran–Calders reweighing sample weights for train-time use.
 
     For each (group, label) cell, weight is
-    ``P(group) * P(label) / P(group, label)`` (with Laplace-smoothed empty
-    cells refused via ValidationError when a cell is empty).
+    ``P(group) * P(label) / P(group, label)``. Returned row weights are normalized
+    to mean one; the table records the unnormalized cell weights. Unobserved
+    cells are omitted, with a warning when a group has no positive-label rows.
 
     Parameters
     ----------
@@ -240,10 +265,10 @@ def suggest_reweighing_weights(
     Raises
     ------
     ValidationError
-        On length mismatch, empty inputs, or empty (group, label) cells.
+        On non-vector inputs, length mismatch, or empty inputs.
     """
-    yt = np.asarray(y_true)
-    sens = np.asarray(sensitive)
+    yt = _vector(y_true, "y_true")
+    sens = _vector(sensitive, "sensitive")
     if len(yt) != len(sens):
         raise ValidationError("y_true and sensitive must have equal length.")
     n = len(yt)
@@ -338,17 +363,29 @@ def apply_group_thresholds(
     """Apply per-group thresholds to scores → hard labels (helper, opt-in).
 
     This is an explicit transform for experiments; it does not touch Session
-    state.
+    state. Scores must be finite real vectors and supplied thresholds finite
+    real values. Unknown groups retain the default threshold of 0.5.
     """
-    scores = np.asarray(y_score, dtype=float)
-    sens = np.asarray(sensitive)
+    scores = _finite_scores(y_score)
+    sens = _vector(sensitive, "sensitive")
     if len(scores) != len(sens):
         raise ValidationError("y_score and sensitive must have equal length.")
+    thresholds: dict[str, float] = {}
+    for group, value in thresholds_by_group.items():
+        try:
+            if np.iscomplexobj(value):
+                raise ValueError("complex threshold")
+            threshold = float(value)
+        except (TypeError, ValueError, OverflowError) as exc:
+            raise ValidationError(f"threshold for group {group!r} must be finite and real.") from exc
+        if not np.isfinite(threshold):
+            raise ValidationError(f"threshold for group {group!r} must be finite and real.")
+        thresholds[group] = threshold
     out = np.empty(len(scores), dtype=object)
     default_t = 0.5
     for i, (score, g_raw) in enumerate(zip(scores, sens, strict=True)):
         g = str(g_raw)
-        t = float(thresholds_by_group.get(g, default_t))
+        t = thresholds.get(g, default_t)
         out[i] = positive_label if score >= t else negative_label
     return out
 
