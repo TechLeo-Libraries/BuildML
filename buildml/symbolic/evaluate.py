@@ -57,7 +57,8 @@ def evaluate_symbolic(
     )
     y_true = _targets(dataset, split_plan, partition, plan.target_column)
     metrics, coverage, mean_fired = _score(
-        y_true, pred.predictions, pred.traces, task=plan.task
+        y_true, pred.predictions, pred.traces, task=plan.task,
+        legacy_labels=not plan.config.get("raw_class_labels", False),
     )
     return SymbolicEvalResult(
         partition=str(partition),
@@ -71,7 +72,7 @@ def evaluate_symbolic(
             "Holdout evaluation only: rules were not re-induced on this partition.",
             *plan.disclosures[:2],
         ),
-        warnings=(),
+        warnings=pred.warnings,
     )
 
 
@@ -108,7 +109,8 @@ def evaluate_neuro_symbolic(
     )
     y_true = _targets(dataset, split_plan, partition, plan.target_column)
     metrics, coverage, mean_fired = _score(
-        y_true, pred.predictions, pred.traces, task=plan.task
+        y_true, pred.predictions, pred.traces, task=plan.task,
+        legacy_labels=not plan.config.get("raw_class_labels", False),
     )
     repair_rate = (
         float(pred.n_repaired) / float(pred.n_rows) if pred.n_rows else None
@@ -116,7 +118,7 @@ def evaluate_neuro_symbolic(
     # Fidelity: agreement between neural and final when neural present.
     if pred.neural_predictions is not None:
         agree = sum(
-            str(a) == str(b)
+            classification_accuracy([a], [b], legacy_labels=not plan.config.get("raw_class_labels", False)) == 1.0
             for a, b in zip(
                 pred.neural_predictions, pred.predictions, strict=True
             )
@@ -139,7 +141,7 @@ def evaluate_neuro_symbolic(
             "refit on this partition.",
             *plan.disclosures[:2],
         ),
-        warnings=(),
+        warnings=pred.warnings,
     )
 
 
@@ -176,6 +178,7 @@ def _score(
     traces: tuple[Any, ...],
     *,
     task: str,
+    legacy_labels: bool = False,
 ) -> tuple[dict[str, float], float | None, float | None]:
     if len(y_true) != len(predictions):
         raise ValidationError(
@@ -184,7 +187,7 @@ def _score(
     if task == "classification":
         metrics = {
             "accuracy": classification_accuracy(
-                y_true.tolist(), list(predictions)
+                y_true.tolist(), list(predictions), legacy_labels=legacy_labels
             )
         }
     else:

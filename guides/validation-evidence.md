@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-10-19, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed:86.6799% (53,875/62,154);3,968 passed,77 skipped | [CI39858733259](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39858733259), source `3f9acc9`, tested merge `39db7a39`; trees match and all three workflows passed.566 exclusions unchanged;floor85 set from this passing86.6799% gate;90% gap2,064 lines. Online raw class identity accepted with coverage7.16.2;1900 pytest warnings, no coverage collection warnings |
+| Current accepted remote expanded CPU whole-package gate | Passed:86.6835% (53,879/62,156);4,006 passed,77 skipped | [CI39865441572](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39865441572), source `4f9eb4d`, tested merge `61852a21`; trees match and all three workflows passed.566 exclusions unchanged;floor85 set from this passing86.6835% gate;90% gap2,062 lines. Public sampling budgets accepted with coverage7.16.2;1900 pytest warnings, no coverage collection warnings |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -1263,3 +1263,21 @@ missing availability/catalog lines are local-profile differences, not projected
 remote gains. Coverage7.16.2/566 exclusions. No aggregate percentage projected.
 Internal generator direct-call coercion is unchanged; public Session sampling
 is the repaired boundary. New whole-suite acceptance pending.
+
+### Symbolic raw class identity (2026-10-23)
+
+Symbolic classification now preserves raw class identities in induced tree/list
+rules, all three sklearn neural modes, metadata and trusted bundles. Numeric-looking
+strings, floats, ints and booleans match independent DecisionTree/LogisticRegression
+consumers (the decision-list fixture has a known perfectly separating boundary).
+Incompatible mixed labels and numeric impersonation of explicit string vocabularies
+are refused. New-fit accuracy, agreement and hard-rule repair counts distinguish
+string consequents from numeric targets. Existing plan comparison behavior remains;
+three actual legacy string-encoder bundles retain their original decoding with
+refit notices. Older plans need refitting to obtain raw identities.
+Corrected baseline31 failed/5 passed22.94s. Final98 passed,1 installed-backend
+missing-extra-guard skip,786 existing warnings91.60s; real Torch/imodels/Z3
+checks pass. Ruff passes; scoped mypy has the same8 baseline diagnostics.
+Reach against verified4f9eb4d:4 unchanged missing lines (3 symbolic,1 optional Torch availability) and17 changed/new;
+no projected aggregate gain. Coverage7.16.2/566 exclusions unchanged. New whole
+CI acceptance pending.

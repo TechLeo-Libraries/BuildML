@@ -14,6 +14,11 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Symbolic classifiers preserve raw class identities in induced rules, neural
+  predictions and trusted bundles. New-fit metrics and repair counts distinguish
+  string labels from numeric targets. Legacy neural decoding remains compatible
+  with a refit notice; older plan comparison behavior is retained.
+
 - Public synthetic sampling refuses lossy or non-finite row budgets before
   drawing or merging. Independent NumPy resampling checks verify exact row
   counts, train-only appends and preserved validation/test values.

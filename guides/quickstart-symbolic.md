@@ -7,6 +7,15 @@ pip install buildml
 Tabular if-then rules, declared or induced from train. Default source is
 a decision tree. `fit_neuro` is the sklearn hybrid overlay. General-purpose logic programming is outside this API. `verify_constraints=True` is a lite check only.
 
+New classification fits preserve raw class labels: `"001"` stays a string,
+and boolean/numeric classes retain their types through rules and trusted bundles.
+Rule consequents must use the intended label representation; string `"1.0"`
+does not count as numeric target `1.0` in new-fit accuracy or repair reporting.
+Incompatible mixed training label types are refused. Existing bundles keep their
+original class ordering and comparison behavior. Legacy neural encoders also keep
+their historical numeric decoding and emit a refit notice; refit older plans to
+obtain raw class identity. Loading cannot recover types lost by an older fit.
+
 [Symbolic deep](symbolic-deep.md) ·
 Runnable example: [`examples/symbolic_rules_loop.py`](../examples/symbolic_rules_loop.py) ·
 Evidence: [policy-rules-neuro-symbolic](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/policy-rules-neuro-symbolic)

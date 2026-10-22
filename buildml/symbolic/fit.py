@@ -330,6 +330,7 @@ def fit_symbolic(
 
     config = {
         "backend": resolved_backend,
+        "raw_class_labels": resolved_task == "classification",
         "source": source_key,
         "method": None if resolved_backend == "sklearn" else resolved_method,
         "task": resolved_task,
@@ -629,6 +630,7 @@ def fit_neuro_symbolic(
     )
     config = {
         "backend": resolved_neuro_backend,
+        "raw_class_labels": resolved_task == "classification",
         "mode": mode_key,
         "base_estimator": base_name,
         "torch_method": resolved_torch_method if resolved_neuro_backend == "torch" else None,
