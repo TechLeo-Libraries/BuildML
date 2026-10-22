@@ -438,6 +438,7 @@ jobs:
           python -c "from langchain_classic.chains.question_answering import load_qa_chain; from langchain_core.language_models.fake import FakeListLLM; import langchain_community; print('LangChain offline consumers ready')"
           python -c "from imodels import SkopeRulesClassifier; print('Maintained SkopeRules runtime ready')"
           python -c "from sentence_transformers import SentenceTransformer; print('Offline text consumer runtime ready')"
+          python -c "import ruptures; print('Penalized changepoint runtime ready')"
       - name: Preserve source and actual dependency evidence
         run: |
           mkdir -p artifacts

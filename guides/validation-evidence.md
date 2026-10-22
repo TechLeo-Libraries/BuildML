@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-10-19, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed:86.3552% (53,586/62,053);3,737 passed,77 skipped | [CI39752790831](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39752790831), source `aca522a`, tested merge `56ae3071`; trees match and all three workflows passed.566 exclusions unchanged;floor85 set from this passing86.3552% gate;90% gap2,262 lines. MAML repair accepted;1900 pytest warnings, no coverage collection warnings |
+| Current accepted remote expanded CPU whole-package gate | Passed:86.4052% (53,617/62,053);3,742 passed,77 skipped | [CI39761220128](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39761220128), source `b9267e6`, tested merge `b13e398b`; trees match and all three workflows passed.566 exclusions unchanged;floor85 set from this passing86.4052% gate;90% gap2,231 lines. Core PACF repair accepted;1900 pytest warnings, no coverage collection warnings |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -928,4 +928,24 @@ Subset reach against verified aca522a:57 unchanged previously missing lines
 plus one changed/new executed line. Of these,30 unchanged lines are in
 diagnostics.py;27 occur elsewhere under this host's optional-backend routing
 and existing cases. They are not attributed to new CI coverage. Package-wide
-remote acceptance and the aggregate gain remain pending.
+remote acceptance of the PACF fix passed at b9267e6; the current table records the measured aggregate.
+
+
+### Penalized changepoint and numeric-boundary consumers
+
+Binary segmentation previously ignored the documented penalty and forced a
+length-based count of breaks. It now calls ruptures Binseg.predict(pen=penalty).
+Six real-library comparisons cover PELT/BinSeg at penalties .2,5,1000; high
+penalty produces no breaks. Independent sums verify segment means and counts.
+Invalid penalties (nonfinite, negative, bool, string, None, overflowing real)
+and nonfinite, complex, nonnumeric or multidimensional series raise ValidationError
+before detection. CUSUM constant-series/high-threshold cases return no breaks.
+Recompute older BinSeg reports to obtain the documented penalty semantics.
+This does not establish changepoint power or guarantee a detected break is causal.
+Twenty-one new and nine existing time-series checks passed locally:30 passed,
+no skips,12 upstream statsmodels future/p-value-lookup warnings. Ruff, scoped
+mypy, dependency and YAML checks passed. Local ruptures1.1.10 installation added
+only that package; the expanded profile already pins it and now requires its
+import. Subset reach against verified b9267e6:23 previously missing unchanged
+lines and19 changed/new executed lines. Full remote acceptance and aggregate
+coverage for this changepoint batch remain pending.

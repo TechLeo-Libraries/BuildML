@@ -14,6 +14,11 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Binary segmentation now uses the documented penalty instead of forcing a
+  length-based break count. Changepoint inputs require finite real vectors
+  and finite non-negative numeric penalties; real ruptures consumers verify
+  break locations and independent segment means. Recompute earlier BinSeg output.
+
 - Core NumPy PACF updates all Levinson-Durbin coefficients, correcting values
   from lag three onward. Independent dense Yule-Walker solves verify the
   recurrence and affine invariance. Recompute earlier core-fallback diagnostics.
