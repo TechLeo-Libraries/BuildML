@@ -14,6 +14,10 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Core NumPy PACF updates all Levinson-Durbin coefficients, correcting values
+  from lag three onward. Independent dense Yule-Walker solves verify the
+  recurrence and affine invariance. Recompute earlier core-fallback diagnostics.
+
 - Native first-order MAML transfers adapted query gradients to its base model.
   Previously the outer optimizer silently left the initialization unchanged.
   Independent SGD/Adam calculations verify updates; existing native MAML plans

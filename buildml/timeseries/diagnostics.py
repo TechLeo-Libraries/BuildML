@@ -164,6 +164,6 @@ def _numpy_pacf(y: np.ndarray, nlags: int) -> np.ndarray:
         den = 1.0 - sum(phi[k - 2, j] * acf[j + 1] for j in range(k - 1))
         pacf[k] = num / den if den != 0 else 0.0
         phi[k - 1, k - 1] = pacf[k]
-        for j in range(k - 2):
+        for j in range(k - 1):
             phi[k - 1, j] = phi[k - 2, j] - pacf[k] * phi[k - 2, k - j - 2]
     return pacf[: nlags + 1]

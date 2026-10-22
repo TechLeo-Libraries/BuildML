@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-10-19, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed:86.3483% (53,580/62,051);3,732 passed,77 skipped | [CI39732272338](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39732272338), source `be8fc01`, tested merge `cb62050e`; trees match and all three workflows passed.566 exclusions unchanged;floor85 set from this passing86.3483% gate;90% gap2,266 lines. Offline text consumers accepted;1900 pytest warnings, no coverage collection warnings |
+| Current accepted remote expanded CPU whole-package gate | Passed:86.3552% (53,586/62,053);3,737 passed,77 skipped | [CI39752790831](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39752790831), source `aca522a`, tested merge `56ae3071`; trees match and all three workflows passed.566 exclusions unchanged;floor85 set from this passing86.3552% gate;90% gap2,262 lines. MAML repair accepted;1900 pytest warnings, no coverage collection warnings |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -901,8 +901,31 @@ insufficient-data episode reports no training score and an explicit warning.
 New consumers plus existing Session meta-learning checks:15 passed, one expected
 installed-Torch missing-extra guard skip, no emitted warnings. Ruff and scoped
 mypy passed. Subset reach against verified be8fc01:four previously missing
-unchanged lines and three changed/new executed lines. Aggregate coverage for
-this batch awaits remote CI. This is a correctness repair, not evidence of
+unchanged lines and three changed/new executed lines. The complete MAML suite
+passed at aca522a after correcting the native-import test hook.
+This is a correctness repair, not evidence of
 few-shot superiority, second-order MAML or an independently verified learn2learn
 execution path. Previously saved native MAML plans require refitting to obtain
 the corrected initialization; loading alone does not update learned weights.
+
+
+### Core partial-autocorrelation numerical checks
+
+The NumPy fallback left one intermediate Levinson-Durbin coefficient unset at
+each order, changing PACF from lag three onward. Its recurrence now updates
+all k-1 prior coefficients. Four cases (two AR-series seeds, lag caps three
+and eight) match independent dense Yule-Walker linear solves at absolute
+tolerance 1e-12. Direct autocovariance sums independently verify ACF.
+Translation and positive rescaling preserve the results; zero-lag PACF is one.
+The tests force the core routing decision while statsmodels remains installed;
+this verifies real fallback arithmetic, not an absent-statsmodels environment.
+The statsmodels implementation is unchanged. Recompute previously generated
+core-fallback diagnostics to obtain corrected values.
+Five new and twelve existing time-series cases passed:17 passed, no skips,
+14 upstream warnings (statsmodels tuple-return/decomposition deprecations and
+KPSS lookup-table p-value bounds). Ruff and scoped mypy passed.
+Subset reach against verified aca522a:57 unchanged previously missing lines
+plus one changed/new executed line. Of these,30 unchanged lines are in
+diagnostics.py;27 occur elsewhere under this host's optional-backend routing
+and existing cases. They are not attributed to new CI coverage. Package-wide
+remote acceptance and the aggregate gain remain pending.

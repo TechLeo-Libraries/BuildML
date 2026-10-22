@@ -8,20 +8,20 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 86.34832637669014,
-      "covered_lines": 53580,
-      "num_statements": 62051,
+      "percent_covered": 86.35521247965448,
+      "covered_lines": 53586,
+      "num_statements": 62053,
       "excluded_lines": 566,
-      "source_revision": "be8fc018ab58f15f2ed0837250748d8d5a90d833",
-      "tested_revision": "cb62050e0cb93f005d52a2e60d0937318419ee09",
+      "source_revision": "aca522a7376df1151edc77cd20fccc1ac9ebb0a5",
+      "tested_revision": "56ae3071bc67ed1a1c75b3ce90a2a0a076c51100",
       "platform": "remote Linux, CPU expanded profile",
-      "run_id": 39732272338,
-      "result": "3732 passed, 77 skipped, zero failures/errors",
+      "run_id": 39752790831,
+      "result": "3737 passed, 77 skipped, zero failures/errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
-      "notes": "Offline text semi-supervision accepted; source/merge trees equal c07af4c18c98dfa4af000a744d922a6d2c6992b9. All three workflows passed. 566 exclusions unchanged; 90 percent requires 2266 further covered lines. 1900 pytest warnings, no coverage collection warnings. Core70/expanded85 retained."
+      "notes": "MAML outer-gradient repair and native import callback test fix accepted; source/merge trees equal 7fa5eca8ad4b83e2eddf225bb8333c5ce55e7ba6. All three workflows passed. 566 exclusions unchanged; 90 percent requires 2262 further covered lines. 1900 pytest warnings, no coverage collection warnings. Core70/expanded85 retained."
     },
     "latest_local_measurement": {
       "percent_covered": 85.51916984547746,
