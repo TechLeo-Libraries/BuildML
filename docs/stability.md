@@ -55,13 +55,13 @@ Measure the complete suite with `python scripts/run_full_coverage.py`; subset
 runs are not comparable to the project coverage threshold.
 The separate expanded Linux job runs the same complete test directory with
 `requirements-expanded-coverage.txt` and an **85%** floor. Latest accepted
-remote CPU source `5ac9580` passed **86.4683%** (53,670/62,069 lines), with
-3,777 passed and77 skipped. CI39785508443, backend evidence39785508484 and
-release acceptance39785508691 all passed. Tested merge `4e947162` and source
-trees match. The exact90% gap is2,193 covered lines at this source. Core70,
+remote CPU source `603a4f9` passed **86.4718%** (53,686/62,085 lines), with
+3,797 passed and77 skipped. CI39794829008, backend evidence39794829064 and
+release acceptance39794829122 all passed. Tested merge `712a22ea` and source
+trees match. The exact90% gap is2,191 covered lines at this source. Core70,
 expanded85 floor is set from this passing gate with one-point headroom;566
 excluded lines remain unchanged. The expanded profile
-passed the complete suite in17:45 with1900 pytest warnings
+passed the complete suite in14:48 with1900 pytest warnings
 and no coverage collection warnings.
 
 The accepted expanded profile includes scikit-activeml1.0.1, DoWhy0.14 and ONNX Runtime1.31.0 using

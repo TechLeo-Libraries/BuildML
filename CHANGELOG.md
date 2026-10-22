@@ -14,6 +14,11 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Evolutionary nested cross-validation now has independent numerical checks
+  for every sampled candidate, selected parameters and outer-fold scores under
+  group and time splits, with and without fold-local scaling. Held-out target
+  poisoning and recorded fit populations check the training boundaries.
+
 - New semi-supervised plans preserve raw class labels instead of stringifying
   and guessing numeric types. Mixed incompatible labels and unseen holdout
   identities are refused. Older bundles retain legacy behavior with a refit
