@@ -14,6 +14,11 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Backbone heads validate class counts and freeze overrides before mutating
+  parameters. Sessions preserve the latest freeze setting when replacing a head.
+  Real offline Wav2Vec2/HuBERT consumers verify pooled logits and gradient updates.
+  Text-loader tests now declare their optional Torch dependency in core profiles.
+
 - Text Torch loaders refuse non-integral, boolean and non-finite resource counts
   before attaching loader state. Sequence length, batch size and frequency must
   be positive; vocabulary caps must include the two reserved tokens. Real agent

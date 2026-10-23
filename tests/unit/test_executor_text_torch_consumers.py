@@ -37,6 +37,8 @@ def test_vocab_controls_refuse_lossy_or_nonfinite_counts(name, value):
 @pytest.mark.parametrize("name", ["max_len", "batch_size"])
 @pytest.mark.parametrize("value", [True, 2.5, "3", float("nan"), 0, -1])
 def test_agent_loader_rejects_bad_counts_without_attaching_state(name, value):
+    if isinstance(value, int) and not isinstance(value, bool) and value <= 0:
+        pytest.importorskip("torch", reason="integer range validation dispatches to Torch loaders")
     session = _session()
     outcome = _call(session, "make_text_torch_loaders", {name: value, "text_column": "text"})
     assert not outcome.executed
@@ -47,6 +49,7 @@ def test_agent_loader_rejects_bad_counts_without_attaching_state(name, value):
 @pytest.mark.parametrize("name", ["batch_size", "max_len", "max_vocab", "min_freq"])
 @pytest.mark.parametrize("value", [True, np.bool_(True), 2.5, "3", float("nan"), float("inf"), 0, -1])
 def test_direct_loader_refuses_invalid_counts_before_attaching_state(name, value):
+    pytest.importorskip("torch", reason="public loader validates after its optional backend preflight")
     session = _session()
     with pytest.raises(ValidationError, match=name):
         session.make_text_torch_loaders(text_column="text", **{name: value})
@@ -56,6 +59,7 @@ def test_direct_loader_refuses_invalid_counts_before_attaching_state(name, value
 def test_minimum_vocabulary_and_numpy_integer_counts():
     vocab = fit_vocab(["apple engine"], max_vocab=np.int64(2), min_freq=np.int64(1), max_len=np.int64(3))
     assert vocab.id_to_token == ("<pad>", "<unk>")
+    pytest.importorskip("torch", reason="constructing a real loader requires Torch")
     session = _session()
     bundle = session.make_text_torch_loaders(text_column="text", batch_size=np.int64(4), max_len=np.int64(3))
     assert bundle.loaders["train"].batch_size == 4

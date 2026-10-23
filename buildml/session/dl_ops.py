@@ -2081,13 +2081,12 @@ def attach_backbone_head(
         raise ValidationError(
             "attach_backbone_head requires a prior load_pretrained_backbone(...)."
         )
-    if int(n_classes) < 2:
-        raise ValidationError("n_classes must be >= 2")
     head = _attach(
         backbone,
-        n_classes=int(n_classes),
+        n_classes=n_classes,
         freeze_backbone=freeze_backbone,
     )
+    session._dl_backbone = head.backbone
     session._dl_backbone_head = head
     session._record(
         "attach_backbone_head",

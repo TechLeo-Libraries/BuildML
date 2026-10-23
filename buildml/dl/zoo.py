@@ -33,6 +33,7 @@ buildml.dl.speech : Transcription, rather than feature extraction.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from numbers import Integral
 from typing import Any, Literal
 
 from buildml.core.errors import MissingExtraError, ValidationError
@@ -331,7 +332,8 @@ def attach_backbone_head(
     MissingExtraError
         If PyTorch is not installed.
     ValidationError
-        If ``n_classes`` is below 2.
+        If ``n_classes`` is not an integer of at least two, or the freeze
+        override is not a boolean or None.
 
     Notes
     -----
@@ -365,9 +367,11 @@ def attach_backbone_head(
     buildml.dl.train.train_supervised_module : Training the result.
     """
     torch = require_torch(feature="attach backbone head")
-    if n_classes < 2:
-        raise ValidationError("n_classes must be >= 2")
-    should_freeze = backbone.frozen if freeze_backbone is None else bool(freeze_backbone)
+    if isinstance(n_classes, bool) or not isinstance(n_classes, Integral) or n_classes < 2:
+        raise ValidationError("n_classes must be an integer >= 2; booleans and lossy counts are refused.")
+    if freeze_backbone is not None and not isinstance(freeze_backbone, bool):
+        raise ValidationError("freeze_backbone must be a boolean or None.")
+    should_freeze = backbone.frozen if freeze_backbone is None else freeze_backbone
     freeze_module(backbone.module, freeze=should_freeze)
     feature_dim = int(backbone.feature_dim)
     head = torch.nn.Linear(feature_dim, int(n_classes))

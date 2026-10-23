@@ -15,6 +15,12 @@ values. `max_vocab` must be an integer of at least two, including `<pad>` and
 `<unk>`. Booleans, numeric strings, fractional and non-finite counts are refused
 before loader state is attached. NumPy integer counts are supported.
 
+Backbone heads require an integer `n_classes >= 2` and a boolean or `None` for
+`freeze_backbone`. Invalid options are refused before changing parameter flags.
+After a freeze override, replacing the head with `freeze_backbone=None` keeps
+the Session's latest freeze setting. Offline random-weight checks verify wiring
+and gradients; they do not establish pretrained model quality.
+
 [Torch deep](torch-deep.md) ·
 Runnable example: [`examples/torch_tabular_mlp_loop.py`](../examples/torch_tabular_mlp_loop.py) ·
 Evidence: [torch-tabular-underwrite](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/torch-tabular-underwrite) ·

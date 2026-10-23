@@ -1330,3 +1330,32 @@ Reach against verifiedffd295f:9 unchanged missing lines (8 dispatcher,1 optional
 Torch availability) and6 changed/new lines. Coverage7.16.2/566 exclusions unchanged.
 No projected aggregate gain, CUDA/ONNX throughput or model-quality claim.
 Fresh whole-suite acceptance pending.
+
+### Offline audio backbone/head and core dependency checks (2026-10-23)
+
+CI39884934089 at44e6ade failed in its core profiles:37 new tests expected
+Torch loader validation while Torch was absent. Expanded job, backend39884934033
+and acceptance39884934043 passed; this overall result was not promoted. The core
+test assumptions are corrected here and verified in a subprocess with Torch
+imports deliberately blocked. This simulates dependency absence, not every minimal
+profile/package version; fresh remote core CI remains required.
+
+Backbone heads refuse non-integral, boolean, string and non-finite class
+counts, and invalid freeze overrides, before changing parameter flags. Session
+heads now retain the latest freeze metadata when replaced without an override.
+Actual offline Wav2Vec2/HuBERT encoders loaded from tiny local configurations
+exercise confirmed agent load/head dispatch. NumPy mean-pooling and affine-head
+math matches logits; real SGD steps verify frozen parameters stay unchanged and
+unfrozen parameters receive gradients and change. These are random architectures
+(weights=none), not evidence of pretrained quality or speech accuracy.
+Baseline20 cases10 failed/10 passed20.74s; repaired20 passed20.98s. Broader102
+passed,1 missing-torchvision skip,77 deprecation warnings77.11s. Ruff/docstring
+audit pass; scoped mypy retains the same2 baseline diagnostics. Reach against
+acceptedffd295f:33 unchanged missing lines (26 dispatcher including8 earlier text
+lines,6 zoo,1 optional Torch availability),13 changed/new lines (7 this repair,
+6 earlier text validation); no projected whole-suite percentage.
+Also fixes prior CI's37 Torch-absent core test failures: dependency-free vocabulary
+and agent schema checks still run; real-loader tests explicitly require Torch.
+Installed text checks72 passed; combined simulated Torch-absent checks32 passed,
+60 explicit dependency skips. No production validation was weakened or floor lowered.
+Fresh full CI acceptance pending.
