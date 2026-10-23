@@ -8,20 +8,20 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 87.14767255216694,
-      "covered_lines": 54293,
+      "percent_covered": 87.17495987158908,
+      "covered_lines": 54310,
       "num_statements": 62300,
       "excluded_lines": 566,
-      "source_revision": "31ae0db7af1a2443e8de6a682ab8ff550bde8afa",
-      "tested_revision": "000c64218b46e29fc20f105c0914f2b9e5a51d6d",
+      "source_revision": "74ecbf40cbecf42dbaf73c349750b8a9d475d960",
+      "tested_revision": "888c4a241c13e114502f06e2e5241ff995e5c2f6",
       "platform": "remote Linux, CPU expanded profile",
-      "run_id": 40030584614,
-      "result": "4740 passed, 77 skipped, zero failures/errors",
+      "run_id": 40036982533,
+      "result": "4748 passed, 77 skipped, zero failures/errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
-      "notes": "ASR corpus/input boundary repair accepted; all three workflows passed. Source/merge trees equal09474417569d8cc3329204af30976611cf79c24c. coverage7.16.2/566 exclusions unchanged;2148 warnings,no collection warnings. Full20:22. Exact90 percent gap1777;core70/expanded86 retained.",
+      "notes": "Agent anomaly support-vector consumers accepted; all three workflows passed. Source/merge trees equal7c0729ce8c18a21cac7dabdeacc2f85b2e214428. coverage7.16.2/566 exclusions unchanged;2196 warnings,no collection warnings. Full20:10. Exact90 percent gap1760;core70/expanded86 retained.",
       "coverage_version": "7.16.2"
     },
     "latest_local_measurement": {
