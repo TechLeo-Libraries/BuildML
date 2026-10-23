@@ -46,6 +46,13 @@ impute missing values first. Component names from `reduce_prefix` must not colli
 with retained columns. Names of source columns removed by `reduce_drop_input=True`
 may be reused for the components that replace them.
 
+The `buildml.preprocess.fold.transform_fold_features` helper also accepts fitted
+sklearn transformers. Sparse outputs remain sparse in the returned Pandas frame;
+feature names come from `get_feature_names_out` when available and otherwise use
+positional labels. Output rows must preserve the input index and order, and
+feature names must be unique. Incompatible shapes, row changes and ambiguous
+names raise `ValidationError` before downstream model fitting.
+
 Outliers inside a recipe may `detect` or `cap`. **Drop** is refused:
 dropping rows would rewrite fold membership.
 

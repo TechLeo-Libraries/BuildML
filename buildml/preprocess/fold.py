@@ -8,6 +8,7 @@ from typing import Any, Literal, cast
 
 import numpy as np
 import pandas as pd
+from scipy.sparse import issparse
 from sklearn.base import BaseEstimator, TransformerMixin, clone
 from sklearn.decomposition import PCA
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
@@ -1166,7 +1167,14 @@ def transform_fold_features(preprocessor: Any, x: pd.DataFrame) -> pd.DataFrame:
     -------
     ~pandas.DataFrame
         The transformed features. Column names come from the transformer when
-        it provides them, and are positional integers otherwise.
+        it provides them, and are positional integers otherwise. Sparse matrices
+        retain sparse storage in the returned DataFrame.
+
+    Raises
+    ------
+    ValidationError
+        When output shape or names do not match, row identity changes, or
+        feature names are duplicated.
 
     See Also
     --------
@@ -1174,11 +1182,23 @@ def transform_fold_features(preprocessor: Any, x: pd.DataFrame) -> pd.DataFrame:
     """
     transformed = preprocessor.transform(x)
     if isinstance(transformed, pd.DataFrame):
-        return transformed
-    names = None
-    if hasattr(preprocessor, "get_feature_names_out"):
-        names = list(preprocessor.get_feature_names_out())
-    return pd.DataFrame(transformed, index=x.index, columns=names)
+        result = transformed
+    else:
+        names = None
+        if hasattr(preprocessor, "get_feature_names_out"):
+            names = list(preprocessor.get_feature_names_out())
+        try:
+            if issparse(transformed):
+                result = cast(Any, pd.DataFrame.sparse).from_spmatrix(transformed, index=x.index, columns=names)
+            else:
+                result = pd.DataFrame(transformed, index=x.index, columns=names)
+        except (TypeError, ValueError) as exc:
+            raise ValidationError("Transformed feature shape or names do not match input rows") from exc
+    if not result.index.equals(x.index):
+        raise ValidationError("Transformed features must preserve input row index and order")
+    if not result.columns.is_unique:
+        raise ValidationError("Transformed feature names must be unique; duplicate names are ambiguous")
+    return result
 
 
 def _pca_values(frame: pd.DataFrame, columns: list[str]) -> np.ndarray:

@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-10-19, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed:86.8752% (54,072/62,241);4,358 passed,77 skipped | [CI39934110340](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39934110340), source `fa5b2f6`, tested merge `b4fea1c5`; trees match and all three workflows passed.566 exclusions unchanged;floor85 set from this passing86.8752% gate;90% gap1,945 lines. Real offline Transformers ASR consumers accepted with coverage7.16.2;2044 pytest warnings, no coverage collection warnings |
+| Current accepted remote expanded CPU whole-package gate | Passed:86.8840% (54,094/62,260);4,394 passed,77 skipped | [CI39940759809](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39940759809), source `5853b6b`, tested merge `27650550`; trees match and all three workflows passed.566 exclusions unchanged;floor85 set from this passing86.8840% gate;90% gap1,940 lines. Fold PCA numerical boundaries accepted with coverage7.16.2;2044 pytest warnings, no coverage collection warnings |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -1494,3 +1494,23 @@ no new errors,ignores or budget changes.
 Subset reach vs verifiedfa5b2f6:1 unchanged previously missing production line
 plus32 changed/new executed lines,all in preprocess/fold.py. No projected
 aggregate gain. Fresh full CI pending.
+
+
+External sklearn transformer handoffs now preserve scipy sparse output as a
+Pandas sparse frame and validate row index/order,unique feature names and shape
+compatibility. This fixes valid sparse one-hot/ColumnTransformer designs failing
+ordinary DataFrame construction and prevents silently ambiguous/reordered input
+from reaching a consumer. Dense and unnamed-array handoffs remain supported.
+Initial15 cases reproduced8 failures and7 passes in21.64s. Two additional
+array-row/name mismatch consumers were added before repair verification.
+Real sparse/dense encoders and ColumnTransformers feed Ridge; independent
+one-hot/scaling designs and normal equations verify predictions for unknown
+categories,normal indices and duplicate row labels. DataFrame row changes and
+real encoder name collisions are refused. No source values are changed.
+Final five-file verification:86 passed,zero skips,2 existing sklearn selector
+warnings,57.06s;no collection warnings. Ruff/docstring audit pass;586 findings
+within unchanged budgets. Scoped mypy has19 existing diagnostics versus20 before,
+with no new normalized messages or ignores;one previous Any-return resolved.
+Subset reach vs verified5853b6b:0 unchanged previously missing lines,16 changed/new
+executed lines in preprocess/fold.py. This is a correctness repair with no
+projected aggregate coverage gain. Fresh full CI pending.

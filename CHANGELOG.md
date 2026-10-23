@@ -14,6 +14,11 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- External sklearn transformer handoffs preserve sparse design storage and
+  reject changed row identity, incompatible output shapes and duplicate feature
+  names. Real one-hot and ColumnTransformer Ridge consumers match independent
+  design matrices and normal-equation predictions.
+
 - Fold-local PCA honors a `1.0` variance target as all components, accepts NumPy
   scalar counts/fractions, and refuses invalid controls or complex/non-finite
   data. Component names cannot collide with retained input columns at fit or

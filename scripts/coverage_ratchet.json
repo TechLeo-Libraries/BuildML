@@ -8,20 +8,20 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 86.87521087386128,
-      "covered_lines": 54072,
-      "num_statements": 62241,
+      "percent_covered": 86.88403469322198,
+      "covered_lines": 54094,
+      "num_statements": 62260,
       "excluded_lines": 566,
-      "source_revision": "fa5b2f6e757ac1afd40caec73faddbc6ba312c70",
-      "tested_revision": "b4fea1c5913af8c251b4cdbd3b0cbd111f0f31fc",
+      "source_revision": "5853b6b0aeaa1fb57a9408c5d343aac8cfe67b98",
+      "tested_revision": "27650550915830e47c113336a6b441760def7d6c",
       "platform": "remote Linux, CPU expanded profile",
-      "run_id": 39934110340,
-      "result": "4358 passed, 77 skipped, zero failures/errors",
+      "run_id": 39940759809,
+      "result": "4394 passed, 77 skipped, zero failures/errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
-      "notes": "Real offline Transformers ASR consumers accepted with coverage7.16.2; source/merge trees equal4cd254b877aaae271ce57951855f9f5f83f1e3a6. All three workflows passed.566 exclusions unchanged;90 percent requires1945 further covered lines.2044 pytest warnings,no coverage collection warnings. Core70/expanded85 retained.",
+      "notes": "Fold PCA numerical boundaries accepted with coverage7.16.2; source/merge trees equalb02bb71483580153276bde6abf93e69f142807dc. All three workflows passed.566 exclusions unchanged;90 percent requires1940 further covered lines.2044 pytest warnings,no coverage collection warnings. Core70/expanded85 retained.",
       "coverage_version": "7.16.2"
     },
     "latest_local_measurement": {
