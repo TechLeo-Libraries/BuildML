@@ -414,6 +414,16 @@ stopping or architecture on Session test. Classical Session-global
 plans are **not** automatically refit inside
 `session.dl.cross_validate`.
 
+For a split Session, `session.dl.cross_validate` uses only the attached training
+partition and reserves validation/test rows. An unsplit Session uses every
+attached row. Result configuration discloses `population`, `n_rows` and
+`held_out_partitions`. The AI `cross_validate_torch` tool follows the same rule.
+The low-level `buildml.dl.cv.cross_validate_torch(dataset, ...)` still evaluates
+all rows in the supplied Dataset; provide a training-only Dataset yourself when
+using that API with outer holdouts. Reserving holdouts does not undo preprocessing
+already learned from other rows; start from raw features when fold independence
+depends on fitting those transformations inside each fold.
+
 ```python
 import pandas as pd
 import torch

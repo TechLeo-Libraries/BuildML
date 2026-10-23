@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-10-19, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed:87.0029% (54,188/62,283);4,637 passed,77 skipped | [CI39997770247](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39997770247), source `7cdbeb7`, tested merge `f03a93a3`; trees match and all three workflows passed.566 exclusions unchanged;floor86 set from this passing87.0029% gate;90% gap1,867 lines. Raised86 percent gate accepted with coverage7.16.2;2059 pytest warnings, no coverage collection warnings |
+| Current accepted remote expanded CPU whole-package gate | Passed:87.0318% (54,206/62,283);4,654 passed,77 skipped | [CI40007515503](https://github.com/TechLeo-Libraries/BuildML/actions/runs/40007515503), source `dc1b162`, tested merge `991fa214`; trees match and all three workflows passed.566 exclusions unchanged;floor86 set from this passing87.0318% gate;90% gap1,849 lines. Frozen agent model and temporal consumers accepted with coverage7.16.2;2125 pytest warnings, no coverage collection warnings |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -1684,3 +1684,32 @@ aggregate coverage. Package scope,coverage7.16.2/566 exclusions and core70/
 expanded86 ratchet unchanged. The 90 percent target and long-term SLA remain open.
 
 Reach breakdown:18 workflow lines (16 AI dispatch,2 temporal split) and14 optional catalog/availability lines. Zero changed/new production lines. Subset counts are separate from full-suite percentages.
+
+Session/agent Torch CV outer-population repair:
+the Session wrapper previously supplied its entire Dataset to the intentionally
+whole-input low-level CV API,so reserved validation/test rows entered folds.
+It now validates an attached split and supplies a copied train-only Dataset.
+Unsplit Session CV remains whole-input; low-level Dataset CV is unchanged.
+Result config records population,n_rows,held_out_partitions and disclosures
+distinguish split/unsplit behavior. Existing global preprocessing limitations
+remain: reserving holdouts does not undo transformations learned outside folds.
+
+Initial6-case reproduction:6FAIL2warnings17.76s. Two unsplit numerical controls
+reached the new missing-metadata assertion; two split controls exposed whole-
+Dataset fold populations,and two real agent consumers failed on poisoned outer
+holdouts. After repair initial6PASS2warnings16.96s. Added three malformed outer
+split controls (emptytrain/testoverlap/validationoverlap),refused before factory.
+Independent linear arithmetic computes each real trained fold model's MSE from
+its weights and fold-only normalization,with split/unsplit and normalizeon/off.
+Non-RangeIndex rows and poisoned holdout feature/target values remain unchanged.
+Both regression and classification run through the actual AI execution path.
+Final five-file source-frozen verification32PASS,zero skips/failures,
+24warnings141.16s;no collection warnings. Existing CPU Torch CV/search seed,
+sampling and real runtime training/retrieval consumers pass too.
+Ruff/scopedmypy/docstring audit PASS (586 findings within unchanged budgets).
+Subset reach vs verifieddc1b162:20 unchanged previously missing lines,
+14 changed/new executed lines. Not an aggregate projection.
+Fresh full CI required. Scope,coverage7.16.2/566 exclusions and core70/expanded86
+ratchet unchanged;90percent and general long-term SLA remain unestablished.
+
+Reach breakdown:18 workflow lines (13 low-level CV,3 AI dispatch,2 split checks) and2 optional-availability lines;14 changed/new Session-wrapper lines. Subset reach is separate from aggregate coverage.

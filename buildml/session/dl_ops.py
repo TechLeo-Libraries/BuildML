@@ -485,6 +485,8 @@ def cross_validate_torch(
     Normalize stats are fit per fold. Classical Session plans are disclosed as
     a limitation unless you supply a custom factory path: this helper does not
     silently refit Session-global plans inside each fold.
+    With an attached split, only its train rows enter CV; validation and test
+    remain reserved. Without a split, CV uses all attached rows.
     Delegates to :func:`buildml.dl.cv.cross_validate_torch`.
 
     Parameters
@@ -526,8 +528,22 @@ def cross_validate_torch(
 
     if session._dataset is None:
         raise ValidationError("No dataset attached. Call ingest(...) first.")
+    population = "all"
+    held_out: list[str] = []
+    cv_dataset = session.dataset
+    if session._split_plan is not None:
+        from buildml.data.dataset import Dataset
+        from buildml.data.splits import assert_fit_partition, frame_for_partition
+
+        assert_fit_partition(session._split_plan)
+        session._split_plan.assert_disjoint()
+        training = frame_for_partition(session.dataset, session._split_plan, "train")
+        cv_dataset = Dataset.from_transformed(session.dataset, training)
+        population = "train"
+        held_out = [name for name in ("validation", "test")
+                    if session._split_plan.indices_for(name)]
     result = _cv(
-        session.dataset,
+        cv_dataset,
         n_folds=n_folds,
         epochs=epochs,
         batch_size=batch_size,
@@ -538,6 +554,13 @@ def cross_validate_torch(
         stratify=stratify,
         task=task,
         module_factory=module_factory,
+    )
+    result.config.update(population=population, n_rows=len(cv_dataset._ensure_pandas()),
+                         held_out_partitions=held_out)
+    result.disclosures += (
+        "Session Torch CV uses only the attached split's train rows; outer holdouts remain reserved."
+        if population == "train" else
+        "Unsplit Session Torch CV uses all attached rows; no outer holdout is reserved.",
     )
     session._dl_cv_result = result
     session._record(

@@ -14,6 +14,11 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Session and AI Torch cross-validation now use only an attached split's training
+  rows, preserving validation/test holdouts. Unsplit Sessions and the low-level
+  Dataset API retain whole-input CV. Results disclose the evaluated population
+  and reserved partitions; malformed outer splits are refused before training.
+
 - Real agent bundle consumers verify KG embedding algebra, recommender cosine
   scores and eligibility, legacy SSL activations and multiclass decision costs
   after restoration. Temporal agent consumers verify chronological splits and

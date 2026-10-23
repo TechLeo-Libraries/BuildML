@@ -8,20 +8,20 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 87.0028739784532,
-      "covered_lines": 54188,
+      "percent_covered": 87.03177432044058,
+      "covered_lines": 54206,
       "num_statements": 62283,
       "excluded_lines": 566,
-      "source_revision": "7cdbeb76f5059b5b9489e3b1c08f404b9f312524",
-      "tested_revision": "f03a93a363e174012224038e7e58816144a8ae3f",
+      "source_revision": "dc1b16211fd1ba72219c36ae77d0c19ee9055ba2",
+      "tested_revision": "991fa214abc62b161f64f33244031a344ca7062e",
       "platform": "remote Linux, CPU expanded profile",
-      "run_id": 39997770247,
-      "result": "4637 passed, 77 skipped, zero failures/errors",
+      "run_id": 40007515503,
+      "result": "4654 passed, 77 skipped, zero failures/errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
-      "notes": "Raised86 percent expanded gate passed; all three workflows passed. Source/merge trees equal95e35e2d4cba3c6b839b00b40e327cfd28d8d083. coverage7.16.2/566 exclusions unchanged;2059 warnings,no collection warnings. Full19:02. Exact90 percent gap1867;core70/expanded86 retained. Production/test source unchanged from a05ec41;one additional covered line is repeat-run variation,not attributed to the docs/ratchet commit.",
+      "notes": "Frozen agent model and temporal consumers accepted; all three workflows passed. Source/merge trees equal4d55f2b7ee00175db62a1dce84ec4a21d185820f. coverage7.16.2/566 exclusions unchanged;2125 warnings,no collection warnings. Full19:42. Exact90 percent gap1849;core70/expanded86 retained.",
       "coverage_version": "7.16.2"
     },
     "latest_local_measurement": {
