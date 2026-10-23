@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-10-19, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed:87.0318% (54,206/62,283);4,654 passed,77 skipped | [CI40007515503](https://github.com/TechLeo-Libraries/BuildML/actions/runs/40007515503), source `dc1b162`, tested merge `991fa214`; trees match and all three workflows passed.566 exclusions unchanged;floor86 set from this passing87.0318% gate;90% gap1,849 lines. Frozen agent model and temporal consumers accepted with coverage7.16.2;2125 pytest warnings, no coverage collection warnings |
+| Current accepted remote expanded CPU whole-package gate | Passed:87.0620% (54,237/62,297);4,663 passed,77 skipped | [CI40015296823](https://github.com/TechLeo-Libraries/BuildML/actions/runs/40015296823), source `b9280a9`, tested merge `e1715a02`; trees match and all three workflows passed.566 exclusions unchanged;floor86 set from this passing87.0620% gate;90% gap1,831 lines. Session Torch CV holdout repair accepted with coverage7.16.2;2127 pytest warnings, no coverage collection warnings |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -1713,3 +1713,24 @@ Fresh full CI required. Scope,coverage7.16.2/566 exclusions and core70/expanded8
 ratchet unchanged;90percent and general long-term SLA remain unestablished.
 
 Reach breakdown:18 workflow lines (13 low-level CV,3 AI dispatch,2 split checks) and2 optional-availability lines;14 changed/new Session-wrapper lines. Subset reach is separate from aggregate coverage.
+
+Agent Torch selection numerical consumers (production unchanged):8 new cases
+cover grid/randomized search and nested CV for regression/classification.
+Actual default factories and actual training/scoring run; the wrapper only
+records returned real models and params,never substitutes models or outputs.
+Grid/distribution spaces select linear tabular architectures and two learning
+rates. NumPy affine predictions from fitted weights independently verify MSE
+or argmax accuracy. Independent seeded fold populations verify inner means/std,
+metric-direction winners and outer selected-model refits/aggregate metrics.
+All8 cases run56 real model fits. Poisoned reserved holdout features/targets stay
+outside both loops,and the source Dataset remains unchanged. Tiny epoch counts
+are numerical workflow checks,not learned-model quality or search superiority.
+Initial regression4PASS2warnings18.84s; then classification cases added.
+Final four-file source-frozen verification29PASS,zero skips/failures,
+6warnings66.89s;no collection warnings. Prior SessionCV holdout,search seed and
+sampling contracts included. Ruff/docstring audit PASS,586 findings within
+unchanged budgets. No production type check repeated for this tests-only batch.
+Subset reach vs verifiedb9280a9:20 previously missing unchanged lines,
+0 changed/new executed lines. Not an aggregate projection.
+Fresh full CI required;scope,coverage7.16.2/566 exclusions and core70/expanded86
+unchanged. The 90 percent target and general long-term SLA remain open.

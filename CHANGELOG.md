@@ -14,6 +14,10 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Real agent Torch grid/randomized and nested search consumers verify regression
+  MSE, classification accuracy, winner direction and outer refits against NumPy
+  calculations, while poisoned Session validation/test rows remain reserved.
+
 - Session and AI Torch cross-validation now use only an attached split's training
   rows, preserving validation/test holdouts. Unsplit Sessions and the low-level
   Dataset API retain whole-input CV. Results disclose the evaluated population

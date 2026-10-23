@@ -8,20 +8,20 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 87.03177432044058,
-      "covered_lines": 54206,
-      "num_statements": 62283,
+      "percent_covered": 87.0619773022778,
+      "covered_lines": 54237,
+      "num_statements": 62297,
       "excluded_lines": 566,
-      "source_revision": "dc1b16211fd1ba72219c36ae77d0c19ee9055ba2",
-      "tested_revision": "991fa214abc62b161f64f33244031a344ca7062e",
+      "source_revision": "b9280a9fc18ffa22bb31b6be3bc365cf925b86e8",
+      "tested_revision": "e1715a0201761eaea81b0fe1fa135cdca51a2a17",
       "platform": "remote Linux, CPU expanded profile",
-      "run_id": 40007515503,
-      "result": "4654 passed, 77 skipped, zero failures/errors",
+      "run_id": 40015296823,
+      "result": "4663 passed, 77 skipped, zero failures/errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
-      "notes": "Frozen agent model and temporal consumers accepted; all three workflows passed. Source/merge trees equal4d55f2b7ee00175db62a1dce84ec4a21d185820f. coverage7.16.2/566 exclusions unchanged;2125 warnings,no collection warnings. Full19:42. Exact90 percent gap1849;core70/expanded86 retained.",
+      "notes": "Session Torch CV holdout repair accepted; all three workflows passed after failed acceptance artifact upload retried successfully. Source/merge trees equal85363bd0b67b6adbe7e11ae37f8846cfcef5091f. coverage7.16.2/566 exclusions unchanged;2127 warnings,no collection warnings. Full15:24. Exact90 percent gap1831;core70/expanded86 retained.",
       "coverage_version": "7.16.2"
     },
     "latest_local_measurement": {
