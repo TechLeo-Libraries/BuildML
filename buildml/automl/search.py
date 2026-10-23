@@ -259,6 +259,10 @@ def run_automl(
     on fold-train only. This is **not** NAS, not causal discovery, and not a
     fully automated AI scientist: the search space is a disclosed finite
     catalog under a trial budget.
+
+    Nested selection carries built-in group/time constraints into inner folds
+    and honors custom inner splitters. Declared sample weights apply to both
+    fitting and evaluation in the inner and outer loops.
     """
     assert_fit_partition(split_plan, "train")
     assert split_plan is not None
@@ -1287,7 +1291,7 @@ def _nested_outer_estimate(
     """Honest outer estimate: for each outer fold, run a smaller inner AutoML."""
     del session_preprocess_applied, allow_session_global_preprocess
     del include_recipe_search, preprocess, budget
-    from buildml.model.selection import _resolve_splitter
+    from buildml.model.selection import _resolve_splitter, _validated_fold_positions
 
     x_train, y_train, _fc, _tg, sample_weight = _feature_target_frames(
         dataset, split_plan, "train"
@@ -1323,8 +1327,16 @@ def _nested_outer_estimate(
     fam_map = {f.name: f for f in fams}
 
     for fold_id, (train_pos, eval_pos) in enumerate(split_iter):
+        train_pos = _validated_fold_positions(train_pos, len(x_reset))
+        eval_pos = _validated_fold_positions(eval_pos, len(x_reset))
         if set(train_pos) & set(eval_pos):
             raise LeakageError("AutoML nested outer fold train/eval indices overlap")
+        inner_groups = None if group_reset is None else group_reset.iloc[list(train_pos)]
+        inner_splits = _nested_inner_splits(
+            x_reset.iloc[list(train_pos)], y_reset.iloc[list(train_pos)],
+            cv=inner_cv, strategy=_strategy_name, groups=inner_groups,
+            task=task, random_state=random_state,
+        )
         # Build a temporary Dataset/SplitPlan-like view via index remapping:
         # score candidates with cv_score-style logic on outer-train only, then
         # evaluate the winner on outer-eval.
@@ -1353,6 +1365,7 @@ def _nested_outer_estimate(
                     metric=metric,
                     n_splits=int(inner_cv) if isinstance(inner_cv, int) else 3,
                     random_state=random_state,
+                    split_positions=inner_splits,
                 )
             except (ValidationError, ValueError, TypeError):
                 continue
@@ -1369,6 +1382,7 @@ def _nested_outer_estimate(
         w_otr = None if w_reset is None else w_reset.iloc[list(train_pos)]
         x_oe = x_reset.iloc[list(eval_pos)]
         y_oe = y_reset.iloc[list(eval_pos)]
+        w_oe = None if w_reset is None else w_reset.iloc[list(eval_pos)]
         recipe = best_cand.recipe.recipe
         if recipe is not None and not recipe.is_empty():
             prep = build_fold_preprocessor(x_otr, recipe, y_otr)
@@ -1381,7 +1395,7 @@ def _nested_outer_estimate(
         y_pred = model.predict(x_score)
         from buildml.model.selection import _score_predictions
 
-        fold_metrics = _score_predictions(task, y_oe, y_pred, sample_weight=None)
+        fold_metrics = _score_predictions(task, y_oe, y_pred, sample_weight=w_oe)
         outer_scores.append(float(fold_metrics[metric]))
 
     if not outer_scores:
@@ -1389,6 +1403,59 @@ def _nested_outer_estimate(
     mean = float(np.mean(outer_scores))
     std = float(np.std(outer_scores, ddof=1)) if len(outer_scores) > 1 else 0.0
     return mean, std, tuple(warnings)
+
+
+def _nested_inner_splits(
+    x: pd.DataFrame,
+    y: pd.Series,
+    *,
+    cv: int | Any,
+    strategy: str,
+    groups: pd.Series | None,
+    task: str,
+    random_state: int | None,
+) -> list[tuple[np.ndarray, np.ndarray]]:
+    from sklearn.model_selection import (
+        GroupKFold,
+        KFold,
+        StratifiedGroupKFold,
+        StratifiedKFold,
+        TimeSeriesSplit,
+        check_cv,
+    )
+
+    from buildml.model.selection import _validated_fold_positions
+
+    strategy = {"GroupKFold": "group", "StratifiedGroupKFold": "stratified_group",
+                "TimeSeriesSplit": "time", "KFold": "kfold",
+                "StratifiedKFold": "stratified"}.get(strategy, strategy)
+    splitter: Any
+    if not isinstance(cv, int):
+        splitter = check_cv(cv, y=y, classifier=task == "classification")
+    else:
+        count = max(2, min(cv, len(x)))
+        if strategy in {"group", "stratified_group"}:
+            if groups is None:
+                raise ValidationError("AutoML nested group CV requires aligned groups")
+            splitter = (StratifiedGroupKFold(count, shuffle=True, random_state=random_state)
+                        if strategy == "stratified_group" else GroupKFold(count))
+        elif strategy == "time":
+            splitter = TimeSeriesSplit(count)
+        elif strategy == "stratified" or (strategy not in {"kfold"} and task == "classification" and y.nunique() > 1):
+            splitter = StratifiedKFold(count, shuffle=True, random_state=random_state)
+        else:
+            splitter = KFold(count, shuffle=True, random_state=random_state)
+    raw = splitter.split(x, y, groups) if groups is not None else splitter.split(x, y)
+    positions = []
+    for train_pos, eval_pos in raw:
+        train_pos = _validated_fold_positions(train_pos, len(x))
+        eval_pos = _validated_fold_positions(eval_pos, len(x))
+        if set(train_pos) & set(eval_pos):
+            raise LeakageError("AutoML nested inner fold train/eval indices overlap")
+        positions.append((train_pos, eval_pos))
+    if not positions:
+        raise ValidationError("AutoML nested inner CV produced no folds")
+    return positions
 
 
 def _manual_inner_cv_score(
@@ -1402,20 +1469,13 @@ def _manual_inner_cv_score(
     metric: str,
     n_splits: int,
     random_state: int | None,
+    split_positions: list[tuple[np.ndarray, np.ndarray]] | None = None,
 ) -> float:
-    from sklearn.model_selection import KFold, StratifiedKFold
-
     from buildml.model.selection import _score_predictions
 
-    n_splits = max(2, min(n_splits, len(x)))
-    if task == "classification" and y.nunique() > 1:
-        splitter = StratifiedKFold(
-            n_splits=n_splits, shuffle=True, random_state=random_state
-        )
-        splits = splitter.split(x, y)
-    else:
-        splitter = KFold(n_splits=n_splits, shuffle=True, random_state=random_state)
-        splits = splitter.split(x)
+    splits = split_positions if split_positions is not None else _nested_inner_splits(
+        x, y, cv=n_splits, strategy="auto", groups=None, task=task, random_state=random_state,
+    )
 
     scores: list[float] = []
     x_reset = x.reset_index(drop=True)
@@ -1427,6 +1487,7 @@ def _manual_inner_cv_score(
         x_ev = x_reset.iloc[list(eval_pos)]
         y_ev = y_reset.iloc[list(eval_pos)]
         w_tr = None if w_reset is None else w_reset.iloc[list(train_pos)]
+        w_ev = None if w_reset is None else w_reset.iloc[list(eval_pos)]
         if recipe is not None and not recipe.is_empty():
             prep = build_fold_preprocessor(x_tr, recipe, y_tr)
             x_fit = transform_fold_features(prep, x_tr)
@@ -1436,7 +1497,7 @@ def _manual_inner_cv_score(
         model = clone(estimator)
         model.fit(x_fit, y_tr, **fit_kwargs_for_sample_weight(model, w_tr))
         y_pred = model.predict(x_score)
-        metrics = _score_predictions(task, y_ev, y_pred, sample_weight=None)
+        metrics = _score_predictions(task, y_ev, y_pred, sample_weight=w_ev)
         scores.append(float(metrics[metric]))
     if not scores:
         raise ValidationError("Inner CV produced no scores")

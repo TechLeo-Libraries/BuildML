@@ -14,6 +14,11 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Native AutoML nested scoring applies evaluation weights in both loops and
+  preserves grouped/temporal inner folds and custom inner splitters. Fold
+  membership is validated before nested indexing. Independent weighted Ridge
+  calculations verify selection and outer estimates across five fold modes.
+
 - External sklearn transformer handoffs preserve sparse design storage and
   reject changed row identity, incompatible output shapes and duplicate feature
   names. Real one-hot and ColumnTransformer Ridge consumers match independent

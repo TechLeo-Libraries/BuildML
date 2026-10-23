@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-10-19, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed:86.8840% (54,094/62,260);4,394 passed,77 skipped | [CI39940759809](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39940759809), source `5853b6b`, tested merge `27650550`; trees match and all three workflows passed.566 exclusions unchanged;floor85 set from this passing86.8840% gate;90% gap1,940 lines. Fold PCA numerical boundaries accepted with coverage7.16.2;2044 pytest warnings, no coverage collection warnings |
+| Current accepted remote expanded CPU whole-package gate | Passed:86.8912% (54,108/62,271);4,411 passed,77 skipped | [CI39948237854](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39948237854), source `85774fb`, tested merge `1f339edb`; trees match and all three workflows passed.566 exclusions unchanged;floor85 set from this passing86.8912% gate;90% gap1,936 lines. Sparse transformer handoff boundaries accepted with coverage7.16.2;2044 pytest warnings, no coverage collection warnings |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -1514,3 +1514,23 @@ with no new normalized messages or ignores;one previous Any-return resolved.
 Subset reach vs verified5853b6b:0 unchanged previously missing lines,16 changed/new
 executed lines in preprocess/fold.py. This is a correctness repair with no
 projected aggregate coverage gain. Fresh full CI pending.
+
+
+Native AutoML nested selection now preserves built-in grouped/temporal inner
+populations and custom inner splitters. Evaluation sample weights apply to both
+inner candidate ranking and outer scoring,matching weighted fitting. Inner
+splits are validated once per outer fold before candidate-error handling;
+outer/inner indices are checked before indexing,including overlap refusals.
+Fifteen independent weighted Ridge procedure oracles reproduced15 failures
+in29.66s; after repair all15 passed18.38s. NumPy normal equations and explicit
+fold populations verify MAE/MSE/R2 outer means/spreads across ordinary,group-role,
+explicit-group,temporal and custom-inner modes. The full input remains unchanged.
+Seven further splitter-constraint cases include stratified groups and sklearn
+class-name aliases; eight malformed-membership cases and missing-group refusal
+exercise validation. Final four-file verification:45 passed,zero skips/warnings,
+81.83s;no collection warnings. Ruff and docstring audit pass;586 findings within
+unchanged budgets. Scoped mypy retains the same2 pre-existing tournament-trial
+type diagnostics,no new errors or ignores.
+Subset reach vs verified85774fb:22 unchanged previously missing lines
+(16 AutoML search workflow lines,6 catalog/availability lines) plus37 changed/new
+executed lines. No projected whole-suite gain. Fresh full CI pending.

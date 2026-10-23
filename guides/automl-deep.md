@@ -33,6 +33,14 @@ and preprocess strategy are still open.
 
 ## Selection
 
+Native `selection='nested'` carries built-in grouped and temporal constraints
+into inner selection. Explicit custom inner splitters are honored. Fold indices
+must be valid, nonempty and disjoint before nested indexing. Custom splitters
+remain responsible for expressing the intended group or temporal population.
+Declared sample weights apply to fitting and evaluation in both loops. The
+reported outer mean and spread summarize the weighted metric within each fold;
+they are not a single pooled metric over every outer-evaluation row.
+
 | Mode | Ranking evidence | When |
 | --- | --- | --- |
 | `cv` (default) | Train-fold CV means | Initial selection; use outer folds for a post-selection estimate |
