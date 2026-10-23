@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-10-19, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed:86.8331% (54,031/62,224);4,290 passed,77 skipped | [CI39919493978](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39919493978), source `01430f9`, tested merge `94bb2168`; trees match and all three workflows passed.566 exclusions unchanged;floor85 set from this passing86.8331% gate;90% gap1,971 lines. Nested search configuration boundaries accepted with coverage7.16.2;2044 pytest warnings, no coverage collection warnings |
+| Current accepted remote expanded CPU whole-package gate | Passed:86.8415% (54,051/62,241);4,347 passed,77 skipped | [CI39926408878](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39926408878), source `4197d8e`, tested merge `21122c18`; trees match and all three workflows passed.566 exclusions unchanged;floor85 set from this passing86.8415% gate;90% gap1,966 lines. Tabular RL budgets and probability boundaries accepted with coverage7.16.2;2044 pytest warnings, no coverage collection warnings |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -1458,3 +1458,20 @@ failures and18 passes in2.86s,including passing numerical rollout consumers.
 Subset reach vs verified01430f9:2 unchanged previously missing production lines
 plus22 changed/new executed lines,all in rl/tabular.py. No projected aggregate
 coverage gain. Fresh full CI pending.
+
+
+Real offline Transformers ASR consumers now execute the production pipeline
+with local tiny Wav2Vec2 CTC models,not a substituted pipeline or stub.
+Zero head weights and fixed output biases yield known frame logits; CTC collapse
+must produce A or blank. Explicit,auto and default backend selection,short/padded/
+truncated arrays,all four Dataset partitions and unchanged source audio are
+checked. Actual convolution failures on one-sample inputs produce per-clip
+error sentinels/warnings; a subsequent valid inference succeeds.
+Initial11 new tests passed46.41s. Final broader speech batch:20 passed,
+1 installed-Transformers missing-backend guard skipped,zero warnings,78.24s.
+No collection warnings. Ruff and docstring audit passed;586 audit findings
+within unchanged budgets. No production changes were needed. No speech-quality,
+pretrained-quality or generalization claim is made for these tiny fixtures.
+Subset reach vs verified4197d8e:23 unchanged previously missing production lines
+(22 speech pipeline/Dataset lines,1 Torch availability line),zero changed/new
+executed lines. No combined or projected whole-suite gain. Fresh full CI pending.

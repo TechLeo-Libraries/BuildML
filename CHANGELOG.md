@@ -14,6 +14,11 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Real Transformers ASR pipeline consumers use local tiny CTC models with
+  analytically known output logits. Offline checks cover transcription, blank
+  decoding, Dataset partition selection, input preservation and per-clip
+  inference failures. These are integration checks, not speech-quality evidence.
+
 - Tabular RL training and evaluation require positive integer episode and step
   budgets before backend allocation. Epsilon-greedy distributions refuse
   non-finite or complex action values and invalid exploration rates. Real Gym

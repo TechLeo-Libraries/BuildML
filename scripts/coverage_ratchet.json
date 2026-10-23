@@ -8,20 +8,20 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 86.83305476986372,
-      "covered_lines": 54031,
-      "num_statements": 62224,
+      "percent_covered": 86.84147105605629,
+      "covered_lines": 54051,
+      "num_statements": 62241,
       "excluded_lines": 566,
-      "source_revision": "01430f93987acfec0ab678e81d4c7876313312b5",
-      "tested_revision": "94bb2168182749458b271399a7a74753182e1fac",
+      "source_revision": "4197d8e755bae44bc3507129a7d1477b3d5a5f54",
+      "tested_revision": "21122c18e3d6a4bcdcb971f2769fe8769f7357b9",
       "platform": "remote Linux, CPU expanded profile",
-      "run_id": 39919493978,
-      "result": "4290 passed, 77 skipped, zero failures/errors",
+      "run_id": 39926408878,
+      "result": "4347 passed, 77 skipped, zero failures/errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
-      "notes": "Nested search configuration boundaries accepted with coverage7.16.2; source/merge trees equal9c4a295eaa322970a2048698908b0f252a5ec73b. All three workflows passed.566 exclusions unchanged;90 percent requires1971 further covered lines.2044 pytest warnings,no coverage collection warnings. Core70/expanded85 retained.",
+      "notes": "Tabular RL budgets and probability boundaries accepted with coverage7.16.2; source/merge trees equalb84fbd5b48a454210a021f3433b6c7a419bf7e84. All three workflows passed.566 exclusions unchanged;90 percent requires1966 further covered lines.2044 pytest warnings,no coverage collection warnings. Core70/expanded85 retained.",
       "coverage_version": "7.16.2"
     },
     "latest_local_measurement": {
