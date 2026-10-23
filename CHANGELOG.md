@@ -14,6 +14,12 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Time-series diagnostics refuse malformed, non-finite or constant series,
+  invalid deterministic terms, and non-integer lag requests before numerical
+  work. Reports distinguish KPSS level and trend stationarity and record both
+  tests' deterministic terms. Real backend results and training-only scope are
+  checked against numerical and held-out perturbation consumers.
+
 - EDA gate class shares use labeled-row denominators, and regression reports
   expose the observed median without inventing zero for missing statistics.
   Threshold teaching requires a positive-label decision and calibrated posterior

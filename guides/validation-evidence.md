@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-10-19, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed:86.8006% (53,990/62,200);4,201 passed,77 skipped | [CI39895594657](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39895594657), source `d10877f`, tested merge `90813294`; trees match and all three workflows passed.566 exclusions unchanged;floor85 set from this passing86.8006% gate;90% gap1,990 lines. Symbolic population/regression boundaries accepted with coverage7.16.2;1977 pytest warnings, no coverage collection warnings |
+| Current accepted remote expanded CPU whole-package gate | Passed:86.8113% (54,001/62,205);4,221 passed,77 skipped | [CI39906912795](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39906912795), source `6c048ff`, tested merge `54893b76`; trees match and all three workflows passed.566 exclusions unchanged;floor85 set from this passing86.8113% gate;90% gap1,984 lines. EDA gate population and executable teaching accepted with coverage7.16.2;1977 pytest warnings, no coverage collection warnings |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -1402,3 +1402,20 @@ Final20 new checks within broader77 passed,zero skips,1 existing LangChain warni
 Reach against acceptedd10877f:6 unchanged missing lines (4 workflow,2 optional
 availability) and17 changed/new lines; coverage7.16.2/566 exclusions unchanged.
 No projected aggregate gain. Fresh full CI acceptance pending.
+
+
+Time-series diagnostics now refuse non-positive/non-integer lag requests,
+multidimensional, complex, non-finite or constant series and unsupported
+deterministic term codes before backend work. KPSS disclosures distinguish
+level stationarity (`c`) from trend stationarity (`ct`); ADF disclosures record
+the selected deterministic terms. Valid short-window numerical failures remain
+visible as unavailable statistics while preserving correlations.
+New tests compare ACF/PACF against dense covariance/linear-solve oracles and
+all eight ADF/KPSS term combinations against real statsmodels calls. A real
+Session consumer perturbs held-out observations and checks training-only results
+and input preservation. Final five-file verification:57 passed,zero skips,
+81 statsmodels future/interpolation warnings,82.59s;no collection warnings.
+Ruff,mypy and docstring audit pass;586 audit findings within unchanged budgets.
+Subset reach against verified6c048ff:9 unchanged previously missing lines
+(4 workflow/result lines,5 availability lines) plus16 changed/new executed lines.
+This is subset reach,not an aggregate coverage gain. Fresh full CI is pending.
