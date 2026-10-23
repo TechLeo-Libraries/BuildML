@@ -85,25 +85,26 @@ def _task(ctx: dict[str, Any]) -> str | None:
 
 
 def _feature_sample(ctx: dict[str, Any], limit: int = 3) -> list[str]:
-    numeric = _names(ctx.get("numeric") or [], limit)
+    target = _target_name(ctx)
+    numeric = [name for name in _names(ctx.get("numeric") or [], limit + 1) if name != target][:limit]
     if numeric:
         return numeric
-    cats = [str(x) for x in (ctx.get("categorical") or [])[:limit]]
+    cats = [str(x) for x in (ctx.get("categorical") or []) if str(x) != target][:limit]
     if cats:
         return cats
-    cols = _names(ctx.get("cols") or [], limit)
+    cols = [name for name in _names(ctx.get("cols") or [], limit + 1) if name != target][:limit]
     return cols or ["feature_a"]
 
 
 def _roles_snippet(ctx: dict[str, Any]) -> str:
     target = _target_name(ctx)
     feats = _feature_sample(ctx, 3)
-    parts = [f'"{f}": "feature"' for f in feats]
+    parts = [f'{f!r}: "feature"' for f in feats]
     if target:
-        parts.append(f'"{target}": "target"')
+        parts.append(f'{target!r}: "target"')
     id_like = _names(ctx.get("idLike") or [], 1)
-    if id_like:
-        parts.append(f'"{id_like[0]}": "id"')
+    if id_like and id_like[0] not in feats:
+        parts.append(f'{id_like[0]!r}: "id"')
     return "{\n    " + ",\n    ".join(parts) + ",\n}"
 
 
@@ -689,7 +690,7 @@ _CURRICULUM: dict[str, dict[str, Any]] = {
         "levels": _levels(
             "Report class shares.",
             "Prefer ranking metrics plus precision/recall at a stated threshold.",
-            "Prefer class weights over reckless resampling unless justified.",
+            "Compare weighting and resampling within validation when justified by the task's costs.",
         ),
         "next": [
             "Set scoring to ROC-AUC / average precision / F1 as appropriate.",
@@ -698,7 +699,7 @@ _CURRICULUM: dict[str, dict[str, Any]] = {
     },
     "04.4": {
         "beginner": "Choose the cut-off from costs of false alarms vs misses, not from 0.5 by habit.",
-        "why": "Default 0.5 assumes equal costs and a balanced base rate - often false.",
+        "why": "For calibrated posterior probabilities, 0.5 corresponds to equal false-positive and false-negative costs; declare the positive label and costs.",
         "levels": _levels(
             "Estimate relative costs C_FP and C_FN.",
             "Tune threshold on validation; freeze for test.",
@@ -989,42 +990,43 @@ def _calculation_for(gate_id: str, ctx: dict[str, Any], status: str) -> dict[str
         if target.get("task") == "regression" and target.get("stats"):
             med = target["stats"].get("median")
             return _calc(
-                label="Median baseline (regression floor)",
-                formula="predict ŷ = median(y_train) for every row",
+                label="Observed target median (descriptive)",
+                formula="median(y_observed) in the EDA population",
                 inputs={"target": target.get("name"), "median": med},
-                result=str(med),
-                reading="Any serious model must beat this constant predictor on the same metric.",
+                result=str(med) if med is not None else "unavailable",
+                reading="Fit a training median for MAE or a training mean for MSE, then score on held-out rows using the chosen metric.",
             )
         if target.get("classes"):
-            maj = max(int(k["count"]) for k in target["classes"]) / rows
+            labeled = sum(int(k["count"]) for k in target["classes"])
+            maj = max(int(k["count"]) for k in target["classes"]) / max(1, labeled)
             return _calc(
-                label="Majority-class baseline accuracy",
-                formula="max(class_count) / n",
-                inputs={"target": target.get("name"), "majority_share": maj},
+                label="Observed majority-class share (descriptive)",
+                formula="max(class_count) / n_labeled",
+                inputs={"target": target.get("name"), "majority_share": maj, "labeled_rows": labeled},
                 result=_fmt_pct(maj),
-                reading="Accuracy at or below this number means you have not beaten a constant guess.",
+                reading="This describes labeled EDA rows. Fit the majority rule on training labels, then compare with the model on the same held-out rows.",
             )
 
     if gate_id == "04.3" and target and target.get("classes"):
+        labeled = sum(int(k["count"]) for k in target["classes"])
         shares = {
-            str(k["label"]): int(k["count"]) / rows for k in target["classes"]
+            str(k["label"]): int(k["count"]) / max(1, labeled) for k in target["classes"]
         }
         return _calc(
             label="Class balance",
-            formula="class_count / n",
-            inputs={"target": target.get("name"), "shares": shares},
+            formula="class_count / n_labeled",
+            inputs={"target": target.get("name"), "shares": shares, "labeled_rows": labeled},
             result=", ".join(f"{lab} {_fmt_pct(rate)}" for lab, rate in shares.items()),
             reading="When shares are uneven, accuracy alone is usually the wrong headline.",
         )
 
     if gate_id == "04.4" and target and target.get("classes") and len(target["classes"]) == 2:
-        pos = int(target["classes"][1]["count"]) / rows
         return _calc(
-            label="Bayes-ish cost threshold sketch",
-            formula="τ ≈ C_FP / (C_FP + C_FN)   (calibrated scores, equal utilities aside)",
-            inputs={"positive_rate": pos, "default_threshold": 0.5},
-            result=f"base rate {_fmt_pct(pos)}; default cut 0.5",
-            reading="Replace equal costs with your real C_FP/C_FN and tune on validation.",
+            label="Calibrated binary cost threshold",
+            formula="τ = C_FP / (C_FP + C_FN) for calibrated posterior probabilities and zero correct-decision costs",
+            inputs={"positive_label": None, "C_FP": None, "C_FN": None, "equal_cost_threshold": 0.5},
+            result="Equal-cost threshold 0.5; positive label and costs require a decision.",
+            reading="Declare the positive label and costs, check calibration, then validate and freeze the operating threshold.",
         )
 
     if gate_id == "05.3":
@@ -1511,17 +1513,31 @@ def _worked_example_for(
         )
 
     if gate_id.startswith("04."):
-        metric = "roc_auc" if task == "classification" else "neg_root_mean_squared_error"
+        estimator = "LogisticRegression(max_iter=500, random_state=0)" if task == "classification" else "Ridge()"
+        labeled_frame = f"frame.loc[frame[{target!r}].notna()].copy()" if target else "frame.copy()"
         code = (
             f"{header}"
+            "import pandas as pd\n"
+            "from sklearn.linear_model import LogisticRegression, Ridge\n"
+            f"labeled = {labeled_frame}\n"
+            "# This example evaluates observed labels; review labeling and sampling bias.\n"
+            "print('observed-label rows', len(labeled), 'of', len(frame))\n"
             "session = (\n"
-            "    Session.ingest(frame)\n"
+            "    Session.ingest(labeled)\n"
             f"    .set_roles({roles})\n"
             f"    .split(test_size=0.25, stratify={task == 'classification'}, random_state=0)\n"
             ")\n"
-            "session.impute(strategy='median').encode(method='onehot').scale(method='standard')\n"
-            "session.fit(model='hist_gradient_boosting')  # or another catalog estimator\n"
-            f"evaluation = session.evaluate(partition='test', scoring='{metric}')\n"
+            f"features = {_feature_sample(ctx)!r}\n"
+            "numeric = [name for name in features if pd.api.types.is_numeric_dtype(labeled[name])]\n"
+            "categorical = [name for name in features if name not in numeric]\n"
+            "if numeric:\n"
+            "    session.impute(strategy='median', columns=numeric)\n"
+            "if categorical:\n"
+            "    session.impute(strategy='most_frequent', columns=categorical)\n"
+            "    session.encode(method='onehot', columns=categorical)\n"
+            "session.scale(method='standard')\n"
+            f"session.fit({estimator}, task={task or 'auto'!r})\n"
+            "evaluation = session.evaluate(partition='test')\n"
             "print(evaluation)\n"
             "# Add threshold/calibration/slice diagnostics when the product uses probabilities.\n"
         )
@@ -1534,7 +1550,7 @@ def _worked_example_for(
             ),
             code=code,
             change_these=common_change
-            + [f"Replace scoring='{metric}' with your frozen headline metric.", "Swap model= for your baseline family."],
+            + ["Choose a frozen headline metric from evaluation.metrics before comparing models.", "Supply your configured estimator instance to fit()."],
             flexible=["Baselines inside evaluate", "Threshold tools", "Calibration plots"] + common_flex,
             reading="Metric, baseline, and threshold decisions belong in writing before leaderboard shopping.",
         )

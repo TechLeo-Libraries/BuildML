@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-10-19, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed:86.7547% (53,951/62,188);4,152 passed,77 skipped | [CI39890363039](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39890363039), source `4b822d4`, tested merge `e8393d4f`; trees match and all three workflows passed.566 exclusions unchanged;floor85 set from this passing86.7547% gate;90% gap2,019 lines. Backbone state/count and core dependency-test repair accepted with coverage7.16.2;1977 pytest warnings, no coverage collection warnings |
+| Current accepted remote expanded CPU whole-package gate | Passed:86.8006% (53,990/62,200);4,201 passed,77 skipped | [CI39895594657](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39895594657), source `d10877f`, tested merge `90813294`; trees match and all three workflows passed.566 exclusions unchanged;floor85 set from this passing86.8006% gate;90% gap1,990 lines. Symbolic population/regression boundaries accepted with coverage7.16.2;1977 pytest warnings, no coverage collection warnings |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -1378,3 +1378,27 @@ Ruff/docstring audit pass; scoped mypy retains its4 baseline diagnostics.
 Reach against accepted4b822d4:26 unchanged missing lines (25 symbolic,1 optional
 Torch availability),15 changed/new lines; coverage7.16.2/566 exclusions unchanged.
 No projected whole-suite gain. Fresh full CI acceptance pending.
+
+### EDA gate populations, costs and executable teaching (2026-10-23)
+
+EDA gate class shares now divide by observed target counts, including the
+displayed majority-share and class-balance teaching calculations. Target medians
+are computed by the real regression analyzer; legacy reports lacking a median
+show it as unavailable. These EDA summaries are descriptive and do not claim a
+held-out baseline score. Threshold teaching asks for a positive label and costs,
+uses calibrated posterior probabilities, and removes the incorrect balanced-prior
+requirement and display-order positive-class guess. Weighting/resampling advice
+now calls for task costs and held-out checks.
+Generated evaluation examples safely quote column names, restrict modeling to
+observed labels with a labeling-bias notice, exclude targets from feature sampling,
+prepare numeric/categorical columns separately, and use real estimator/evaluate
+APIs. Actual numeric/categorical classification/regression examples execute with
+ordinary and quoted names. Three missing-label class distributions and two actual
+regression reports match independent Pandas/NumPy counts and medians.
+Original16 cases all failed89.28s; repaired16 passed41.99s. Strengthened8 examples
+exposed target-in-feature selection and categorical-path failures, now repaired.
+Final20 new checks within broader77 passed,zero skips,1 existing LangChain warning
+114.23s. Ruff/docstring audit pass; scoped mypy retains4 baseline diagnostics.
+Reach against acceptedd10877f:6 unchanged missing lines (4 workflow,2 optional
+availability) and17 changed/new lines; coverage7.16.2/566 exclusions unchanged.
+No projected aggregate gain. Fresh full CI acceptance pending.

@@ -14,6 +14,12 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- EDA gate class shares use labeled-row denominators, and regression reports
+  expose the observed median without inventing zero for missing statistics.
+  Threshold teaching requires a positive-label decision and calibrated posterior
+  probabilities. Generated examples use real estimator/evaluation APIs, quote
+  column names safely and exclude targets from feature preparation.
+
 - Symbolic evaluation labels train/all metrics as including fitting rows and
   removes the universal holdout claim. Regression evaluation refuses non-finite,
   complex or unscorable inputs with actionable validation errors; independent

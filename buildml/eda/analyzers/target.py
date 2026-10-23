@@ -180,6 +180,7 @@ def analyze_target(
             "summary": {
                 "type": "regression_target",
                 "mean": _optional_float(y.mean()),
+                "median": _optional_float(y.median()),
                 "std": _optional_float(y.std()),
                 "skew": _optional_float(y.skew()),
             },
