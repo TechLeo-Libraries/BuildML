@@ -14,6 +14,11 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Fold-local PCA honors a `1.0` variance target as all components, accepts NumPy
+  scalar counts/fractions, and refuses invalid controls or complex/non-finite
+  data. Component names cannot collide with retained input columns at fit or
+  replay. Independent SVD projections verify the frozen training subspace.
+
 - Real Transformers ASR pipeline consumers use local tiny CTC models with
   analytically known output logits. Offline checks cover transcription, blank
   decoding, Dataset partition selection, input preservation and per-clip

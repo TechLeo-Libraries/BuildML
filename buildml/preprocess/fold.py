@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, fields, replace
+from numbers import Integral, Real
 from typing import Any, Literal, cast
 
 import numpy as np
@@ -748,11 +749,7 @@ class FoldLocalPreprocessor(TransformerMixin, BaseEstimator):
         cols = _resolve_numeric(x_train, recipe.reduce_columns)
         if not cols:
             raise ValidationError("Fold-local PCA requires numeric columns")
-        values = x_train[cols].to_numpy(dtype=float)
-        if np.isnan(values).any():
-            raise ValidationError(
-                "Fold-local PCA requires non-null features; impute before reduce."
-            )
+        values = _pca_values(x_train, cols)
         n_samples, n_features = values.shape
         max_components = min(n_samples, n_features)
         if max_components < 1:
@@ -760,19 +757,29 @@ class FoldLocalPreprocessor(TransformerMixin, BaseEstimator):
         n_components = recipe.reduce_n_components
         if n_components is None:
             pca_n: int | float = max_components
-        elif isinstance(n_components, float):
-            if not (0.0 < n_components <= 1.0):
-                raise ValidationError("Float reduce_n_components must be in (0, 1]")
-            pca_n = n_components
-        else:
-            if int(n_components) < 1:
+        elif isinstance(n_components, (bool, np.bool_)):
+            raise ValidationError("reduce_n_components must be an integer count or variance fraction")
+        elif isinstance(n_components, Integral):
+            if n_components < 1:
                 raise ValidationError("Integer reduce_n_components must be >= 1")
             pca_n = min(int(n_components), max_components)
+        elif isinstance(n_components, Real):
+            fraction = float(n_components)
+            if not np.isfinite(fraction) or not (0.0 < fraction <= 1.0):
+                raise ValidationError("Float reduce_n_components must be in (0, 1]")
+            pca_n = max_components if fraction == 1.0 else fraction
+        else:
+            raise ValidationError("reduce_n_components must be an integer count or variance fraction")
         reducer = PCA(n_components=pca_n, svd_solver="full")
         reducer.fit(values)
         n_out = int(np.asarray(reducer.explained_variance_ratio_).shape[0])
+        names = [f"{recipe.reduce_prefix}_{i + 1}" for i in range(n_out)]
+        retained = set(x_train.columns) - (set(cols) if recipe.reduce_drop_input else set())
+        collisions = sorted(retained.intersection(names))
+        if collisions:
+            raise ValidationError(f"Fold-local PCA component names collide with retained columns: {collisions}")
         self._reduce_columns = list(cols)
-        self._reduce_feature_names = [f"{recipe.reduce_prefix}_{i + 1}" for i in range(n_out)]
+        self._reduce_feature_names = names
         self._reducer = reducer
 
     def _apply_reduce(self, frame: pd.DataFrame) -> pd.DataFrame:
@@ -781,20 +788,17 @@ class FoldLocalPreprocessor(TransformerMixin, BaseEstimator):
         missing = [c for c in self._reduce_columns if c not in frame.columns]
         if missing:
             raise ValidationError(f"Fold-local reduce columns missing: {missing}")
-        values = frame[self._reduce_columns].to_numpy(dtype=float)
-        if np.isnan(values).any():
-            raise ValidationError(
-                "Fold-local PCA transform found nulls; impute before reduce."
-            )
+        out = frame.drop(columns=list(self._reduce_columns)) if self.recipe.reduce_drop_input else frame
+        collisions = sorted(set(out.columns).intersection(self._reduce_feature_names))
+        if collisions:
+            raise ValidationError(f"Fold-local PCA component names collide with retained columns: {collisions}")
+        values = _pca_values(frame, self._reduce_columns)
         transformed = self._reducer.transform(values)
         component_frame = pd.DataFrame(
             transformed,
             columns=list(self._reduce_feature_names),
             index=frame.index,
         )
-        out = frame
-        if self.recipe.reduce_drop_input:
-            out = out.drop(columns=list(self._reduce_columns))
         return pd.concat([out, component_frame], axis=1)
 
     def _fit_outliers(self, x_train: pd.DataFrame) -> None:
@@ -1175,6 +1179,19 @@ def transform_fold_features(preprocessor: Any, x: pd.DataFrame) -> pd.DataFrame:
     if hasattr(preprocessor, "get_feature_names_out"):
         names = list(preprocessor.get_feature_names_out())
     return pd.DataFrame(transformed, index=x.index, columns=names)
+
+
+def _pca_values(frame: pd.DataFrame, columns: list[str]) -> np.ndarray:
+    values = frame[columns].to_numpy()
+    if np.iscomplexobj(values):
+        raise ValidationError("Fold-local PCA requires finite real, non-null numeric features")
+    try:
+        numeric = np.asarray(values, dtype=float)
+    except (TypeError, ValueError, OverflowError) as exc:
+        raise ValidationError("Fold-local PCA requires finite real, non-null numeric features") from exc
+    if not np.isfinite(numeric).all():
+        raise ValidationError("Fold-local PCA requires finite real, non-null features; impute before reduce")
+    return numeric
 
 
 def _make_scaler(method: ScaleMethod) -> Any:
