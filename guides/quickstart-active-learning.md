@@ -7,6 +7,15 @@ pip install buildml
 Query the train pool, then you label. Unlabeled means target NaN.
 Validation and test are never queried. A person or a separate labeling system supplies the queried labels. Default strategy is margin. `label_budget` defaults to 50.
 
+New learners preserve raw class identities through human labeling rounds, refits
+and trusted bundles. Numeric-looking strings remain strings; numeric and boolean
+labels retain their types. With refitting enabled (the default), new classes trigger a full refit with
+the expanded vocabulary. Fitting refuses incompatible mixed label types. Evaluation scores raw
+labels and includes unseen holdout classes without confusing strings with numbers.
+Legacy learners retain their original string class ordering and numeric decoding,
+including during labeling refits; evaluation emits a notice. Start a fresh fit to
+recover raw identities from an older bundle.
+
 [Active learning deep](active-learning-deep.md) ·
 Runnable example: [`examples/activelearning_margin_loop.py`](../examples/activelearning_margin_loop.py) ·
 Evidence: [active-labeling-budget](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/active-labeling-budget)

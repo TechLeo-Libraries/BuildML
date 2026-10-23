@@ -257,6 +257,9 @@ def classification_accuracy(
     ----------
     y_true, y_pred:
         Parallel label sequences.
+    legacy_labels:
+        Preserve string-normalized comparisons for plans fitted before raw
+        class identity was recorded. New fits use raw label comparisons.
 
     Returns
     -------

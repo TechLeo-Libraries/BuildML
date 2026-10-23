@@ -1279,5 +1279,34 @@ Corrected baseline31 failed/5 passed22.94s. Final98 passed,1 installed-backend
 missing-extra-guard skip,786 existing warnings91.60s; real Torch/imodels/Z3
 checks pass. Ruff passes; scoped mypy has the same8 baseline diagnostics.
 Reach against verified4f9eb4d:4 unchanged missing lines (3 symbolic,1 optional Torch availability) and17 changed/new;
-no projected aggregate gain. Coverage7.16.2/566 exclusions unchanged. New whole
-CI acceptance pending.
+no projected aggregate gain. Coverage7.16.2/566 exclusions unchanged. Expanded
+job passed but overall CI failed the docstring audit; repaired in the next batch.
+
+### Active-learning raw label continuation and CI audit repair (2026-10-23)
+
+The symbolic expanded job passed4042 tests with77 skips (raw86.6873%),
+but overall CI39872285177 failed its four core docstring-audit jobs because the
+new legacy_labels parameter was undocumented. Backend39872285036 and
+acceptance39872284910 passed. That raw percentage is NOT accepted or used for
+floors; accepted4f9eb4d remains86.6835%. Parameter documentation is now repaired
+and local audit passes without changing its budgets.
+
+New active learners preserve raw class labels through user annotation rounds,
+full vocabulary-expanding refits, metadata and trusted bundle continuation.
+Five label domains match independently fitted LogisticRegression models before
+and after two human-label rounds, including a reload. Three new-class rounds
+reorder codes and reproduce fresh fits; original holdouts remain unchanged.
+Mixed incompatible labels are refused. Raw factorization gives metrics a shared
+vocabulary without conflating strings and numbers, including unseen holdout
+classes. Three actual legacy string-encoder bundles retain codes, numeric decoding
+and string-based refits; evaluation asks for a fresh fit for raw identity.
+Missing holdout labels are counted and excluded without model/budget mutation.
+Corrected initial9 cases all failed14.17s; repaired9 passed13.71s. Expanded18
+new cases plus real host/Torch/native acquisition/annotation/integration checks:
+107 passed,zero skips/warnings83.50s. Ruff and docstring audit pass; scoped mypy
+retains its one baseline PartitionOrAll alias error. Subset reach against accepted
+4f9eb4d:4 unchanged missing lines (3 active-learning,1 optional Torch availability)
+and28 changed/new lines (26 active-learning,2 earlier symbolic import/function
+definitions). Coverage7.16.2/566 exclusions; no projected whole-suite gain.
+Also fixes the prior symbolic docstring CI failure by documenting legacy_labels;
+audit passes586 existing findings within unchanged budgets. Fresh full CI pending.

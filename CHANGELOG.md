@@ -14,6 +14,11 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Active learners preserve raw class identities through human-label refits and
+  trusted reloads, including expanded class vocabularies. Evaluation distinguishes
+  string labels from numeric targets while retaining legacy plan behavior.
+  The symbolic comparison option now satisfies the docstring audit.
+
 - Symbolic classifiers preserve raw class identities in induced rules, neural
   predictions and trusted bundles. New-fit metrics and repair counts distinguish
   string labels from numeric targets. Legacy neural decoding remains compatible
