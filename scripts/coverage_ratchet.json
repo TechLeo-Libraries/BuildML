@@ -8,20 +8,20 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 86.6955067382844,
-      "covered_lines": 53909,
-      "num_statements": 62182,
+      "percent_covered": 86.75467935936193,
+      "covered_lines": 53951,
+      "num_statements": 62188,
       "excluded_lines": 566,
-      "source_revision": "ffd295fa83b223db5277ba2fd7d45ea0ebec93ce",
-      "tested_revision": "b3905b71c0544280aa6fb4fd2c8dc5c787474988",
+      "source_revision": "4b822d4a1c9ce9a31a41c46350c242cc23ff5e2e",
+      "tested_revision": "e8393d4f9707a3082045947e06d4fffcd0b1787d",
       "platform": "remote Linux, CPU expanded profile",
-      "run_id": 39878873090,
-      "result": "4060 passed, 77 skipped, zero failures/errors",
+      "run_id": 39890363039,
+      "result": "4152 passed, 77 skipped, zero failures/errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
-      "notes": "Active-learning identity and symbolic audit repair accepted with coverage7.16.2; source/merge trees equald2e671371c563e5265914fb1b996ce231505192a. All three workflows passed.566 exclusions unchanged;90 percent requires2055 further covered lines.1900 pytest warnings,no coverage collection warnings. Core70/expanded85 retained.",
+      "notes": "Backbone state/count and core dependency-test repair accepted with coverage7.16.2; source/merge trees equal341bca9d3fa0023115ecff2fa194370159a87757. All three workflows passed.566 exclusions unchanged;90 percent requires2019 further covered lines.1977 pytest warnings,no coverage collection warnings. Core70/expanded85 retained.",
       "coverage_version": "7.16.2"
     },
     "latest_local_measurement": {

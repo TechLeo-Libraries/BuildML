@@ -16,6 +16,12 @@ original class ordering and comparison behavior. Legacy neural encoders also kee
 their historical numeric decoding and emit a refit notice; refit older plans to
 obtain raw class identity. Loading cannot recover types lost by an older fit.
 
+Evaluation scores the requested partition without refitting. `train` and `all`
+include training rows and carry an explicit warning; those metrics are not
+independent holdout evidence. Regression evaluation refuses non-finite, complex
+or unscorable targets/predictions with a validation error instead of returning
+partial metrics or raw numerical-library errors.
+
 [Symbolic deep](symbolic-deep.md) ·
 Runnable example: [`examples/symbolic_rules_loop.py`](../examples/symbolic_rules_loop.py) ·
 Evidence: [policy-rules-neuro-symbolic](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/policy-rules-neuro-symbolic)

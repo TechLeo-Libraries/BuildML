@@ -14,6 +14,11 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Symbolic evaluation labels train/all metrics as including fitting rows and
+  removes the universal holdout claim. Regression evaluation refuses non-finite,
+  complex or unscorable inputs with actionable validation errors; independent
+  classification and Ridge equations check the unchanged valid metrics.
+
 - Backbone heads validate class counts and freeze overrides before mutating
   parameters. Sessions preserve the latest freeze setting when replacing a head.
   Real offline Wav2Vec2/HuBERT consumers verify pooled logits and gradient updates.
