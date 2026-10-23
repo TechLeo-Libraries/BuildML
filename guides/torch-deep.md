@@ -650,6 +650,13 @@ the result. Do not quote them as speech. `session.dl.evaluate_asr`
 scores WER/CER against references (reuses last transcripts if you
 omit hypotheses).
 
+ASR metric inputs must be lists or tuples of transcript strings; scalar strings
+and non-string elements are refused. WER/CER pool edit counts over actual
+reference word/character counts, with whitespace excluded from CER. Empty
+references add no denominator units. When the entire reference count is zero,
+the rate uses denominator one and still counts insertions. The result reports
+the actual reference totals, including zero, and discloses this convention.
+
 ```python
 import pandas as pd
 import torch

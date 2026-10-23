@@ -2170,7 +2170,7 @@ def evaluate_asr(
                 "transcribe_speech result with texts."
             )
         hyps = list(texts)
-    result = _eval(hypotheses=hyps, references=list(references), lowercase=lowercase)
+    result = _eval(hypotheses=hyps, references=references, lowercase=lowercase)
     session._dl_asr_eval = result
     session._record(
         "evaluate_asr",

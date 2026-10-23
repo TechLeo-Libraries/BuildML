@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-10-19, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed:87.0620% (54,237/62,297);4,663 passed,77 skipped | [CI40015296823](https://github.com/TechLeo-Libraries/BuildML/actions/runs/40015296823), source `b9280a9`, tested merge `e1715a02`; trees match and all three workflows passed.566 exclusions unchanged;floor86 set from this passing87.0620% gate;90% gap1,831 lines. Session Torch CV holdout repair accepted with coverage7.16.2;2127 pytest warnings, no coverage collection warnings |
+| Current accepted remote expanded CPU whole-package gate | Passed:87.0941% (54,257/62,297);4,671 passed,77 skipped | [CI40022865714](https://github.com/TechLeo-Libraries/BuildML/actions/runs/40022865714), source `4ad7a3c`, tested merge `a84f02ff`; trees match and all three workflows passed.566 exclusions unchanged;floor86 set from this passing87.0941% gate;90% gap1,811 lines. Agent Torch selection numerical consumers accepted with coverage7.16.2;2131 pytest warnings, no coverage collection warnings |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -1734,3 +1734,30 @@ Subset reach vs verifiedb9280a9:20 previously missing unchanged lines,
 0 changed/new executed lines. Not an aggregate projection.
 Fresh full CI required;scope,coverage7.16.2/566 exclusions and core70/expanded86
 unchanged. The 90 percent target and general long-term SLA remain open.
+
+ASR corpus counting and transcript input repair:
+empty utterance references previously added artificial denominator units,
+under-reporting corpus WER/CER. Totals now pool actual reference word and
+non-whitespace character counts. Only an entirely zero corpus denominator is
+floored at one;reported reference totals remain zero and the convention is
+disclosed. Per-utterance zero-reference convention remains denominatorone.
+The pure metric API requires list/tuple containers of strings. Session and AI
+wrappers no longer coerce scalar strings/dicts into character/key utterances.
+Malformed transcripts fail before result/history state changes. Valid empty
+strings remain supported. No claim of general ASR model quality.
+
+Initial public consumer matrix35FAIL16PASS17warnings12.54s;afterrepair51PASS/
+17warnings9.75s. Known substitution/insertion/deletion/casing counts and empty
+reference populations are checked across direct,Session and actualAI paths.
+18 additional required-input refusal cases verify unchanged dataset/roles/history,
+no model/split attachment and no files written. These use real tool dispatch,
+not fake session implementations. Real local Wav2Vec2 CTC consumers also pass.
+Final explicit four-file/node source-frozen verification81PASS,zero skips/failures,
+17warnings87.96s;no collection warnings. HF offline flags enabled,no downloads.
+Ruff/docstring audit PASS (586 findings within unchanged budgets). Scoped mypy
+has11 existing diagnostics; an archived4ad7a3c baseline,verified against git show,
+produced the identical normalized diagnostic multiset. No new ignores/budgets.
+Subset reach vs verified4ad7a3c:31 unchanged previously missing lines,
+7 changed/new executed lines. Not an aggregate projection.
+Fresh full CI required. Package scope,coverage7.16.2/566 exclusions and core70/
+expanded86 preserved;90percent and general long-term SLA remain outstanding.

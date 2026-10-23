@@ -14,6 +14,11 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- ASR corpus WER/CER no longer add artificial denominator units for empty
+  references. All-empty corpus denominators use one while reported reference
+  totals remain zero. Direct, Session and AI scoring refuse scalar strings and
+  non-string transcript elements instead of silently reinterpreting them.
+
 - Real agent Torch grid/randomized and nested search consumers verify regression
   MSE, classification accuracy, winner direction and outer refits against NumPy
   calculations, while poisoned Session validation/test rows remain reserved.

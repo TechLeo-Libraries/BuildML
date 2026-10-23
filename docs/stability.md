@@ -55,13 +55,13 @@ Measure the complete suite with `python scripts/run_full_coverage.py`; subset
 runs are not comparable to the project coverage threshold.
 The separate expanded Linux job runs the same complete test directory with
 `requirements-expanded-coverage.txt` and an **86%** floor. Latest accepted
-remote CPU source `b9280a9` passed **87.0620%** (54,237/62,297 lines), with
-4,663 passed and77 skipped. CI40015296823, backend evidence40015296817 and
-release acceptance40015296811 all passed. Tested merge `e1715a02` and source
-trees match. The exact90% gap is1,831 covered lines at this source. Core70,
+remote CPU source `4ad7a3c` passed **87.0941%** (54,257/62,297 lines), with
+4,671 passed and77 skipped. CI40022865714, backend evidence40022865698 and
+release acceptance40022865822 all passed. Tested merge `a84f02ff` and source
+trees match. The exact90% gap is1,811 covered lines at this source. Core70,
 expanded86 floor is set from this passing gate with one-point headroom;566
 excluded lines remain unchanged. The expanded profile
-passed the complete suite in15:24 with2127 pytest warnings
+passed the complete suite in12:06 with2131 pytest warnings
 and no coverage collection warnings.
 
 The subsequent `8594200` gate passed its tests, but coverage.py upgraded from

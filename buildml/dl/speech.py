@@ -472,7 +472,8 @@ def evaluate_asr(
     Raises
     ------
     ValidationError
-        If the two sequences differ in length, or if either is empty.
+        If inputs are not lists/tuples of strings, their lengths differ, or
+        either sequence is empty.
 
     Notes
     -----
@@ -488,6 +489,10 @@ def evaluate_asr(
     transcribed long utterance moves the corpus number more than one badly
     transcribed short one, which is usually what you want.
 
+    Empty references contribute zero reference words/characters to corpus
+    totals. If an entire corpus denominator is zero, one is used for its rate
+    so insertions remain countable. CER excludes whitespace.
+
     Examples
     --------
     >>> from buildml.dl.speech import evaluate_asr
@@ -502,6 +507,9 @@ def evaluate_asr(
     --------
     transcribe_audio_values : Producing the hypotheses.
     """
+    for name, values in (("hypotheses", hypotheses), ("references", references)):
+        if not isinstance(values, (list, tuple)) or not all(isinstance(v, str) for v in values):
+            raise ValidationError(f"{name} must be a list or tuple of strings")
     if len(hypotheses) != len(references):
         raise ValidationError(
             f"hypotheses/references length mismatch: {len(hypotheses)} vs {len(references)}"
@@ -528,8 +536,8 @@ def evaluate_asr(
         c_ed = _edit_distance(ref_chars, hyp_chars)
         word_edits += w_ed
         char_edits += c_ed
-        n_ref_words += max(len(ref_words), 1)
-        n_ref_chars += max(len(ref_chars), 1)
+        n_ref_words += len(ref_words)
+        n_ref_chars += len(ref_chars)
         per.append(
             {
                 "hypothesis": hyp,
@@ -540,12 +548,15 @@ def evaluate_asr(
         )
     return AsrEvalResult(
         n_utterances=len(hypotheses),
-        wer=float(word_edits / n_ref_words),
-        cer=float(char_edits / n_ref_chars),
+        wer=float(word_edits / max(n_ref_words, 1)),
+        cer=float(char_edits / max(n_ref_chars, 1)),
         n_ref_words=n_ref_words,
         n_ref_chars=n_ref_chars,
         per_utterance=tuple(per),
-        disclosures=("WER/CER via Levenshtein edit distance.",),
+        disclosures=(
+            "WER/CER via Levenshtein edit distance; CER excludes whitespace.",
+            "Corpus denominators pool actual reference counts; an all-empty denominator uses one.",
+        ),
         limitations=("String metrics only: not a speech quality product.",),
     )
 

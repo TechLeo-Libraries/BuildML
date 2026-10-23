@@ -2978,11 +2978,11 @@ def _dispatch_tool(
         if references is None:
             raise ValidationError("evaluate_asr requires references.")
         asr_kwargs: dict[str, Any] = {
-            "references": list(references),
+            "references": references,
             "lowercase": bool(call.arguments.get("lowercase", True)),
         }
         if call.arguments.get("hypotheses") is not None:
-            asr_kwargs["hypotheses"] = list(call.arguments["hypotheses"])
+            asr_kwargs["hypotheses"] = call.arguments["hypotheses"]
         result = session.evaluate_asr(**asr_kwargs)
         state_changes.append("Scored ASR hypotheses (WER/CER).")
         return result, tuple(state_changes)
