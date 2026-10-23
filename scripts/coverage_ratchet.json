@@ -8,20 +8,20 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 87.09408157696197,
-      "covered_lines": 54257,
-      "num_statements": 62297,
+      "percent_covered": 87.14767255216694,
+      "covered_lines": 54293,
+      "num_statements": 62300,
       "excluded_lines": 566,
-      "source_revision": "4ad7a3ccc29cf43dc6f6016d6543f1355a768872",
-      "tested_revision": "a84f02ff5a962ffcdf1b82377495bdcf2619c74d",
+      "source_revision": "31ae0db7af1a2443e8de6a682ab8ff550bde8afa",
+      "tested_revision": "000c64218b46e29fc20f105c0914f2b9e5a51d6d",
       "platform": "remote Linux, CPU expanded profile",
-      "run_id": 40022865714,
-      "result": "4671 passed, 77 skipped, zero failures/errors",
+      "run_id": 40030584614,
+      "result": "4740 passed, 77 skipped, zero failures/errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
-      "notes": "Agent Torch selection numerical consumers accepted; all three workflows passed. Source/merge trees equal02f40af35dbee5895491053efb5ec023e9ccd4f6. coverage7.16.2/566 exclusions unchanged;2131 warnings,no collection warnings. Full12:06. Exact90 percent gap1811;core70/expanded86 retained.",
+      "notes": "ASR corpus/input boundary repair accepted; all three workflows passed. Source/merge trees equal09474417569d8cc3329204af30976611cf79c24c. coverage7.16.2/566 exclusions unchanged;2148 warnings,no collection warnings. Full20:22. Exact90 percent gap1777;core70/expanded86 retained.",
       "coverage_version": "7.16.2"
     },
     "latest_local_measurement": {
