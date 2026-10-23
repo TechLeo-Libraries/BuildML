@@ -1684,4 +1684,3 @@ aggregate coverage. Package scope,coverage7.16.2/566 exclusions and core70/
 expanded86 ratchet unchanged. The 90 percent target and long-term SLA remain open.
 
 Reach breakdown:18 workflow lines (16 AI dispatch,2 temporal split) and14 optional catalog/availability lines. Zero changed/new production lines. Subset counts are separate from full-suite percentages.
-
