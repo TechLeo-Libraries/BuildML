@@ -8,20 +8,20 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 86.89116924411042,
-      "covered_lines": 54108,
-      "num_statements": 62271,
+      "percent_covered": 86.92574400462294,
+      "covered_lines": 54153,
+      "num_statements": 62298,
       "excluded_lines": 566,
-      "source_revision": "85774fb489273026c7c2221079810f1c26f0c0ae",
-      "tested_revision": "1f339edbdca623ab63274eaa778ddd31ecdcf96d",
+      "source_revision": "946098b6afffc397b81efe09db71f356ca0ad3e3",
+      "tested_revision": "835a6155deafb5b5dde63668c317b91b2c6f8229",
       "platform": "remote Linux, CPU expanded profile",
-      "run_id": 39948237854,
-      "result": "4411 passed, 77 skipped, zero failures/errors",
+      "run_id": 39955910603,
+      "result": "4442 passed, 77 skipped, zero failures/errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
-      "notes": "Sparse transformer handoff boundaries accepted with coverage7.16.2; source/merge trees equal40d27cc572be2e77352c9784369665cddd910897. All three workflows passed.566 exclusions unchanged;90 percent requires1936 further covered lines.2044 pytest warnings,no coverage collection warnings. Core70/expanded85 retained.",
+      "notes": "Native AutoML nested populations and weights accepted with coverage7.16.2; source/merge trees equalfd65739f8ec0d909818053739b036e0f5deec2b1. All three workflows passed.566 exclusions unchanged;90 percent requires1916 further covered lines.2044 pytest warnings,no coverage collection warnings. Core70/expanded85 retained.",
       "coverage_version": "7.16.2"
     },
     "latest_local_measurement": {

@@ -14,6 +14,12 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Nested AutoML repeats the configured search method, trial budget, recipes and
+  ensemble choices on each outer-training subset, rather than scoring a random
+  proxy. Outer Optuna studies are isolated. Voting-family selection respects
+  loss direction; supported sklearn voting ensembles receive sample weights
+  through their routing API, with unsupported members refused before fitting.
+
 - Native AutoML nested scoring applies evaluation weights in both loops and
   preserves grouped/temporal inner folds and custom inner splitters. Fold
   membership is validated before nested indexing. Independent weighted Ridge

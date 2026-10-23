@@ -33,6 +33,20 @@ and preprocess strategy are still open.
 
 ## Selection
 
+Nested outer estimates repeat the configured grid, randomized, evolutionary or
+Optuna search, including recipe and ensemble options, within each outer-training
+subset. Trial and ensemble budgets apply inside each repeated search, so nesting
+multiplies the work. Outer Optuna studies are fresh and do not reuse persistent
+study objectives from the main search or earlier folds. Integer CV settings use
+the same fold-building machinery as ordinary CV; pass a custom splitter when a
+particular fold assignment is required.
+
+Voting-family candidates follow the ranking metric's direction: lower losses
+are better. With a declared weight column, sklearn voting ensembles pass weights
+to every active member; a member that cannot accept them causes a validation
+refusal. Dropped members are ignored. Backend versions and metadata-routing
+configuration still need compatible sklearn support.
+
 Native `selection='nested'` carries built-in grouped and temporal constraints
 into inner selection. Explicit custom inner splitters are honored. Fold indices
 must be valid, nonempty and disjoint before nested indexing. Custom splitters

@@ -69,7 +69,7 @@ def test_nested_automl_matches_independent_weighted_selection_and_outer_scoring(
                 splits = GroupKFold(2).split(fit, groups=fit.cluster)
             else:
                 splits = KFold(2, shuffle=mode != 'custom_inner',
-                               random_state=None if mode == 'custom_inner' else 7).split(fit)
+                               random_state=None if mode == 'custom_inner' else 42).split(fit)
             scores = []
             for inner_fit, inner_eval in splits:
                 fitting, scoring = fit.iloc[inner_fit], fit.iloc[inner_eval]
