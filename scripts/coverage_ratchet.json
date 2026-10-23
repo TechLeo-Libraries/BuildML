@@ -3,25 +3,25 @@
   "source": "pyproject.toml [tool.coverage.report] fail_under",
   "current": 70,
   "expanded": {
-    "current": 85,
+    "current": 86,
     "source": ".github/workflows/ci.yml expanded-coverage job --cov-fail-under",
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 86.90130216277838,
-      "covered_lines": 54123,
-      "num_statements": 62281,
+      "percent_covered": 87.00126840389834,
+      "covered_lines": 54187,
+      "num_statements": 62283,
       "excluded_lines": 566,
-      "source_revision": "ff93cc8189d3ef903af522f5c8807eb5cc6a063d",
-      "tested_revision": "a95ea99e3fc1856f12e630320081cc9d09de87ee",
+      "source_revision": "a05ec417db99de40277583b76854bd6d29a70737",
+      "tested_revision": "4b8b634cb6d35046baae2b62833cbe09b1b6603a",
       "platform": "remote Linux, CPU expanded profile",
-      "run_id": 39981215644,
-      "result": "4478 passed, 77 skipped, zero failures/errors",
+      "run_id": 39990338088,
+      "result": "4637 passed, 77 skipped, zero failures/errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
-      "notes": "Custom CV iterator replay and honest metadata accepted. All three workflows passed; source/merge trees equalc0871e756b28493adbd47a97c127d5383c89b015. coverage7.16.2/566 exclusions unchanged;2044 warnings,no collection warnings. Full20:00. Exact90 percent gap1930;core70/expanded85 retained.",
+      "notes": "AI bundle restoration accepted. All three workflows passed; source/merge trees equale687668f89d67f80c138aaa4380648b996b694b8. coverage7.16.2/566 exclusions unchanged;2059 warnings,no collection warnings. Full15:11. Exact90 percent gap1868;expanded floor raised85 to86 with1.0012684 percentage points headroom. Core70 retained.",
       "coverage_version": "7.16.2"
     },
     "latest_local_measurement": {
@@ -67,6 +67,15 @@
       "excluded_lines": 607,
       "eligible_for_floor": false,
       "notes": "Not promoted: automatic coverage.py upgrade from7.16.2 changed TYPE_CHECKING exclusion accounting across40 files (+41 excluded lines). Source/merge trees equal fbacba31e290aee2038d5d45c3216171a93ca80b. Full12:47,1900 warnings,no coverage collection warnings. Development coverage pinned to7.16.2; static package exclusions restored566. Fresh whole-suite gate required. Latest accepted4c06bd3 remains86.4734%."
+    },
+    "last_raise": {
+      "previous": 85,
+      "current": 86,
+      "source_revision": "a05ec417db99de40277583b76854bd6d29a70737",
+      "run_id": 39990338088,
+      "percent_covered": 87.00126840389834,
+      "headroom_percentage_points": 1.0012684038983366,
+      "qualification": "Passing whole-package expanded Linux CI; all three workflows passed,source/merge trees match. Scope,coverage7.16.2/566 exclusions unchanged. Core floor remains70."
     }
   },
   "schedule": [

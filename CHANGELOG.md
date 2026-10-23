@@ -14,6 +14,11 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Expanded whole-package Linux coverage reached87.0013% at `a05ec41`
+  (4,637 passed,77 skipped). All workflows passed with unchanged scope,
+  coverage.py7.16.2 and566 exclusions. Raise the expanded CI floor from85% to86%
+  under the existing one-point headroom rule; the core floor remains70%.
+
 - AI bundle-load tools expose and forward the explicit boolean `trusted`
   argument. Default refusal and confirmation gates remain enforced; a trust
   request is disclosed in the proposal. Real round-trips exercise restoration

@@ -121,13 +121,15 @@ monolith** (**70** active after corrected thread/process tracing measured at lea
 (`python scripts/run_full_coverage.py --update-ratchet` or CI
 `pytest tests --cov=buildml`); do not lower it to silence a regression.
 The separate `expanded-coverage` CI job installs
-`requirements-expanded-coverage.txt` and runs the entire suite with an **84%**
-floor. The broadened profile includes DoWhy and ONNX Runtime, using a compatible
+`requirements-expanded-coverage.txt` and runs the entire suite with an **86%**
+floor, supported by passing remote Linux87.0013% evidence at `a05ec41`.
+The broadened profile includes DoWhy and ONNX Runtime, using a compatible
 NumPy 2.4.1/SciPy 1.15.3/mlxtend 0.23.4 stack. Same-source complete local suites
 passed 85.5192% for this profile and85.3947% for its original-profile control;
 remote acceptance is tracked separately. Keep the package-wide scope, audit
 skip changes, and never add percentages from different profiles. The 90% target
-remains outstanding;85.52% does not support an 85% floor under the headroom rule.
+remains outstanding. Raise the expanded floor only after a passing complete
+expanded Linux run provides at least one percentage point of headroom.
 `requirements.txt` / `requirements-dev.txt` are convenience mirrors of
 `pyproject.toml` ranges; prefer `pip install -e ".[dev]"`.
 
@@ -228,16 +230,12 @@ and pick the next target, and `--path buildml/<pkg>` to audit work in progress.
 - Write public documentation for library users. Keep implementation instructions,
   release actions, and work plans in clearly labeled contributor material.
 
-Current expanded coverage evidence (2026-10-19, source `3d35017`): remote Linux
-passed at **85.0410%** (52,580 / 61,829 lines), with 3,125 passed and 91 skipped.
-[CI run 39326055971](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39326055971)
-passed, as did backend evidence and release acceptance. Tested merge `a75c6d26`
-and source trees are equal. This supports expanded floor **84%** with the required
-one-point headroom. Scope and 566 excluded lines are unchanged; core floor stays 70%.
-Local Linux at the same source passed at **85.1397%** (52,641 / 61,829 lines),
-3,153 passed and 63 skipped in 24:29, without coverage collection warnings.
-Installed FLAML integration passed. Six new ONNX consumer cases skip remotely
-because that profile lacks their dependencies; they pass locally. These records
-supersede earlier latest-measurement statements above; historical results retain
-their original floors and qualifications. Reaching 90% requires 3,067 further
-covered lines at the current remote denominator; subset percentages are not added.
+Current expanded coverage evidence (2026-10-23, source `a05ec41`): remote Linux
+passed at **87.0013%** (54,187 / 62,283 lines), with 4,637 passed and 77 skipped.
+[CI run 39990338088](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39990338088)
+passed, as did backend evidence and release acceptance. Tested merge `4b8b634c`
+and source trees are equal. This supports expanded floor **86%** with the required
+one-point headroom. Scope, coverage.py7.16.2 and566 excluded lines are unchanged;
+core floor stays70%. The suite ran in15:11 with2059 pytest warnings and no coverage
+collection warnings. Optional skips remain configuration-specific. Reaching90%
+requires1,868 further covered lines at this source; subset percentages are not added.
