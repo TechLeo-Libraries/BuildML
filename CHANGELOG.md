@@ -14,6 +14,11 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- AI bundle-load tools expose and forward the explicit boolean `trusted`
+  argument. Default refusal and confirmation gates remain enforced; a trust
+  request is disclosed in the proposal. Real round-trips exercise restoration
+  through the executor instead of switching to a direct Session load call.
+
 - Native AutoML reuses one-shot CV iterators across candidate and ensemble
   scoring. Custom CV settings serialize as null plus their supplied type,
   instead of an invented three-fold request. Integer requests are unchanged.

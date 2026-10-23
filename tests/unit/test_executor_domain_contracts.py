@@ -187,8 +187,12 @@ def test_agent_domain_save_round_trip_requires_explicit_trust(
     outcome = execute_tool(restored, proposal, confirmed=True, registry=registry)
     assert not outcome.executed
     assert "trust" in outcome.error.lower()
-    getattr(restored, f"load_{domain}_bundle")(path, trusted=True)
-    after = getattr(restored, evaluate_tool)(partition="test")
+    proposal = propose_tool_execution(f"load_{domain}_bundle", {"path": path, "trusted": True}, registry)
+    withheld = execute_tool(restored, proposal, confirmed=False, registry=registry)
+    assert not withheld.executed and 'confirm' in withheld.error.lower()
+    loaded = execute_tool(restored, proposal, confirmed=True, registry=registry)
+    assert loaded.executed, loaded.error
+    after = _run(restored, evaluate_tool, {"partition": "test"})
     for metric, value in before.metrics.items():
         if isinstance(value, (int, float)) and np.isfinite(value):
             assert after.metrics[metric] == pytest.approx(value)

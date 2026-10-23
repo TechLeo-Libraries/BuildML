@@ -366,6 +366,12 @@ def propose_tool_execution(
         warnings.append("This is a destructive operation that cannot be undone.")
     if not spec.read_only:
         warnings.append("This operation will modify Session state.")
+    if (tool_name.startswith("load_") and tool_name.endswith("_bundle")
+            and arguments.get("trusted") is True):
+        warnings.append(
+            "This request permits executable model deserialization. "
+            "Confirm only for artifacts you created or fully trust."
+        )
     if tool_name == "fit_imitation" and arguments.get("allow_variable_horizon") is True:
         warnings.append(
             "Variable-horizon GAIL can leak reward information through episode termination. "
@@ -751,7 +757,7 @@ def _dispatch_tool(
         path = call.arguments.get("path")
         if not path:
             raise ValidationError("load_unsupervised_bundle requires a path argument.")
-        session.load_unsupervised_bundle(path)
+        session.load_unsupervised_bundle(path, trusted=call.arguments.get("trusted", False))
         state_changes.append(f"Loaded unsupervised bundle from: {path}")
         return {"loaded": True}, tuple(state_changes)
 
@@ -813,7 +819,7 @@ def _dispatch_tool(
         path = call.arguments.get("path")
         if not path:
             raise ValidationError("load_ensemble_bundle requires a path argument.")
-        session.load_ensemble_bundle(path)
+        session.load_ensemble_bundle(path, trusted=call.arguments.get("trusted", False))
         state_changes.append(f"Loaded ensemble bundle from: {path}")
         return {"loaded": True}, tuple(state_changes)
 
@@ -893,7 +899,7 @@ def _dispatch_tool(
         path = call.arguments.get("path")
         if not path:
             raise ValidationError("load_automl_bundle requires a path argument.")
-        session.load_automl_bundle(path)
+        session.load_automl_bundle(path, trusted=call.arguments.get("trusted", False))
         state_changes.append(f"Loaded AutoML bundle from: {path}")
         return {"loaded": True}, tuple(state_changes)
 
@@ -943,7 +949,7 @@ def _dispatch_tool(
         path = call.arguments.get("path")
         if not path:
             raise ValidationError("load_forecast_bundle requires a path argument.")
-        session.load_forecast_bundle(path)
+        session.load_forecast_bundle(path, trusted=call.arguments.get("trusted", False))
         state_changes.append(f"Loaded forecast bundle from: {path}")
         return {"loaded": True}, tuple(state_changes)
 
@@ -1010,7 +1016,7 @@ def _dispatch_tool(
         path = call.arguments.get("path")
         if not path:
             raise ValidationError("load_anomaly_bundle requires a path argument.")
-        session.load_anomaly_bundle(path)
+        session.load_anomaly_bundle(path, trusted=call.arguments.get("trusted", False))
         state_changes.append(f"Loaded anomaly bundle from: {path}")
         return {"loaded": True}, tuple(state_changes)
 
@@ -1057,7 +1063,7 @@ def _dispatch_tool(
         path = call.arguments.get("path")
         if not path:
             raise ValidationError("load_semisupervised_bundle requires a path argument.")
-        session.load_semisupervised_bundle(path)
+        session.load_semisupervised_bundle(path, trusted=call.arguments.get("trusted", False))
         state_changes.append(f"Loaded semi-supervised bundle from: {path}")
         return {"loaded": True}, tuple(state_changes)
 
@@ -1120,7 +1126,7 @@ def _dispatch_tool(
         path = call.arguments.get("path")
         if not path:
             raise ValidationError("load_ssl_bundle requires a path argument.")
-        session.load_ssl_bundle(path)
+        session.load_ssl_bundle(path, trusted=call.arguments.get("trusted", False))
         state_changes.append(f"Loaded SSL bundle from: {path}")
         return {"loaded": True}, tuple(state_changes)
 
@@ -1175,7 +1181,7 @@ def _dispatch_tool(
         path = call.arguments.get("path")
         if not path:
             raise ValidationError("load_active_learning_bundle requires a path argument.")
-        session.load_active_learning_bundle(path)
+        session.load_active_learning_bundle(path, trusted=call.arguments.get("trusted", False))
         state_changes.append(f"Loaded active-learning bundle from: {path}")
         return {"loaded": True}, tuple(state_changes)
 
@@ -1239,7 +1245,7 @@ def _dispatch_tool(
         path = call.arguments.get("path")
         if not path:
             raise ValidationError("load_online_bundle requires a path argument.")
-        session.load_online_bundle(path)
+        session.load_online_bundle(path, trusted=call.arguments.get("trusted", False))
         state_changes.append(f"Loaded online bundle from: {path}")
         return {"loaded": True}, tuple(state_changes)
 
@@ -1288,7 +1294,7 @@ def _dispatch_tool(
         path = call.arguments.get("path")
         if not path:
             raise ValidationError("load_multitask_bundle requires a path argument.")
-        session.load_multitask_bundle(path)
+        session.load_multitask_bundle(path, trusted=call.arguments.get("trusted", False))
         state_changes.append(f"Loaded multi-task bundle from: {path}")
         return {"loaded": True}, tuple(state_changes)
 
@@ -1363,7 +1369,7 @@ def _dispatch_tool(
             raise ValidationError(
                 "load_metalearning_bundle requires a path argument."
             )
-        session.load_metalearning_bundle(path)
+        session.load_metalearning_bundle(path, trusted=call.arguments.get("trusted", False))
         state_changes.append(f"Loaded meta-learning bundle from: {path}")
         return {"loaded": True}, tuple(state_changes)
 
@@ -1428,7 +1434,7 @@ def _dispatch_tool(
             raise ValidationError(
                 "load_federated_bundle requires a path argument."
             )
-        session.load_federated_bundle(path)
+        session.load_federated_bundle(path, trusted=call.arguments.get("trusted", False))
         state_changes.append(f"Loaded federated bundle from: {path}")
         return {"loaded": True}, tuple(state_changes)
 
@@ -1502,7 +1508,7 @@ def _dispatch_tool(
             raise ValidationError(
                 "load_probabilistic_bundle requires a path argument."
             )
-        session.load_probabilistic_bundle(path)
+        session.load_probabilistic_bundle(path, trusted=call.arguments.get("trusted", False))
         state_changes.append(f"Loaded probabilistic bundle from: {path}")
         return {"loaded": True}, tuple(state_changes)
 
@@ -1587,7 +1593,7 @@ def _dispatch_tool(
         path = call.arguments.get("path")
         if not path:
             raise ValidationError("load_causal_bundle requires a path argument.")
-        session.load_causal_bundle(path)
+        session.load_causal_bundle(path, trusted=call.arguments.get("trusted", False))
         state_changes.append(f"Loaded causal bundle from: {path}")
         return {"loaded": True}, tuple(state_changes)
 
@@ -1661,7 +1667,7 @@ def _dispatch_tool(
         path = call.arguments.get("path")
         if not path:
             raise ValidationError("load_graph_bundle requires a path argument.")
-        session.load_graph_bundle(path)
+        session.load_graph_bundle(path, trusted=call.arguments.get("trusted", False))
         state_changes.append(f"Loaded graph bundle from: {path}")
         return {"loaded": True}, tuple(state_changes)
 
@@ -1764,7 +1770,7 @@ def _dispatch_tool(
         path = call.arguments.get("path")
         if not path:
             raise ValidationError("load_symbolic_bundle requires a path argument.")
-        session.load_symbolic_bundle(path)
+        session.load_symbolic_bundle(path, trusted=call.arguments.get("trusted", False))
         state_changes.append(f"Loaded symbolic bundle from: {path}")
         return {"loaded": True}, tuple(state_changes)
 
@@ -1860,7 +1866,7 @@ def _dispatch_tool(
         path = call.arguments.get("path")
         if not path:
             raise ValidationError("load_cbr_bundle requires a path argument.")
-        session.load_cbr_bundle(path)
+        session.load_cbr_bundle(path, trusted=call.arguments.get("trusted", False))
         state_changes.append(f"Loaded CBR bundle from: {path}")
         return {"loaded": True}, tuple(state_changes)
 
@@ -2119,7 +2125,7 @@ def _dispatch_tool(
         path = call.arguments.get("path")
         if not path:
             raise ValidationError("load_imitation_bundle requires a path argument.")
-        session.load_imitation_bundle(path)
+        session.load_imitation_bundle(path, trusted=call.arguments.get("trusted", False))
         state_changes.append(f"Loaded imitation bundle from: {path}")
         return {"loaded": True}, tuple(state_changes)
 
@@ -2192,7 +2198,7 @@ def _dispatch_tool(
         path = call.arguments.get("path")
         if not path:
             raise ValidationError("load_rl_bundle requires a path argument.")
-        session.load_rl_bundle(path)
+        session.load_rl_bundle(path, trusted=call.arguments.get("trusted", False))
         state_changes.append(f"Loaded RL bundle from: {path}")
         return {"loaded": True}, tuple(state_changes)
 
@@ -2269,7 +2275,7 @@ def _dispatch_tool(
         path = call.arguments.get("path")
         if not path:
             raise ValidationError("load_tda_bundle requires a path argument.")
-        session.load_tda_bundle(path)
+        session.load_tda_bundle(path, trusted=call.arguments.get("trusted", False))
         state_changes.append(f"Loaded TDA bundle from: {path}")
         return {"loaded": True}, tuple(state_changes)
 
@@ -2333,7 +2339,7 @@ def _dispatch_tool(
         path = call.arguments.get("path")
         if not path:
             raise ValidationError("load_recommender_bundle requires a path argument.")
-        session.load_recommender_bundle(path)
+        session.load_recommender_bundle(path, trusted=call.arguments.get("trusted", False))
         state_changes.append(f"Loaded recommender bundle from: {path}")
         return {"loaded": True}, tuple(state_changes)
 
@@ -2400,7 +2406,7 @@ def _dispatch_tool(
         path = call.arguments.get("path")
         if not path:
             raise ValidationError("load_ranker_bundle requires a path argument.")
-        session.load_ranker_bundle(path)
+        session.load_ranker_bundle(path, trusted=call.arguments.get("trusted", False))
         state_changes.append(f"Loaded ranker bundle from: {path}")
         return {"loaded": True}, tuple(state_changes)
 
@@ -2488,7 +2494,7 @@ def _dispatch_tool(
         path = call.arguments.get("path")
         if not path:
             raise ValidationError("load_kg_bundle requires a path argument.")
-        session.load_kg_bundle(path)
+        session.load_kg_bundle(path, trusted=call.arguments.get("trusted", False))
         state_changes.append(f"Loaded KG bundle from: {path}")
         return {"loaded": True}, tuple(state_changes)
 
@@ -2558,7 +2564,7 @@ def _dispatch_tool(
         path = call.arguments.get("path")
         if not path:
             raise ValidationError("load_decision_bundle requires a path argument.")
-        session.load_decision_bundle(path)
+        session.load_decision_bundle(path, trusted=call.arguments.get("trusted", False))
         state_changes.append(f"Loaded decision bundle from: {path}")
         return {"loaded": True}, tuple(state_changes)
 
@@ -2636,7 +2642,7 @@ def _dispatch_tool(
         path = call.arguments.get("path")
         if not path:
             raise ValidationError("load_synthetic_bundle requires a path argument.")
-        session.load_synthetic_bundle(path)
+        session.load_synthetic_bundle(path, trusted=call.arguments.get("trusted", False))
         state_changes.append(f"Loaded synthetic bundle from: {path}")
         return {"loaded": True}, tuple(state_changes)
 

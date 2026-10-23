@@ -8,20 +8,20 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 86.89124745098668,
-      "covered_lines": 54115,
-      "num_statements": 62279,
+      "percent_covered": 86.90130216277838,
+      "covered_lines": 54123,
+      "num_statements": 62281,
       "excluded_lines": 566,
-      "source_revision": "400b8ddc21eb603b77b339a61dca18feea166115",
-      "tested_revision": "7cfa5072b593f4a5320e48d3ea7eccec31e8d3a6",
+      "source_revision": "ff93cc8189d3ef903af522f5c8807eb5cc6a063d",
+      "tested_revision": "a95ea99e3fc1856f12e630320081cc9d09de87ee",
       "platform": "remote Linux, CPU expanded profile",
-      "run_id": 39966382162,
-      "result": "4457 passed, 77 skipped, zero failures/errors",
+      "run_id": 39981215644,
+      "result": "4478 passed, 77 skipped, zero failures/errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
-      "notes": "Configured nested AutoML procedure and weighted voting repairs accepted; all three workflows passed. Source/merge trees equal c011ea8ac658b0eaf519cbb05002b7e01f68513b. coverage7.16.2/566 exclusions unchanged. 2044 warnings, no coverage collection warnings. Coverage decreased from86.9257 to86.8912 percent: search covered/statements -47/-26, supervised +7/+7, spaces +2/0. Legacy manual nested helpers remain but canonical search now handles actual nesting. Exact90 percent gap1937; core70/expanded85 retained.",
+      "notes": "Custom CV iterator replay and honest metadata accepted. All three workflows passed; source/merge trees equalc0871e756b28493adbd47a97c127d5383c89b015. coverage7.16.2/566 exclusions unchanged;2044 warnings,no collection warnings. Full20:00. Exact90 percent gap1930;core70/expanded85 retained.",
       "coverage_version": "7.16.2"
     },
     "latest_local_measurement": {
