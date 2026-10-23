@@ -14,6 +14,10 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Native AutoML reuses one-shot CV iterators across candidate and ensemble
+  scoring. Custom CV settings serialize as null plus their supplied type,
+  instead of an invented three-fold request. Integer requests are unchanged.
+
 - Nested AutoML repeats the configured search method, trial budget, recipes and
   ensemble choices on each outer-training subset, rather than scoring a random
   proxy. Outer Optuna studies are isolated. Voting-family selection respects

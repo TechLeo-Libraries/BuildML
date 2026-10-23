@@ -1574,3 +1574,34 @@ Scope,566 exclusions and core70/expanded85 floors remain unchanged. The exact
 90% gap is1,937 lines. Same-source whole-suite reach separately found3 previously
 missing unchanged lines and20 changed/new executed lines; it is not an aggregate
 projection. Tested merge7cfa5072 and source400b8dd have the same tree.
+
+
+Native AutoML custom CV replay and configuration repair:
+one-shot fold iterators are normalized once using sklearn's reusable check_cv
+wrapper, so all candidate and ensemble scorers receive the supplied folds.
+Previously the first candidate exhausted a generator and later candidates were
+silently discarded. Custom cv/outer_cv metadata is now null plus the supplied
+type in extras; integer requests are unchanged and cv_strategy is disclosed.
+This metadata is not an observed count or complete custom-fold replay definition.
+The indices are materialized in memory; custom splitter objects retain their
+split method, and nested indices must fit each outer-training population.
+
+Initial18-case reproduction:14 failures,4 absent-Optuna skips in16.73s.
+Final seven-file source-frozen verification:83 passed,6 absent-Optuna skips,
+zero warnings in138.87s. New21-case consumer file contributes17 passed/4 skipped;
+real grid/randomized/evolutionary searches use splitter/list/tuple/generator CV.
+Independent Ridge normal equations verify all trial means and sample deviations.
+Real voting/stacking list-vs-generator controls and bundle prediction/config
+roundtrip pass. No fabricated estimators, scores or search outputs are used.
+Ruff and docstring audit pass;586 findings within unchanged budgets.
+Scoped mypy --follow-imports=silent has the same2 existing tournament type
+diagnostics,no new ignores/budgets. An accidentally unscoped type check followed
+the entire package and was stopped using only its verified own process IDs;
+its incomplete broad log is not a new baseline or a clean type-check claim.
+
+Subset reach against accepted400b8dd:11 unchanged previously missing lines
+(5 search candidate/stacking,6 optional catalog/availability),5 changed/new
+executed lines. These counts are not a projected whole-suite percentage.
+Latest accepted whole-package source400b8dd remains54115/62279=86.89124745%,
+4457PASS77SKIP,coverage7.16.2/566 exclusions,core70/expanded85,exact90gap1937.
+Fresh full CI required for this source;no90 or long-term SLA claim.

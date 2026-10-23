@@ -165,6 +165,21 @@ not the dataset. `checkpoint_load` does not restore the AutoMLPlan.
 
 ## What usually goes wrong
 
+Native search accepts reusable splitter objects and iterables of positional
+train/evaluation index pairs. A one-shot iterable is materialized once so every
+candidate, including ensembles, sees the same supplied folds. This stores its
+indices in memory. Custom splitters retain control of their `split` method;
+use a fixed random seed when repeated calls must produce identical folds.
+
+In result and bundle configuration, `cv` and `outer_cv` preserve integer requests.
+For custom inputs they are `null`; `extras.cv_splitter` and
+`extras.outer_cv_splitter` record the supplied type, and `extras.cv_strategy`
+records the requested strategy. These fields describe configuration, not an
+observed fold count or a complete replay specification. Keep the custom fold
+definition separately to reproduce a search. Nested inner indices must be valid
+within every outer-training population; full-population indices do not become
+valid inner indices automatically.
+
 - Session-global prep without the allow flag: `LeakageError`.
 - `selection='validation'` without a validation partition: `ValidationError`.
 - Treating train-CV ranks as final generalization.

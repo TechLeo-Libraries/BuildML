@@ -59,8 +59,8 @@ class AutoMLConfig:
     selection: AutoMLSelection = "cv"
     task: Literal["classification", "regression", "auto"] = "auto"
     n_trials: int = 20
-    cv: int = 3
-    outer_cv: int = 3
+    cv: int | None = 3
+    outer_cv: int | None = 3
     ranking_metric: str | None = None
     include_recipe_search: bool = True
     include_ensembles: bool = False

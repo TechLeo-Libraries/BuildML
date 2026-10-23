@@ -16,7 +16,7 @@ from sklearn.ensemble import (
     VotingClassifier,
     VotingRegressor,
 )
-from sklearn.model_selection import ParameterSampler
+from sklearn.model_selection import ParameterSampler, check_cv
 from sklearn.pipeline import Pipeline as SkPipeline
 
 from buildml.automl.results import AutoMLPlan, AutoMLResult, AutoMLTrial
@@ -364,8 +364,8 @@ def run_automl(
         selection=selection,
         task=resolved_task,
         n_trials=n_trials,
-        cv=int(cv) if isinstance(cv, int) else 3,
-        outer_cv=int(outer_cv) if isinstance(outer_cv, int) else 3,
+        cv=int(cv) if isinstance(cv, int) else None,
+        outer_cv=int(outer_cv) if isinstance(outer_cv, int) else None,
         ranking_metric=metric,
         include_recipe_search=include_recipe_search,
         include_ensembles=include_ensembles,
@@ -377,8 +377,20 @@ def run_automl(
             "ensemble_mode": ensemble_mode,
             "include_industry_families": include_industry_families,
             "time_budget_seconds": budget.max_time_seconds,
+            "cv_strategy": cv_strategy,
+            "cv_splitter": (None if isinstance(cv, int) else
+                            f"{type(cv).__module__}.{type(cv).__qualname__}"),
+            "outer_cv_splitter": (None if isinstance(outer_cv, int) else
+                                  f"{type(outer_cv).__module__}.{type(outer_cv).__qualname__}"),
         },
     )
+
+    # check_cv snapshots an iterable once into its reusable splitter wrapper.
+    # Rewrapping a generator separately for every candidate exhausts it after
+    # the first trial, silently dropping the rest of the search space.
+    # Keep actual splitter objects intact; their split method remains in charge.
+    if selection != "validation" and not isinstance(cv, int):
+        cv = check_cv(cv, y=y_train, classifier=resolved_task == "classification")
 
     import time as _time
 
