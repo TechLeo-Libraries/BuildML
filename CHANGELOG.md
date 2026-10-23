@@ -14,6 +14,12 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Tabular RL training and evaluation require positive integer episode and step
+  budgets before backend allocation. Epsilon-greedy distributions refuse
+  non-finite or complex action values and invalid exploration rates. Real Gym
+  rollouts verify TD recurrences, termination versus truncation, exact interaction
+  counts and evaluation without learned-state mutation.
+
 - Nested CV refuses unknown inner search methods and mixed grid/randomized
   search families before fitting, preventing silent omission of estimator or
   preprocessing search spaces. Weighted Ridge inner selection and outer scores
