@@ -14,6 +14,11 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Nested CV refuses unknown inner search methods and mixed grid/randomized
+  search families before fitting, preventing silent omission of estimator or
+  preprocessing search spaces. Weighted Ridge inner selection and outer scores
+  are checked against independent normal equations.
+
 - Time-series diagnostics refuse malformed, non-finite or constant series,
   invalid deterministic terms, and non-integer lag requests before numerical
   work. Reports distinguish KPSS level and trend stationarity and record both

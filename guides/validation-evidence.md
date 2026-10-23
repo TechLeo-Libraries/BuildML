@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-10-19, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed:86.8113% (54,001/62,205);4,221 passed,77 skipped | [CI39906912795](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39906912795), source `6c048ff`, tested merge `54893b76`; trees match and all three workflows passed.566 exclusions unchanged;floor85 set from this passing86.8113% gate;90% gap1,984 lines. EDA gate population and executable teaching accepted with coverage7.16.2;1977 pytest warnings, no coverage collection warnings |
+| Current accepted remote expanded CPU whole-package gate | Passed:86.8194% (54,019/62,220);4,261 passed,77 skipped | [CI39912916473](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39912916473), source `7aa4f0c`, tested merge `9e0a968f`; trees match and all three workflows passed.566 exclusions unchanged;floor85 set from this passing86.8194% gate;90% gap1,979 lines. Time-series diagnostic boundaries accepted with coverage7.16.2;2044 pytest warnings, no coverage collection warnings |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -1419,3 +1419,22 @@ Ruff,mypy and docstring audit pass;586 audit findings within unchanged budgets.
 Subset reach against verified6c048ff:9 unchanged previously missing lines
 (4 workflow/result lines,5 availability lines) plus16 changed/new executed lines.
 This is subset reach,not an aggregate coverage gain. Fresh full CI is pending.
+
+
+Nested CV now refuses unknown inner_search names and mixed grid/randomized
+families before fitting. Previously unknown names fell through to auto and
+cross-family estimator/recipe combinations could omit a supplied space.
+Both estimator and recipe spaces must use the same family. Existing explicit
+Optuna/evolutionary configuration refusals remain intact.
+New29 tests include12 before-fix failures,11 existing invalid-configuration
+contracts and6 independent weighted Ridge consumers (grid/randomized by
+MAE/MSE/R2). Dense weighted normal equations independently verify every inner
+winner,inner mean/spread,outer metric and aggregate mean/spread. Invalid requests
+never fit or publish Session state; valid searches preserve the input.
+Final five-file batch:90 passed,zero skips,2 existing sklearn warnings,65.67s.
+Ruff and docstring audit passed;586 findings within unchanged budgets.
+Scoped mypy has the same4 pre-existing errors (three Any-return DataFrame
+methods and optional SplitPlan in search refit);no new errors or ignores.
+Subset reach vs verified7aa4f0c:8 unchanged previously missing production lines
+and4 changed/new executed lines,all in model/selection.py. No projected
+whole-suite gain. Fresh full CI is pending.

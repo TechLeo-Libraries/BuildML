@@ -8,20 +8,20 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 86.81134956997026,
-      "covered_lines": 54001,
-      "num_statements": 62205,
+      "percent_covered": 86.8193506910961,
+      "covered_lines": 54019,
+      "num_statements": 62220,
       "excluded_lines": 566,
-      "source_revision": "6c048ff8f588f6ff94535eda33fff2356505756e",
-      "tested_revision": "54893b76525ff856ff47f9e644aee27a2e40fac6",
+      "source_revision": "7aa4f0cd8a8565c357b99e248e8dd135db3607e2",
+      "tested_revision": "9e0a968fd5b2ea4b6c62df7795287bf4219c9ae3",
       "platform": "remote Linux, CPU expanded profile",
-      "run_id": 39906912795,
-      "result": "4221 passed, 77 skipped, zero failures/errors",
+      "run_id": 39912916473,
+      "result": "4261 passed, 77 skipped, zero failures/errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
-      "notes": "EDA gate population and executable teaching accepted with coverage7.16.2; source/merge trees equal7128e84e77f14fa81b8ea031da6482461418c332. All three workflows passed.566 exclusions unchanged;90 percent requires1984 further covered lines.1977 pytest warnings,no coverage collection warnings. Core70/expanded85 retained.",
+      "notes": "Time-series diagnostic boundaries accepted with coverage7.16.2; source/merge trees equal2fa55602a903d11a1ce2cfa1157dabbd0819effc. All three workflows passed.566 exclusions unchanged;90 percent requires1979 further covered lines.2044 pytest warnings,no coverage collection warnings. Core70/expanded85 retained.",
       "coverage_version": "7.16.2"
     },
     "latest_local_measurement": {

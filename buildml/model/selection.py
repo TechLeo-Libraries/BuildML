@@ -3016,9 +3016,17 @@ def _resolve_inner_search(
     recipe_space: OptunaSpace | None,
 ) -> SearchMethod:
     """Resolve nested-CV inner search method from explicit choice or spaces."""
+    if inner_search not in ("auto", "grid", "randomized", "optuna", "evolutionary"):
+        raise ValidationError(f"Unsupported inner_search {inner_search!r}")
     has_space = param_space is not None or recipe_space is not None
     has_grid = param_grid is not None or recipe_grid is not None
     has_random = param_distributions is not None or recipe_distributions is not None
+    if has_grid and has_random:
+        raise ValidationError(
+            "nested_cv_score accepts at most one of param_grid or param_distributions, "
+            "and at most one of recipe_grid or recipe_distributions; "
+            "cannot mix grid and randomized search families"
+        )
 
     if inner_search == "optuna":
         return "optuna"
