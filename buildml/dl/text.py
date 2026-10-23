@@ -32,6 +32,7 @@ from __future__ import annotations
 import re
 from collections import Counter
 from dataclasses import asdict, dataclass, field
+from numbers import Integral
 from typing import Any, Literal
 
 import numpy as np
@@ -338,6 +339,12 @@ def fit_vocab(
     TextVocab
         The mapping, both directions, with the reserved ids and length.
 
+    Raises
+    ------
+    ValidationError
+        If counts are not integers, the vocabulary cap is below two reserved
+        tokens, or frequency/sequence length is below one.
+
     Notes
     -----
     **Frequency ordering makes truncation sensible.** Cutting the tail removes
@@ -353,6 +360,11 @@ def fit_vocab(
     --------
     texts_to_ids : Applying the result.
     """
+    for name, value, minimum in (
+        ("max_vocab", max_vocab, 2), ("min_freq", min_freq, 1), ("max_len", max_len, 1)
+    ):
+        if isinstance(value, bool) or not isinstance(value, Integral) or value < minimum:
+            raise ValidationError(f"{name} must be an integer >= {minimum}; booleans and lossy counts are refused.")
     counts: Counter[str] = Counter()
     for text in texts:
         counts.update(tokenize(text))
@@ -514,8 +526,8 @@ def make_text_loaders(
     assert split_plan is not None
     require_torch(feature="Text Torch DataLoaders")
     cfg = config or TextLoaderConfig()
-    if cfg.batch_size < 1:
-        raise ValidationError("batch_size must be >= 1")
+    if isinstance(cfg.batch_size, bool) or not isinstance(cfg.batch_size, Integral) or cfg.batch_size < 1:
+        raise ValidationError("batch_size must be a positive integer; booleans and lossy counts are refused.")
 
     text_col, target = _resolve_text_target(dataset, text_column)
     frame = dataset._ensure_pandas()
@@ -570,7 +582,7 @@ def make_text_loaders(
         shuffle = bool(cfg.shuffle_train and name == "train")
         loaders[name] = torch.utils.data.DataLoader(
             dataset_t,
-            batch_size=cfg.batch_size,
+            batch_size=int(cfg.batch_size),
             shuffle=shuffle,
             num_workers=cfg.num_workers,
             pin_memory=cfg.pin_memory and name == "train",

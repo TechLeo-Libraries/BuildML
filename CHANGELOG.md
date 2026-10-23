@@ -14,6 +14,11 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Text Torch loaders refuse non-integral, boolean and non-finite resource counts
+  before attaching loader state. Sequence length, batch size and frequency must
+  be positive; vocabulary caps must include the two reserved tokens. Real agent
+  consumers verify train-only token IDs and NumPy-replayed model logits.
+
 - Active learners preserve raw class identities through human-label refits and
   trusted reloads, including expanded class vocabularies. Evaluation distinguishes
   string labels from numeric targets while retaining legacy plan behavior.

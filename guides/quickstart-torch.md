@@ -10,6 +10,11 @@ a module. Backbone weights default to `mock`. Speech ASR without
 `buildml[speech]` is a disclosed stub. Foundation-model pretrain is
 refused.
 
+Text loaders require positive integer `batch_size`, `max_len` and `min_freq`
+values. `max_vocab` must be an integer of at least two, including `<pad>` and
+`<unk>`. Booleans, numeric strings, fractional and non-finite counts are refused
+before loader state is attached. NumPy integer counts are supported.
+
 [Torch deep](torch-deep.md) ·
 Runnable example: [`examples/torch_tabular_mlp_loop.py`](../examples/torch_tabular_mlp_loop.py) ·
 Evidence: [torch-tabular-underwrite](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/torch-tabular-underwrite) ·

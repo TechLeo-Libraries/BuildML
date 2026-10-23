@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-10-19, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed:86.6835% (53,879/62,156);4,006 passed,77 skipped | [CI39865441572](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39865441572), source `4f9eb4d`, tested merge `61852a21`; trees match and all three workflows passed.566 exclusions unchanged;floor85 set from this passing86.6835% gate;90% gap2,062 lines. Public sampling budgets accepted with coverage7.16.2;1900 pytest warnings, no coverage collection warnings |
+| Current accepted remote expanded CPU whole-package gate | Passed:86.6955% (53,909/62,182);4,060 passed,77 skipped | [CI39878873090](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39878873090), source `ffd295f`, tested merge `b3905b71`; trees match and all three workflows passed.566 exclusions unchanged;floor85 set from this passing86.6955% gate;90% gap2,055 lines. Active-learning identity and symbolic audit repair accepted with coverage7.16.2;1900 pytest warnings, no coverage collection warnings |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -1310,3 +1310,23 @@ and28 changed/new lines (26 active-learning,2 earlier symbolic import/function
 definitions). Coverage7.16.2/566 exclusions; no projected whole-suite gain.
 Also fixes the prior symbolic docstring CI failure by documenting legacy_labels;
 audit passes586 existing findings within unchanged budgets. Fresh full CI pending.
+
+### Agent text Torch counts and numerical replay (2026-10-23)
+
+Text Torch vocabulary/loader controls now refuse boolean, non-integral,
+string, non-finite and out-of-range counts before attaching Session loader state.
+Vocabulary caps require two reserved tokens; frequency, sequence length and
+batch size require positive integers. NumPy integer controls remain supported.
+Actual confirmed agent text-loader→CPU training→evaluation consumers independently
+reconstruct train-only token vocabulary, reserved/unknown IDs, truncation/padding,
+all partition tensors and batch sizes at three sequence lengths. A NumPy embedding
+mean-pool/MLP replay matches actual Torch logits and reported accuracy after two
+epochs; refused confirmation leaves state empty and caller frames stay unchanged.
+Initial39 cases:26 failed,13 passed15.69s (24 invalid vocab controls,2 agent
+zero/negative max_len failures); valid numerical workflows already matched.
+Expanded72 new checks pass16.73s. Broader five-file suite93 passed,1 absent-ONNX
+skip,47 deprecation warnings76.63s. Ruff, scoped mypy and docstring audit pass.
+Reach against verifiedffd295f:9 unchanged missing lines (8 dispatcher,1 optional
+Torch availability) and6 changed/new lines. Coverage7.16.2/566 exclusions unchanged.
+No projected aggregate gain, CUDA/ONNX throughput or model-quality claim.
+Fresh whole-suite acceptance pending.

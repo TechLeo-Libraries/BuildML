@@ -8,20 +8,20 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 86.68350601711822,
-      "covered_lines": 53879,
-      "num_statements": 62156,
+      "percent_covered": 86.6955067382844,
+      "covered_lines": 53909,
+      "num_statements": 62182,
       "excluded_lines": 566,
-      "source_revision": "4f9eb4d0aa9ffcc5a9a47db32da959cdb14a6b4e",
-      "tested_revision": "61852a211dc1fb24be995c25d58973aeb2bd1099",
+      "source_revision": "ffd295fa83b223db5277ba2fd7d45ea0ebec93ce",
+      "tested_revision": "b3905b71c0544280aa6fb4fd2c8dc5c787474988",
       "platform": "remote Linux, CPU expanded profile",
-      "run_id": 39865441572,
-      "result": "4006 passed, 77 skipped, zero failures/errors",
+      "run_id": 39878873090,
+      "result": "4060 passed, 77 skipped, zero failures/errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
-      "notes": "Public sampling budgets accepted with coverage7.16.2; source/merge trees equalf507cc25a71089d94734ee3d021424a0afa0536d. All three workflows passed.566 exclusions unchanged;90 percent requires2062 further covered lines.1900 pytest warnings,no coverage collection warnings. Core70/expanded85 retained.",
+      "notes": "Active-learning identity and symbolic audit repair accepted with coverage7.16.2; source/merge trees equald2e671371c563e5265914fb1b996ce231505192a. All three workflows passed.566 exclusions unchanged;90 percent requires2055 further covered lines.1900 pytest warnings,no coverage collection warnings. Core70/expanded85 retained.",
       "coverage_version": "7.16.2"
     },
     "latest_local_measurement": {
