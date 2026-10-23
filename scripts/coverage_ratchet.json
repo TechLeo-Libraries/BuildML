@@ -8,20 +8,20 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 86.92574400462294,
-      "covered_lines": 54153,
-      "num_statements": 62298,
+      "percent_covered": 86.89124745098668,
+      "covered_lines": 54115,
+      "num_statements": 62279,
       "excluded_lines": 566,
-      "source_revision": "946098b6afffc397b81efe09db71f356ca0ad3e3",
-      "tested_revision": "835a6155deafb5b5dde63668c317b91b2c6f8229",
+      "source_revision": "400b8ddc21eb603b77b339a61dca18feea166115",
+      "tested_revision": "7cfa5072b593f4a5320e48d3ea7eccec31e8d3a6",
       "platform": "remote Linux, CPU expanded profile",
-      "run_id": 39955910603,
-      "result": "4442 passed, 77 skipped, zero failures/errors",
+      "run_id": 39966382162,
+      "result": "4457 passed, 77 skipped, zero failures/errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
-      "notes": "Native AutoML nested populations and weights accepted with coverage7.16.2; source/merge trees equalfd65739f8ec0d909818053739b036e0f5deec2b1. All three workflows passed.566 exclusions unchanged;90 percent requires1916 further covered lines.2044 pytest warnings,no coverage collection warnings. Core70/expanded85 retained.",
+      "notes": "Configured nested AutoML procedure and weighted voting repairs accepted; all three workflows passed. Source/merge trees equal c011ea8ac658b0eaf519cbb05002b7e01f68513b. coverage7.16.2/566 exclusions unchanged. 2044 warnings, no coverage collection warnings. Coverage decreased from86.9257 to86.8912 percent: search covered/statements -47/-26, supervised +7/+7, spaces +2/0. Legacy manual nested helpers remain but canonical search now handles actual nesting. Exact90 percent gap1937; core70/expanded85 retained.",
       "coverage_version": "7.16.2"
     },
     "latest_local_measurement": {
