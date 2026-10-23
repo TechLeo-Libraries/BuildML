@@ -8,20 +8,20 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 87.00126840389834,
-      "covered_lines": 54187,
+      "percent_covered": 87.0028739784532,
+      "covered_lines": 54188,
       "num_statements": 62283,
       "excluded_lines": 566,
-      "source_revision": "a05ec417db99de40277583b76854bd6d29a70737",
-      "tested_revision": "4b8b634cb6d35046baae2b62833cbe09b1b6603a",
+      "source_revision": "7cdbeb76f5059b5b9489e3b1c08f404b9f312524",
+      "tested_revision": "f03a93a363e174012224038e7e58816144a8ae3f",
       "platform": "remote Linux, CPU expanded profile",
-      "run_id": 39990338088,
+      "run_id": 39997770247,
       "result": "4637 passed, 77 skipped, zero failures/errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
-      "notes": "AI bundle restoration accepted. All three workflows passed; source/merge trees equale687668f89d67f80c138aaa4380648b996b694b8. coverage7.16.2/566 exclusions unchanged;2059 warnings,no collection warnings. Full15:11. Exact90 percent gap1868;expanded floor raised85 to86 with1.0012684 percentage points headroom. Core70 retained.",
+      "notes": "Raised86 percent expanded gate passed; all three workflows passed. Source/merge trees equal95e35e2d4cba3c6b839b00b40e327cfd28d8d083. coverage7.16.2/566 exclusions unchanged;2059 warnings,no collection warnings. Full19:02. Exact90 percent gap1867;core70/expanded86 retained. Production/test source unchanged from a05ec41;one additional covered line is repeat-run variation,not attributed to the docs/ratchet commit.",
       "coverage_version": "7.16.2"
     },
     "latest_local_measurement": {

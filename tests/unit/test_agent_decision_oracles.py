@@ -66,8 +66,10 @@ def test_agent_bayes_actions_and_realized_cost_match_numpy(partition, tmp_path):
     error = _run(restored, "load_decision_bundle", {"path": path}, success=False)
     assert "trusted=True" in error
     assert restored.decision_plan is None
-    restored.load_decision_bundle(path, trusted=True)
-    after = restored.evaluate_decisions(partition=partition)
+    _run(restored, "load_decision_bundle", {"path": path, "trusted": True})
+    after = _run(restored, "evaluate_decisions", {"partition": partition})
+    applied_again = _run(restored, "apply_decisions", {"partition": partition})
+    np.testing.assert_array_equal(applied_again.decisions, expected_actions)
     assert after.metrics == evaluated.metrics
 
 

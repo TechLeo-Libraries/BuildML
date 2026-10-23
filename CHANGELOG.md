@@ -14,6 +14,11 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Real agent bundle consumers verify KG embedding algebra, recommender cosine
+  scores and eligibility, legacy SSL activations and multiclass decision costs
+  after restoration. Temporal agent consumers verify chronological splits and
+  four forecasts against independent training-prefix calculations.
+
 - Expanded whole-package Linux coverage reached87.0013% at `a05ec41`
   (4,637 passed,77 skipped). All workflows passed with unchanged scope,
   coverage.py7.16.2 and566 exclusions. Raise the expanded CI floor from85% to86%

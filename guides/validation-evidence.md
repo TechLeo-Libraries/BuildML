@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-10-19, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed:87.0013% (54,187/62,283);4,637 passed,77 skipped | [CI39990338088](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39990338088), source `a05ec41`, tested merge `4b8b634c`; trees match and all three workflows passed.566 exclusions unchanged;floor86 set from this passing87.0013% gate;90% gap1,868 lines. AI bundle restoration accepted with coverage7.16.2;2059 pytest warnings, no coverage collection warnings |
+| Current accepted remote expanded CPU whole-package gate | Passed:87.0029% (54,188/62,283);4,637 passed,77 skipped | [CI39997770247](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39997770247), source `7cdbeb7`, tested merge `f03a93a3`; trees match and all three workflows passed.566 exclusions unchanged;floor86 set from this passing87.0029% gate;90% gap1,867 lines. Raised86 percent gate accepted with coverage7.16.2;2059 pytest warnings, no coverage collection warnings |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -1651,3 +1651,37 @@ Core floor remains70. Exact90% gap1,868 lines; no90% or long-term SLA claim.
 Same-source whole-suite reach separately reports61 previously missing unchanged
 lines and27 changed/new executed lines. This differs from Windows subset reach
 78/22 because profile/platform and scope differ; percentages are never combined.
+
+
+Frozen agent model consumer verification (production source unchanged):
+native KG TransE L1/L2 and DistMult scores match independent embedding algebra
+before and after actual agent save/load. Item/user kNN recommendations match
+train-only pivoted rating matrices,cosine scores,eligibility and top-k score
+thresholds,with and without train-history exclusion. Restored legacy SSL MLP
+bottleneck activations match explicit matrix/ReLU forward calculations at two
+latent widths,and the supervised head's held-out accuracy is preserved.
+Both multiclass decision cost consumers now restore through the executor and
+recheck their independently derived Bayes actions,not just direct API loading.
+These tests close prior local positive-runtime gaps for SSL,KG,recommender and
+decision load tools; native/sklearn paths do not validate every optional backend.
+
+Eight additional real temporal consumers exercise the agent's previously missing
+time_split handler on shuffled UTC dates,with/without validation. Assert disjoint
+chronological prefix/middle/tail populations and unchanged dataset,then derive
+naive/mean/drift/seasonal-naive forecasts independently from training history.
+Initial bundle/decision15PASS74warnings22.91s; temporal8PASS16warnings9.13s.
+Final five-file source-frozen verification:188 passed, 128 warnings in 116.38s.
+Ruff/docstring audit PASS,586 findings within unchanged budgets. No production
+code changes or new failures found; no redundant production type check run.
+Warnings include known flat-alias deprecations and legacy sklearn SSL notices;
+no warnings suppressed and no coverage collection warnings.
+
+Subset reach vs verified7cdbeb7:
+32 previously missing unchanged production lines,
+0 changed/new executed production lines.
+This is not a projected whole-suite percentage. Fresh full CI required to assess
+aggregate coverage. Package scope,coverage7.16.2/566 exclusions and core70/
+expanded86 ratchet unchanged. The 90 percent target and long-term SLA remain open.
+
+Reach breakdown:18 workflow lines (16 AI dispatch,2 temporal split) and14 optional catalog/availability lines. Zero changed/new production lines. Subset counts are separate from full-suite percentages.
+
