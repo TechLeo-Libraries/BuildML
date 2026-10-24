@@ -14,6 +14,9 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Added real two-rank CPU/Gloo numerical consumers for both distributed entry
+  paths, checking averaged Adam updates, result transfer, validation and cleanup.
+
 - Added independent learning-to-rank score and per-query metric consumers,
   legacy bundle replay and column-contract refusal checks that preserve a fitted ranker.
 
