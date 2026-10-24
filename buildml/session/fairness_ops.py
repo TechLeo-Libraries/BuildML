@@ -81,6 +81,11 @@ def _resolve_last_eval_partition(session: Any, default: str = "test") -> str:
 
 def _positive_scores(session: Any, partition: str, positive_label: Any) -> Any | None:
     """Best-effort positive-class scores via ``predict(..., return_proba=True)``."""
+    fit = getattr(session, "_fit_result", None)
+    if fit is not None and not callable(getattr(fit.estimator, "predict_proba", None)):
+        # Classical predict falls back to labels when probabilities are absent.
+        # Those labels cannot serve as probability scores for AUC or thresholds.
+        return None
     try:
         proba = session.predict(partition=partition, return_proba=True)  # type: ignore[misc]
     except Exception:  # noqa: BLE001 - scores are optional for AUC bridge
@@ -89,6 +94,9 @@ def _positive_scores(session: Any, partition: str, positive_label: Any) -> Any |
         return None
     if hasattr(proba, "columns"):
         cols = list(proba.columns)
+        score_column = f"proba_{positive_label}"
+        if score_column in cols:
+            return proba[score_column].to_numpy()
         if positive_label in cols:
             return proba[positive_label].to_numpy()
         # Common binary layout: columns [0, 1] or class labels

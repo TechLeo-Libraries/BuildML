@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-10-19, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed:87.3413% (54,542/62,447);5,304 passed,77 skipped | [CI40084726593](https://github.com/TechLeo-Libraries/BuildML/actions/runs/40084726593), source `1b71c34`, tested merge `7f7bce89`; trees match and all three workflows passed.566 exclusions unchanged;floor86 retained from passing87.0013% source a05ec41;90% gap1,661 lines. Allocation numerical consumers accepted with coverage7.16.2;2781 pytest warnings, no coverage collection warnings |
+| Current accepted remote expanded CPU whole-package gate | Passed:87.3485% (54,550/62,451);5,322 passed,77 skipped | [CI40088477840](https://github.com/TechLeo-Libraries/BuildML/actions/runs/40088477840), source `2ded027`, tested merge `3dd9d058`; trees match and all three workflows passed.566 exclusions unchanged;floor86 retained from passing87.0013% source a05ec41;90% gap1,656 lines. Frozen multimodal repair accepted with coverage7.16.2;2781 pytest warnings, no coverage collection warnings |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -2054,3 +2054,18 @@ no collection warnings. Ruff/doc auditPASS586. Scopedmypy retains the same6error
 as extracted1b71c34 baseline (4fusiontyping,2Pandasstuberrors);not a clean type check.
 Reach vs verified1b71c34:4 previously missing unchanged lines,5changed/new executed
 lines. Subset reach is not a whole-package percentage or ONNX execution claim.
+
+Fairness positive-class consumer repair (2026-10-24):public fairness AUC and
+threshold suggestions previously chose the last probability column when the
+caller declared the first class positive;actual AUC0.076923 instead of independent
+0.923077 reproduced. LinearSVC hard predictions were also mistaken for scores.
+The helper now matches Session proba_LABEL columns and checks predict_proba
+availability before the classical label fallback. Existing raw-label layouts
+remain supported. Actual logistic,sklearn Pipeline and LinearSVC consumers across
+string/integer/bool labels,both positive choices and both holdouts verified by
+NumPy sigmoid,pairwise AUC and exhaustive per-group threshold arithmetic.
+Pre-fix24FAIL12PASS;repaired36PASS;four-file frozen suite91PASS0SKIP/WARN/FAIL43.59s.
+Ruff/doc auditPASS586;scopedmypy clean1file,existing unused config note.
+Reach vs verified2ded027:1 previously missing unchanged line,6changed/new executed
+lines;this correctness repair does not establish an aggregate coverage gain.
+Fairness metrics remain observational;threshold suggestions are opt-in.

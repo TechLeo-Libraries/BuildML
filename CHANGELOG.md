@@ -14,6 +14,10 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Fairness AUC and threshold suggestions select the declared positive-class
+  probability column. Classifiers without predict_proba no longer pass hard
+  class predictions through as probability scores.
+
 - Frozen multimodal preprocessing retains saved normalization choices, image
   geometry and audio settings independently of runtime loader defaults. Missing
   frozen text vocabulary is refused rather than learned again.
