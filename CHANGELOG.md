@@ -14,6 +14,10 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Added numerical consumer checks for model-driven top-k, exact knapsack and
+  fractional LP allocations, including selected-positive-rate metrics and
+  frozen bundle replay across string, integer and boolean labels.
+
 - Ensemble bundles validate the saved plan and paired classical FitResult
   before creating destination files or replacing Session state, including
   estimator identity and ordered feature, target, task and row-count contracts.
