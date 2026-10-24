@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import json
+from collections import Counter
+from numbers import Integral
 from pathlib import Path
 from typing import Any
 
@@ -150,20 +152,20 @@ def load_kg_bundle(path: str | Path, *, trusted: bool = False) -> KgPlan:
             plan.entity_embeddings_ is None or plan.entity_embeddings_.size == 0
         ):
             plan.entity_embeddings_ = np.asarray(
-                loaded["entity_embeddings"], dtype=float
+                loaded["entity_embeddings"]
             )
         if loaded.get("relation_embeddings") is not None and (
             plan.relation_embeddings_ is None or plan.relation_embeddings_.size == 0
         ):
             plan.relation_embeddings_ = np.asarray(
-                loaded["relation_embeddings"], dtype=float
+                loaded["relation_embeddings"]
             )
         if loaded.get("train_heads") is not None and plan.train_heads_.size == 0:
-            plan.train_heads_ = np.asarray(loaded["train_heads"], dtype=np.int64)
+            plan.train_heads_ = np.asarray(loaded["train_heads"])
             plan.train_relations_ = np.asarray(
-                loaded["train_relations"], dtype=np.int64
+                loaded["train_relations"]
             )
-            plan.train_tails_ = np.asarray(loaded["train_tails"], dtype=np.int64)
+            plan.train_tails_ = np.asarray(loaded["train_tails"])
         if loaded.get("entity_ids") and not plan.entity_ids:
             plan.entity_ids = tuple(loaded["entity_ids"])
         if loaded.get("relation_ids") and not plan.relation_ids:
@@ -174,12 +176,12 @@ def load_kg_bundle(path: str | Path, *, trusted: bool = False) -> KgPlan:
             )
         if loaded.get("out_edges") is not None and not plan.out_edges_:
             plan.out_edges_ = {
-                int(k): [(int(a), int(b)) for a, b in v]
+                (int(k) if isinstance(k, str) else k): list(v)
                 for k, v in loaded["out_edges"].items()
             }
         if loaded.get("in_edges") is not None and not plan.in_edges_:
             plan.in_edges_ = {
-                int(k): [(int(a), int(b)) for a, b in v]
+                (int(k) if isinstance(k, str) else k): list(v)
                 for k, v in loaded["in_edges"].items()
             }
     else:
@@ -187,23 +189,79 @@ def load_kg_bundle(path: str | Path, *, trusted: bool = False) -> KgPlan:
             "kg_plan.joblib must contain a KgPlan or a payload with key 'plan'."
         )
 
-    if not plan.entity_index_ and plan.entity_ids:
-        plan.entity_index_ = {e: i for i, e in enumerate(plan.entity_ids)}
-    if not plan.relation_index_ and plan.relation_ids:
-        plan.relation_index_ = {r: i for i, r in enumerate(plan.relation_ids)}
-    if not plan.true_triple_set_ and plan.train_heads_.size:
-        plan.true_triple_set_ = frozenset(
-            zip(
-                plan.train_heads_.tolist(),
-                plan.train_relations_.tolist(),
-                plan.train_tails_.tolist(),
-                strict=True,
-            )
-        )
-    if not plan.out_edges_ and plan.train_heads_.size:
-        from buildml.kg.features import build_adjacency
-
-        plan.out_edges_, plan.in_edges_ = build_adjacency(
-            plan.train_heads_, plan.train_relations_, plan.train_tails_
-        )
+    _validate_and_restore_contract(plan)
     return plan
+
+
+def _validate_and_restore_contract(plan: KgPlan) -> None:
+    """Validate fitted KG arrays and restore missing derived graph caches.
+
+    Parameters
+    ----------
+    plan:
+        Deserialized plan, hydrated from any redundant payload arrays.
+
+    Raises
+    ------
+    ValidationError
+        When counts, vocabularies, embeddings, train triples or caches disagree.
+    """
+    for name, value, minimum in (
+        ("n_entities", plan.n_entities, 1), ("n_relations", plan.n_relations, 1),
+        ("embedding_dim", plan.embedding_dim, 1), ("n_train_triples", plan.n_train_triples, 0),
+    ):
+        if isinstance(value, bool) or not isinstance(value, Integral) or value < minimum:
+            raise ValidationError(f"KG bundle {name} must be an integer >= {minimum}.")
+    for name, ids, count, embeddings, index in (
+        ("entity", plan.entity_ids, plan.n_entities, plan.entity_embeddings_, plan.entity_index_),
+        ("relation", plan.relation_ids, plan.n_relations, plan.relation_embeddings_, plan.relation_index_),
+    ):
+        try:
+            unique_count = len(set(ids))
+        except TypeError as exc:
+            raise ValidationError(f"KG bundle {name} vocabulary must contain hashable ids.") from exc
+        if len(ids) != count or unique_count != count:
+            raise ValidationError(f"KG bundle {name} vocabulary/count mismatch or duplicate ids.")
+        matrix = np.asarray(embeddings)
+        if (matrix.shape != (count, plan.embedding_dim) or matrix.dtype.kind not in "fciu"
+                or not np.isfinite(matrix).all()):
+            raise ValidationError(f"KG bundle {name} embeddings must be finite with the declared shape.")
+        expected_index = {identifier: i for i, identifier in enumerate(ids)}
+        if not index:
+            setattr(plan, f"{name}_index_", expected_index)
+        elif (not isinstance(index, dict)
+              or any(isinstance(v, bool) or not isinstance(v, Integral) for v in index.values())
+              or index != expected_index):
+            raise ValidationError(f"KG bundle {name} index disagrees with its vocabulary.")
+    arrays = (plan.train_heads_, plan.train_relations_, plan.train_tails_)
+    for array, limit in zip(arrays, (plan.n_entities, plan.n_relations, plan.n_entities), strict=True):
+        values = np.asarray(array)
+        if (values.shape != (plan.n_train_triples,) or values.dtype.kind not in "iu"
+                or np.any(values < 0) or np.any(values >= limit)):
+            raise ValidationError("KG bundle train triples must have aligned integer ids within vocabulary bounds.")
+    expected_triples = frozenset(zip(*(array.tolist() for array in arrays), strict=True))
+    if not plan.true_triple_set_:
+        plan.true_triple_set_ = expected_triples
+    elif plan.true_triple_set_ != expected_triples:
+        raise ValidationError("KG bundle true-triple cache disagrees with train triples.")
+    from buildml.kg.features import build_adjacency
+
+    expected_out, expected_in = build_adjacency(*arrays)
+    for attribute, expected in (("out_edges_", expected_out), ("in_edges_", expected_in)):
+        edges = getattr(plan, attribute)
+        if not edges:
+            setattr(plan, attribute, expected)
+            continue
+        try:
+            if any(
+                isinstance(node, bool) or not isinstance(node, Integral)
+                or any(len(pair) != 2 or any(isinstance(v, bool) or not isinstance(v, Integral)
+                                            for v in pair) for pair in pairs)
+                for node, pairs in edges.items()
+            ):
+                raise ValidationError("KG bundle adjacency must contain integer node/relation ids.")
+            actual_counts = {node: Counter(tuple(pair) for pair in pairs) for node, pairs in edges.items()}
+        except (TypeError, AttributeError, ValueError) as exc:
+            raise ValidationError("KG bundle adjacency has an invalid structure.") from exc
+        if actual_counts != {node: Counter(pairs) for node, pairs in expected.items()}:
+            raise ValidationError("KG bundle adjacency disagrees with train triples.")

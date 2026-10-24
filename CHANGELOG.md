@@ -14,6 +14,10 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- KG bundle loading validates vocabulary, embedding, triple and cache contracts
+  before Session attachment. Missing inbound/outbound caches rebuild independently,
+  and redundant complex embeddings retain their imaginary components.
+
 - Causal assumption flags require actual booleans across dataclass, mapping,
   Session and agent paths. Truthy strings/numbers no longer acknowledge
   unconfoundedness, positivity or an empty-confounder waiver.

@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-10-19, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed:87.2321% (54,377/62,336);4,854 passed,77 skipped | [CI40059969000](https://github.com/TechLeo-Libraries/BuildML/actions/runs/40059969000), source `4e047bc`, tested merge `ca3f2ae3`; trees match and all three workflows passed.566 exclusions unchanged;floor86 retained from passing87.0013% source a05ec41;90% gap1,726 lines. Agent evolutionary base-recipe repair accepted with coverage7.16.2;2453 pytest warnings, no coverage collection warnings |
+| Current accepted remote expanded CPU whole-package gate | Passed:87.2552% (54,394/62,339);4,951 passed,77 skipped | [CI40064460327](https://github.com/TechLeo-Libraries/BuildML/actions/runs/40064460327), source `45bd975`, tested merge `a034adf3`; trees match and all three workflows passed.566 exclusions unchanged;floor86 retained from passing87.0013% source a05ec41;90% gap1,712 lines. Causal boolean-assumption repair accepted with coverage7.16.2;2621 pytest warnings, no coverage collection warnings |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -1955,3 +1955,36 @@ reach,measurement}.json. No runtime installs/local full-suite overlap. Fresh rem
 CI required independently before accepting aggregate changes. Next candidate evidence:
 reports/next-bundle-boundary-gaps.json ranks persisted-bundle failure paths from4e047bc;
 not yet tested defects or projected gains.
+
+KG bundle loads validate declared sizes,vocabulary/index alignment,finite embedding
+matrices,integer train triples and graph-cache consistency before replacing Session
+state. Valid direct-plan and redundant-array layouts remain supported. Complex
+representations retain their dtype during restoration;verification of frozen complex
+representations exercises serialization/scoring and does not claim a PyKEEN training run.
+
+## KG persisted-state contracts and reconstruction - 2026-10-24
+
+Real fitted-bundle tests exposed malformed contracts accepted at load,missing inbound
+adjacency not rebuilt when outbound adjacency existed,and redundant complex embeddings
+cast to float with imaginary components discarded. Loading now preserves embedding/
+index-array dtype,validates metadata sizes,vocabulary/index alignment,finite embedding
+shapes,aligned integer train-id bounds and true-triple/adjacency consistency. Missing
+derived caches rebuild independently. Session attachment occurs only after validation.
+Valid direct-plan,redundant-array and derived-cache legacy layouts remain supported.
+
+New72-case matrix uses actual native TransE L1/L2 and DistMult fits,independent scores/
+adjacency checks and real serialized corruption. Frozen analytic ComplEx/RotatE arrays
+verify dtype preservation and independent NumPy scoring;they do NOT invoke or simulate
+PyKEEN training. Before repair51FAIL12PASS9ComplexWarnings14.66s;initialrepair63PASS12.01s;
+expandedfocused72PASS12.92s. Corrupt load refusals preserve an already-fitted Session's
+state by identity and plan fingerprint. Ruff/doc audit PASS586 unchanged findings;
+scopedmypy clean1file with existing unused-config-section note.
+
+Final source-frozen four-file108PASS2SKIP0WARN/FAIL48.22s;no collection warnings. Both
+skips are real PyKEEN positive tests absent locally;native query/scoring consumers ran.
+Reach vs verified45bd975:14 unchanged previously missing lines (13workflow,1availability),
+49 changed/new executed lines including2imports. Separate from accepted87.2552% fullsuite;
+no aggregate projection/floor raise. Scope,coverage7.16.2/566 exclusions/core70/expanded86
+preserved. Evidence reports/kg-bundle-{before,after,repaired,final,docstrings,mypy}.log
+and reports/kg-bundle-{coverage,reach,measurement}.json. No runtime installs/full overlap.
+Fresh remote CI must independently verify native/optional profile compatibility.
