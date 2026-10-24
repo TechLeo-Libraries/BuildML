@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-10-19, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed:87.1880% (54,326/62,309);4,777 passed,77 skipped | [CI40047069674](https://github.com/TechLeo-Libraries/BuildML/actions/runs/40047069674), source `5c6e158`, tested merge `49465f2b`; trees match and all three workflows passed.566 exclusions unchanged;floor86 retained from passing87.0013% source a05ec41;90% gap1,753 lines. Meta-learning label identity repair accepted with coverage7.16.2;2296 pytest warnings, no coverage collection warnings |
+| Current accepted remote expanded CPU whole-package gate | Passed:87.1973% (54,337/62,315);4,810 passed,77 skipped | [CI40051934060](https://github.com/TechLeo-Libraries/BuildML/actions/runs/40051934060), source `4dbd273`, tested merge `cabf920c`; trees match and all three workflows passed.566 exclusions unchanged;floor86 retained from passing87.0013% source a05ec41;90% gap1,747 lines. Agent future-exog forecast repair accepted with coverage7.16.2;2453 pytest warnings, no coverage collection warnings |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -1858,3 +1858,32 @@ preserved. Evidence reports/agent-exog-{before,before-forwarding,after,repaired,
 docstrings,mypy,baseline-mypy}.log and reports/agent-exog-{coverage,reach,measurement}.json.
 Baseline archive reports/exog-baseline-source. No runtime installs/full-suite overlap.
 Fresh remote CI required independently before promoting any aggregate change.
+
+## Torch resume patience and scalar optimizer consumers - 2026-10-24
+
+Resuming early-stopped training previously reset elapsed patience: a constant-loss
+run that stopped at epoch3 uninterrupted stopped at epoch4 when resumed after epoch2.
+The trainer now derives consumed patience from cumulative epoch offset minus best
+epoch,independent of sparse logged history. Changing monitor,mode or minimum delta
+starts a fresh window with a warning. Existing serialized epoch metadata is reused;
+no new checkpoint fields or format version are required.
+
+Twenty real Torch consumers independently calculate scalar SGD momentum,gradient
+clipping,Step/Cosine/Plateau learning rates and losses across full8epoch vs3+5resume
+runs. Constant and moving losses,parameter state,contract mismatch refusals before
+weight restore,patience in min/max modes with sparse logs,and changed-monitor windows
+are checked. Initial15PASS14.51s;patience regression2FAIL15PASS14.66s;repaired20PASS14.64s.
+Ruff/docstrings PASS586 unchanged findings. Scopedmypy has the same3 pre-existing
+diagnostics as an archived,gitshow-verified4dbd273 baseline. No ignores/budgets changed.
+
+Final source-frozen three-file verification34PASS1expected Torch-missing-control SKIP,
+zero warnings/failures59.36s;no collection warnings. Real Torch consumers ran;newfixture
+uses importorskip for core profiles without optionalTorch. Earlier broader log34PASS/
+1SKIP65.60s preserved;guard added only after completion,then final rerun on frozen tests.
+Reach vs verified4dbd273:19 unchanged previously missing lines (18training workflow,
+1availability),10 changed/new executed lines. Separate from accepted87.1973% fullsuite;
+no aggregate projection/floor raise. Scope,coverage7.16.2/566 exclusions/core70/expanded86
+preserved. Evidence reports/torch-sgd-{initial,before-patience,repaired,first-final,final,
+docstrings,mypy,baseline-mypy}.log and reports/torch-sgd-{coverage,reach,measurement}.json.
+Archived control reports/torch-sgd-baseline-source. No runtime installs/full-suite overlap.
+Fresh remote CI required independently before accepting aggregate changes.

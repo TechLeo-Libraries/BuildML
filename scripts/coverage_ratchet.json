@@ -8,20 +8,20 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 87.18804667062543,
-      "covered_lines": 54326,
-      "num_statements": 62309,
+      "percent_covered": 87.1973040198989,
+      "covered_lines": 54337,
+      "num_statements": 62315,
       "excluded_lines": 566,
-      "source_revision": "5c6e1581e32f4aeeb5daca927eff21fed8b6242a",
-      "tested_revision": "49465f2b9fb5a20ef6b98df74f03c650c9aefad1",
+      "source_revision": "4dbd2736f70aace770314252478fb27a40fd938f",
+      "tested_revision": "cabf920c194594156c8d27800f5eeec99ba27c71",
       "platform": "remote Linux, CPU expanded profile",
-      "run_id": 40047069674,
-      "result": "4777 passed, 77 skipped, zero failures/errors",
+      "run_id": 40051934060,
+      "result": "4810 passed, 77 skipped, zero failures/errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
-      "notes": "Meta-learning label identity repair accepted; all three workflows passed. Source/merge trees equal7d20e52c2dd6b28bce401e5b8da83843ebba6da8. coverage7.16.2/566 exclusions unchanged;2296 warnings,no collection warnings. Full10:56. Exact90 percent gap1753;core70/expanded86 retained.",
+      "notes": "Agent future-exog forecast repair accepted; all three workflows passed. Source/merge trees equal051b693e15ce10a869e094a3aaf4088f7691d7bb. coverage7.16.2/566 exclusions unchanged;2453 warnings,no collection warnings. Full20:51. Exact90 percent gap1747;core70/expanded86 retained.",
       "coverage_version": "7.16.2"
     },
     "latest_local_measurement": {

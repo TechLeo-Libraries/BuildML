@@ -732,3 +732,8 @@ except Exception as exc:
 Wrong loader kind after a text, multimodal, or speech fit raises
 `ValidationError`. There is no Polars zero-copy into DataLoaders.
 GPU is not a PR merge gate; CPU-first is the supported CI path.
+
+Resuming a Torch trainer preserves elapsed early-stopping patience from the
+best epoch and total epoch offset, including with sparse `log_every` history.
+Changing the monitor, mode or minimum delta starts a fresh patience window
+and records a warning. Epoch counts remain cumulative across resume calls.

@@ -14,6 +14,10 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Torch training resumes preserve early-stopping patience already consumed,
+  including when history logging omits intermediate epochs. Changed monitor,
+  mode or minimum delta starts a fresh window with a warning.
+
 - Agent forecast generation now accepts and forwards caller-supplied future
   exogenous rows, in fitted column order. Exogenous models can be generated
   through the same public tool that fits them; malformed inputs still refuse.
