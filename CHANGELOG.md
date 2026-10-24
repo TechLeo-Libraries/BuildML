@@ -14,6 +14,11 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Meta-learning preserves raw label types for new fits and adaptation prototype
+  keys, including numeric-looking strings and booleans. Incompatible mixed
+  labels and unseen holdout labels are refused; persisted legacy encoders keep
+  their historical string transform and decode behavior.
+
 - ASR corpus WER/CER no longer add artificial denominator units for empty
   references. All-empty corpus denominators use one while reported reference
   totals remain zero. Direct, Session and AI scoring refuse scalar strings and

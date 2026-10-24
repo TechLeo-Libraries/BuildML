@@ -245,3 +245,13 @@ Random row splits may place the same task id in train and holdout.
 need a hard boundary.
 
 [Meta-learning quickstart](quickstart-meta-learning.md)
+
+### Class label identity
+
+New meta-learning fits preserve original string, numeric and boolean labels.
+For example, `"01"` and `"1"` remain distinct string classes in episode reports
+and adaptation prototype keys. Support and query labels must belong to the
+train-fitted vocabulary; incompatible mixed types and unseen labels are refused.
+Bundles retain this encoder behavior after loading. Older, unmarked encoders
+keep their historical string transforms and numeric-string decoding so loading
+an existing bundle does not silently change its interpretation.

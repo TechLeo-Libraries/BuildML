@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-10-19, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed:87.1750% (54,310/62,300);4,748 passed,77 skipped | [CI40036982533](https://github.com/TechLeo-Libraries/BuildML/actions/runs/40036982533), source `74ecbf4`, tested merge `888c4a24`; trees match and all three workflows passed.566 exclusions unchanged;floor86 retained from passing87.0013% source a05ec41;90% gap1,760 lines. Agent anomaly support-vector consumers accepted with coverage7.16.2;2196 pytest warnings, no coverage collection warnings |
+| Current accepted remote expanded CPU whole-package gate | Passed:87.1878% (54,318/62,300);4,760 passed,77 skipped | [CI40041925485](https://github.com/TechLeo-Libraries/BuildML/actions/runs/40041925485), source `d2df2ee`, tested merge `5c9785f9`; trees match and all three workflows passed.566 exclusions unchanged;floor86 retained from passing87.0013% source a05ec41;90% gap1,752 lines. Agent DBSCAN density consumers accepted with coverage7.16.2;2256 pytest warnings, no coverage collection warnings |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -1799,3 +1799,31 @@ Subset reach is separate from accepted full87.1750%;no aggregate projection.
 Evidence reports/agent-dbscan-{initial,final,docstrings}.log and
 reports/agent-dbscan-{coverage,reach,measurement}.json. No runtime installs,
 production edits or local full-suite overlap. Fresh remote CI required.
+
+## Meta-learning raw label identity - 2026-10-24
+
+New meta-learning encoders preserve raw string,numeric and boolean labels rather than
+stringifying them and guessing their types on output. Numeric-looking strings such as
+"01" and "1" remain distinct in decoded episodes and adaptation prototypes. Invalid
+mixed types and unseen support/query labels refuse; raw-vocabulary validation precedes
+sklearn transform because boolean encoders can coerce unknown strings. A persisted
+marker selects the new behavior. Unmarked legacy encoders retain historical string
+transforms and decode/prototype conventions; bundle format is unchanged.
+
+Seventeen new independent label/centroid consumers and actual agent adaptation/bundle
+roundtrips cover prototypical and warm-start fits with string,int,float,bool classes.
+Before repair15FAIL2PASS7warnings14.16s;firstrepair16PASS1FAIL40warnings14.71s exposed
+boolean unknown-label coercion;final focused17PASS40warnings13.53s. Support means are
+computed independently from selected rows;the frozen meta-plan and dataset remain
+unchanged. Ruff/doc audit PASS586 existing findings;scoped mypy clean2files,existing
+unused-config-section note. No new type ignores or audit budgets.
+
+Final source-frozen five-file verification55PASS1SKIP40 expected flat-alias warnings
+68.11s;no collection warnings. The skip is the torch-missing negative control when
+Torch is present;real Torch prototypical/MAML consumers ran. Reach vs verified
+d2df2ee:5 unchanged previously missing lines (4 workflow,1 availability),14 changed/new
+executed production lines. Separate from accepted87.1878% whole-package coverage;
+no aggregate projection or floor raise. Scope,coverage7.16.2/566 exclusions and
+core70/expanded86 preserved. Fresh remote CI required;local Torch differs from CI.
+Evidence reports/meta-labels-{before,after,repaired,final,docstrings,mypy}.log and
+reports/meta-labels-{coverage,reach,measurement}.json. No runtime installs/full overlap.

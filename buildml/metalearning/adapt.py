@@ -12,6 +12,7 @@ from buildml.data.dataset import Dataset
 from buildml.data.splits import PartitionName, SplitPlan, frame_for_partition
 from buildml.metalearning.features import (
     compute_prototypes,
+    decode_labels,
     encode_labels,
     frame_for_task,
     matrix_from_frame,
@@ -161,7 +162,9 @@ def adapt_to_task(
         proto_map = compute_prototypes(x, y_codes)
         # Map codes → original labels for the result payload
         label_by_code = {
-            i: _coerce(plan.label_encoder_.classes_[i])
+            i: (decode_labels([i], plan.label_encoder_)[0]
+                if getattr(plan.label_encoder_, "_buildml_raw_class_labels_", False)
+                else _coerce(plan.label_encoder_.classes_[i]))
             for i in range(len(plan.label_encoder_.classes_))
         }
         prototypes = {
@@ -184,7 +187,9 @@ def adapt_to_task(
         emb = plan.meta_learner_.embed(x)
         proto_map = compute_prototypes(emb, y_codes)
         label_by_code = {
-            i: _coerce(plan.label_encoder_.classes_[i])
+            i: (decode_labels([i], plan.label_encoder_)[0]
+                if getattr(plan.label_encoder_, "_buildml_raw_class_labels_", False)
+                else _coerce(plan.label_encoder_.classes_[i]))
             for i in range(len(plan.label_encoder_.classes_))
         }
         prototypes = {
