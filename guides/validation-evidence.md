@@ -2109,3 +2109,27 @@ Ruff/doc auditPASS586;actual spawned-worker coverage collected by existing
 multiprocessing/subprocess instrumentation. Reach vs verifiede9ade35:72 previously
 missing unchanged production lines,zerochanged/new. Production source matches
 that baseline exactly;subset reach is not an aggregate coverage percentage.
+
+
+### Probabilistic numerical consumer checks (2026-10-24)
+
+`tests/unit/test_probabilistic_numerical_consumers.py` checks actual native
+BayesianRidge and GaussianProcessRegressor output against independent posterior
+matrix and kernel solves. Gaussian CRPS is checked by numerical integration of
+squared CDF error, separately from the scoring implementation's closed form.
+GaussianNB probability columns and NLL, Brier, ECE and accuracy are checked from
+class-conditional Gaussian densities for string, integer and boolean labels.
+
+The consumers cover validation/test populations, partially missing targets,
+posterior interval alpha changes and trusted bundle replay. Evaluation must retain
+the fitted plan and dataset. These checks establish numerical agreement for these
+workflows; they do not establish exchangeability, population-wide nominal coverage,
+or the behavior of unavailable optional backends. A subset reach count must not be
+added to the accepted whole-package percentage.
+
+Local four-file verification passed **61 tests**, with zero skips, warnings or
+failures, in 57.25 seconds. The 45 new consumers passed in the focused run.
+Ruff and the docstring budget passed (586 existing findings unchanged).
+Source-mapped reach against verified `72a39e9` measured **18 previously missing
+unchanged production lines**, with zero changed/new production lines. This is
+subset evidence; the accepted full-suite result remains 87.5082% pending fresh CI.
