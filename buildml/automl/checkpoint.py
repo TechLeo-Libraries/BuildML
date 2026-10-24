@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 from copy import copy
 from dataclasses import replace
+from numbers import Integral
 from pathlib import Path
 from typing import Any
 from uuid import uuid4
@@ -74,6 +75,7 @@ def save_automl_bundle(
     """
     if plan is None:
         raise ValidationError("No AutoMLPlan to save.")
+    _validate_model_contract(plan, fit_result)
     destination = Path(path)
     persisted_plan, persisted_fit = plan, fit_result
     assets_name = None
@@ -83,8 +85,6 @@ def save_automl_bundle(
         predictor = plan.estimator_._predictor
         if destination.resolve().is_relative_to(Path(predictor.path).resolve()):
             raise ValidationError("AutoML bundle destination must be outside the AutoGluon predictor directory.")
-        if fit_result is not None and fit_result.estimator is not plan.estimator_:
-            raise ValidationError("AutoGluon plan and FitResult must refer to the same estimator.")
     destination.mkdir(parents=True, exist_ok=True)
     if isinstance(plan.estimator_, _AutoGluonSklearnWrapper):
         # Clone into a fresh sidecar, leaving an existing bundle's assets intact
@@ -170,6 +170,7 @@ def load_automl_bundle(path: str | Path, *, trusted: bool = False) -> tuple[Auto
         fit_result = fit_result_from_plan(plan)
     elif fit_result is None:
         fit_result = fit_result_from_plan(plan)
+    _validate_model_contract(plan, fit_result)
     assets_name = meta.get("autogluon_assets")
     if assets_name is not None:
         if not isinstance(assets_name, str) or not assets_name or Path(assets_name).is_absolute():
@@ -190,3 +191,51 @@ def load_automl_bundle(path: str | Path, *, trusted: bool = False) -> tuple[Auto
         if fit_result is not None:
             fit_result.estimator = wrapper
     return plan, fit_result
+
+
+def _validate_model_contract(plan: AutoMLPlan, fit_result: FitResult | None) -> None:
+    """Keep AutoML and classical prediction contracts aligned at persistence.
+
+    Parameters
+    ----------
+    plan:
+        Selected AutoML estimator and raw column contract.
+    fit_result:
+        Optional classical result carried with the same selected model.
+
+    Raises
+    ------
+    ValidationError
+        When the plan is incomplete or its paired fit result disagrees.
+    """
+    if not isinstance(plan, AutoMLPlan):
+        raise ValidationError("AutoML bundle requires an AutoMLPlan.")
+    if plan.task not in {"classification", "regression"}:
+        raise ValidationError("AutoML plan has an unsupported task.")
+    columns = plan.feature_columns
+    if (not isinstance(columns, (tuple, list)) or not columns
+            or any(not isinstance(c, str) or not c.strip() for c in columns)
+            or len(set(columns)) != len(columns)):
+        raise ValidationError("AutoML plan requires unique, nonempty feature column names.")
+    if (not isinstance(plan.target_column, str) or not plan.target_column.strip()
+            or plan.target_column in columns):
+        raise ValidationError("AutoML plan target must be separate from feature columns.")
+    if (isinstance(plan.n_train_rows, bool) or not isinstance(plan.n_train_rows, Integral)
+            or plan.n_train_rows < 1):
+        raise ValidationError("AutoML plan n_train_rows must be a positive integer.")
+    if not callable(getattr(plan.estimator_, "predict", None)):
+        raise ValidationError("AutoML plan is missing a prediction estimator.")
+    if fit_result is None:
+        return
+    if not isinstance(fit_result, FitResult):
+        raise ValidationError("AutoML fit_result must be a FitResult or None.")
+    if fit_result.estimator is not plan.estimator_:
+        raise ValidationError("AutoML plan and FitResult must refer to the same estimator.")
+    if (not isinstance(fit_result.feature_columns, (tuple, list))
+            or tuple(fit_result.feature_columns) != tuple(columns)):
+        raise ValidationError("AutoML plan and FitResult feature columns must agree in order.")
+    if (fit_result.task != plan.task or fit_result.target_column != plan.target_column
+            or isinstance(fit_result.n_train_rows, bool)
+            or not isinstance(fit_result.n_train_rows, Integral)
+            or fit_result.n_train_rows != plan.n_train_rows):
+        raise ValidationError("AutoML plan and FitResult task, target and training-row contract must agree.")

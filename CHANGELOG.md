@@ -14,6 +14,10 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- AutoML bundles validate the selected plan and paired classical FitResult
+  before writing files or replacing Session state. Model identity, ordered
+  columns, target, task and training-row counts must agree.
+
 - KG bundle loading validates vocabulary, embedding, triple and cache contracts
   before Session attachment. Missing inbound/outbound caches rebuild independently,
   and redundant complex embeddings retain their imaginary components.
