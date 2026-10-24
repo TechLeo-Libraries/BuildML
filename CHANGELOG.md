@@ -14,6 +14,9 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Added independent numerical consumers for ordered neuro-symbolic overlays,
+  soft-rule thresholds, regression blends, repair counts, traces and bundle replay.
+
 - Fairness AUC and threshold suggestions select the declared positive-class
   probability column. Classifiers without predict_proba no longer pass hard
   class predictions through as probability scores.

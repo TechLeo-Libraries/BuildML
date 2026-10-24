@@ -8,20 +8,20 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 87.34848120926807,
-      "covered_lines": 54550,
-      "num_statements": 62451,
+      "percent_covered": 87.3432921850233,
+      "covered_lines": 54552,
+      "num_statements": 62457,
       "excluded_lines": 566,
-      "source_revision": "2ded0271c99835330e7d9644c80dddbb82f11c9c",
-      "tested_revision": "3dd9d058bfcc6c9e5fbce4f85bda17165867567b",
+      "source_revision": "09fb559cc2d7af3ce120843d6e9c823ac2cfc227",
+      "tested_revision": "1864e09a9714663554ed13d796cf2a6230e4ede2",
       "platform": "remote Linux, CPU expanded profile",
-      "run_id": 40088477840,
-      "result": "5322 passed, 77 skipped, zero failures/errors",
+      "run_id": 40092624726,
+      "result": "5358 passed, 77 skipped, zero failures/errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
-      "notes": "Frozen multimodal repair accepted; all three workflows passed. Source/merge trees equalc937b60ce35da8045233d87305d2dddb5ad95aa4. coverage7.16.2/566 exclusions unchanged;2781 warnings,no collection warnings. Full13:21. Exact90 percent gap1656;core70/expanded86 retained.",
+      "notes": "Fairness positive-class repair accepted; all three workflows passed. Source/merge trees equalbd1653cdbdf3888e474c315755ed2d81fc8e44f6. coverage7.16.2/566 exclusions unchanged;2781 warnings,no collection warnings. Full13:32. Exact90 percent gap1660;core70/expanded86 retained.",
       "coverage_version": "7.16.2"
     },
     "latest_local_measurement": {
