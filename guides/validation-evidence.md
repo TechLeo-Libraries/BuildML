@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-10-19, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed:87.3433% (54,552/62,457);5,358 passed,77 skipped | [CI40092624726](https://github.com/TechLeo-Libraries/BuildML/actions/runs/40092624726), source `09fb559`, tested merge `1864e09a`; trees match and all three workflows passed.566 exclusions unchanged;floor86 retained from passing87.0013% source a05ec41;90% gap1,660 lines. Fairness positive-class repair accepted with coverage7.16.2;2781 pytest warnings, no coverage collection warnings |
+| Current accepted remote expanded CPU whole-package gate | Passed:87.3689% (54,568/62,457);5,422 passed,77 skipped | [CI40096918131](https://github.com/TechLeo-Libraries/BuildML/actions/runs/40096918131), source `a2a802e`, tested merge `ae2fb6ec`; trees match and all three workflows passed.566 exclusions unchanged;floor86 retained from passing87.0013% source a05ec41;90% gap1,644 lines. Symbolic overlay consumers accepted with coverage7.16.2;2781 pytest warnings, no coverage collection warnings |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -2082,3 +2082,15 @@ Ruff/doc auditPASS586. Reach vs verified09fb559:17 previously missing unchanged
 lines,zerochanged/new. Subset reach is not a whole-package percentage.
 Accepted fairness repair full measurement87.3433% is slightly below prior87.3485%;
 all gates passed and no coverage gain was claimed for that repair.
+
+LTR consumer evidence (2026-10-24):112 new cases use actual Ridge/RankSVM fits,
+string/integer query ids,three cutoffs,both holdouts,reverse query order and
+current/directlegacy/redundant bundle layouts. Independent train means/std,
+Ridge normal equations,RankSVM affine scores and scalar nDCG/MAP/MRR check scores,
+ids,metrics and zero-relevance-query skipping. Ten invalid column contracts must
+preserve the existing fitted ranker. Legacy payloads derive from real fitted
+models;no fake optional backend is introduced. No production defect reproduced.
+Focused112PASS;four-file frozen suite134PASS1absentXGBoostSKIP0WARN/FAIL82.24s.
+Existing real LightGBM and Torch ranking checks ran;this does not establish
+XGBoost execution locally. Ruff/doc auditPASS586. Reach vs verifieda2a802e:
+16 previously missing unchanged lines,zerochanged/new;not an aggregate percentage.

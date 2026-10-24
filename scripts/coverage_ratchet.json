@@ -8,20 +8,20 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 87.3432921850233,
-      "covered_lines": 54552,
+      "percent_covered": 87.36890980994924,
+      "covered_lines": 54568,
       "num_statements": 62457,
       "excluded_lines": 566,
-      "source_revision": "09fb559cc2d7af3ce120843d6e9c823ac2cfc227",
-      "tested_revision": "1864e09a9714663554ed13d796cf2a6230e4ede2",
+      "source_revision": "a2a802e727382218436af437ba14407ecba3f102",
+      "tested_revision": "ae2fb6ec1bbf63b0a617e77eaef91802779569d7",
       "platform": "remote Linux, CPU expanded profile",
-      "run_id": 40092624726,
-      "result": "5358 passed, 77 skipped, zero failures/errors",
+      "run_id": 40096918131,
+      "result": "5422 passed, 77 skipped, zero failures/errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
-      "notes": "Fairness positive-class repair accepted; all three workflows passed. Source/merge trees equalbd1653cdbdf3888e474c315755ed2d81fc8e44f6. coverage7.16.2/566 exclusions unchanged;2781 warnings,no collection warnings. Full13:32. Exact90 percent gap1660;core70/expanded86 retained.",
+      "notes": "Symbolic overlay consumers accepted; all three workflows passed. Source/merge trees equal0f7f282a2e2dff2fdcc509e0c8035f84b7dc1701. coverage7.16.2/566 exclusions unchanged;2781 warnings,no collection warnings. Full13:28. Exact90 percent gap1644;core70/expanded86 retained.",
       "coverage_version": "7.16.2"
     },
     "latest_local_measurement": {

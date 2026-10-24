@@ -14,6 +14,9 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Added independent learning-to-rank score and per-query metric consumers,
+  legacy bundle replay and column-contract refusal checks that preserve a fitted ranker.
+
 - Added independent numerical consumers for ordered neuro-symbolic overlays,
   soft-rule thresholds, regression blends, repair counts, traces and bundle replay.
 
