@@ -230,12 +230,12 @@ and pick the next target, and `--path buildml/<pkg>` to audit work in progress.
 - Write public documentation for library users. Keep implementation instructions,
   release actions, and work plans in clearly labeled contributor material.
 
-Current expanded coverage evidence (2026-10-24, source `82556fb`): remote Linux
-passed at **87.2918%** (54,450 / 62,377 lines), with 5,023 passed and 77 skipped.
-[CI run 40068788183](https://github.com/TechLeo-Libraries/BuildML/actions/runs/40068788183)
-passed, as did backend evidence and release acceptance. Tested merge `1ffa0552`
+Current expanded coverage evidence (2026-10-24, source `a2ea071`): remote Linux
+passed at **87.2969%** (54,475 / 62,402 lines), with 5,071 passed and 77 skipped.
+[CI run 40072611408](https://github.com/TechLeo-Libraries/BuildML/actions/runs/40072611408)
+passed, as did backend evidence and release acceptance. Tested merge `679caaa7`
 and source trees are equal. This supports expanded floor **86%** with the required
 one-point headroom. Scope, coverage.py7.16.2 and566 excluded lines are unchanged;
-core floor stays70%. The suite ran in21:12 with2621 pytest warnings and no coverage
+core floor stays70%. The suite ran in12:14 with2621 pytest warnings and no coverage
 collection warnings. Optional skips remain configuration-specific. Reaching90%
-requires1,690 further covered lines at this source; subset percentages are not added.
+requires1,687 further covered lines at this source; subset percentages are not added.

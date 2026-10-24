@@ -14,6 +14,10 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Torch SSL bundle loading checks sidecar method, input width and latent
+  representation contracts before restoring weights or replacing Session state.
+  Malformed tabular weight payloads raise ValidationError.
+
 - AutoML bundles validate the selected plan and paired classical FitResult
   before writing files or replacing Session state. Model identity, ordered
   columns, target, task and training-row counts must agree.

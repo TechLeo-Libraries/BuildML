@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-10-19, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed:87.2918% (54,450/62,377);5,023 passed,77 skipped | [CI40068788183](https://github.com/TechLeo-Libraries/BuildML/actions/runs/40068788183), source `82556fb`, tested merge `1ffa0552`; trees match and all three workflows passed.566 exclusions unchanged;floor86 retained from passing87.0013% source a05ec41;90% gap1,690 lines. KG persisted-state repair accepted with coverage7.16.2;2621 pytest warnings, no coverage collection warnings |
+| Current accepted remote expanded CPU whole-package gate | Passed:87.2969% (54,475/62,402);5,071 passed,77 skipped | [CI40072611408](https://github.com/TechLeo-Libraries/BuildML/actions/runs/40072611408), source `a2ea071`, tested merge `679caaa7`; trees match and all three workflows passed.566 exclusions unchanged;floor86 retained from passing87.0013% source a05ec41;90% gap1,687 lines. AutoML persisted-contract repair accepted with coverage7.16.2;2621 pytest warnings, no coverage collection warnings |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -2005,3 +2005,15 @@ PASS586 unchanged findings;scopedmypy clean1file (existing unused config note).
 Reach vs verified82556fb:9 previously missing unchanged lines,25 changed/new
 executed lines;subset reach is not a whole-package percentage. Local AutoGluon
 filesystem controls do not establish installed-backend numerical execution.
+
+Torch SSL sidecar contract repair (2026-10-24): five real tabular methods,
+current/legacy direct/dictionary bundles and NumPy affine/ReLU (VAE eval mean)
+checks validate restored embeddings. Loader refuses method/input/latent contract
+disagreements, duplicate representation names and malformed state before Session
+replacement. Tabular weight restore errors become ValidationError.
+Focused65PASS0WARN23.94s;four-file frozen subset88PASS6CUDA/visionSKIP,
+25 existing facade deprecation warnings,zero failures124.82s;no collection warnings.
+Ruff/doc auditPASS586;scopedmypy clean1file,existing unused config note.
+Reach vs verifieda2ea071:6 previously missing unchanged lines (3 checkpoint,
+3 availability controls),20 changed/new executed including1import. Subset reach
+is not a whole-package percentage;no current CUDA/vision/HF training claim.

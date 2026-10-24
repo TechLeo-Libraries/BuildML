@@ -8,20 +8,20 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 87.29179024319862,
-      "covered_lines": 54450,
-      "num_statements": 62377,
+      "percent_covered": 87.29688151020801,
+      "covered_lines": 54475,
+      "num_statements": 62402,
       "excluded_lines": 566,
-      "source_revision": "82556fb6604ee5942d3d857b8d1ecf145cb8175c",
-      "tested_revision": "1ffa055270adb7d640dcef1474aab0892cda6a61",
+      "source_revision": "a2ea0713ea02572ce350a8037e71534ed9fd2f60",
+      "tested_revision": "679caaa7e71e53bad1cc182fa2b1f6e46163ff94",
       "platform": "remote Linux, CPU expanded profile",
-      "run_id": 40068788183,
-      "result": "5023 passed, 77 skipped, zero failures/errors",
+      "run_id": 40072611408,
+      "result": "5071 passed, 77 skipped, zero failures/errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
-      "notes": "KG persisted-state repair accepted; all three workflows passed. Source/merge trees equal47f3ea88670ef99de1e4f5162b9f4316970d90cf. coverage7.16.2/566 exclusions unchanged;2621 warnings,no collection warnings. Full21:12. Exact90 percent gap1690;core70/expanded86 retained.",
+      "notes": "AutoML persisted-contract repair accepted; all three workflows passed. Source/merge trees equala48ebd792c0754b7e7986df82f980e2f2902a9a8. coverage7.16.2/566 exclusions unchanged;2621 warnings,no collection warnings. Full12:14. Exact90 percent gap1687;core70/expanded86 retained.",
       "coverage_version": "7.16.2"
     },
     "latest_local_measurement": {
