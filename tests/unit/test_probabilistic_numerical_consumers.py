@@ -7,6 +7,8 @@ import joblib
 import numpy as np
 import pandas as pd
 import pytest
+import sklearn
+from packaging.version import Version
 from scipy.integrate import quad
 
 from buildml import Session
@@ -44,8 +46,11 @@ def gaussian_oracle(session, x):
         covariance = np.linalg.inv(est.lambda_ * np.eye(2) + est.alpha_ * centered.T @ centered)
         coef = est.alpha_ * covariance @ centered.T @ (yt - yt.mean())
         mean = (x - xt.mean(axis=0)) @ coef + yt.mean()
-        # sklearn versions exposing X_offset_ center predictive covariance too.
-        design = x - getattr(est, "X_offset_", np.zeros(2))
+        # sklearn 1.9 centers predictive variance; <=1.8 exposes the offset
+        # attribute too but evaluates variance on the raw design. Both mean
+        # predictions still use the centered training posterior above.
+        offset = xt.mean(axis=0) if Version(sklearn.__version__).release >= (1, 9) else np.zeros(2)
+        design = x - offset
         variance = np.einsum("ij,jk,ik->i", design, covariance, design) + 1 / est.alpha_
     else:
         scale = float(est.kernel_.k1.length_scale)

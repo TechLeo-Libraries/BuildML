@@ -2133,3 +2133,19 @@ Ruff and the docstring budget passed (586 existing findings unchanged).
 Source-mapped reach against verified `72a39e9` measured **18 previously missing
 unchanged production lines**, with zero changed/new production lines. This is
 subset evidence; the accepted full-suite result remains 87.5082% pending fresh CI.
+
+
+The initial new scoring tests exposed a test-oracle compatibility issue in
+Python 3.10 CI: scikit-learn through 1.8 computes BayesianRidge predictive variance
+on raw features, while 1.9 centers those features. Both versions expose an offset
+attribute, so attribute presence cannot select the convention. The test oracle
+uses the verified version boundary while retaining an independent posterior
+matrix calculation. A passing local subset did not justify accepting the failed
+CI run or changing the recorded whole-package coverage.
+
+Corrected verification passed 61 tests with scikit-learn 1.9 (54.95 seconds) and
+all 45 new consumers with an actual isolated scikit-learn 1.8 installation
+(16.39 seconds), with zero skips, warnings or failures. Ruff and the unchanged
+586-finding docstring budget passed. Recomputed subset reach remains 18 unchanged
+previously missing production lines, zero changed/new lines. Remote acceptance
+is still required; the recorded full-suite percentage remains unchanged.
