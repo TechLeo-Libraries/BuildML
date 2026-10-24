@@ -32,7 +32,7 @@ buildml.dl.audio : Audio handling and statistics.
 
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass, field, replace
 from pathlib import Path
 from typing import Any, Literal
 
@@ -1009,6 +1009,21 @@ def make_multimodal_loaders(
             else MultimodalContract.from_dict(preprocess)
         )
 
+    if frozen is not None:
+        # A saved transform owns its preprocessing choices; runtime settings
+        # control batching without refitting statistics or changing geometry.
+        cfg = replace(
+            cfg,
+            normalize=frozen.normalize_mean is not None,
+            normalize_images=frozen.image_mean is not None,
+            normalize_audio=frozen.audio_mean is not None,
+            image_size=frozen.image_size,
+            image_channels=frozen.image_channels,
+            audio_sample_rate=frozen.audio_sample_rate,
+            audio_max_samples=frozen.audio_max_samples,
+            audio_source_sample_rate=frozen.audio_source_sample_rate,
+        )
+
     numeric_cols, text_col, image_col, audio_col, target = _resolve_multimodal_columns(
         dataset,
         text_column=text_column if frozen is None else frozen.text_column,
@@ -1064,6 +1079,8 @@ def make_multimodal_loaders(
     vocab = None
     if has_text:
         assert text_col is not None
+        if frozen is not None and not frozen.vocab:
+            raise ValidationError("Frozen multimodal_preprocess is missing its fitted text vocab.")
         if frozen is not None and frozen.vocab:
             from buildml.dl.text import TextVocab
 

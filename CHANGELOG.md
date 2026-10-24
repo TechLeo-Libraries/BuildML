@@ -14,6 +14,10 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Frozen multimodal preprocessing retains saved normalization choices, image
+  geometry and audio settings independently of runtime loader defaults. Missing
+  frozen text vocabulary is refused rather than learned again.
+
 - Added numerical consumer checks for model-driven top-k, exact knapsack and
   fractional LP allocations, including selected-positive-rate metrics and
   frozen bundle replay across string, integer and boolean labels.
