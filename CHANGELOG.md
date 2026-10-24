@@ -14,6 +14,10 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Causal assumption flags require actual booleans across dataclass, mapping,
+  Session and agent paths. Truthy strings/numbers no longer acknowledge
+  unconfoundedness, positivity or an empty-confounder waiver.
+
 - Agent evolutionary search accepts a validated, unfitted base preprocessing
   recipe so advertised recipe-space knobs can run inside training folds.
   Invalid recipe settings refuse before search or Session state changes.

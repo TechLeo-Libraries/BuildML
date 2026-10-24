@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-10-19, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed:87.2256% (54,359/62,320);4,830 passed,77 skipped | [CI40056116326](https://github.com/TechLeo-Libraries/BuildML/actions/runs/40056116326), source `1bf7160`, tested merge `ad3b819e`; trees match and all three workflows passed.566 exclusions unchanged;floor86 retained from passing87.0013% source a05ec41;90% gap1,729 lines. Torch resume patience repair accepted with coverage7.16.2;2453 pytest warnings, no coverage collection warnings |
+| Current accepted remote expanded CPU whole-package gate | Passed:87.2321% (54,377/62,336);4,854 passed,77 skipped | [CI40059969000](https://github.com/TechLeo-Libraries/BuildML/actions/runs/40059969000), source `4e047bc`, tested merge `ca3f2ae3`; trees match and all three workflows passed.566 exclusions unchanged;floor86 retained from passing87.0013% source a05ec41;90% gap1,726 lines. Agent evolutionary base-recipe repair accepted with coverage7.16.2;2453 pytest warnings, no coverage collection warnings |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -1926,3 +1926,32 @@ preserved. Evidence reports/agent-evo-{before,after,repaired,final,docstrings,my
 baseline-mypy}.log and reports/agent-evo-{coverage,reach,measurement}.json. Archived
 control reports/evo-baseline-source. No runtime installs/local full-suite overlap.
 Fresh remote CI required independently before accepting aggregate changes.
+
+## Causal assumption booleans and native refutation - 2026-10-24
+
+Python Session/mapping declarations previously used bool() on acknowledgement flags,
+so truthy strings/numbers could acknowledge assumptions;the agent already required
+JSON booleans. Central CausalAssumptions.validate now requires actual booleans for
+unconfoundedness,positivity and empty-confounder waivers. Session and mapping parsers
+preserve values until validation. Refusals preserve prior assumptions,data/history.
+Literal True empty-confounder waivers remain explicit;declarations do not prove
+identification or positivity in a deployment population.
+
+Twenty-four native real-agent refutation consumers independently solve arm-specific
+OLS/Ridge nuisance fits and calculate original/placebo/random-confounder ATEs. Three
+treatment label types,poisoned reserved holdouts,plan immutability and real trusted
+bundle replay are checked. Initial24PASS168 flat-alias warnings10.96s. Seventy-three
+flag boundary/control cases across instance,mapping,Session,agent exposed30FAIL/
+43PASS9.60s before repair. Combinedfocused97PASS168warnings11.53s. Ruff/docstrings
+PASS586 unchanged findings;scopedmypy clean2files,existing unused-config-section note.
+
+Final source-frozen five-file117PASS0SKIP/FAIL168 expected flat-alias warnings72.36s;
+no collection warnings. Reach vs verified4e047bc:16 unchanged previously missing
+lines (15workflow,1availability),3 changed/new executed lines. Separate from accepted
+87.2321% fullsuite;no aggregate projection/floor raise. Scope,coverage7.16.2/566 exclusions
+and core70/expanded86 preserved. Evidence reports/agent-causal-{initial,repaired,final,
+docstrings,mypy}.log,reports/causal-flags-before.log and reports/agent-causal-{coverage,
+reach,measurement}.json. No runtime installs/local full-suite overlap. Fresh remote
+CI required independently before accepting aggregate changes. Next candidate evidence:
+reports/next-bundle-boundary-gaps.json ranks persisted-bundle failure paths from4e047bc;
+not yet tested defects or projected gains.
