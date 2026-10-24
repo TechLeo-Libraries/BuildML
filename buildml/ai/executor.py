@@ -841,6 +841,35 @@ def _dispatch_tool(
             "refit": bool(call.arguments.get("refit", True)),
             "task": call.arguments.get("task", "auto"),
         }
+        recipe_values = call.arguments.get("preprocess")
+        if recipe_values is not None:
+            from buildml.preprocess import PreprocessRecipe
+
+            if not isinstance(recipe_values, dict):
+                raise ValidationError("preprocess must be a JSON object of fold-local recipe settings.")
+            recipe_enums = {
+                "impute": (None, "mean", "median", "most_frequent", "constant"),
+                "scale": (None, "standard", "minmax"),
+                "select": (None, "variance", "univariate", "model"),
+            }
+            if set(recipe_values) - set(recipe_enums) - {"select_k", "select_threshold"}:
+                raise ValidationError("Unsupported preprocess setting; use impute,scale,select,select_k,select_threshold.")
+            for recipe_key, choices in recipe_enums.items():
+                if recipe_key in recipe_values and recipe_values[recipe_key] not in choices:
+                    raise ValidationError(f"Unsupported preprocess {recipe_key}: {recipe_values[recipe_key]!r}.")
+            if "select_k" in recipe_values and (
+                isinstance(recipe_values["select_k"], bool)
+                or not isinstance(recipe_values["select_k"], Integral)
+                or recipe_values["select_k"] < 1
+            ):
+                raise ValidationError("preprocess select_k must be a positive integer.")
+            if "select_threshold" in recipe_values and (
+                type(recipe_values["select_threshold"]) not in (int, float)
+                or not isfinite(recipe_values["select_threshold"])
+                or recipe_values["select_threshold"] < 0
+            ):
+                raise ValidationError("preprocess select_threshold must be finite and nonnegative.")
+            evo_kwargs["preprocess"] = PreprocessRecipe(**recipe_values)
         recipe_space = call.arguments.get("recipe_space")
         if isinstance(recipe_space, dict) and recipe_space:
             evo_kwargs["recipe_space"] = dict(recipe_space)

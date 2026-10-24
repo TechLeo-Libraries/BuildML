@@ -8,20 +8,20 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 87.1973040198989,
-      "covered_lines": 54337,
-      "num_statements": 62315,
+      "percent_covered": 87.22560975609755,
+      "covered_lines": 54359,
+      "num_statements": 62320,
       "excluded_lines": 566,
-      "source_revision": "4dbd2736f70aace770314252478fb27a40fd938f",
-      "tested_revision": "cabf920c194594156c8d27800f5eeec99ba27c71",
+      "source_revision": "1bf7160eb50d94211501a618206d12387e327436",
+      "tested_revision": "ad3b819e8120b10836f50a288fbf22251d3fd28a",
       "platform": "remote Linux, CPU expanded profile",
-      "run_id": 40051934060,
-      "result": "4810 passed, 77 skipped, zero failures/errors",
+      "run_id": 40056116326,
+      "result": "4830 passed, 77 skipped, zero failures/errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
-      "notes": "Agent future-exog forecast repair accepted; all three workflows passed. Source/merge trees equal051b693e15ce10a869e094a3aaf4088f7691d7bb. coverage7.16.2/566 exclusions unchanged;2453 warnings,no collection warnings. Full20:51. Exact90 percent gap1747;core70/expanded86 retained.",
+      "notes": "Torch resume patience repair accepted; all three workflows passed. Source/merge trees equal1cf6edde1a336bef1cd5d7e4757400825266f47b. coverage7.16.2/566 exclusions unchanged;2453 warnings,no collection warnings. Full13:28. Exact90 percent gap1729;core70/expanded86 retained.",
       "coverage_version": "7.16.2"
     },
     "latest_local_measurement": {

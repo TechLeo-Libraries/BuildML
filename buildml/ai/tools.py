@@ -1866,6 +1866,18 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
                             "{name: {type: float|int|categorical, ...}} or list choices."
                         ),
                     },
+                    "preprocess": {
+                        "type": "object",
+                        "description": "Unfitted fold-local base recipe; required when searching recipe knobs.",
+                        "properties": {
+                            "impute": {"enum": [None, "mean", "median", "most_frequent", "constant"]},
+                            "scale": {"enum": [None, "standard", "minmax"]},
+                            "select": {"enum": [None, "variance", "univariate", "model"]},
+                            "select_k": {"type": "integer", "minimum": 1},
+                            "select_threshold": {"type": "number", "minimum": 0},
+                        },
+                        "additionalProperties": False,
+                    },
                     "recipe_space": {
                         "type": "object",
                         "description": "Optional fold-local recipe knobs (requires preprocess).",

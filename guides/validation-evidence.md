@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-10-19, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed:87.1973% (54,337/62,315);4,810 passed,77 skipped | [CI40051934060](https://github.com/TechLeo-Libraries/BuildML/actions/runs/40051934060), source `4dbd273`, tested merge `cabf920c`; trees match and all three workflows passed.566 exclusions unchanged;floor86 retained from passing87.0013% source a05ec41;90% gap1,747 lines. Agent future-exog forecast repair accepted with coverage7.16.2;2453 pytest warnings, no coverage collection warnings |
+| Current accepted remote expanded CPU whole-package gate | Passed:87.2256% (54,359/62,320);4,830 passed,77 skipped | [CI40056116326](https://github.com/TechLeo-Libraries/BuildML/actions/runs/40056116326), source `1bf7160`, tested merge `ad3b819e`; trees match and all three workflows passed.566 exclusions unchanged;floor86 retained from passing87.0013% source a05ec41;90% gap1,729 lines. Torch resume patience repair accepted with coverage7.16.2;2453 pytest warnings, no coverage collection warnings |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -1886,4 +1886,43 @@ no aggregate projection/floor raise. Scope,coverage7.16.2/566 exclusions/core70/
 preserved. Evidence reports/torch-sgd-{initial,before-patience,repaired,first-final,final,
 docstrings,mypy,baseline-mypy}.log and reports/torch-sgd-{coverage,reach,measurement}.json.
 Archived control reports/torch-sgd-baseline-source. No runtime installs/full-suite overlap.
+Fresh remote CI required independently before accepting aggregate changes.
+
+Agent evolutionary search can receive an unfitted `preprocess` object with
+`impute`, `scale`, `select`, `select_k` and `select_threshold`. For example,
+`{"impute":"median","scale":"standard","select":"univariate"}` supplies
+the base recipe for `recipe_space={"select_k":[1,2]}`. Preprocessing is fitted
+inside each training fold and refitted on train for the selected model.
+This does not undo preprocessing previously applied globally to the Session;
+the existing leakage refusal remains in force.
+
+## Agent evolutionary fold-local base recipes - 2026-10-24
+
+The agent exposed recipe_space but omitted the required base preprocess argument.
+It now accepts a validated,unfitted base recipe with impute,scale,select,select_k and
+select_threshold settings,constructing PreprocessRecipe before the native search.
+Unsupported settings/invalid enums/nonmapping objects,nonpositive/fractional/bool
+selection counts and negative/nonfinite/bool thresholds refuse before search state
+changes. No executable estimator payloads are accepted. Existing Session-global
+preprocessing leakage refusals and fold-local fitting/refit rules remain in force.
+
+Twenty-four real-agent consumers independently compute per-fold medians,standard/
+minmax scaling,correlation-ranked feature selection and Ridge normal equations with
+an unpenalized intercept. Every explored candidate's MSE/sampleSD,winner and refit
+predictions are checked;poisoned reserved holdouts do not alter train-foldscores.
+GA caching/budget accounting is checked for observed configurations;no claim that
+a finite genetic search finds the global optimum. Twelve malformed recipes check
+unchanged data/history and no fitted/search result. Focused24PASS10.70s.
+Initialmissing-base1FAIL8.89s;first numericmatrix12FAIL12.17s from the oracle using
+population SD while classicalCV reports sample SD,corrected after means matched.
+Ruff/doc audit PASS586 unchanged findings;scopedmypy same7 existing diagnostics as
+an archived,gitshow-verified1bf7160 source control. No ignores/budgets changed.
+
+Final source-frozen four-file verification78PASS0SKIP/WARN/FAIL53.70s;no collection
+warnings. Reach vs verified1bf7160:1 unchanged previously missing AI workflow line,
+16 changed/new executed production lines. Separate from accepted87.2256% fullsuite;
+no aggregate projection/floor raise. Scope,coverage7.16.2/566 exclusions/core70/expanded86
+preserved. Evidence reports/agent-evo-{before,after,repaired,final,docstrings,mypy,
+baseline-mypy}.log and reports/agent-evo-{coverage,reach,measurement}.json. Archived
+control reports/evo-baseline-source. No runtime installs/local full-suite overlap.
 Fresh remote CI required independently before accepting aggregate changes.

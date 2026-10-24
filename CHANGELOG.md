@@ -14,6 +14,10 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Agent evolutionary search accepts a validated, unfitted base preprocessing
+  recipe so advertised recipe-space knobs can run inside training folds.
+  Invalid recipe settings refuse before search or Session state changes.
+
 - Torch training resumes preserve early-stopping patience already consumed,
   including when history logging omits intermediate epochs. Changed monitor,
   mode or minimum delta starts a fresh window with a warning.
