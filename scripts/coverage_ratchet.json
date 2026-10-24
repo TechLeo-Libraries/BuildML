@@ -8,20 +8,20 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 87.39292633331732,
-      "covered_lines": 54583,
+      "percent_covered": 87.5082056454841,
+      "covered_lines": 54655,
       "num_statements": 62457,
       "excluded_lines": 566,
-      "source_revision": "e9ade3515ea922e2d9384775f7ea9fde980e7435",
-      "tested_revision": "364caa7d479e161dcd31e217b8beafb9d27df0ac",
+      "source_revision": "72a39e95ed4a604a0e4bf7952c1e9314beb8d053",
+      "tested_revision": "8ebea4813b8e556853a76c52c86d46cbb6600b22",
       "platform": "remote Linux, CPU expanded profile",
-      "run_id": 40125427007,
-      "result": "5534 passed, 77 skipped, zero failures/errors",
+      "run_id": 40127136721,
+      "result": "5542 passed, 77 skipped, zero failures/errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
-      "notes": "LTR numerical consumers accepted; all three workflows passed. Source/merge trees equalbcefebea56d529a9c978758654400645b3257aed. coverage7.16.2/566 exclusions unchanged;2781 warnings,no collection warnings. Full16:11. Exact90 percent gap1629;core70/expanded86 retained.",
+      "notes": "Real DDP numerical consumers accepted; all three workflows passed. Source/merge trees equal34729dcab4f4c97c97df179b7a86ffc5859f25d5. coverage7.16.2/566 exclusions unchanged;2781 warnings,no collection warnings. Full12:55. Exact90 percent gap1557;core70/expanded86 retained.",
       "coverage_version": "7.16.2"
     },
     "latest_local_measurement": {
