@@ -31,6 +31,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime, timezone
+from math import isfinite
 from numbers import Integral
 from typing import Any
 
@@ -927,6 +928,16 @@ def _dispatch_tool(
         }
         if "horizon" in call.arguments and call.arguments["horizon"] is not None:
             kwargs["horizon"] = int(call.arguments["horizon"])
+        if "future_exog" in call.arguments:
+            future_rows = call.arguments["future_exog"]
+            if not isinstance(future_rows, list) or any(
+                not isinstance(row, list) or any(
+                    type(value) not in (int, float) or not isfinite(value)
+                    for value in row
+                ) for row in future_rows
+            ):
+                raise ValidationError("future_exog must contain rows of finite JSON numbers.")
+            kwargs["future_exog"] = future_rows
         result = session.generate_forecast(**kwargs)
         return result, ()
 

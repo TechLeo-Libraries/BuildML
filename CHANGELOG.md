@@ -14,6 +14,10 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Agent forecast generation now accepts and forwards caller-supplied future
+  exogenous rows, in fitted column order. Exogenous models can be generated
+  through the same public tool that fits them; malformed inputs still refuse.
+
 - Meta-learning preserves raw label types for new fits and adaptation prototype
   keys, including numeric-looking strings and booleans. Incompatible mixed
   labels and unseen holdout labels are refused; persisted legacy encoders keep

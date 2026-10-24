@@ -8,20 +8,20 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 87.18780096308186,
-      "covered_lines": 54318,
-      "num_statements": 62300,
+      "percent_covered": 87.18804667062543,
+      "covered_lines": 54326,
+      "num_statements": 62309,
       "excluded_lines": 566,
-      "source_revision": "d2df2ee264ed0d7e718268d5eb7c62b26f41f7ab",
-      "tested_revision": "5c9785f9743d72f05e870f4491b8ab3a807b68ac",
+      "source_revision": "5c6e1581e32f4aeeb5daca927eff21fed8b6242a",
+      "tested_revision": "49465f2b9fb5a20ef6b98df74f03c650c9aefad1",
       "platform": "remote Linux, CPU expanded profile",
-      "run_id": 40041925485,
-      "result": "4760 passed, 77 skipped, zero failures/errors",
+      "run_id": 40047069674,
+      "result": "4777 passed, 77 skipped, zero failures/errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
-      "notes": "Agent DBSCAN density consumers accepted; all three workflows passed. Source/merge trees equalc6ea6baeb281334a3bcf59f633f7f2ed78d1a142. coverage7.16.2/566 exclusions unchanged;2256 warnings,no collection warnings. Full11:39. Exact90 percent gap1752;core70/expanded86 retained.",
+      "notes": "Meta-learning label identity repair accepted; all three workflows passed. Source/merge trees equal7d20e52c2dd6b28bce401e5b8da83843ebba6da8. coverage7.16.2/566 exclusions unchanged;2296 warnings,no collection warnings. Full10:56. Exact90 percent gap1753;core70/expanded86 retained.",
       "coverage_version": "7.16.2"
     },
     "latest_local_measurement": {

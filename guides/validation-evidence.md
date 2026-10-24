@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-10-19, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed:87.1878% (54,318/62,300);4,760 passed,77 skipped | [CI40041925485](https://github.com/TechLeo-Libraries/BuildML/actions/runs/40041925485), source `d2df2ee`, tested merge `5c9785f9`; trees match and all three workflows passed.566 exclusions unchanged;floor86 retained from passing87.0013% source a05ec41;90% gap1,752 lines. Agent DBSCAN density consumers accepted with coverage7.16.2;2256 pytest warnings, no coverage collection warnings |
+| Current accepted remote expanded CPU whole-package gate | Passed:87.1880% (54,326/62,309);4,777 passed,77 skipped | [CI40047069674](https://github.com/TechLeo-Libraries/BuildML/actions/runs/40047069674), source `5c6e158`, tested merge `49465f2b`; trees match and all three workflows passed.566 exclusions unchanged;floor86 retained from passing87.0013% source a05ec41;90% gap1,753 lines. Meta-learning label identity repair accepted with coverage7.16.2;2296 pytest warnings, no coverage collection warnings |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -1827,3 +1827,34 @@ no aggregate projection or floor raise. Scope,coverage7.16.2/566 exclusions and
 core70/expanded86 preserved. Fresh remote CI required;local Torch differs from CI.
 Evidence reports/meta-labels-{before,after,repaired,final,docstrings,mypy}.log and
 reports/meta-labels-{coverage,reach,measurement}.json. No runtime installs/full overlap.
+
+## Agent future exogenous forecasting - 2026-10-24
+
+The agent could fit an exogenous ForecastPlan but its generation schema/dispatch
+omitted future_exog despite describing it as required. The tool now accepts a matrix
+of finite JSON numbers in fitted column order and forwards it to Session generation.
+Malformed rows,booleans and nonfinite values refuse before result/history mutation;
+existing shape checks remain shared. Caller-supplied covariates must be available at
+the forecast origin or explicitly assumed scenarios;offline holdout covariates do
+not establish deployment availability.
+
+Twenty-four real agent consumers independently solve Ridge normal equations with an
+unpenalized intercept,then calculate recursive forecasts and expanding one-step,
+fixed-origin and windowed-origin holdout paths. Two lag sets,one/two exogenous columns
+including reversed order,validation/test and real bundle reloads are checked. Nine
+malformed-input cases check frozen plans,data,history and result state. Focusedfinal
+33PASS157 expected flat-alias warnings10.73s. Initial fixture split-size assumption
+was corrected before reproducing the missing-forward defect. After forwarding,
+a bool-vector acceptance failure prompted strict finite numeric-row validation.
+Ruff/doc audit PASS586 unchanged findings;scopedmypy has the same7 existing diagnostics
+as an archived,gitshow-verified5c6e158 baseline. No ignores/budgets changed.
+
+Final source-frozen five-file verification66PASS0SKIP/FAIL177 expected flat-alias
+warnings73.52s;no collection warnings. Reach vs verified5c6e158:4 unchanged previously
+missing workflow lines,6 changed/new executed lines (including the isfinite import).
+No availability padding. Subset reach is separate from accepted full87.1880%;no
+aggregate projection/floor raise. Scope,coverage7.16.2/566 exclusions/core70/expanded86
+preserved. Evidence reports/agent-exog-{before,before-forwarding,after,repaired,final,
+docstrings,mypy,baseline-mypy}.log and reports/agent-exog-{coverage,reach,measurement}.json.
+Baseline archive reports/exog-baseline-source. No runtime installs/full-suite overlap.
+Fresh remote CI required independently before promoting any aggregate change.

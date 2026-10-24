@@ -2089,6 +2089,14 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
                 "type": "object",
                 "properties": {
                     "horizon": {"type": "integer", "description": "Steps ahead."},
+                    "future_exog": {
+                        "type": "array",
+                        "items": {"type": "array", "items": {"type": "number"}},
+                        "description": (
+                            "Known future values: one row per forecast step, columns in "
+                            "the fitted exog_columns order. Required for exogenous plans."
+                        ),
+                    },
                     "origin": {
                         "type": "string",
                         "enum": ["train_end", "validation_end", "test_end"],
