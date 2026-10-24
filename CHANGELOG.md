@@ -14,6 +14,10 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Ensemble bundles validate the saved plan and paired classical FitResult
+  before creating destination files or replacing Session state, including
+  estimator identity and ordered feature, target, task and row-count contracts.
+
 - Torch SSL bundle loading checks sidecar method, input width and latent
   representation contracts before restoring weights or replacing Session state.
   Malformed tabular weight payloads raise ValidationError.
