@@ -33,6 +33,28 @@ and preprocess strategy are still open.
 
 ## Selection
 
+Nested outer estimates repeat the configured grid, randomized, evolutionary or
+Optuna search, including recipe and ensemble options, within each outer-training
+subset. Trial and ensemble budgets apply inside each repeated search, so nesting
+multiplies the work. Outer Optuna studies are fresh and do not reuse persistent
+study objectives from the main search or earlier folds. Integer CV settings use
+the same fold-building machinery as ordinary CV; pass a custom splitter when a
+particular fold assignment is required.
+
+Voting-family candidates follow the ranking metric's direction: lower losses
+are better. With a declared weight column, sklearn voting ensembles pass weights
+to every active member; a member that cannot accept them causes a validation
+refusal. Dropped members are ignored. Backend versions and metadata-routing
+configuration still need compatible sklearn support.
+
+Native `selection='nested'` carries built-in grouped and temporal constraints
+into inner selection. Explicit custom inner splitters are honored. Fold indices
+must be valid, nonempty and disjoint before nested indexing. Custom splitters
+remain responsible for expressing the intended group or temporal population.
+Declared sample weights apply to fitting and evaluation in both loops. The
+reported outer mean and spread summarize the weighted metric within each fold;
+they are not a single pooled metric over every outer-evaluation row.
+
 | Mode | Ranking evidence | When |
 | --- | --- | --- |
 | `cv` (default) | Train-fold CV means | Initial selection; use outer folds for a post-selection estimate |
@@ -142,6 +164,21 @@ session.save_pipeline("artifacts/automl_pipeline", evaluate_partition="test")
 not the dataset. `checkpoint_load` does not restore the AutoMLPlan.
 
 ## What usually goes wrong
+
+Native search accepts reusable splitter objects and iterables of positional
+train/evaluation index pairs. A one-shot iterable is materialized once so every
+candidate, including ensembles, sees the same supplied folds. This stores its
+indices in memory. Custom splitters retain control of their `split` method;
+use a fixed random seed when repeated calls must produce identical folds.
+
+In result and bundle configuration, `cv` and `outer_cv` preserve integer requests.
+For custom inputs they are `null`; `extras.cv_splitter` and
+`extras.outer_cv_splitter` record the supplied type, and `extras.cv_strategy`
+records the requested strategy. These fields describe configuration, not an
+observed fold count or a complete replay specification. Keep the custom fold
+definition separately to reproduce a search. Nested inner indices must be valid
+within every outer-training population; full-population indices do not become
+valid inner indices automatically.
 
 - Session-global prep without the allow flag: `LeakageError`.
 - `selection='validation'` without a validation partition: `ValidationError`.

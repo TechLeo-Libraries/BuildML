@@ -178,6 +178,15 @@ only `algorithm="sarsa"` (no `mode=`) routes here. If you pass
 `mode="tabular_q"` and leave the mixin `algorithm="linucb"` alone, the
 resolver treats linucb as unset and uses `q_learning`.
 
+Tabular training and evaluation require positive integer `n_episodes` and
+`max_steps`. Boolean, fractional, string, zero and non-finite budgets raise
+`ValidationError` before backend or environment allocation. NumPy integer counts
+are accepted. Epsilon-greedy probabilities require finite real action values and
+a finite exploration rate; finite rates outside `[0, 1]` are clipped as documented.
+Evaluation rolls out fresh episodes without updating the learned Q-tables or
+training visit counts. A truncation ends the rollout but retains bootstrapping;
+a true terminal transition has no future-value term.
+
 | Algorithm | Target | Family |
 | --- | --- | --- |
 | `q_learning` (mode default) | `r + γ max_a' Q(s', a')` | Off-policy TD control |

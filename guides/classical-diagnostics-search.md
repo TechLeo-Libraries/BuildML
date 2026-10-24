@@ -18,6 +18,14 @@ Use validation to select thresholds, features, and model families.
 Use test to assess the final choice. BuildML cannot stop you from using test results to select a model in your
 own notebook. It can refuse CV after Session-global fitted preprocessing.
 
+For `nested_cv_score`, `inner_search` accepts `auto`, `grid`, `randomized`,
+`optuna`, or `evolutionary`. Unknown names raise `ValidationError` before
+fitting. Keep both estimator and recipe spaces in the same search family:
+`param_grid` with `recipe_grid`, or `param_distributions` with
+`recipe_distributions`. Mixing grid and randomized spaces is refused so that
+neither space can be silently ignored. Optuna/evolutionary use `param_space`
+and `recipe_space` instead.
+
 [Classical end-to-end](classical-end-to-end.md) ·
 Runnable script: [`examples/evolutionary_search_loop.py`](../examples/evolutionary_search_loop.py)
 

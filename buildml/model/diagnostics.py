@@ -41,6 +41,7 @@ buildml.model.evidence : How findings stay linked to measurements.
 
 from __future__ import annotations
 
+import json
 from collections.abc import Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -328,6 +329,7 @@ def calibration_report(
 
     x, y, _, _, _ = _feature_target_frames(dataset, split_plan, partition)
     x = x[list(fit_result.feature_columns)]
+    _validate_diagnostic_classes(y, fit_result.estimator.classes_)
     proba = fit_result.estimator.predict_proba(x)
     tips: list[str] = []
     interpretation: list[str] = []
@@ -338,22 +340,33 @@ def calibration_report(
     }
 
     if proba.shape[1] == 2:
-        y_bin = pd.Series(y).astype(str)
-        positive = str(fit_result.estimator.classes_[1])
-        y_true = (y_bin == positive).astype(int).to_numpy()
+        y_bin = pd.Series(y)
+        positive_value = fit_result.estimator.classes_[1]
+        positive = str(positive_value)
+        y_true = (y_bin == positive_value).astype(int).to_numpy()
         prob_pos = proba[:, 1]
         n_bins_eff = min(n_bins, max(3, len(y_true) // 5))
         frac_pos, mean_pred = calibration_curve(
             y_true, prob_pos, n_bins=n_bins_eff, strategy="quantile"
         )
         brier = float(brier_score_loss(y_true, prob_pos))
-        ece = float(np.mean(np.abs(np.asarray(frac_pos) - np.asarray(mean_pred))))
+        # Quantile bins can have very unequal sizes when probabilities tie.
+        # Weight nonempty bins by their actual sample counts, matching the
+        # bin assignment used by sklearn.calibration_curve.
+        edges = np.percentile(prob_pos, np.linspace(0, 100, n_bins_eff + 1))
+        bin_ids = np.searchsorted(edges[1:-1], prob_pos)
+        counts = np.bincount(bin_ids, minlength=len(edges))
+        nonempty_counts = counts[counts > 0]
+        gaps = np.abs(np.asarray(frac_pos) - np.asarray(mean_pred))
+        ece = float(np.average(gaps, weights=nonempty_counts))
         max_gap = float(np.max(np.abs(np.asarray(frac_pos) - np.asarray(mean_pred))))
         payload["positive_class"] = positive
         payload["brier_score"] = brier
         payload["ece"] = ece
         payload["max_reliability_gap"] = max_gap
         payload["n_bins"] = int(n_bins_eff)
+        payload["bin_counts"] = [int(value) for value in nonempty_counts]
+        payload["ece_method"] = "sample-weighted mean absolute bin gap"
         payload["prevalence"] = float(y_true.mean())
         payload["calibration_curve"] = {
             "fraction_positives": [float(v) for v in frac_pos],
@@ -386,17 +399,17 @@ def calibration_report(
             )
     else:
         # Multiclass: one-vs-rest Brier-style summary per class (micro)
-        y_str = pd.Series(y).astype(str)
-        classes = [str(c) for c in fit_result.estimator.classes_]
+        y_values = pd.Series(y)
+        classes = list(fit_result.estimator.classes_)
         per_class = []
         for idx, cls in enumerate(classes):
-            y_bin = (y_str == cls).astype(int).to_numpy()
+            y_bin = (y_values == cls).astype(int).to_numpy()
             prob_c = proba[:, idx]
             try:
                 brier_c = float(brier_score_loss(y_bin, prob_c))
             except ValueError:
                 brier_c = float("nan")
-            per_class.append({"class": cls, "brier_score": brier_c})
+            per_class.append({"class": str(cls), "brier_score": brier_c})
         payload["per_class_brier"] = per_class
         payload["note"] = (
             "Multiclass: binary reliability diagram omitted; per-class Brier provided."
@@ -465,7 +478,8 @@ def threshold_report(
     reverse. There is no setting that improves both.
 
     When ``fp_cost`` and ``fn_cost`` are supplied the guesswork disappears: the
-    threshold that minimises expected cost is computed directly. This is the
+    threshold that minimises empirical cost over every distinct observed
+    probability and the all-positive/all-negative policies is computed. This is the
     right way to use the function whenever the costs can be estimated at all,
     even roughly: a rough ratio beats an arbitrary 0.5.
 
@@ -589,9 +603,11 @@ def threshold_report(
             "for multiclass use per-class one-vs-rest thresholds"
         )
 
-    y_bin = pd.Series(y).astype(str)
-    positive = str(fit_result.estimator.classes_[1])
-    y_true = (y_bin == positive).astype(int).to_numpy()
+    _validate_diagnostic_classes(y, fit_result.estimator.classes_)
+    y_bin = pd.Series(y)
+    positive_value = fit_result.estimator.classes_[1]
+    positive = str(positive_value)
+    y_true = (y_bin == positive_value).astype(int).to_numpy()
     prob = fit_result.estimator.predict_proba(x)[:, 1]
     precision, recall, thr = precision_recall_curve(y_true, prob)
     fpr, tpr, roc_thr = roc_curve(y_true, prob)
@@ -599,19 +615,28 @@ def threshold_report(
     ap = float(average_precision_score(y_true, prob))
     n_rows = int(len(y_true))
 
+    thresholds = np.linspace(0.05, 0.95, 19)
+    if cost_mode:
+        thresholds = np.unique(np.r_[thresholds, 0., prob, np.nextafter(prob.max(), np.inf)])
+    # Prefix counts evaluate all observed score breakpoints in O(n log n),
+    # avoiding a full prediction vector and metric passes per threshold.
+    order = np.argsort(prob, kind="stable")
+    sorted_prob = prob[order]
+    positive_prefix = np.r_[0, np.cumsum(y_true[order])]
+    positives = int(positive_prefix[-1])
     rows: list[dict[str, Any]] = []
-    for t in np.linspace(0.05, 0.95, 19):
-        pred = (prob >= t).astype(int)
-        tp = int(((pred == 1) & (y_true == 1)).sum())
-        fp = int(((pred == 1) & (y_true == 0)).sum())
-        tn = int(((pred == 0) & (y_true == 0)).sum())
-        fn = int(((pred == 0) & (y_true == 1)).sum())
+    for t in thresholds:
+        below = int(np.searchsorted(sorted_prob, t, side="left"))
+        fn = int(positive_prefix[below])
+        tp = positives - fn
+        tn = below - fn
+        fp = n_rows - below - tp
         row: dict[str, Any] = {
             "threshold": float(t),
-            "precision": float(precision_score(y_true, pred, zero_division=0)),
-            "recall": float(recall_score(y_true, pred, zero_division=0)),
-            "f1": float(f1_score(y_true, pred, zero_division=0)),
-            "predicted_positive_rate": float(pred.mean()),
+            "precision": float(tp / (tp + fp)) if tp + fp else 0.,
+            "recall": float(tp / positives) if positives else 0.,
+            "f1": float(2 * tp / (2 * tp + fp + fn)) if 2 * tp + fp + fn else 0.,
+            "predicted_positive_rate": float((tp + fp) / n_rows),
             "tp": tp,
             "fp": fp,
             "tn": tn,
@@ -738,6 +763,10 @@ def threshold_report(
             "roc_auc": roc_auc,
             "average_precision": ap,
             "rows": rows,
+            "threshold_search": (
+                "observed probability breakpoints, display grid and all-positive/all-negative policies"
+                if cost_mode else "display grid from 0.05 to 0.95"
+            ),
             "operating_points": operating_points,
             "recommended_threshold": recommended,
             "recommendation_basis": recommendation_basis,
@@ -1238,6 +1267,8 @@ def segment_error_report(
     """
     if split_plan is None:
         raise ValidationError("Split required for segment error analysis")
+    if partition not in {"train", "validation", "test"}:
+        raise ValidationError("partition must be train, validation, or test")
     by_columns = _normalize_segment_columns(by, dataset.columns)
     if max_segments < 1:
         raise ValidationError("max_segments must be >= 1")
@@ -1265,17 +1296,17 @@ def segment_error_report(
             f"No segment values available for columns {by_columns!r} on partition '{partition}'"
         )
     top = counts.head(max_segments).index.tolist()
-    binary_positive: str | None = None
+    binary_positive: Any | None = None
     if fit_result.task == "classification" and hasattr(fit_result.estimator, "classes_"):
-        classes = [str(c) for c in fit_result.estimator.classes_]
+        classes = list(fit_result.estimator.classes_)
         if len(classes) == 2:
             binary_positive = classes[1]
 
     primary: list[dict[str, Any]] = []
     small: list[dict[str, Any]] = []
     if fit_result.task == "classification":
-        y_true = y.astype(str).to_numpy()
-        y_pred = pd.Series(preds).astype(str).to_numpy()
+        y_true = y.to_numpy()
+        y_pred = np.asarray(preds)
         for value in top:
             mask = segment_labels.to_numpy() == value
             n = int(mask.sum())
@@ -1330,7 +1361,7 @@ def segment_error_report(
         "min_segment_n": min_segment_n,
         "segments": primary,
         "small_segments": small,
-        "binary_positive_class": binary_positive,
+        "binary_positive_class": str(binary_positive) if binary_positive is not None else None,
     }
     interpretation = [
         (
@@ -1403,10 +1434,32 @@ def _normalize_segment_columns(by: str | Sequence[str], columns: Sequence[str]) 
     return ordered
 
 
+def _validate_diagnostic_classes(y: Any, classes: Any) -> None:
+    """Refuse scoring labels absent from the fitted probability columns."""
+    values = pd.Series(y)
+    if values.isna().any():
+        raise ValidationError("Diagnostic target contains missing class labels")
+    unknown = values[~values.isin(list(classes))]
+    if not unknown.empty:
+        raise ValidationError(
+            f"Diagnostic target contains class labels absent from the fitted classifier: {sorted(set(unknown.map(repr)))!r}"
+        )
+
+
 def _segment_label_series(frame: pd.DataFrame, columns: Sequence[str]) -> pd.Series:
     parts: list[pd.Series] = []
     for column in columns:
-        series = frame[column].astype("string").fillna("<NA>")
+        def render(value: Any) -> str:
+            if pd.isna(value):
+                return "<NA>"
+            text = str(value)
+            # Escape delimiters and the missing-value spelling so formatting
+            # cannot collapse distinct observed groups into one segment.
+            if text == "<NA>" or any(char in text for char in ('|', '"', "\\")):
+                return json.dumps(text, ensure_ascii=False)
+            return text
+
+        series = frame[column].map(render)
         parts.append(series.map(lambda value, col=column: f"{col}={value}"))
     if len(parts) == 1:
         return parts[0]
@@ -1421,7 +1474,7 @@ def _classification_segment_metrics(
     value: str,
     y_true: np.ndarray,
     y_pred: np.ndarray,
-    positive: str | None,
+    positive: Any | None,
 ) -> dict[str, Any]:
     n = int(len(y_true))
     correct = int((y_true == y_pred).sum())

@@ -297,6 +297,11 @@ def train_supervised_module(
     weights no longer describe the problem, and continuing would train happily
     while meaning nothing. Each is refused with a message naming the mismatch.
 
+    **Resuming preserves elapsed early-stopping patience.** The epoch offset
+    since the best epoch determines the patience already consumed, independent
+    of sparse history logging. Changing the monitor, mode, or minimum delta
+    starts a fresh patience window and is disclosed in warnings.
+
     **``mixed_precision=True`` off CUDA is a no-op with a warning.** It is not
     an error: the same configuration should run on a laptop and a GPU box: but
     the speedup will not be there, and silence about that would be misleading.
@@ -407,12 +412,24 @@ def train_supervised_module(
     stop_reason = f"completed_epochs:{cfg.epochs}"
     stopped_epoch = start_epoch + cfg.epochs
 
-    # Seed best from prior early-stop bookkeeping when resuming.
-    if prior is not None and prior.early_stop is not None and prior.early_stop.enabled:
-        best_value = prior.early_stop.best_value
-        best_epoch = prior.early_stop.best_epoch
-        if cfg.restore_best_weights:
-            best_state = deepcopy(prior.module.state_dict())
+    # Epoch offsets preserve patience even when log_every omits intermediate rows.
+    if early_enabled and prior is not None and prior.early_stop is not None and prior.early_stop.enabled:
+        same_monitor = (
+            prior.early_stop.monitor == monitor
+            and prior.early_stop.mode == mode
+            and prior.config.early_stopping_min_delta == cfg.early_stopping_min_delta
+        )
+        if same_monitor:
+            best_value = prior.early_stop.best_value
+            best_epoch = prior.early_stop.best_epoch
+            if best_epoch is not None:
+                wait = max(0, start_epoch - int(best_epoch))
+            if cfg.restore_best_weights:
+                best_state = deepcopy(prior.module.state_dict())
+        else:
+            warnings.append(
+                "Early-stopping monitor/mode/min_delta changed; starting a fresh patience window."
+            )
 
     for offset in range(1, cfg.epochs + 1):
         epoch = start_epoch + offset

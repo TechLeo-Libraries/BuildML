@@ -34,7 +34,6 @@ def _run_backend(
         Session.ingest(_reference_frame())
         .set_roles({"x0": "feature", "x1": "feature", "x2": "feature", "y": "target"})
         .split(test_size=0.25, validation_size=0.2, random_state=0)
-        .scale(method="standard")
     )
     fit = session.fit_probabilistic(
         backend=backend,

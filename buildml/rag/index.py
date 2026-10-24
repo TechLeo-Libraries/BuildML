@@ -111,6 +111,7 @@ class RagIndex:
         queries land in a different space.
         """
         self.store = store
+        self._bm25_cache: tuple[Any, float, float, Any] | None = None
         self.embedder = embedder
         self.embed_config = embed_config
         self.chunk_config = chunk_config
@@ -260,6 +261,7 @@ class RagIndex:
             raise ValidationError("rag delete requires chunk_ids and/or doc_ids.")
         before = len(self.store.chunks)
         self.store = self.store.without_ids(chunk_ids=chunk_ids, doc_ids=doc_ids)
+        self._bm25_cache = None
         removed = before - len(self.store.chunks)
         self._refresh_doc_count()
         self._refresh_disclosures(note=f"deleted_chunks={removed}")
@@ -357,6 +359,7 @@ class RagIndex:
             embeddings=np.asarray(final_emb, dtype=np.float32),
             dim=self.embed_config.dim,
         )
+        self._bm25_cache = None
         self._refresh_doc_count()
         self._refresh_disclosures(
             note=f"upserted_chunks={len(to_encode)}; replaced={len(replace_ids)}"

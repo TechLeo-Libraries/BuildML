@@ -10,6 +10,10 @@ Train-fitted generators. Default is native Gaussian copula. This is not
 `session.resample` and not differential privacy. `extend_train` merge
 clears a classical `FitResult`.
 
+Sampling `n` must be a positive integer; `None` uses the fitted training row
+count. Booleans, strings, fractional counts and non-finite values are refused
+before drawing or merging rows. NumPy integer counts are supported.
+
 [Synthetic deep](synthetic-deep.md) ·
 Runnable example: [`examples/synthetic_copula_loop.py`](../examples/synthetic_copula_loop.py) ·
 Evidence: [synthetic-privacy-utility](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/synthetic-privacy-utility)

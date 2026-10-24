@@ -1,0 +1,277 @@
+"""Bounded real HTTP load, process restart and prediction-parity evidence.
+
+This measures one loopback deployment, not an uptime SLA. Traffic pauses during
+deliberate shutdowns; recovery time and downtime are reported separately.
+"""
+from __future__ import annotations
+
+import argparse
+import concurrent.futures
+import hashlib
+import importlib.metadata
+import json
+import logging
+import math
+import platform
+import random
+import socket
+import subprocess
+import sys
+import tempfile
+import threading
+import time
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
+
+
+def free_port():
+    with socket.socket() as sock:
+        sock.bind(("127.0.0.1", 0))
+        return sock.getsockname()[1]
+
+
+def worker(bundle, port, stop_file):
+    from buildml.serving.launch import serve_bundle
+
+    logging.disable(logging.CRITICAL)
+    handle = serve_bundle(bundle, port=port, trusted=True, api_keys="probe-key")
+    try:
+        while not Path(stop_file).exists() and handle.is_running:
+            time.sleep(.1)
+    finally:
+        handle.stop()
+
+
+def verify(seconds, out, *, continuous=False, requests_per_second=None, rss_sample_seconds=1):
+    for name, value in (("seconds", seconds), ("rss_sample_seconds", rss_sample_seconds),
+                        ("requests_per_second", requests_per_second)):
+        if value is None and name == "requests_per_second":
+            continue
+        if isinstance(value, bool) or not math.isfinite(value) or value <= 0:
+            raise ValueError(f"{name} must be finite and positive")
+    import httpx
+    import numpy as np
+    import pandas as pd
+    import psutil
+    from sklearn.linear_model import LinearRegression
+
+    from buildml import Session
+
+    started = time.monotonic()
+    def source_digest():
+        digest = hashlib.sha256()
+        for path in sorted((ROOT / "buildml").rglob("*.py")):
+            digest.update(path.relative_to(ROOT).as_posix().encode())
+            digest.update(path.read_bytes())
+        return digest.hexdigest()
+
+    result = {"status": "running", "requested_load_seconds": seconds,
+              "scope": ("continuous real loopback HTTP across three loads; no deployment SLA" if continuous
+                        else "real loopback HTTP; traffic paused during deliberate recovery; no deployment SLA"),
+              "continuous_process": continuous,
+              "target_requests_per_second": requests_per_second,
+              "rss_sample_seconds": rss_sample_seconds,
+              "source_sha256_at_start": source_digest(),
+              "source_revision": ((ROOT / ".source-revision").read_text().strip()
+                                  if (ROOT / ".source-revision").exists() else None),
+              "platform": platform.platform(), "python": sys.version,
+              "dependencies": {name: importlib.metadata.version(name) for name in
+                               ("numpy", "pandas", "scikit-learn", "fastapi", "uvicorn", "httpx", "psutil")},
+              "epochs": [], "recoveries": [], "errors": []}
+    out = Path(out)
+    out.parent.mkdir(parents=True, exist_ok=True)
+
+    def save():
+        out.write_text(json.dumps(result, indent=2, allow_nan=False))
+
+    save()
+    with tempfile.TemporaryDirectory(prefix="buildml-http-reliability-") as tmp:
+        frame = pd.DataFrame({"x": np.arange(80, dtype=float)})
+        frame["y"] = 2 * frame.x + 3
+        session = (Session.ingest(frame).set_roles({"x": "feature", "y": "target"})
+                   .split(test_size=.2, random_state=7).fit(LinearRegression(), task="regression"))
+        bundle = session.save_pipeline(Path(tmp) / "bundle")
+        port = free_port()
+        url = f"http://127.0.0.1:{port}"
+        process = None
+        try:
+            for epoch, (clients, batch) in enumerate([(1, 1), (4, 16), (8, 64)]):
+                if not continuous or epoch == 0:
+                    stop_file = Path(tmp) / f"stop-{epoch}"
+                launch_started = time.monotonic()
+                if not continuous or epoch == 0:
+                    process = subprocess.Popen(
+                        [sys.executable, str(Path(__file__).resolve()), "--worker", "--bundle", str(bundle),
+                         "--port", str(port), "--stop-file", str(stop_file)],
+                        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                    )
+                with httpx.Client(timeout=2) as client:
+                    deadline = launch_started + 60
+                    while True:
+                        if process.poll() is not None:
+                            raise RuntimeError(f"server exited during startup: {process.returncode}")
+                        try:
+                            response = client.get(url + "/health")
+                            if response.status_code == 200:
+                                break
+                        except httpx.HTTPError:
+                            pass
+                        if time.monotonic() >= deadline:
+                            raise TimeoutError("server did not become healthy within 60 seconds")
+                        time.sleep(.05)
+                recovery = time.monotonic() - launch_started
+                if epoch and not continuous:
+                    result["recoveries"].append({"after": "graceful" if epoch == 1 else "forced",
+                                                 "startup_seconds": recovery})
+                deadline = time.monotonic() + seconds / 3
+                abort = threading.Event()
+
+                def traffic(worker_id, epoch=epoch, batch=batch, deadline=deadline, clients=clients, abort=abort):
+                    rng = random.Random(epoch * 100 + worker_id)
+                    samples, errors, count = [], [], 0
+                    rows = [{"x": float(i - batch // 2)} for i in range(batch)]
+                    expected = [2 * row["x"] + 3 for row in rows]
+                    with httpx.Client(base_url=url, timeout=10) as client:
+                        while time.monotonic() < deadline and not abort.is_set():
+                            t0 = time.perf_counter()
+                            try:
+                                if count % 101 == 0:
+                                    response = client.post("/predict", json={"rows": rows})
+                                    assert response.status_code == 401, response.text
+                                elif count % 103 == 0:
+                                    response = client.post("/predict", headers={"X-API-Key": "probe-key"},
+                                                           json={"rows": [{"wrong": 1}]})
+                                    assert response.status_code in {400, 422}, response.text
+                                else:
+                                    response = client.post("/predict", headers={"X-API-Key": "probe-key"},
+                                                           json={"rows": rows})
+                                    assert response.status_code == 200, response.text
+                                    np.testing.assert_allclose(response.json()["predictions"], expected,
+                                                               rtol=1e-10, atol=1e-10)
+                            except Exception as exc:
+                                abort.set()
+                                if len(errors) < 20:
+                                    errors.append(f"{type(exc).__name__}: {str(exc)[:200]}")
+                                # Fail quickly instead of masking failures with a success rate.
+                                return {"requests": count, "samples": samples, "errors": errors}
+                            count += 1
+                            elapsed = (time.perf_counter() - t0) * 1000
+                            if len(samples) < 2048:
+                                samples.append(elapsed)
+                            else:
+                                index = rng.randrange(count)
+                                if index < len(samples):
+                                    samples[index] = elapsed
+                            if requests_per_second is not None:
+                                # Share the target rate across clients. Latency samples
+                                # exclude deliberate pacing sleeps.
+                                delay = clients / requests_per_second - elapsed / 1000
+                                if delay > 0:
+                                    abort.wait(min(delay, max(0, deadline - time.monotonic())))
+                    return {"requests": count, "samples": samples, "errors": errors}
+
+                rss = []
+                with concurrent.futures.ThreadPoolExecutor(max_workers=clients) as executor:
+                    futures = [executor.submit(traffic, i) for i in range(clients)]
+                    next_progress = time.monotonic()
+                    next_rss_sample = time.monotonic()
+                    while not all(f.done() for f in futures):
+                        if any(f.done() and f.exception() is not None for f in futures):
+                            abort.set()
+                        if time.monotonic() >= next_rss_sample:
+                            server = psutil.Process(process.pid)
+                            tree = [server, *server.children(recursive=True)]
+                            rss.append({"elapsed_seconds": time.monotonic() - started,
+                                        "mib": sum(p.memory_info().rss for p in tree) / 1024 ** 2})
+                            next_rss_sample = time.monotonic() + rss_sample_seconds
+                        if time.monotonic() >= next_progress:
+                            print(f"HTTP epoch={epoch} clients={clients} batch={batch} RSS={rss[-1]['mib']:.2f}MiB", flush=True)
+                            result["progress"] = {"clients": clients, "batch_size": batch,
+                                                  "server_pid": process.pid,
+                                                  "elapsed_seconds": time.monotonic() - started,
+                                                  "sampled_rss_mib": rss[-1]["mib"]}
+                            save()
+                            next_progress = time.monotonic() + 60
+                        time.sleep(min(1, max(.01, seconds / 30)))
+                    outcomes = [f.result() for f in futures]
+                errors = [error for item in outcomes for error in item["errors"]]
+                samples = [value for item in outcomes for value in item["samples"]]
+                result["epochs"].append({"clients": clients, "batch_size": batch,
+                                          "server_pid": process.pid,
+                                          "requests": sum(item["requests"] for item in outcomes),
+                                          "latency_p95_ms": float(np.percentile(samples, 95)) if samples else None,
+                                          "latency_sampling": "reservoir of up to 2048 requests per client",
+                                          "rss_samples": rss, "errors": errors})
+                result["errors"].extend(errors)
+                save()
+                if errors:
+                    raise RuntimeError("HTTP scoring or request-contract failure")
+                if continuous and epoch < 2:
+                    continue
+                stop_started = time.monotonic()
+                if epoch == 1:
+                    # Windows venv launchers can have a separate interpreter child.
+                    children = psutil.Process(process.pid).children(recursive=True)
+                    for child in children:
+                        child.kill()
+                    process.kill()
+                    _, alive = psutil.wait_procs(children, timeout=15)
+                    if alive:
+                        raise RuntimeError("server interpreter child did not terminate")
+                else:
+                    stop_file.touch()
+                process.wait(timeout=15)
+                close_deadline = time.monotonic() + 5
+                while True:
+                    with socket.socket() as sock:
+                        sock.settimeout(.2)
+                        closed = sock.connect_ex(("127.0.0.1", port)) != 0
+                    if closed:
+                        break
+                    if time.monotonic() >= close_deadline:
+                        raise RuntimeError("server port remained open after shutdown")
+                    time.sleep(.05)
+                result["epochs"][-1]["shutdown_seconds"] = time.monotonic() - stop_started
+                result["epochs"][-1]["shutdown"] = "forced" if epoch == 1 else "graceful"
+            result["source_sha256_at_end"] = source_digest()
+            result["source_unchanged"] = result["source_sha256_at_start"] == result["source_sha256_at_end"]
+            if not result["source_unchanged"]:
+                raise RuntimeError("BuildML source changed during the reliability run")
+            result["status"] = "passed"
+        except Exception as exc:
+            result["status"] = "failed"
+            result["errors"].append(f"{type(exc).__name__}: {exc}")
+            raise
+        finally:
+            if process is not None and process.poll() is None:
+                for child in psutil.Process(process.pid).children(recursive=True):
+                    child.kill()
+                process.kill()
+                process.wait(timeout=15)
+            result["elapsed_seconds"] = time.monotonic() - started
+            save()
+    return result
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--seconds", type=float, default=3600)
+    parser.add_argument("--out", default="artifacts/http-reliability.json")
+    parser.add_argument("--continuous", action="store_true", help="Keep one server process through all load phases")
+    parser.add_argument("--requests-per-second", type=float, help="Paced total target rate shared by all clients")
+    parser.add_argument("--rss-sample-seconds", type=float, default=1, help="Interval between process RSS samples")
+    parser.add_argument("--worker", action="store_true")
+    parser.add_argument("--bundle")
+    parser.add_argument("--port", type=int)
+    parser.add_argument("--stop-file")
+    args = parser.parse_args()
+    if args.worker:
+        worker(args.bundle, args.port, args.stop_file)
+    else:
+        result = verify(args.seconds, args.out, continuous=args.continuous,
+                        requests_per_second=args.requests_per_second, rss_sample_seconds=args.rss_sample_seconds)
+        print(json.dumps({"status": result["status"], "elapsed_seconds": result["elapsed_seconds"],
+                          "requests": sum(e["requests"] for e in result["epochs"]),
+                          "recoveries": result["recoveries"], "evidence": args.out}, allow_nan=False))

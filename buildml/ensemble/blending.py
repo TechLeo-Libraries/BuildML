@@ -32,6 +32,7 @@ sklearn.ensemble.StackingClassifier : Out-of-fold meta-features instead.
 from __future__ import annotations
 
 import logging
+from inspect import signature
 from typing import Any, Literal
 
 import numpy as np
@@ -80,14 +81,20 @@ def _fit_one(est: Any, X: Any, y: Any, sample_weight: Any | None) -> Any:
     model = clone(est)
     if sample_weight is not None:
         try:
-            model.fit(X, y, sample_weight=sample_weight)
-            return model
-        except TypeError:
-            # Estimator rejects sample_weight; refit without it (sklearn-compatible fallback).
-            logger.debug(
-                "blending: estimator rejected sample_weight; fitting without weights",
-                exc_info=True,
-            )
+            fit_signature = signature(model.fit)
+        except (TypeError, ValueError):
+            # Unknown signatures must not turn internal failures into an
+            # apparently successful, unweighted fit.
+            fit_signature = None
+        if fit_signature is not None:
+            try:
+                fit_signature.bind(X, y, sample_weight=sample_weight)
+            except TypeError:
+                logger.debug("blending: estimator has no sample_weight parameter; fitting unweighted")
+                model.fit(X, y)
+                return model
+        model.fit(X, y, sample_weight=sample_weight)
+        return model
     model.fit(X, y)
     return model
 
@@ -354,6 +361,7 @@ class HoldoutBlendClassifier(ClassifierMixin, BaseEstimator):
         blend of four models is roughly four times the latency of one, which is
         the trade a blend makes.
         """
+        check_is_fitted(self, ["estimators_", "final_estimator_"])
         return self.final_estimator_.predict(self._transform_meta(X))
 
     def predict_proba(self, X: Any) -> np.ndarray:
@@ -388,6 +396,7 @@ class HoldoutBlendClassifier(ClassifierMixin, BaseEstimator):
         :func:`buildml.model.diagnostics.calibration_report` before treating
         them as probabilities rather than scores.
         """
+        check_is_fitted(self, ["estimators_", "final_estimator_"])
         if not hasattr(self.final_estimator_, "predict_proba"):
             raise AttributeError(
                 f"{type(self.final_estimator_).__name__} does not implement predict_proba"
@@ -600,4 +609,5 @@ class HoldoutBlendRegressor(RegressorMixin, BaseEstimator):
         has a physical floor: a count, a price, a duration. Clip afterwards if
         the domain requires it.
         """
+        check_is_fitted(self, ["estimators_", "final_estimator_"])
         return self.final_estimator_.predict(self._transform_meta(X))

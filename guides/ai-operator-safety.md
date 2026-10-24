@@ -26,6 +26,15 @@ sensitive data in requests. BuildML restricts the operator through:
 
 Advice remains fallible. Domain roles, splits, and metrics still need human review.
 
+Bundle loading through the operator has two separate decisions. The tool call
+must explicitly set `trusted=True` to deserialize a model artifact you created
+or fully trust, and execution still requires confirmation. Omission or
+`trusted=False` retains the loader's refusal to deserialize executable payloads.
+Strings such as `"true"` and numeric values are rejected as trust arguments.
+The proposal discloses executable deserialization when trust is requested;
+confirmation alone does not supply trust. Bundle metadata and integrity hashes
+do not establish that an artifact's author is trustworthy.
+
 ---
 
 ## Use case A: Configure, preview egress, dry-run

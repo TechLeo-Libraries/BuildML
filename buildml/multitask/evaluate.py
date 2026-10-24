@@ -80,8 +80,11 @@ def evaluate_multitask(
             )
 
     disclosures = [
-        "Multi-task evaluation scores a holdout partition; rows were never "
-        "used for fitting.",
+        (
+            "Evaluation includes training rows; these are in-sample metrics, not an unseen-data estimate."
+            if part_name in {"train", "all"}
+            else "Multi-task evaluation scores a holdout partition; rows were never used for fitting."
+        ),
         "Per-task metrics are reported individually; aggregates are unweighted "
         "means across tasks.",
         f"method={plan.method}, task={plan.task}, "

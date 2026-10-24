@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from pandas.api.types import is_string_dtype
+
 from buildml.core.errors import ValidationError
 from buildml.data.dataset import Dataset
 from buildml.data.splits import SplitPlan, assert_fit_partition, frame_for_partition
@@ -167,13 +169,13 @@ ValidationError
             text_candidates = [
                 str(c)
                 for c in feature_cols
-                if str(c) in train.columns and train[str(c)].dtype == object
+                if str(c) in train.columns and is_string_dtype(train[str(c)].dtype)
             ]
             col = text_candidates[0] if text_candidates else None
         if col is None or col not in train.columns:
             raise ValidationError(
                 "text_pseudo_label requires a text feature column via text_column= "
-                "or a single object-dtype feature column."
+                "or an object- or string-dtype feature column."
             )
         cols = [str(col)]
         used_reduce = False

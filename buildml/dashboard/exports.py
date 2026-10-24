@@ -107,8 +107,9 @@ def export_csv(report: dict[str, Any], section: str) -> tuple[str, str]:
 
     Notes
     -----
-    **Columns come from the first row.** Sections build uniform rows, so this
-    holds; a section whose later rows carried extra keys would lose them.
+    **Columns include every row's fields**, in first-seen order. Mixed
+    univariate and multivariate evidence therefore retains its distinct
+    measurements; a field absent from a row is exported as an empty cell.
 
     **The text is returned, not written.** The caller decides where it goes.
 
@@ -122,7 +123,8 @@ def export_csv(report: dict[str, Any], section: str) -> tuple[str, str]:
     if not rows:
         raise KeyError(f"CSV section '{section}' has no rows for this report.")
     buffer = io.StringIO()
-    writer = csv.DictWriter(buffer, fieldnames=list(rows[0].keys()), extrasaction="ignore")
+    fields = list(dict.fromkeys(key for row in rows for key in row))
+    writer = csv.DictWriter(buffer, fieldnames=fields)
     writer.writeheader()
     writer.writerows(rows)
     return f"buildml_eda_{section}.csv", buffer.getvalue()
@@ -1103,7 +1105,7 @@ def _rows_univariate_categorical(report: dict[str, Any]) -> list[dict[str, Any]]
             }
             top = stats.get("top_values")
             if isinstance(top, dict) and top:
-                mode_key = next(iter(top))
+                mode_key = max(top, key=lambda value: top[value])
                 flat.setdefault("mode", mode_key)
                 flat["top_value"] = mode_key
                 flat["top_count"] = top[mode_key]
@@ -1215,7 +1217,25 @@ def _rows_target(report: dict[str, Any]) -> list[dict[str, Any]]:
         for key, value in target.items()
         if not isinstance(value, (dict, list))
     ]
-    summary = target.get("summary") if isinstance(target.get("summary"), dict) else {}
+    raw_summary = target.get("summary")
+    summary = raw_summary if isinstance(raw_summary, dict) else {}
+    rows.extend(
+        {"key": f"summary:{key}", "value": value}
+        for key, value in summary.items()
+        if not isinstance(value, (dict, list))
+    )
+    interpretation = target.get("interpretation") or {}
+    if isinstance(interpretation, dict):
+        rows.extend(
+            {"key": f"interpretation:{key}", "value": value}
+            for key, value in interpretation.items()
+            if not isinstance(value, (dict, list))
+        )
+        if interpretation.get("limitations"):
+            rows.append({
+                "key": "interpretation:limitations",
+                "value": " | ".join(str(item) for item in interpretation["limitations"]),
+            })
     balance = (
         target.get("class_balance")
         or target.get("value_counts")

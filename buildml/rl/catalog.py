@@ -173,14 +173,14 @@ def rl_capability_matrix() -> dict[str, Any]:
                 ),
             },
             "industry": {
-                "available": rl_industry_available(),
+                "available": gymnasium_available() and stable_baselines3_available(),
                 "extra": "rl-industry",
                 "modes": list(INDUSTRY_RL_MODES),
                 "algorithms": list(SB3_ALGORITHMS),
                 "modality": "gymnasium",
                 "notes": (
                     "Stable-Baselines3 PPO/DQN/A2C on small Gymnasium environments "
-                    "(buildml[rl-industry]). Not robotics/AV/multi-agent."
+                    "(Gymnasium + SB3; imitation is a separate capability). Not robotics/AV/multi-agent."
                 ),
             },
         },
@@ -592,6 +592,9 @@ def resolve_rl_backend_mode_algorithm(
     resolve_imitation_backend_method : The imitation counterpart.
     """
     from buildml.core.errors import MissingExtraError, ValidationError
+
+    if backend is not None and backend not in ('sklearn', 'native', 'industry'):
+        raise ValidationError(f"Unknown backend {backend!r}; choose from ('sklearn', 'native', 'industry').")
 
     resolved_backend: RlBackendName
     algo_key = str(algorithm or "linucb").lower().replace("-", "_")

@@ -197,3 +197,9 @@ print(restored.forecast.generate(horizon=7).predictions)
 
 [Time-series analysis](timeseries-analysis-deep.md) ·
 [Leakage](leakage-cv-recipes.md)
+
+Agent `generate_forecast` accepts `future_exog` as numeric rows in the fitted
+`exog_columns` order, with one row for each forecast step. Supply values known
+at the forecast origin or an explicitly assumed scenario; this API does not
+establish that future covariates are available in deployment. Offline holdout
+backtests can use contemporaneous holdout covariates, as disclosed in results.

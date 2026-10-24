@@ -158,6 +158,10 @@ def recommend_for_users(
             continue
 
         sc = _scores_for_user(plan, uidx, exclude_train=exclude_train_items)
+        # Exclusion is an eligibility rule, independent of backend score values.
+        if exclude_train_items:
+            sc = np.asarray(sc, dtype=float).copy()
+            sc[plan.matrix_[uidx] != 0] = -np.inf
         # If all scores are zero / -inf (e.g. empty after exclude), fall back
         if not np.isfinite(sc).any() or (
             np.nanmax(np.where(np.isfinite(sc), sc, -np.inf)) <= -np.inf

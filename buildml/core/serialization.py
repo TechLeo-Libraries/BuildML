@@ -72,15 +72,16 @@ def require_trusted_deserialize(
     Raises
     ------
     ValidationError
-        When ``trusted`` is false. Nothing is read from disk in that case.
+        When ``trusted`` is not the literal boolean ``True``. Nothing is
+        read from disk in that case.
     """
-    if trusted:
+    if trusted is True:
         return
     resolved = Path(path)
     raise ValidationError(
-        f"Refusing to deserialize {artifact} at '{resolved}'. "
+        f"Refusing to deserialize {artifact}. "
         "Pass trusted=True only for artifacts you created or fully trust "
-        "(pickle/joblib/torch can execute code on load)."
+        f"(pickle/joblib/torch can execute code on load). Path: '{resolved}'."
     )
 
 

@@ -12,6 +12,685 @@ from the current release; use the installation guide for current requirements.
 
 ## [Unreleased]
 
+### Validation
+
+- Added independent probabilistic scoring consumers: Gaussian posterior matrix
+  algebra, CRPS integration, GaussianNB density scores, partially labeled
+  evaluation populations and bundle replay without refitting.
+
+- Added real two-rank CPU/Gloo numerical consumers for both distributed entry
+  paths, checking averaged Adam updates, result transfer, validation and cleanup.
+
+- Added independent learning-to-rank score and per-query metric consumers,
+  legacy bundle replay and column-contract refusal checks that preserve a fitted ranker.
+
+- Added independent numerical consumers for ordered neuro-symbolic overlays,
+  soft-rule thresholds, regression blends, repair counts, traces and bundle replay.
+
+- Fairness AUC and threshold suggestions select the declared positive-class
+  probability column. Classifiers without predict_proba no longer pass hard
+  class predictions through as probability scores.
+
+- Frozen multimodal preprocessing retains saved normalization choices, image
+  geometry and audio settings independently of runtime loader defaults. Missing
+  frozen text vocabulary is refused rather than learned again.
+
+- Added numerical consumer checks for model-driven top-k, exact knapsack and
+  fractional LP allocations, including selected-positive-rate metrics and
+  frozen bundle replay across string, integer and boolean labels.
+
+- Ensemble bundles validate the saved plan and paired classical FitResult
+  before creating destination files or replacing Session state, including
+  estimator identity and ordered feature, target, task and row-count contracts.
+
+- Torch SSL bundle loading checks sidecar method, input width and latent
+  representation contracts before restoring weights or replacing Session state.
+  Malformed tabular weight payloads raise ValidationError.
+
+- AutoML bundles validate the selected plan and paired classical FitResult
+  before writing files or replacing Session state. Model identity, ordered
+  columns, target, task and training-row counts must agree.
+
+- KG bundle loading validates vocabulary, embedding, triple and cache contracts
+  before Session attachment. Missing inbound/outbound caches rebuild independently,
+  and redundant complex embeddings retain their imaginary components.
+
+- Causal assumption flags require actual booleans across dataclass, mapping,
+  Session and agent paths. Truthy strings/numbers no longer acknowledge
+  unconfoundedness, positivity or an empty-confounder waiver.
+
+- Agent evolutionary search accepts a validated, unfitted base preprocessing
+  recipe so advertised recipe-space knobs can run inside training folds.
+  Invalid recipe settings refuse before search or Session state changes.
+
+- Torch training resumes preserve early-stopping patience already consumed,
+  including when history logging omits intermediate epochs. Changed monitor,
+  mode or minimum delta starts a fresh window with a warning.
+
+- Agent forecast generation now accepts and forwards caller-supplied future
+  exogenous rows, in fitted column order. Exogenous models can be generated
+  through the same public tool that fits them; malformed inputs still refuse.
+
+- Meta-learning preserves raw label types for new fits and adaptation prototype
+  keys, including numeric-looking strings and booleans. Incompatible mixed
+  labels and unseen holdout labels are refused; persisted legacy encoders keep
+  their historical string transform and decode behavior.
+
+- ASR corpus WER/CER no longer add artificial denominator units for empty
+  references. All-empty corpus denominators use one while reported reference
+  totals remain zero. Direct, Session and AI scoring refuse scalar strings and
+  non-string transcript elements instead of silently reinterpreting them.
+
+- Real agent Torch grid/randomized and nested search consumers verify regression
+  MSE, classification accuracy, winner direction and outer refits against NumPy
+  calculations, while poisoned Session validation/test rows remain reserved.
+
+- Session and AI Torch cross-validation now use only an attached split's training
+  rows, preserving validation/test holdouts. Unsplit Sessions and the low-level
+  Dataset API retain whole-input CV. Results disclose the evaluated population
+  and reserved partitions; malformed outer splits are refused before training.
+
+- Real agent bundle consumers verify KG embedding algebra, recommender cosine
+  scores and eligibility, legacy SSL activations and multiclass decision costs
+  after restoration. Temporal agent consumers verify chronological splits and
+  four forecasts against independent training-prefix calculations.
+
+- Expanded whole-package Linux coverage reached87.0013% at `a05ec41`
+  (4,637 passed,77 skipped). All workflows passed with unchanged scope,
+  coverage.py7.16.2 and566 exclusions. Raise the expanded CI floor from85% to86%
+  under the existing one-point headroom rule; the core floor remains70%.
+
+- AI bundle-load tools expose and forward the explicit boolean `trusted`
+  argument. Default refusal and confirmation gates remain enforced; a trust
+  request is disclosed in the proposal. Real round-trips exercise restoration
+  through the executor instead of switching to a direct Session load call.
+
+- Native AutoML reuses one-shot CV iterators across candidate and ensemble
+  scoring. Custom CV settings serialize as null plus their supplied type,
+  instead of an invented three-fold request. Integer requests are unchanged.
+
+- Nested AutoML repeats the configured search method, trial budget, recipes and
+  ensemble choices on each outer-training subset, rather than scoring a random
+  proxy. Outer Optuna studies are isolated. Voting-family selection respects
+  loss direction; supported sklearn voting ensembles receive sample weights
+  through their routing API, with unsupported members refused before fitting.
+
+- Native AutoML nested scoring applies evaluation weights in both loops and
+  preserves grouped/temporal inner folds and custom inner splitters. Fold
+  membership is validated before nested indexing. Independent weighted Ridge
+  calculations verify selection and outer estimates across five fold modes.
+
+- External sklearn transformer handoffs preserve sparse design storage and
+  reject changed row identity, incompatible output shapes and duplicate feature
+  names. Real one-hot and ColumnTransformer Ridge consumers match independent
+  design matrices and normal-equation predictions.
+
+- Fold-local PCA honors a `1.0` variance target as all components, accepts NumPy
+  scalar counts/fractions, and refuses invalid controls or complex/non-finite
+  data. Component names cannot collide with retained input columns at fit or
+  replay. Independent SVD projections verify the frozen training subspace.
+
+- Real Transformers ASR pipeline consumers use local tiny CTC models with
+  analytically known output logits. Offline checks cover transcription, blank
+  decoding, Dataset partition selection, input preservation and per-clip
+  inference failures. These are integration checks, not speech-quality evidence.
+
+- Tabular RL training and evaluation require positive integer episode and step
+  budgets before backend allocation. Epsilon-greedy distributions refuse
+  non-finite or complex action values and invalid exploration rates. Real Gym
+  rollouts verify TD recurrences, termination versus truncation, exact interaction
+  counts and evaluation without learned-state mutation.
+
+- Nested CV refuses unknown inner search methods and mixed grid/randomized
+  search families before fitting, preventing silent omission of estimator or
+  preprocessing search spaces. Weighted Ridge inner selection and outer scores
+  are checked against independent normal equations.
+
+- Time-series diagnostics refuse malformed, non-finite or constant series,
+  invalid deterministic terms, and non-integer lag requests before numerical
+  work. Reports distinguish KPSS level and trend stationarity and record both
+  tests' deterministic terms. Real backend results and training-only scope are
+  checked against numerical and held-out perturbation consumers.
+
+- EDA gate class shares use labeled-row denominators, and regression reports
+  expose the observed median without inventing zero for missing statistics.
+  Threshold teaching requires a positive-label decision and calibrated posterior
+  probabilities. Generated examples use real estimator/evaluation APIs, quote
+  column names safely and exclude targets from feature preparation.
+
+- Symbolic evaluation labels train/all metrics as including fitting rows and
+  removes the universal holdout claim. Regression evaluation refuses non-finite,
+  complex or unscorable inputs with actionable validation errors; independent
+  classification and Ridge equations check the unchanged valid metrics.
+
+- Backbone heads validate class counts and freeze overrides before mutating
+  parameters. Sessions preserve the latest freeze setting when replacing a head.
+  Real offline Wav2Vec2/HuBERT consumers verify pooled logits and gradient updates.
+  Text-loader tests now declare their optional Torch dependency in core profiles.
+
+- Text Torch loaders refuse non-integral, boolean and non-finite resource counts
+  before attaching loader state. Sequence length, batch size and frequency must
+  be positive; vocabulary caps must include the two reserved tokens. Real agent
+  consumers verify train-only token IDs and NumPy-replayed model logits.
+
+- Active learners preserve raw class identities through human-label refits and
+  trusted reloads, including expanded class vocabularies. Evaluation distinguishes
+  string labels from numeric targets while retaining legacy plan behavior.
+  The symbolic comparison option now satisfies the docstring audit.
+
+- Symbolic classifiers preserve raw class identities in induced rules, neural
+  predictions and trusted bundles. New-fit metrics and repair counts distinguish
+  string labels from numeric targets. Legacy neural decoding remains compatible
+  with a refit notice; older plan comparison behavior is retained.
+
+- Public synthetic sampling refuses lossy or non-finite row budgets before
+  drawing or merging. Independent NumPy resampling checks verify exact row
+  counts, train-only appends and preserved validation/test values.
+
+- New online classifiers preserve raw class labels through incremental updates,
+  evaluation and trusted bundles. Numeric-looking strings and booleans retain
+  their identities; incompatible mixed labels and typed impersonation are refused.
+  Legacy plans retain old behavior with refit notices. Train/all evaluations no
+  longer claim their rows were untouched holdouts.
+
+- Native query-by-committee KL scoring averages both divergence directions,
+  preventing committee member order from changing labeling priorities. Real
+  fitted ensembles match scalar acquisition oracles and permutation checks.
+
+- Anomaly threshold tuning refuses unknown metrics and invalid F-beta values.
+  Exploratory test tuning discloses its optimistic metrics, and stored policy
+  names distinguish train, validation and test tuning. Independent confusion-count
+  oracles verify all four methods and the resulting applied flags.
+
+- Synthetic utility evaluation infers its task from frozen training metadata,
+  preventing holdout size or label cardinality from switching metric families.
+  Independent Ridge normal equations and classification probes verify TSTR/TRTR.
+  Explicit synthetic sample budgets must be positive integers.
+
+- Z3 bound verification preserves exact integer, decimal and rational values;
+  categorical or unsupported predicates are skipped with partial-check notices
+  instead of conversion crashes. Real solver cases verify exact SAT outcomes.
+- Pin development coverage.py to7.16.2: the7.17.0 upgrade changed TYPE_CHECKING
+  exclusion accounting. Its successful but noncomparable gate is recorded
+  separately rather than promoted as a coverage gain.
+
+- Fairness threshold helpers reject non-finite/complex scores and thresholds,
+  non-vector inputs and fractional grid sizes instead of silently selecting
+  negative labels or leaking array errors. Independent scalar calculations
+  verify valid threshold policies and normalized reweighing weights.
+
+- Evolutionary nested cross-validation now has independent numerical checks
+  for every sampled candidate, selected parameters and outer-fold scores under
+  group and time splits, with and without fold-local scaling. Held-out target
+  poisoning and recorded fit populations check the training boundaries.
+
+- New semi-supervised plans preserve raw class labels instead of stringifying
+  and guessing numeric types. Mixed incompatible labels and unseen holdout
+  identities are refused. Older bundles retain legacy behavior with a refit
+  notice; refitting is required to obtain preserved raw identities.
+
+- Persisted pipeline scoring passes schema-coerced data to estimators even
+  without replayable preprocessing plans. Real categorical pipelines verify
+  labels, probabilities, indices and unchanged caller data across public input forms.
+
+- EDA list-format mutual-information ledgers preserve measured zero values and
+  primary-field priority. Shared, static HTML and cockpit consumers agree with
+  dictionary-format reports instead of showing zero as unavailable.
+
+- Binary segmentation now uses the documented penalty instead of forcing a
+  length-based break count. Changepoint inputs require finite real vectors
+  and finite non-negative numeric penalties; real ruptures consumers verify
+  break locations and independent segment means. Recompute earlier BinSeg output.
+
+- Core NumPy PACF updates all Levinson-Durbin coefficients, correcting values
+  from lag three onward. Independent dense Yule-Walker solves verify the
+  recurrence and affine invariance. Recompute earlier core-fallback diagnostics.
+
+- Native first-order MAML transfers adapted query gradients to its base model.
+  Previously the outer optimizer silently left the initialization unchanged.
+  Independent SGD/Adam calculations verify updates; existing native MAML plans
+  need refitting to benefit. The learn2learn path is unchanged.
+
+- Semi-supervised text inference accepts Pandas string feature columns. Offline
+  tiny-encoder consumers verify self-training probabilities, pseudo-labels,
+  holdout isolation and trusted bundle reloads against independent calculations.
+
+- Real autonomous Session consumers verify failure audits, stop/continue policy,
+  skipped-step iteration limits and destructive-step refusal. Continued fits
+  match independent sklearn models; no new product defect was found.
+
+- DuckDB positional filters use distinct source views so chained masks do not
+  create recursive views. Non-boolean masks are refused before row selection;
+  real SQL and injected Arrow-import-failure consumers match positional oracles.
+
+- SkopeRules uses the maintained imodels implementation when available. Exported
+  predicates preserve positional feature aliases and reject unsupported conjuncts
+  instead of silently broadening rules; independent real-consumer masks verify this.
+
+- LightFM side-feature preparation refuses missing, non-finite and complex
+  inputs before sparse conversion. Real SciPy consumers verify entity means,
+  catalog ordering, constant-feature scaling and matrix-vector products.
+
+- New SSL heads preserve raw class labels and JSON-safe summaries; evaluation
+  compares encoded identities and refuses unseen labels instead of conflating
+  numeric and textual classes. Older stored string-label heads retain their
+  legacy evaluation contract with an explicit refit warning.
+
+- Cost-matrix policy fit summaries report probability-weighted expected total
+  loss as expected cost. Observed-label realized costs remain separate metrics;
+  independent multiclass oracles verify reordered cost axes and held-out loss.
+
+- Real blocking serving CLI consumers verify linear-model HTTP predictions,
+  API-key/Basic authentication, credential-free startup logs and graceful
+  shutdown with released loopback ports.
+
+- Automatic ARIMA disclosures distinguish an explicitly supplied order from a
+  completed AIC grid search. Real statsmodels consumers verify the restricted
+  AIC winner and resulting forecasts against independent direct fits.
+
+- Causal partition bootstrap counts now describe performed resamples. DoWhy
+  and EconML disclose unsupported requests and report zero with no interval.
+  Invalid negative, boolean, fractional and non-finite budgets are refused.
+  Native bootstrap quantiles and spread match independent NumPy resampling.
+
+- DoWhy partition estimation now returns a fresh effect for the requested rows.
+  Evaluation no longer overwrites that holdout effect with the stored training
+  ATE. Native/EconML evaluation still reuses fitted nuisances; the differing
+  DoWhy procedure is disclosed explicitly.
+
+- Expanded Linux coverage passed86.0131%; its floor rises to85% under the
+  one-point headroom policy, preserving package scope and exclusions.
+- Dashboard readiness context preserves measured zero complete cases, target
+  median, anomaly counts and scored rows instead of substituting defaults.
+
+- LangChain generation applies the positive integer passage budget to actual
+  chain input, recorded context and citations consistently. Offline framework
+  consumers check prompts without contacting a model service. A pinned
+  LangChain profile is submitted for independent expanded Linux validation.
+
+- Real Session SHAP consumers verify train/validation/test selection, capped
+  sampling and feature order against known linear effects and tree prediction
+  additivity, including duplicate input index labels.
+
+- DuckDB native readers explicitly disclose their lazy relation handle and
+  close the owned connection when reading fails. Real multi-format previews
+  check row limits, quoted paths, values and connection ownership.
+
+- Synthetic sample validation explicitly fails unparseable, non-finite and
+  complex numeric values and fractional integer values. Summary metrics use
+  finite observations. Tolerances require valid finite bounds, and duplicate
+  sample columns are refused before validation.
+
+- Disclosed online batch-refit fallback fits a fresh estimator on cumulative
+  Session train rows. It refuses external-frame refits whose complete history
+  cannot be reconstructed, rather than silently dropping earlier stream data.
+  Native incremental estimators continue to support external updates.
+
+- Recommender bundles rebuild missing catalog indexes for both direct legacy
+  plans and separate-state payloads. Invalid JSON metadata is refused with a
+  validation error before pickle loading. Real fitted model restoration checks
+  preserve recommendation scores and train-item exclusions.
+
+- SB3 online training reports actual executed interactions and requested counts
+  separately, disclosing rollout overruns. Invalid training/evaluation counts
+  are refused. SB3 readiness no longer requires the separate imitation runtime.
+  The candidate expanded profile includes SB32.7.0 for full CI verification.
+
+- EconML policy-tree refutation now uses the doubly robust policy learner
+  and mean adjusted training effects, matching policy fitting rather than
+  calling the incompatible raw PolicyTree API and reporting an arm contrast.
+
+- Multi-task decoding preserves numeric-looking string classes rather than
+  parsing them as numbers. Mixed targets reject nulls/invalid head metadata,
+  regression targets require finite values, and train/all evaluation identifies
+  in-sample metrics. Incompatible class-label types are refused explicitly.
+
+- Repair real scikit-activeml host execution: compatible missing labels,
+  fitted committee wrappers and pool-only utility mapping. Pin host1.0.1 in
+  the candidate expanded CI profile and require real imports. Numerical host
+  consumers passed on Windows; the expanded Linux profile needs full CI acceptance.
+
+- Binning refuses generated-column overwrites, preserves missing values in
+  every one-hot indicator, and learns edges from finite training values only.
+  Bin counts must be integers of at least two; scoring keeps frozen edge bounds.
+
+- Random over/undersampling preserves complete donor rows, including IDs,
+  groups, timestamps, weights and ignored columns, using positional sampler
+  provenance. Synthetic resampling refuses auxiliary metadata instead of
+  inventing mode values. Resampling also refuses datasets with no feature
+  columns rather than falling back to ID/ignored columns.
+
+- Expand the full Linux assessment to include DoWhy 0.14 using a compatible
+  NumPy 2.4.1/SciPy 1.15.3/mlxtend 0.23.4 stack. Same-source complete local runs
+  passed at 85.5192% (broader profile) and85.3947% (original):80 gained lines,
+  three lost, net 77. Five DoWhy positive cases execute; its missing-package
+  case skips. Scope, exclusions and coverage floors remain unchanged. Remote
+  acceptance of the broadened profile is verified separately.
+- Require ONNX Runtime 1.31.0 in the expanded assessment, matching the passing
+  local full profile so its real ONNX consumer checks also execute remotely.
+
+- Scoring-contract coercion refuses numeric/datetime conversions that would
+  discard non-null values and rejects boolean inputs outside0/1/null. Invalid
+  columns remain intact, while valid conversions preserve existing nulls and
+  row indexes. Persisted pipeline scoring tests cover null-capable estimators.
+
+- Recommendation exclusions are enforced as catalog eligibility before ranking
+  and fallback. Seen training items cannot reappear with zero backend scores,
+  including oversized kNN requests and degenerate content profiles. Real agent
+  checks cover five native methods, independent scores/metrics and bundle trust.
+
+- Real knowledge-graph agent consumer checks cover native TransE L1/L2 and
+  DistMult fitting, frozen triple scores, candidate ranks, train-only queries,
+  independently calculated filtered metrics and bundle trust boundaries.
+- Same-source whole-suite coverage at `6e072fd`: remote85.2237% and local
+  Linux85.3207%; no test failures or local coverage collection warnings.
+
+- Dashboard CSV exports choose the highest-count top category and preserve
+  target summary statistics plus exploratory interpretation and limitations.
+  Consumer checks independently verify correlations, missingness, PCA curves
+  and categorical association charts across supported report layouts/themes.
+
+- RAG bundle restore refuses unreconstructable embedding backends, incompatible
+  vector dimensions and non-finite vectors. It no longer silently substitutes
+  hashing for arbitrary embedding spaces. Explicit HashingEmbedder instances
+  now record the reconstructable hashing backend rather than callable. Old
+  bundles recorded as callable require rebuilding with their original embedder.
+
+- RAG directory ingest ignores matching folders. Retrieval evaluation rejects
+  empty mapping labels and scalar relevance collections with domain errors,
+  instead of splitting strings into characters or leaking TypeError. Real
+  local index tests verify all document/chunk label forms and rank metrics.
+
+- Autonomous runs now validate boolean permission/policy flags and positive
+  integer step caps before any planning or mutation. Truthy strings and numeric
+  permissions cannot grant autonomy; NumPy integer caps remain supported.
+
+- Raise expanded Linux coverage floor to 84% from passing whole-suite CI at
+  85.0410% (3,125 passed, 91 skipped), source `3d35017`. Local Linux passed
+  at 85.1397% (3,153 passed, 63 skipped), without collection warnings.
+  Package scope and exclusions remain unchanged; the 90% target stays open.
+
+- Export/serving hand-off checks consume real relocated TorchScript/ONNX models.
+  Generated handlers preserve request groups, packaging references remain relative,
+  and recipes quote filenames. Serving model selectors are isolated; Indexed DDP
+  pods have the matching DNS subdomain and quoted script paths. Invalid scripting
+  methods are refused and multi-output dynamic-axis metadata covers every output.
+  A reusable reach report maps unchanged source lines against a full-suite baseline;
+  the 25-case Linux workflow exercised 54 previously missing production lines.
+
+- Required FLAML integration skips only when the package is absent. Its bounded
+  import probe now uses the 90-second scientific-import policy. Actual fitting
+  and recovery checks passed; the prior skipped probe's cause remains unestablished.
+
+- Torch continual initialization honors its seed without consuming ambient CPU
+  Torch RNG state. EWC consolidates learned first-buffer weights and estimates
+  empirical Fisher diagonals from per-example squared gradients. Invalid stream
+  updates are rejected before buffer/model contract changes; replay copies and
+  row/label alignment have numerical checks. The batch adds 29 cases; broader
+  Linux checks passed all 56 tests, while Windows passed 55 with one River-absence
+  skip. Full-suite coverage is measured separately.
+
+- Remote whole-package Linux coverage at `18f0199` passed at 84.96% (3,104
+  passed, 85 skipped), with the complete CI, backend evidence and release
+  acceptance workflows passing. The newer local `d9af9b6` run passed its tests
+  at 84.88% but skipped installed FLAML and reported an unreadable worker coverage
+  file. That qualified local result does not set floors. The 90% goal remains open.
+
+- Meta-learning adaptation reports classes actually present in support and
+  rejects missing support targets before per-class sampling. Explicit task
+  columns must identify one consistent task. Episode sampling preserves user
+  feature columns, including `__y_code__`, without temporary-column collisions.
+  Independent support centroid/refit and row-integrity checks passed with the
+  existing meta-learning backend group: 54 passed and one expected dependency
+  skip on each of Windows and Linux; subset results are not coverage figures.
+
+- Active-learning annotations use dataset row positions rather than pandas
+  index labels, reject duplicate positions and missing/marker labels, and
+  publish budget/history changes only after successful refit. Failed model or
+  committee refits leave the Session unchanged; new classes remain supported.
+  Acquisition scores and holdout isolation match independent probability/vote
+  calculations. The broader Linux active-learning group passed all 56 tests.
+
+- Federated evaluation identifies its requested partition without claiming
+  verified exclusion from original training data. Training/all-data scores
+  warn about possible training overlap. Distinct client ids with colliding
+  string report keys are refused instead of silently overwriting metrics.
+  New frozen-population and binary causal numerical contracts passed alongside
+  existing Linux federation/Flower/causal checks: 75 passed, one expected skip.
+
+- Probabilistic fitting and calibration select SplitPlan row positions rather
+  than pandas index labels. Offset and duplicate labels no longer cause missing-row
+  errors; permuted integer labels cannot substitute other rows. Real native,
+  MAPIE split and NGBoost regression contracts check index and holdout isolation.
+  Independent grouped/time-ordered nested-CV oracles and frozen probabilistic
+  evaluation checks cover scaling, missing labels, empty populations and schema
+  failures. The combined Linux regression run passed 101 tests with one expected
+  dependency-state skip; this subset is not a coverage measurement.
+
+- Polars Parquet/IPC previews pass row limits to the reader before table
+  materialization. Design-frame preparation materializes repeated requested
+  columns once, preserving first-occurrence order across engines.
+
+- Torch search and cross-validation seed model construction for every fold.
+  Malformed CUDA indices are refused even without CUDA. A seeded sampler's
+  internal failure propagates instead of triggering an unseeded retry.
+
+- The required imodels integration skips only when the package is absent,
+  making installed-backend failures visible. Its scientific import probe uses
+  the existing bounded 90-second heavy-import policy.
+
+- AutoGluon probability outputs follow the NumPy estimator contract. AutoML
+  bundles clone backend model assets into a relative directory and can load
+  after relocation without the original training directory; trust and path
+  containment checks remain mandatory.
+
+- Single-node Linux Gloo workers use forkserver to avoid native cleanup racing
+  Python finalization. All workers are joined before loading the serialized
+  result; injected worker failures must propagate. Fifty repeated checks passed
+  locally on Python 3.11/Torch 2.14 CPU and on each remote Python 3.11/3.12 stack
+  at `7eec279`. This is a tested launcher workaround, not an upstream Torch repair.
+
+- AutoGluon classification distinguishes binary and multiclass targets, preserves
+  weighted F1, normalizes signed loss scores before ranking, and reports internal
+  validation scores instead of training scores. GBM seed hints and class labels
+  are retained. A separate compatible profile exercises actual CPU fits.
+
+- Categorical EDA effect sizes are checked against independent SciPy reference
+  values, including degenerate tables and the documented pair cap. Guidance
+  explicitly identifies uncorrected Cramér's V as an exploratory effect size.
+
+- Session import no longer probes optional HDBSCAN/UMAP runtimes. Clustering
+  defaults resolve on use, including the existing constant and wildcard imports.
+- Knowledge-graph queries reject fractional, boolean and string hop limits;
+  graph oracles cover bounded shortest paths, cycles, direction and vocabulary
+  failures.
+
+- TDA subsampling maps global split positions to train-frame positions instead
+  of using them as Pandas labels or indexing a reduced Series twice. Custom
+  indices, stratification, holdout membership and cap validation have regression
+  contracts. Transient import-probe failures can recover after a bounded cooldown;
+  scientific probes retain bounded cold-start allowances.
+
+- Blending no longer retries internal weighted-fit `TypeError` failures without
+  weights. The unweighted fallback applies only when the fit signature rejects
+  `sample_weight`. Public export checks now include seven additional domains
+  and verify star-import identities.
+
+- Weighted holdout blending is checked against independent sklearn fits across
+  refitting, passthrough and pandas/NumPy inputs. Unfitted prediction now raises
+  the documented `NotFittedError` for both blend classes.
+
+- Capability-worker imports no longer construct the complete Session API.
+  Session loads on first access while preserving the public class and import
+  syntax; import-boundary contracts protect lightweight dependency probes.
+
+- Repeated DDP checks retain opt-in rank lifecycle traces, including successful
+  process-group teardown. Native worker aborts remain failures without retries;
+  the intermittent CI abort is still under investigation.
+
+- The immutable `58e4309` suite passed at 84.12% locally and 84.06% remotely;
+  its complete CI, backend matrix and release acceptance passed. Windows/Linux
+  paced 24-hour HTTP assessments completed with zero recorded errors and
+  unchanged source hashes, on the documented local workload.
+- Expanded Linux coverage floor raised to 83% after its full remote suite passed
+  at 84.02%; local CPU/CUDA coverage passed at 84.08%. The overall matrix still
+  failed separate Torch DETAIL-mode diagnostics; this is not an all-green claim.
+- Torch CI repeats buffered two-rank validation on each Python stack, recording
+  the installed Torch version, every attempt and native failure diagnostics.
+  A failed or skipped attempt fails the check; repetitions are not retries.
+- Core Linux coverage floor raised from 69% to 70% after all four Python
+  configurations passed at 71.28-71.29% with corrected thread/process tracing.
+- Coverage records both worker threads and multiprocessing. A matching six-test
+  HTTP comparison confirmed omitted threaded execution; fresh whole-suite results
+  must qualify this measurement change separately from earlier percentages.
+- Expanded whole-package CI coverage floor raised from 81% to 82%, following
+  a passing 83.02% remote CPU measurement; the 90% target remains outstanding.
+- Real HTTP load/recovery runner records source identity, dependencies, sampled
+  latency and process-tree RSS; it distinguishes deliberate downtime from load.
+- Isolated giotto profile verifies the compatible numerical stack and real graph
+  contracts separately from the newer expanded stack.
+
+### Fixed
+
+- Fold-local supervised selection uses target type rather than a cardinality
+  cutoff, honors explicit F-test scorers, refuses infinite numeric targets,
+  and retains a serializable fallback when thresholding would discard all features.
+  The default univariate scorer is now `auto`; explicit choices remain supported.
+- CV and search propagate the resolved task into automatic feature selection,
+  including integer-valued regression. Fold-local date parsing handles valid
+  mixed formats consistently across batches and rejects mixed timezones clearly.
+- Tabular SSL agent tools expose native methods and forward training budgets.
+  SSL random_state now seeds Torch initialization and stochastic augmentations,
+  in addition to NumPy shuffling, for repeatable fits on the same backend.
+  Invalid budgets and non-finite feature matrices fail before model construction.
+- Agent integer arguments and checkpoint partition sizes reject malformed values
+  before mutation. DuckDB Parquet fallbacks use unique temporary registrations
+  and release them after SQL failures as well as successful writes.
+- Evolutionary search rejects boolean, fractional and non-finite budgets before
+  fitting, instead of truncating evaluation limits or raising low-level errors.
+  NumPy integer budgets remain supported.
+- TorchScript serving places inputs on the model's parameter/buffer device and
+  floating-point dtype. Empty, ragged, unbatched and non-finite inputs return
+  client errors; non-finite model outputs return a sanitized server error.
+- Cost-sensitive threshold tuning considers every observed probability breakpoint
+  and all-positive/all-negative policies, including optima below 0.05 or above
+  0.95. Sorted prefix counts avoid quadratic rescoring of the partition.
+- Statsmodels rolling forecasts condition on prior observed history with fixed
+  parameters, instead of repeating the forecast from the training endpoint.
+  Exogenous history remains aligned across validation and rolling windows.
+- DuckDB preserves embedded quotes in projected, sampled and aggregated column
+  names, and reads Parquet directories containing apostrophes.
+- SHAP attribution rejects invalid sample budgets and malformed/non-finite
+  output dimensions rather than producing empty or misleading summaries.
+- Explicit serving arguments take precedence over configuration, including
+  `trusted=False`, loopback binding and CPU placement. Omitted arguments inherit
+  configuration; permission flags still reject non-boolean values.
+- Agent training requests preserve registered AutoML, probabilistic, symbolic,
+  neuro-symbolic, recommender and ranker options instead of silently dropping them.
+- Native ANN capability probes contain interpreter crashes on every platform;
+  expanded CI requires a portable source-built hnswlib and a real ANN contract.
+- Concurrent serving apps retain independent models through either shutdown
+  order. Unicode Basic credentials no longer fail during secret comparison;
+  boolean and fractional ports are rejected instead of coerced.
+- Custom CV splitters reject repeated, negative, fractional and out-of-range
+  positions before fitting. Conformal carving preserves observation IDs and
+  rejects duplicates and invalid minimum sizes. Null-target evaluation retains
+  calibrated MAPIE intervals/sets on the same labeled population.
+- Giotto Mapper summaries count the real igraph vertices and edges.
+- The RL extra's SB3 minimum matches imitation's supported series. Real BC
+  uses the trainer's constructor/optimizer API; GAIL uses a vectorized environment,
+  seeds its reward network, and archives models without live environment state.
+  Variable horizons require an explicit choice and retain risk disclosures.
+  Agent imitation requests preserve the selected method and training budget.
+
+- DoWhy causal graphs preserve dataframe names containing spaces, quotes,
+  punctuation and Unicode by passing native node IDs rather than interpolated DOT.
+- Doubly robust policy trees bound depth and leaf size to reduce unstable rules
+  from small noisy leaves; their numerical profile is shared across platform CI.
+- Evolutionary search rejects missing, nonfinite, boolean, and fractional integer
+  bounds before fitting; logarithmic domains require positive bounds and a
+  boolean flag. Invalid declarations raise actionable ValidationError messages.
+- EconML policy-tree fitting uses the observed-outcome API of DRPolicyTree.
+  ATE and neighborhood effect dispersion come from cross-fitted reward estimates;
+  reports disclose omitted bootstrap intervals and the actual refit count.
+- Fold-local model selection clones caller-supplied estimators and rejects null
+  string labels before factorization. Outlier fences and bin edges learn only
+  from finite training values, refusing columns with no finite observations.
+- Calibration ECE weights quantile bins by their actual sample counts when
+  probability ties produce unequal bin sizes, and reports bin counts and method.
+- EDA CSV exports preserve fields from later heterogeneous rows, including
+  drift statistics and multivariate anomaly measurements. Dashboard JSON maps
+  undefined nonfinite measurements to null instead of failing serialization.
+- Segment error diagnostics reject unknown partition names instead of silently
+  analyzing the test set.
+- Managed serving refuses startup timeouts, stops the unready worker and uses
+  a monotonic readiness deadline.
+
+- AutoML leaderboards rank loss metrics in ascending order and unavailable
+  scores last, with score gaps measured in the correct direction.
+- Text SSL installs training dependencies, respects the requested device and
+  leaves unavailable final training losses unset instead of reporting zero.
+
+- Federated classification retains encoded training classes and decodes arbitrary
+  original labels correctly. Client evaluation restores classifier metadata.
+- Ensemble contribution reports decode internally encoded base labels; binary
+  average precision uses the fitted positive class instead of assuming label 1.
+- Zero-budget knapsack allocation keeps eligible positive-value zero-cost items.
+- The optimization extra uses HiGHS below 1.15 to avoid its native symbol conflict
+  with OR-Tools after CVXPY import; CI checks both import orders.
+
+- DuckDB lazy row masks retain independent sidecars, so later filters cannot
+  replace the row selection of earlier unmaterialized relations.
+- Deserialization requires literal `trusted=True`; serving APIs reject non-boolean
+  permissions, and provider error tracebacks suppress secret-bearing exceptions.
+- RuleFit indexed features map to the fitted input columns and zero coefficients
+  remain zero; unknown online, probabilistic, symbolic and RL backends fail clearly.
+- DDP preserves requested shuffle behavior. Torch consistency inference disables
+  dropout, and concept-bottleneck predictions follow the fitted model device.
+- OR-Tools feasible-only knapsack solutions disclose that optimality is unproven.
+  The exact PuLP/CBC path explicitly requests zero relative and absolute gaps.
+
+- Retrieval-grounded advisors now use the actual retrieval entry point and
+  retain document IDs in source evidence instead of silently omitting context.
+- Single-node DDP no longer serializes an unused training-loader random
+  generator; rank samplers still use the configured seed and caller state is preserved.
+
+- Coverage enforcement rises to 69% from a passing Linux CI monolith at
+  70.04–70.05% across Python 3.10–3.13 (1,645 passed, 261 skipped). The broader local CUDA environment
+  remains a separate measurement; 90% is still a target.
+
+- Agent tool execution preserves explicit backend and online drift settings.
+  Non-boolean permission values cannot enable bundle trust or test-set tuning.
+- Invalid neuro-symbolic backend names fail explicitly rather than selecting
+  a different model implementation.
+
+- The breast-cancer example now encodes `malignant=1`, so positive-class
+  probabilities and threshold costs refer to malignancy.
+- Session conformal fitting rejects previously fitted Session preprocessing,
+  which may have used future calibration rows. Calibration carving no longer
+  stratifies on labels; unsupported fit/calibration class combinations fail clearly.
+- Explicit Windows industry ANN runs in a persistent isolated worker with
+  bounded waits, fault containment, retention and lazy restoration.
+- BM25 retrieval reuses its sparse index until the corpus or parameters change.
+
+### Added
+
+- Real locally generated transformer checkpoints verify pooling, embedding
+  widths, persistence and weight updates without model downloads.
+- Independent graph-ranking and adjacency oracles and evolutionary search
+  budget checks cover frozen prediction and held-out data boundaries.
+- Coverage measures spawned Python and multiprocessing workers using the
+  supported coverage.py instrumentation, with existing exclusions retained.
+
+- Agent/direct workflow parity, holdout-preservation and bundle-trust regression
+  checks across native fitting domains; bounded latency sampling for longer soaks.
+
+- EDA interpretation metadata and full-family Benjamini–Hochberg q-values for
+  target tests and numeric drift screens.
+- Real M4 hourly and BEIR SciFact comparative benchmarks, conformal simulation,
+  backend evidence reports, and bounded scale, serving and CUDA verification tools.
+- Windows/Linux backend evidence CI and a maintained validation evidence guide.
+
 ## [2.6.4] - 2026-10-04
 
 ### Fixed

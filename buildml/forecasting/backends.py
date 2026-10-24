@@ -187,7 +187,9 @@ def _fit_statsmodels(
         model = ARIMA(y, order=ord_)
         fitted = model.fit()
         disclosures.append(
-            f"auto_arima: selected ARIMA{ord_} via AIC grid search on low orders."
+            f"auto_arima: using explicit ARIMA{ord_}; no order search performed."
+            if order is not None
+            else f"auto_arima: selected ARIMA{ord_} via AIC grid search on low orders."
         )
         warnings.append(
             "auto_arima is a lightweight AIC search: not pmdarima; "
@@ -343,12 +345,51 @@ def _fit_nbeats(
     )
 
 
+def _condition_on_history(estimator: dict[str, Any], history: list[float],
+                          history_exog: np.ndarray | None) -> Any:
+    """Advance fitted states using prior observations, keeping parameters fixed."""
+    result = estimator["result"]
+    kind = estimator["kind"]
+    values = np.asarray(history, dtype=float)
+    original = np.asarray(result.model.endog, dtype=float).reshape(-1)
+    if history_exog is None and np.array_equal(values, original):
+        return result
+    if kind in {"arima", "sarimax"}:
+        if result.model.k_exog and history_exog is None:
+            raise ValidationError("Advancing an exogenous forecast requires aligned history_exog.")
+        return result.apply(values, exog=history_exog, refit=False)
+    if kind == "ets":
+        from statsmodels.tsa.holtwinters import ExponentialSmoothing
+
+        model, params = result.model, result.params
+        initial: dict[str, Any] = {"initial_level": params["initial_level"]}
+        fixed: dict[str, Any] = {"smoothing_level": params["smoothing_level"]}
+        if model.trend:
+            initial["initial_trend"] = params["initial_trend"]
+            fixed["smoothing_trend"] = params["smoothing_trend"]
+        if model.seasonal:
+            initial["initial_seasonal"] = params["initial_seasons"]
+            fixed["smoothing_seasonal"] = params["smoothing_seasonal"]
+        if model.damped_trend:
+            fixed["damping_trend"] = params["damping_trend"]
+        boxcox = params["use_boxcox"]
+        if boxcox is True:
+            boxcox = params["lamda"]
+        updated = ExponentialSmoothing(
+            values, trend=model.trend, damped_trend=model.damped_trend,
+            seasonal=model.seasonal, seasonal_periods=model.seasonal_periods,
+            initialization_method="known", use_boxcox=boxcox, **initial)
+        return updated.fit(optimized=False, remove_bias=params["remove_bias"], **fixed)
+    return result
+
+
 def industry_predict(
     estimator: Any,
     *,
     steps: int,
     history: list[float] | None = None,
     exog_future: np.ndarray | None = None,
+    history_exog: np.ndarray | None = None,
 ) -> tuple[float, ...]:
     """Generate a multi-step forecast from a fitted industry estimator wrapper.
 
@@ -365,6 +406,8 @@ def industry_predict(
         Target history required for N-BEATS rolling context.
     exog_future:
         Future exogenous rows for ARIMA/SARIMAX exog-aware models.
+    history_exog:
+        Historical exogenous rows aligned with the supplied target history.
 
     Returns
     -------
@@ -381,6 +424,8 @@ def industry_predict(
         raise ValidationError("Invalid industry estimator payload")
     kind = estimator["kind"]
     result = estimator["result"]
+    if history is not None and kind in {"ets", "arima", "sarimax"}:
+        result = _condition_on_history(estimator, history, history_exog)
 
     if kind == "ets":
         fc = result.forecast(steps)
@@ -422,6 +467,7 @@ def industry_one_step(
     history: list[float],
     *,
     exog_row: np.ndarray | None = None,
+    history_exog: np.ndarray | None = None,
 ) -> float:
     """Predict one step ahead for rolling holdout evaluation.
 
@@ -437,6 +483,8 @@ def industry_one_step(
         Chronologically ordered target history ending at the forecast origin.
     exog_row:
         Optional contemporaneous exogenous values for the scored step.
+    history_exog:
+        Prior exogenous observations aligned with target history.
 
     Returns
     -------
@@ -448,5 +496,7 @@ def industry_one_step(
     ValidationError
         When the estimator payload is invalid or N-BEATS history is missing.
     """
-    preds = industry_predict(estimator, steps=1, history=history, exog_future=exog_row)
+    preds = industry_predict(estimator, steps=1, history=history,
+                             exog_future=None if exog_row is None else np.asarray(exog_row).reshape(1, -1),
+                             history_exog=history_exog)
     return float(preds[0])

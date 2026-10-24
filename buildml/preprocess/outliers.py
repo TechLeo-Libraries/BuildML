@@ -30,7 +30,8 @@ to contain one enormous value.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Literal
+from numbers import Real
+from typing import Any, Literal, cast
 
 import numpy as np
 import pandas as pd
@@ -234,10 +235,10 @@ def fit_outlier_plan(
         raise ValidationError(f"Unsupported outlier method '{method}'")
     if action not in {"detect", "cap", "drop"}:
         raise ValidationError(f"Unsupported outlier action '{action}'")
-    if iqr_multiplier <= 0:
-        raise ValidationError("iqr_multiplier must be positive")
-    if zscore_threshold <= 0:
-        raise ValidationError("zscore_threshold must be positive")
+    for name, value in (("iqr_multiplier", iqr_multiplier), ("zscore_threshold", zscore_threshold)):
+        if (isinstance(value, bool) or not isinstance(value, Real)
+                or not np.isfinite(float(value)) or float(value) <= 0):
+            raise ValidationError(f"{name} must be a positive finite number")
 
     train = frame_for_partition(dataset, split_plan, "train")
     cols = resolve_transform_columns(
@@ -253,7 +254,7 @@ def fit_outlier_plan(
     lower: dict[str, float] = {}
     upper: dict[str, float] = {}
     for column in cols:
-        series = pd.to_numeric(train[column], errors="coerce").dropna()
+        series = _numeric_outlier_values(train[column], column).dropna()
         if series.empty:
             raise ValidationError(
                 f"Column '{column}' has no finite train values for outlier fences"
@@ -357,7 +358,7 @@ def apply_outlier_plan(
     frame = dataset._ensure_pandas().copy()
     if plan.action == "cap":
         for column in plan.columns:
-            values = pd.to_numeric(frame[column], errors="coerce")
+            values = _numeric_outlier_values(frame[column], column)
             capped = values.clip(lower=plan.lower_[column], upper=plan.upper_[column])
             frame[column] = capped
         new_dataset = Dataset.from_transformed(
@@ -424,15 +425,25 @@ def apply_outlier_plan(
     return new_dataset, new_split, updated, _build_result(updated, mutated=True)
 
 
+def _numeric_outlier_values(series: pd.Series, column: str) -> pd.Series:
+    """Preserve true missingness while refusing lossy numeric coercion/infinity."""
+    values = cast(pd.Series, pd.to_numeric(series, errors="coerce"))
+    if (series.notna() & values.isna()).any():
+        raise ValidationError(f"Outlier column '{column}' contains non-numeric values")
+    if np.isinf(values.dropna().to_numpy(dtype=float)).any():
+        raise ValidationError(f"Outlier column '{column}' contains non-finite values")
+    return values
+
+
 def _flag_mask(
     frame: pd.DataFrame,
     columns: list[str],
     lower: dict[str, float],
     upper: dict[str, float],
 ) -> pd.Series:
-    mask = pd.Series(False, index=frame.index)
+    mask: pd.Series = pd.Series(False, index=frame.index)
     for column in columns:
-        values = pd.to_numeric(frame[column], errors="coerce")
+        values = _numeric_outlier_values(frame[column], column)
         mask = mask | (values < lower[column]) | (values > upper[column])
     return mask
 

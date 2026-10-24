@@ -416,7 +416,7 @@ def _fit_native(
         aggregated = average_linear_params(client_params, weights)
         set_linear_params(ctx.global_est, aggregated)
         if ctx.classes_tuple is not None and hasattr(ctx.global_est, "classes_"):
-            ctx.global_est.classes_ = np.asarray(ctx.label_encoder.classes_)
+            ctx.global_est.classes_ = np.arange(len(ctx.classes_tuple))
 
         mean_client = float(np.mean(client_metrics)) if client_metrics else None
         final_metric = mean_client

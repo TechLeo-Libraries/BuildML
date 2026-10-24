@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
+from dataclasses import replace
 from typing import Any
 
 import pandas as pd
@@ -44,7 +45,8 @@ def label_rows(
     split_plan:
         Split plan restricting labeling to the train partition.
     indices:
-        Dataset-level indices previously suggested (must be in the train pool).
+        Dataset row positions previously suggested (must be in the train pool),
+        independent of pandas index labels. Repeated positions are refused.
     labels:
         Human-provided labels aligned 1:1 with ``indices``.
     refit:
@@ -81,6 +83,10 @@ def label_rows(
         )
     if not idx_list:
         raise ValidationError("label_rows requires at least one index/label pair.")
+    if any(not pd.api.types.is_integer(idx) or isinstance(idx, bool) for idx in idx_list):
+        raise ValidationError("Label indices must be integer row positions.")
+    if len(set(idx_list)) != len(idx_list):
+        raise ValidationError("label_rows requires unique row positions; duplicate indices are refused.")
 
     train_set = set(split_plan.train_indices)
     test_set = set(split_plan.test_indices or ())
@@ -112,21 +118,24 @@ def label_rows(
     marker = (plan.config or {}).get("unlabeled_marker")
     # Only allow labeling currently-unlabeled train rows (or re-label with disclosure).
     warnings: list[str] = []
+    target_position = full.columns.get_loc(target)
     for idx, lab in zip(idx_list, lab_list):
-        if idx not in full.index:
-            raise ValidationError(f"Index {idx!r} not present in the Session frame.")
-        current = full.loc[idx, target]
+        if idx < 0 or idx >= len(full):
+            raise ValidationError(f"Row position {idx!r} not present in the Session frame.")
+        current = full.iloc[idx, target_position]
         series = pd.Series([current])
         if not bool(is_unlabeled_mask(series, marker)[0]):
             warnings.append(
                 f"Index {idx!r} already had a label; overwriting with user-provided value."
             )
-        if lab is None or (isinstance(lab, float) and pd.isna(lab)):
+        if not pd.api.types.is_scalar(lab) or bool(pd.isna(lab)):
             raise ValidationError(
                 f"Refusing null label for index {idx!r}. Active learning labels "
                 "must be concrete user-provided values."
             )
-        full.loc[idx, target] = lab
+        if bool(is_unlabeled_mask(pd.Series([lab]), marker)[0]):
+            raise ValidationError("Refusing an unlabeled marker as a concrete user-provided label.")
+        full.iloc[idx, target_position] = lab
 
     roles = dict(dataset.roles)
     new_dataset = Dataset.from_transformed(
@@ -147,8 +156,7 @@ def label_rows(
     budget_remaining = None if budget is None else max(0, int(budget) - n_queries_used)
 
     # Stash history onto a shallow plan copy before optional refit.
-    plan.query_history = updated_history
-    plan.n_queries_used = n_queries_used
+    plan = replace(plan, query_history=updated_history, n_queries_used=n_queries_used)
 
     do_refit = bool((plan.config or {}).get("auto_refit", True)) if refit is None else bool(refit)
     fit_result = None

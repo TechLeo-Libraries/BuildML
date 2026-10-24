@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from itertools import product
 from pathlib import Path
 from typing import Any, Literal
@@ -16,7 +16,7 @@ from sklearn.ensemble import (
     VotingClassifier,
     VotingRegressor,
 )
-from sklearn.model_selection import ParameterSampler
+from sklearn.model_selection import ParameterSampler, check_cv
 from sklearn.pipeline import Pipeline as SkPipeline
 
 from buildml.automl.results import AutoMLPlan, AutoMLResult, AutoMLTrial
@@ -259,6 +259,10 @@ def run_automl(
     on fold-train only. This is **not** NAS, not causal discovery, and not a
     fully automated AI scientist: the search space is a disclosed finite
     catalog under a trial budget.
+
+    Nested selection carries built-in group/time constraints into inner folds
+    and honors custom inner splitters. Declared sample weights apply to both
+    fitting and evaluation in the inner and outer loops.
     """
     assert_fit_partition(split_plan, "train")
     assert split_plan is not None
@@ -360,8 +364,8 @@ def run_automl(
         selection=selection,
         task=resolved_task,
         n_trials=n_trials,
-        cv=int(cv) if isinstance(cv, int) else 3,
-        outer_cv=int(outer_cv) if isinstance(outer_cv, int) else 3,
+        cv=int(cv) if isinstance(cv, int) else None,
+        outer_cv=int(outer_cv) if isinstance(outer_cv, int) else None,
         ranking_metric=metric,
         include_recipe_search=include_recipe_search,
         include_ensembles=include_ensembles,
@@ -373,8 +377,20 @@ def run_automl(
             "ensemble_mode": ensemble_mode,
             "include_industry_families": include_industry_families,
             "time_budget_seconds": budget.max_time_seconds,
+            "cv_strategy": cv_strategy,
+            "cv_splitter": (None if isinstance(cv, int) else
+                            f"{type(cv).__module__}.{type(cv).__qualname__}"),
+            "outer_cv_splitter": (None if isinstance(outer_cv, int) else
+                                  f"{type(outer_cv).__module__}.{type(outer_cv).__qualname__}"),
         },
     )
+
+    # check_cv snapshots an iterable once into its reusable splitter wrapper.
+    # Rewrapping a generator separately for every candidate exhausts it after
+    # the first trial, silently dropping the rest of the search space.
+    # Keep actual splitter objects intact; their split method remains in charge.
+    if selection != "validation" and not isinstance(cv, int):
+        cv = check_cv(cv, y=y_train, classifier=resolved_task == "classification")
 
     import time as _time
 
@@ -488,7 +504,7 @@ def run_automl(
             method=effective_method,
             task=resolved_task,
             metric=metric,
-            n_trials=max(4, min(n_trials, 12)),
+            n_trials=n_trials,
             outer_cv=outer_cv,
             inner_cv=cv,
             cv_strategy=cv_strategy,
@@ -497,6 +513,9 @@ def run_automl(
             allow_session_global_preprocess=allow_session_global_preprocess,
             random_state=random_state,
             include_recipe_search=include_recipe_search,
+            include_ensembles=include_ensembles,
+            ensemble_mode=ensemble_mode,
+            max_ensemble_bases=max_ensemble_bases,
             preprocess=preprocess,
             budget=budget,
         )
@@ -875,13 +894,14 @@ def _score_ensemble_candidates(
     fam_map = {f.name: f for f in fams}
     recipe_map = {r.name: r for r in recipes}
     best_by_family: dict[str, AutoMLTrial] = {}
+    higher_is_better = metric not in _LOWER_IS_BETTER
     for trial in single_trials:
         if trial.kind != "single":
             continue
         cur = best_by_family.get(trial.family)
-        if cur is None or trial.mean_score > cur.mean_score:
+        if cur is None or (trial.mean_score > cur.mean_score if higher_is_better else trial.mean_score < cur.mean_score):
             best_by_family[trial.family] = trial
-    ordered = sorted(best_by_family.values(), key=lambda t: t.mean_score, reverse=True)
+    ordered = sorted(best_by_family.values(), key=lambda t: t.mean_score, reverse=higher_is_better)
     if len(ordered) < 2:
         return []
 
@@ -1281,13 +1301,14 @@ def _nested_outer_estimate(
     allow_session_global_preprocess: bool,
     random_state: int | None,
     include_recipe_search: bool,
+    include_ensembles: bool,
+    ensemble_mode: EnsembleMode,
+    max_ensemble_bases: int,
     preprocess: PreprocessRecipe | None,
     budget: AutoMLBudget,
 ) -> tuple[float | None, float | None, tuple[str, ...]]:
-    """Honest outer estimate: for each outer fold, run a smaller inner AutoML."""
-    del session_preprocess_applied, allow_session_global_preprocess
-    del include_recipe_search, preprocess, budget
-    from buildml.model.selection import _resolve_splitter
+    """Repeat the configured search on each outer-training population."""
+    from buildml.model.selection import _resolve_splitter, _validated_fold_positions
 
     x_train, y_train, _fc, _tg, sample_weight = _feature_target_frames(
         dataset, split_plan, "train"
@@ -1304,7 +1325,9 @@ def _nested_outer_estimate(
     x_reset = x_train.reset_index(drop=True)
     y_reset = y_train.reset_index(drop=True)
     w_reset = None if sample_weight is None else sample_weight.reset_index(drop=True)
+    position_map = np.asarray(split_plan.train_indices, dtype=int)
     if row_order is not None:
+        position_map = position_map[row_order]
         x_reset = x_reset.iloc[row_order].reset_index(drop=True)
         y_reset = y_reset.iloc[row_order].reset_index(drop=True)
         if w_reset is not None:
@@ -1320,75 +1343,104 @@ def _nested_outer_estimate(
         if group_reset is not None
         else splitter.split(x_reset, y_reset)
     )
-    fam_map = {f.name: f for f in fams}
-
     for fold_id, (train_pos, eval_pos) in enumerate(split_iter):
+        train_pos = _validated_fold_positions(train_pos, len(x_reset))
+        eval_pos = _validated_fold_positions(eval_pos, len(x_reset))
         if set(train_pos) & set(eval_pos):
             raise LeakageError("AutoML nested outer fold train/eval indices overlap")
-        # Build a temporary Dataset/SplitPlan-like view via index remapping:
-        # score candidates with cv_score-style logic on outer-train only, then
-        # evaluate the winner on outer-eval.
-        inner_candidates = _build_candidates(
-            fams,
-            recipes,
-            method="randomized" if method == "optuna" else method,
-            n_trials=n_trials,
-            random_state=None if random_state is None else int(random_state) + fold_id,
-            include_ensembles=False,
+        inner_groups = None if group_reset is None else group_reset.iloc[list(train_pos)]
+        inner_split = SplitPlan(
+            kind="nested_inner", test_size=None, validation_size=None,
+            random_state=None, stratify_column=None,
+            train_indices=tuple(int(i) for i in position_map[train_pos]),
+            validation_indices=(),
+            test_indices=tuple(int(i) for i in position_map[eval_pos]),
         )
-        best_score = None
-        best_cand: _Candidate | None = None
-        higher = metric not in _LOWER_IS_BETTER
-        for cand in inner_candidates:
-            estimator = _build_estimator(cand, fam_map, task=task, random_state=random_state)
-            # Manual fold CV on outer-train positions only.
-            try:
-                score = _manual_inner_cv_score(
-                    x_reset.iloc[list(train_pos)],
-                    y_reset.iloc[list(train_pos)],
-                    None if w_reset is None else w_reset.iloc[list(train_pos)],
-                    estimator,
-                    recipe=cand.recipe.recipe,
-                    task=task,
-                    metric=metric,
-                    n_splits=int(inner_cv) if isinstance(inner_cv, int) else 3,
-                    random_state=random_state,
-                )
-            except (ValidationError, ValueError, TypeError):
-                continue
-            if best_score is None or (score > best_score if higher else score < best_score):
-                best_score = score
-                best_cand = cand
-        if best_cand is None:
-            warnings.append(f"Outer fold {fold_id}: no viable inner candidate.")
-            continue
-        # Fit winner on outer-train, score outer-eval.
-        estimator = _build_estimator(best_cand, fam_map, task=task, random_state=random_state)
-        x_otr = x_reset.iloc[list(train_pos)]
-        y_otr = y_reset.iloc[list(train_pos)]
-        w_otr = None if w_reset is None else w_reset.iloc[list(train_pos)]
-        x_oe = x_reset.iloc[list(eval_pos)]
-        y_oe = y_reset.iloc[list(eval_pos)]
-        recipe = best_cand.recipe.recipe
-        if recipe is not None and not recipe.is_empty():
-            prep = build_fold_preprocessor(x_otr, recipe, y_otr)
-            x_fit = transform_fold_features(prep, x_otr)
-            x_score = transform_fold_features(prep, x_oe)
-        else:
-            x_fit, x_score = x_otr, x_oe
-        model = clone(estimator)
-        model.fit(x_fit, y_otr, **fit_kwargs_for_sample_weight(model, w_otr))
-        y_pred = model.predict(x_score)
+        # selection='cv' terminates nesting and reuses the actual configured
+        # search, recipe and ensemble machinery on this outer-training subset.
+        # A fresh study prevents earlier folds' objective values leaking in.
+        _, inner_result, fitted = run_automl(
+            dataset, inner_split, backend="native", method=method, selection="cv",
+            task=task, ranking_metric=metric, n_trials=n_trials, cv=inner_cv,
+            cv_strategy=cv_strategy, groups=inner_groups,
+            families=tuple(f.name for f in fams), include_industry_families=True,
+            include_recipe_search=include_recipe_search, preprocess=preprocess,
+            include_ensembles=include_ensembles, ensemble_mode=ensemble_mode,
+            max_ensemble_bases=max_ensemble_bases,
+            session_preprocess_applied=session_preprocess_applied,
+            allow_session_global_preprocess=allow_session_global_preprocess,
+            random_state=None if random_state is None else int(random_state)+fold_id,
+            budget=replace(budget, study_storage=None), refit=True,
+        )
+        if fitted is None:
+            raise ValidationError("Nested AutoML did not return a fitted outer-training model")
+        y_pred = fitted.estimator.predict(x_reset.iloc[list(eval_pos)])
         from buildml.model.selection import _score_predictions
 
-        fold_metrics = _score_predictions(task, y_oe, y_pred, sample_weight=None)
+        w_eval = None if w_reset is None else w_reset.iloc[list(eval_pos)]
+        fold_metrics = _score_predictions(task, y_reset.iloc[list(eval_pos)], y_pred,
+                                          sample_weight=w_eval)
         outer_scores.append(float(fold_metrics[metric]))
+        warnings.extend(f"Outer fold {fold_id}: {item}" for item in inner_result.warnings)
 
     if not outer_scores:
         return None, None, tuple(warnings + ["Nested outer estimate produced no folds."])
     mean = float(np.mean(outer_scores))
     std = float(np.std(outer_scores, ddof=1)) if len(outer_scores) > 1 else 0.0
     return mean, std, tuple(warnings)
+
+
+def _nested_inner_splits(
+    x: pd.DataFrame,
+    y: pd.Series,
+    *,
+    cv: int | Any,
+    strategy: str,
+    groups: pd.Series | None,
+    task: str,
+    random_state: int | None,
+) -> list[tuple[np.ndarray, np.ndarray]]:
+    from sklearn.model_selection import (
+        GroupKFold,
+        KFold,
+        StratifiedGroupKFold,
+        StratifiedKFold,
+        TimeSeriesSplit,
+        check_cv,
+    )
+
+    from buildml.model.selection import _validated_fold_positions
+
+    strategy = {"GroupKFold": "group", "StratifiedGroupKFold": "stratified_group",
+                "TimeSeriesSplit": "time", "KFold": "kfold",
+                "StratifiedKFold": "stratified"}.get(strategy, strategy)
+    splitter: Any
+    if not isinstance(cv, int):
+        splitter = check_cv(cv, y=y, classifier=task == "classification")
+    else:
+        count = max(2, min(cv, len(x)))
+        if strategy in {"group", "stratified_group"}:
+            if groups is None:
+                raise ValidationError("AutoML nested group CV requires aligned groups")
+            splitter = (StratifiedGroupKFold(count, shuffle=True, random_state=random_state)
+                        if strategy == "stratified_group" else GroupKFold(count))
+        elif strategy == "time":
+            splitter = TimeSeriesSplit(count)
+        elif strategy == "stratified" or (strategy not in {"kfold"} and task == "classification" and y.nunique() > 1):
+            splitter = StratifiedKFold(count, shuffle=True, random_state=random_state)
+        else:
+            splitter = KFold(count, shuffle=True, random_state=random_state)
+    raw = splitter.split(x, y, groups) if groups is not None else splitter.split(x, y)
+    positions = []
+    for train_pos, eval_pos in raw:
+        train_pos = _validated_fold_positions(train_pos, len(x))
+        eval_pos = _validated_fold_positions(eval_pos, len(x))
+        if set(train_pos) & set(eval_pos):
+            raise LeakageError("AutoML nested inner fold train/eval indices overlap")
+        positions.append((train_pos, eval_pos))
+    if not positions:
+        raise ValidationError("AutoML nested inner CV produced no folds")
+    return positions
 
 
 def _manual_inner_cv_score(
@@ -1402,20 +1454,13 @@ def _manual_inner_cv_score(
     metric: str,
     n_splits: int,
     random_state: int | None,
+    split_positions: list[tuple[np.ndarray, np.ndarray]] | None = None,
 ) -> float:
-    from sklearn.model_selection import KFold, StratifiedKFold
-
     from buildml.model.selection import _score_predictions
 
-    n_splits = max(2, min(n_splits, len(x)))
-    if task == "classification" and y.nunique() > 1:
-        splitter = StratifiedKFold(
-            n_splits=n_splits, shuffle=True, random_state=random_state
-        )
-        splits = splitter.split(x, y)
-    else:
-        splitter = KFold(n_splits=n_splits, shuffle=True, random_state=random_state)
-        splits = splitter.split(x)
+    splits = split_positions if split_positions is not None else _nested_inner_splits(
+        x, y, cv=n_splits, strategy="auto", groups=None, task=task, random_state=random_state,
+    )
 
     scores: list[float] = []
     x_reset = x.reset_index(drop=True)
@@ -1427,6 +1472,7 @@ def _manual_inner_cv_score(
         x_ev = x_reset.iloc[list(eval_pos)]
         y_ev = y_reset.iloc[list(eval_pos)]
         w_tr = None if w_reset is None else w_reset.iloc[list(train_pos)]
+        w_ev = None if w_reset is None else w_reset.iloc[list(eval_pos)]
         if recipe is not None and not recipe.is_empty():
             prep = build_fold_preprocessor(x_tr, recipe, y_tr)
             x_fit = transform_fold_features(prep, x_tr)
@@ -1436,7 +1482,7 @@ def _manual_inner_cv_score(
         model = clone(estimator)
         model.fit(x_fit, y_tr, **fit_kwargs_for_sample_weight(model, w_tr))
         y_pred = model.predict(x_score)
-        metrics = _score_predictions(task, y_ev, y_pred, sample_weight=None)
+        metrics = _score_predictions(task, y_ev, y_pred, sample_weight=w_ev)
         scores.append(float(metrics[metric]))
     if not scores:
         raise ValidationError("Inner CV produced no scores")

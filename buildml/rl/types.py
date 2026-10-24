@@ -90,6 +90,10 @@ class ImitationConfig:
         The Gymnasium environment, for methods that need one.
     n_epochs:
         Neural training passes. Ignored by scikit-learn estimators.
+    total_timesteps:
+        Requested GAIL budget; actual generator steps are disclosed separately.
+    allow_variable_horizon:
+        Whether variable-horizon reward-leakage risk was explicitly accepted.
     random_state:
         Seed, so a fit can be reproduced.
     prefer_reduce_components:
@@ -109,6 +113,8 @@ class ImitationConfig:
     action_column: str | None = None
     env_id: str | None = None
     n_epochs: int = 40
+    total_timesteps: int = 8_000
+    allow_variable_horizon: bool = False
     random_state: int | None = 0
     prefer_reduce_components: bool = True
 
@@ -134,6 +140,8 @@ class ImitationConfig:
             "action_column": self.action_column,
             "env_id": self.env_id,
             "n_epochs": self.n_epochs,
+            "total_timesteps": getattr(self, "total_timesteps", 8_000),
+            "allow_variable_horizon": getattr(self, "allow_variable_horizon", False),
             "random_state": self.random_state,
             "prefer_reduce_components": self.prefer_reduce_components,
         }

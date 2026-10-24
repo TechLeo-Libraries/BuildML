@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any, Literal
 
 import numpy as np
+import pandas as pd
 from sklearn.metrics import (
     accuracy_score,
     f1_score,
@@ -98,7 +99,10 @@ def evaluate_active_learning(
         f"Eval mix: n_labeled={n_labeled}, n_unlabeled={n_unlabeled} of n_rows={n_rows}.",
         f"Queries used so far: {plan.n_queries_used} (budget={plan.label_budget}).",
     ]
-    warnings: list[str] = []
+    warnings: list[str] = list(plan.warnings)
+    raw_labels = getattr(plan.label_encoder_, "_buildml_raw_class_labels_", False)
+    if not raw_labels:
+        warnings.append("Legacy active learner uses string label encoding; refit from scratch to preserve raw class identities.")
     metrics: dict[str, float] = {}
 
     if n_labeled < 1:
@@ -121,8 +125,14 @@ def evaluate_active_learning(
     y_true = frame.loc[~unlabeled, target]
     pred_all = np.asarray(preds, dtype=object)
     y_pred = pred_all[~unlabeled]
-    y_true_s = y_true.astype(str).to_numpy()
-    y_pred_s = np.asarray([str(v) for v in y_pred])
+    if raw_labels:
+        # A shared raw vocabulary also scores previously unseen holdout classes.
+        # Object dtype prevents strings and numbers from being coerced together.
+        codes, _ = pd.factorize(pd.Series([*y_true.tolist(), *y_pred.tolist()], dtype=object))
+        y_true_s, y_pred_s = codes[:n_labeled], codes[n_labeled:]
+    else:
+        y_true_s = y_true.astype(str).to_numpy()
+        y_pred_s = np.asarray([str(v) for v in y_pred])
 
     metrics["accuracy"] = float(accuracy_score(y_true_s, y_pred_s))
     metrics["f1_macro"] = float(

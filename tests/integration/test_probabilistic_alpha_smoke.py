@@ -28,7 +28,6 @@ def test_probabilistic_alpha_smoke(tmp_path: Path) -> None:
             {"f0": "feature", "f1": "feature", "f2": "feature", "y": "target"}
         )
         .split(test_size=0.2, validation_size=0.2, random_state=0)
-        .scale(method="standard")
     )
 
     fit = session.probabilistic.fit(

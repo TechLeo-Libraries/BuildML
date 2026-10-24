@@ -37,6 +37,22 @@ Fold-local order, when those steps are set, is:
 
 dates → text → outliers → impute → encode → binning → scale → reduce → select
 
+For `reduce='pca'`, `reduce_n_components` accepts a positive integer count
+(capped by training rows and feature count), a variance fraction in `(0, 1]`,
+or `None` for all available components. A fraction of `1.0` also retains all
+components. NumPy integer and real scalar controls are supported; booleans and
+string controls are refused. PCA requires finite real values at fit and replay;
+impute missing values first. Component names from `reduce_prefix` must not collide
+with retained columns. Names of source columns removed by `reduce_drop_input=True`
+may be reused for the components that replace them.
+
+The `buildml.preprocess.fold.transform_fold_features` helper also accepts fitted
+sklearn transformers. Sparse outputs remain sparse in the returned Pandas frame;
+feature names come from `get_feature_names_out` when available and otherwise use
+positional labels. Output rows must preserve the input index and order, and
+feature names must be unique. Incompatible shapes, row changes and ambiguous
+names raise `ValidationError` before downstream model fitting.
+
 Outliers inside a recipe may `detect` or `cap`. **Drop** is refused:
 dropping rows would rewrite fold membership.
 

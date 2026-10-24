@@ -929,12 +929,12 @@ def _retrieve_rag_context(
         return "", []
 
     try:
-        from buildml.rag.retriever import retrieve_chunks
+        from buildml.rag.retrieve import retrieve
     except ImportError:
         return "", []
 
     try:
-        chunks = retrieve_chunks(rag_index, query, top_k=top_k)
+        chunks = retrieve(rag_index, query, k=top_k).hits
     except Exception:
         return "", []
 
@@ -946,7 +946,7 @@ def _retrieve_rag_context(
 
     for chunk in chunks:
         text = getattr(chunk, "text", str(chunk))
-        source = getattr(chunk, "source_id", "unknown")
+        source = chunk.doc_id
         sanitized = mark_untrusted_data(text, f"rag_chunk_{source}")
         texts.append(sanitized)
         sources.append(str(source))

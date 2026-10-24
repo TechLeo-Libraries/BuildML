@@ -141,21 +141,12 @@ def hnswlib_available() -> bool:
 
     Notes
     -----
-    Catchable import failures are swallowed. On Windows, the probe runs in a
-    child process because a broken native wheel can hard-crash the parent.
+    The probe runs in a child process on every platform: incompatible CPU
+    instructions and broken native libraries can hard-crash the interpreter.
     """
     if not hnswlib_spec_present():
         return False
-    # Native wheels on Windows can hard-crash (access violation) instead of
-    # raising a catchable ImportError. Probe in a child process so walkthrough /
-    # capability matrices never kill the parent Session.
-    if sys.platform.startswith("win"):
-        return _subprocess_import_ok("hnswlib")
-    try:
-        import hnswlib  # noqa: F401
-    except Exception:
-        return False
-    return True
+    return _subprocess_import_ok("hnswlib")
 
 
 def faiss_available() -> bool:
@@ -171,18 +162,12 @@ def faiss_available() -> bool:
 
     Notes
     -----
-    Catchable import failures are swallowed. On Windows, the probe runs in a
-    child process for the same hard-crash reason as :func:`hnswlib_available`.
+    The probe runs in a child process on every platform for the same
+    hard-crash reason as :func:`hnswlib_available`.
     """
     if not faiss_spec_present():
         return False
-    if sys.platform.startswith("win"):
-        return _subprocess_import_ok("faiss")
-    try:
-        import faiss  # noqa: F401
-    except Exception:
-        return False
-    return True
+    return _subprocess_import_ok("faiss")
 
 
 def cbr_industry_available() -> bool:

@@ -49,6 +49,34 @@ deprecation rules, and dependency availability.
 ## Coverage requirements
 
 See `scripts/coverage_ratchet.json` and `pyproject.toml` `fail_under`.
-Active floor **66** (Linux CI monolith measured 66.67% on the 2.6.0 cut).
+Active floor **70** (corrected thread/process tracing measured 71.28-71.29%
+across Linux Python 3.10-3.13, run 38589015544, commit 2837fb3).
 Measure the complete suite with `python scripts/run_full_coverage.py`; subset
 runs are not comparable to the project coverage threshold.
+The separate expanded Linux job runs the same complete test directory with
+`requirements-expanded-coverage.txt` and an **86%** floor. Latest accepted
+remote CPU source `05e1c37` passed **87.5370%** (54,673/62,457 lines), with
+5,587 passed and77 skipped. CI40138774912, backend evidence40138774951 and
+release acceptance40138775100 all passed. Tested merge `15112139` and source
+trees match. The exact90% gap is1,539 covered lines at this source. Core70,
+expanded86 floor was set from source `a05ec41` with one-point headroom;566
+excluded lines remain unchanged. The expanded profile
+passed the complete suite in23:27 with2781 pytest warnings
+and no coverage collection warnings.
+
+The subsequent `8594200` gate passed its tests, but coverage.py upgraded from
+7.16.2 to7.17.0 and reported607 excluded lines instead of566. Its raw86.5151%
+is not accepted as a comparable coverage gain. Development coverage tooling is
+now pinned to7.16.2; the subsequent91b34d6 gate passed with566 exclusions
+and is the current accepted measurement above.
+
+The accepted expanded profile includes scikit-activeml1.0.1, DoWhy0.14 and ONNX Runtime1.31.0 using
+NumPy2.4.1/SciPy1.15.3/mlxtend0.23.4. A prior same-source local comparison
+passed85.3947% (original) and85.5192% (broader), gained80/lost3 lines, net77,
+without combining databases or collection warnings. Local and remote results
+are recorded separately; they do not establish coverage for every backend.
+
+The Linux Gloo forkserver workaround passed50 repetitions on each remote
+Python3.11/3.12 stack and50 locally on Python3.11.17/Torch2.14.1 CPU, without
+retries. This bounded evidence does not establish multi-GPU/NCCL reliability
+or a long-term production SLA. The requested90% coverage target remains open.

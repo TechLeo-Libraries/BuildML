@@ -12,6 +12,13 @@ Whisper-scale foundation models from scratch.
 `session.dl.refuse_speech_pretrain()` raises an error for unsupported
 foundation-model pretraining requests.
 
+The offline verification suite also exercises the real Transformers ASR pipeline
+with local tiny Wav2Vec2 CTC models. Constant output logits give a known CTC
+collapse result, including blank-only output. These checks validate model loading,
+decoding, partition selection and inference-error reporting without downloading
+weights. They do not measure recognition accuracy on spoken language; choose and
+evaluate a trained model on representative recordings for that purpose.
+
 Related: [torch-deep](torch-deep.md), [pretrained-backbones](pretrained-backbones.md),
 [features](../docs/features.rst).
 

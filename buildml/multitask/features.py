@@ -353,6 +353,24 @@ def encode_multitask_y(
     """
     from sklearn.preprocessing import LabelEncoder
 
+    if task not in {"classification", "regression", "mixed"}:
+        raise ValidationError(f"Unsupported multi-task target type {task!r}")
+    if task == "mixed" and (
+        not task_kinds or any(task_kinds.get(str(col)) not in {"classification", "regression"}
+                              for col in target_columns)
+    ):
+        raise ValidationError("Mixed task_kinds must identify every requested head as classification or regression")
+    for col in target_columns:
+        series = frame[col]
+        if series.isna().any():
+            raise ValidationError(f"Multi-task target {col!r} contains nulls")
+        kind = task_kinds[str(col)] if task == "mixed" and task_kinds else task
+        if kind == "regression":
+            if not pd.api.types.is_numeric_dtype(series):
+                raise ValidationError(f"Multi-task regression target {col!r} must be numeric")
+            if not np.isfinite(series.to_numpy(dtype=float)).all():
+                raise ValidationError(f"Multi-task regression target {col!r} must be finite")
+
     if task == "mixed":
         if not task_kinds:
             raise ValidationError("task='mixed' requires task_kinds= metadata.")
@@ -370,15 +388,20 @@ def encode_multitask_y(
                 cols.append(series.to_numpy(dtype=float))
                 continue
             series = frame[col]
-            values = series.astype(str)
+            values = series.to_numpy()
             if col not in encoders:
                 enc = LabelEncoder()
-                codes = enc.fit_transform(values)
+                try:
+                    codes = enc.fit_transform(values)
+                except (TypeError, ValueError) as exc:
+                    raise ValidationError(
+                        f"Multi-task target {col!r} has incompatible class-label types; use one comparable type"
+                    ) from exc
                 encoders[col] = enc
             else:
                 enc = encoders[col]
-                known = {str(c) for c in enc.classes_}
-                unknown = sorted(set(values) - known)
+                known = set(enc.classes_)
+                unknown = sorted(set(values) - known, key=repr)
                 if unknown:
                     raise ValidationError(
                         f"Multi-task target {col!r} saw unseen class label(s): "
@@ -390,7 +413,7 @@ def encode_multitask_y(
                     f"Multi-task classification target {col!r} needs >= 2 classes "
                     f"(found {tuple(enc.classes_)!r})."
                 )
-            classes[col] = tuple(enc.classes_)
+            classes[col] = tuple(_coerce_label(value) for value in enc.classes_)
             cols.append(np.asarray(codes))
         y = np.column_stack(cols)
         return y, encoders, classes
@@ -420,15 +443,20 @@ def encode_multitask_y(
             raise ValidationError(
                 f"Multi-task classification target {col!r} contains nulls."
             )
-        values = series.astype(str)
+        values = series.to_numpy()
         if col not in encoders:
             enc = LabelEncoder()
-            codes = enc.fit_transform(values)
+            try:
+                codes = enc.fit_transform(values)
+            except (TypeError, ValueError) as exc:
+                raise ValidationError(
+                    f"Multi-task target {col!r} has incompatible class-label types; use one comparable type"
+                ) from exc
             encoders[col] = enc
         else:
             enc = encoders[col]
-            known = {str(c) for c in enc.classes_}
-            unknown = sorted(set(values) - known)
+            known = set(enc.classes_)
+            unknown = sorted(set(values) - known, key=repr)
             if unknown:
                 raise ValidationError(
                     f"Multi-task target {col!r} saw unseen class label(s): "
@@ -440,7 +468,7 @@ def encode_multitask_y(
                 f"Multi-task classification target {col!r} needs >= 2 classes "
                 f"(found {tuple(enc.classes_)!r})."
             )
-        classes[col] = tuple(enc.classes_)
+        classes[col] = tuple(_coerce_label(value) for value in enc.classes_)
         cols.append(np.asarray(codes))
     y = np.column_stack(cols)
     return y, encoders, classes
@@ -543,10 +571,5 @@ def _assert_targets_compatible(
 
 
 def _coerce_label(value: Any) -> Any:
-    text = str(value)
-    if text.isdigit() or (text.startswith("-") and text[1:].isdigit()):
-        return int(text)
-    try:
-        return float(text) if "." in text else text
-    except ValueError:
-        return text
+    """Convert NumPy scalars for serialization without reinterpreting label text."""
+    return value.item() if isinstance(value, np.generic) else value

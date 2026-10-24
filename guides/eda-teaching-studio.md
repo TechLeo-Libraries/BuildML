@@ -11,6 +11,18 @@ modeling steps. The report contains findings and recommended operations;
 it leaves the dataset unchanged. Review each recommendation against your
 analysis goal before applying it.
 
+Readiness-gate class shares use observed target labels. Missing labels are outside
+that denominator, so the shares describe the labeled rows. Majority shares and
+target medians are descriptive EDA statistics. Fit a constant baseline on training
+labels and score it on held-out rows using the model's metric: a training majority
+for accuracy, a median for MAE, or a mean for MSE.
+
+Declare the positive label and error costs before choosing a binary threshold.
+For calibrated posterior probabilities, 0.5 corresponds to equal false-positive
+and false-negative costs. Display order does not establish a positive class.
+Generated evaluation examples filter to observed labels and select feature columns;
+review labeling bias and the inferred task before using their results.
+
 The teaching methods explain operations and their prerequisites. Start
 with `session.learn()` for introductory concepts, or use `session.explain()`
 for a particular operation. Explanations use the `beginner` reading level

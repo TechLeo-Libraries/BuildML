@@ -104,7 +104,10 @@ def finetune_ssl_head(
 
     y_labeled = train.loc[~unlabeled, target]
     encoder = LabelEncoder()
-    y_codes = encoder.fit_transform(y_labeled.astype(str))
+    try:
+        y_codes = encoder.fit_transform(y_labeled.to_numpy())
+    except (TypeError, ValueError) as exc:
+        raise ValidationError("SSL class labels must have compatible raw types.") from exc
     if len(encoder.classes_) < 2:
         raise ValidationError(
             "SSL head fine-tune requires at least 2 classes among labeled train rows."
@@ -139,7 +142,7 @@ def finetune_ssl_head(
         representation_columns=ssl_plan.representation_columns,
         n_labeled_train=n_labeled,
         n_unlabeled_skipped=n_unlabeled,
-        classes_=tuple(encoder.classes_),
+        classes_=tuple(v.item() if isinstance(v, np.generic) else v for v in encoder.classes_),
         estimator_=model,
         task="classification",
         disclosures=tuple(disclosures),
@@ -147,6 +150,7 @@ def finetune_ssl_head(
     )
     # Stash encoder on plan via estimator attributes for predict decode
     plan.estimator_._buildml_label_encoder_ = encoder  # type: ignore[attr-defined]
+    plan.estimator_._buildml_raw_class_labels_ = True  # type: ignore[attr-defined]
     plan.estimator_._buildml_ssl_columns_ = tuple(ssl_plan.columns)  # type: ignore[attr-defined]
 
     result = SSLHeadFitResult(
@@ -155,7 +159,7 @@ def finetune_ssl_head(
         n_unlabeled_skipped=n_unlabeled,
         representation_columns=ssl_plan.representation_columns,
         target_column=target,
-        classes=tuple(encoder.classes_),
+        classes=plan.classes_,
         disclosures=tuple(disclosures),
         warnings=tuple(warnings),
     )

@@ -32,7 +32,6 @@ def _reg_session() -> Session:
         Session.ingest(_reg_frame())
         .set_roles({"a": "feature", "b": "feature", "y": "target"})
         .split(test_size=0.2, validation_size=0.2, random_state=1)
-        .scale(method="standard")
     )
 
 
@@ -41,7 +40,6 @@ def _cls_session() -> Session:
         Session.ingest(_cls_frame())
         .set_roles({"a": "feature", "b": "feature", "label": "target"})
         .split(test_size=0.2, validation_size=0.2, random_state=1, stratify=True)
-        .scale(method="standard")
     )
 
 

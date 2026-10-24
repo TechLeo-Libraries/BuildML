@@ -30,6 +30,7 @@ from scipy.stats import ks_2samp
 
 from buildml.data.dataset import Dataset
 from buildml.data.splits import SplitPlan, frame_for_partition
+from buildml.eda.analyzers.target import _adjust_pvalues
 
 
 def analyze_drift(
@@ -47,7 +48,7 @@ def analyze_drift(
     between the category frequencies, a bounded symmetric measure where 0 means
     identical and 1 means no overlap.
 
-    The numeric flag requires both statistical significance (p below 0.01) and
+    The numeric flag requires both corrected significance (BH q below 0.01) and
     practical size (KS statistic above 0.1), and requiring both is the point.
     With 100,000 rows, a p-value alone flags differences far too small to
     matter; with 200 rows, a large difference may not reach significance. The two criteria
@@ -153,6 +154,9 @@ def analyze_drift(
                 "test_nonfinite": int(test[col].isin([np.inf, -np.inf]).sum()),
             }
         )
+    _adjust_pvalues(numeric_drift)
+    for row in numeric_drift:
+        row["flag"] = bool(row.get("qvalue_bh", 1.0) < 0.01 and abs(row["ks_stat"]) > 0.1)
     numeric_drift.sort(key=lambda item: item["ks_stat"], reverse=True)
 
     categorical_drift = []
@@ -209,7 +213,9 @@ def analyze_drift(
         "skipped_columns": skipped_columns,
         "settings": {
             "numeric_test": "two-sample Kolmogorov-Smirnov",
-            "numeric_flag": "pvalue < 0.01 and KS statistic > 0.1",
+            "numeric_flag": "BH-adjusted qvalue < 0.01 and KS statistic > 0.1",
+            "numeric_test_family_size": len(numeric_drift),
+            "interpretation": "Exploratory univariate screen; absence of flags does not establish population equivalence",
             "categorical_metric": "Jensen-Shannon divergence (base 2)",
             "categorical_flag": "JS divergence > 0.1",
         },

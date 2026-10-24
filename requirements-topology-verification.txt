@@ -1,0 +1,10 @@
+# Giotto 0.6.2 requires sklearn 1.3.2; keep this separate from sklearn 1.9.
+-e .[tda,tda-industry]
+pytest>=7.4
+pytest-cov>=7.0
+numpy==1.26.4
+pandas==2.3.3
+scipy==1.11.4
+scikit-learn==1.3.2
+pyarrow==20.0.0
+giotto-tda==0.6.2

@@ -250,7 +250,6 @@ def predict_from_pipeline(
     fit_result = bundle.fit_result
     warnings: list[str] = []
     apply_result: ApplyPlansResult | None = None
-    working: Dataset | pd.DataFrame = data
 
     raw_frame = data.frame if isinstance(data, Dataset) else data
     if not isinstance(raw_frame, pd.DataFrame):
@@ -296,6 +295,7 @@ def predict_from_pipeline(
             sync_native=False,
         )
 
+    working: Dataset | pd.DataFrame = data
     if apply_plans and plan_present:
         apply_result = apply_preprocess_plans(
             data,

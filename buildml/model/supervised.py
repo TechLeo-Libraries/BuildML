@@ -425,7 +425,8 @@ def fit_kwargs_for_sample_weight(estimator: Any, sample_weight: pd.Series | None
     Parameters
     ----------
     estimator:
-        The estimator about to be fitted. Its ``fit`` signature is inspected.
+        The estimator about to be fitted. Its ``fit`` signature is inspected;
+        known voting ensembles also validate their active members.
     sample_weight:
         Validated weights, or ``None`` when no weight role is set.
 
@@ -444,7 +445,9 @@ def fit_kwargs_for_sample_weight(estimator: Any, sample_weight: pd.Series | None
 
     Notes
     -----
-    **Support is detected from the signature**, so an estimator that declares
+    **Support is detected from the signature**, with explicit support for
+    sklearn voting ensembles that route weights through ``**fit_params``.
+    Every active voting member must support weights. An estimator that declares
     the parameter and ignores it cannot be caught here.
 
     **Pipelines need the step-prefixed spelling** that scikit-learn requires, so
@@ -481,6 +484,14 @@ def fit_kwargs_for_sample_weight(estimator: Any, sample_weight: pd.Series | None
     """
     if sample_weight is None:
         return {}
+    from sklearn.ensemble import VotingClassifier, VotingRegressor
+
+    if isinstance(estimator, (VotingClassifier, VotingRegressor)):
+        for _name, member in estimator.estimators:
+            if isinstance(member, str) and member == "drop":
+                continue
+            fit_kwargs_for_sample_weight(member, sample_weight)
+        return {"sample_weight": sample_weight.to_numpy(dtype=float)}
     if not has_fit_parameter(estimator, "sample_weight"):
         raise ValidationError(
             f"{type(estimator).__name__} does not accept sample_weight, but a "
@@ -1123,11 +1134,12 @@ def evaluate_estimator(
                     )
                 )
                 if len(fit_result.estimator.classes_) == 2:
+                    y_positive = np.asarray(y_true) == fit_result.estimator.classes_[1]
                     metrics["roc_auc"] = float(
-                        roc_auc_score(y_true, proba[:, 1], sample_weight=sw)
+                        roc_auc_score(y_positive, proba[:, 1], sample_weight=sw)
                     )
                     metrics["average_precision"] = float(
-                        average_precision_score(y_true, proba[:, 1], sample_weight=sw)
+                        average_precision_score(y_positive, proba[:, 1], sample_weight=sw)
                     )
                 else:
                     metrics["roc_auc_ovr_weighted"] = float(

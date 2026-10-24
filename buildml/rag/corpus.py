@@ -136,7 +136,7 @@ def load_text_corpus(
         files = [root]
         source = str(root)
     elif root.is_dir():
-        files = sorted(root.glob(glob))
+        files = sorted(p for p in root.glob(glob) if p.is_file())
         source = f"{root}/{glob}"
     else:
         raise ValidationError(f"Corpus path does not exist: {root}")

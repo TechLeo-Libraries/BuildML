@@ -20,7 +20,7 @@ buildml.ingest.detect.check_materialization : The size gate applied here.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, cast
 
 import pandas as pd
 
@@ -144,7 +144,8 @@ def prepare_design_frame(
     dataset:
         The source.
     columns:
-        Everything the design matrix needs, features and target.
+        Everything the design matrix needs, features and target. Repeated names
+        are materialized once, preserving their first-occurrence order.
     sample_rows:
         Cap rows before materialising. Changes what a fit means: see the notes.
     random_state:
@@ -203,7 +204,7 @@ def prepare_design_frame(
     MaterializePrepResult : What comes back.
     buildml.data.dataset.Dataset.project : The narrowing this performs.
     """
-    cols = [str(c) for c in columns]
+    cols = list(dict.fromkeys(str(c) for c in columns))
     if not cols:
         raise ValidationError("prepare_design_frame requires at least one column")
     missing = [c for c in cols if c not in dataset.columns]
@@ -224,7 +225,7 @@ def prepare_design_frame(
     sampled = False
 
     if engine_name == EngineName.PANDAS:
-        work = dataset._ensure_pandas().loc[:, cols]
+        work = cast(pd.DataFrame, dataset._ensure_pandas().loc[:, cols])
         disclosures.append(
             f"Projected to {len(cols)} requested column(s) before materialization."
         )
@@ -269,7 +270,7 @@ def prepare_design_frame(
         frame = frame.loc[:, [c for c in cols if c in frame.columns]]
     else:
         # Engine selected but no persistent native handle: convert projected cols only.
-        narrow = dataset._ensure_pandas().loc[:, cols]
+        narrow = cast(pd.DataFrame, dataset._ensure_pandas().loc[:, cols])
         disclosures.append(
             f"Projected to {len(cols)} requested column(s) before materialization."
         )

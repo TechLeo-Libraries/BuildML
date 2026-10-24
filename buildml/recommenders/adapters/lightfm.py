@@ -30,6 +30,12 @@ def _feature_csr(
             raise ValidationError(
                 f"LightFM requires numeric side features; {col!r} is not numeric."
             )
+        if pd.api.types.is_complex_dtype(frame[col].dtype) or not np.isfinite(
+            frame[col].to_numpy(dtype=float, na_value=np.nan)
+        ).all():
+            raise ValidationError(
+                f"LightFM side features must be finite real values; invalid column {col!r}."
+            )
     rows: list[np.ndarray] = []
     for entity in ids:
         sub = frame.loc[frame[id_column] == entity, cols]
