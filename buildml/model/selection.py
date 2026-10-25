@@ -1596,6 +1596,12 @@ def optuna_search(
         raise ValidationError("n_trials must be >= 1")
     if param_space is None and recipe_space is None:
         raise ValidationError("Provide param_space and/or recipe_space")
+    # Refuse malformed declared domains before creating/advancing a caller's study.
+    # Callable spaces remain runtime suggestions supplied by the caller.
+    for space in (param_space, recipe_space):
+        if space is not None and not callable(space):
+            for name, spec in space.items():
+                _gene_from_spec(name, spec, engine="Optuna")
     _require_recipe_for_knobs(preprocess, recipe_space is not None)
 
     assert_fit_partition(split_plan, "train")
@@ -2936,33 +2942,16 @@ def _suggest_from_space(
     out: dict[str, Any] = {}
     for name, spec in space.items():
         key = f"{prefix}__{name}"
-        if isinstance(spec, (list, tuple)):
-            out[name] = trial.suggest_categorical(key, list(spec))
-            continue
-        if not isinstance(spec, dict):
-            raise ValidationError(
-                f"Optuna space entry '{name}' must be a dict spec or a list of choices"
-            )
-        kind = str(spec.get("type", "")).lower()
-        if kind == "float":
-            out[name] = trial.suggest_float(
-                key,
-                float(spec["low"]),
-                float(spec["high"]),
-                log=bool(spec.get("log", False)),
-            )
-        elif kind == "int":
-            out[name] = trial.suggest_int(key, int(spec["low"]), int(spec["high"]))
-        elif kind == "categorical":
-            choices = list(spec.get("choices") or [])
-            if not choices:
-                raise ValidationError(f"Optuna categorical space '{name}' needs non-empty choices")
-            out[name] = trial.suggest_categorical(key, choices)
+        gene = _gene_from_spec(name, spec, engine="Optuna")
+        if gene.kind == "categorical":
+            assert gene.choices is not None
+            out[name] = trial.suggest_categorical(key, list(gene.choices))
         else:
-            raise ValidationError(
-                f"Unsupported Optuna space type '{kind}' for '{name}'. "
-                "Use float, int, or categorical."
-            )
+            assert gene.low is not None and gene.high is not None
+            if gene.kind == "int":
+                out[name] = trial.suggest_int(key, int(gene.low), int(gene.high))
+            else:
+                out[name] = trial.suggest_float(key, gene.low, gene.high, log=gene.log)
     return out
 
 
@@ -3103,15 +3092,15 @@ def _parse_evolutionary_genes(
     return list(by_name.values())
 
 
-def _gene_from_spec(name: str, spec: Any) -> _GeneSpec:
+def _gene_from_spec(name: str, spec: Any, *, engine: str = "Evolutionary") -> _GeneSpec:
     if isinstance(spec, (list, tuple)):
         choices = tuple(spec)
         if not choices:
-            raise ValidationError(f"Evolutionary categorical space '{name}' needs non-empty choices")
+            raise ValidationError(f"{engine} categorical space '{name}' needs non-empty choices")
         return _GeneSpec(name=name, kind="categorical", choices=choices)
     if not isinstance(spec, dict):
         raise ValidationError(
-            f"Evolutionary space entry '{name}' must be a dict spec or a list of choices"
+            f"{engine} space entry '{name}' must be a dict spec or a list of choices"
         )
     kind = str(spec.get("type", "")).lower()
     if kind in {"float", "int"}:
@@ -3122,21 +3111,21 @@ def _gene_from_spec(name: str, spec: Any) -> _GeneSpec:
             low, high = float(raw_low), float(raw_high)
         except (KeyError, TypeError, ValueError, OverflowError) as exc:
             raise ValidationError(
-                f"Evolutionary {kind} space '{name}' requires numeric low and high bounds"
+                f"{engine} {kind} space '{name}' requires numeric low and high bounds"
             ) from exc
         if not np.isfinite(low) or not np.isfinite(high):
-            raise ValidationError(f"Evolutionary {kind} space '{name}' requires finite bounds")
+            raise ValidationError(f"{engine} {kind} space '{name}' requires finite bounds")
         if high < low:
-            raise ValidationError(f"Evolutionary {kind} space '{name}' has high < low")
+            raise ValidationError(f"{engine} {kind} space '{name}' has high < low")
         if kind == "int":
             if not low.is_integer() or not high.is_integer():
-                raise ValidationError(f"Evolutionary int space '{name}' requires integer bounds")
+                raise ValidationError(f"{engine} int space '{name}' requires integer bounds")
             return _GeneSpec(name=name, kind="int", low=low, high=high)
         log = spec.get("log", False)
         if not isinstance(log, bool):
-            raise ValidationError(f"Evolutionary float space '{name}' log must be a boolean")
+            raise ValidationError(f"{engine} float space '{name}' log must be a boolean")
         if log and low <= 0:
-            raise ValidationError(f"Evolutionary log space '{name}' requires positive bounds")
+            raise ValidationError(f"{engine} log space '{name}' requires positive bounds")
         return _GeneSpec(
             name=name,
             kind="float",
@@ -3147,10 +3136,10 @@ def _gene_from_spec(name: str, spec: Any) -> _GeneSpec:
     if kind == "categorical":
         choices = tuple(spec.get("choices") or [])
         if not choices:
-            raise ValidationError(f"Evolutionary categorical space '{name}' needs non-empty choices")
+            raise ValidationError(f"{engine} categorical space '{name}' needs non-empty choices")
         return _GeneSpec(name=name, kind="categorical", choices=choices)
     raise ValidationError(
-        f"Unsupported evolutionary space type '{kind}' for '{name}'. "
+        f"Unsupported {engine} space type '{kind}' for '{name}'. "
         "Use float, int, or categorical."
     )
 

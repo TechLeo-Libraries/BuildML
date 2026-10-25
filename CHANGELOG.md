@@ -14,6 +14,10 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Optuna declared search domains share the evolutionary domain validator, refusing
+  invalid bounds, empty choices and lossy boolean/integer/logarithm coercions.
+  Malformed declared domains are checked before advancing an existing study.
+
 - Recommender bundles refuse stale catalog indexes, duplicate or unhashable IDs,
   and matrix/catalog dimension conflicts before saving or loading. Valid legacy
   catalog restoration remains supported across the five native methods.

@@ -2389,3 +2389,38 @@ fresh full remote verification; no coverage floor, exclusion or package scope
 was changed. An earlier successful 129-test subset inherited the whole-suite
 coverage threshold; the final report-only subset explicitly disables that
 threshold without changing the full-suite gate.
+
+
+### Search-domain validation and existing-study preservation (2026-10-25)
+
+The real CI-pinned Optuna 5.0.0 backend accepted some malformed declared domains
+through coercion, including boolean bounds, fractional integer bounds and a
+string logarithm flag. Other invalid domains leaked backend ValueError, KeyError
+or TypeError instead of BuildML ValidationError. Before repair, 14 of 38 public
+Optuna/evolutionary refusal consumers failed. Optuna now shares the existing
+validated domain parser with evolutionary search, preserving valid linear,
+logarithmic, integer and categorical domains.
+
+Domain normalization alone still allowed invalid requests to add failed trials
+to a caller's existing study: 19 standalone public API consumers demonstrated
+that mutation. Declared domains now validate before study creation or advancement.
+Caller-provided callable spaces remain runtime suggestions; this check does not
+promise rollback of failures inside arbitrary user callables.
+
+Final six-file Windows verification with real isolated Optuna 5.0.0 passed
+**91 tests**, no failures or warnings, in 59.58 seconds. Two existing tests for
+missing Optuna intentionally skipped because it was installed. Native GA and
+Optuna candidate domains, two-fold RMSE and sample standard deviation were
+checked using independent Ridge normal equations. Existing fitted model
+predictions remain unchanged after refused searches and searches without refit;
+invalid declared domains cannot consume an existing study trial.
+
+Ruff, copy lint and the unchanged 586-finding docstring budget passed. Targeted
+mypy reports three no-any-return findings at lines 268, 509 and 757, reproduced
+exactly on the verified baseline source; a clean type check is not claimed.
+Source-mapped subset reach against verified `90088a5` was **6 previously missing
+unchanged lines and 21 changed/new executed lines**. This is separate from
+whole-package coverage, whose accepted result remains **87.6404%** pending a
+passing full remote measurement. Package scope, exclusions and floors are
+unchanged. The optional backend was installed only under this task's reports
+directory; the main environment was preserved.
