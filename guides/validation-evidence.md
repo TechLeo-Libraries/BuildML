@@ -2361,7 +2361,7 @@ lines**. Whole-package coverage remains 87.6323% pending fresh full remote
 verification; subset reach is not an aggregate percentage increase.
 
 
-### Recommender persisted catalog identity — 2026-10-25
+### Recommender persisted catalog identity (2026-10-25)
 
 Actual item-kNN, user-kNN, SVD, NMF and content bundles accepted stale nonempty
 catalog indexes, duplicate IDs and interaction-matrix dimensions inconsistent
