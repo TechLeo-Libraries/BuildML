@@ -8,20 +8,20 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 87.58545605917482,
-      "covered_lines": 54705,
+      "percent_covered": 87.59506236090876,
+      "covered_lines": 54711,
       "num_statements": 62459,
       "excluded_lines": 566,
-      "source_revision": "cd0bbe672ca84a8cef3dc5b31b416b0baaaa3f15",
-      "tested_revision": "03876172f50d91349b87f7dff60349ea95397b3d",
+      "source_revision": "664594505bebce3cebdbae265cf89dab5f9b6b3f",
+      "tested_revision": "167f26fd3054524d0a643330ed2b2b2d76365cf7",
       "platform": "remote Linux, CPU expanded profile",
-      "run_id": 40166732754,
-      "result": "5764 passed, 77 skipped, zero failures/errors",
+      "run_id": 40174349232,
+      "result": "5780 passed, 77 skipped, zero failures/errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
-      "notes": "Temporal and evolutionary numerical consumers accepted; all three workflows passed. Source/merge trees equalde2adc24ddab1d4502b8856b1014a2ff1748909e. coverage7.16.2/566 exclusions unchanged;2781 warnings,no collection warnings. Full23:07. Exact90 percent gap1509;core70/expanded86 retained.",
+      "notes": "EDA readiness evidence consumers accepted; all three workflows passed. Source/merge trees equalf3086d8a77d1088fb411f0ee406be24fa76c7ec5. coverage7.16.2/566 exclusions unchanged;2781 warnings,no collection warnings. Full23:15. Full gain6lines;local subset8 is profile-specific. Exact90 percent gap1503;core70/expanded86 retained.",
       "coverage_version": "7.16.2"
     },
     "latest_local_measurement": {
