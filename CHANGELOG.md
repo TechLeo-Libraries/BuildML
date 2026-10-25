@@ -14,6 +14,9 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Added real evolutionary search candidate oracles for numeric mutation bounds,
+  independent fold RMSE, ranking, reproducibility and held-out-data isolation.
+
 - Added agent temporal workflow consumers for chronological split boundaries,
   train-only preprocessing statistics and independent Ridge prediction metrics.
 

@@ -2222,3 +2222,28 @@ production line**, zero changed/new lines. No defect was reproduced. This is
 additional numerical correctness evidence with minimal coverage reach; it must
 not be presented as a material aggregate coverage improvement. The accepted
 whole-package measurement remains 87.5614% pending fresh remote acceptance.
+
+
+### Evolutionary numerical candidate consumers (2026-10-25)
+
+`tests/unit/test_evolutionary_numerical_candidates.py` runs actual evolutionary
+search with integer, categorical, linear-float and log-float domains. Three
+seeds exercise Ridge and decision-tree configurations with full mutation,
+crossover, three generations and a fourteen-candidate evaluation budget.
+
+Every evaluated candidate's fold RMSE is checked against independent Ridge
+normal equations or a separately fitted reference tree traversed through its
+arrays. Fold sample standard deviation and minimum-score ranking are checked.
+Parameter bounds must hold after mutation. Repeating searches with the same
+seed and extreme replacement of validation/test rows must retain the candidate
+sequence and scores; refit=False must leave the Session without a fitted model.
+These checks validate search mechanics and population isolation for these finite
+workloads, not optimizer superiority or a generalization guarantee.
+
+Final three-file verification passed **32 tests**, with zero failures, skips or
+warnings, in 47.31 seconds. Ruff and the unchanged 586-finding docstring budget
+passed. Source-mapped reach against verified `01b4c80` was **13 previously missing
+unchanged production lines**, zero changed/new lines. No production defect was
+reproduced. The initial test oracle used population instead of sample fold
+standard deviation; that test-only assumption was corrected before accepted
+verification. Whole-package coverage remains 87.5614% pending fresh remote CI.
