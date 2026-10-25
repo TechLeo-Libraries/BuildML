@@ -2333,3 +2333,29 @@ Recomputed multi-task bundle subset reach against the newer verified sentiment
 source `a81f4c8` remains 4 unchanged previously missing lines and 85 changed/new
 executed lines. The newer accepted full measurement is 87.6231% at `a81f4c8`;
 the multi-task production repair still needs its own remote acceptance.
+
+
+### Semi-supervised persisted model and missingness contracts (2026-10-25)
+
+`tests/unit/test_semisupervised_bundle_contracts.py` fits actual LabelPropagation
+and SelfTrainingClassifier plans with string, integer and boolean labels.
+Independent RBF-weighted label-distribution calculations and logistic score
+arithmetic check valid current, direct-plan and summary-free bundle replay.
+
+Malformed fitted shapes, absent/unfitted estimators, label encoders or class-code
+mismatches, invalid labeled/unlabeled counts and conflicting stored summaries
+must be refused before creating output directories or replacing the receiver's
+usable plan. Boolean vocabularies cannot silently become integer vocabularies.
+Before the repair, 198 refusal cases failed while 24 valid reloads passed.
+
+Available metadata establishes consistency with the persisted plan, not training
+provenance or deployment-population validity. Summary-free legacy artifacts
+remain supported; trusted deserialization is still required. These native checks
+do not establish behavior for every optional semi-supervised backend.
+
+Final three-file verification passed **251 tests**, with zero failures, skips or
+warnings, in 87.06 seconds. Ruff, mypy (the changed source file) and the unchanged
+586-finding docstring budget passed. Source-mapped reach against verified
+`0d9f52e` was **4 previously missing unchanged lines and 52 changed/new executed
+lines**. Whole-package coverage remains 87.6323% pending fresh full remote
+verification; subset reach is not an aggregate percentage increase.

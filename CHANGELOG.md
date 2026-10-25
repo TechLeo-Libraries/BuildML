@@ -14,6 +14,10 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Semi-supervised bundles validate fitted shape, class encoders, missingness
+  counts and stored summaries before saving or replacing a Session learner.
+  Boolean class identity is checked separately from integer class codes.
+
 - Multi-task bundles validate fitted dimensions, target order, label encoders
   and stored summaries before saving or attaching. Mixed-target Torch bundles
   persist explicit CPU weight arrays and reload without refitting.
