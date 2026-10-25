@@ -14,6 +14,9 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Added readiness-gate consumers checking independent EDA counts, saved-report
+  replay and explicit human-judgment and causal-interpretation boundaries.
+
 - Added real evolutionary search candidate oracles for numeric mutation bounds,
   independent fold RMSE, ranking, reproducibility and held-out-data isolation.
 

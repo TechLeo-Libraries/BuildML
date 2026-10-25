@@ -2247,3 +2247,28 @@ unchanged production lines**, zero changed/new lines. No production defect was
 reproduced. The initial test oracle used population instead of sample fold
 standard deviation; that test-only assumption was corrected before accepted
 verification. Whole-package coverage remains 87.5614% pending fresh remote CI.
+
+
+### EDA readiness evidence consumers (2026-10-25)
+
+`tests/unit/test_dashboard_gate_evidence_consumers.py` builds real classification
+and regression EDA reports from clean and missing/duplicate frames. Missing-cell,
+duplicate-row, numeric range and target summary evidence is checked against
+independent frame calculations. Reports are replayed from memory, strict JSON
+and supported legacy VIF/correlation/cardinality shapes.
+
+Readiness status totals must match the actual rows. Framing remains a human
+judgment, and causal interpretation remains open for observational data. Gate
+judgments are not persisted, and rendering must not mutate report evidence.
+These are analytical aids; numerical consistency does not settle substantive
+methodological questions or establish causality.
+
+Final two-file verification passed **22 tests**, with no failures or skips, and
+one upstream langchain-community deprecation warning, in 234.62 seconds. The 16
+new consumers passed in 130.60 seconds. Ruff and the unchanged 586-finding
+docstring budget passed. Source-mapped reach against verified `cd0bbe6` was
+**8 previously missing unchanged production lines**, zero changed/new lines.
+No production defect was reproduced. Whole-package coverage remains 87.5855%
+pending fresh remote verification. Session capability probes and package-wide
+coverage reporting contribute to local runtime; no backend availability was
+substituted to bypass them.
