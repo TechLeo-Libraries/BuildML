@@ -2174,3 +2174,27 @@ verified `05e1c37` measured **2 previously missing unchanged lines and 2 new
 executed guard lines**. This is a correctness repair with a small measured reach;
 it is not an aggregate percentage increase. Remote full-suite acceptance remains
 required before updating the recorded 87.5370% whole-package measurement.
+
+
+### Multi-target numerical and attachment consumers (2026-10-25)
+
+`tests/unit/test_multitask_numerical_consumers.py` fits real sklearn multi-output
+regression and classification plans. Independent Ridge normal equations and
+logistic affine decision calculations check per-target predictions over train,
+validation, test and all rows, including trusted bundle replay. Classification
+fixtures use string, integer and boolean labels.
+
+All-row attachment retains duplicate row indices and the original targets while
+adding feature-role prediction columns. Conflicts on either the first or second
+output column, missing features or splits, and attempted holdout attachment must
+leave the dataset and fitted plan unchanged. These are correctness checks for
+local native workflows; they do not validate unavailable optional backends or
+long-term deployment reliability. Subset reach is separate from full coverage.
+
+Three-file verification passed **102 tests**, with zero failures, skips or
+warnings, in 62.64 seconds. All 68 new consumers passed in the focused run.
+Ruff and the unchanged 586-finding docstring budget passed. Source-mapped reach
+against verified `e9a7259` measured **18 previously missing unchanged production
+lines**, with zero changed/new production lines. No production defect was
+reproduced in these workflows. The accepted whole-package measurement remains
+87.5390% until a passing full remote measurement establishes the next result.

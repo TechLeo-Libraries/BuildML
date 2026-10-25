@@ -14,6 +14,9 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Added multi-output numerical consumers for per-target prediction, class-label
+  decoding, bundle replay and atomic attachment with duplicate row indices.
+
 - Pipeline scoring rejects empty batches with a clear ValidationError before
   preprocessing. Added numerical replay and malformed-request consumers for
   frozen imputation/scaling, row identity, legacy bundles and probability labels.
