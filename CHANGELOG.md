@@ -14,6 +14,10 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Multi-task bundles validate fitted dimensions, target order, label encoders
+  and stored summaries before saving or attaching. Mixed-target Torch bundles
+  persist explicit CPU weight arrays and reload without refitting.
+
 - Transformer sentiment rejects unknown head labels instead of silently calling
   them negative. Real offline checkpoint consumers verify signed probabilities,
   neutral handling and threshold behavior against independent softmax scores.

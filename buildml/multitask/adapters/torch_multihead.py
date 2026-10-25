@@ -29,6 +29,51 @@ class SharedTrunkMultiHeadEstimator:
     module_: Any = field(default=None, repr=False)
     n_features_: int = 0
 
+    def __getstate__(self) -> dict[str, Any]:
+        """Persist CPU weight arrays instead of the function-local module class."""
+        state = dict(self.__dict__)
+        module = state.pop("module_", None)
+        state["module_"] = None
+        state["_module_state"] = (
+            None
+            if module is None
+            else {
+                key: tensor.detach().cpu().numpy().copy()
+                for key, tensor in module.state_dict().items()
+            }
+        )
+        return state
+
+    def __setstate__(self, state: dict[str, Any]) -> None:
+        """Rebuild a persisted model on CPU without refitting or optimizer state."""
+        values = dict(state)
+        weights = values.pop("_module_state", None)
+        self.__dict__.update(values)
+        if weights is None:
+            return
+        torch = require_torch_multitask()
+        if self.n_features_ < 1:
+            raise ValidationError("Persisted multi-task Torch feature width must be positive.")
+        specs = [
+            (
+                self.task_kinds[col],
+                len(self.classes_per_task_.get(col, ()))
+                if self.task_kinds[col] == "classification"
+                else None,
+            )
+            for col in self.target_columns
+        ]
+        try:
+            module = _MultiHeadModule(self.n_features_, specs, hidden_dim=int(self.hidden_dim))
+            module.load_state_dict(
+                {key: torch.tensor(value) for key, value in weights.items()}, strict=True
+            )
+        except (ValueError, TypeError, RuntimeError) as exc:
+            raise ValidationError(f"Invalid persisted multi-task Torch weights: {exc}") from exc
+        module.eval()
+        self.module_ = module
+        self.device = "cpu"
+
     def fit(self, x: np.ndarray, y: np.ndarray) -> SharedTrunkMultiHeadEstimator:
         """Jointly train shared trunk and per-task heads on tabular features.
 
@@ -55,14 +100,13 @@ class SharedTrunkMultiHeadEstimator:
             When torch is not installed.
         """
         torch = require_torch_multitask()
-        x_arr = np.asarray(x, dtype=np.float32)
+        x_arr = np.array(x, dtype=np.float32, copy=True)
         y_arr = np.asarray(y)
         if y_arr.ndim == 1:
             y_arr = y_arr.reshape(-1, 1)
         if y_arr.shape[1] != len(self.target_columns):
             raise ValidationError(
-                f"Target width {y_arr.shape[1]} does not match "
-                f"n_tasks={len(self.target_columns)}."
+                f"Target width {y_arr.shape[1]} does not match n_tasks={len(self.target_columns)}."
             )
 
         self.n_features_ = int(x_arr.shape[1])
@@ -72,9 +116,7 @@ class SharedTrunkMultiHeadEstimator:
             if kind == "classification":
                 n_cls = len(self.classes_per_task_.get(col, ()))
                 if n_cls < 2:
-                    raise ValidationError(
-                        f"Classification target {col!r} needs >= 2 classes."
-                    )
+                    raise ValidationError(f"Classification target {col!r} needs >= 2 classes.")
                 head_specs.append(("classification", n_cls))
             else:
                 head_specs.append(("regression", None))
@@ -155,7 +197,7 @@ class SharedTrunkMultiHeadEstimator:
             raise ValidationError("SharedTrunkMultiHeadEstimator is not fitted.")
         torch = require_torch_multitask()
         device = torch.device(self.device)
-        x_arr = np.asarray(x, dtype=np.float32)
+        x_arr = np.array(x, dtype=np.float32, copy=True)
         tensor_x = torch.as_tensor(x_arr, device=device)
         self.module_.eval()
         with torch.no_grad():
@@ -229,23 +271,24 @@ def _MultiHeadModule(
     *,
     hidden_dim: int,
 ) -> Any:
-    torch = require_torch_multitask()
+    require_torch_multitask()
+    from torch import nn
 
-    class Module(torch.nn.Module):
+    class Module(nn.Module):
         def __init__(self) -> None:
             super().__init__()
-            self.trunk = torch.nn.Sequential(
-                torch.nn.Linear(n_features, hidden_dim),
-                torch.nn.ReLU(),
-                torch.nn.Linear(hidden_dim, hidden_dim),
-                torch.nn.ReLU(),
+            self.trunk = nn.Sequential(
+                nn.Linear(n_features, hidden_dim),
+                nn.ReLU(),
+                nn.Linear(hidden_dim, hidden_dim),
+                nn.ReLU(),
             )
-            self.heads = torch.nn.ModuleList()
+            self.heads = nn.ModuleList()
             for kind, n_cls in head_specs:
                 if kind == "classification":
-                    self.heads.append(torch.nn.Linear(hidden_dim, int(n_cls or 2)))
+                    self.heads.append(nn.Linear(hidden_dim, int(n_cls or 2)))
                 else:
-                    self.heads.append(torch.nn.Linear(hidden_dim, 1))
+                    self.heads.append(nn.Linear(hidden_dim, 1))
 
         def forward(self, x: Any) -> list[Any]:
             shared = self.trunk(x)

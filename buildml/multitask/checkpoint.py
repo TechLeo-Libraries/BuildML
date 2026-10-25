@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from numbers import Integral
 from pathlib import Path
 from typing import Any
 
@@ -64,6 +65,9 @@ def save_multitask_bundle(
     """
     if plan is None:
         raise ValidationError("No MultiTaskPlan to save.")
+    _validate_plan_contract(plan)
+    if fit_result is not None:
+        _validate_summary(plan, fit_result.to_dict())
     destination = Path(path)
     destination.mkdir(parents=True, exist_ok=True)
     payload = {"plan": plan}
@@ -119,13 +123,89 @@ def load_multitask_bundle(path: str | Path, *, trusted: bool = False) -> MultiTa
         )
     loaded = joblib_load_trusted(plan_path, trusted=trusted, artifact="joblib plan")
     if isinstance(loaded, MultiTaskPlan):
-        return loaded
-    if not isinstance(loaded, dict) or "plan" not in loaded:
+        plan = loaded
+    elif isinstance(loaded, dict) and "plan" in loaded:
+        plan = loaded["plan"]
+    else:
         raise ValidationError(
-            "multitask_plan.joblib must contain a MultiTaskPlan or a payload "
-            "with key 'plan'."
+            "multitask_plan.joblib must contain a MultiTaskPlan or a payload with key 'plan'."
         )
-    plan = loaded["plan"]
+    _validate_plan_contract(plan)
+    _validate_summary(plan, meta.get("plan"))
+    _validate_summary(plan, meta.get("fit"))
+    return plan
+
+
+def _validate_plan_contract(plan: MultiTaskPlan) -> None:
+    """Refuse unusable or internally inconsistent model contracts."""
     if not isinstance(plan, MultiTaskPlan):
         raise ValidationError("Loaded plan object is not a MultiTaskPlan")
-    return plan
+    for name, values in (("columns", plan.columns), ("target_columns", plan.target_columns)):
+        if (
+            not isinstance(values, (tuple, list))
+            or not values
+            or any(not isinstance(v, str) or not v for v in values)
+            or len(set(values)) != len(values)
+        ):
+            raise ValidationError(f"Multi-task {name} must contain unique non-empty names.")
+    if plan.task not in {"regression", "classification", "mixed"}:
+        raise ValidationError(f"Invalid multi-task task {plan.task!r}.")
+    if (
+        isinstance(plan.n_train_rows, bool)
+        or not isinstance(plan.n_train_rows, Integral)
+        or plan.n_train_rows < 1
+    ):
+        raise ValidationError("Multi-task n_train_rows must be a positive integer.")
+    model = plan.estimator_
+    if not callable(getattr(model, "predict", None)):
+        raise ValidationError("Multi-task plan requires a fitted predictive estimator.")
+    from sklearn.base import BaseEstimator
+    from sklearn.utils.validation import check_is_fitted
+
+    if isinstance(model, BaseEstimator):
+        try:
+            check_is_fitted(model)
+        except (ValueError, TypeError) as exc:
+            raise ValidationError("Multi-task estimator is not fitted.") from exc
+    if hasattr(model, "module_") and model.module_ is None:
+        raise ValidationError("Multi-task Torch estimator is not fitted.")
+    width = getattr(model, "n_features_in_", getattr(model, "n_features_", None))
+    if width is not None and width != len(plan.columns):
+        raise ValidationError("Multi-task feature columns disagree with fitted estimator width.")
+    heads = getattr(model, "estimators_", None)
+    if heads is not None and len(heads) != len(plan.target_columns):
+        raise ValidationError("Multi-task targets disagree with fitted estimator head count.")
+    stored_targets = getattr(model, "target_columns", None)
+    if stored_targets is not None and tuple(stored_targets) != tuple(plan.target_columns):
+        raise ValidationError("Multi-task target order disagrees with fitted estimator.")
+    for target in plan.target_columns:
+        kind = plan.task_kinds_.get(target, plan.task)
+        if kind not in {"classification", "regression"}:
+            raise ValidationError(f"Missing or invalid task kind for {target!r}.")
+        if kind == "classification":
+            encoder = plan.label_encoders_.get(target)
+            classes = getattr(encoder, "classes_", None)
+            if classes is None or list(classes) != list(plan.classes_per_task_.get(target, ())):
+                raise ValidationError(f"Multi-task label encoder/classes disagree for {target!r}.")
+
+
+def _validate_summary(plan: MultiTaskPlan, summary: Any) -> None:
+    """Check available summaries while retaining older summary-free bundles."""
+    if summary is None:
+        return
+    if not isinstance(summary, dict):
+        raise ValidationError("Multi-task bundle summary must be an object.")
+    expected = plan.to_dict()
+    for key in (
+        "columns",
+        "target_columns",
+        "task",
+        "method",
+        "backend",
+        "n_train_rows",
+        "n_tasks",
+        "classes_per_task",
+        "task_kinds",
+    ):
+        if key in summary and summary[key] != expected[key]:
+            raise ValidationError(f"Multi-task bundle summary {key!r} disagrees with fitted plan.")

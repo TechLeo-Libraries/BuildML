@@ -2296,3 +2296,35 @@ passed. Source-mapped reach against verified `6645945` was **20 previously missi
 unchanged lines and 7 changed/new executed lines**. No external model was fetched.
 Whole-package coverage remains 87.5951% pending fresh full remote verification;
 subset reach must not be added to the aggregate percentage.
+
+
+### Multi-target persisted contract and Torch replay (2026-10-25)
+
+`tests/unit/test_multitask_bundle_contracts.py` fits real native regression and
+string/integer/boolean classification plans. Malformed feature/target contracts,
+unfitted or absent models, inconsistent dimensions and stored metadata must be
+refused before creating output directories or replacing a Session's existing
+learner. Label encoders must agree with the class vocabulary. Valid current and
+legacy direct-plan or summary-free bundles retain numerical predictions.
+
+The native pre-fix run had 92 failed refusal cases and 16 passing valid cases.
+A separate actual mixed-target Torch consumer reproduced a PicklingError from
+the function-local neural module. Torch learners now persist CPU weight arrays
+and reconstruct the module with strict weight checks on load, without refitting
+or restoring optimizer state. Reload defaults to CPU. Independent NumPy dense/
+ReLU/head calculations verify predictions; damaged tensor shapes must fail before
+Session attachment. Saving leaves the original model weights unchanged.
+
+Available summaries provide consistency checks, not proof of training provenance.
+Legacy bundles without summaries remain readable; semantic history cannot be
+reconstructed from estimator dimensions alone. Trusted deserialization is still
+required. These local checks do not establish GPU throughput or long-term service
+reliability.
+
+Final four-file verification passed **217 tests**, with zero failures, skips or
+warnings, in 66.48 seconds. Ruff, mypy (both changed source files) and the unchanged
+586-finding docstring budget passed. Source-mapped reach against verified
+`6645945` was **4 previously missing unchanged lines and 85 changed/new executed
+lines**. This includes contract validation and real Torch persistence, and is not
+an aggregate percentage. The accepted full-suite measurement remains 87.5951%
+until the changed production source passes fresh remote verification.
