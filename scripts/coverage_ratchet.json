@@ -8,20 +8,20 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 87.63231108694957,
-      "covered_lines": 54807,
-      "num_statements": 62542,
+      "percent_covered": 87.64039558402965,
+      "covered_lines": 54855,
+      "num_statements": 62591,
       "excluded_lines": 566,
-      "source_revision": "0d9f52e98d1020567300ff11fc1a787bfb736388",
-      "tested_revision": "2ea59e4f46a802f2fa1275d40798e52f3adb93a7",
+      "source_revision": "90088a59f396c6a82b4a58dbec1a27f0283c580e",
+      "tested_revision": "706908d22809909928cfc3caa435664f1b17a432",
       "platform": "remote Linux, CPU expanded profile",
-      "run_id": 40220023229,
-      "result": "5931 passed, 77 skipped, zero failures/errors",
+      "run_id": 40230647820,
+      "result": "6157 passed, 77 skipped, zero failures/errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
-      "notes": "Multi-task native contract and real Torch persistence repair accepted; all three workflows passed. Source/merge trees equala6323a83e041701c2d65e2dca19c7b65569a0d29. coverage7.16.2/566 exclusions unchanged;2781 warnings,no collection warnings. Full23:33. Covered lines +75,statements +79 against accepteda81f4c8;subset4unchanged/85new is not aggregate. Exact90 percent gap1481;core70/expanded86 retained.",
+      "notes": "Semi-supervised persisted class/missingness contract repair accepted; all three workflows passed. Source/merge trees equald055430bbf314b602a95394d79f086ed55057080. coverage7.16.2/566 exclusions unchanged;2781 warnings,no collection warnings. Full17:51. Covered lines +48,statements +49 against accepted0d9f52e;subset4unchanged/52new is not aggregate. Exact90 percent gap1477;core70/expanded86 retained.",
       "coverage_version": "7.16.2"
     },
     "latest_local_measurement": {
