@@ -8,20 +8,20 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 87.56144030483998,
-      "covered_lines": 54690,
+      "percent_covered": 87.58545605917482,
+      "covered_lines": 54705,
       "num_statements": 62459,
       "excluded_lines": 566,
-      "source_revision": "01b4c80a043b5309345713a5d47313b2356d1cef",
-      "tested_revision": "1aef8efaf445a156a5a291f47e355899b29d73c3",
+      "source_revision": "cd0bbe672ca84a8cef3dc5b31b416b0baaaa3f15",
+      "tested_revision": "03876172f50d91349b87f7dff60349ea95397b3d",
       "platform": "remote Linux, CPU expanded profile",
-      "run_id": 40155144114,
-      "result": "5719 passed, 77 skipped, zero failures/errors",
+      "run_id": 40166732754,
+      "result": "5764 passed, 77 skipped, zero failures/errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
-      "notes": "Multi-target numerical consumers accepted; all three workflows passed. Source/merge trees equalcee90dda27dea8bb46e26877d3f202b26e1ab60f. coverage7.16.2/566 exclusions unchanged;2781 warnings,no collection warnings. Full19:39. Net14lines gained,zero lost,all in multitask/predict.py;local subset18 is profile-specific. Exact90 percent gap1524;core70/expanded86 retained.",
+      "notes": "Temporal and evolutionary numerical consumers accepted; all three workflows passed. Source/merge trees equalde2adc24ddab1d4502b8856b1014a2ff1748909e. coverage7.16.2/566 exclusions unchanged;2781 warnings,no collection warnings. Full23:07. Exact90 percent gap1509;core70/expanded86 retained.",
       "coverage_version": "7.16.2"
     },
     "latest_local_measurement": {
