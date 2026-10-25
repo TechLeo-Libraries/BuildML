@@ -2198,3 +2198,27 @@ against verified `e9a7259` measured **18 previously missing unchanged production
 lines**, with zero changed/new production lines. No production defect was
 reproduced in these workflows. The accepted whole-package measurement remains
 87.5390% until a passing full remote measurement establishes the next result.
+
+
+### Agent temporal workflow numerical consumers (2026-10-25)
+
+`tests/unit/test_agent_temporal_numerical_consumers.py` executes actual registered
+tools for role assignment, chronological splitting, imputation, scaling, Ridge
+fitting and evaluation. Independent timestamp ordering and row-count calculations
+check train/validation/test positions for fractional and absolute sizes, implicit
+and explicit time columns, and forward/reversed/shuffled source rows.
+
+Independent train medians and standard deviations check preprocessing on every
+row. Ridge normal equations check held-out predictions and RMSE. Duplicate row
+indices and original targets must survive unchanged. No provider service or
+optional backend is substituted. These finite local consumers do not establish
+future stationarity, exchangeability or long-term service reliability.
+
+Three-file verification passed **49 tests**, with no failures or skips, and 16
+existing forecast-alias deprecation warnings, in 62.35 seconds. The 36 new cases
+passed in 8.29 seconds. Ruff and the unchanged 586-finding docstring budget passed.
+Source-mapped reach against verified `01b4c80` was **1 previously missing unchanged
+production line**, zero changed/new lines. No defect was reproduced. This is
+additional numerical correctness evidence with minimal coverage reach; it must
+not be presented as a material aggregate coverage improvement. The accepted
+whole-package measurement remains 87.5614% pending fresh remote acceptance.

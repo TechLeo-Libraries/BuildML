@@ -14,6 +14,9 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Added agent temporal workflow consumers for chronological split boundaries,
+  train-only preprocessing statistics and independent Ridge prediction metrics.
+
 - Added multi-output numerical consumers for per-target prediction, class-label
   decoding, bundle replay and atomic attachment with duplicate row indices.
 
