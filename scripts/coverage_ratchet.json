@@ -8,20 +8,20 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 87.53902560079412,
-      "covered_lines": 54676,
+      "percent_covered": 87.56144030483998,
+      "covered_lines": 54690,
       "num_statements": 62459,
       "excluded_lines": 566,
-      "source_revision": "e9a725978da50f69b79bd7397da0c51ac1a65c2a",
-      "tested_revision": "9b0358172f48fac83438c64ebb546595eda2d4bb",
+      "source_revision": "01b4c80a043b5309345713a5d47313b2356d1cef",
+      "tested_revision": "1aef8efaf445a156a5a291f47e355899b29d73c3",
       "platform": "remote Linux, CPU expanded profile",
-      "run_id": 40147055089,
-      "result": "5651 passed, 77 skipped, zero failures/errors",
+      "run_id": 40155144114,
+      "result": "5719 passed, 77 skipped, zero failures/errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
-      "notes": "Pipeline empty-batch repair and numerical replay consumers accepted; all three workflows passed. Source/merge trees equalac22c1d6ca8f71cc3b6113eac2fc2d49f758fddd. coverage7.16.2/566 exclusions unchanged;2781 warnings,no collection warnings. Full13:24. Exact90 percent gap1538;core70/expanded86 retained.",
+      "notes": "Multi-target numerical consumers accepted; all three workflows passed. Source/merge trees equalcee90dda27dea8bb46e26877d3f202b26e1ab60f. coverage7.16.2/566 exclusions unchanged;2781 warnings,no collection warnings. Full19:39. Net14lines gained,zero lost,all in multitask/predict.py;local subset18 is profile-specific. Exact90 percent gap1524;core70/expanded86 retained.",
       "coverage_version": "7.16.2"
     },
     "latest_local_measurement": {
