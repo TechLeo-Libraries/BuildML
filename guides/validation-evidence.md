@@ -2149,3 +2149,28 @@ all 45 new consumers with an actual isolated scikit-learn 1.8 installation
 586-finding docstring budget passed. Recomputed subset reach remains 18 unchanged
 previously missing production lines, zero changed/new lines. Remote acceptance
 is still required; the recorded full-suite percentage remains unchanged.
+
+
+### Pipeline inference replay and empty-batch boundary (2026-10-25)
+
+`tests/unit/test_pipeline_numerical_replay.py` exercises real saved Ridge and
+LogisticRegression pipelines with fitted imputation and scaling. Predictions
+are checked with independent fill/standardization arithmetic and affine or
+sigmoid calculations. Raw and already-transformed requests cover DataFrame and
+Dataset inputs, filesystem and loaded bundles, legacy missing schema contracts,
+duplicate row indices, probability class labels and unchanged fitted state.
+
+Malformed numeric values, missing features, non-frame inputs and empty batches
+must be refused without changing fitted state. Before the repair, four empty
+batch cases leaked StandardScaler ValueError from preprocessing. Scoring now
+rejects empty input with ValidationError before coercion or replay, consistently
+with replay enabled or disabled. These checks concern local inference correctness,
+not long-term reliability or a broader deployment guarantee.
+
+Final three-file verification passed **99 tests**, with no failures or skips,
+and two existing datetime parsing warnings, in 60.11 seconds. Ruff and the
+unchanged 586-finding docstring budget passed. Source-mapped reach against
+verified `05e1c37` measured **2 previously missing unchanged lines and 2 new
+executed guard lines**. This is a correctness repair with a small measured reach;
+it is not an aggregate percentage increase. Remote full-suite acceptance remains
+required before updating the recorded 87.5370% whole-package measurement.

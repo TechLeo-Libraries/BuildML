@@ -14,6 +14,10 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Pipeline scoring rejects empty batches with a clear ValidationError before
+  preprocessing. Added numerical replay and malformed-request consumers for
+  frozen imputation/scaling, row identity, legacy bundles and probability labels.
+
 - Added independent probabilistic scoring consumers: Gaussian posterior matrix
   algebra, CRPS integration, GaussianNB density scores, partially labeled
   evaluation populations and bundle replay without refitting.
