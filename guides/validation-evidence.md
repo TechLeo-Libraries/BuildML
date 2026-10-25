@@ -2359,3 +2359,33 @@ warnings, in 87.06 seconds. Ruff, mypy (the changed source file) and the unchang
 `0d9f52e` was **4 previously missing unchanged lines and 52 changed/new executed
 lines**. Whole-package coverage remains 87.6323% pending fresh full remote
 verification; subset reach is not an aggregate percentage increase.
+
+
+### Recommender persisted catalog identity — 2026-10-25
+
+Actual item-kNN, user-kNN, SVD, NMF and content bundles accepted stale nonempty
+catalog indexes, duplicate IDs and interaction-matrix dimensions inconsistent
+with the catalog. A stale index can silently select another user's ratings or
+attribute scores to the wrong item. Before repair, 70 refusal cases failed while
+13 valid restoration/metadata cases passed. Save now validates before directory
+creation; load validates after legacy array/catalog restoration and before the
+plan reaches consumers. Unhashable IDs are refused as validation errors.
+
+The final four-file Windows subset passed **160 tests**, no skips/failures, in
+75.15 seconds, with 77 existing deprecated Session-alias warnings from actual
+agent consumers. Independent cosine, weighted-rating, content-profile and factor
+arithmetic checks cover all five native methods, with train-item exclusion and
+valid direct/separate legacy payloads. This establishes catalog consistency,
+not artifact provenance or behavior of absent industry backends; trusted loading
+is still required.
+
+Ruff and the unchanged 586-finding docstring budget passed. Targeted mypy with
+`--follow-imports=skip` passed the changed source file. A broader import-following
+check reported **533 errors in 92 files**, with none in the changed checkpoint
+file; package-wide type cleanliness is not claimed. Source-mapped subset reach
+against verified `90088a5` was **1 previously missing unchanged line and 17
+changed/new executed lines**. The accepted aggregate remains **87.6404%** pending
+fresh full remote verification; no coverage floor, exclusion or package scope
+was changed. An earlier successful 129-test subset inherited the whole-suite
+coverage threshold; the final report-only subset explicitly disables that
+threshold without changing the full-suite gate.

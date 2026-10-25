@@ -14,6 +14,10 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Recommender bundles refuse stale catalog indexes, duplicate or unhashable IDs,
+  and matrix/catalog dimension conflicts before saving or loading. Valid legacy
+  catalog restoration remains supported across the five native methods.
+
 - Semi-supervised bundles validate fitted shape, class encoders, missingness
   counts and stored summaries before saving or replacing a Session learner.
   Boolean class identity is checked separately from integer class codes.

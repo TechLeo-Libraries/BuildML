@@ -34,6 +34,24 @@ CHECKPOINT_BOUNDARY = (
 )
 
 
+def _validate_catalog(plan: RecommenderPlan) -> None:
+    """Reject inconsistent catalog identity before persistence or consumption."""
+    for kind in ("user", "item"):
+        ids = getattr(plan, f"{kind}_ids")
+        count = getattr(plan, f"n_{kind}s")
+        index = getattr(plan, f"{kind}_index_")
+        try:
+            canonical = {value: position for position, value in enumerate(ids)}
+        except TypeError as exc:
+            raise ValidationError("Recommender catalog IDs must be hashable.") from exc
+        if count != len(ids) or not ids or len(canonical) != len(ids):
+            raise ValidationError(f"Invalid recommender {kind} catalog size or duplicate IDs.")
+        if index and index != canonical:
+            raise ValidationError(f"Recommender {kind} catalog index disagrees with ID order.")
+    if np.shape(plan.matrix_) != (plan.n_users, plan.n_items):
+        raise ValidationError("Recommender matrix shape disagrees with catalog dimensions.")
+
+
 def save_recommender_bundle(
     path: str | Path,
     plan: RecommenderPlan,
@@ -70,10 +88,11 @@ def save_recommender_bundle(
     Raises
     ------
     ValidationError
-        When ``plan`` is ``None``.
+        When the plan is missing or its catalog and interaction matrix disagree.
     """
     if plan is None:
         raise ValidationError("No RecommenderPlan to save.")
+    _validate_catalog(plan)
     destination = Path(path)
     destination.mkdir(parents=True, exist_ok=True)
     payload = {
@@ -218,4 +237,5 @@ def load_recommender_bundle(path: str | Path, *, trusted: bool = False) -> Recom
         plan.user_index_ = {u: i for i, u in enumerate(plan.user_ids)}
     if not plan.item_index_ and plan.item_ids:
         plan.item_index_ = {it: i for i, it in enumerate(plan.item_ids)}
+    _validate_catalog(plan)
     return plan
