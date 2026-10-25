@@ -14,6 +14,10 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Transformer sentiment rejects unknown head labels instead of silently calling
+  them negative. Real offline checkpoint consumers verify signed probabilities,
+  neutral handling and threshold behavior against independent softmax scores.
+
 - Added readiness-gate consumers checking independent EDA counts, saved-report
   replay and explicit human-judgment and causal-interpretation boundaries.
 

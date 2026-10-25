@@ -2272,3 +2272,27 @@ No production defect was reproduced. Whole-package coverage remains 87.5855%
 pending fresh remote verification. Session capability probes and package-wide
 coverage reporting contribute to local runtime; no backend availability was
 substituted to bypass them.
+
+
+### Offline transformer sentiment label semantics (2026-10-25)
+
+`tests/unit/test_transformer_sentiment_offline_consumers.py` uses actual local
+BertForSequenceClassification checkpoints and a saved tokenizer, with model
+network access disabled. Zero weights and known classifier biases provide an
+independent softmax oracle for signed sentiment scores, neutral output and
+threshold behavior across validation/test/all populations.
+
+These fixtures validate inference plumbing and semantics, not sentiment quality:
+they are deliberately untrained constant-output heads. Before the repair, 18
+unknown-label refusal cases failed because LABEL_0/custom labels were silently
+interpreted as negative. Transformer sentiment now requires recognizable
+positive, negative or neutral output labels; otherwise it raises ValidationError
+with id2label guidance. A generic classifier index does not establish polarity.
+The 18 recognized-label consumers already passed before the repair.
+
+Final two-file verification passed **56 tests**, with zero failures, skips or
+warnings, in 103.56 seconds. Ruff and the unchanged 586-finding docstring budget
+passed. Source-mapped reach against verified `6645945` was **20 previously missing
+unchanged lines and 7 changed/new executed lines**. No external model was fetched.
+Whole-package coverage remains 87.5951% pending fresh full remote verification;
+subset reach must not be added to the aggregate percentage.

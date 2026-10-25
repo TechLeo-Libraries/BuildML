@@ -293,8 +293,7 @@ def analyze_sentiment(
     backend_key = str(backend).lower()
     if backend_key not in SENTIMENT_BACKENDS:
         raise ValidationError(
-            f"backend={backend!r} is not supported. "
-            f"Choose from {list(SENTIMENT_BACKENDS)}."
+            f"backend={backend!r} is not supported. Choose from {list(SENTIMENT_BACKENDS)}."
         )
     if not 0.0 <= threshold < 1.0:
         raise ValidationError("threshold must be within [0.0, 1.0).")
@@ -355,8 +354,7 @@ def analyze_sentiment(
                 f"Supervised backend: reuses the fitted "
                 f"{text_plan.estimator} head over "
                 f"{text_plan.backend} features (classes={list(text_plan.classes_)}).",
-                "Scoring is transform-only; the classifier was fitted on train "
-                "documents only.",
+                "Scoring is transform-only; the classifier was fitted on train documents only.",
             ]
         )
         if not text_plan.supports_proba:
@@ -463,18 +461,25 @@ def _transformer_sentiment(
             truncation=True,
         )
     except Exception as exc:  # pragma: no cover - network / model errors
-        raise ValidationError(
-            f"Could not load sentiment model {model_name!r}: {exc}"
-        ) from exc
+        raise ValidationError(f"Could not load sentiment model {model_name!r}: {exc}") from exc
 
     labels: list[str] = []
     scores: list[float] = []
     for output in pipeline([item or "" for item in documents], batch_size=16):
         raw_label = str(output.get("label", "")).lower()
         confidence = float(output.get("score", 0.0))
-        signed = confidence if raw_label.startswith("pos") else -confidence
-        if raw_label.startswith("neu"):
+        if raw_label.startswith("pos"):
+            signed = confidence
+        elif raw_label.startswith("neg"):
+            signed = -confidence
+        elif raw_label.startswith("neu"):
             signed = 0.0
+        else:
+            raise ValidationError(
+                f"Transformer sentiment label {output.get('label')!r} has no known "
+                "polarity. Use a sentiment head with explicit positive, negative "
+                "or neutral id2label names; generic class indices are ambiguous."
+            )
         scores.append(signed)
         labels.append(_classify(signed, threshold=threshold))
     notes = [
@@ -503,11 +508,19 @@ def _target_agreement(
         return {}
 
     mapping = {
-        "1": "positive", "0": "negative", "-1": "negative",
-        "true": "positive", "false": "negative",
-        "pos": "positive", "neg": "negative", "neu": "neutral",
-        "positive": "positive", "negative": "negative", "neutral": "neutral",
-        "good": "positive", "bad": "negative",
+        "1": "positive",
+        "0": "negative",
+        "-1": "negative",
+        "true": "positive",
+        "false": "negative",
+        "pos": "positive",
+        "neg": "negative",
+        "neu": "neutral",
+        "positive": "positive",
+        "negative": "negative",
+        "neutral": "neutral",
+        "good": "positive",
+        "bad": "negative",
     }
     truth = [mapping.get(str(item).strip().lower()) for item in truth_raw]
     usable = [
@@ -518,12 +531,9 @@ def _target_agreement(
     if not usable:
         return {}
     hits = sum(1 for expected, actual in usable if expected == actual)
-    non_neutral = [
-        (expected, actual) for expected, actual in usable if actual != "neutral"
-    ]
+    non_neutral = [(expected, actual) for expected, actual in usable if actual != "neutral"]
     directional = (
-        sum(1 for expected, actual in non_neutral if expected == actual)
-        / len(non_neutral)
+        sum(1 for expected, actual in non_neutral if expected == actual) / len(non_neutral)
         if non_neutral
         else 0.0
     )
@@ -531,9 +541,7 @@ def _target_agreement(
         "n_compared": float(len(usable)),
         "agreement": float(hits / len(usable)),
         "directional_agreement": float(directional),
-        "neutral_share": float(
-            sum(1 for _, actual in usable if actual == "neutral") / len(usable)
-        ),
+        "neutral_share": float(sum(1 for _, actual in usable if actual == "neutral") / len(usable)),
     }
 
 
