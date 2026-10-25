@@ -8,20 +8,20 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 87.6230728591326,
-      "covered_lines": 54732,
-      "num_statements": 62463,
+      "percent_covered": 87.63231108694957,
+      "covered_lines": 54807,
+      "num_statements": 62542,
       "excluded_lines": 566,
-      "source_revision": "a81f4c8152fbeeba4d9f81f82db7c69e425390f9",
-      "tested_revision": "338235589059020ccebd5a7367aa6eeedf9fd6fe",
+      "source_revision": "0d9f52e98d1020567300ff11fc1a787bfb736388",
+      "tested_revision": "2ea59e4f46a802f2fa1275d40798e52f3adb93a7",
       "platform": "remote Linux, CPU expanded profile",
-      "run_id": 40215354337,
-      "result": "5816 passed, 77 skipped, zero failures/errors",
+      "run_id": 40220023229,
+      "result": "5931 passed, 77 skipped, zero failures/errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
-      "notes": "Transformer sentiment semantic repair accepted; all three workflows passed. Source/merge trees equale7cfe3f6b9926915b88d39fc9e46d6684005d16c. coverage7.16.2/566 exclusions unchanged;2781 warnings,no collection warnings. Full17:41. Exact90 percent gap1485;core70/expanded86 retained.",
+      "notes": "Multi-task native contract and real Torch persistence repair accepted; all three workflows passed. Source/merge trees equala6323a83e041701c2d65e2dca19c7b65569a0d29. coverage7.16.2/566 exclusions unchanged;2781 warnings,no collection warnings. Full23:33. Covered lines +75,statements +79 against accepteda81f4c8;subset4unchanged/85new is not aggregate. Exact90 percent gap1481;core70/expanded86 retained.",
       "coverage_version": "7.16.2"
     },
     "latest_local_measurement": {
