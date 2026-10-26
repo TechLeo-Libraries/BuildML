@@ -5,14 +5,13 @@ from __future__ import annotations
 from typing import Literal
 
 import numpy as np
-import pandas as pd
 
 from buildml.core.errors import ValidationError
 from buildml.core.types import ColumnRole
 from buildml.data.dataset import Dataset
 from buildml.data.splits import PartitionName, SplitPlan, frame_for_partition
 from buildml.ingest.detect import schema_from_dataframe
-from buildml.selfsupervised.features import matrix_from_frame
+from buildml.selfsupervised.features import encode_ssl_frame
 from buildml.selfsupervised.results import (
     SelfSupervisedPlan,
     SelfSupervisedTransformResult,
@@ -72,11 +71,7 @@ def transform_ssl(
         frame = frame_for_partition(dataset, split_plan, partition)
         part_name = str(partition)
 
-    emb = _encode_frame(frame, plan)
-    if emb.shape[1] != len(plan.representation_columns):
-        raise ValidationError(
-            "SSL encoder latent width drifted from plan.representation_columns."
-        )
+    emb = encode_ssl_frame(frame, plan)
 
     disclosures = [
         "SSL transform reuses the train-fitted SelfSupervisedPlan (no pretext refit).",
@@ -119,24 +114,3 @@ def transform_ssl(
         disclosures=tuple(disclosures),
     )
     return new_dataset, result, emb
-
-
-def _encode_frame(frame: pd.DataFrame, plan: SelfSupervisedPlan) -> np.ndarray:
-    modality = getattr(plan, "modality", "tabular")
-    if modality == "text":
-        col = plan.columns[0]
-        if col not in frame.columns:
-            raise ValidationError(f"Missing text column {col!r} for SSL transform.")
-        texts = frame[col].astype(str).tolist()
-        return np.asarray(plan.encoder_.transform(texts), dtype=float)
-    if modality == "vision":
-        col = plan.columns[0]
-        if col not in frame.columns:
-            raise ValidationError(f"Missing image column {col!r} for SSL transform.")
-        images = frame[col].tolist()
-        return np.asarray(plan.encoder_.transform(images), dtype=float)
-    missing = [c for c in plan.columns if c not in frame.columns]
-    if missing:
-        raise ValidationError(f"Missing feature columns for SSL transform: {missing}")
-    x = matrix_from_frame(frame, list(plan.columns))
-    return np.asarray(plan.encoder_.transform(x), dtype=float)

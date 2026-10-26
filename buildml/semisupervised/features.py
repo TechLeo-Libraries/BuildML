@@ -173,7 +173,8 @@ def is_unlabeled_mask(series: pd.Series, unlabeled_marker: Any = None) -> np.nda
     missing = series.isna().to_numpy(dtype=bool)
     if unlabeled_marker is None:
         return missing
-    return missing | (series.to_numpy(dtype=object) == unlabeled_marker)
+    matches = series.eq(unlabeled_marker).fillna(False).to_numpy(dtype=bool)
+    return missing | matches
 
 
 def encode_targets_for_sklearn(

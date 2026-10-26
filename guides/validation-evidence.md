@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-10-26, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed: 88.1572% (55,383/62,823); 8,310 passed, 77 skipped | [CI40347763619](https://github.com/TechLeo-Libraries/BuildML/actions/runs/40347763619), source `02364bf`, tested merge `016adf11`; matching trees and all four workflows passed. Scope/566 exclusions/coverage.py7.16.2 unchanged. Core70/expanded87 retained. Exact90% gap1,158 lines; 2,890 pytest warnings, no coverage collection warnings |
+| Current accepted remote expanded CPU whole-package gate | Passed: 88.1816% (55,408/62,834); 8,489 passed, 77 skipped | [CI40366540046](https://github.com/TechLeo-Libraries/BuildML/actions/runs/40366540046), source `3a2d51a`, tested merge `bce1ab51`; matching trees and all four workflows passed. Scope/566 exclusions/coverage.py7.16.2 unchanged. Core70/expanded87 retained. Exact90% gap1,143 lines; 2,890 pytest warnings, no coverage collection warnings |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -3187,3 +3187,84 @@ subset observations, never combined or added to the **88.1572%** accepted
 whole-suite percentage. This batch needs its complete remote measurement after
 publication. Probability accuracy and conformal coverage still require
 representative independent evaluation.
+
+### Accepted probabilistic whole-suite result (2026-10-26)
+
+Source `3a2d51a` passed its complete expanded Linux CPU suite at **88.1816%**
+(55,408/62,834 lines), with **8,489 passed and 77 skipped** in 25:23. The XML
+contains 8,566 tests and zero failures/errors. There were 2,890 pytest warnings
+and no coverage collection warnings. CI 40366540046, backend evidence 40366540318,
+release acceptance 40366539896 and CodeQL 40366537369 passed. Tested merge
+`bce1ab51` and source have matching trees. The runtime records Pandas2.3.3,
+Polars2.0.0, Torch2.7.1+cpu and coverage.py7.16.2. Package scope and566 excluded
+lines are unchanged. This is25 more covered lines and11 more statements than
+the preceding accepted `02364bf`; the exact90% gap is1,143 lines. Core70 and
+expanded87 floors remain unchanged. Earlier subset observations remain separate
+and are not added to this full-suite percentage.
+
+### Frozen SSL labeled populations and representation contracts (2026-10-26)
+
+SSL head fitting and evaluation previously transformed all selected feature rows
+before excluding unobserved targets. Missing features on excluded rows could
+prevent a head fit or holdout score. A custom unlabeled marker combined with
+Pandas nullable targets also raised an ambiguous-NA error. These paths now select
+labeled rows first, validate the consumed representations and preserve counts.
+The shared marker predicate supports nullable values. Pretext fitting still uses
+all selected training features; this change concerns the frozen head stages.
+
+Frozen exports, head fitting and scoring share representation validation: saved
+width, row alignment and finite values. Selected numeric inputs must be finite.
+Unknown evaluation classes and incompatible head columns refuse before prediction.
+Empty evaluation returns counts with no invented metrics, and empty exports keep
+the saved width without calling an encoder that cannot consume zero rows. Current
+partitions do not establish independence from original training data after bundle
+loading/data replacement. Train/all scores explicitly identify diagnostic use.
+Real Session refusals preserve existing results and operation history.
+
+The new batch contains **744 distinct cases**: 708 tabular cases covering the
+retained sklearn encoder, five Torch methods, two heads, validation/test/all,
+live/trusted replay, duplicated index labels, nullable/custom markers, counts,
+refusals and Session history; 28 real local text cases; and 8 separate vision
+cases. Independent scalar confusion/F1/accuracy calculations, logistic affine
+predictions and separate sklearn fits/coefficients verify outputs. Actual encoder
+weights/buffers and fitted-head fingerprints verify that the frozen encoder and
+existing head remain unchanged.
+The text fixture constructs a tiny local BERT/sentence encoder; the vision fixture
+uses ResNet-18 with supported random mock weights and zero pretext epochs. Neither
+is pretrained-quality or deployment-performance evidence; no model is downloaded.
+
+On untouched source `3a2d51a`, with all 828 archived package files/resources
+verified, the final 708 tabular cases reproduced **684 failures / 24 passes** in
+92.29s with six warnings from invalid numeric operations. Of those failures,
+168 only request the new provenance/diagnostic disclosures after behavioral
+checks pass. Separate final text cases reproduced **28 failures** in 30.53s;
+separate final vision cases reproduced **8 failures** in 16.19s. Repaired focused
+runs passed 708 in 99.12s and 28 text cases in 30.33s, with no skips/warnings.
+
+Final **19-file** Windows profiles independently passed **1,190 tests / 7 skipped**
+on Pandas 3.0.5 in 270.35s and Pandas 2.3.3 in 293.29s. Both used NumPy2.4.6,
+Torch2.13 CPU, Transformers5.19.0 and sentence-transformers6.1.0. Each reported
+26 deprecation warnings (flat SSL aliases and a sentence-transformers import),
+with no coverage collection warnings. Five skips require CUDA, one needs locally
+absent Torchvision, and one needs locally absent XGBoost. An isolated official
+Torchvision0.28+cpu runtime, verified to require Torch2.13, separately passed all
+**8 vision cases** in 59.78s with no skips or warnings. The main environment and
+its visible skip accounting remain unchanged.
+
+Each main profile exercised **28 previously missing unchanged / 37 changed-new
+lines** against verified full source `3a2d51a`; the separate vision observation
+exercised **18 unchanged / 32 changed-new lines**. Each uses
+`scripts/measure_coverage_reach.py` with the exact frozen source. All 814 package
+sources and 20 verification files were frozen/hash-verified. Each observation
+uses coverage.py7.16.2 and 566 exclusions. These observations are separate and
+are never added or combined into the **88.1816%** accepted complete-suite result.
+A complete remote measurement of this new batch is required after publication.
+
+Five changed production files pass targeted mypy at baseline and after repair;
+package-wide type cleanliness is not claimed. Ruff, copy lint, diff and the
+unchanged 586 finding docstring budget pass. Fixture corrections preceded the
+accepted final observations: Torch fingerprints use actual state arrays because
+local module classes are not picklable; duplicate empty parameter combinations
+were removed; the independent head-fit reference uses the real float64 input
+contract; and image fixtures use supported PNG paths. Earlier draft fixture
+failures are not accepted product failures or coverage gains.

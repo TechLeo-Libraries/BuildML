@@ -10,7 +10,7 @@ from sklearn.metrics import accuracy_score, f1_score
 from buildml.core.errors import ValidationError
 from buildml.data.dataset import Dataset
 from buildml.data.splits import PartitionName, SplitPlan, frame_for_partition
-from buildml.selfsupervised.features import matrix_from_frame
+from buildml.selfsupervised.features import encode_ssl_frame
 from buildml.selfsupervised.results import (
     SelfSupervisedEvalResult,
     SelfSupervisedPlan,
@@ -81,36 +81,29 @@ def evaluate_ssl(
     target = head_plan.target_column
     if target not in frame.columns:
         raise ValidationError(f"Target column {target!r} missing from evaluation frame.")
+    if head_plan.representation_columns != ssl_plan.representation_columns:
+        raise ValidationError("SSL head and pretext representation columns do not match.")
     missing = [c for c in ssl_plan.columns if c not in frame.columns]
-    modality = getattr(ssl_plan, "modality", "tabular")
-    if modality == "text":
-        col = ssl_plan.columns[0]
-        if col not in frame.columns:
-            raise ValidationError(f"Missing text column {col!r}.")
-        emb = np.asarray(
-            ssl_plan.encoder_.transform(frame[col].astype(str).tolist()), dtype=float
-        )
-    elif modality == "vision":
-        col = ssl_plan.columns[0]
-        if col not in frame.columns:
-            raise ValidationError(f"Missing image column {col!r}.")
-        emb = np.asarray(ssl_plan.encoder_.transform(frame[col].tolist()), dtype=float)
-    else:
-        if missing:
-            raise ValidationError(f"Missing SSL feature columns: {missing}")
-        x = matrix_from_frame(frame, list(ssl_plan.columns))
-        emb = np.asarray(ssl_plan.encoder_.transform(x), dtype=float)
+    if missing:
+        raise ValidationError(f"Missing SSL feature columns: {missing}")
     unlabeled = is_unlabeled_mask(frame[target], unlabeled_marker)
     n_rows = int(len(frame))
     n_unlabeled = int(unlabeled.sum())
     n_labeled = n_rows - n_unlabeled
 
     disclosures = [
-        "SSL evaluation scores labeled holdout rows only under a frozen pretext + head.",
+        "SSL evaluation scores labeled rows under a frozen pretext + head.",
         "Unlabeled holdout rows are never treated as ground truth.",
+        "Current partition names do not establish independence from original pretext/head "
+        "training data; verify provenance after bundle loading or dataset replacement.",
         f"Eval mix: n_labeled={n_labeled}, n_unlabeled={n_unlabeled} of n_rows={n_rows}.",
     ]
     warnings: list[str] = []
+    if partition in {"all", "train"}:
+        warnings.append(
+            f"partition='{partition}' can include pretext/head training rows; "
+            "treat these metrics as diagnostic, not independent holdout evidence."
+        )
     metrics: dict[str, float] = {}
 
     if n_labeled < 1:
@@ -127,20 +120,23 @@ def evaluate_ssl(
 
     label_encoder = getattr(head_plan.estimator_, "_buildml_label_encoder_", None)
     raw_target = frame.loc[~unlabeled, target]
-    pred_codes = head_plan.estimator_.predict(emb[~unlabeled])
-    if label_encoder is not None and getattr(head_plan.estimator_, "_buildml_raw_class_labels_", False):
+    raw_classes = label_encoder is not None and getattr(head_plan.estimator_, "_buildml_raw_class_labels_", False)
+    if raw_classes and label_encoder is not None:
         if not raw_target.isin(label_encoder.classes_).all():
             raise ValidationError("Evaluation class labels are outside the SSL head classes.")
         y_true = label_encoder.transform(raw_target.to_numpy())
+    else:
+        y_true = raw_target.astype(str).to_numpy()
+    emb = encode_ssl_frame(frame.loc[~unlabeled], ssl_plan)
+    pred_codes = head_plan.estimator_.predict(emb)
+    if raw_classes:
         y_pred_s = np.asarray(pred_codes)
     elif label_encoder is not None:
         # Older serialized heads stored string labels; preserve that contract.
-        y_true = raw_target.astype(str).to_numpy()
         y_pred = label_encoder.inverse_transform(np.asarray(pred_codes, dtype=int))
         y_pred_s = np.asarray([str(v) for v in y_pred])
         warnings.append("Legacy SSL head uses stored string labels; refit to preserve raw class types.")
     else:
-        y_true = raw_target.astype(str).to_numpy()
         y_pred_s = np.asarray([str(v) for v in pred_codes])
 
     metrics["accuracy"] = float(accuracy_score(y_true, y_pred_s))

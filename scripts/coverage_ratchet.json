@@ -8,20 +8,20 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 88.15720357194022,
-      "covered_lines": 55383,
-      "num_statements": 62823,
+      "percent_covered": 88.18155775535539,
+      "covered_lines": 55408,
+      "num_statements": 62834,
       "excluded_lines": 566,
-      "source_revision": "02364bfccb5632290f05f21e26d913a3bb59075a",
-      "tested_revision": "016adf119ad3442c6c1e7166fb9d0143f25abe62",
+      "source_revision": "3a2d51a1f6b1e9dece596d002f5e22a875471f35",
+      "tested_revision": "bce1ab51754d2ca5964e77ffb2b37eb5a5c0caf4",
       "platform": "remote Linux, CPU expanded profile",
-      "run_id": 40347763619,
-      "result": "8310 passed, 77 skipped, zero failures/errors",
+      "run_id": 40366540046,
+      "result": "8489 passed, 77 skipped, zero failures/errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
-      "notes": "Fairness populations and persistent audit records accepted; all four workflows passed. Source/merge trees equal 65431b7e45f82680bcc597106636673defc51e04. coverage.py7.16.2/566 exclusions unchanged;2890 pytest warnings,no collection warnings. Full26:24. Covered lines+50,statements+37 versus e997b6b. Exact90 gap1158. Core70/expanded87 retained;88 floor lacks required1pp headroom. Subset reach is not aggregate.",
+      "notes": "Probabilistic scalar identities and MAPIE proper scores accepted; all four workflows passed. Source/merge trees equal 335ee78165f839ee3653456e3c7ddfd8d68cd4be. coverage.py7.16.2/566 exclusions unchanged;2890 pytest warnings,no collection warnings. Full25:23. Covered lines+25,statements+11 versus 02364bf. Exact90 gap1143. Core70/expanded87 retained;88 floor lacks required1pp headroom. Subset reach is not aggregate.",
       "coverage_version": "7.16.2"
     },
     "latest_local_measurement": {

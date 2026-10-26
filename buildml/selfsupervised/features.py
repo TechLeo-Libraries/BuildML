@@ -11,6 +11,7 @@ from buildml.core.errors import ValidationError
 from buildml.core.types import ColumnRole
 from buildml.core.validation import validate_column_names
 from buildml.data.dataset import Dataset
+from buildml.selfsupervised.results import SelfSupervisedPlan
 
 
 def resolve_ssl_columns(
@@ -125,6 +126,55 @@ def matrix_from_frame(frame: pd.DataFrame, columns: list[str]) -> np.ndarray:
             "Call session.impute(...) first (and typically session.scale(...))."
         )
     return block.to_numpy(dtype=float)
+
+
+def encode_ssl_frame(frame: pd.DataFrame, plan: SelfSupervisedPlan) -> np.ndarray:
+    """Encode an explicitly selected population through a frozen SSL plan.
+
+    Callers select the rows their operation actually consumes before invoking
+    this helper. Empty exports retain the recorded representation width without
+    calling an encoder that may require nonempty input.
+
+    Parameters
+    ----------
+    frame:
+        Selected rows with the fitted input columns.
+    plan:
+        Frozen encoder and its representation contract.
+
+    Returns
+    -------
+    numpy.ndarray
+        Finite matrix aligned with the selected rows and saved column order.
+
+    Raises
+    ------
+    ValidationError
+        When input columns, numeric values or representation shape are invalid.
+    """
+    missing = [column for column in plan.columns if column not in frame.columns]
+    if missing:
+        raise ValidationError(f"Missing SSL input columns: {missing}")
+    width = len(plan.representation_columns)
+    if width != plan.latent_dim or width < 1:
+        raise ValidationError("SSL representation width does not match the fitted plan.")
+    if frame.empty:
+        return np.empty((0, width), dtype=float)
+    modality = getattr(plan, "modality", "tabular")
+    if modality == "text":
+        values = frame[plan.columns[0]].astype(str).tolist()
+    elif modality == "vision":
+        values = frame[plan.columns[0]].tolist()
+    else:
+        values = matrix_from_frame(frame, list(plan.columns))
+        if not np.isfinite(values).all():
+            raise ValidationError("SSL numeric inputs must contain only finite values.")
+    embeddings = np.asarray(plan.encoder_.transform(values), dtype=float)
+    if embeddings.shape != (len(frame), width):
+        raise ValidationError("SSL encoder output does not match the saved representation shape.")
+    if not np.isfinite(embeddings).all():
+        raise ValidationError("SSL encoder representations must contain only finite values.")
+    return embeddings
 
 
 def representation_column_names(prefix: str, latent_dim: int) -> tuple[str, ...]:

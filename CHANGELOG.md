@@ -14,6 +14,13 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- SSL head fitting and evaluation select labeled rows before transforming
+  features. Excluded rows can contain missing features at these stages;
+  nullable targets work with custom unlabeled markers. Frozen exports validate
+  representation shape and finite values, and empty populations retain correct
+  counts and width. Evaluation refuses unknown classes or mismatched head
+  columns before prediction, and marks train/all metrics as diagnostic.
+
 - Probabilistic classification preserves original scalar labels in points and
   prediction sets, including numeric-looking strings, and refuses ambiguous
   string encodings before replacing a working plan. Bundles retain the original

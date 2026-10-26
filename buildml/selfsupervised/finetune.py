@@ -12,7 +12,7 @@ from sklearn.preprocessing import LabelEncoder
 from buildml.core.errors import ValidationError
 from buildml.data.dataset import Dataset
 from buildml.data.splits import SplitPlan, assert_fit_partition, frame_for_partition
-from buildml.selfsupervised.features import matrix_from_frame
+from buildml.selfsupervised.features import encode_ssl_frame
 from buildml.selfsupervised.results import (
     SelfSupervisedPlan,
     SSLHeadFitResult,
@@ -74,25 +74,6 @@ def finetune_ssl_head(
 
     target = dataset.require_target()
     train = frame_for_partition(dataset, split_plan, "train")
-    modality = getattr(ssl_plan, "modality", "tabular")
-    if modality == "text":
-        col = ssl_plan.columns[0]
-        if col not in train.columns:
-            raise ValidationError(f"Missing text column {col!r}.")
-        emb = np.asarray(
-            ssl_plan.encoder_.transform(train[col].astype(str).tolist()), dtype=float
-        )
-    elif modality == "vision":
-        col = ssl_plan.columns[0]
-        if col not in train.columns:
-            raise ValidationError(f"Missing image column {col!r}.")
-        emb = np.asarray(ssl_plan.encoder_.transform(train[col].tolist()), dtype=float)
-    else:
-        missing = [c for c in ssl_plan.columns if c not in train.columns]
-        if missing:
-            raise ValidationError(f"Missing SSL feature columns: {missing}")
-        x_raw = matrix_from_frame(train, list(ssl_plan.columns))
-        emb = np.asarray(ssl_plan.encoder_.transform(x_raw), dtype=float)
     unlabeled = is_unlabeled_mask(train[target], unlabeled_marker)
     n_unlabeled = int(unlabeled.sum())
     n_labeled = int((~unlabeled).sum())
@@ -112,13 +93,12 @@ def finetune_ssl_head(
         raise ValidationError(
             "SSL head fine-tune requires at least 2 classes among labeled train rows."
         )
-    x_labeled = emb[~unlabeled]
-
     key = str(estimator).lower().replace("-", "_")
     if key not in _HEADS:
         raise ValidationError(
             f"Unknown SSL head estimator={estimator!r}. Supported: {sorted(_HEADS)}"
         )
+    x_labeled = encode_ssl_frame(train.loc[~unlabeled], ssl_plan)
     model = _HEADS[key](random_state)
     model.fit(x_labeled, y_codes)
 
