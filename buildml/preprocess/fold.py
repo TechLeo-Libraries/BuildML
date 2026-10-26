@@ -25,7 +25,13 @@ from sklearn.preprocessing import MinMaxScaler, OneHotEncoder, OrdinalEncoder, S
 from sklearn.utils.multiclass import type_of_target
 
 from buildml.core.errors import ValidationError
-from buildml.preprocess.encode import INFREQUENT_LABEL, _smoothed_means
+from buildml.preprocess.encode import (
+    INFREQUENT_LABEL,
+    _check_reserved_infrequent,
+    _frequency_threshold,
+    _normalize_min_frequency,
+    _smoothed_means,
+)
 from buildml.preprocess.text import (
     _as_text,
     _build_vectorizer,
@@ -250,7 +256,9 @@ class PreprocessRecipe:
             "text_columns": None if self.text_columns is None else list(self.text_columns),
             "reduce_columns": None if self.reduce_columns is None else list(self.reduce_columns),
             "fill_value": self.fill_value,
-            "min_frequency": self.min_frequency,
+            "min_frequency": (
+                _normalize_min_frequency(self.min_frequency) if self.encode == "infrequent" else self.min_frequency
+            ),
             "select_threshold": self.select_threshold,
             "select_k": self.select_k,
             "select_score_func": self.select_score_func,
@@ -866,10 +874,11 @@ class FoldLocalPreprocessor(TransformerMixin, BaseEstimator):
         if method == "infrequent":
             maps: dict[str, list[str]] = {}
             collapsed = x_train[cols].astype(str).copy()
+            threshold = _frequency_threshold(recipe.min_frequency, len(collapsed))
             for column in cols:
                 counts = collapsed[column].value_counts(dropna=False)
-                threshold = _frequency_threshold(recipe.min_frequency, len(collapsed))
                 rare = [str(level) for level, count in counts.items() if float(count) < threshold]
+                _check_reserved_infrequent(collapsed[column], rare, column=column)
                 maps[column] = rare
                 collapsed[column] = collapsed[column].where(
                     ~collapsed[column].isin(rare),
@@ -1092,6 +1101,7 @@ class FoldLocalPreprocessor(TransformerMixin, BaseEstimator):
         if method == "infrequent":
             for column in cols:
                 rare = set(self._infrequent_maps.get(column, ()))
+                _check_reserved_infrequent(work[column], rare, column=column)
                 work[column] = work[column].where(~work[column].isin(rare), INFREQUENT_LABEL)
         assert self._encoder is not None and self._encoder != "target"
         matrix = self._encoder.transform(work)
@@ -1330,16 +1340,6 @@ def _resolve_text(frame: pd.DataFrame, columns: tuple[str, ...] | None) -> list[
             "Pass text_columns=... explicitly."
         )
     return names
-
-
-def _frequency_threshold(min_frequency: float | int, n_rows: int) -> float:
-    if isinstance(min_frequency, float):
-        if not 0.0 < min_frequency < 1.0:
-            raise ValidationError("float min_frequency must be in (0, 1)")
-        return min_frequency * n_rows
-    if int(min_frequency) < 1:
-        raise ValidationError("integer min_frequency must be >= 1")
-    return float(min_frequency)
 
 
 def _numeric_target(series: pd.Series) -> np.ndarray:

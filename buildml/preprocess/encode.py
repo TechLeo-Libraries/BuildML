@@ -34,6 +34,7 @@ explicitly rather than silently.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from numbers import Integral, Real
 from typing import Any, Literal
 
 import numpy as np
@@ -60,6 +61,34 @@ from buildml.preprocess.result import PreprocessResult
 
 EncodeMethod = Literal["onehot", "ordinal", "infrequent", "target"]
 INFREQUENT_LABEL = "__infrequent__"
+
+
+def _normalize_min_frequency(value: Any) -> float | int:
+    """Keep count and proportion semantics without accepting lossy coercions."""
+    if isinstance(value, (bool, np.bool_)) or not isinstance(value, Real):
+        raise ValidationError("min_frequency must be a positive integer count or a real proportion in (0, 1)")
+    if isinstance(value, Integral):
+        if value < 1:
+            raise ValidationError("integer min_frequency must be >= 1")
+        return int(value)
+    proportion = float(value)
+    if not np.isfinite(proportion) or not 0.0 < proportion < 1.0:
+        raise ValidationError("float min_frequency must be finite and in (0, 1)")
+    return proportion
+
+
+def _frequency_threshold(min_frequency: float | int, n_rows: int) -> float | int:
+    value = _normalize_min_frequency(min_frequency)
+    return value if isinstance(value, int) else value * n_rows
+
+
+def _check_reserved_infrequent(values: Any, rare: list[str] | set[str], *, column: str) -> None:
+    """Refuse literal values that would alias an active internal pooling label."""
+    if rare and INFREQUENT_LABEL not in rare and bool(values.eq(INFREQUENT_LABEL).any()):
+        raise ValidationError(
+            f"Column {column!r} contains reserved label '{INFREQUENT_LABEL}' while rare pooling is active; "
+        "rename that retained or unseen literal category before fitting or replay."
+        )
 
 
 @dataclass(slots=True)
@@ -197,8 +226,12 @@ def fit_encoder(
         For ``'infrequent'``, how common a category must be to keep its own
         column. A float is a proportion of training rows, so ``0.05`` means
         anything under five percent is folded into the shared bucket; an
-        integer is a raw row count. Raise it to compress harder, lower it to
-        preserve more distinctions. Ignored by the other methods.
+        integer is a raw row count. NumPy real/integer scalars are accepted;
+        booleans, text and non-finite proportions are refused. Raise it to
+        compress harder, lower it to preserve more distinctions. Ignored by
+        the other methods. A retained literal ``'__infrequent__'`` category
+        conflicts with an active internal bucket and must be renamed. If
+        that literal is itself fitted as rare, it joins the pool normally.
     n_folds:
         For ``'target'``, how many out-of-fold splits are used when encoding
         the training rows. More folds means each row's encoding is computed
@@ -291,19 +324,14 @@ def fit_encoder(
         )
 
     if method == "infrequent":
+        min_frequency = _normalize_min_frequency(min_frequency)
         maps: dict[str, list[str]] = {}
         collapsed = train[list(cols)].astype(str).copy()
+        threshold = _frequency_threshold(min_frequency, len(collapsed))
         for column in cols:
             counts = collapsed[column].value_counts(dropna=False)
-            if isinstance(min_frequency, float):
-                if not 0.0 < min_frequency < 1.0:
-                    raise ValidationError("float min_frequency must be in (0, 1)")
-                threshold = min_frequency * len(collapsed)
-            else:
-                if int(min_frequency) < 1:
-                    raise ValidationError("integer min_frequency must be >= 1")
-                threshold = float(min_frequency)
             rare = [str(level) for level, count in counts.items() if float(count) < threshold]
+            _check_reserved_infrequent(collapsed[column], rare, column=column)
             maps[column] = rare
             collapsed[column] = collapsed[column].where(
                 ~collapsed[column].isin(rare),
@@ -393,14 +421,19 @@ def transform_encoder(
     -----
     **Unseen categories are handled, not rejected.** With one-hot they produce
     all zeros; with ordinal they take the encoder's unknown value; with
-    infrequent they join the rare bucket; with target they fall back to the
+    infrequent, known rare labels join the bucket and unseen labels produce
+    all zeros; with target they fall back to the
     training prior. All four are reasonable, and none of them is a signal you
     will notice unless you look: the returned result reports how often it
     happened, and a high rate means training and serving data have diverged.
 
-    **Missing values are encoded as the literal string** ``"nan"``, so they
-    become a category rather than propagating. Impute first if you want
-    different behaviour.
+    **The literal** ``'__infrequent__'`` **is refused when a rare bucket is
+    active unless it is itself a fitted rare label.** Otherwise it cannot be
+    distinguished from the internal pooling label. Rename that value before
+    replay, including for older saved plans.
+
+    **Missing values use their string representation**, such as ``"nan"`` or
+    ``"None"``, and become categories. Impute first for different behaviour.
 
     See Also
     --------
@@ -423,6 +456,7 @@ def transform_encoder(
     if plan.method == "infrequent":
         for column in plan.columns:
             rare = set(plan.infrequent_maps_.get(column, ()))
+            _check_reserved_infrequent(work[column], rare, column=column)
             work[column] = work[column].where(~work[column].isin(rare), INFREQUENT_LABEL)
 
     encoded = plan.encoder.transform(work)
@@ -636,6 +670,10 @@ def _build_result(plan: EncodePlan) -> PreprocessResult:
         "Encoding vocabularies and target means are train-fitted only.",
         "Ordinal codes invent numeric order unless the domain supplies one.",
     ]
+    if plan.method == "infrequent":
+        limitations.append(
+            "Unseen categories produce all-zero indicators; only training-fitted rare labels use the shared bucket."
+        )
     if plan.method == "target":
         limitations.append(
             "Target encoding without out-of-fold discipline leaks labels into train features."

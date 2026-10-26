@@ -14,6 +14,13 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Session and fold-local infrequent encoding share strict count/proportion
+  validation and accept NumPy scalar controls with ordinary JSON metadata.
+  Retained or unseen literal bucket names refuse ambiguous pooling; fitted rare
+  literals retain their behavior. Replay guidance now states that ordinary unseen
+  labels produce all-zero indicators. See the CV recipe guide for renaming an
+  ambiguous `__infrequent__` value, including with older saved pipelines.
+
 - NumPy integer CV counts honor requested time/group/stratified strategies in
   search and both nested CV loops. Audit records retain numeric fold counts.
   Randomized and Optuna budgets require positive integers before optimization;

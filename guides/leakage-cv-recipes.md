@@ -46,6 +46,20 @@ selected method. Budget validation happens before creating or advancing an
 Optuna study. User-supplied callable search spaces can still fail during an
 otherwise valid trial. Audit records retain integer counts and the used budget.
 
+For `encode='infrequent'`, `min_frequency` accepts a positive integer count or
+a finite real proportion strictly between zero and one. NumPy scalars follow
+the same rule; booleans and text are refused. Counts exactly at the threshold
+keep their own indicator. Session encoding and fold-local recipes both learn
+rarity and vocabulary from their training rows. Replay pools those fitted rare
+labels; ordinary unseen labels produce all-zero indicators.
+
+The internal bucket name is `__infrequent__`. If a real category with that name
+would keep its own indicator while other labels are pooled, fitting refuses the
+ambiguous merge. Replay also refuses an unseen literal of that name when the
+column has a bucket. Rename that raw value before fitting or replay, including
+with an older saved pipeline. A literal already fitted as rare still pools
+normally, and a column without pooling keeps the literal as an ordinary category.
+
 ## What a recipe can and cannot do
 
 Fold-local order, when those steps are set, is:

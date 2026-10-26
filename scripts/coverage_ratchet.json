@@ -8,20 +8,20 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 87.78911075994829,
-      "covered_lines": 54999,
-      "num_statements": 62649,
+      "percent_covered": 87.81741281621578,
+      "covered_lines": 55022,
+      "num_statements": 62655,
       "excluded_lines": 566,
-      "source_revision": "4bd010b4b236d68d3aee5a2561225950bcc78c12",
-      "tested_revision": "7638309060b200609853782eec78b49cd9d24850",
+      "source_revision": "10d427104935e6e382a1e4cb510e86980014967b",
+      "tested_revision": "4869168380a7434da0f5adabaf4e059874318e87",
       "platform": "remote Linux, CPU expanded profile",
-      "run_id": 40271115417,
-      "result": "6922 passed, 77 skipped, zero failures/errors",
+      "run_id": 40277316893,
+      "result": "7066 passed, 77 skipped, zero failures/errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
-      "notes": "Provider-plan structure/argument repair accepted; CI, backend, acceptance and CodeQL passed. Source/merge trees equal4b6f9ddd0497fccffaf72ff17f9ab3b9b086182a. coverage7.16.2/566 exclusions unchanged;2781 pytest warnings,no collection warnings. Full23:43. Covered lines +69,statements +29 against accepted2c8b7c4;subset42unchanged/30new is not aggregate. Exact90 percent gap1386;core70/expanded86 retained.",
+      "notes": "Integral CV strategy/search-budget repair accepted; CI, backend, acceptance and CodeQL passed. Source/merge trees equalf834ac14c8850b2f7d7c656c326c5dbe86d66471. coverage7.16.2/566 exclusions unchanged;2781 pytest warnings,no collection warnings. Full13:04. Covered lines +23,statements +6 against accepted4bd010b;subset16unchanged/15new is not aggregate. Exact90 percent gap1368;core70/expanded86 retained.",
       "coverage_version": "7.16.2"
     },
     "latest_local_measurement": {

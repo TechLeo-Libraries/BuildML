@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-10-26, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed:87.7891% (54,999/62,649);6,922 passed,77 skipped | [CI40271115417](https://github.com/TechLeo-Libraries/BuildML/actions/runs/40271115417), source `4bd010b`, tested merge `76383090`; trees match and all three workflows passed.566 exclusions unchanged;floor86 retained from passing87.0013% source a05ec41;90% gap1,386 lines. Provider-plan structure/argument repair accepted with coverage7.16.2;2781 pytest warnings, no coverage collection warnings |
+| Current accepted remote expanded CPU whole-package gate | Passed:87.8174% (55,022/62,655);7,066 passed,77 skipped | [CI40277316893](https://github.com/TechLeo-Libraries/BuildML/actions/runs/40277316893), source `10d4271`, tested merge `48691683`; trees match and all three workflows passed.566 exclusions unchanged;floor86 retained from passing87.0013% source a05ec41;90% gap1,368 lines. Integral CV strategy/search-budget repair accepted with coverage7.16.2;2781 pytest warnings, no coverage collection warnings |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -2573,7 +2573,41 @@ lines and15 changed/new executed lines. This is subset reach, not a combined
 coverage percentage. Ruff/copy lint and the unchanged586 docstring budget passed.
 Targeted mypy retained6 baseline findings on unchanged mapped source lines with
 matching messages/codes; zero new findings, but no clean typecheck is claimed.
-The accepted remote full result remains87.7891% (54,999/62,649;6,922 passed,
-77 skipped). Fresh full CI must pass separately. Core70/expanded86, scope and
+Published10d4271 subsequently passed all remote workflows and full coverage at
+87.8174% (55,022/62,655;7,066 passed,77 skipped). Core70/expanded86, scope and
 566 exclusions are unchanged; no production-population or reliability guarantee
 is inferred from these numerical regression checks.
+
+### Infrequent encoding frequency and replay contracts (2026-10-26)
+
+Session and fold-local infrequent encoding now share strict count/proportion
+validation. NumPy scalar controls normalize to ordinary JSON numbers; booleans,
+text and non-finite proportions refuse. Absolute integer counts remain exact,
+including counts larger than the training population. Threshold-equal categories
+keep their own indicators. Ordinary unseen categories still produce all-zero
+indicators; the prior guidance incorrectly said they joined the rare bucket.
+That behavior is now disclosed at the point of use without changing its numbers.
+
+A retained literal `__infrequent__` cannot alias a bucket that pools other labels.
+Fitting and frozen replay refuse that ambiguity, including an unseen literal at
+score time. A literal already fitted as rare pools normally, and a column with
+no pooling keeps its literal category. The CV recipe guide explains renaming
+ambiguous raw values, including when using an older saved pipeline.
+
+Final ten-file verification passed242 tests with zero failures/skips in55.43s.
+Two existing date-parser warnings came from malformed-datetime pipeline cases.
+The82 added consumers compare independent counts, indicator matrices, fold-local
+Ridge normal equations, and real saved-pipeline predictions. They also verify
+training-only vocabulary, input/model/bundle preservation, exact boundaries,
+reserved-label compatibility and ignored controls for other methods. The
+verified10d4271 archive produced36 failures,40 passes and6 fixture setup errors
+in22.56s, including missing point-of-use disclosure and NumPy/JSON failures.
+
+Source-mapped reach against verified10d4271 is2 previously missing unchanged
+lines and28 changed/new executed lines. This is subset reach, not aggregate
+coverage. Ruff/copy lint and the unchanged586 docstring budget passed. Targeted
+mypy retains19 baseline fold.py findings on unchanged mapped source lines with
+matching messages/codes; zero new findings, not a clean typecheck. Accepted
+remote full coverage remains87.8174% (55,022/62,655;7,066 passed,77 skipped).
+Fresh full CI must pass separately; scope,coverage7.16.2/566 exclusions and
+core70/expanded86 floors are unchanged.
