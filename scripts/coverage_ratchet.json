@@ -8,20 +8,20 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 88.18155775535539,
-      "covered_lines": 55408,
-      "num_statements": 62834,
+      "percent_covered": 88.27331486611266,
+      "covered_lines": 55448,
+      "num_statements": 62814,
       "excluded_lines": 566,
-      "source_revision": "3a2d51a1f6b1e9dece596d002f5e22a875471f35",
-      "tested_revision": "bce1ab51754d2ca5964e77ffb2b37eb5a5c0caf4",
+      "source_revision": "d6a7c8d0d23baa99f9bb57d493fdbcddb53ccc41",
+      "tested_revision": "8126d298b0868986eaff0496ed0fc15866c932eb",
       "platform": "remote Linux, CPU expanded profile",
-      "run_id": 40366540046,
-      "result": "8489 passed, 77 skipped, zero failures/errors",
+      "run_id": 40380341499,
+      "result": "9233 passed, 77 skipped, zero failures/errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
-      "notes": "Probabilistic scalar identities and MAPIE proper scores accepted; all four workflows passed. Source/merge trees equal 335ee78165f839ee3653456e3c7ddfd8d68cd4be. coverage.py7.16.2/566 exclusions unchanged;2890 pytest warnings,no collection warnings. Full25:23. Covered lines+25,statements+11 versus 02364bf. Exact90 gap1143. Core70/expanded87 retained;88 floor lacks required1pp headroom. Subset reach is not aggregate.",
+      "notes": "SSL labeled populations accepted; all four workflows passed. Source/merge trees equal 3c5f9cc1df9b926912f91fa908ee7d6ac1c2831b. coverage.py7.16.2/566 exclusions unchanged;2890 pytest warnings,no collection warnings. Full28:02; exact90 gap1085. Core70/expanded87 retained;88 floor lacks required1pp headroom. Subset reach is not aggregate.",
       "coverage_version": "7.16.2"
     },
     "latest_local_measurement": {

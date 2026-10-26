@@ -29,6 +29,26 @@ Decision Transformer are outside these adapters.
 Quickstart: [imitation + RL quickstart](quickstart-imitation-rl.md).
 Proof: [imitation-cartpole-control](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/imitation-cartpole-control).
 
+## Discrete action identities and evaluation scope
+
+New cloning and bandit policies retain the original scalar actions alongside
+internal string encoding keys. An action named `"001"` stays a string with its
+padding; booleans, integers and noninteger numeric actions retain their types.
+NumPy scalar wrappers are normalized to equivalent Python scalars. Distinct
+typed values sharing a key, such as `1` and `"1"`, are refused before fitting.
+Evaluation checks actions against the saved training vocabulary and refuses
+unknown actions or type aliases rather than assigning them new meanings.
+
+Trusted bundles preserve this identity mapping with the fitted policy. Older
+encoders without the mapping return their recorded string keys exactly;
+refit an older policy to recover original action types. A bundle carries no
+proof that a newly attached table is independent of the training data.
+
+Validation/test evaluation never updates a policy. Train/all evaluation includes
+fitted demonstrations and carries a diagnostic warning. Cloning accuracy and F1
+measure agreement with the demonstrator; bandit direct-method and IPS estimates
+remain offline estimates. These checks do not establish online policy quality.
+
 ## Behavioral cloning
 
 Demonstration rows on train. `action_column` defaults to the Session

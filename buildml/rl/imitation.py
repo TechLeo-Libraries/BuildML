@@ -613,15 +613,19 @@ def evaluate_imitation(
             disclosures=("Empty partition; no imitation metrics.",),
             warnings=("Empty evaluation partition.",),
         )
+    y_true = frame[plan.action_column]
+    if plan.task == "classification":
+        encode_discrete_actions(y_true, label_encoder=plan.label_encoder_)
     pred = predict_imitation_action(
         dataset, plan, split_plan, partition=partition
     )
-    y_true = frame[plan.action_column]
     disclosures = [
-        "Imitation metrics compare policy actions to held-out demonstration actions.",
-        "Holdout rows are never used to fit the cloning policy.",
+        "Imitation metrics compare policy actions to the selected demonstration rows.",
+        "Evaluation never refits the cloning policy; its bundle does not prove dataset independence.",
     ]
     warnings: list[str] = []
+    if partition in {"train", "all"}:
+        warnings.append("Train/all imitation metrics are diagnostic and include fitted demonstrations.")
     if plan.task == "classification":
         if y_true.isna().any():
             raise ValidationError(

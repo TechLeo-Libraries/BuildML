@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-10-26, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed: 88.1816% (55,408/62,834); 8,489 passed, 77 skipped | [CI40366540046](https://github.com/TechLeo-Libraries/BuildML/actions/runs/40366540046), source `3a2d51a`, tested merge `bce1ab51`; matching trees and all four workflows passed. Scope/566 exclusions/coverage.py7.16.2 unchanged. Core70/expanded87 retained. Exact90% gap1,143 lines; 2,890 pytest warnings, no coverage collection warnings |
+| Current accepted remote expanded CPU whole-package gate | Passed: 88.2733% (55,448/62,814); 9,233 passed, 77 skipped | [CI40380341499](https://github.com/TechLeo-Libraries/BuildML/actions/runs/40380341499), source `d6a7c8d`, tested merge `8126d298`; matching trees and all four workflows passed. Scope/566 exclusions/coverage.py7.16.2 unchanged. Core70/expanded87 retained. Exact90% gap1,085 lines; 2,890 pytest warnings, no coverage collection warnings |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -3268,3 +3268,67 @@ local module classes are not picklable; duplicate empty parameter combinations
 were removed; the independent head-fit reference uses the real float64 input
 contract; and image fixtures use supported PNG paths. Earlier draft fixture
 failures are not accepted product failures or coverage gains.
+
+### Accepted SSL population whole-suite result (2026-10-26)
+
+Source `d6a7c8d` passed the complete expanded Linux CPU suite at **88.2733%**
+(55,448/62,814 lines), with **9,233 passed and 77 skipped** in 28:02.
+The XML has 9,310 tests and zero failures/errors; there were 2,890
+pytest warnings and no coverage collection warnings. CI40380341499, backend40380341467,
+acceptance40380341465 and CodeQL40380337120 passed. Tested merge `8126d298`
+and source trees match. coverage.py7.16.2 and566 exclusions are unchanged.
+The exact90% gap is1,085 covered lines at this source. Core70 and expanded87
+remain unchanged. Earlier local SSL, text and vision subset observations remain
+separate and are not added to this full-suite percentage.
+
+### Discrete action identities through real policy consumers (2026-10-26)
+
+Cloning and bandit actions previously parsed numeric-looking strings, changed
+scalar types and could collapse distinct typed actions onto one key. New
+encoders retain original scalar identities, while evaluation reuses the saved
+vocabulary and refuses ambiguous, missing, unknown or aliased actions. Trusted
+bundles preserve that mapping. Legacy encoders return recorded strings exactly;
+refit to recover original types. Train/all metrics carry diagnostic warnings,
+and saved policies cannot prove that newly attached data is independent.
+
+The batch adds **268 distinct cases**: 218 tabular, 40 actual neural consumers
+and 10 separate refusal cases. On all 828 verified archived `d6a7c8d` package
+files/resources, these reproduce 178 failures/40 passes (49.81s), 32 failures/
+8 passes (41.03s), and 5 failures/5 passes (21.06s), respectively. Missing-action
+refusals already worked; those cases remain regression checks. Repaired focused
+tabular checks pass all218 (44.07s). Preliminary working-tree observations are
+superseded; eight initial repaired assertions used different float32 formatting
+in the oracle, corrected before the final archived and repaired observations.
+
+| Final observation | Result | Source-mapped reach versus accepted `d6a7c8d` |
+|---|---|---|
+| Nine files, Windows/Pandas3.0.5/NumPy2.4.6/Torch2.13 CPU/SB3 2.7 | 335 passed,54 skipped,5 deprecation warnings;178.61s | 5 unchanged previously missing /41 changed-new lines |
+| Same nine files, Pandas2.3.3 | 335 passed,54 skipped,5 warnings;179.01s | Separate5 /41 observation |
+| Same nine files, isolated compatible RL profile | 387 passed,2 skipped,9 deprecation warnings;135.26s | Separate141 /41 observation, including97 adapter and20 imitation lines |
+| Additional selected-action refusals | 10 passed,zero skips/warnings;66.18s | Separate0 /40 observation |
+
+All profiles use coverage.py7.16.2, preserve566 exclusions and have no coverage
+collection warnings. Main skips include51 imitation-dependent cases,1 industry
+BC case and2 missing-runtime scenarios. The compatible profile executes all40
+new neural cases and skips only those2 missing-runtime scenarios because their
+runtimes are installed. Existing flat RL aliases account for warnings.
+
+The isolated profile follows `requirements-rl-verification.txt`: NumPy1.26.4,
+Pandas2.3.3,scikit-learn1.7.2,Torch2.7.1+cpu,SB3 2.2.1,Gymnasium0.29.1 and
+imitation1.0.1; pipcheck passes. The main environment is unchanged. All814
+production sources and10 main verification files were frozen/hash-verified;
+the additional refusal file has separate frozen verification. Three changed
+production files pass targeted mypy at baseline and after repair; Ruff,copy
+lint,diff and the unchanged586 docstring budget pass. Package-wide type
+cleanliness is not claimed.
+
+Independent normal equations and uncertainty geometry check bandit scores;
+scalar reward/IPS/DM/confusion/F1 calculations check reports. Logistic affine
+decisions and real sklearn reference fits check cloning, while NumPy affine/
+tanh evaluation of real saved SB3 weights checks BC/GAIL decisions. Predictions,
+evaluation and replay preserve policy state; refusals preserve prior reports
+and Session history. Neural2epochs/GAIL128steps establish integration behavior,
+not online reward improvement or policy quality. Compatible CI selects the new
+tabular and neural consumers on both Windows and Linux. Reach belongs to each
+nine-file runtime profile, not solely to the new cases, and is never added to
+the accepted **88.2733%** whole-suite percentage. Core70/expanded87 stay unchanged.

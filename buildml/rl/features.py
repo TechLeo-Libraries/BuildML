@@ -13,10 +13,11 @@ action; silently substituting zero would produce a policy trained on situations
 that never occurred. Impute deliberately in :mod:`buildml.preprocess` if you
 need to.
 
-**Actions round-trip through string codes.** Encoding stringifies before
-assigning integers, and decoding attempts to restore the original type. This
-keeps mixed-type action columns workable, at the cost that an action of ``1``
-and an action of ``"1"`` become the same arm.
+**Action identities are retained beside string encoding keys.** Discrete
+predictions preserve the observed scalar values, including numeric-looking
+strings. Distinct typed actions sharing a key are refused before fitting.
+Older encoders without identity metadata return their recorded strings exactly;
+refit those policies to recover the original types.
 
 See Also
 --------
@@ -218,111 +219,104 @@ def encode_discrete_actions(
     y: pd.Series,
     *,
     classes: Sequence[Any] | None = None,
+    label_encoder: Any | None = None,
 ) -> tuple[np.ndarray, Any, tuple[Any, ...]]:
-    """Number the distinct actions so a model can predict them.
+    """Encode action identities and retain their original scalar values.
 
-    Models predict integers, not labels. This assigns each distinct action a
-    code and hands back the encoder needed to undo it.
+    Fitting records the training vocabulary. Evaluation reuses that encoder
+    so logged actions cannot silently acquire different meanings or codes.
 
     Parameters
     ----------
     y:
-        The action column.
+        Non-null discrete actions in row order.
     classes:
-        The action vocabulary to encode against. Pass the plan's ``arms_`` when
-        encoding a holdout partition, so codes line up with what the policy was
-        fitted on. Left ``None``, the vocabulary is learned from ``y``, which is
-        only correct at fit time.
+        Optional fixed encoding vocabulary. Learn it from train when omitted.
+    label_encoder:
+        Saved train encoder when scoring a fitted policy. New encoders also
+        check that observed action types match the fitted vocabulary.
 
     Returns
     -------
-    numpy.ndarray
-        Integer codes, one per row.
-    sklearn.preprocessing.LabelEncoder
-        The fitted encoder, stored on the plan for decoding later.
     tuple
-        The action vocabulary in code order.
+        Integer action codes, encoder and string keys in code order. Original
+        scalar identities are carried by the encoder for prediction and bundles.
 
     Raises
     ------
     ValidationError
-        If any action is null. A missing action is not an action, and there is
-        no defensible substitute.
-
-    Notes
-    -----
-    **Actions are stringified before encoding.** That is what lets a mixed-type
-    action column work, but it also means an action of ``1`` and an action of
-    ``"1"`` collapse into one arm.
-
-    **Passing ``classes`` explicitly raises on unseen actions**, which is the
-    intended behaviour: a holdout partition containing an action the policy was
-    never fitted on cannot be scored against it.
-
-    See Also
-    --------
-    decode_discrete_actions : The inverse.
+        If actions are missing, ambiguous, unseen or inconsistent with saved
+        identities. Numeric-looking string actions are never parsed as numbers.
     """
     from sklearn.preprocessing import LabelEncoder
 
-    if y.isna().any():
-        raise ValidationError(
-            "Imitation / bandit discrete actions require non-null train values."
-        )
-    values = y.astype(str)
-    encoder = LabelEncoder()
-    if classes is not None:
-        encoder.fit([str(c) for c in classes])
+    observed = _action_vocabulary(y)
+    values = [_action_key(value) for value in y]
+    encoder = label_encoder
+    if encoder is None:
+        encoder = LabelEncoder()
+        fixed = observed if classes is None else _action_vocabulary(pd.Series(list(classes), dtype=object))
+        encoder.fit(list(fixed))
+        encoder.buildml_original_classes_ = tuple(fixed[key] for key in encoder.classes_)
+    original = getattr(encoder, "buildml_original_classes_", None)
+    if original is not None:
+        fitted = dict(zip(encoder.classes_, original, strict=True))
+        for key, value in observed.items():
+            if key in fitted and (type(fitted[key]) is not type(value) or fitted[key] != value):
+                raise ValidationError(f"Observed action {value!r} differs from fitted action identity for key {key!r}.")
+    try:
         codes = encoder.transform(values)
-    else:
-        codes = encoder.fit_transform(values)
+    except ValueError as exc:
+        raise ValidationError(f"Discrete actions contain an unknown action: {exc}") from exc
     return np.asarray(codes, dtype=int), encoder, tuple(encoder.classes_)
 
 
-def decode_discrete_actions(pred_codes: np.ndarray, label_encoder: Any) -> list[Any]:
-    """Turn predicted codes back into recognisable actions.
+def _action_key(value: Any) -> str:
+    """Return a stable encoding key after normalizing NumPy scalar wrappers."""
+    return str(value.item() if isinstance(value, np.generic) else value)
 
-    A user who supplied actions ``'offer_a'``/``'offer_b'`` should get those
-    back, not ``0``/``1``.
+
+def _action_vocabulary(y: pd.Series) -> dict[str, Any]:
+    """Retain observed scalar actions and refuse nulls or ambiguous keys."""
+    if y.isna().any():
+        raise ValidationError("Imitation / bandit discrete actions require non-null values.")
+    vocabulary: dict[str, Any] = {}
+    for value in y:
+        value = value.item() if isinstance(value, np.generic) else value
+        key = str(value)
+        if key in vocabulary:
+            previous = vocabulary[key]
+            if type(previous) is not type(value) or previous != value:
+                raise ValidationError(f"Ambiguous discrete actions share encoding key {key!r}; use distinct action names.")
+        vocabulary[key] = value
+    return vocabulary
+
+
+def decode_discrete_actions(pred_codes: np.ndarray, label_encoder: Any) -> list[Any]:
+    """Restore recorded scalar action identities from integer policy codes.
+
+    Both behavioral cloning and contextual bandits use this boundary before
+    returning actions to callers or estimating rewards from logged decisions.
 
     Parameters
     ----------
     pred_codes:
-        Integer codes predicted by a policy.
+        Integer predictions from the fitted policy.
     label_encoder:
-        The encoder from :func:`encode_discrete_actions`, carried on the plan.
+        Encoder saved with the policy, including original identities when known.
 
     Returns
     -------
     list
-        The decoded actions.
-
-    Notes
-    -----
-    **The original type is recovered heuristically, not preserved.** Encoding
-    stringified everything, so decoding parses the strings back: digits become
-    integers, strings containing a dot become floats where possible, everything
-    else stays a string. An action column of integers round-trips to integers,
-    which is what almost all callers expect. An exotic type: a Decimal, a
-    timestamp: comes back as its string form.
-
-    See Also
-    --------
-    encode_discrete_actions : The forward direction.
+        Original scalar actions. Legacy encoders without identity metadata
+        return their recorded strings exactly; their original types are unknown.
     """
     codes = np.asarray(pred_codes).astype(int)
     decoded = label_encoder.inverse_transform(codes)
-    out: list[Any] = []
-    for value in decoded:
-        text = str(value)
-        if text.isdigit() or (text.startswith("-") and text[1:].isdigit()):
-            out.append(int(text))
-        else:
-            try:
-                out.append(float(text) if "." in text else text)
-            except ValueError:
-                out.append(text)
-    return out
+    original = getattr(label_encoder, "buildml_original_classes_", None)
+    if original is not None:
+        return [original[int(code)] for code in codes]
+    return list(decoded)
 
 
 def continuous_actions(y: pd.Series) -> np.ndarray:
@@ -400,8 +394,8 @@ def classification_metrics(
     """
     from sklearn.metrics import accuracy_score, f1_score
 
-    yt = [str(v) for v in y_true]
-    yp = [str(v) for v in y_pred]
+    yt = [_action_key(v) for v in y_true]
+    yp = [_action_key(v) for v in y_pred]
     return {
         "accuracy": float(accuracy_score(yt, yp)),
         "macro_f1": float(f1_score(yt, yp, average="macro", zero_division=0)),

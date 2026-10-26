@@ -14,6 +14,13 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Cloning and contextual-bandit policies preserve original discrete action
+  identities through prediction and trusted bundle replay, including padded
+  numeric strings, booleans and NumPy scalar labels. Ambiguous typed actions
+  sharing an encoding key refuse before replacing a fitted policy. Evaluation
+  reuses the saved vocabulary and marks train/all metrics as diagnostic.
+  Legacy encoders retain recorded string keys; refit to recover original types.
+
 - SSL head fitting and evaluation select labeled rows before transforming
   features. Excluded rows can contain missing features at these stages;
   nullable targets work with custom unlabeled markers. Frozen exports validate
