@@ -8,6 +8,7 @@ from typing import Any
 import numpy as np
 
 from buildml.core.errors import ValidationError
+from buildml.core.validation import _positive_integer
 from buildml.data.dataset import Dataset
 from buildml.data.splits import SplitPlan
 from buildml.recommenders.adapters.implicit_lib import score_implicit_model
@@ -130,10 +131,13 @@ def recommend_for_users(
     Raises
     ------
     ValidationError
-        When ``k`` is less than 1 or the plan lacks required fitted state.
+        When ``k`` is not a positive integer, the exclusion flag is not boolean,
+        or the plan lacks required fitted state.
     """
-    if int(k) < 1:
-        raise ValidationError("k must be >= 1.")
+    k = _positive_integer(k, name="k")
+    if not isinstance(exclude_train_items, (bool, np.bool_)):
+        raise ValidationError("exclude_train_items must be a boolean.")
+    exclude_train_items = bool(exclude_train_items)
 
     recs: list[tuple[Any, ...]] = []
     scores_out: list[tuple[float, ...]] = []

@@ -382,7 +382,7 @@ def precision_at_k(recommended: list[Any], relevant: set[Any], k: int) -> float:
 
     Measures what fraction of the top-``k`` recommended items appear in the
     user's relevant holdout set. Used by :func:`evaluate_recommender` for
-    micro-averaged ranking metrics.
+    macro-averaged ranking metrics.
 
     Parameters
     ----------
@@ -411,7 +411,7 @@ def recall_at_k(recommended: list[Any], relevant: set[Any], k: int) -> float:
     """Compute Recall@K for one user's recommendation list.
 
     Measures what fraction of the user's relevant items appear in the top-``k``
-    recommendations. Used by :func:`evaluate_recommender` for micro-averaged
+    recommendations. Used by :func:`evaluate_recommender` for macro-averaged
     ranking metrics.
 
     Parameters

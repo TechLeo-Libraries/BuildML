@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-10-26, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed:87.6823% (54,897/62,609);6,398 passed,77 skipped | [CI40255331982](https://github.com/TechLeo-Libraries/BuildML/actions/runs/40255331982), source `bba9d20`, tested merge `318350f3`; trees match and all three workflows passed.566 exclusions unchanged;floor86 retained from passing87.0013% source a05ec41;90% gap1,452 lines. CV group alignment repair accepted with coverage7.16.2;2781 pytest warnings, no coverage collection warnings |
+| Current accepted remote expanded CPU whole-package gate | Passed:87.7102% (54,918/62,613);6,602 passed,77 skipped | [CI40260607054](https://github.com/TechLeo-Libraries/BuildML/actions/runs/40260607054), source `cff4e9d`, tested merge `4808bfc0`; trees match and all three workflows passed.566 exclusions unchanged;floor86 retained from passing87.0013% source a05ec41;90% gap1,434 lines. KG ranking-control repair accepted with coverage7.16.2;2781 pytest warnings, no coverage collection warnings |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -2485,3 +2485,39 @@ reach against verified `bba9d20` was **17 previously missing unchanged lines and
 6 changed/new executed lines**. Accepted whole-package coverage remains
 **87.6823%** pending fresh full remote verification. Package scope, exclusions
 and core/expanded floors remain unchanged.
+
+
+### Recommendation and retrieval cutoff contracts (2026-10-26)
+
+Recommendation and RAG retrieval/evaluation paths accepted some malformed
+cutoffs by coercion and leaked Python errors for others. Recommender exclusion
+flags also accepted non-booleans. Of 230 initial real-consumer checks, 164 failed
+before repair. Cutoff validation now consistently requires a positive integral
+count, while preserving NumPy integer counts. NumPy exclusion flags normalize
+to ordinary boolean metadata. Retrieval k=None remains an override sentinel
+that selects the configured cutoff; an actual configured/evaluation cutoff
+cannot be None.
+
+Recommender evaluation had described its metrics as micro averages even though
+it computes an equal-weight mean over scored warm users. Documentation and
+point-of-use disclosures now correctly identify macro averaging. Independent
+per-user hit, recall, discount and average-precision counts verify the published
+averages with unequal relevance support; the numerical averaging is unchanged.
+
+The final five-file Windows subset passed **405 tests**, no failures or skips,
+in 86.77 seconds. Its 77 warnings are existing deprecated Session-alias calls
+from agent consumers. The new consumers exercise all five native recommender
+methods and dense/BM25/hybrid local retrieval, direct/configured/evaluation
+cutoffs, refusal-state preservation, valid defaults and JSON result metadata.
+Independent dense cosine scores and rank-metric counts supplement the existing
+numerical recommender consumers. These are contract/regression checks; the
+maintained comparative retrieval benchmark remains separate.
+
+Ruff, copy lint and the unchanged 586-finding docstring budget passed. Targeted
+mypy on six source files retained 10 findings in two files, all matched to
+unchanged source lines and messages from verified `cff4e9d`; no new finding was
+observed and no clean package-wide typecheck is claimed. Source-mapped reach
+against that accepted baseline was **3 previously missing unchanged lines and
+17 changed/new executed lines**. Whole-package coverage remains **87.7102%**
+pending fresh full remote verification. Scope, exclusions and coverage floors
+remain unchanged.

@@ -14,6 +14,11 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Recommendation/retrieval cutoffs reject boolean, fractional, textual and
+  non-finite counts before scoring. Valid NumPy integer counts are retained;
+  retrieval k=None still uses the configured cutoff. Recommender reports now
+  identify their per-user metrics as macro averages and validate exclusion flags.
+
 - Knowledge-graph link rankings require positive integer counts and boolean
   filtering controls. NumPy integer counts remain supported, and NumPy boolean
   filter flags produce ordinary JSON-serializable boolean result metadata.

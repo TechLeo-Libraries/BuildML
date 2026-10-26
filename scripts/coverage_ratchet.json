@@ -8,20 +8,20 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 87.68228210001757,
-      "covered_lines": 54897,
-      "num_statements": 62609,
+      "percent_covered": 87.71021992238033,
+      "covered_lines": 54918,
+      "num_statements": 62613,
       "excluded_lines": 566,
-      "source_revision": "bba9d20b5dc227c67db16d7af9bf2b4e8267fa7f",
-      "tested_revision": "318350f3ff165cc78e81196af1e9a52405b5f736",
+      "source_revision": "cff4e9d9a6ad3604e87fb73f8d04195c0549d3f6",
+      "tested_revision": "4808bfc07da78303f78c12d89fcfd8ef1813a9ef",
       "platform": "remote Linux, CPU expanded profile",
-      "run_id": 40255331982,
-      "result": "6398 passed, 77 skipped, zero failures/errors",
+      "run_id": 40260607054,
+      "result": "6602 passed, 77 skipped, zero failures/errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
-      "notes": "CV group alignment repair accepted; CI, backend, acceptance and CodeQL passed. Source/merge trees equal59f5b5167f754503d87657e2fe7d4688d9862203. coverage7.16.2/566 exclusions unchanged;2781 pytest warnings,no collection warnings. Full18:48. Covered lines +12,statements +5 against accepted8934aed;subset8unchanged/5new is not aggregate. Exact90 percent gap1452;core70/expanded86 retained.",
+      "notes": "KG ranking-control repair accepted; CI, backend, acceptance and CodeQL passed. Source/merge trees equal79ff8245e32131403f922e9b0a9b239d8f44d7d7. coverage7.16.2/566 exclusions unchanged;2781 pytest warnings,no collection warnings. Full19:48. Covered lines +21,statements +4 against acceptedbba9d20;subset17unchanged/6new is not aggregate. Exact90 percent gap1434;core70/expanded86 retained.",
       "coverage_version": "7.16.2"
     },
     "latest_local_measurement": {

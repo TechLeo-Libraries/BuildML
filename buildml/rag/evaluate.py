@@ -44,6 +44,7 @@ from collections.abc import Mapping, Sequence
 from typing import Any
 
 from buildml.core.errors import ValidationError
+from buildml.core.validation import _positive_integer
 from buildml.rag.generate import EchoGroundedProvider, generate_grounded, score_faithfulness
 from buildml.rag.index import RagIndex, build_index
 from buildml.rag.results import (
@@ -300,8 +301,7 @@ def evaluate_retrieval(
     """
     if index is None:
         raise ValidationError("No RAG index. Call rag_embed_and_index(...) first.")
-    if k <= 0:
-        raise ValidationError(f"k must be positive; got {k}")
+    k = _positive_integer(k, name="k")
     if relevance_mode not in {"document", "chunk"}:
         raise ValidationError(
             f"relevance_mode must be 'document' or 'chunk'; got {relevance_mode!r}"
