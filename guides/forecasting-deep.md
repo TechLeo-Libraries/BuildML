@@ -43,10 +43,17 @@ session = (Session.ingest(frame)
 row *t* uses only `y[t-lag]`. Early rows that lack a full lag history
 are dropped from fit.
 
+Horizon, lags and an explicit seasonal period require positive integer values.
+Boolean, fractional and string counts are refused. Target history and exogenous
+values must be finite; future exogenous data must have one row per forecast step
+and the columns named by the plan. DataFrame columns are selected in plan order.
+
 ## Data requirements
 
 - `split` / `group_split` / stratified: `LeakageError`.
-- Fit when train does not end before holdout on the time column.
+- Injected splits must keep train, validation and test in chronological order.
+  Validation observations cannot occur after the test origin because test
+  forecasting conditions on the preceding validation history.
 - Missing future exogenous values. If you fit with `exog_columns`,
   `generate` needs `future_exog`. Offline `evaluate` may use holdout
   exog at each scored timestamp and discloses that.
@@ -81,10 +88,10 @@ except LeakageError as exc:
 | Method | Role | Extra |
 | --- | --- | --- |
 | `auto` | ETS if statsmodels else `lag_ridge` | timeseries |
-| `naive` | Last train value | core |
+| `naive` | Last observation at the selected origin | core |
 | `mean` | Train mean | core |
-| `drift` | Line from first to last train point | core |
-| `seasonal_naive` | Repeat last `seasonal_period` | core |
+| `drift` | Train-fitted slope projected from the selected origin | core |
+| `seasonal_naive` | Repeat the last `seasonal_period` observations at the origin | core |
 | `lag_ridge` | Ridge on lag (+ optional exog) | core |
 | `lag_hgb` | HistGradientBoosting on lag/exog | core |
 | `ets` | Holt-Winters | timeseries |
@@ -130,6 +137,14 @@ Rolling eval appends holdout **actuals** after each one-step
 prediction. Origin eval is recursive multi-step from the prior
 partition end. Metrics: MAE, RMSE, MAPE. MAPE may be NaN near zero
 actuals; lead with MAE/RMSE.
+
+`origin="validation_end"` and `origin="test_end"` condition generation on
+observations available through that partition. Naive and seasonal-naive use the
+latest observation or season. Drift keeps its train-fitted slope and starts from
+the latest observation; mean keeps the train mean. ARIMA/SARIMAX keep fitted
+parameters and receive the matching historical exogenous rows. Saved forecast
+bundles retain these rules when loaded into a Session with the matching data
+and chronological split.
 
 ## Exogenous
 

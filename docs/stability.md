@@ -55,21 +55,21 @@ Measure the complete suite with `python scripts/run_full_coverage.py`; subset
 runs are not comparable to the project coverage threshold.
 The separate expanded Linux job runs the same complete test directory with
 `requirements-expanded-coverage.txt` and an **87%** floor. Latest accepted
-remote CPU source `ec1ff90` passed **88.0076%** (55,238/62,765 lines), with
-7,956 passed and 77 skipped. CI 40320342842, backend evidence 40320342650,
-release acceptance 40320342741 and CodeQL 40320336536 all passed. Tested merge
-`fe3e32c4` and source trees match. The exact 90% gap is 1,251 covered lines at
-this source. Core remains 70; the expanded floor rises from 86 to 87 using this
-passing full suite with 1.0076 percentage points of headroom. Scope and 566
-excluded lines remain unchanged. The expanded profile passed the complete suite
-in 25:17 with 2,889 pytest warnings
+remote CPU source `3472fb0` passed **88.0891%** (55,290/62,766 lines), with
+8,047 passed and 77 skipped. CI 40329845801, backend evidence 40329846432,
+release acceptance 40329846090 and CodeQL 40329838749 all passed. Tested merge
+`18fa23cc` and source trees match. The exact 90% gap is 1,200 covered lines at
+this source. Core remains 70 and expanded remains 87; the next floor increase
+requires a passing complete gate with at least one percentage point of headroom.
+Scope and 566 excluded lines remain unchanged. The expanded profile passed the
+complete suite in 22:13 with 2,889 pytest warnings
 and no coverage collection warnings.
 
 The subsequent `8594200` gate passed its tests, but coverage.py upgraded from
 7.16.2 to7.17.0 and reported607 excluded lines instead of566. Its raw86.5151%
 is not accepted as a comparable coverage gain. Development coverage tooling is
 now pinned to7.16.2; the subsequent91b34d6 gate passed with566 exclusions
-and is the current accepted measurement above.
+with the same exclusion accounting used by the current accepted measurement above.
 
 The accepted expanded profile includes scikit-activeml1.0.1, DoWhy0.14 and ONNX Runtime1.31.0 using
 NumPy2.4.1/SciPy1.15.3/mlxtend0.23.4. A prior same-source local comparison

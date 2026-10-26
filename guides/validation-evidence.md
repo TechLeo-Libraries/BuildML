@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-10-26, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed: 88.0076% (55,238/62,765); 7,956 passed, 77 skipped | [CI40320342842](https://github.com/TechLeo-Libraries/BuildML/actions/runs/40320342842), source `ec1ff90`, tested merge `fe3e32c4`; matching trees and all four workflows passed. Scope/566 exclusions/coverage7.16.2 unchanged. Expanded floor rises86 to87 with1.0076pp headroom; core70 retained. Exact90% gap1,251 lines; 2,889 pytest warnings, no coverage collection warnings |
+| Current accepted remote expanded CPU whole-package gate | Passed: 88.0891% (55,290/62,766); 8,047 passed, 77 skipped | [CI40329845801](https://github.com/TechLeo-Libraries/BuildML/actions/runs/40329845801), source `3472fb0`, tested merge `18fa23cc`; matching trees and all four workflows passed. Scope/566 exclusions/coverage.py7.16.2 unchanged. Core70/expanded87 retained. Exact90% gap1,200 lines; 2,889 pytest warnings, no coverage collection warnings |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -3004,3 +3004,55 @@ workflows passed. It supports raising expanded floor 86 to 87 with 1.0076 percen
 headroom; core 70, package scope, coverage 7.16.2 and 566 exclusions are unchanged.
 The exact 90% gap is 1,251 lines at that source. The audit/checkpoint batch still
 requires its own complete remote suite after publication.
+
+### Accepted checkpoint and audit whole-suite result (2026-10-26)
+
+Source `3472fb0` passed its complete expanded Linux CPU suite at **88.0891%**
+(55,290/62,766 lines), with **8,047 passed and 77 skipped** in 22:13. The XML
+contains 8,124 tests and zero failures/errors. There were 2,889 pytest warnings
+and no coverage collection warnings. CI 40329845801, backend evidence 40329846432,
+release acceptance 40329846090 and CodeQL 40329838749 passed. Tested merge
+`18fa23cc` and source have matching trees. The runtime records Pandas 2.3.3,
+Polars 2.0.0, Torch 2.7.1+cpu and coverage.py 7.16.2. Package scope and 566 excluded
+lines are unchanged. This is 52 more covered lines and one more statement than
+the preceding accepted `ec1ff90`; the exact 90% gap is 1,200 lines. Core 70 and
+expanded 87 floors remain unchanged. Earlier subset observations remain separate
+and are not added to this full-suite percentage.
+
+### Forecast origins and input boundaries (2026-10-26)
+
+Named validation/test origins previously returned train-end values for naive,
+drift and seasonal-naive generation. Fixed-origin and rolling-origin evaluation
+could therefore score the wrong baseline. Generation now uses the observations
+at the selected origin, preserving the train mean and train-fitted drift slope.
+Exogenous ARIMA/SARIMAX also receive the matching historical regressors when a
+Session generates beyond train end. Parameters and fitted observations remain
+unchanged; statsmodels may populate forecast caches.
+
+Injected split guards now check validation before test and run again when
+evaluation gathers current history. They prevent test forecasts from reading
+later validation observations. Horizon, lags and seasonal counts reject boolean,
+fractional and string coercions. Target/history values must be finite; one shared
+numeric/shape check validates future, training and holdout exogenous rows.
+Refused calls preserve active plans, prior results and operation history.
+
+The 158 new consumer cases compare baseline formulas, frozen-slope backtests and
+exogenous random-walk formulas with real outputs, including trusted saved-bundle
+replay. The corrected final tests on an untouched package materialized from
+verified source `3472fb0` reproduced 115 failures / 43 passes in 30.97s, with 6 warnings.
+The repaired focused run passed 158 in 12.10s with one statsmodels starting-parameter
+warning. Broader TEN-file profiles separately passed **271 tests, 1 skipped** on
+Pandas 3.0.5 in 108.13s and Pandas 2.3.3 in 100.23s, both using NumPy 2.4.6 and
+statsmodels 0.15.0 on Windows. Each reported 178 warnings: flat-alias deprecations
+and upstream statsmodels warnings. The skip is the absent-statsmodels refusal
+test because statsmodels is installed. Neither profile has collection warnings.
+
+Each source-mapped profile reached **11 previously missing unchanged production
+lines and 75 changed/new executed lines**, against the verified complete `3472fb0`
+baseline. All 814 package source files and verification files have frozen hashes.
+These observations are separate; counts and databases are not combined and do
+not project a whole-suite percentage. Ruff, copy lint, diff and the unchanged 586
+docstring budget pass. The same targeted five-file mypy check improved 24 baseline
+findings to one retained `ordered_frame` return-type finding, with zero new
+findings; type cleanliness is not claimed. A fresh complete remote suite is
+required for this forecasting batch after publication.

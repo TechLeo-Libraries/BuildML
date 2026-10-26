@@ -8,10 +8,18 @@ import numpy as np
 import pandas as pd
 
 from buildml.core.errors import ValidationError
+from buildml.core.validation import _positive_integer
 from buildml.data.dataset import Dataset
 from buildml.data.splits import SplitPlan
 from buildml.forecasting.backends import industry_one_step, industry_predict
-from buildml.forecasting.features import lag_feature_row, ordered_frame, target_series
+from buildml.forecasting.features import (
+    _exog_matrix,
+    assert_partition_time_order,
+    assert_temporal_split,
+    lag_feature_row,
+    ordered_frame,
+    target_series,
+)
 from buildml.forecasting.results import ForecastGenerateResult, ForecastPlan
 
 
@@ -42,18 +50,18 @@ def _predict_next(
         )
         return float(preds[0])
     if method == "naive":
-        assert plan.baseline_value_ is not None
-        return float(plan.baseline_value_)
+        return float(history[-1])
     if method == "mean":
         assert plan.baseline_value_ is not None
         return float(plan.baseline_value_)
     if method == "drift":
-        assert plan.baseline_value_ is not None and plan.drift_slope_ is not None
-        return float(plan.baseline_value_ + plan.drift_slope_ * step)
+        assert plan.drift_slope_ is not None
+        return float(history[-1] + plan.drift_slope_ * step)
     if method == "seasonal_naive":
-        hist = plan.seasonal_history_
-        if not hist:
-            raise ValidationError("seasonal_naive plan is missing seasonal_history_")
+        period = plan.seasonal_period or len(plan.seasonal_history_)
+        if not period or len(history) < period:
+            raise ValidationError("seasonal_naive requires a full season of origin history")
+        hist = history[-period:]
         # step is 1-indexed from origin
         return float(hist[(step - 1) % len(hist)])
     if method in {"lag_ridge", "lag_hgb"}:
@@ -79,7 +87,7 @@ def generate_forecast(
     *,
     horizon: int | None = None,
     history: list[float] | tuple[float, ...] | np.ndarray | None = None,
-    future_exog: np.ndarray | pd.DataFrame | None = None,
+    future_exog: np.ndarray | pd.DataFrame | list[list[float]] | None = None,
     origin: str = "train_end",
     history_exog: np.ndarray | None = None,
 ) -> ForecastGenerateResult:
@@ -87,6 +95,8 @@ def generate_forecast(
 
     Supports baseline, lag-tabular, and industry backends with optional future
     exogenous rows and recursive multi-step composition for lag models.
+    Baselines use the selected origin's observations; the fitted mean and drift
+    slope remain fixed. Generation never estimates new model parameters.
 
     Parameters
     ----------
@@ -115,41 +125,34 @@ def generate_forecast(
         When horizon or history is invalid, exogenous inputs are missing or
         malformed, or the plan method is unsupported.
     """
-    h = int(plan.horizon if horizon is None else horizon)
-    if h < 1:
-        raise ValidationError("horizon must be >= 1")
-    hist = list(
-        float(v)
-        for v in (
-            plan.last_train_values_
-            if history is None
-            else np.asarray(history, dtype=float).reshape(-1).tolist()
-        )
-    )
+    h = _positive_integer(plan.horizon if horizon is None else horizon, name="horizon")
+    try:
+        values = np.asarray(plan.last_train_values_ if history is None else history, dtype=float)
+    except (TypeError, ValueError, OverflowError) as exc:
+        raise ValidationError("Forecast history must contain finite numeric values") from exc
+    if values.ndim != 1 or not np.isfinite(values).all():
+        raise ValidationError("Forecast history must be a one-dimensional sequence of finite values")
+    hist = values.tolist()
     if not hist:
         raise ValidationError("Forecast history is empty")
 
     warnings: list[str] = []
 
+    exog_mat = None
+    if plan.exog_columns:
+        if future_exog is None:
+            raise ValidationError("Plan uses exogenous columns; pass future_exog for horizon generation.")
+        exog_mat = _exog_matrix(future_exog, plan.exog_columns, rows=h, name="future_exog")
+        if history_exog is not None:
+            history_exog = _exog_matrix(history_exog, plan.exog_columns,
+                                       rows=len(hist), name="history_exog")
+
     if plan.industry_estimator_ is not None:
-        exog_mat_ind = None
-        if plan.exog_columns:
-            if future_exog is None:
-                raise ValidationError(
-                    "Industry exog plan requires future_exog for horizon generation."
-                )
-            exog_mat_ind = np.asarray(
-                future_exog if not isinstance(future_exog, pd.DataFrame)
-                else future_exog[list(plan.exog_columns)].to_numpy(),
-                dtype=float,
-            )
-            if exog_mat_ind.ndim == 1:
-                exog_mat_ind = exog_mat_ind.reshape(-1, 1)
         preds_tuple = industry_predict(
             plan.industry_estimator_,
             steps=h,
             history=hist,
-            exog_future=exog_mat_ind,
+            exog_future=exog_mat,
             history_exog=history_exog,
         )
         disclosures = [
@@ -170,34 +173,12 @@ def generate_forecast(
             warnings=tuple(warnings),
         )
 
-    exog_mat: np.ndarray | None = None
     disclosures = [
         f"Horizon generate from origin={origin} with frozen ForecastPlan "
         f"(method={plan.method}); no refit.",
         "Recursive multi-step: each step may feed predicted values into later lags.",
     ]
     if plan.exog_columns:
-        if future_exog is None:
-            raise ValidationError(
-                "Plan uses exogenous columns; pass future_exog with shape "
-                f"(horizon={h}, n_exog={len(plan.exog_columns)})."
-            )
-        if isinstance(future_exog, pd.DataFrame):
-            missing = [c for c in plan.exog_columns if c not in future_exog.columns]
-            if missing:
-                raise ValidationError(f"future_exog missing columns: {missing}")
-            exog_mat = future_exog[list(plan.exog_columns)].to_numpy(dtype=float)
-        else:
-            exog_mat = np.asarray(future_exog, dtype=float)
-        if exog_mat.ndim == 1:
-            exog_mat = exog_mat.reshape(-1, 1)
-        if exog_mat.shape != (h, len(plan.exog_columns)):
-            raise ValidationError(
-                f"future_exog shape {exog_mat.shape} != "
-                f"(horizon={h}, n_exog={len(plan.exog_columns)})"
-            )
-        if np.isnan(exog_mat).any():
-            raise ValidationError("future_exog contains nulls")
         disclosures.append(
             "Exogenous horizon path uses caller-supplied future_exog "
             "(not inferred by BuildML)."
@@ -207,7 +188,8 @@ def generate_forecast(
     working = list(hist)
     for step in range(1, h + 1):
         row = None if exog_mat is None else exog_mat[step - 1]
-        yhat = _predict_next(plan, working, step=step, exog_row=row)
+        origin_history = hist if plan.method in {"naive", "mean", "drift", "seasonal_naive"} else working
+        yhat = _predict_next(plan, origin_history, step=step, exog_row=row)
         preds.append(yhat)
         working.append(yhat)
 
@@ -261,6 +243,8 @@ def history_through_partition(
     ValidationError
         When ``through`` is not ``train``, ``validation``, or ``test``.
     """
+    assert_temporal_split(split_plan)
+    assert_partition_time_order(dataset, split_plan, time_column=plan.time_column)
     if through == "train":
         parts = ["train"]
     elif through == "validation":

@@ -2,13 +2,14 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, cast
 
 import numpy as np
 from sklearn.ensemble import HistGradientBoostingRegressor
 from sklearn.linear_model import Ridge
 
 from buildml.core.errors import MissingExtraError, ValidationError
+from buildml.core.validation import _positive_integer
 from buildml.data.dataset import Dataset
 from buildml.data.splits import SplitPlan, assert_fit_partition
 from buildml.forecasting.backends import fit_industry_backend
@@ -20,6 +21,7 @@ from buildml.forecasting.catalog import (
     resolve_default_method,
 )
 from buildml.forecasting.features import (
+    _exog_matrix,
     assert_partition_time_order,
     assert_temporal_split,
     build_lag_matrix,
@@ -127,13 +129,14 @@ def fit_forecaster(
     assert_fit_partition(split_plan, "train")
     assert_temporal_split(split_plan)
     assert split_plan is not None
-    method = resolve_default_method(method)  # type: ignore[arg-type]
+    method = cast(ForecastMethod, resolve_default_method(method))
     extra_req = method_requires_extra(method)
     if extra_req is not None:
         raise MissingExtraError(extra_req, f"{method} forecasting")
 
-    if horizon < 1:
-        raise ValidationError("horizon must be >= 1")
+    horizon = _positive_integer(horizon, name="horizon")
+    if seasonal_period is not None:
+        seasonal_period = _positive_integer(seasonal_period, name="seasonal_period")
 
     time_col = resolve_time_column(dataset, time_column)
     target_col = resolve_target_column(dataset, target_column)
@@ -215,11 +218,7 @@ def fit_forecaster(
     elif method in {"lag_ridge", "lag_hgb"}:
         exog_mat = None
         if exog:
-            exog_mat = train.loc[:, list(exog)].to_numpy(dtype=float)
-            if np.isnan(exog_mat).any():
-                raise ValidationError(
-                    "Exogenous columns contain nulls; impute before fit_forecast"
-                )
+            exog_mat = _exog_matrix(train, exog, rows=n_train, name="Exogenous columns")
         x_mat, y_mat, _start = build_lag_matrix(y, lag_tuple, exog=exog_mat)
         n_fit = int(y_mat.shape[0])
         if method == "lag_ridge":
@@ -246,11 +245,7 @@ def fit_forecaster(
     elif method not in CORE_BASELINE_METHODS:
         exog_mat = None
         if exog:
-            exog_mat = train.loc[:, list(exog)].to_numpy(dtype=float)
-            if np.isnan(exog_mat).any():
-                raise ValidationError(
-                    "Exogenous columns contain nulls; impute before fit_forecast"
-                )
+            exog_mat = _exog_matrix(train, exog, rows=n_train, name="Exogenous columns")
         nb_h = int(nbeats_horizon if nbeats_horizon is not None else horizon)
         outcome = fit_industry_backend(
             y,

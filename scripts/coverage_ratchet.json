@@ -8,20 +8,20 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 88.00764757428503,
-      "covered_lines": 55238,
-      "num_statements": 62765,
+      "percent_covered": 88.08909282095402,
+      "covered_lines": 55290,
+      "num_statements": 62766,
       "excluded_lines": 566,
-      "source_revision": "ec1ff90373e0f83222c051e1cd7c3e4e56a5a832",
-      "tested_revision": "fe3e32c45a630d3fd07fe72f9dd3620c136ede79",
+      "source_revision": "3472fb0a1d608d0398a865b3abdcc6a3b796f806",
+      "tested_revision": "18fa23cc46b321d00300ce55444446686484935c",
       "platform": "remote Linux, CPU expanded profile",
-      "run_id": 40320342842,
-      "result": "7956 passed, 77 skipped, zero failures/errors",
+      "run_id": 40329845801,
+      "result": "8047 passed, 77 skipped, zero failures/errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
-      "notes": "Graph supervision/replay and exact AI routing accepted; all four workflows passed. Source/merge trees equal6a4cbc57f7da33c8570cf492ce7906ddc4127b20. coverage7.16.2/566 exclusions unchanged;2889 pytest warnings,no collection warnings. Full25:17. Covered lines +80,statements +40 versus accepted3021047. Expanded floor raised86 to87 with1.00764757428503pp headroom; core70 retained. Exact90 percent gap1251; separate subset reach is not aggregate.",
+      "notes": "Checkpoint replacement and current audit readiness accepted; all four workflows passed. Source/merge trees equal c690c300b84e2b39ea3ded911d597123912b8194. coverage.py7.16.2/566 exclusions unchanged;2889 pytest warnings,no collection warnings. Full22:13. Covered lines+52,statements+1 versus ec1ff90. Exact90 gap1200. Core70/expanded87 retained;88 floor lacks required1pp headroom. Subset reach is not aggregate.",
       "coverage_version": "7.16.2"
     },
     "latest_local_measurement": {

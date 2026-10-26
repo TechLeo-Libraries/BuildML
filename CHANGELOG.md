@@ -14,6 +14,13 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Forecast generation conditions naive, drift and seasonal-naive baselines on
+  the selected origin, while retaining the train-fitted mean and drift slope.
+  Exogenous ARIMA/SARIMAX receive historical regressors at validation/test end.
+  Chronological guards check validation before test, including later evaluation.
+  Counts reject lossy coercions; targets, histories and exogenous inputs require
+  finite values and aligned shapes. Trusted forecast bundles replay these rules.
+
 - Checkpoint reattachment discards stale models, retrieval indexes, AI settings
   and reports while preserving the Session identity and explicitly restored
   checkpoint state. Workflow readiness checks current prerequisites before

@@ -9,7 +9,7 @@ import numpy as np
 from buildml.core.errors import ValidationError
 from buildml.data.dataset import Dataset
 from buildml.data.splits import PartitionName, SplitPlan
-from buildml.forecasting.features import ordered_frame, target_series
+from buildml.forecasting.features import _exog_matrix, ordered_frame, target_series
 from buildml.forecasting.predict import (
     history_through_partition,
     origin_predictions,
@@ -145,11 +145,10 @@ def evaluate_forecast(
             ordered_frame(dataset, split_plan, name, time_column=plan.time_column)
             [list(plan.exog_columns)].to_numpy(dtype=float) for name in prior_parts
         ])
-        exog = holdout[list(plan.exog_columns)].to_numpy(dtype=float)
-        if np.isnan(exog).any():
-            raise ValidationError(
-                "Holdout exogenous columns contain nulls; impute before evaluate_forecast"
-            )
+        exog = _exog_matrix(holdout, plan.exog_columns, rows=len(actuals),
+                           name="Holdout exogenous columns")
+        history_exog = _exog_matrix(history_exog, plan.exog_columns, rows=len(history),
+                                   name="Historical exogenous columns")
         disclosures.append(
             "Exog-aware eval uses holdout exogenous values at each scored timestamp "
             "(known at that clock time in this offline evaluation setting)."

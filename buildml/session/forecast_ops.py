@@ -20,6 +20,7 @@ from buildml.forecasting.explain_hooks import (
     fit_result_summary,
     generate_result_summary,
 )
+from buildml.forecasting.features import ordered_frame
 from buildml.forecasting.fit import fit_forecaster
 from buildml.forecasting.predict import generate_forecast, history_through_partition
 from buildml.forecasting.types import ForecastEvalStrategy, ForecastMethod
@@ -181,6 +182,7 @@ def generate_forecast_op(
     if plan is None:
         raise ValidationError("No forecast plan. Call fit_forecast(...) first.")
     history = None
+    history_exog = None
     if origin == "train_end":
         history = list(plan.last_train_values_)
     elif origin in {"validation_end", "test_end"}:
@@ -190,21 +192,29 @@ def generate_forecast_op(
         history = history_through_partition(
             session.dataset, plan, session._split_plan, through=through
         )
+        if plan.exog_columns and plan.industry_estimator_ is not None:
+            parts = ["train"]
+            if session._split_plan.validation_indices:
+                parts.append("validation")
+            if through == "test":
+                parts.append("test")
+            history_exog = np.vstack([
+                ordered_frame(session.dataset, session._split_plan, name,
+                              time_column=plan.time_column)[list(plan.exog_columns)].to_numpy(dtype=float)
+                for name in parts
+            ])
     elif origin != "train_end":
         raise ValidationError(
             "origin must be one of: train_end, validation_end, test_end"
         )
 
-    exog = future_exog
-    if isinstance(future_exog, list):
-        exog = np.asarray(future_exog, dtype=float)
-
     result = generate_forecast(
         plan,
         horizon=horizon,
         history=history,
-        future_exog=exog,
+        future_exog=future_exog,
         origin=origin,
+        history_exog=history_exog,
     )
     session._forecast_generate_result = result
     session._record(
