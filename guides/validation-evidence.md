@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-10-26, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed:87.8174% (55,022/62,655);7,066 passed,77 skipped | [CI40277316893](https://github.com/TechLeo-Libraries/BuildML/actions/runs/40277316893), source `10d4271`, tested merge `48691683`; trees match and all three workflows passed.566 exclusions unchanged;floor86 retained from passing87.0013% source a05ec41;90% gap1,368 lines. Integral CV strategy/search-budget repair accepted with coverage7.16.2;2781 pytest warnings, no coverage collection warnings |
+| Current accepted remote expanded CPU whole-package gate | Passed:87.8371% (55,044/62,666);7,148 passed,77 skipped | [CI40283342384](https://github.com/TechLeo-Libraries/BuildML/actions/runs/40283342384), source `a01ae67`, tested merge `462c874c`; trees match and CI/backend/acceptance/CodeQL passed.566 exclusions unchanged;floor86 retained from passing87.0013% source a05ec41;90% gap1,356 lines. Infrequent encoder repair accepted with coverage7.16.2;2781 pytest warnings, no coverage collection warnings |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -2607,7 +2607,41 @@ Source-mapped reach against verified10d4271 is2 previously missing unchanged
 lines and28 changed/new executed lines. This is subset reach, not aggregate
 coverage. Ruff/copy lint and the unchanged586 docstring budget passed. Targeted
 mypy retains19 baseline fold.py findings on unchanged mapped source lines with
-matching messages/codes; zero new findings, not a clean typecheck. Accepted
-remote full coverage remains87.8174% (55,022/62,655;7,066 passed,77 skipped).
-Fresh full CI must pass separately; scope,coverage7.16.2/566 exclusions and
+matching messages/codes; zero new findings, not a clean typecheck. Published
+a01ae67 subsequently passed all remote workflows and the full suite at87.8371%
+(55,044/62,666;7,148 passed,77 skipped), with source/merge trees verified.
+Scope,coverage7.16.2/566 exclusions and core70/expanded86 floors are unchanged.
+
+### Categorical encoder output-name integrity (2026-10-26)
+
+Session fitting, fold-local CV and frozen replay now refuse duplicate generated
+names or outputs colliding with retained columns. This protects all column roles
+and extra score-time inputs before assignment or numeric filtering. Previously,
+Session one-hot/infrequent encoding raised a raw pandas AttributeError, target
+encoding overwrote retained values, and folds silently dropped both colliding
+features. Different column/category pairs containing separators could also
+produce the same output name. The CV recipe guide explains renaming conflicting
+inputs/categories and refitting the encoder and model together.
+
+Target encoding now builds outputs separately from its raw inputs in both OOF
+Session transformation and frozen score-time application. Outputs can safely
+reuse removed source names when the final schema is unique. Ordinal encoding
+continues to replace its own source columns and keeps its unknown-value policy.
+
+Final eleven-file verification passed322 tests, zero failures/skips, in60.88s.
+Two existing malformed-datetime parser warnings came from pipeline contract
+tests. The80 added consumers check protected roles, pooled indicators, generated
+name ambiguity, restored plans, extra score inputs, original model/history/frame
+preservation, real saved pipelines, independent indicator/category-mean matrices,
+OOF positional assignment and Ridge normal-equation predictions/CV metrics.
+Verified a01ae67 production sources produced57 failures and17 passes in15.22s
+on the initial74 cases; six final pooling/ordinal boundary controls were added.
+
+Source-mapped reach against verified a01ae67 is11 previously missing unchanged
+lines and29 changed/new executed lines. This is subset reach, not aggregate
+coverage. Ruff/copy lint and the unchanged586 docstring budget passed. Targeted
+mypy retains19 baseline findings matched to unchanged source lines/messages;
+zero new findings, not a clean typecheck. Accepted remote full coverage is
+87.8371% (55,044/62,666;7,148 passed,77 skipped) at a01ae67. Fresh full CI for
+this repair must pass separately. Scope,coverage7.16.2/566 exclusions and
 core70/expanded86 floors are unchanged.

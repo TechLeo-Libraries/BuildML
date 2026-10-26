@@ -14,6 +14,13 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Categorical encoders refuse duplicate generated names and collisions with
+  retained columns before they can overwrite or drop features. The same checks
+  apply to fold-local CV and frozen pipeline replay, including extra score
+  inputs and protected roles. Target encoding constructs outputs separately so
+  reusing a removed source name preserves both the source values and output.
+  Ordinal source replacement and other unambiguous layouts remain supported.
+
 - Session and fold-local infrequent encoding share strict count/proportion
   validation and accept NumPy scalar controls with ordinary JSON metadata.
   Retained or unseen literal bucket names refuse ambiguous pooling; fitted rare

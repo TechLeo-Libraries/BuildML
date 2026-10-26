@@ -33,6 +33,8 @@ explicitly rather than silently.
 
 from __future__ import annotations
 
+from collections import Counter
+from collections.abc import Iterable
 from dataclasses import dataclass, field
 from numbers import Integral, Real
 from typing import Any, Literal
@@ -61,6 +63,24 @@ from buildml.preprocess.result import PreprocessResult
 
 EncodeMethod = Literal["onehot", "ordinal", "infrequent", "target"]
 INFREQUENT_LABEL = "__infrequent__"
+
+
+def _validate_encoded_names(
+    input_columns: Iterable[str],
+    source_columns: Iterable[str],
+    feature_names: Iterable[str],
+) -> None:
+    """Keep generated features distinct from each other and retained inputs."""
+    counts = Counter(feature_names)
+    duplicates = sorted(name for name, count in counts.items() if count > 1)
+    retained = set(input_columns).difference(source_columns)
+    collisions = sorted(retained.intersection(counts))
+    if duplicates or collisions:
+        raise ValidationError(
+            "Encoding output names are ambiguous: "
+            f"duplicate outputs={duplicates}; retained columns={collisions}. "
+            "Rename source columns or category labels before fitting or replay."
+        )
 
 
 def _normalize_min_frequency(value: Any) -> float | int:
@@ -258,7 +278,8 @@ def fit_encoder(
     ~buildml.core.errors.ValidationError
         ``method`` is unrecognised, no categorical columns resolved, or
         ``'target'`` was requested without a target column having a role
-        assigned.
+        assigned. Duplicate output names or outputs colliding with retained
+        columns are refused; rename source columns or category labels first.
 
     Notes
     -----
@@ -316,6 +337,7 @@ def fit_encoder(
             if method == "onehot"
             else tuple(cols)
         )
+        _validate_encoded_names(dataset.columns, cols, feature_names)
         return EncodePlan(
             columns=tuple(cols),
             method=method,
@@ -340,6 +362,7 @@ def fit_encoder(
         encoder = OneHotEncoder(handle_unknown="ignore", sparse_output=False)
         encoder.fit(collapsed)
         feature_names = tuple(str(n) for n in encoder.get_feature_names_out(cols))
+        _validate_encoded_names(dataset.columns, cols, feature_names)
         return EncodePlan(
             columns=tuple(cols),
             method=method,
@@ -350,6 +373,8 @@ def fit_encoder(
         )
 
     if method == "target":
+        feature_names = tuple(f"{c}_target" for c in cols)
+        _validate_encoded_names(dataset.columns, cols, feature_names)
         if n_folds < 2:
             raise ValidationError("target encoding n_folds must be at least 2")
         if smoothing < 0:
@@ -369,7 +394,7 @@ def fit_encoder(
         return EncodePlan(
             columns=tuple(cols),
             method=method,
-            feature_names_=tuple(f"{c}_target" for c in cols),
+            feature_names_=feature_names,
             target_maps_=maps_target,
             target_prior_=prior,
             n_folds=n_folds,
@@ -415,7 +440,8 @@ def transform_encoder(
     ------
     ~buildml.core.errors.ValidationError
         A column the plan expects is missing, or a ``'target'`` plan was passed
-        without a split plan.
+        without a split plan. Output names must be unique and cannot replace
+        retained columns, including protected roles and extra replay inputs.
 
     Notes
     -----
@@ -442,6 +468,7 @@ def transform_encoder(
     missing = [c for c in plan.columns if c not in dataset.columns]
     if missing:
         raise ValidationError(f"Encode plan columns missing from dataset: {missing}")
+    _validate_encoded_names(dataset.columns, plan.columns, plan.feature_names_)
 
     if plan.method == "target":
         if split_plan is None:
@@ -516,6 +543,7 @@ def _transform_target(
         fold_iter = list(splitter.split(np.zeros(len(y))))
 
     roles = {k: v for k, v in dataset.roles.items() if k not in plan.columns}
+    encoded = pd.DataFrame(index=frame.index)
     for column, out_name in zip(plan.columns, plan.feature_names_, strict=True):
         oof = np.full(len(frame), np.nan, dtype=float)
         col_train = train[column].astype(str).to_numpy()
@@ -546,10 +574,10 @@ def _transform_target(
         unresolved = np.isnan(oof)
         if unresolved.any():
             oof[unresolved] = prior
-        frame[out_name] = oof
+        encoded[out_name] = oof
         roles[out_name] = ColumnRole.FEATURE
 
-    frame = frame.drop(columns=list(plan.columns))
+    frame = pd.concat([frame.drop(columns=list(plan.columns)), encoded], axis=1)
     new_dataset = Dataset.from_transformed(
         dataset,
         frame,

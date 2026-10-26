@@ -31,6 +31,7 @@ from buildml.preprocess.encode import (
     _frequency_threshold,
     _normalize_min_frequency,
     _smoothed_means,
+    _validate_encoded_names,
 )
 from buildml.preprocess.text import (
     _as_text,
@@ -490,7 +491,8 @@ class FoldLocalPreprocessor(TransformerMixin, BaseEstimator):
             Labels are needed but absent; an outlier action of ``'drop'`` was
             requested, which cannot work inside a fold because removing rows
             would change fold membership; ``n_bins`` is below 2; text settings
-            are malformed; or the reduce method or prefix is unsupported.
+            are malformed; the reduce method or prefix is unsupported; or
+            encoding outputs duplicate each other or a retained column name.
 
         Notes
         -----
@@ -649,7 +651,8 @@ class FoldLocalPreprocessor(TransformerMixin, BaseEstimator):
         ~buildml.core.errors.ValidationError
             :meth:`fit` has not run, or selection retained no column that
             exists in this frame: which means the frame does not match what
-            was fitted.
+            was fitted. Encoding also refuses names colliding with retained
+            replay inputs, including extra columns absent during fitting.
         """
         if not self._feature_names_ and self._selector is None:
             raise ValidationError("FoldLocalPreprocessor must be fitted before transform")
@@ -1090,6 +1093,14 @@ class FoldLocalPreprocessor(TransformerMixin, BaseEstimator):
         if missing:
             raise ValidationError(f"Categorical recipe columns missing: {missing}")
         method = self.recipe.encode
+        if method == "target":
+            names = [f"{column}_target" for column in cols]
+        elif method in {"onehot", "infrequent"}:
+            assert self._encoder is not None
+            names = list(self._encoder.get_feature_names_out(cols))
+        else:
+            names = list(cols)
+        _validate_encoded_names(x.columns, cols, names)
         work = x[cols].astype(str)
         if method == "target":
             prior = float(self._target_prior if self._target_prior is not None else 0.0)
@@ -1105,10 +1116,6 @@ class FoldLocalPreprocessor(TransformerMixin, BaseEstimator):
                 work[column] = work[column].where(~work[column].isin(rare), INFREQUENT_LABEL)
         assert self._encoder is not None and self._encoder != "target"
         matrix = self._encoder.transform(work)
-        if method == "onehot" or method == "infrequent":
-            names = list(self._encoder.get_feature_names_out(cols))
-        else:
-            names = list(cols)
         return pd.DataFrame(matrix, index=x.index, columns=names)
 
 

@@ -8,20 +8,20 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 87.81741281621578,
-      "covered_lines": 55022,
-      "num_statements": 62655,
+      "percent_covered": 87.83710465004947,
+      "covered_lines": 55044,
+      "num_statements": 62666,
       "excluded_lines": 566,
-      "source_revision": "10d427104935e6e382a1e4cb510e86980014967b",
-      "tested_revision": "4869168380a7434da0f5adabaf4e059874318e87",
+      "source_revision": "a01ae6770852e7ca4c477df97fa3425efc7c42f9",
+      "tested_revision": "462c874cced3cd91040d35e3182e5621b9aab812",
       "platform": "remote Linux, CPU expanded profile",
-      "run_id": 40277316893,
-      "result": "7066 passed, 77 skipped, zero failures/errors",
+      "run_id": 40283342384,
+      "result": "7148 passed, 77 skipped, zero failures/errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
-      "notes": "Integral CV strategy/search-budget repair accepted; CI, backend, acceptance and CodeQL passed. Source/merge trees equalf834ac14c8850b2f7d7c656c326c5dbe86d66471. coverage7.16.2/566 exclusions unchanged;2781 pytest warnings,no collection warnings. Full13:04. Covered lines +23,statements +6 against accepted4bd010b;subset16unchanged/15new is not aggregate. Exact90 percent gap1368;core70/expanded86 retained.",
+      "notes": "Infrequent encoding repair accepted; CI, backend, acceptance and CodeQL passed. Source/merge trees equal8823f9db0f0f0917eb5566a4419d3b881f538c8d. coverage7.16.2/566 exclusions unchanged;2781 pytest warnings,no collection warnings. Full24:37. Covered lines +22,statements +11 against accepted10d4271;subset2unchanged/28new is not aggregate. Exact90 percent gap1356;core70/expanded86 retained.",
       "coverage_version": "7.16.2"
     },
     "latest_local_measurement": {

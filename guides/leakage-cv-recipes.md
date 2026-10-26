@@ -60,6 +60,17 @@ column has a bucket. Rename that raw value before fitting or replay, including
 with an older saved pipeline. A literal already fitted as rare still pools
 normally, and a column without pooling keeps the literal as an ordinary category.
 
+Encoding output names must be unique and cannot replace retained columns in any
+role. For example, one-hot encoding `city='London'` creates `city_London`; an
+existing `city_London` column makes that request ambiguous. Target encoding
+similarly creates `city_target`. Underscores in different column/category pairs
+can also produce the same output name. Rename the conflicting input columns or
+category labels, then refit the encoder and model together. Session encoding,
+fold-local recipes and frozen replay raise `ValidationError` for these cases,
+including extra score-time columns and duplicate names in an older plan.
+Removed source names can be reused when the final outputs remain distinct;
+ordinal encoding continues to replace its own source columns.
+
 ## What a recipe can and cannot do
 
 Fold-local order, when those steps are set, is:
