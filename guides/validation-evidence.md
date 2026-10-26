@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-10-26, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed:87.8603% (55,077/62,687);7,228 passed,77 skipped | [CI40288064806](https://github.com/TechLeo-Libraries/BuildML/actions/runs/40288064806), source `6511eb8`, tested merge `8b42e708`; trees match and CI/backend/acceptance/CodeQL passed.566 exclusions unchanged;floor86 retained from passing87.0013% source a05ec41;90% gap1,342 lines. Encoder name integrity repair accepted with coverage7.16.2;2781 pytest warnings, no coverage collection warnings |
+| Current accepted remote expanded CPU whole-package gate | Passed:87.8692% (55,094/62,700);7,346 passed,77 skipped | [CI40295550489](https://github.com/TechLeo-Libraries/BuildML/actions/runs/40295550489), source `75e2973`, tested merge `31b457ea`; trees match and CI/backend/acceptance/CodeQL passed.566 exclusions unchanged;floor86 retained from passing87.0013% source a05ec41;90% gap1,336 lines. Native null-category repair accepted with coverage7.16.2;2781 pytest warnings, no coverage collection warnings |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -2679,8 +2679,9 @@ unchanged586 docstring budget passed. That baseline job independently passed
 87.8603% (55,077/62,687;7,228 passed,77 skipped), with source/merge trees verified,
 coverage7.16.2/566 exclusions and no coverage collection warnings. Its overall CI,
 backend evidence, release acceptance and CodeQL passed, including the repeated
-DDP validation job. This schema batch needs its own full CI; package scope and
-core70/expanded86 floors remain unchanged.
+DDP validation job. Initial b873795 CI later failed16 Pandas2 null cases; the
+subsequent75e2973 null-coercion repair passed all remote workflows and the full
+suite at87.8692%. Package scope and core70/expanded86 floors remain unchanged.
 
 ### Native categorical null coercion on Pandas 2 and 3 (2026-10-26)
 
@@ -2711,6 +2712,49 @@ unchanged lines and16 changed/new executed lines in each separate report. This
 includes the preceding unaccepted raw-schema changes, so it is not an incremental
 gain for just this patch, a combined database or an aggregate percentage. Ruff,
 targeted mypy (zero findings), copy lint and the unchanged586 docstring budget
-passed. Accepted full coverage remains87.8603% (55,077/62,687;7,228 passed,
-77 skipped) at6511eb8. Fresh full CI must pass;scope,coverage7.16.2/566 exclusions
-and core70/expanded86 floors remain unchanged.
+passed. The preceding accepted full baseline was87.8603%
+(55,077/62,687;7,228 passed,77 skipped) at6511eb8. Published75e2973 subsequently
+passed all remote workflows and full coverage at87.8692% (55,094/62,700;
+7,346 passed,77 skipped), with source/merge trees verified. Scope,coverage7.16.2/
+566 exclusions and core70/expanded86 floors remain unchanged.
+
+### Target-encoding OOF priors and controls (2026-10-26)
+
+Session target encoding now learns both the category mean and its smoothing or
+fallback prior from each OOF fitting fold. With fixed fold membership, held-out
+labels cannot influence those rows' encoded features. The previous full-training
+prior leaked labels even though category means themselves excluded the held-out
+rows: changing a row's target by1,000 changed its own feature by29.4118 for a
+known category at default smoothing, or50 for a singleton fallback. The fitting
+prior and maps stored for frozen holdout scoring still use all training rows.
+Refit the encoder and estimator together to adopt corrected training values.
+
+Used fold counts require integers of at least two and sufficient training rows;
+used smoothing values require finite non-negative reals. Valid NumPy controls
+normalize into ordinary JSON values. Session/fold-local smoothing validation is
+shared, while other methods continue to ignore unused target-encoding controls.
+
+The110 added consumers check independent shrinkage equations and OOF assignments
+for continuous/binary/string targets; fixed-fold label perturbations; training
+and holdout populations; actual saved Ridge predictions; NumPy/JSON metadata;
+invalid-request state preservation; two-row stratification fallback; and refusal
+when one training row cannot support OOF features. Initial108 consumers against
+verified75e2973 production sources produced76 failures,32 passes and4 warnings in
+16.47s before repair; two final minimum-row controls were added subsequently.
+
+Separate thirteen-file subsets passed530 tests on Pandas3.0.5 in88.15s and530
+on Pandas2.3.3 in81.16s, each with zero failures/skips and the same two existing
+malformed-date parser warnings. These are separate runtime observations, not
+1,060 distinct tests or a combined database. Ruff and the unchanged586 docstring
+budget passed. Nineteen targeted fold.py type findings map to unchanged baseline
+lines/messages; zero new findings, not a clean typecheck. Each runtime fits and
+replays its own saved bundles; cross-version artifact portability is unestablished.
+
+Separate source-mapped reach reports against the verified full75e2973 baseline
+each show7 previously missing unchanged lines and18 changed/new executed lines.
+This is subset reach, not an aggregate percentage or a combined database. That
+baseline passed87.8692% (55,094/62,700;7,346 passed,77 skipped) with all remote
+workflows green, matching source/merge trees and no coverage collection warnings.
+The exact90% gap is1,336 lines at that source. Scope,coverage7.16.2/566 exclusions
+and core70/expanded86 floors remain unchanged. Fresh full CI for this OOF repair
+must pass independently.

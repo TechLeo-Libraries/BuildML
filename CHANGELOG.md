@@ -14,6 +14,13 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Session target encoding computes smoothing priors and unknown-category
+  fallbacks from each OOF fitting fold, preventing held-out labels from changing
+  their own features. Frozen score-time maps still use all training rows.
+  Fold counts require integers of at least two and sufficient training rows;
+  smoothing weights require finite non-negative reals. Valid NumPy controls
+  normalize into JSON metadata. Refit the encoder and model to adopt the change.
+
 - Native categorical pipeline replay keeps the encoder's string-conversion
   policy during raw-input validation. This fixes null-category prediction drift
   under Pandas 2.3 without changing generic nullable-string coercion or numeric

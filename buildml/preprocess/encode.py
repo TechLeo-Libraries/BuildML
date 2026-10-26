@@ -46,6 +46,7 @@ from sklearn.preprocessing import OneHotEncoder, OrdinalEncoder
 
 from buildml.core.errors import ValidationError
 from buildml.core.types import ColumnRole
+from buildml.core.validation import _positive_integer
 from buildml.data.dataset import Dataset
 from buildml.data.splits import SplitPlan, assert_fit_partition, frame_for_partition
 from buildml.explain.schemas import (
@@ -95,6 +96,19 @@ def _normalize_min_frequency(value: Any) -> float | int:
     if not np.isfinite(proportion) or not 0.0 < proportion < 1.0:
         raise ValidationError("float min_frequency must be finite and in (0, 1)")
     return proportion
+
+
+def _normalize_target_smoothing(value: Any, *, name: str = "smoothing") -> float:
+    """Require a finite non-negative shrinkage weight without lossy coercions."""
+    if isinstance(value, (bool, np.bool_)) or not isinstance(value, Real):
+        raise ValidationError(f"{name} must be a finite non-negative real number")
+    try:
+        number = float(value)
+    except OverflowError as exc:
+        raise ValidationError(f"{name} must be a finite non-negative real number") from exc
+    if not np.isfinite(number) or number < 0:
+        raise ValidationError(f"{name} must be a finite non-negative real number")
+    return number
 
 
 def _frequency_threshold(min_frequency: float | int, n_rows: int) -> float | int:
@@ -264,7 +278,8 @@ def fit_encoder(
         For ``'target'``, how many out-of-fold splits are used when encoding
         the training rows. More folds means each row's encoding is computed
         from more data and is less noisy, at proportionally more work. Five is
-        a reasonable default.
+        a reasonable default. Requires an integer count of at least two;
+        NumPy integers are accepted. At least two training rows are required.
     random_state:
         Seed for the out-of-fold assignment, so target encoding reproduces.
     smoothing:
@@ -272,7 +287,10 @@ def fit_encoder(
         overall mean. This is the guard against trusting a category seen three
         times: at the default of 10, a category needs roughly ten rows before
         its own average outweighs the prior. Raise it when categories are
-        sparse, lower it when every category has plenty of support.
+        sparse, lower it when every category has plenty of support. Requires a
+        finite non-negative real number; NumPy reals are accepted, while
+        booleans and text are refused. Each OOF fold uses only its fitting
+        labels for both category means and the smoothing/fallback prior.
 
     Returns
     -------
@@ -386,10 +404,12 @@ def fit_encoder(
     if method == "target":
         feature_names = tuple(f"{c}_target" for c in cols)
         _validate_encoded_names(dataset.columns, cols, feature_names)
+        n_folds = _positive_integer(n_folds, name="n_folds")
         if n_folds < 2:
             raise ValidationError("target encoding n_folds must be at least 2")
-        if smoothing < 0:
-            raise ValidationError("smoothing must be non-negative")
+        smoothing = _normalize_target_smoothing(smoothing)
+        if len(train) < 2:
+            raise ValidationError("Target encoding requires at least two training rows for out-of-fold features")
         target_name = dataset.require_target()
         y_raw = train[target_name]
         y = _numeric_target(y_raw)
@@ -560,13 +580,14 @@ def _transform_target(
         oof = np.full(len(frame), np.nan, dtype=float)
         col_train = train[column].astype(str).to_numpy()
         for fit_pos, pred_pos in fold_iter:
+            fold_prior = float(np.mean(y[fit_pos]))
             means = _smoothed_means(
                 pd.Series(col_train[fit_pos]),
                 y[fit_pos],
-                prior=prior,
+                prior=fold_prior,
                 smoothing=plan.smoothing,
             )
-            mapped = pd.Series(col_train[pred_pos]).map(means).fillna(prior).to_numpy(dtype=float)
+            mapped = pd.Series(col_train[pred_pos]).map(means).fillna(fold_prior).to_numpy(dtype=float)
             global_positions = [train_idx[i] for i in pred_pos]
             oof[global_positions] = mapped
 

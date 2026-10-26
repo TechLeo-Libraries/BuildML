@@ -71,6 +71,21 @@ including extra score-time columns and duplicate names in an older plan.
 Removed source names can be reused when the final outputs remain distinct;
 ordinal encoding continues to replace its own source columns.
 
+Session target encoding computes each training fold's category means, smoothing
+prior and unseen-category fallback from that fold's fitting labels only. With
+fold membership fixed, the labels of rows held out by that fold cannot influence
+those rows' encoded features. Holdout and frozen score-time maps use the full training population.
+The earlier Session implementation used a full-training smoothing prior inside
+OOF folds, allowing held-out labels to affect their own features. Refit the
+encoder and estimator together to adopt the corrected training values.
+
+Target encoding requires an integer `n_folds >= 2` and at least two training
+rows; NumPy integer counts are accepted. Both Session `smoothing` and recipe
+`target_smoothing` require finite non-negative real values, including NumPy
+reals. Booleans, text and non-finite weights raise `ValidationError`. These
+controls are ignored by other encoding methods. Continue to use fold-local
+recipes for model selection and independent data for calibration.
+
 ## What a recipe can and cannot do
 
 Fold-local order, when those steps are set, is:

@@ -30,6 +30,7 @@ from buildml.preprocess.encode import (
     _check_reserved_infrequent,
     _frequency_threshold,
     _normalize_min_frequency,
+    _normalize_target_smoothing,
     _smoothed_means,
     _validate_encoded_names,
 )
@@ -277,7 +278,10 @@ class PreprocessRecipe:
             "reduce_n_components": self.reduce_n_components,
             "reduce_prefix": self.reduce_prefix,
             "reduce_drop_input": self.reduce_drop_input,
-            "target_smoothing": self.target_smoothing,
+            "target_smoothing": (
+                _normalize_target_smoothing(self.target_smoothing, name="target_smoothing")
+                if self.encode == "target" else self.target_smoothing
+            ),
             "fold_local_order": list(FOLD_LOCAL_ORDER),
             "session_global_only": list(SESSION_GLOBAL_ONLY_STEPS),
         }
@@ -894,6 +898,7 @@ class FoldLocalPreprocessor(TransformerMixin, BaseEstimator):
             return
         if method == "target":
             assert y_train is not None
+            smoothing = _normalize_target_smoothing(recipe.target_smoothing, name="target_smoothing")
             y = _numeric_target(y_train)
             prior = float(np.mean(y))
             self._target_prior = prior
@@ -903,7 +908,7 @@ class FoldLocalPreprocessor(TransformerMixin, BaseEstimator):
                     x_train[column].astype(str),
                     y,
                     prior=prior,
-                    smoothing=recipe.target_smoothing,
+                    smoothing=smoothing,
                 )
             self._target_maps = maps_target
             self._encoder = "target"
