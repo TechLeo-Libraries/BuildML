@@ -104,14 +104,14 @@ Sources: [M4 official data](https://github.com/Mcompetitions/M4-methods),
 
 ## Backend/platform evidence table
 
-Maintained assessment, updated 2026-10-19, review branch `codex/coverage-cuda-ci-20261012`:
+Maintained assessment, updated 2026-10-26, review branch `codex/coverage-cuda-ci-20261012`:
 
 | Configuration | Outcome | Qualification |
 |---|---|---|
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed:87.6701% (54,885/62,604);6,324 passed,77 skipped | [CI40249402802](https://github.com/TechLeo-Libraries/BuildML/actions/runs/40249402802), source `8934aed`, tested merge `73a60865`; trees match and all three workflows passed.566 exclusions unchanged;floor86 retained from passing87.0013% source a05ec41;90% gap1,459 lines. Search-domain consistency repair accepted with coverage7.16.2;2781 pytest warnings, no coverage collection warnings |
+| Current accepted remote expanded CPU whole-package gate | Passed:87.6823% (54,897/62,609);6,398 passed,77 skipped | [CI40255331982](https://github.com/TechLeo-Libraries/BuildML/actions/runs/40255331982), source `bba9d20`, tested merge `318350f3`; trees match and all three workflows passed.566 exclusions unchanged;floor86 retained from passing87.0013% source a05ec41;90% gap1,452 lines. CV group alignment repair accepted with coverage7.16.2;2781 pytest warnings, no coverage collection warnings |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -2453,3 +2453,35 @@ Source-mapped reach against that verified baseline was **8 previously missing
 unchanged lines and 5 changed/new executed lines**. Accepted whole-package
 coverage remains **87.6701%** pending fresh remote full verification. Package
 scope, exclusions and core/expanded coverage floors are unchanged.
+
+
+### Frozen KG ranking counts and filters (2026-10-26)
+
+Knowledge-graph link prediction accepted fractional counts: k=1.5 could return
+two candidates while reporting k=1. Non-boolean filtering controls silently
+changed the candidate population. Other malformed counts leaked Python errors,
+and NumPy boolean filter flags produced result metadata that JSON could not
+serialize. Before repair, 78 of 198 ranking consumers failed; a separate six-case
+NumPy-flag serialization check also failed completely.
+
+Link prediction now requires a positive integral count, refuses boolean counts,
+requires a boolean filter and normalizes supported NumPy flags to Python bool.
+Valid NumPy integer counts remain supported. Invalid requests cannot replace a
+previous ranking or append a successful history entry. The embedding state
+remains frozen.
+
+Real two-epoch native TransE (L1/L2) and DistMult fixtures cover all three
+prediction modes, filtered/unfiltered populations, multiple count limits,
+missing/unequal query fields and aligned OOV outputs. Expected rankings use
+independent translation-distance or trilinear-product equations and the raw
+training partition's known triples. These checks establish count, score and
+candidate-population consistency; this batch does not measure ranking quality
+on large deployment graphs.
+
+Final four-file Windows verification passed **236 tests**, no failures, skips or
+warnings, in 39.76 seconds. Ruff, targeted mypy for the changed source file,
+copy lint and the unchanged 586-finding docstring budget passed. Source-mapped
+reach against verified `bba9d20` was **17 previously missing unchanged lines and
+6 changed/new executed lines**. Accepted whole-package coverage remains
+**87.6823%** pending fresh full remote verification. Package scope, exclusions
+and core/expanded floors remain unchanged.

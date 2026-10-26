@@ -8,20 +8,20 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 87.67011692543608,
-      "covered_lines": 54885,
-      "num_statements": 62604,
+      "percent_covered": 87.68228210001757,
+      "covered_lines": 54897,
+      "num_statements": 62609,
       "excluded_lines": 566,
-      "source_revision": "8934aed9e4fc2edc354c16e9c543f95883d7cc88",
-      "tested_revision": "73a6086563fd95303f88f8ff07240e9570d341ae",
+      "source_revision": "bba9d20b5dc227c67db16d7af9bf2b4e8267fa7f",
+      "tested_revision": "318350f3ff165cc78e81196af1e9a52405b5f736",
       "platform": "remote Linux, CPU expanded profile",
-      "run_id": 40249402802,
-      "result": "6324 passed, 77 skipped, zero failures/errors",
+      "run_id": 40255331982,
+      "result": "6398 passed, 77 skipped, zero failures/errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
-      "notes": "Search-domain consistency and existing-study preservation repair accepted; CI, backend, acceptance and CodeQL passed. Source/merge trees equal f108835110814d8d373382fdfc59586873b794de. coverage7.16.2/566 exclusions unchanged;2781 pytest warnings,no collection warnings. Full23:38. Covered lines +12,statements -4 against acceptedc1317b5;subset6unchanged/20new is not aggregate. Exact90 percent gap1459;core70/expanded86 retained.",
+      "notes": "CV group alignment repair accepted; CI, backend, acceptance and CodeQL passed. Source/merge trees equal59f5b5167f754503d87657e2fe7d4688d9862203. coverage7.16.2/566 exclusions unchanged;2781 pytest warnings,no collection warnings. Full18:48. Covered lines +12,statements +5 against accepted8934aed;subset8unchanged/5new is not aggregate. Exact90 percent gap1452;core70/expanded86 retained.",
       "coverage_version": "7.16.2"
     },
     "latest_local_measurement": {

@@ -14,6 +14,10 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Knowledge-graph link rankings require positive integer counts and boolean
+  filtering controls. NumPy integer counts remain supported, and NumPy boolean
+  filter flags produce ordinary JSON-serializable boolean result metadata.
+
 - CV and search entry points refuse explicit group labels with the wrong shape
   or training-row count before passing them to sklearn. Group Series labels
   remain positional; failed requests preserve existing fitted models and history.

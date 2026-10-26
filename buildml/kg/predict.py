@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
+from numbers import Integral
 from typing import Any
 
 import numpy as np
@@ -242,7 +243,8 @@ def predict_links(
     Raises
     ------
     ValidationError
-        When ``k`` is invalid, ``mode`` is unknown, or required query fields are missing.
+        When ``k`` is not a positive integer, ``filtered`` is not boolean,
+        ``mode`` is unknown, or required query fields are missing.
 
     Notes
     -----
@@ -256,8 +258,11 @@ def predict_links(
     the ranking (standard KG filtered protocol); the query's own true fill-in
     is not required here: this is a prediction API.
     """
-    if int(k) < 1:
-        raise ValidationError("k must be >= 1.")
+    if isinstance(k, (bool, np.bool_)) or not isinstance(k, Integral) or k < 1:
+        raise ValidationError("k must be a positive integer.")
+    if not isinstance(filtered, (bool, np.bool_)):
+        raise ValidationError("filtered must be a boolean.")
+    filtered = bool(filtered)
     if mode not in {"tail", "head", "relation"}:
         raise ValidationError("mode must be 'tail', 'head', or 'relation'.")
 
