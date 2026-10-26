@@ -14,6 +14,11 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- NumPy integer CV counts honor requested time/group/stratified strategies in
+  search and both nested CV loops. Audit records retain numeric fold counts.
+  Randomized and Optuna budgets require positive integers before optimization;
+  invalid counts cannot advance an existing Optuna study.
+
 - AI planning retains provider-supplied operation parameters and refuses malformed
   plan structures as a whole. Failure results preserve usage, the egress manifest
   and raw response; optional text-list defaults remain supported. Execution still

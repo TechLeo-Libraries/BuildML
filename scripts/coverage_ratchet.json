@@ -8,20 +8,20 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 87.71957840945385,
-      "covered_lines": 54930,
-      "num_statements": 62620,
+      "percent_covered": 87.78911075994829,
+      "covered_lines": 54999,
+      "num_statements": 62649,
       "excluded_lines": 566,
-      "source_revision": "2c8b7c4e38f3c3553bfb3703b6600938169463a5",
-      "tested_revision": "38229adcb60741fb2c0b288f36f2e31c3176eb88",
+      "source_revision": "4bd010b4b236d68d3aee5a2561225950bcc78c12",
+      "tested_revision": "7638309060b200609853782eec78b49cd9d24850",
       "platform": "remote Linux, CPU expanded profile",
-      "run_id": 40265925278,
-      "result": "6838 passed, 77 skipped, zero failures/errors",
+      "run_id": 40271115417,
+      "result": "6922 passed, 77 skipped, zero failures/errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
-      "notes": "Ranking cutoff/averaging repair accepted; CI, backend, acceptance and CodeQL passed. Source/merge trees equald6bfd093a246207af8b9d348a99e41df5ba9cdb8. coverage7.16.2/566 exclusions unchanged;2781 pytest warnings,no collection warnings. Full24:18. Covered lines +12,statements +7 against acceptedcff4e9d;subset3unchanged/17new is not aggregate. Exact90 percent gap1428;core70/expanded86 retained.",
+      "notes": "Provider-plan structure/argument repair accepted; CI, backend, acceptance and CodeQL passed. Source/merge trees equal4b6f9ddd0497fccffaf72ff17f9ab3b9b086182a. coverage7.16.2/566 exclusions unchanged;2781 pytest warnings,no collection warnings. Full23:43. Covered lines +69,statements +29 against accepted2c8b7c4;subset42unchanged/30new is not aggregate. Exact90 percent gap1386;core70/expanded86 retained.",
       "coverage_version": "7.16.2"
     },
     "latest_local_measurement": {

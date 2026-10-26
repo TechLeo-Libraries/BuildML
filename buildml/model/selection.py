@@ -77,6 +77,7 @@ from sklearn.pipeline import Pipeline as SkPipeline
 
 from buildml.core.errors import LeakageError, ValidationError
 from buildml.core.types import ColumnRole
+from buildml.core.validation import _positive_integer
 from buildml.data.dataset import Dataset
 from buildml.data.splits import SplitPlan, assert_fit_partition, frame_for_partition
 from buildml.model.supervised import (
@@ -1351,7 +1352,8 @@ def randomized_search(
     recipe_distributions:
         Fold-local recipe knobs, in the same forms. Requires ``preprocess``.
     n_iter:
-        How many configurations to try. The whole budget.
+        Positive integer number of configurations to try. Booleans and
+        fractional counts are refused; NumPy integer counts are accepted.
     random_state:
         Seed, so the sampled configurations reproduce.
     task:
@@ -1424,8 +1426,7 @@ def randomized_search(
     grid_search : Exhaustive, for small spaces.
     optuna_search : Adaptive, concentrating on promising regions.
     """
-    if n_iter < 1:
-        raise ValidationError("n_iter must be >= 1")
+    n_iter = _positive_integer(n_iter, name="n_iter")
     trials = _expand_randomized_trials(
         param_distributions=param_distributions,
         recipe_distributions=recipe_distributions,
@@ -1500,7 +1501,8 @@ def optuna_search(
     recipe_space:
         The same forms, for fold-local recipe knobs. Requires ``preprocess``.
     n_trials:
-        How many configurations to evaluate.
+        Positive integer number of configurations to evaluate. Booleans and
+        fractional counts are refused before creating or advancing a study.
     random_state:
         Seed for the TPE sampler.
     task:
@@ -1585,6 +1587,7 @@ def optuna_search(
     randomized_search : No extra dependency, easy to parallelise.
     evolutionary_search : Better on rugged spaces with interacting parameters.
     """
+    n_trials = _positive_integer(n_trials, name="n_trials")
     try:
         import optuna
     except ImportError as exc:
@@ -1592,8 +1595,6 @@ def optuna_search(
 
         raise MissingExtraError("optuna", "Optuna hyperparameter search") from exc
 
-    if n_trials < 1:
-        raise ValidationError("n_trials must be >= 1")
     if param_space is None and recipe_space is None:
         raise ValidationError("Provide param_space and/or recipe_space")
     # Refuse malformed declared domains before creating/advancing a caller's study.
@@ -2161,9 +2162,9 @@ def nested_cv_score(
         ``'auto'`` to infer from the spaces given, or an explicit ``'grid'``,
         ``'randomized'``, ``'optuna'``, or ``'evolutionary'``.
     n_iter:
-        Trials per inner randomized search.
+        Positive integer trials per inner randomized search.
     n_trials:
-        Trials per inner Optuna search; also the evaluation ceiling for
+        Positive integer trials per inner Optuna search; also the evaluation ceiling for
         evolutionary.
     population_size:
         Configurations alive at once in an evolutionary inner search.
@@ -2311,8 +2312,10 @@ def nested_cv_score(
             "warm_start_studies=True requires Optuna inner search "
             "(inner_search='optuna' or auto with param_space/recipe_space)"
         )
-    if search_method in {"optuna", "evolutionary"} and n_trials < 1:
-        raise ValidationError("n_trials must be >= 1")
+    if search_method in {"optuna", "evolutionary"}:
+        n_trials = _positive_integer(n_trials, name="n_trials")
+    elif search_method == "randomized":
+        n_iter = _positive_integer(n_iter, name="n_iter")
     if param_grid is not None and not param_grid:
         raise ValidationError("param_grid must not be empty when provided")
     if param_distributions is not None and not param_distributions:
@@ -2380,7 +2383,7 @@ def nested_cv_score(
     selected_params: list[dict[str, Any]] = []
     selected_recipe_knobs: list[dict[str, Any]] = []
     inner_strategy_name = outer_strategy
-    inner_n_splits = int(inner_cv) if isinstance(inner_cv, int) else 0
+    inner_n_splits = int(inner_cv) if isinstance(inner_cv, Integral) else 0
     shared_study: Any | None = None
 
     for fold_id, (outer_train_pos, outer_eval_pos) in enumerate(split_iter):
@@ -3352,10 +3355,14 @@ def _resolve_splitter(
             raise ValidationError("groups must be one-dimensional and aligned to the train partition")
         if len(groups) != len(y_train):
             raise ValidationError("groups length must match the train partition")
-    if not isinstance(cv, int):
-        splitter = check_cv(cv, y=y_train, classifier=task == "classification")
+    if not isinstance(cv, Integral):
+        try:
+            splitter = check_cv(cv, y=y_train, classifier=task == "classification")
+        except (TypeError, ValueError) as exc:
+            raise ValidationError("cv must be an integer >= 2 or a CV splitter") from exc
         return groups, type(splitter).__name__, splitter, None
 
+    cv = _positive_integer(cv, name="cv")
     if cv < 2:
         raise ValidationError("cv must be an integer >= 2 or a CV splitter")
 

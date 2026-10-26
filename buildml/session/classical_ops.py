@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from numbers import Integral
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal, Sequence, cast
 
@@ -774,7 +775,7 @@ def cv_score(
         {
             "estimator": type(estimator).__name__,
             "task": task,
-            "cv": cv if isinstance(cv, int) else type(cv).__name__,
+            "cv": int(cv) if isinstance(cv, Integral) else type(cv).__name__,
             "cv_strategy": cv_strategy,
             "scoring_metric": scoring_metric,
             "fold_preprocess": None if preprocess is None else preprocess.to_dict(),
@@ -996,13 +997,14 @@ def nested_cv_score(
         {
             "estimator": type(estimator).__name__,
             "task": task,
-            "outer_cv": outer_cv if isinstance(outer_cv, int) else type(outer_cv).__name__,
-            "inner_cv": inner_cv if isinstance(inner_cv, int) else type(inner_cv).__name__,
+            "outer_cv": int(outer_cv) if isinstance(outer_cv, Integral) else type(outer_cv).__name__,
+            "inner_cv": int(inner_cv) if isinstance(inner_cv, Integral) else type(inner_cv).__name__,
             "cv_strategy": cv_strategy,
             "scoring_metric": scoring_metric,
             "search_method": result.search_method,
             "inner_search": inner_search,
-            "n_trials": n_trials if result.search_method in {"optuna", "evolutionary"} else None,
+            "n_iter": int(n_iter) if result.search_method == "randomized" else None,
+            "n_trials": int(n_trials) if result.search_method in {"optuna", "evolutionary"} else None,
             "population_size": population_size
             if result.search_method == "evolutionary"
             else None,
@@ -1183,7 +1185,7 @@ def grid_search(
             if recipe_grid is None
             else {k: list(v) for k, v in recipe_grid.items()},
             "task": task,
-            "cv": cv if isinstance(cv, int) else type(cv).__name__,
+            "cv": int(cv) if isinstance(cv, Integral) else type(cv).__name__,
             "cv_strategy": cv_strategy,
             "ranking_metric": ranking_metric,
             "refit": refit,
@@ -1344,10 +1346,10 @@ def randomized_search(
             "recipe_distributions": None
             if recipe_distributions is None
             else {k: str(v) for k, v in recipe_distributions.items()},
-            "n_iter": n_iter,
+            "n_iter": int(n_iter),
             "random_state": random_state,
             "task": task,
-            "cv": cv if isinstance(cv, int) else type(cv).__name__,
+            "cv": int(cv) if isinstance(cv, Integral) else type(cv).__name__,
             "cv_strategy": cv_strategy,
             "ranking_metric": ranking_metric,
             "refit": refit,
@@ -1510,10 +1512,10 @@ def optuna_search(
         "optuna_search",
         {
             "estimator": type(estimator).__name__,
-            "n_trials": n_trials,
+            "n_trials": int(n_trials),
             "random_state": random_state,
             "task": task,
-            "cv": cv if isinstance(cv, int) else type(cv).__name__,
+            "cv": int(cv) if isinstance(cv, Integral) else type(cv).__name__,
             "cv_strategy": cv_strategy,
             "ranking_metric": ranking_metric,
             "refit": refit,
@@ -1727,7 +1729,7 @@ def evolutionary_search(
             "max_evaluations": max_evaluations,
             "random_state": random_state,
             "task": task,
-            "cv": cv if isinstance(cv, int) else type(cv).__name__,
+            "cv": int(cv) if isinstance(cv, Integral) else type(cv).__name__,
             "cv_strategy": cv_strategy,
             "ranking_metric": ranking_metric,
             "refit": refit,

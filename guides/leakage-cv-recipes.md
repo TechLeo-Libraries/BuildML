@@ -31,6 +31,21 @@ Related: [concepts](../docs/concepts.rst),
 [diagnostics and search](classical-diagnostics-search.md).
 Runnable example: [`examples/leakage_cv_recipe.py`](../examples/leakage_cv_recipe.py).
 
+Integer fold counts, including NumPy integer scalars, use the requested
+`cv_strategy` and role-based `auto` resolution. The same rule applies to both
+loops of nested CV. Check the result's strategy fields when interpreting scores:
+group folds keep subjects apart, while time folds score later observations.
+Booleans, float counts and malformed splitter controls raise `ValidationError`.
+Explicit sklearn splitters retain their own folding behavior; `cv=None` retains
+sklearn's default splitter behavior.
+
+Randomized search requires a positive integer `n_iter`; Optuna requires a positive
+integer `n_trials`. NumPy integers are accepted, and booleans, floats and text are
+refused before optimization. Nested search validates the budget used by its
+selected method. Budget validation happens before creating or advancing an
+Optuna study. User-supplied callable search spaces can still fail during an
+otherwise valid trial. Audit records retain integer counts and the used budget.
+
 ## What a recipe can and cannot do
 
 Fold-local order, when those steps are set, is:

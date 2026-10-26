@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-10-26, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed:87.7196% (54,930/62,620);6,838 passed,77 skipped | [CI40265925278](https://github.com/TechLeo-Libraries/BuildML/actions/runs/40265925278), source `2c8b7c4`, tested merge `38229adc`; trees match and all three workflows passed.566 exclusions unchanged;floor86 retained from passing87.0013% source a05ec41;90% gap1,428 lines. Ranking cutoff/averaging repair accepted with coverage7.16.2;2781 pytest warnings, no coverage collection warnings |
+| Current accepted remote expanded CPU whole-package gate | Passed:87.7891% (54,999/62,649);6,922 passed,77 skipped | [CI40271115417](https://github.com/TechLeo-Libraries/BuildML/actions/runs/40271115417), source `4bd010b`, tested merge `76383090`; trees match and all three workflows passed.566 exclusions unchanged;floor86 retained from passing87.0013% source a05ec41;90% gap1,386 lines. Provider-plan structure/argument repair accepted with coverage7.16.2;2781 pytest warnings, no coverage collection warnings |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -2543,6 +2543,37 @@ these checks do not measure an external model's planning quality.
 Source-mapped reach against verified2c8b7c4 is42 previously missing unchanged
 lines and30 changed/new executed lines. These are subset counts, not a combined
 whole-package percentage. Ruff, targeted mypy, copy lint and the unchanged586
-finding docstring budget passed. The accepted remote full result remains87.7196%
-(54,930/62,620;6,838 passed,77 skipped), with the90% target still open. Core70,
-expanded86 and566 exclusions are unchanged; fresh full CI must pass separately.
+finding docstring budget passed. Published4bd010b subsequently passed all remote
+workflows and full coverage at87.7891% (54,999/62,649;6,922 passed,77 skipped).
+The90% target remains open;core70,expanded86 and566 exclusions are unchanged.
+
+### Integer CV strategy and search-budget consumers (2026-10-26)
+
+NumPy integer fold counts previously bypassed requested time/group strategies and
+role-based auto resolution. A public chronological-CV probe reported RMSE
+560.1166415236899 with a Python integer but469.22486707953703 with np.int64,
+which silently selected ordinary KFold on the same data. A real Optuna probe
+also executed3 trials for n_trials=2.5. Integer routing and strict positive
+search budgets now validate at the public implementation boundary, including
+both nested loops. Custom sklearn splitters and cv=None retain their existing
+behavior. History preserves numeric fold counts and the used search budget.
+
+The final nine-file subset passed402 tests with zero failures/warnings in74.61s.
+Two missing-Optuna error-path tests skipped because real Optuna5.0.0 was present
+through an isolated runtime. The144 new consumers compare weighted Ridge
+normal equations and classification confusion arithmetic, chronological/group
+populations, both nested loops, real study/trial budgets and state-preserving
+refusal. User-facing ranked tables, JSON summaries and printed scores retain
+independently calculated means and sample standard deviations. A verified4bd010b
+source archive failed93 of129 initial consumers before repair; additional final
+cases extend the audit and strategy-boundary coverage.
+
+Source-mapped reach against verified4bd010b is16 previously missing unchanged
+lines and15 changed/new executed lines. This is subset reach, not a combined
+coverage percentage. Ruff/copy lint and the unchanged586 docstring budget passed.
+Targeted mypy retained6 baseline findings on unchanged mapped source lines with
+matching messages/codes; zero new findings, but no clean typecheck is claimed.
+The accepted remote full result remains87.7891% (54,999/62,649;6,922 passed,
+77 skipped). Fresh full CI must pass separately. Core70/expanded86, scope and
+566 exclusions are unchanged; no production-population or reliability guarantee
+is inferred from these numerical regression checks.
