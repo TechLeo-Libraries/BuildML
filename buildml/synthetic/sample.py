@@ -43,7 +43,10 @@ n:
 random_state:
     Seed for stochastic steps (sampling, initialization, bagging).
 condition:
-    condition (dict[str, Any] | None).
+    Column-to-value equality conditions for native Gaussian copula sampling.
+    Values retain their types; None selects missing values. A condition must
+    be a dictionary of finite numbers, strings, booleans or None. Unsupported or
+    unsatisfied conditions raise instead of returning unconditioned rows.
 
 Returns
 -------
@@ -61,6 +64,8 @@ ValidationError
     if isinstance(requested, bool) or not isinstance(requested, Integral) or requested < 1:
         raise ValidationError("n must be a positive integer (booleans are not row counts).")
     n_rows = int(requested)
+    if condition is not None and not isinstance(condition, dict):
+        raise ValidationError("condition must be a column-to-value dictionary or None.")
     if condition and plan.method != "gaussian_copula":
         raise ValidationError(
             "condition= is currently supported for method='gaussian_copula' only."

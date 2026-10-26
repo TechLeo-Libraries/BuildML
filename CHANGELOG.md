@@ -14,6 +14,11 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- AI synthetic sampling preserves requested equality conditions through tool
+  execution and provider plans, including train extension. Copula conditions
+  retain label types and distinguish missing values from literal null labels.
+  Invalid or unsatisfied conditions refuse without changing Session data.
+
 - Session target encoding computes smoothing priors and unknown-category
   fallbacks from each OOF fitting fold, preventing held-out labels from changing
   their own features. Frozen score-time maps still use all training rows.

@@ -164,7 +164,9 @@ def sample_synthetic_op(
     random_state:
         Optional seed override for this sampling call.
     condition:
-        Optional column-value conditions for conditional sampling.
+        Equality conditions for the native Gaussian copula. Values retain their
+        types; None selects missing values. Invalid or unsatisfied conditions
+        raise without changing Session data, splits or the previous sample.
     merge_mode:
         ``none`` returns a frame only; ``extend_train`` merges into Session train.
     provenance_column:

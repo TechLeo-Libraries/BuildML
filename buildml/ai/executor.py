@@ -2640,6 +2640,7 @@ def _dispatch_tool(
             for key in (
                 "n",
                 "random_state",
+                "condition",
                 "merge_mode",
                 "provenance_column",
                 "validate",
@@ -3564,6 +3565,8 @@ def _infer_expected_changes(tool_name: str, arguments: dict[str, Any]) -> tuple[
         changes.append(
             f"Will sample synthetic rows (merge_mode={merge_mode})."
         )
+        if arguments.get("condition") is not None:
+            changes.append(f"Will apply equality conditions: {arguments['condition']!r}.")
 
     elif tool_name == "save_synthetic_bundle":
         path = arguments.get("path", "")

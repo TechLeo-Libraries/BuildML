@@ -8,20 +8,20 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 87.86921850079744,
-      "covered_lines": 55094,
-      "num_statements": 62700,
+      "percent_covered": 87.8864705413378,
+      "covered_lines": 55118,
+      "num_statements": 62715,
       "excluded_lines": 566,
-      "source_revision": "75e297357e0cf35e857665613a130a811c65279e",
-      "tested_revision": "31b457eaba63d50bbe66434d8b0f7f04a99e4826",
+      "source_revision": "a70ba76806502cefc146337a09fbed24c47a4ef7",
+      "tested_revision": "f5c89b1aa4c4c3a6c4e412c6f46532338c35eca8",
       "platform": "remote Linux, CPU expanded profile",
-      "run_id": 40295550489,
-      "result": "7346 passed, 77 skipped, zero failures/errors",
+      "run_id": 40299500742,
+      "result": "7456 passed, 77 skipped, zero failures/errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
-      "notes": "Raw-schema and native null-coercion repairs accepted together; CI, backend, acceptance and CodeQL passed. Prior b873795 failed and was not promoted. Source/merge trees equalb609e027c75477236c6d5cb8f465edd33c9f360e. coverage7.16.2/566 exclusions unchanged;2781 pytest warnings,no collection warnings. Full15:17. Covered lines +17,statements +13 against accepted6511eb8; separate subset5unchanged/16new reports are not aggregate. Exact90 percent gap1336;core70/expanded86 retained.",
+      "notes": "OOF fitting-fold prior repair accepted; CI, backend, acceptance and CodeQL passed. Source/merge trees equal5e54471c040fbcb7841408fc02672fb6151f628c. coverage7.16.2/566 exclusions unchanged;2781 pytest warnings,no collection warnings. Full24:13. Covered lines +24,statements +15 against accepted75e2973. Separate subset reach is not aggregate. Exact90 percent gap1326;core70/expanded86 retained.",
       "coverage_version": "7.16.2"
     },
     "latest_local_measurement": {

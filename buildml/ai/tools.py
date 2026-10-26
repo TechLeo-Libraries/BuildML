@@ -5818,13 +5818,25 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
             name="sample_synthetic",
             description=(
                 "Sample from a frozen synthesizer. Default returns a Frame; "
-                "merge_mode=extend_train appends to train with provenance."
+                "merge_mode=extend_train appends to train with provenance. "
+                "Only native gaussian_copula supports equality conditions."
             ),
             parameters={
                 "type": "object",
                 "properties": {
                     "n": {"type": "integer"},
                     "random_state": {"type": "integer"},
+                    "condition": {
+                        "type": ["object", "null"],
+                        "additionalProperties": {
+                            "type": ["string", "number", "boolean", "null"],
+                        },
+                        "description": (
+                            "Column-to-value equality conditions for native gaussian_copula. "
+                            "Values retain their types; null selects missing values. "
+                            "Unsatisfiable conditions fail instead of returning other rows."
+                        ),
+                    },
                     "merge_mode": {
                         "type": "string",
                         "enum": ["none", "extend_train"],

@@ -98,6 +98,16 @@ for the gap.
 **gaussian_copula**: mixed-type empirical CDF plus a correlation
 latent (`correlation_ridge=1e-3`). Optional
 `condition={col: value}` rejection sampling on `sample`.
+Conditions compare values without converting them to text: `1` differs from
+`"1"`, and `None` selects missing values rather than a literal `"None"` label.
+Keys must name fitted columns, and values must be finite numbers, strings,
+booleans or `None`. All conditions must hold. Invalid requests and conditions
+not satisfied within the rejection-sampling limit raise without appending rows.
+An empty dictionary or `None` requests unconditional sampling. AI sampling tools
+carry the same `condition` argument through confirmed plans and explicit autonomy;
+the proposed conditions appear before confirmation. Other synthesizers refuse
+non-empty conditions. Post-sample validation checks the full fitted marginals,
+so a deliberately conditioned sample may trigger distribution warnings.
 
 **smote**: imblearn wrap. Needs `buildml[imbalanced]`. Target from
 `target_column` or the Session target. `k_neighbors` default 5.

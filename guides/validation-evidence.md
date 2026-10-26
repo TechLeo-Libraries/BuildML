@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-10-26, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed:87.8692% (55,094/62,700);7,346 passed,77 skipped | [CI40295550489](https://github.com/TechLeo-Libraries/BuildML/actions/runs/40295550489), source `75e2973`, tested merge `31b457ea`; trees match and CI/backend/acceptance/CodeQL passed.566 exclusions unchanged;floor86 retained from passing87.0013% source a05ec41;90% gap1,336 lines. Native null-category repair accepted with coverage7.16.2;2781 pytest warnings, no coverage collection warnings |
+| Current accepted remote expanded CPU whole-package gate | Passed: 87.8865% (55,118/62,715); 7,456 passed, 77 skipped | [CI40299500742](https://github.com/TechLeo-Libraries/BuildML/actions/runs/40299500742), source `a70ba76`, tested merge `f5c89b1a`; trees match and CI/backend/acceptance/CodeQL passed. 566 exclusions unchanged; floor 86 retained from passing 87.0013% source a05ec41; 90% gap 1,326 lines. OOF prior repair accepted with coverage 7.16.2; 2,781 pytest warnings, no coverage collection warnings |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -2756,5 +2756,58 @@ This is subset reach, not an aggregate percentage or a combined database. That
 baseline passed87.8692% (55,094/62,700;7,346 passed,77 skipped) with all remote
 workflows green, matching source/merge trees and no coverage collection warnings.
 The exact90% gap is1,336 lines at that source. Scope,coverage7.16.2/566 exclusions
-and core70/expanded86 floors remain unchanged. Fresh full CI for this OOF repair
-must pass independently.
+and core70/expanded86 floors remain unchanged. Published `a70ba76` subsequently
+passed all remote workflows and the full gate at87.8865% (55,118/62,715;
+7,456 passed,77 skipped), with matching source/merge trees and no coverage
+collection warnings. The exact90% gap is now1,326 lines at that source.
+
+### Conditional synthetic populations through AI consumers (2026-10-26)
+
+The AI sampling dispatcher previously dropped `condition`. A real copula
+preflight at source `a70ba76` returned 16 rows outside the requested category
+among 32 AI-generated rows, while the direct request returned zero violations.
+The provider tool schema also omitted the argument. Dispatch and provider
+schemas now carry equality conditions through confirmed plans and explicit
+autonomy, and confirmation previews show the requested conditions.
+
+Copula matching now compares values without converting them to text. A numeric
+or boolean label is distinct from its text spelling; `None` selects missing
+values rather than literal `"None"` or `"<NA>"` labels. Keys must name fitted
+columns and values must be finite numbers, strings, booleans or `None`. Invalid
+conditions and exhausted rejection sampling raise before Session data, splits,
+fitted models or prior sample results change. Empty dictionaries and `None`
+retain unconditional sampling, and unsupported methods refuse conditions.
+
+The 109 added consumers exercise direct sampling, real executor calls and
+scripted offline provider plans under confirmation and explicit autonomy.
+Checks cover exact selected populations, joint predicates, nullable/string/
+categorical dtypes, saved generator replay, train-only provenance and holdout
+preservation, invalid-request state preservation, independent bootstrap draws
+and independently calculated Ridge predictions after augmented-data refitting.
+The initial 64 cases on verified untouched `a70ba76` produced 49 failures and
+15 passes in 10.94s. Two early draft checks incorrectly assumed a prediction
+result wrapper and the final history entry's action; those fixture assumptions
+were corrected. Later transport checks compare JSON forms to account for JSON
+object-key conversion and NaN inequality in invalid-input cases.
+
+The final ten-file subset independently passed 309 tests with one SDV skip
+under Pandas 3.0.5 in 146.12s and under Pandas 2.3.3 in 127.03s. Each observation
+had 116 deprecation warnings from retained flat aliases and an upstream
+LangChain notice, with no coverage collection warnings. These are the same
+tests in separate runtimes, not 618 distinct tests or a combined database.
+Each runtime fitted and replayed its own saved generators; cross-version
+artifact portability and locally absent SDV execution remain unestablished.
+
+Source-mapped reach against verified full source `a70ba76` is 31 previously
+missing unchanged lines and 16 changed/new executed lines in each separate
+report. Configuration-specific optional-dependency refusal paths contribute to
+that reach. It is not a combined database or a projected full-suite percentage.
+Historical reach versus `75e2973` was 31 unchanged/18 changed-new, including two
+changed/new lines from the preceding OOF repair. Ruff, copy lint, the unchanged
+586 docstring budget and diff checks passed. Thirteen targeted baseline mypy
+findings map to unchanged lines/messages; zero new findings, not a clean typecheck.
+The accepted full baseline is now 87.8865% (55,118/62,715; 7,456 passed, 77 skipped)
+at `a70ba76`, with a 1,326-line gap to 90%. All remote workflows passed, source
+and merge trees match, and there are no coverage collection warnings. This
+synthetic repair still requires its own full CI. Package scope, coverage 7.16.2,
+566 exclusions and core 70/expanded 86 floors remain unchanged.

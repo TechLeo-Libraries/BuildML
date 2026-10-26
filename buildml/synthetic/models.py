@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from numbers import Real
 from typing import Any
 
 import numpy as np
@@ -405,6 +406,17 @@ ValidationError
         rng = np.random.default_rng(
             self.random_state if random_state is None else int(random_state)
         )
+        if condition is not None and not isinstance(condition, dict):
+            raise ValidationError("condition must be a column-to-value dictionary or None.")
+        for key, value in (condition or {}).items():
+            if not isinstance(key, str) or key not in self.columns:
+                raise ValidationError(f"condition key {key!r} is not a synthesizer column.")
+            if value is not None and not isinstance(value, (str, Real, np.bool_)):
+                raise ValidationError(
+                    f"condition value for {key!r} must be a finite number, string, boolean or None."
+                )
+            if isinstance(value, (float, np.floating)) and not np.isfinite(value):
+                raise ValidationError(f"condition value for {key!r} must be finite; use None for missing values.")
         dim = len(self.columns)
         mean = np.zeros(dim)
         # Oversample when conditioning via rejection
@@ -423,11 +435,10 @@ ValidationError
             if condition:
                 mask = np.ones(len(frame), dtype=bool)
                 for key, value in condition.items():
-                    if key not in frame.columns:
-                        raise ValidationError(
-                            f"condition key {key!r} is not a synthesizer column."
-                        )
-                    mask &= frame[key].astype(str).to_numpy() == str(value)
+                    series = frame[key]
+                    matches = (series.isna() if value is None
+                               else series.astype(object).eq(value).fillna(False))
+                    mask &= matches.to_numpy(dtype=bool)
                 frame = frame.loc[mask].reset_index(drop=True)
             if len(frame) > remaining:
                 frame = frame.iloc[:remaining].reset_index(drop=True)
@@ -437,8 +448,8 @@ ValidationError
             batch = max(remaining * 8, remaining + 16)
         if remaining > 0:
             raise ValidationError(
-                "Could not satisfy categorical condition with rejection sampling; "
-                "relax condition or increase n / train diversity."
+                "Could not satisfy condition within 20 rejection-sampling attempts; "
+                "relax condition or fit on training data with sufficient support."
             )
         out = pd.concat(collected, ignore_index=True) if collected else pd.DataFrame(
             columns=list(self.columns)
