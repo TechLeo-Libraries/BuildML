@@ -283,6 +283,11 @@ def predict_from_pipeline(
         raw_frame,
         bundle.schema_contract,
         stage=contract_stage,
+        stringify_columns=(
+            bundle.encode_plan.columns
+            if contract_stage == "input" and bundle.encode_plan is not None
+            else ()
+        ),
     )
     warnings.extend(contract_validation.warnings)
     raise_for_contract(contract_validation, allow_extra=True)

@@ -973,6 +973,7 @@ def coerce_score_frame(
     contract: SchemaContract | None,
     *,
     stage: Literal["input", "features"] = "input",
+    stringify_columns: list[str] | tuple[str, ...] = (),
 ) -> tuple[pd.DataFrame, SchemaContractValidation]:
     """Convert what can safely be converted, then report what is left.
 
@@ -996,6 +997,11 @@ def coerce_score_frame(
         The contract to coerce toward, or ``None`` to copy and skip.
     stage:
         Which expectation to use, as in :func:`validate_score_frame`.
+    stringify_columns:
+        Raw categorical inputs consumed by a native encode plan. At the input
+        stage their string conversion uses the encoder's ``astype(str)`` policy
+        so nullable-string normalization cannot change fitted category labels.
+        Numeric validation and the features stage are unaffected.
 
     Returns
     -------
@@ -1012,11 +1018,9 @@ def coerce_score_frame(
     **Boolean coercion requires strictly 0 and 1.** A column of arbitrary
     integers is not silently truncated to booleans.
 
-    **Numeric coercion uses ``errors='coerce'``, which turns unparseable values
-    into nulls.** A column of mostly-numeric strings with a few ``'N/A'``
-    entries converts, and those entries become missing. That is usually what was
-    meant, and it is worth knowing it happened: check ``coerced_columns``
-    against your expectations rather than assuming a clean conversion.
+    **Numeric coercion refuses to discard non-null values.** If conversion
+    would turn a supplied value into null, the original column is retained and
+    validation fails. Existing null values remain allowed by this conversion.
 
     **Coercion is not free on large frames.** It touches every expected column;
     skip it when the source already produces correct types.
@@ -1060,6 +1064,7 @@ def coerce_score_frame(
     if not expected:
         expected = list(contract.feature_columns)
     encoded_numeric = set(contract.encoded_numeric_columns)
+    stringify = set(stringify_columns) if stage == "input" else set()
 
     for column in expected:
         if column not in out.columns:
@@ -1095,7 +1100,7 @@ def coerce_score_frame(
                     out[column] = converted
                     coerced.append(column)
             elif family in {"string", "categorical"}:
-                out[column] = series.astype("string")
+                out[column] = series.astype(str) if column in stringify else series.astype("string")
                 coerced.append(column)
         except Exception:  # noqa: BLE001 - leave column unchanged
             continue

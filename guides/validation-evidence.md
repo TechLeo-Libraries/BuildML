@@ -2658,7 +2658,8 @@ encoding, changing loaded predictions. The public artifact guide explains the
 two stages and how to rebuild affected older contracts from known raw schemas.
 Loading cannot reconstruct raw type information that was never recorded.
 
-Final twelve-file verification passed389 tests with zero failures/skips in76.06s.
+Final local Windows/Pandas3.0.5 twelve-file verification passed389 tests with
+zero failures/skips in76.06s.
 Two existing date-parser warnings came from malformed-datetime contract cases.
 The106 new consumers check object/string/category dtypes, leading-zero labels,
 missing reused sources, explicit prepared-feature validation, older plans without
@@ -2680,3 +2681,36 @@ coverage7.16.2/566 exclusions and no coverage collection warnings. Its overall C
 backend evidence, release acceptance and CodeQL passed, including the repeated
 DDP validation job. This schema batch needs its own full CI; package scope and
 core70/expanded86 floors remain unchanged.
+
+### Native categorical null coercion on Pandas 2 and 3 (2026-10-26)
+
+The raw-schema change at b873795 passed its local Pandas3 checks but failed
+remote expanded coverage and Python3.10 core CI: each had16 real saved-replay
+prediction failures for object/category null values. Nullable-string coercion
+normalized distinct null labels before native encoders applied their fitted
+string-conversion policy. That failed full run is not accepted coverage evidence.
+
+Raw inputs consumed by a native encode plan now use that encoder's astype(str)
+conversion policy during input-contract coercion. Generic nullable-string
+coercion retains its behavior, and neither numeric validation nor the prepared
+features stage can be bypassed by the new option. The numeric-coercion docstring
+also now accurately states that non-null values cannot silently become null.
+
+An isolated Pandas2.3.3 runtime reproduced the16 failures with8 passing controls
+in12.28s before repair. The final twelve-file subset passed401 tests under
+Pandas2.3.3 in75.72s and independently passed401 under Pandas3.0.5 in75.38s.
+Both had zero failures/skips and the same two existing malformed-date parser
+warnings. These are separate runtime measurements, not802 distinct tests. The
+12 new controls verify numeric refusal and input/model preservation alongside
+the existing null, leading-zero, OOF/Ridge numerical, persistence and checkpoint
+consumers. Each runtime fits and replays its own bundles; this does not establish
+cross-version artifact portability.
+
+Reach against the last accepted full source6511eb8 is5 previously missing
+unchanged lines and16 changed/new executed lines in each separate report. This
+includes the preceding unaccepted raw-schema changes, so it is not an incremental
+gain for just this patch, a combined database or an aggregate percentage. Ruff,
+targeted mypy (zero findings), copy lint and the unchanged586 docstring budget
+passed. Accepted full coverage remains87.8603% (55,077/62,687;7,228 passed,
+77 skipped) at6511eb8. Fresh full CI must pass;scope,coverage7.16.2/566 exclusions
+and core70/expanded86 floors remain unchanged.

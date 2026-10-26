@@ -31,6 +31,13 @@ raw column types. Raw source columns remain required even when another encoded
 output reuses their name. Missing raw inputs and malformed numeric features
 raise `ValidationError`.
 
+For native encode plans, raw categorical inputs use the encoder's string
+conversion policy before replay. Nullable-string coercion must not merge the
+null labels learned at fitting. Null-category behavior was checked separately
+under Pandas 2.3.3 and 3.0.5, each using bundles fitted in that runtime. Ordinary
+nullable-string coercion still applies when no native encode plan consumes the
+column, and numeric contract checks retain their normal validation.
+
 Older bundles may already contain an input contract inferred from post-encoding
 types. Loading does not reconstruct missing raw type information. For an
 affected ordinal bundle, refit the encoder and model from the original raw data

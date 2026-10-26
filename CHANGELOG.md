@@ -14,6 +14,11 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Native categorical pipeline replay keeps the encoder's string-conversion
+  policy during raw-input validation. This fixes null-category prediction drift
+  under Pandas 2.3 without changing generic nullable-string coercion or numeric
+  validation. Pandas 2 and 3 consumer checks run separately.
+
 - Saved categorical pipelines retain raw input types separately from numeric
   encoded features. Ordinal labels such as `"01"` and `"1"` remain distinct at
   replay, and source names reused by generated outputs remain required inputs.

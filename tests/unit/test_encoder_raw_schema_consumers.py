@@ -235,3 +235,34 @@ def test_checkpoint_preserves_raw_type_metadata_before_refitting_and_export(save
     restored.save_pipeline(path, evaluate_partition=None)
     result = predict_from_pipeline(path, case["score"], trusted=True)
     np.testing.assert_allclose(result.predictions, case["expected"], atol=1e-10)
+
+
+@pytest.mark.parametrize("as_dataset", [False, True])
+def test_native_category_policy_cannot_hide_malformed_numeric_input(saved_category_model, as_dataset):
+    case = saved_category_model("object", "numeric_text")
+    score = case["score"].copy()
+    score["x"] = ["1", "not-a-number", "3", "4"]
+    original = score.copy(deep=True)
+    source = Session.ingest(score).dataset if as_dataset else score
+    before = joblib.hash(case["bundle"])
+    with pytest.raises(ValidationError, match="x"):
+        predict_from_pipeline(case["bundle"], source)
+    assert joblib.hash(case["bundle"]) == before
+    pd.testing.assert_frame_equal(score, original)
+
+
+@pytest.mark.parametrize("stage", ["input", "features"])
+@pytest.mark.parametrize("values,valid", [(["01", "1"], True), (["1", "not-a-number"], False)])
+def test_native_string_policy_does_not_override_numeric_contracts(stage, values, valid):
+    contract = build_schema_contract(schema={"fields": [
+        {"name": "x", "dtype": "float64", "nullable": False}]},
+        roles={"x": "feature"}, feature_columns=["x"], target_column=None,
+        input_columns=["x"], encoded_numeric_columns=["x"])
+    raw = pd.DataFrame({"x": values})
+    result, validation = coerce_score_frame(raw, contract, stage=stage, stringify_columns=["x"])
+    assert validation.ok is valid
+    if valid:
+        np.testing.assert_array_equal(result.x, [1, 1])
+        assert pd.api.types.is_numeric_dtype(result.x)
+    else:
+        pd.testing.assert_frame_equal(result, raw)
