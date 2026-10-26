@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-10-26, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed:87.7102% (54,918/62,613);6,602 passed,77 skipped | [CI40260607054](https://github.com/TechLeo-Libraries/BuildML/actions/runs/40260607054), source `cff4e9d`, tested merge `4808bfc0`; trees match and all three workflows passed.566 exclusions unchanged;floor86 retained from passing87.0013% source a05ec41;90% gap1,434 lines. KG ranking-control repair accepted with coverage7.16.2;2781 pytest warnings, no coverage collection warnings |
+| Current accepted remote expanded CPU whole-package gate | Passed:87.7196% (54,930/62,620);6,838 passed,77 skipped | [CI40265925278](https://github.com/TechLeo-Libraries/BuildML/actions/runs/40265925278), source `2c8b7c4`, tested merge `38229adc`; trees match and all three workflows passed.566 exclusions unchanged;floor86 retained from passing87.0013% source a05ec41;90% gap1,428 lines. Ranking cutoff/averaging repair accepted with coverage7.16.2;2781 pytest warnings, no coverage collection warnings |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -2521,3 +2521,28 @@ against that accepted baseline was **3 previously missing unchanged lines and
 17 changed/new executed lines**. Whole-package coverage remains **87.7102%**
 pending fresh full remote verification. Scope, exclusions and coverage floors
 remain unchanged.
+
+### Provider plan structure and argument retention (2026-10-26)
+
+Provider planning previously accepted malformed JSON structures or raised raw
+AttributeError/TypeError, and silently discarded each operation's parameters.
+The response is now validated as a whole before steps are constructed. Invalid
+structures return the existing empty failure result with a schema reason, usage,
+raw response and egress manifest. Valid arguments survive into confirmed and
+explicit autonomous execution; optional text-list defaults remain supported.
+
+The seven-file regression set passed207 tests with zero failures/skips in108.84s.
+There was one upstream langchain-community deprecation warning. Eighty-four new
+consumers cover malformed roots/steps/fields, accounting and audit records,
+confirmation pauses, unmapped operations, missing estimator refusal and advisor
+read-only tool rounds. Actual split populations match an independently generated
+permutation, and real fitted predictions match NumPy least-squares arithmetic in
+both execution modes. The builtin MockProvider scripts the protocol offline;
+these checks do not measure an external model's planning quality.
+
+Source-mapped reach against verified2c8b7c4 is42 previously missing unchanged
+lines and30 changed/new executed lines. These are subset counts, not a combined
+whole-package percentage. Ruff, targeted mypy, copy lint and the unchanged586
+finding docstring budget passed. The accepted remote full result remains87.7196%
+(54,930/62,620;6,838 passed,77 skipped), with the90% target still open. Core70,
+expanded86 and566 exclusions are unchanged; fresh full CI must pass separately.

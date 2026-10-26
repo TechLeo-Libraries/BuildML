@@ -8,20 +8,20 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 87.71021992238033,
-      "covered_lines": 54918,
-      "num_statements": 62613,
+      "percent_covered": 87.71957840945385,
+      "covered_lines": 54930,
+      "num_statements": 62620,
       "excluded_lines": 566,
-      "source_revision": "cff4e9d9a6ad3604e87fb73f8d04195c0549d3f6",
-      "tested_revision": "4808bfc07da78303f78c12d89fcfd8ef1813a9ef",
+      "source_revision": "2c8b7c4e38f3c3553bfb3703b6600938169463a5",
+      "tested_revision": "38229adcb60741fb2c0b288f36f2e31c3176eb88",
       "platform": "remote Linux, CPU expanded profile",
-      "run_id": 40260607054,
-      "result": "6602 passed, 77 skipped, zero failures/errors",
+      "run_id": 40265925278,
+      "result": "6838 passed, 77 skipped, zero failures/errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
-      "notes": "KG ranking-control repair accepted; CI, backend, acceptance and CodeQL passed. Source/merge trees equal79ff8245e32131403f922e9b0a9b239d8f44d7d7. coverage7.16.2/566 exclusions unchanged;2781 pytest warnings,no collection warnings. Full19:48. Covered lines +21,statements +4 against acceptedbba9d20;subset17unchanged/6new is not aggregate. Exact90 percent gap1434;core70/expanded86 retained.",
+      "notes": "Ranking cutoff/averaging repair accepted; CI, backend, acceptance and CodeQL passed. Source/merge trees equald6bfd093a246207af8b9d348a99e41df5ba9cdb8. coverage7.16.2/566 exclusions unchanged;2781 pytest warnings,no collection warnings. Full24:18. Covered lines +12,statements +7 against acceptedcff4e9d;subset3unchanged/17new is not aggregate. Exact90 percent gap1428;core70/expanded86 retained.",
       "coverage_version": "7.16.2"
     },
     "latest_local_measurement": {

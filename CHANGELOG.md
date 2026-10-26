@@ -14,6 +14,11 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- AI planning retains provider-supplied operation parameters and refuses malformed
+  plan structures as a whole. Failure results preserve usage, the egress manifest
+  and raw response; optional text-list defaults remain supported. Execution still
+  validates tool arguments and applies confirmation or explicit autonomy policy.
+
 - Recommendation/retrieval cutoffs reject boolean, fractional, textual and
   non-finite counts before scoring. Valid NumPy integer counts are retained;
   retrieval k=None still uses the configured cutoff. Recommender reports now
