@@ -14,6 +14,15 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Graph fitting reads labels only from training nodes, allowing unlabeled or
+  novel-label holdouts for classical, native GCN and PyG learners. Evaluation
+  validates selected labels and discloses undefined ROC-AUC instead of emitting
+  NaN or treating unknown classes as negatives. Neural graph bundles serialize
+  architecture and weights for real saved replay. AI plans prioritize exact
+  registered tool names, preventing graph/ASR/Torch operations from being
+  redirected to generic fit/evaluate aliases. Documentation example processes
+  preserve declared dependency paths after the repository root.
+
 - Tabular ranking orders scores without overwriting query IDs, item IDs or
   relevance columns named `__score__`. Ties retain candidate row order and
   ranking/evaluation cutoffs require positive integers. AI ranking preserves

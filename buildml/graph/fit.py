@@ -68,7 +68,8 @@ def fit_graph(
     Requires ``set_graph`` (:class:`GraphSpec`) and a Session split. Labels
     for supervision come from the train partition only. Inductive mode fits on
     the train-induced subgraph; transductive mode uses full topology with
-    train-label-only loss or sklearn fit rows.
+    train-label-only loss or sklearn fit rows. Training nodes must have labels;
+    other nodes may be unlabeled or carry classes absent from training.
 
     Parameters
     ----------
@@ -170,8 +171,8 @@ def fit_graph(
         node_id_col=graph_spec.node_id_col,
         target_column=target_column,
     )
-    y_all = target_array(frame, target_column)
-    y_train_raw = y_all[train_mask]
+    y_train_raw = target_array(frame.loc[train_mask], target_column)
+    y_all = frame[target_column].to_numpy()
     if len(np.unique(y_train_raw)) < 2:
         raise ValidationError(
             "Train partition must contain at least two target classes."

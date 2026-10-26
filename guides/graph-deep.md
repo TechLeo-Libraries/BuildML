@@ -76,6 +76,22 @@ attach time.
 `evaluate` and `predict` default to **validation**. Look at test once you
 are done choosing.
 
+Only training nodes need labels for fitting. Other nodes may have missing labels
+or classes absent from training; neither changes the supervised loss or learned
+class vocabulary. Inductive fitting still uses only train-to-train edges, while
+transductive fitting uses the declared full topology and node features. Prediction
+does not require holdout labels. Evaluation requires labels only on the selected
+nodes. Accuracy and macro-F1 count novel evaluation classes as errors; binary
+ROC-AUC is omitted with a warning when the selected population lacks either
+trained class or contains unknown classes. Unrelated unlabeled partitions do not
+block evaluation of a labeled partition.
+
+Neural graph bundles save the architecture and weights and reconstruct the Torch
+or PyG module on load. Bundle trust requirements still apply. This supports
+prediction replay; it does not restore an optimizer for training continuation.
+Confirmed AI plans retain exact registered graph operation names, so `fit_graph`
+reaches the graph fitter rather than a generic fit alias.
+
 ## Methods
 
 | Method | Extra | What it fits |

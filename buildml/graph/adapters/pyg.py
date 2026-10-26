@@ -143,7 +143,9 @@ class PyGNodeClassifier:
             device=device,
         )
         x_t = torch.as_tensor(x, dtype=torch.float32, device=device)
-        y_idx = np.asarray([class_to_index[v] for v in y.tolist()], dtype=np.int64)
+        # Only train-mask labels participate in supervised loss.
+        y_idx = np.zeros(len(y), dtype=np.int64)
+        y_idx[train_mask] = [class_to_index[v] for v in y[train_mask].tolist()]
         y_t = torch.as_tensor(y_idx, dtype=torch.long, device=device)
         mask = torch.as_tensor(train_mask, dtype=torch.bool, device=device)
         if int(mask.sum().item()) < 2:
@@ -176,6 +178,24 @@ class PyGNodeClassifier:
         module.eval()
         self._module = module
         return self
+
+    def __getstate__(self) -> dict[str, Any]:
+        """Serialize fitted weights without pickling a local PyG module class."""
+        state = self.__dict__.copy()
+        state["_torch"] = None
+        if self._module is not None:
+            state["_serialized_graph_state"] = self.to_state()
+            state["_module"] = None
+        return state
+
+    def __setstate__(self, state: dict[str, Any]) -> None:
+        """Restore serialized weights while retaining older object-state payloads."""
+        state = dict(state)
+        encoded = state.pop("_serialized_graph_state", None)
+        self.__dict__.update(state)
+        if encoded is not None:
+            restored = type(self).from_state(encoded)
+            self._module, self._torch = restored._module, restored._torch
 
     def predict_proba(
         self,

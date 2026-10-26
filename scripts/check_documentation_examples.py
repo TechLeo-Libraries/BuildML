@@ -170,7 +170,8 @@ def execute(example: Example, timeout: int, *, max_output_chars: int = 8000) -> 
     with tempfile.TemporaryDirectory(prefix="buildml-doc-example-") as directory:
         script = Path(directory) / "example.py"
         script.write_text(python_source(example), encoding="utf-8")
-        env = {**os.environ, "PYTHONPATH": str(ROOT), "MPLBACKEND": "Agg", "LOKY_MAX_CPU_COUNT": "2", "PYTHONIOENCODING": "utf-8"}
+        python_path = os.pathsep.join(filter(None, (str(ROOT), os.environ.get("PYTHONPATH"))))
+        env = {**os.environ, "PYTHONPATH": python_path, "MPLBACKEND": "Agg", "LOKY_MAX_CPU_COUNT": "2", "PYTHONIOENCODING": "utf-8"}
         try:
             result = subprocess.run([sys.executable, str(script)], cwd=directory, env=env, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=timeout)
         except subprocess.TimeoutExpired:

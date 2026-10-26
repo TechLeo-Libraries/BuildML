@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-10-26, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed: 87.9211% (55,152/62,729); 7,565 passed, 77 skipped | [CI40304039791](https://github.com/TechLeo-Libraries/BuildML/actions/runs/40304039791), source `e48bac7`, tested merge `00e53afe`; trees match and CI/backend/acceptance/CodeQL passed. 566 exclusions unchanged; floor 86 retained from passing 87.0013% source a05ec41; 90% gap 1,305 lines. Synthetic conditions accepted with coverage 7.16.2; 2,856 pytest warnings, no coverage collection warnings |
+| Current accepted remote expanded CPU whole-package gate | Passed: 87.9362% (55,158/62,725); 7,641 passed, 77 skipped | [CI40309978100](https://github.com/TechLeo-Libraries/BuildML/actions/runs/40309978100), source `3021047`, tested merge `3582c1c2`; trees match and CI/backend/acceptance/CodeQL passed. 566 exclusions unchanged; floor 86 retained from passing 87.0013% source a05ec41; 90% gap 1,295 lines. Ranking repair accepted with coverage 7.16.2; 2,865 pytest warnings, no coverage collection warnings |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -199,7 +199,7 @@ python scripts/backend_support_report.py --groups engines forecasting mapie ann
 | Resampling | imbalanced-learn | Training-only resampling and lineage |
 | RL | Gymnasium | Tabular state/action and environment behavior |
 | TDA | ripser, persim | Persistence/feature and domain behavior |
-| Graph | NetworkX | Graph structure, classical node fitting and graph bundle contracts; optional GCN skips remain visible |
+| Graph | NetworkX; optional Torch/PyG | Remote NetworkX evidence plus separately verified Windows native GCN and PyG GCN/GraphSAGE/GAT training, partial-label populations and real saved replay; older Windows skips remain visible. See dated graph consumer evidence below |
 | MAPIE | MAPIE | Real split/CV+/jackknife+ methods, alpha, persistence |
 | ANN | hnswlib | Persistent worker, neighbour parity, retention, restore, fault containment |
 | Serving | FastAPI, httpx, Uvicorn | Authentication configuration, scoring schema, real loopback HTTP predictions and shutdown |
@@ -2868,4 +2868,69 @@ passed. The accepted full baseline is now 87.9211% (55,152/62,729; 7,565 passed,
 77 skipped) at `e48bac7`, with a 1,305-line gap to 90%. All remote workflows
 passed, source/merge trees match, and there are no coverage collection warnings.
 Scope, coverage 7.16.2, 566 exclusions and core 70/expanded 86 floors remain
-unchanged. The ranking repair still requires its own full CI after publication.
+unchanged. The ranking repair subsequently passed its own complete remote gate at `3021047`: 87.9362% (55,158/62,725), 7,641 passed and 77 skipped in 25:04. CI40309978100, backend40309978166, acceptance40309978101 and CodeQL40309970414 all passed; source/merge trees match, with 2,865 pytest warnings and no collection warnings. The exact90% gap is1,295 lines at that source; floors and exclusions remain unchanged.
+
+### Graph label populations, saved neural replay and exact AI operations (2026-10-26)
+
+Graph fitting previously validated every node's label and neural fit encoded
+labels outside the supervised training mask. Unlabeled holdouts therefore
+blocked fitting, and novel holdout classes could raise a dictionary lookup
+error. Training-label validation and encoding now use only TRAIN. Inductive
+and transductive topology rules remain explicit and unchanged. Evaluation
+requires labels only on its selected population, counts novel selected labels
+as errors in accuracy/macro-F1, and omits binary ROC-AUC with a warning if
+either trained class is absent or an unknown class is present.
+
+Native GCN and PyG bundles previously attempted to pickle locally defined
+Torch module classes. Natural classifier serialization now stores architecture
+and weights using the existing state conversion, supporting actual trusted
+bundle prediction replay and configured-worker serialization before fitting.
+This does not restore optimizer state for continued training. A provider graph
+consumer also exposed `fit_graph` being routed to generic `fit`: the planner
+now prioritizes exact and normalized registered tool names before its existing
+lenient free-form alias fallback. The fallback policy remains lenient.
+
+The batch adds 314 graph/planner cases, including all 226 registered tool
+identities and four normalized spellings, plus one documentation-process
+consumer. Real classical, native GCN, PyG GCN/GraphSAGE/GAT consumers cover
+binary/multiclass labels, missing/novel holdouts, both graph modes, duplicate
+frame indexes, saved probability replay, state-preserving TRAIN-null refusals,
+and actual executor, confirmed provider and explicitly authorized autonomy.
+Independent NumPy normalization/message passing/affine/softmax checks verify
+native GCN and classical probabilities. Initial 50 cases on untouched
+`3021047` had 37 failures/13 passes in 23.30s. Separately, 230 identity-routing
+cases with original planner and graph repair present had 75 failures/155
+passes in 7.82s; these are distinct reproduction stages. Focused verification
+passed 280 cases before the final 34 graph cases were added.
+
+The first broad attempt passed 519 checks, skipped three and failed writing a
+documentation example into the sandbox temporary directory before execution.
+Workspace temporary storage resolved that environment failure. A follow-up
+then reproduced the example runner dropping declared dependency paths despite
+PyG being available in the parent. The runner now preserves those paths after
+the repository root; a real subprocess import check guards that correction.
+
+The final thirteen-file subsets independently passed 532 tests with
+three existing Windows graph skips under Pandas 3.0.5 in 273.78s
+and Pandas 2.3.3 in 271.58s. Each observation had
+86 warnings under Pandas3 and 85 under Pandas2,
+with no coverage collection warnings. The old tests skip Windows native
+GCN/PyG over historical DLL concerns; the new consumers actually train and
+replay those same model families on this Windows Python3.12 CPU runtime.
+PyG2.8.0.post1 is an isolated dependency overlay; Torch2.13.0+cpu differs from
+remote expanded Torch2.7.1+cpu. Each runtime fits/reloads its own artifacts;
+cross-version portability and GPU performance are not established.
+
+Against verified same-source full baseline `3021047`, Pandas3 separately
+exercised 50 previously missing unchanged production lines and
+52 changed/new lines; Pandas2 separately exercised
+50 unchanged and 52 changed/new lines. The
+814-file frozen source snapshot and hashes preserve this mapping. These
+observations include configuration-specific optional paths and are not a
+combined database or projected full-suite percentage. Two baseline targeted
+mypy findings map unchanged, with zero new findings; type cleanliness is not
+claimed. Ruff, copy lint, diff and unchanged 586 docstring budget passed.
+Latest accepted full coverage remains 87.9362% (55,158/62,725), 7,641 passed
+and 77 skipped at `3021047`; exact90% gap1,295 lines. Core70/expanded86,
+coverage7.16.2 and 566 exclusions remain unchanged. This graph batch still
+requires its own complete remote suite after publication.
