@@ -257,7 +257,7 @@ def rank(
     if query_ids is None and partition is None:
         partition = "test"
     if partition is None:
-        frame = dataset.frame.copy()
+        frame = dataset.to_pandas()
     else:
         frame = partition_frame(dataset, split_plan, partition)
     return rank_queries(

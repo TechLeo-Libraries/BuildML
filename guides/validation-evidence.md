@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-10-26, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed: 88.2843% (55,477/62,839); 9,461 passed, 117 skipped | [CI40386365175](https://github.com/TechLeo-Libraries/BuildML/actions/runs/40386365175), source `30beca5`, tested merge `8314b8af`; matching trees and all four workflows passed. Scope/566 exclusions/coverage.py7.16.2 unchanged. Core70/expanded87 retained. Exact90% gap1,079 lines; 2,890 pytest warnings, no coverage collection warnings |
+| Current accepted remote expanded CPU whole-package gate | Passed: 88.3007% (55,512/62,867); 9,608 passed, 117 skipped | [CI40392669881](https://github.com/TechLeo-Libraries/BuildML/actions/runs/40392669881), source `f604f48`, tested merge `a48fb36c`; matching trees and all four workflows passed. Scope/566 exclusions/coverage.py7.16.2 unchanged. Core70/expanded87 retained. Exact90% gap1,069 lines; 2,890 pytest warnings, no coverage collection warnings |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -3390,3 +3390,62 @@ The accepted full result remains **88.2843%**,55,477/62,839 lines at`30beca5`,
 with9,461 passed/117 skipped and zero collection warnings. Forty added skips
 are the imitation consumers exercised in the separate compatible RL profile.
 No databases or subset reaches are combined. Core70/expanded87 stay unchanged.
+
+### Accepted observed-rating whole-suite result (2026-10-26)
+
+Source `f604f48` passed the complete expanded Linux CPU suite at **88.3007%**
+(55,512/62,867 lines), with **9,608 passed and 117 skipped** in 28:14.
+The XML has 9,725 tests and zero failures/errors; there were 2,890
+pytest warnings and no coverage collection warnings. CI40392669881, backend40392669887,
+acceptance40392670113 and CodeQL40392661769 passed. Tested merge `a48fb36c`
+and source trees match. coverage.py7.16.2 and566 exclusions are unchanged.
+The exact90% gap is1,069 covered lines at this source. Core70 and expanded87
+remain unchanged. Earlier local recommender subset observations remain
+separate and are not added to this full-suite percentage.
+
+### Native whole-population consumers (2026-10-26)
+
+Cold DuckDB/Polars ingest and lazy filtered or projected datasets now supply
+their actual rows to recommendation, ranking, KG scoring, allocation and TDA
+transforms. Explicit-query ranking uses the same current population. Ranker
+fitting checks numeric dtypes after materialization; loaded synthesizers extend
+real train rows while preserving real validation/test rows. These consumers
+materialize data in memory. This evidence does not establish out-of-core fitting
+or large-data capacity.
+
+The 124 new cases run actual native backends, trusted bundle replay and pandas
+controls. On all 828 verified archived `f604f48` package/resource files,
+**72 failed and 52 passed** in 41.73s. Repaired focused verification passed all
+124 in 38.38s with no skips or warnings. Independent checks use scalar
+recommender aggregation and cosine arithmetic, NumPy SVD/ridge equations, KG
+embedding equations, exhaustive knapsack and fractional allocation, and H0
+minimum spanning tree edge lengths with landscape/silhouette arithmetic.
+Synthetic consumers compare real row values, split membership and provenance
+before and after extension. Learned numerical state stays frozen;
+nearest-neighbour runtime caches may be populated.
+
+Windows subsets across ten files, each measured separately with all 814
+production sources and 10 verification files frozen and hash-verified:
+
+- Pandas 3.0.5/NumPy 2.4.6: **798 passed, 1 skipped**, 157.16s in the log
+  (157.082s XML); 75 warnings, zero coverage collection warnings.
+- Pandas 2.3.3: **798 passed, 1 skipped**, 160.97s in the log
+  (160.884s XML); 75 warnings, zero coverage collection warnings.
+
+Both use actual DuckDB 1.5.6 and isolated Polars 2.0.0/Ripser 0.6.15/Persim 0.4.1;
+the main environment is unchanged. All 124 new cases executed in each profile.
+The single skip checks the missing-Polars message because Polars is installed.
+The 75 warnings are existing executor flat `sample_synthetic` alias deprecations.
+
+Each separate reach against the verified full `f604f48` baseline is **15
+previously missing unchanged lines and 19 changed/new executed lines**. These
+are broader subset observations, not gains attributable solely to the new cases
+or projected full-suite percentages. The 15 unchanged lines are catalog and
+optional-dependency availability branches under the local dependency profile;
+they do not establish an incremental full-suite gain. Coverage.py 7.16.2, package
+scope and 566 exclusions are unchanged. Seven touched source files pass targeted mypy after
+typed materialization and four behavior-preserving casts resolve 18 baseline
+annotation findings; package-wide type cleanliness is not claimed. The engine
+CI matrix installs real TDA dependencies and selects the new consumers. Latest
+accepted complete coverage remains **88.3007%**; a new full result requires
+remote CI.

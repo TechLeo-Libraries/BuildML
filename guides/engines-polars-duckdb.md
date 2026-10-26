@@ -10,6 +10,18 @@ project, and aggregate before that materialization. Engine choice does not
 make sklearn train out of core. Lazy Polars collects at the sklearn
 boundary.
 
+All-row recommendation, ranking, KG scoring, allocation and TDA transforms
+also materialize the current native table. A loaded model bundle can consume
+lazy data directly: calling `to_pandas()` first is unnecessary. Native filters
+and projections define the population that is materialized; the original
+unfiltered source is not substituted. Explicit query-id ranking uses that same
+current population.
+
+Synthetic `merge_mode="extend_train"` materializes real rows before appending
+generated rows to train. Validation and test membership and values are retained.
+These operations require memory for the materialized population. Narrow data
+before invoking them when that population is large.
+
 `with session:` closes an owned DuckDB connection. After Session
 preprocess, native handles rebuild so later `project` /
 `prepare_design_matrix` can still use the engine where that path exists.

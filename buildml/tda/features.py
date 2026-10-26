@@ -170,7 +170,7 @@ def partition_frame(
         When a named partition is requested but ``split_plan`` is ``None``.
     """
     if partition == "all":
-        return dataset.frame.copy()
+        return dataset.to_pandas()
     if split_plan is None:
         raise ValidationError("A SplitPlan is required for partitioned TDA transforms.")
     return frame_for_partition(dataset, split_plan, partition)  # type: ignore[arg-type]

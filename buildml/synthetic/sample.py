@@ -148,7 +148,7 @@ ValidationError
     """
     if sample_frame is None or sample_frame.empty:
         raise ValidationError("Cannot merge an empty synthetic frame.")
-    if provenance_column in dataset.frame.columns:
+    if provenance_column in dataset.columns:
         raise ValidationError(
             f"provenance_column {provenance_column!r} already exists on the dataset. "
             "Choose another name to avoid silently overwriting real data."
@@ -163,13 +163,14 @@ ValidationError
     syn = syn[ordered_cols]
     syn[provenance_column] = mark_value
 
-    train = dataset.frame.iloc[list(split_plan.train_indices)].reset_index(drop=True)
+    frame = dataset.to_pandas()
+    train = frame.iloc[list(split_plan.train_indices)].reset_index(drop=True)
     valid = (
-        dataset.frame.iloc[list(split_plan.validation_indices)].reset_index(drop=True)
+        frame.iloc[list(split_plan.validation_indices)].reset_index(drop=True)
         if split_plan.validation_indices
         else None
     )
-    test = dataset.frame.iloc[list(split_plan.test_indices)].reset_index(drop=True)
+    test = frame.iloc[list(split_plan.test_indices)].reset_index(drop=True)
 
     train = train.copy()
     train[provenance_column] = False if mark_value is not False else 0

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import Any, Literal
+from typing import Any, Literal, cast
 
 import numpy as np
 import pandas as pd
@@ -243,8 +243,8 @@ def partition_frame(
         Copy of rows belonging to the requested partition.
     """
     if partition == "all":
-        return dataset.frame.copy()
-    return frame_for_partition(dataset, split_plan, partition).copy()  # type: ignore[arg-type]
+        return dataset.to_pandas()
+    return cast(pd.DataFrame, frame_for_partition(dataset, split_plan, partition).copy())  # type: ignore[arg-type]
 
 
 def model_scores(
@@ -286,7 +286,7 @@ def model_scores(
         ``score_source`` is unknown.
     """
     x, y, _, _, _ = _feature_target_frames(dataset, split_plan, partition)  # type: ignore[arg-type]
-    x = x[list(fit_result.feature_columns)]
+    x = cast(pd.DataFrame, x[list(fit_result.feature_columns)])
     estimator = fit_result.estimator
     y_arr = None if y is None else np.asarray(y)
     if score_source == "model_proba":

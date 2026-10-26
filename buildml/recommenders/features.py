@@ -77,7 +77,7 @@ def partition_frame(
         When ``partition`` is not ``"all"`` and ``split_plan`` is ``None``.
     """
     if partition == "all":
-        return cast(pd.DataFrame, dataset.frame.copy())
+        return dataset.to_pandas()
     if split_plan is None:
         raise ValidationError(
             "A SplitPlan is required for partitioned recommender evaluation."

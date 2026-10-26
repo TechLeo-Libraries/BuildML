@@ -14,6 +14,12 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Native all-row consumers materialize their current DuckDB or Polars data
+  before recommendation, ranking, KG scoring, allocation and TDA transforms.
+  Ranker fitting validates real numeric dtypes, and synthetic train extension
+  retains real train and holdout rows when loading a saved generator onto lazy
+  data. Native filters and projections retain their selected population.
+
 - Recommenders retain explicit zero-rated interactions as observed history,
   including duplicate ratings whose mean is zero. History exclusion, popularity,
   SVD centering and neighbour weighting use recorded membership. Bundles retain
