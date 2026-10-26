@@ -14,6 +14,12 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Tabular ranking orders scores without overwriting query IDs, item IDs or
+  relevance columns named `__score__`. Ties retain candidate row order and
+  ranking/evaluation cutoffs require positive integers. AI ranking preserves
+  explicit query selections and their partition scope. NumPy counts produce
+  ordinary integer result and audit metadata.
+
 - AI synthetic sampling preserves requested equality conditions through tool
   execution and provider plans, including train extension. Copula conditions
   retain label types and distinguish missing values from literal null labels.

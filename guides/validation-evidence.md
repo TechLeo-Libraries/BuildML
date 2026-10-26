@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-10-26, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed: 87.8865% (55,118/62,715); 7,456 passed, 77 skipped | [CI40299500742](https://github.com/TechLeo-Libraries/BuildML/actions/runs/40299500742), source `a70ba76`, tested merge `f5c89b1a`; trees match and CI/backend/acceptance/CodeQL passed. 566 exclusions unchanged; floor 86 retained from passing 87.0013% source a05ec41; 90% gap 1,326 lines. OOF prior repair accepted with coverage 7.16.2; 2,781 pytest warnings, no coverage collection warnings |
+| Current accepted remote expanded CPU whole-package gate | Passed: 87.9211% (55,152/62,729); 7,565 passed, 77 skipped | [CI40304039791](https://github.com/TechLeo-Libraries/BuildML/actions/runs/40304039791), source `e48bac7`, tested merge `00e53afe`; trees match and CI/backend/acceptance/CodeQL passed. 566 exclusions unchanged; floor 86 retained from passing 87.0013% source a05ec41; 90% gap 1,305 lines. Synthetic conditions accepted with coverage 7.16.2; 2,856 pytest warnings, no coverage collection warnings |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -2809,5 +2809,63 @@ findings map to unchanged lines/messages; zero new findings, not a clean typeche
 The accepted full baseline is now 87.8865% (55,118/62,715; 7,456 passed, 77 skipped)
 at `a70ba76`, with a 1,326-line gap to 90%. All remote workflows passed, source
 and merge trees match, and there are no coverage collection warnings. This
-synthetic repair still requires its own full CI. Package scope, coverage 7.16.2,
-566 exclusions and core 70/expanded 86 floors remain unchanged.
+synthetic repair subsequently passed all remote workflows at `e48bac7`:87.9211%
+(55,152/62,729;7,565 passed,77 skipped), with matching source/merge trees and no
+collection warnings. The exact90% gap is1,305 lines at that source. Package scope,
+coverage7.16.2,566 exclusions and core70/expanded86 floors remain unchanged.
+
+### Ranking identities, relevance and explicit AI query scopes (2026-10-26)
+
+Ranking and evaluation previously wrote predictions into a user-visible
+`__score__` column on a copied frame. When that name was a query ID, rankings
+could be empty; when it was an item ID, predicted floating-point scores replaced
+the returned item IDs; when it was relevance, metrics evaluated overwritten
+labels and even counted all-zero relevance queries as relevant. Scores now
+remain in separate arrays, with positional ordering that supports duplicate
+row indexes. Equal scores retain candidate row order. Fitted model state and
+artifact formats are unchanged; loaded rankers use corrected postprocessing.
+
+Both ranking and evaluation require positive integer cutoffs, refusing boolean,
+fractional, textual and non-finite requests before replacing results or history.
+Valid NumPy counts produce ordinary integer result and audit metadata. The AI
+ranking schema and dispatcher now carry `query_ids`: omitted partition means
+explicit queries select from the full dataset, while an explicit partition
+restricts that selection. Requested order, repetitions and empty selections
+are retained; missing queries refuse instead of returning the default test set.
+
+The 76 added consumers check current and saved pointwise/pairwise rankers,
+column-role collisions, duplicate indexes, explicit tie order, actual executor
+and offline provider/autonomy consumers, invalid requests and state preservation.
+Pointwise scores are checked against independent standardized Ridge normal
+equations; pairwise ordering uses independent affine arithmetic with the fitted
+weights. Metrics use independent graded DCG, average precision and reciprocal
+rank calculations on original labels, including queries without relevant items.
+The initial 65 cases on verified untouched `e48bac7` produced 41 failures and
+24 passes in 20.05s, followed by 65 passes and six expected alias deprecations
+in 20.31s after repair. An earlier draft compared whole-plan hashes across a
+load-time normalization step; that fixture was corrected to check the original
+plan before load and numerical replay afterward. Eleven additional cases were
+then added for ties and explicit empty/repeated/missing query scopes.
+
+The final eight-file subset independently passed 404 tests with one absent
+XGBoost skip under Pandas 3.0.5 in 141.75s and under Pandas 2.3.3 in 144.07s.
+Each observation had 85 deprecation warnings from retained flat aliases and an
+upstream LangChain notice, with no coverage collection warnings. These are the
+same tests in separate runtimes, not 808 distinct tests or a combined database.
+Each runtime fitted and replayed its own rankers; cross-version artifact
+portability and the locally absent XGBoost backend remain unestablished. The
+subset also reruns the preceding synthetic-condition consumers.
+
+Separate source-mapped reach reports versus newly verified full source
+`e48bac7` each show 14 previously missing unchanged lines and 15 changed/new
+executed lines. Configuration-specific optional refusal paths contribute to
+reach, so this is not a combined database or a projected aggregate percentage.
+Historical reach versus `a70ba76` was 34 unchanged/31 changed-new and included
+the preceding synthetic repair. Eleven targeted baseline mypy findings map to
+unchanged source lines/messages with zero new findings; this is not a clean
+typecheck. Ruff, copy lint, diff checks and the unchanged 586 docstring budget
+passed. The accepted full baseline is now 87.9211% (55,152/62,729; 7,565 passed,
+77 skipped) at `e48bac7`, with a 1,305-line gap to 90%. All remote workflows
+passed, source/merge trees match, and there are no coverage collection warnings.
+Scope, coverage 7.16.2, 566 exclusions and core 70/expanded 86 floors remain
+unchanged. The ranking repair still requires its own full CI after publication.

@@ -5317,11 +5317,20 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
             name="rank",
             description=(
                 "Order items for queries with the frozen tabular ranker "
-                "(top-K item ids + scores per query)."
+                "(top-K item ids + scores per query). Explicit query_ids select "
+                "the full dataset unless partition is also provided."
             ),
             parameters={
                 "type": "object",
                 "properties": {
+                    "query_ids": {
+                        "type": ["array", "null"],
+                        "items": {"type": ["string", "number", "boolean"]},
+                        "description": (
+                            "Explicit query order. With partition, selects only from that "
+                            "partition; otherwise selects from the full dataset."
+                        ),
+                    },
                     "partition": {
                         "type": "string",
                         "enum": ["train", "validation", "test", "all"],

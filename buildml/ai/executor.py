@@ -2419,7 +2419,7 @@ def _dispatch_tool(
     elif call.tool_name == "rank":
         kwargs = {
             key: call.arguments[key]
-            for key in ("partition", "k", "backend")
+            for key in ("partition", "query_ids", "k", "backend")
             if key in call.arguments
         }
         result = session.rank(**kwargs)
