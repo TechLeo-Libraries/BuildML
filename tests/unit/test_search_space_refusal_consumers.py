@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 import pytest
 from sklearn.linear_model import Ridge
-from sklearn.model_selection import KFold
+from sklearn.model_selection import GroupKFold, KFold
 
 from buildml import Session
 from buildml.core.errors import ValidationError
@@ -130,4 +130,119 @@ def test_valid_candidate_domains_match_independent_ridge_cv(engine, spec):
         independent_scores.append(np.mean(errors))
     assert result.best_score == pytest.approx(min(independent_scores))
     assert session.fit_result is original_fit
+    np.testing.assert_allclose(session.predict(), oracle, atol=1e-12)
+
+
+@pytest.mark.parametrize('method', ['cv_score', 'grid_search', 'randomized_search',
+                                     'evolutionary_search', 'nested_cv_score'])
+@pytest.mark.parametrize('problem', ['one_fold', 'unknown_strategy', 'regression_stratified',
+                                      'missing_groups', 'too_few_groups', 'short_groups',
+                                      'long_groups', 'matrix_groups', 'missing_time', 'wrong_metric'])
+def test_cv_configuration_refusals_preserve_working_model(method, problem):
+    session, oracle = fitted_session()
+    fitted, previous_search = session.fit_result, session.last_search
+    holdout = session.partition('test').copy(deep=True)
+    options = dict(task='regression', cv=2)
+    if method == 'grid_search':
+        options.update(param_grid={'alpha': [.4]}, refit=True)
+    elif method == 'randomized_search':
+        options.update(param_distributions={'alpha': [.4]}, n_iter=1, refit=True)
+    elif method == 'evolutionary_search':
+        options.update(param_space={'alpha': [.4]}, population_size=2,
+                       n_generations=1, elite_size=1, max_evaluations=2, refit=True)
+    elif method == 'nested_cv_score':
+        options = dict(task='regression', outer_cv=2, inner_cv=2, param_grid={'alpha': [.4]})
+    if problem == 'one_fold':
+        options['outer_cv' if method == 'nested_cv_score' else 'cv'] = 1
+    elif problem == 'unknown_strategy':
+        options['cv_strategy'] = 'typo'
+    elif problem == 'regression_stratified':
+        options['cv_strategy'] = 'stratified'
+    elif problem in {'missing_groups', 'too_few_groups', 'short_groups', 'long_groups', 'matrix_groups'}:
+        options['cv_strategy'] = 'group'
+        if problem == 'too_few_groups':
+            options['groups'] = pd.Series(np.zeros(len(session.partition('train'))))
+        elif problem == 'short_groups':
+            options['groups'] = pd.Series([0, 1])
+        elif problem == 'long_groups':
+            options['groups'] = pd.Series(np.arange(len(session.partition('train')) + 1))
+        elif problem == 'matrix_groups':
+            options['groups'] = pd.DataFrame({'g': np.arange(len(session.partition('train')))})
+    elif problem == 'missing_time':
+        options['cv_strategy'] = 'time'
+    else:
+        options['scoring_metric' if method in {'cv_score', 'nested_cv_score'} else 'ranking_metric'] = 'accuracy'
+    history = copy.deepcopy(session.history)
+    with pytest.raises(ValidationError):
+        getattr(session, method)(Ridge(), **options)
+    assert session.fit_result is fitted
+    assert session.last_search is previous_search
+    assert session.history == history
+    pd.testing.assert_frame_equal(session.partition('test'), holdout)
+    np.testing.assert_allclose(session.predict(), oracle, atol=1e-12)
+
+
+@pytest.mark.parametrize('overrides', [
+    {'param_grid': None},
+    {'param_distributions': {'alpha': [.4]}},
+    {'recipe_distributions': {'scale': ['standard']}},
+    {'inner_search': 'evolutionary'},
+    {'inner_search': 'optuna'},
+    {'param_space': {'alpha': [.4]}},
+    {'inner_search': 'grid', 'param_grid': None, 'param_distributions': {'alpha': [.4]}},
+    {'inner_search': 'grid', 'param_space': {'alpha': [.4]}},
+    {'inner_search': 'randomized', 'param_grid': None, 'param_space': {'alpha': [.4]}},
+    {'inner_search': 'optuna', 'param_space': {'alpha': [.4]}},
+    {'inner_search': 'evolutionary', 'param_space': {'alpha': [.4]}},
+    {'warm_start_studies': True},
+    {'param_grid': {}},
+    {'param_grid': None, 'param_distributions': {}},
+    {'param_grid': None, 'recipe_grid': {}},
+    {'param_grid': None, 'recipe_distributions': {}},
+    {'param_grid': None, 'param_space': {'alpha': [.4]}, 'inner_search': 'evolutionary', 'n_trials': 0},
+    {'inner_search': 'optuna', 'param_grid': None, 'param_space': {'alpha': [.4]}, 'recipe_grid': {'scale': ['standard']}},
+])
+def test_nested_search_routing_conflicts_leave_existing_fit_usable(overrides):
+    session, oracle = fitted_session()
+    fitted, previous_search = session.fit_result, session.last_search
+    history = copy.deepcopy(session.history)
+    options = dict(param_grid={'alpha': [.4]}, outer_cv=2, inner_cv=2, task='regression')
+    options.update(overrides)
+    with pytest.raises(ValidationError):
+        session.nested_cv_score(Ridge(), **options)
+    assert session.fit_result is fitted
+    assert session.last_search is previous_search
+    assert session.history == history
+    np.testing.assert_allclose(session.predict(), oracle, atol=1e-12)
+
+
+@pytest.mark.parametrize('method', ['cv_score', 'nested_cv_score'])
+@pytest.mark.parametrize('index_kind', ['default', 'duplicate', 'reversed'])
+def test_valid_group_labels_are_positional_and_match_independent_scores(method, index_kind):
+    session, oracle = fitted_session()
+    fitted = session.fit_result
+    train = session.partition('train')
+    x, y = train[['a', 'b']].to_numpy(), train.y.to_numpy()
+    groups = pd.Series(np.arange(len(train)) % 4)
+    if index_kind == 'duplicate':
+        groups.index = [1000] * len(train)
+    elif index_kind == 'reversed':
+        groups.index = list(reversed(range(1000, 1000 + len(train))))
+    expected = []
+    for fit, score in GroupKFold(n_splits=2).split(x, y, groups.to_numpy()):
+        center = x[fit].mean(axis=0)
+        centered = x[fit] - center
+        coef = np.linalg.solve(centered.T @ centered + .4*np.eye(2),
+                               centered.T @ (y[fit] - y[fit].mean()))
+        prediction = (x[score] - center) @ coef + y[fit].mean()
+        expected.append(np.sqrt(np.mean((prediction - y[score])**2)))
+    options = dict(task='regression', cv_strategy='group', groups=groups, scoring_metric='rmse')
+    if method == 'nested_cv_score':
+        options.update(outer_cv=2, inner_cv=2, param_grid={'alpha': [.4]})
+    else:
+        options.update(cv=2)
+    result = getattr(session, method)(Ridge(alpha=.4), **options)
+    assert result.mean_metrics['rmse'] == pytest.approx(np.mean(expected))
+    assert result.std_metrics['rmse'] == pytest.approx(np.std(expected, ddof=1))
+    assert session.fit_result is fitted
     np.testing.assert_allclose(session.predict(), oracle, atol=1e-12)

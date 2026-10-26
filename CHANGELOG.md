@@ -14,6 +14,10 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- CV and search entry points refuse explicit group labels with the wrong shape
+  or training-row count before passing them to sklearn. Group Series labels
+  remain positional; failed requests preserve existing fitted models and history.
+
 - Optuna declared search domains share the evolutionary domain validator, refusing
   invalid bounds, empty choices and lossy boolean/integer/logarithm coercions.
   Malformed declared domains are checked before advancing an existing study.

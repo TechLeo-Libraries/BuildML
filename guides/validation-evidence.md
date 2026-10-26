@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-10-19, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed:87.6453% (54,873/62,608);6,257 passed,77 skipped | [CI40244547295](https://github.com/TechLeo-Libraries/BuildML/actions/runs/40244547295), source `c1317b5`, tested merge `b9fc4fdf`; trees match and all three workflows passed.566 exclusions unchanged;floor86 retained from passing87.0013% source a05ec41;90% gap1,475 lines. Recommender catalog identity repair accepted with coverage7.16.2;2781 pytest warnings, no coverage collection warnings |
+| Current accepted remote expanded CPU whole-package gate | Passed:87.6701% (54,885/62,604);6,324 passed,77 skipped | [CI40249402802](https://github.com/TechLeo-Libraries/BuildML/actions/runs/40249402802), source `8934aed`, tested merge `73a60865`; trees match and all three workflows passed.566 exclusions unchanged;floor86 retained from passing87.0013% source a05ec41;90% gap1,459 lines. Search-domain consistency repair accepted with coverage7.16.2;2781 pytest warnings, no coverage collection warnings |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -2424,3 +2424,32 @@ whole-package coverage, whose accepted result remains **87.6453%** pending a
 passing full remote measurement. Package scope, exclusions and floors are
 unchanged. The optional backend was installed only under this task's reports
 directory; the main environment was preserved.
+
+
+### CV group shape and configuration refusal (2026-10-26)
+
+Explicit groups must be a one-dimensional sequence with one value per training
+row. Short, long and matrix-shaped groups previously leaked raw sklearn or
+pandas ValueError through cv_score, grid_search, randomized_search,
+evolutionary_search and nested_cv_score. Fifteen refusal cases failed before
+the repair while 59 other configuration and valid-group cases passed.
+The shared splitter resolver now checks this boundary before backend use.
+
+Seventy-four added consumers cover those five entry points, nested search-family
+conflicts, invalid fold counts/strategies/metrics, missing group/time roles and
+insufficient groups. Refused requests preserve the existing fitted model,
+search result, history, holdout frame and independently calculated predictions.
+Valid GroupKFold and nested grouped scores match independent Ridge normal
+equations, including duplicated and reversed external Series index labels:
+group values retain their positional meaning rather than aligning by index.
+
+The final eight-file Windows subset passed **209 tests**, no failures or warnings,
+in 66.17 seconds. One existing missing-Optuna test intentionally skipped because
+the real isolated Optuna 5.0.0 backend was installed. Ruff, copy lint and the
+unchanged 586-finding docstring budget passed. Targeted mypy retains the same
+three no-any-return findings at lines 268, 509 and 757, reproduced exactly on
+archived verified `8934aed` source; no clean package-wide typecheck is claimed.
+Source-mapped reach against that verified baseline was **8 previously missing
+unchanged lines and 5 changed/new executed lines**. Accepted whole-package
+coverage remains **87.6701%** pending fresh remote full verification. Package
+scope, exclusions and core/expanded coverage floors are unchanged.

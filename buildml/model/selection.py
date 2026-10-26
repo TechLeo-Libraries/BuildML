@@ -3347,6 +3347,11 @@ def _resolve_splitter(
     groups: pd.Series | None,
     task: Literal["classification", "regression"],
 ) -> tuple[pd.Series | None, str, Any, np.ndarray | None]:
+    if groups is not None:
+        if np.ndim(groups) != 1:
+            raise ValidationError("groups must be one-dimensional and aligned to the train partition")
+        if len(groups) != len(y_train):
+            raise ValidationError("groups length must match the train partition")
     if not isinstance(cv, int):
         splitter = check_cv(cv, y=y_train, classifier=task == "classification")
         return groups, type(splitter).__name__, splitter, None
