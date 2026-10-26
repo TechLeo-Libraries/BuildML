@@ -454,7 +454,8 @@ def input_columns_from_plans(plans: dict[str, Any] | None) -> list[str]:
     ``city_London``, ``city_Paris``, and so on. Those outputs are *not* inputs;
     requiring them would demand that the caller do the encoding the bundle
     exists to perform. Engineered names are collected across all plans and
-    subtracted from the result.
+    subtracted from the result. Encoding outputs that reuse one of that same
+    plan's source names still require the raw source, as with ordinal encoding.
 
     Parameters
     ----------
@@ -493,7 +494,12 @@ def input_columns_from_plans(plans: dict[str, Any] | None) -> list[str]:
         names = getattr(encode_plan, "feature_names_", None)
         if names is None and isinstance(encode_plan, dict):
             names = encode_plan.get("feature_names_")
-        engineered.update(str(c) for c in names or [])
+        sources = getattr(encode_plan, "columns", None)
+        if sources is None and isinstance(encode_plan, dict):
+            sources = encode_plan.get("columns")
+        # Ordinal and other safe source-name reuse still need the raw input.
+        source_names = {str(c) for c in sources or []}
+        engineered.update(str(c) for c in names or [] if str(c) not in source_names)
 
     binning_plan = plans.get("binning_plan")
     if binning_plan is not None:
@@ -572,6 +578,7 @@ def build_schema_contract(
     target_column: str | None,
     input_columns: list[str] | tuple[str, ...] | None = None,
     encoded_numeric_columns: list[str] | tuple[str, ...] | None = None,
+    input_dtypes: dict[str, str] | None = None,
 ) -> SchemaContract:
     """Derive the contract from what was known at training time.
 
@@ -605,6 +612,10 @@ def build_schema_contract(
         Feature columns that are numeric post-transform. Inferred when omitted,
         by taking feature columns that are already numeric or that do not appear
         among the inputs: the latter being engineered outputs.
+    input_dtypes:
+        Original raw types for declared input columns whose types changed during
+        preprocessing. These override the transformed training schema; numeric
+        encoded outputs are checked separately at the features stage.
 
     Returns
     -------
@@ -613,9 +624,9 @@ def build_schema_contract(
 
     Notes
     -----
-    **A contract with no schema still checks column presence.** Types are
-    skipped, roles are skipped, and missing columns are still caught, which is
-    the most common failure anyway.
+    **A contract with no schema still checks column presence.** Raw types can
+    also be supplied through ``input_dtypes``; unknown types are skipped.
+    Missing columns are still caught.
 
     **The inference of ``encoded_numeric_columns`` is a heuristic**, and a good
     one for the standard plans. Pass the list explicitly when a custom transform
@@ -663,6 +674,8 @@ def build_schema_contract(
         if ordered:
             columns = tuple(ordered)
 
+    if input_dtypes:
+        dtypes.update({name: dtype for name, dtype in input_dtypes.items() if name in columns})
     families = {name: dtype_family(dtype) for name, dtype in dtypes.items()}
     # Ensure every declared column has a family entry.
     for name in columns:
@@ -679,7 +692,8 @@ def build_schema_contract(
             if families.get(name) == "numeric" or name not in columns
         )
     for name in encoded:
-        families[name] = "numeric"
+        if name not in columns:
+            families[name] = "numeric"
 
     required_roles = tuple(
         sorted(

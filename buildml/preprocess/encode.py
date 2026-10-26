@@ -157,6 +157,9 @@ class EncodePlan:
     smoothing:
         How strongly a category's mean is pulled toward the prior. Higher means
         a category needs more rows before its own mean is trusted.
+    input_dtypes_:
+        Raw categorical column types before encoding. Saved input contracts use
+        these when an output reuses a source name but has become numeric.
     """
 
     columns: tuple[str, ...]
@@ -170,6 +173,7 @@ class EncodePlan:
     n_folds: int = 5
     random_state: int = 0
     smoothing: float = 10.0
+    input_dtypes_: dict[str, str] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
         """Return the plan as plain JSON-safe values.
@@ -184,14 +188,18 @@ class EncodePlan:
             ``'infrequent'`` plan adds ``infrequent_maps_`` and
             ``min_frequency``; a ``'target'`` plan adds ``target_maps_``,
             ``target_prior_``, ``n_folds``, ``random_state``, and
-            ``smoothing``. The fitted encoder object is omitted, since it does
-            not serialise to JSON: use a saved pipeline to round-trip it.
+            ``smoothing``. New plans also include ``input_dtypes_`` when raw
+            types were recorded. The fitted encoder object is omitted, since
+            it does not serialise to JSON: use a saved pipeline to round-trip it.
         """
         payload: dict[str, Any] = {
             "columns": list(self.columns),
             "method": self.method,
             "feature_names_": list(self.feature_names_),
         }
+        input_dtypes = getattr(self, "input_dtypes_", {})
+        if input_dtypes:
+            payload["input_dtypes_"] = dict(input_dtypes)
         if self.method == "infrequent":
             payload["infrequent_maps_"] = {
                 key: list(values) for key, values in self.infrequent_maps_.items()
@@ -322,6 +330,7 @@ def fit_encoder(
             "Pass columns=... explicitly to include ignore/id roles."
         ),
     )
+    input_dtypes = {column: str(train[column].dtype) for column in cols}
 
     if method in {"onehot", "ordinal"}:
         if method == "onehot":
@@ -343,6 +352,7 @@ def fit_encoder(
             method=method,
             feature_names_=feature_names,
             encoder=encoder,
+            input_dtypes_=input_dtypes,
         )
 
     if method == "infrequent":
@@ -370,6 +380,7 @@ def fit_encoder(
             encoder=encoder,
             infrequent_maps_=maps,
             min_frequency=min_frequency,
+            input_dtypes_=input_dtypes,
         )
 
     if method == "target":
@@ -400,6 +411,7 @@ def fit_encoder(
             n_folds=n_folds,
             random_state=random_state,
             smoothing=smoothing,
+            input_dtypes_=input_dtypes,
         )
 
     raise ValidationError(f"Unsupported encode method '{method}'")

@@ -8,20 +8,20 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 87.83710465004947,
-      "covered_lines": 55044,
-      "num_statements": 62666,
+      "percent_covered": 87.86032191682486,
+      "covered_lines": 55077,
+      "num_statements": 62687,
       "excluded_lines": 566,
-      "source_revision": "a01ae6770852e7ca4c477df97fa3425efc7c42f9",
-      "tested_revision": "462c874cced3cd91040d35e3182e5621b9aab812",
+      "source_revision": "6511eb8c54adde2a20785f05660ba453054ccd48",
+      "tested_revision": "8b42e70884e3f031065aef6d731214910a1a44b9",
       "platform": "remote Linux, CPU expanded profile",
-      "run_id": 40283342384,
-      "result": "7148 passed, 77 skipped, zero failures/errors",
+      "run_id": 40288064806,
+      "result": "7228 passed, 77 skipped, zero failures/errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
-      "notes": "Infrequent encoding repair accepted; CI, backend, acceptance and CodeQL passed. Source/merge trees equal8823f9db0f0f0917eb5566a4419d3b881f538c8d. coverage7.16.2/566 exclusions unchanged;2781 pytest warnings,no collection warnings. Full24:37. Covered lines +22,statements +11 against accepted10d4271;subset2unchanged/28new is not aggregate. Exact90 percent gap1356;core70/expanded86 retained.",
+      "notes": "Encoder output-name repair accepted; CI, backend, acceptance and CodeQL passed, including repeated DDP validation. Source/merge trees equal3fa52f1b58565c9604abf1060f9b525375ec872f. coverage7.16.2/566 exclusions unchanged;2781 pytest warnings,no collection warnings. Full15:36. Covered lines +33,statements +21 against accepteda01ae67;subset11unchanged/29new is not aggregate. Exact90 percent gap1342;core70/expanded86 retained.",
       "coverage_version": "7.16.2"
     },
     "latest_local_measurement": {

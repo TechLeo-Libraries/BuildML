@@ -23,6 +23,23 @@ do not use that gate.
 | Pipeline bundle | `save_pipeline` / `load_pipeline` | plans + estimator + model card + schema contract | Dataset rows, full history, Torch/RAG |
 | Score helper | `predict_from_pipeline` | one-shot inference | Does not mutate Session |
 
+Categorical pipeline contracts distinguish raw labels from prepared numeric
+features. Ordinal encoding can keep the same column name in both stages:
+raw labels `"01"` and `"1"` remain distinct, while `apply_plans=False` expects
+their already encoded numeric values. Newly fitted encode plans retain their
+raw column types. Raw source columns remain required even when another encoded
+output reuses their name. Missing raw inputs and malformed numeric features
+raise `ValidationError`.
+
+Older bundles may already contain an input contract inferred from post-encoding
+types. Loading does not reconstruct missing raw type information. For an
+affected ordinal bundle, refit the encoder and model from the original raw data
+and save a new bundle, or rebuild an explicit schema contract from the known raw
+schema using `build_schema_contract` and pass it to `save_pipeline_bundle`.
+Include the encoded output names in `encoded_numeric_columns` so feature-stage
+validation remains numeric. Passing transformed values as raw labels can change
+their meaning; validate the replacement bundle against known predictions.
+
 A domain mixin that fits also has `save_bundle` / `load_bundle`. That
 file holds the domain's `*Plan` (estimator or factors, plus the
 disclosures that domain needs). It does not hold the dataset, split

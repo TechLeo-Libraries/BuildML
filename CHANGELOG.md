@@ -14,6 +14,12 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Saved categorical pipelines retain raw input types separately from numeric
+  encoded features. Ordinal labels such as `"01"` and `"1"` remain distinct at
+  replay, and source names reused by generated outputs remain required inputs.
+  Feature-stage numeric validation stays strict. The artifact guide explains
+  rebuilding affected older contracts when raw type metadata is unavailable.
+
 - Categorical encoders refuse duplicate generated names and collisions with
   retained columns before they can overwrite or drop features. The same checks
   apply to fold-local CV and frozen pipeline replay, including extra score

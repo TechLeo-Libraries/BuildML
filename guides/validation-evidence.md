@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-10-26, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed:87.8371% (55,044/62,666);7,148 passed,77 skipped | [CI40283342384](https://github.com/TechLeo-Libraries/BuildML/actions/runs/40283342384), source `a01ae67`, tested merge `462c874c`; trees match and CI/backend/acceptance/CodeQL passed.566 exclusions unchanged;floor86 retained from passing87.0013% source a05ec41;90% gap1,356 lines. Infrequent encoder repair accepted with coverage7.16.2;2781 pytest warnings, no coverage collection warnings |
+| Current accepted remote expanded CPU whole-package gate | Passed:87.8603% (55,077/62,687);7,228 passed,77 skipped | [CI40288064806](https://github.com/TechLeo-Libraries/BuildML/actions/runs/40288064806), source `6511eb8`, tested merge `8b42e708`; trees match and CI/backend/acceptance/CodeQL passed.566 exclusions unchanged;floor86 retained from passing87.0013% source a05ec41;90% gap1,342 lines. Encoder name integrity repair accepted with coverage7.16.2;2781 pytest warnings, no coverage collection warnings |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -2641,7 +2641,42 @@ Source-mapped reach against verified a01ae67 is11 previously missing unchanged
 lines and29 changed/new executed lines. This is subset reach, not aggregate
 coverage. Ruff/copy lint and the unchanged586 docstring budget passed. Targeted
 mypy retains19 baseline findings matched to unchanged source lines/messages;
-zero new findings, not a clean typecheck. Accepted remote full coverage is
-87.8371% (55,044/62,666;7,148 passed,77 skipped) at a01ae67. Fresh full CI for
-this repair must pass separately. Scope,coverage7.16.2/566 exclusions and
-core70/expanded86 floors are unchanged.
+zero new findings, not a clean typecheck. Published6511eb8 subsequently passed
+all remote workflows and the full expanded suite at87.8603% (55,077/62,687;
+7,228 passed,77 skipped), including repeated DDP validation. Source/merge trees
+match;scope,coverage7.16.2/566 exclusions and core70/expanded86 are unchanged.
+
+### Raw categorical types in saved pipeline contracts (2026-10-26)
+
+Newly fitted encode plans retain their original input dtypes. Bundle contracts
+use these raw types separately from the explicitly numeric encoded outputs.
+Input-name derivation keeps raw source names that are also outputs of that
+encoder, including ordinal replacement and safe cross-source name reuse.
+Previously, ordinary raw ordinal labels could fail an expected-numeric check;
+numeric-looking labels such as "01" and "1" could be silently collapsed before
+encoding, changing loaded predictions. The public artifact guide explains the
+two stages and how to rebuild affected older contracts from known raw schemas.
+Loading cannot reconstruct raw type information that was never recorded.
+
+Final twelve-file verification passed389 tests with zero failures/skips in76.06s.
+Two existing date-parser warnings came from malformed-datetime contract cases.
+The106 new consumers check object/string/category dtypes, leading-zero labels,
+missing reused sources, explicit prepared-feature validation, older plans without
+the new metadata, loaded/path bundles, duplicate row indexes, unknown categories
+and checkpoint/resume/refit/export. Independent indicator/category-mean matrices,
+OOF assignments and Ridge normal equations establish feature and prediction
+agreement; null-category compatibility uses actual Session-versus-saved replay
+with an explicit imputer for ordinal missing values. The initial66-case audit
+against verified6511eb8 production sources produced61 failures and5 passes in
+15.28s, including metadata/presence assertions alongside numerical and refusal
+failures. Forty final compatibility/checkpoint controls were added subsequently.
+
+Source-mapped reach against the verified6511eb8 full expanded job is3 previously
+missing unchanged lines and14 changed/new executed lines. This is subset reach,
+not aggregate coverage. Ruff, targeted mypy (zero findings), copy lint and the
+unchanged586 docstring budget passed. That baseline job independently passed
+87.8603% (55,077/62,687;7,228 passed,77 skipped), with source/merge trees verified,
+coverage7.16.2/566 exclusions and no coverage collection warnings. Its overall CI,
+backend evidence, release acceptance and CodeQL passed, including the repeated
+DDP validation job. This schema batch needs its own full CI; package scope and
+core70/expanded86 floors remain unchanged.
