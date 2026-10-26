@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 
+import numpy as np
+
 from buildml.core.errors import ValidationError
 from buildml.data.dataset import Dataset
 from buildml.data.splits import SplitPlan, assert_fit_partition
@@ -174,7 +176,9 @@ def fit_recommender(
             f"{len(users)} users / {len(items)} items."
         )
 
-    mask = matrix != 0
+    mask = np.zeros(matrix.shape, dtype=bool)
+    mask[interactions[user_col].map(user_index).to_numpy(),
+         interactions[item_col].map(item_index).to_numpy()] = True
     global_mean = float(matrix[mask].mean()) if mask.any() else 0.0
     item_popularity = mask.sum(axis=0).astype(float)
 
@@ -248,7 +252,7 @@ def fit_recommender(
         )
     elif resolved_method == "svd":
         user_factors, item_factors = fit_svd_factors(
-            matrix, n_factors=n_factors, random_state=random_state
+            matrix, n_factors=n_factors, random_state=random_state, observed_mask=mask
         )
         disclosures.append(
             f"svd: TruncatedSVD factors "
@@ -328,6 +332,7 @@ def fit_recommender(
         user_index_=user_index,
         item_index_=item_index,
         matrix_=matrix,
+        observed_mask_=mask,
         similarity_=similarity,
         user_factors_=user_factors,
         item_factors_=item_factors,

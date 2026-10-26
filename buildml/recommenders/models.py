@@ -9,6 +9,18 @@ from sklearn.metrics.pairwise import cosine_similarity
 from buildml.core.errors import ValidationError
 
 
+def _observed_entries(matrix: np.ndarray, observed_mask: np.ndarray | None) -> np.ndarray:
+    """Validate explicit observation membership or retain legacy nonzero inference."""
+    if observed_mask is None:
+        return matrix != 0
+    mask = np.asarray(observed_mask)
+    if mask.shape != matrix.shape or mask.dtype != np.dtype(bool):
+        raise ValidationError("Recommender observation mask must be boolean and match matrix shape.")
+    if np.any((matrix != 0) & ~mask):
+        raise ValidationError("Recommender observation mask omits a nonzero matrix rating.")
+    return mask
+
+
 def fit_item_similarity(matrix: np.ndarray) -> np.ndarray:
     """Compute item-item cosine similarity from a user×item matrix.
 
@@ -49,7 +61,8 @@ def fit_user_similarity(matrix: np.ndarray) -> np.ndarray:
 
 
 def fit_svd_factors(
-    matrix: np.ndarray, *, n_factors: int, random_state: int | None
+    matrix: np.ndarray, *, n_factors: int, random_state: int | None,
+    observed_mask: np.ndarray | None = None,
 ) -> tuple[np.ndarray, np.ndarray]:
     """Fit truncated SVD factors for matrix-factorization scoring.
 
@@ -64,6 +77,9 @@ def fit_svd_factors(
         Requested latent dimension; capped by matrix rank.
     random_state:
         Seed for reproducible SVD initialization.
+    observed_mask:
+        Optional boolean membership matrix, including observed zero ratings.
+        Omitted for legacy callers that infer membership from nonzero values.
 
     Returns
     -------
@@ -82,7 +98,7 @@ def fit_svd_factors(
     if n_comp < 1:
         raise ValidationError("SVD requires at least 2 users and 2 items.")
     # Center by global mean for stability on sparse explicit ratings
-    mask = matrix != 0
+    mask = _observed_entries(matrix, observed_mask)
     if mask.any():
         global_mean = float(matrix[mask].mean())
     else:
@@ -151,6 +167,7 @@ def score_item_knn(
     *,
     n_neighbors: int,
     exclude_mask: np.ndarray,
+    observed_mask: np.ndarray | None = None,
 ) -> np.ndarray:
     """Score all items for one user via item-item kNN collaborative filtering.
 
@@ -169,6 +186,9 @@ def score_item_knn(
         Maximum rated neighbors contributing to each item score.
     exclude_mask:
         Boolean mask of items to zero out (typically train history).
+    observed_mask:
+        Optional boolean matrix identifying rated entries, including zeros.
+        Omitted for legacy nonzero-membership behavior.
 
     Returns
     -------
@@ -176,7 +196,7 @@ def score_item_knn(
         Per-item scores of length ``n_items``.
     """
     rated = matrix[user_idx]
-    rated_idx = np.flatnonzero(rated != 0)
+    rated_idx = np.flatnonzero(_observed_entries(matrix, observed_mask)[user_idx])
     scores = np.zeros(matrix.shape[1], dtype=float)
     if rated_idx.size == 0:
         return scores
@@ -205,6 +225,7 @@ def score_user_knn(
     *,
     n_neighbors: int,
     exclude_mask: np.ndarray,
+    observed_mask: np.ndarray | None = None,
 ) -> np.ndarray:
     """Score all items for one user via user-user kNN collaborative filtering.
 
@@ -223,6 +244,9 @@ def score_user_knn(
         Maximum similar users contributing to each item score.
     exclude_mask:
         Boolean mask of items to zero out (typically train history).
+    observed_mask:
+        Optional boolean matrix identifying rated entries, including zeros.
+        Omitted for legacy nonzero-membership behavior.
 
     Returns
     -------
@@ -240,7 +264,7 @@ def score_user_knn(
     weights = sims[neighbor_idx]
     neighbor_ratings = matrix[neighbor_idx]  # neighbors × items
     # Only count neighbors who rated each item
-    rated_mask = neighbor_ratings != 0
+    rated_mask = _observed_entries(matrix, observed_mask)[neighbor_idx]
     numer = (weights[:, None] * neighbor_ratings).sum(axis=0)
     denom = (np.abs(weights)[:, None] * rated_mask).sum(axis=0)
     scores = np.zeros(matrix.shape[1], dtype=float)

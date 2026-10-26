@@ -12,6 +12,7 @@ import numpy as np
 from buildml._version import __version__
 from buildml.core.errors import ValidationError
 from buildml.core.serialization import joblib_load_trusted
+from buildml.recommenders.features import _observed_interactions
 from buildml.recommenders.results import (
     RecommenderEvalResult,
     RecommenderFitResult,
@@ -50,6 +51,7 @@ def _validate_catalog(plan: RecommenderPlan) -> None:
             raise ValidationError(f"Recommender {kind} catalog index disagrees with ID order.")
     if np.shape(plan.matrix_) != (plan.n_users, plan.n_items):
         raise ValidationError("Recommender matrix shape disagrees with catalog dimensions.")
+    _observed_interactions(plan)
 
 
 def save_recommender_bundle(
@@ -98,6 +100,7 @@ def save_recommender_bundle(
     payload = {
         "plan": plan,
         "matrix": np.asarray(plan.matrix_),
+        "observed_mask": getattr(plan, "observed_mask_", None),
         "similarity": None if plan.similarity_ is None else np.asarray(plan.similarity_),
         "user_factors": (
             None if plan.user_factors_ is None else np.asarray(plan.user_factors_)
@@ -202,6 +205,8 @@ def load_recommender_bundle(path: str | Path, *, trusted: bool = False) -> Recom
         plan.matrix_ is None or plan.matrix_.size == 0
     ):
         plan.matrix_ = np.asarray(loaded["matrix"], dtype=float)
+    if loaded.get("observed_mask") is not None and getattr(plan, "observed_mask_", None) is None:
+        plan.observed_mask_ = np.asarray(loaded["observed_mask"])
     if loaded.get("similarity") is not None and plan.similarity_ is None:
         plan.similarity_ = np.asarray(loaded["similarity"], dtype=float)
     if loaded.get("user_factors") is not None and plan.user_factors_ is None:

@@ -13,7 +13,7 @@ from buildml.data.dataset import Dataset
 from buildml.data.splits import SplitPlan
 from buildml.recommenders.adapters.implicit_lib import score_implicit_model
 from buildml.recommenders.adapters.lightfm import score_lightfm_model
-from buildml.recommenders.features import partition_frame
+from buildml.recommenders.features import _observed_interactions, partition_frame
 from buildml.recommenders.models import (
     popularity_scores,
     score_content,
@@ -30,10 +30,11 @@ def _scores_for_user(
     user_idx: int,
     *,
     exclude_train: bool,
+    observed: np.ndarray,
 ) -> np.ndarray:
     exclude = np.zeros(plan.n_items, dtype=bool)
     if exclude_train:
-        exclude = plan.matrix_[user_idx] != 0
+        exclude = observed[user_idx]
 
     method = plan.method
     backend = plan.backend
@@ -66,6 +67,7 @@ def _scores_for_user(
             user_idx,
             n_neighbors=plan.n_neighbors,
             exclude_mask=exclude,
+            observed_mask=observed,
         )
     if method == "user_knn":
         if plan.similarity_ is None:
@@ -76,6 +78,7 @@ def _scores_for_user(
             user_idx,
             n_neighbors=plan.n_neighbors,
             exclude_mask=exclude,
+            observed_mask=observed,
         )
     if method in {"svd", "nmf"}:
         if plan.user_factors_ is None or plan.item_factors_ is None:
@@ -139,11 +142,14 @@ def recommend_for_users(
         raise ValidationError("exclude_train_items must be a boolean.")
     exclude_train_items = bool(exclude_train_items)
 
+    observed = _observed_interactions(plan)
     recs: list[tuple[Any, ...]] = []
     scores_out: list[tuple[float, ...]] = []
     cold: list[Any] = []
     disclosures = list(plan.disclosures[:4])
     warnings: list[str] = []
+    if getattr(plan, "observed_mask_", None) is None:
+        warnings.append("Legacy recommender infers history from nonzero ratings; refit to preserve observed zero ratings.")
 
     for user in user_ids:
         uidx = plan.user_index_.get(user)
@@ -161,16 +167,16 @@ def recommend_for_users(
                 scores_out.append(())
             continue
 
-        sc = _scores_for_user(plan, uidx, exclude_train=exclude_train_items)
+        sc = _scores_for_user(plan, uidx, exclude_train=exclude_train_items, observed=observed)
         # Exclusion is an eligibility rule, independent of backend score values.
         if exclude_train_items:
             sc = np.asarray(sc, dtype=float).copy()
-            sc[plan.matrix_[uidx] != 0] = -np.inf
+            sc[observed[uidx]] = -np.inf
         # If all scores are zero / -inf (e.g. empty after exclude), fall back
         if not np.isfinite(sc).any() or (
             np.nanmax(np.where(np.isfinite(sc), sc, -np.inf)) <= -np.inf
         ):
-            excl = plan.matrix_[uidx] != 0 if exclude_train_items else np.zeros(
+            excl = observed[uidx] if exclude_train_items else np.zeros(
                 plan.n_items, dtype=bool
             )
             sc = popularity_scores(plan.item_popularity_, excl)

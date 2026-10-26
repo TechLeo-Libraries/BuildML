@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-10-26, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed: 88.2733% (55,448/62,814); 9,233 passed, 77 skipped | [CI40380341499](https://github.com/TechLeo-Libraries/BuildML/actions/runs/40380341499), source `d6a7c8d`, tested merge `8126d298`; matching trees and all four workflows passed. Scope/566 exclusions/coverage.py7.16.2 unchanged. Core70/expanded87 retained. Exact90% gap1,085 lines; 2,890 pytest warnings, no coverage collection warnings |
+| Current accepted remote expanded CPU whole-package gate | Passed: 88.2843% (55,477/62,839); 9,461 passed, 117 skipped | [CI40386365175](https://github.com/TechLeo-Libraries/BuildML/actions/runs/40386365175), source `30beca5`, tested merge `8314b8af`; matching trees and all four workflows passed. Scope/566 exclusions/coverage.py7.16.2 unchanged. Core70/expanded87 retained. Exact90% gap1,079 lines; 2,890 pytest warnings, no coverage collection warnings |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -3332,3 +3332,61 @@ not online reward improvement or policy quality. Compatible CI selects the new
 tabular and neural consumers on both Windows and Linux. Reach belongs to each
 nine-file runtime profile, not solely to the new cases, and is never added to
 the accepted **88.2733%** whole-suite percentage. Core70/expanded87 stay unchanged.
+
+### Accepted RL action whole-suite result (2026-10-26)
+
+Source `30beca5` passed the complete expanded Linux CPU suite at **88.2843%**
+(55,477/62,839 lines), with **9,461 passed and 117 skipped** in 28:34.
+The XML has 9,578 tests and zero failures/errors; there were 2,890
+pytest warnings and no coverage collection warnings. CI40386365175, backend40386365069,
+acceptance40386365083 and CodeQL40386360971 passed. Tested merge `8314b8af`
+and source trees match. coverage.py7.16.2 and566 exclusions are unchanged.
+The exact90% gap is1,079 covered lines at this source. Core70 and expanded87
+remain unchanged. Earlier local RL runtime subset observations remain
+separate and are not added to this full-suite percentage.
+
+### Observed zero-rating recommender consumers (2026-10-26)
+
+Explicit zero ratings, including duplicate ratings with a zero mean, used to
+look absent to history exclusion, popularity, SVD centering and neighbour
+weighting. New plans retain observation membership separately from values and
+persist it in bundles. Consumption and persistence check its boolean type,
+shape, nonzero-entry membership and interaction count. Legacy bundles retain
+their recorded scoring behavior and warn that refitting is needed to recover
+zero-rated history.
+
+The batch adds **147 cases** across item/user kNN,SVD,NMF and content scoring,
+zero/cancelling/positive populations,live/trusted replay,both holdout partitions
+and invalid observation artifacts. Final tests on all828 verified archived
+`30beca5` package files/resources reproduce **67 failures/80 passes** in14.60s.
+Of those,27 request the new metadata contracts;40 reproduce incorrect zero-
+history/statistic/score behavior. Repaired focused147 pass in13.73s. An earlier
+300-case draft is superseded: duplicate validation combinations were removed,
+and the metric oracle consumes actual rankings without assuming an undocumented
+tie policy.
+
+Final six-file Windows profiles each pass **295 tests with3 skips**, with no
+warnings or coverage collection warnings: Pandas3.0.5/NumPy2.4.6 in63.46s,
+and Pandas2.3.3 in67.42s. Skips are2 implicit-library and1 LightFM tests because
+those optional backends are absent locally. Neither profile establishes their
+execution. coverage.py7.16.2 and566 exclusions remain unchanged. Each separately
+exercises **14 previously missing unchanged/38 changed-new lines** against the
+verified `30beca5` full artifact. These are broader six-file observations,not
+coverage gains solely from the new cases or projected full-suite percentages.
+
+Independent scalar interaction aggregation,zero-inclusive means and counts,
+NumPy SVD reconstruction,cosine/neighbour arithmetic and latent dot products
+check scores and eligibility. Scalar Precision/Recall/nDCG/AP arithmetic checks
+the real ranked-list consumer. Predictions and replay preserve fitted state.
+Five bundles actually produced by archived `30beca5` (without the new slot)
+load in current code with unchanged recommendations/scores and a refit warning.
+This is separate legacy-consumer evidence,not five extra pytest cases.
+
+All814 production sources and6 verification files were frozen/hash-verified.
+Targeted mypy across6 changed source files is clean;4 baseline DataFrame
+annotation findings are resolved by behavior-preserving casts. Ruff,diff and
+the unchanged586 docstring budget pass. The main environment is unchanged.
+The accepted full result remains **88.2843%**,55,477/62,839 lines at`30beca5`,
+with9,461 passed/117 skipped and zero collection warnings. Forty added skips
+are the imitation consumers exercised in the separate compatible RL profile.
+No databases or subset reaches are combined. Core70/expanded87 stay unchanged.

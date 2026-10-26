@@ -14,6 +14,12 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Recommenders retain explicit zero-rated interactions as observed history,
+  including duplicate ratings whose mean is zero. History exclusion, popularity,
+  SVD centering and neighbour weighting use recorded membership. Bundles retain
+  and validate it; older bundles preserve their recorded scoring behavior and
+  disclose that refitting is needed to recover zero-rated history.
+
 - Cloning and contextual-bandit policies preserve original discrete action
   identities through prediction and trusted bundle replay, including padded
   numeric strings, booleans and NumPy scalar labels. Ambiguous typed actions
