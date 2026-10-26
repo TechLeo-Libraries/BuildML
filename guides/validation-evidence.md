@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-10-26, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed: 88.1295% (55,333/62,786); 8,205 passed, 77 skipped | [CI40336277246](https://github.com/TechLeo-Libraries/BuildML/actions/runs/40336277246), source `e997b6b`, tested merge `020ab828`; matching trees and all four workflows passed. Scope/566 exclusions/coverage.py7.16.2 unchanged. Core70/expanded87 retained. Exact90% gap1,175 lines; 2,890 pytest warnings, no coverage collection warnings |
+| Current accepted remote expanded CPU whole-package gate | Passed: 88.1572% (55,383/62,823); 8,310 passed, 77 skipped | [CI40347763619](https://github.com/TechLeo-Libraries/BuildML/actions/runs/40347763619), source `02364bf`, tested merge `016adf11`; matching trees and all four workflows passed. Scope/566 exclusions/coverage.py7.16.2 unchanged. Core70/expanded87 retained. Exact90% gap1,158 lines; 2,890 pytest warnings, no coverage collection warnings |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -3121,3 +3121,69 @@ or copies. No files are unmapped. These are separate subset observations, not
 projected full-suite gains. A fresh complete remote suite is required after
 publication. Resampling bands remain descriptive observational variability;
 they do not establish population fairness or calibrated deployment uncertainty.
+
+### Accepted fairness whole-suite result (2026-10-26)
+
+Source `02364bf` passed its complete expanded Linux CPU suite at **88.1572%**
+(55,383/62,823 lines), with **8,310 passed and 77 skipped** in 26:24. The XML
+contains 8,387 tests and zero failures/errors. There were 2,890 pytest warnings
+and no coverage collection warnings. CI 40347763619, backend evidence 40347763479,
+release acceptance 40347763580 and CodeQL 40347759881 passed. Tested merge
+`016adf11` and source have matching trees. The runtime records Pandas2.3.3,
+Polars2.0.0, Torch2.7.1+cpu and coverage.py7.16.2. Package scope and566 excluded
+lines are unchanged. This is50 more covered lines and37 more statements than
+the preceding accepted `e997b6b`; the exact90% gap is1,158 lines. Core70 and
+expanded87 floors remain unchanged. Earlier subset observations remain separate
+and are not added to this full-suite percentage.
+
+### Probabilistic scalar identities and MAPIE proper scores (2026-10-26)
+
+Numeric-looking strings were guessed back into numbers, losing leading zeros
+and merging different decimal spellings. Boolean classes became strings. Native
+sets retained string keys; MAPIE sets exposed class codes instead of original
+labels, producing incorrect reported set coverage. Modern MAPIE's fitted
+classifier was not resolved, so probability output and NLL/Brier scores were
+omitted. These paths now retain original scalar class values, normalize NumPy
+scalars consistently and resolve the actual fitted point classifier. Byte/date
+formatting no longer causes a false missing-class refusal during calibration.
+Observed typed labels sharing an encoding key refuse before replacing a working
+plan. Class metadata records the original values in probability column order.
+New trusted bundles retain the mapping; JSON displays non-JSON scalar labels as
+strings while joblib preserves their types. Older encoders without the mapping
+retain recorded strings; original types require refitting to recover.
+
+The **179 new cases** cover eleven vocabularies, native GaussianNB and real MAPIE
+split/CV+/jackknife+, validation/test, and live/trusted-bundle replay, plus three
+atomic collision refusals. Independent Gaussian density arithmetic, logistic
+affine/sigmoid/softmax calculations from fitted parameters, and official MAPIE
+set masks check points, probabilities, sets, accuracy, proper scores, calibration
+cutoffs and set coverage. Duplicate pandas index labels retain row selection.
+The original 131 cases before metadata assertions reproduced **123 failures and
+8 passes** in 20.18s on untouched verified source `02364bf`. Final 179 cases on
+all 828 verified archived package files/resources reproduce **179 failures** in
+25.75s: eight only lack the new metadata field after all behavioral
+checks. An earlier draft's NumPy-string scalar representation assertions were
+corrected before accepted reproduction. Earlier 131/163-case repaired scopes
+and 285/317-pass broad profiles were preliminary; the final profiles below use
+the complete extended source and test hashes.
+
+Final **13-file** Windows profiles independently passed **333 tests / 5 skipped**
+on Pandas 3.0.5 in 110.4s and Pandas 2.3.3 in 100.37s, with
+NumPy 2.4.6 and actual MAPIE 1.5.0. Neither reported pytest or coverage collection
+warnings. Four skips need locally absent NGBoost; one checks missing MAPIE and
+skips because MAPIE is installed. These observations establish modern MAPIE
+behavior for the exercised runtime, not legacy-version or GPU compatibility.
+Seven production files pass targeted mypy at baseline and after repair. Ruff,
+copy lint, diff and the unchanged 586 finding docstring budget pass;
+package-wide type cleanliness is not claimed.
+
+Against verified complete source `02364bf`, Pandas 3 exercised **4
+previously missing unchanged / 46 changed-new lines**; Pandas 2
+exercised **4 unchanged / 46 changed-new lines**.
+Each is mapped with `scripts/measure_coverage_reach.py` against its exact frozen
+source. All 814 Python production files and 13 test files were hash-verified.
+Each observation uses coverage.py 7.16.2 and 566 exclusions. These are separate
+subset observations, never combined or added to the **88.1572%** accepted
+whole-suite percentage. This batch needs its complete remote measurement after
+publication. Probability accuracy and conformal coverage still require
+representative independent evaluation.

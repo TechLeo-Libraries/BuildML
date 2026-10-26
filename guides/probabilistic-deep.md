@@ -27,6 +27,20 @@ Proof: [prob-interval-risk](https://github.com/TechLeo-Libraries/BuildML/tree/ma
 Classical `session.calibration()` stays on the classical `fit` path.
 This plan does not replace it.
 
+Classification points and sets retain the original scalar labels: `"001"` stays
+a string, and numeric or Boolean classes keep their types. Labels that share an
+encoding key, such as integer `1` and string `"1"`, are refused before fitting.
+NumPy scalars normalize to their equivalent Python values during encoding and
+evaluation. Probability columns follow sorted string-key order in `plan.classes_`;
+`plan.to_dict()["original_classes"]` records the corresponding original values.
+New trusted bundles preserve that mapping, including bytes and dates. JSON bundle
+metadata displays non-JSON labels as strings; the joblib plan keeps their types.
+Older bundles without the mapping retain their
+recorded encoded labels; refit to recover original types, which cannot be inferred
+unambiguously from strings. MAPIE probabilities and proper scores use the fitted
+point classifier. Its conformal sets are separate uncertainty estimates, and
+classifier probabilities do not establish calibrated deployment risk.
+
 ## A first interval
 
 ```python

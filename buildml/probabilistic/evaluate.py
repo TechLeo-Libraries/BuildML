@@ -241,7 +241,9 @@ def evaluate_probabilistic(
         else:
             raw = plan.estimator_.predict(x)
             preds = decode_predictions(raw, plan.label_encoder_)
-        y_true_s = y_true.astype(str).to_numpy()
+        y_true_s = np.asarray([
+            str(v.item() if isinstance(v, np.generic) else v) for v in y_true
+        ])
         y_pred_s = np.asarray([str(v) for v in preds])
         metrics["accuracy"] = float(accuracy_score(y_true_s, y_pred_s))
         metrics["f1_macro"] = float(
@@ -252,12 +254,9 @@ def evaluate_probabilistic(
         )
         if plan.supports_predict_proba:
             if plan.backend == "mapie":
-                from buildml.probabilistic.adapters.mapie import MapieWrapper
+                from buildml.probabilistic.adapters.mapie import mapie_predict_proba
 
-                handle = plan.estimator_
-                est = handle.estimator if isinstance(handle, MapieWrapper) else handle
-                base = getattr(est, "estimator", est)
-                proba = np.asarray(base.predict_proba(x), dtype=float)
+                proba = mapie_predict_proba(plan.estimator_, x)
             else:
                 proba = np.asarray(plan.estimator_.predict_proba(x), dtype=float)
             classes = [str(c) for c in (plan.classes_ or ())]

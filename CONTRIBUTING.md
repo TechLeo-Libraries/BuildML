@@ -122,7 +122,7 @@ monolith** (**70** active after corrected thread/process tracing measured at lea
 `pytest tests --cov=buildml`); do not lower it to silence a regression.
 The separate `expanded-coverage` CI job installs
 `requirements-expanded-coverage.txt` and runs the entire suite with an **87%**
-floor, supported by passing remote Linux 88.1295% evidence at `e997b6b`.
+floor, supported by passing remote Linux 88.1572% evidence at `02364bf`.
 The broadened profile includes DoWhy and ONNX Runtime, using a compatible
 NumPy 2.4.1/SciPy 1.15.3/mlxtend 0.23.4 stack. Same-source complete local suites
 passed 85.5192% for this profile and85.3947% for its original-profile control;
@@ -230,13 +230,13 @@ and pick the next target, and `--path buildml/<pkg>` to audit work in progress.
 - Write public documentation for library users. Keep implementation instructions,
   release actions, and work plans in clearly labeled contributor material.
 
-Current expanded coverage evidence (2026-10-26, source `e997b6b`): remote Linux
-passed at **88.1295%** (55,333 / 62,786 lines), with 8,205 passed and 77 skipped.
-[CI run 40336277246](https://github.com/TechLeo-Libraries/BuildML/actions/runs/40336277246)
-passed, as did backend evidence, release acceptance and CodeQL. Tested merge `020ab828`
+Current expanded coverage evidence (2026-10-26, source `02364bf`): remote Linux
+passed at **88.1572%** (55,383 / 62,823 lines), with 8,310 passed and 77 skipped.
+[CI run 40347763619](https://github.com/TechLeo-Libraries/BuildML/actions/runs/40347763619)
+passed, as did backend evidence, release acceptance and CodeQL. Tested merge `016adf11`
 and source trees are equal. The expanded floor stays **87%**; the next increase
 requires at least one percentage point of headroom from a passing complete gate.
 Scope, coverage.py 7.16.2 and 566 excluded lines are unchanged; core floor stays
-70%. The suite ran in 18:35 with 2,890 pytest warnings and no coverage collection
+70%. The suite ran in 26:24 with 2,890 pytest warnings and no coverage collection
 warnings. Optional skips remain configuration-specific. Reaching 90% requires
-1,175 further covered lines at this source; subset percentages are not added.
+1,158 further covered lines at this source; subset percentages are not added.

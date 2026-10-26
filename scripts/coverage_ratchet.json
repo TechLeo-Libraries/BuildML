@@ -8,20 +8,20 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 88.12951931959354,
-      "covered_lines": 55333,
-      "num_statements": 62786,
+      "percent_covered": 88.15720357194022,
+      "covered_lines": 55383,
+      "num_statements": 62823,
       "excluded_lines": 566,
-      "source_revision": "e997b6b13630e6035d6fa40d9badd3816b15538a",
-      "tested_revision": "020ab8289c731389ecbc4f78ba60a99daa33d518",
+      "source_revision": "02364bfccb5632290f05f21e26d913a3bb59075a",
+      "tested_revision": "016adf119ad3442c6c1e7166fb9d0143f25abe62",
       "platform": "remote Linux, CPU expanded profile",
-      "run_id": 40336277246,
-      "result": "8205 passed, 77 skipped, zero failures/errors",
+      "run_id": 40347763619,
+      "result": "8310 passed, 77 skipped, zero failures/errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
-      "notes": "Forecast origin conditioning and input boundaries accepted; all four workflows passed. Source/merge trees equal c1d1255fb188666346c46b6a13ea99bbfa8ee2c9. coverage.py7.16.2/566 exclusions unchanged;2890 pytest warnings,no collection warnings. Full18:35. Covered lines+43,statements+20 versus3472fb0. Exact90 gap1175. Core70/expanded87 retained;88 floor lacks required1pp headroom. Subset reach is not aggregate.",
+      "notes": "Fairness populations and persistent audit records accepted; all four workflows passed. Source/merge trees equal 65431b7e45f82680bcc597106636673defc51e04. coverage.py7.16.2/566 exclusions unchanged;2890 pytest warnings,no collection warnings. Full26:24. Covered lines+50,statements+37 versus e997b6b. Exact90 gap1158. Core70/expanded87 retained;88 floor lacks required1pp headroom. Subset reach is not aggregate.",
       "coverage_version": "7.16.2"
     },
     "latest_local_measurement": {

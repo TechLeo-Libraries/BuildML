@@ -23,6 +23,7 @@ __all__ = [
     "matrix_from_frame",
     "resolve_probabilistic_columns",
     "encode_classification_targets",
+    "classification_vocabulary",
     "decode_predictions",
     "regression_targets",
     "train_partition_frame",
@@ -109,6 +110,47 @@ def resolve_probabilistic_columns(
     return cols, used_reduce, out
 
 
+def classification_vocabulary(y: pd.Series) -> dict[str, Any]:
+    """Map encoding keys to observed class identities, refusing collisions.
+
+    Validate the observed training vocabulary before a carve or estimator fit
+    can merge labels that have different meanings but the same string key.
+
+    Parameters
+    ----------
+    y:
+        Observed classification targets before string encoding.
+
+    Returns
+    -------
+    dict[str, Any]
+        String keys and their original Python scalar labels.
+
+    Raises
+    ------
+    ValidationError
+        When labels are missing or distinct labels share a string key.
+    """
+    if y.isna().any():
+        raise ValidationError(
+            "Probabilistic classification requires non-null train targets."
+        )
+    vocabulary: dict[str, Any] = {}
+    for value in y:
+        if isinstance(value, np.generic):
+            value = value.item()
+        key = str(value)
+        if key in vocabulary:
+            previous = vocabulary[key]
+            if type(previous) is not type(value) or previous != value:
+                raise ValidationError(
+                    f"Ambiguous classification labels share encoding key {key!r}. "
+                    "Use distinct class names before fitting."
+                )
+        vocabulary[key] = value
+    return vocabulary
+
+
 def encode_classification_targets(
     y: pd.Series,
     *,
@@ -138,22 +180,23 @@ def encode_classification_targets(
     """
     from sklearn.preprocessing import LabelEncoder
 
-    if y.isna().any():
-        raise ValidationError(
-            "Probabilistic classification requires non-null train targets."
-        )
-    values = y.astype(str)
+    observed = classification_vocabulary(y)
+    values = [str(value.item() if isinstance(value, np.generic) else value) for value in y]
     encoder = LabelEncoder()
     if classes is not None:
         encoder.fit([str(c) for c in classes])
         codes = encoder.transform(values)
     else:
         codes = encoder.fit_transform(values)
+    fixed = {} if classes is None else {str(c): c for c in classes}
+    encoder.buildml_original_classes_ = tuple(
+        observed[key] if key in observed else fixed[key] for key in encoder.classes_
+    )
     return np.asarray(codes), encoder, tuple(encoder.classes_)
 
 
 def decode_predictions(pred_codes: np.ndarray, label_encoder: Any) -> list[Any]:
-    """Map integer class codes back toward original label values.
+    """Map integer class codes back to recorded class values.
 
     Used after predict paths that emit encoded sklearn class indices.
 
@@ -167,21 +210,15 @@ def decode_predictions(pred_codes: np.ndarray, label_encoder: Any) -> list[Any]:
     Returns
     -------
     list
-        Decoded labels with numeric strings coerced when safe.
+        Original scalar labels. Older encoders without original-class metadata
+        retain their recorded labels exactly; their original types are unknown.
     """
     codes = np.asarray(pred_codes).astype(int)
     decoded = label_encoder.inverse_transform(codes)
-    out: list[Any] = []
-    for value in decoded:
-        text = str(value)
-        if text.isdigit() or (text.startswith("-") and text[1:].isdigit()):
-            out.append(int(text))
-        else:
-            try:
-                out.append(float(text) if "." in text else text)
-            except ValueError:
-                out.append(text)
-    return out
+    original = getattr(label_encoder, "buildml_original_classes_", None)
+    if original is not None:
+        return [original[int(code)] for code in codes]
+    return list(decoded)
 
 
 def regression_targets(y: pd.Series) -> np.ndarray:

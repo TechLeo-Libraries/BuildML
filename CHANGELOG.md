@@ -14,6 +14,12 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Probabilistic classification preserves original scalar labels in points and
+  prediction sets, including numeric-looking strings, and refuses ambiguous
+  string encodings before replacing a working plan. Bundles retain the original
+  class vocabulary. Modern MAPIE probabilities now use its fitted point
+  classifier, restoring probability output, NLL and Brier scoring.
+
 - Fairness reports and policy helpers refuse group-key collisions, preserve
   nullable sensitive populations, and validate aligned observed labels, scores
   and resampling controls. Session audits and suggestions now write persistent

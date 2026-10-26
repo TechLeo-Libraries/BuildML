@@ -23,6 +23,7 @@ from buildml.probabilistic.adapters.native import (
 from buildml.probabilistic.adapters.ngboost import build_ngboost_estimator
 from buildml.probabilistic.catalog import resolve_backend_estimator
 from buildml.probabilistic.features import (
+    classification_vocabulary,
     encode_classification_targets,
     matrix_from_frame,
     regression_targets,
@@ -176,7 +177,7 @@ def fit_probabilistic(
             raise ValidationError(
                 "Probabilistic classification requires non-null train targets."
             )
-        class_vocab = tuple(sorted(train_y.astype(str).unique().tolist()))
+        class_vocab = tuple(sorted(classification_vocabulary(train_y)))
         if len(class_vocab) < 2:
             raise ValidationError(
                 "Probabilistic classification requires at least 2 classes."
@@ -215,13 +216,14 @@ def fit_probabilistic(
     classes_tuple: tuple[Any, ...] | None = None
     y_fit: np.ndarray
     if resolved_task == "classification":
-        fit_classes = tuple(sorted(fit_frame[target].astype(str).unique().tolist()))
+        fit_vocabulary = classification_vocabulary(fit_frame[target])
+        fit_classes = tuple(sorted(fit_vocabulary))
         if len(fit_classes) < 2:
             raise ValidationError(
                 "The label-independent calibration carve left fewer than two "
                 "classes in the fitting subset; collect more training examples."
             )
-        if calib_indices and not set(full.iloc[calib_indices][target].astype(str)).issubset(fit_classes):
+        if calib_indices and not set(classification_vocabulary(full.iloc[calib_indices][target])).issubset(fit_classes):
             raise ValidationError(
                 "Calibration contains a class absent from the fitting subset. "
                 "Collect more examples of rare classes; calibration is not "
@@ -229,7 +231,7 @@ def fit_probabilistic(
             )
         y_fit, label_encoder, classes_tuple = encode_classification_targets(
             fit_frame[target],
-            classes=fit_classes,
+            classes=tuple(fit_vocabulary[key] for key in fit_classes),
         )
         disclosures.append("Classifier vocabulary learned from the fitting subset only.")
     else:

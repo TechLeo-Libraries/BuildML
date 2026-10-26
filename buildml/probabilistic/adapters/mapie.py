@@ -471,6 +471,51 @@ def mapie_supports_return_std() -> bool:
     return False
 
 
+def _fitted_classifier(wrapper: Any) -> Any:
+    """Resolve the fitted classifier used by MAPIE's point predictions."""
+    model = wrapper.estimator if isinstance(wrapper, MapieWrapper) else wrapper
+    inner = getattr(model, "_mapie_classifier", model)
+    ensemble = getattr(inner, "estimator_", None)
+    candidates = (
+        getattr(ensemble, "single_estimator_", None),
+        getattr(model, "_estimator", None),
+        getattr(model, "estimator", None),
+    )
+    for candidate in candidates:
+        if hasattr(candidate, "classes_") and callable(getattr(candidate, "predict_proba", None)):
+            return candidate
+    return None
+
+
+def mapie_predict_proba(wrapper: Any, x: np.ndarray) -> np.ndarray:
+    """Return probabilities from the fitted MAPIE point classifier.
+
+    Resolve the classifier actually fitted by modern or legacy MAPIE instead
+    of assuming the constructor's estimator reference has been fitted in place.
+
+    Parameters
+    ----------
+    wrapper:
+        Fitted MAPIE classifier or BuildML wrapper.
+    x:
+        Feature matrix in the fitted column order.
+
+    Returns
+    -------
+    numpy.ndarray
+        Probabilities in encoded class order.
+
+    Raises
+    ------
+    ValidationError
+        When no fitted probability classifier can be resolved.
+    """
+    classifier = _fitted_classifier(wrapper)
+    if classifier is None:
+        raise ValidationError("MAPIE does not expose a fitted probability classifier.")
+    return np.asarray(classifier.predict_proba(x), dtype=float)
+
+
 def mapie_supports_predict_proba(wrapper: Any) -> bool:
     """Return whether the underlying MAPIE base estimator supports ``predict_proba``.
 
@@ -487,13 +532,7 @@ def mapie_supports_predict_proba(wrapper: Any) -> bool:
     bool
         ``True`` when a base classifier with ``predict_proba`` is wrapped.
     """
-    handle = wrapper if isinstance(wrapper, MapieWrapper) else None
-    est = None
-    if handle is not None:
-        est = getattr(handle.estimator, "estimator", handle.estimator)
-    elif hasattr(wrapper, "estimator"):
-        est = getattr(wrapper, "estimator", wrapper)
-    return est is not None and hasattr(est, "predict_proba")
+    return _fitted_classifier(wrapper) is not None
 
 
 def _as_wrapper(wrapper: Any, *, task: str, alpha: float) -> MapieWrapper:
