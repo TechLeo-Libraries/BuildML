@@ -119,6 +119,21 @@ restored.save_model("artifacts/model_only")
 `data_only=True` on load discards prior workflow semantics. Use it when
 you want the frame without replaying history.
 
+`session.reattach(...)` replaces the current in-memory workflow state while
+keeping the Session object's identity. Models, domain plans, retrieval indexes,
+AI configuration and cached reports from the previous dataset are discarded.
+It restores the checkpoint's rows, split, history and preprocessing plans; load
+the appropriate trusted model/domain bundle explicitly before scoring.
+
+Historical fit/evaluate records remain part of the audit trail. They do not make
+those operations available when a required fitted model is absent. Workflow,
+explain and dry-run views report the current missing prerequisites. Dry-run
+accepts flat names and facade paths such as `classical.evaluate` or
+`session.graph.evaluate`, returning their canonical names in the report.
+Unknown names remain blocked steps with `status="unknown"`. Previews and
+printed audit summaries do not fit, transform or append history; risk rankings
+remain heuristic review cues.
+
 ---
 
 ## Use case: predict_from_pipeline on new rows

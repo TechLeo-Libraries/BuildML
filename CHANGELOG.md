@@ -14,6 +14,13 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Checkpoint reattachment discards stale models, retrieval indexes, AI settings
+  and reports while preserving the Session identity and explicitly restored
+  checkpoint state. Workflow readiness checks current prerequisites before
+  historical completion, and dry-run accepts canonical and facade names.
+  The expanded coverage floor rises from 86% to 87% using the passing 88.0076%
+  complete Linux suite; scope and 566 exclusions remain unchanged.
+
 - Graph fitting reads labels only from training nodes, allowing unlabeled or
   novel-label holdouts for classical, native GCN and PyG learners. Evaluation
   validates selected labels and discloses undefined ROC-AUC instead of emitting

@@ -3,25 +3,25 @@
   "source": "pyproject.toml [tool.coverage.report] fail_under",
   "current": 70,
   "expanded": {
-    "current": 86,
+    "current": 87,
     "source": ".github/workflows/ci.yml expanded-coverage job --cov-fail-under",
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 87.93622957353527,
-      "covered_lines": 55158,
-      "num_statements": 62725,
+      "percent_covered": 88.00764757428503,
+      "covered_lines": 55238,
+      "num_statements": 62765,
       "excluded_lines": 566,
-      "source_revision": "3021047be90cb6e195068cb5b46074b2983cd57e",
-      "tested_revision": "3582c1c2fba5347235705a926a8e881c04b69890",
+      "source_revision": "ec1ff90373e0f83222c051e1cd7c3e4e56a5a832",
+      "tested_revision": "fe3e32c45a630d3fd07fe72f9dd3620c136ede79",
       "platform": "remote Linux, CPU expanded profile",
-      "run_id": 40309978100,
-      "result": "7641 passed, 77 skipped, zero failures/errors",
+      "run_id": 40320342842,
+      "result": "7956 passed, 77 skipped, zero failures/errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
-      "notes": "Ranking identity/query-scope repair accepted; CI, backend, acceptance and CodeQL passed. Source/merge trees equal4e68f54c3b6230ecd4938c7e3422b5bc3f04491a. coverage7.16.2/566 exclusions unchanged;2865 pytest warnings,no collection warnings. Full25:04. Covered lines +6,statements -4 against accepted e48bac7. Separate subset reach is not aggregate. Exact90 percent gap1295;core70/expanded86 retained.",
+      "notes": "Graph supervision/replay and exact AI routing accepted; all four workflows passed. Source/merge trees equal6a4cbc57f7da33c8570cf492ce7906ddc4127b20. coverage7.16.2/566 exclusions unchanged;2889 pytest warnings,no collection warnings. Full25:17. Covered lines +80,statements +40 versus accepted3021047. Expanded floor raised86 to87 with1.00764757428503pp headroom; core70 retained. Exact90 percent gap1251; separate subset reach is not aggregate.",
       "coverage_version": "7.16.2"
     },
     "latest_local_measurement": {
@@ -69,13 +69,13 @@
       "notes": "Not promoted: automatic coverage.py upgrade from7.16.2 changed TYPE_CHECKING exclusion accounting across40 files (+41 excluded lines). Source/merge trees equal fbacba31e290aee2038d5d45c3216171a93ca80b. Full12:47,1900 warnings,no coverage collection warnings. Development coverage pinned to7.16.2; static package exclusions restored566. Fresh whole-suite gate required. Latest accepted4c06bd3 remains86.4734%."
     },
     "last_raise": {
-      "previous": 85,
-      "current": 86,
-      "source_revision": "a05ec417db99de40277583b76854bd6d29a70737",
-      "run_id": 39990338088,
-      "percent_covered": 87.00126840389834,
-      "headroom_percentage_points": 1.0012684038983366,
-      "qualification": "Passing whole-package expanded Linux CI; all three workflows passed,source/merge trees match. Scope,coverage7.16.2/566 exclusions unchanged. Core floor remains70."
+      "previous": 86,
+      "current": 87,
+      "source_revision": "ec1ff90373e0f83222c051e1cd7c3e4e56a5a832",
+      "run_id": 40320342842,
+      "percent_covered": 88.00764757428503,
+      "headroom_percentage_points": 1.0076475742850306,
+      "qualification": "Passing complete expanded Linux CPU suite, all four workflows passed, source/merge trees match. Scope/coverage7.16.2/566 exclusions unchanged; core70 retained."
     }
   },
   "schedule": [

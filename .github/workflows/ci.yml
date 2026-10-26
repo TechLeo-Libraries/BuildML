@@ -446,7 +446,7 @@ jobs:
           python -m pip list --format=json > artifacts/expanded-environment.json
       - name: Whole-package expanded coverage gate
         run: >-
-          pytest tests -q --cov=buildml --cov-fail-under=86
+          pytest tests -q --cov=buildml --cov-fail-under=87
           --cov-report=term --cov-report=json:artifacts/expanded-coverage.json
           --junitxml=artifacts/expanded-tests.xml --tb=short
       - uses: actions/upload-artifact@v4

@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-10-26, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed: 87.9362% (55,158/62,725); 7,641 passed, 77 skipped | [CI40309978100](https://github.com/TechLeo-Libraries/BuildML/actions/runs/40309978100), source `3021047`, tested merge `3582c1c2`; trees match and CI/backend/acceptance/CodeQL passed. 566 exclusions unchanged; floor 86 retained from passing 87.0013% source a05ec41; 90% gap 1,295 lines. Ranking repair accepted with coverage 7.16.2; 2,865 pytest warnings, no coverage collection warnings |
+| Current accepted remote expanded CPU whole-package gate | Passed: 88.0076% (55,238/62,765); 7,956 passed, 77 skipped | [CI40320342842](https://github.com/TechLeo-Libraries/BuildML/actions/runs/40320342842), source `ec1ff90`, tested merge `fe3e32c4`; matching trees and all four workflows passed. Scope/566 exclusions/coverage7.16.2 unchanged. Expanded floor rises86 to87 with1.0076pp headroom; core70 retained. Exact90% gap1,251 lines; 2,889 pytest warnings, no coverage collection warnings |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -2930,7 +2930,77 @@ observations include configuration-specific optional paths and are not a
 combined database or projected full-suite percentage. Two baseline targeted
 mypy findings map unchanged, with zero new findings; type cleanliness is not
 claimed. Ruff, copy lint, diff and unchanged 586 docstring budget passed.
-Latest accepted full coverage remains 87.9362% (55,158/62,725), 7,641 passed
+At graph-batch publication, accepted full coverage was 87.9362% (55,158/62,725), 7,641 passed
 and 77 skipped at `3021047`; exact90% gap1,295 lines. Core70/expanded86,
-coverage7.16.2 and 566 exclusions remain unchanged. This graph batch still
+coverage7.16.2 and 566 exclusions remain unchanged. This graph batch subsequently passed its complete remote suite at
+`ec1ff90`:88.0076% (55,238/62,765),7,956 passed/77 skipped in25:17,
+with2,889 pytest warnings and no collection warnings. All four workflows
+passed and tested/source trees match. The expanded floor rises86 to87
+with1.0076pp headroom; core70 and566 exclusions remain unchanged. The
+exact90% gap is1,251 lines at this source.
+
+### Checkpoint state replacement and truthful audit readiness (2026-10-26)
+
+An in-place `reattach` previously replaced rows, split and preprocessing while
+retaining the previous fitted model and other domain state. It now prepares
+the checkpoint's complete replacement state before closing the old owned
+connection and installing that state on the same Session object. Old models,
+graph plans, RAG indexes, AI configuration and cached reports are discarded.
+Held facade objects still delegate to the same Session. Refused untrusted loads
+preserve the existing data, model predictions, history and owned connection.
+Model/domain bundles must be loaded explicitly to recover fitted models.
+
+Checkpoint history also caused workflow, explain and dry-run views to advertise
+evaluation as available despite no fitted model being restored. Current missing
+prerequisites now take priority over historical completion. The history retains
+its completed operation counts. Dry-run facade paths resolve to the same
+canonical names and prerequisite graphs as flat operations; unknown names remain
+blocked with `status="unknown"`. Printed summaries and risk rankings are checked
+against actual operation counts and current requirements; ranks remain heuristic
+review cues rather than proof of leakage or approval to execute.
+
+The 91 added consumers include 72 facade/state combinations across empty,
+split and evaluated Sessions; real classical/graph checkpoint and trusted-bundle
+replay; stale model/graph/RAG/AI replacement; Pandas/DuckDB/native resource
+checks; refused untrusted loads; printed audit summaries; and a real CV opt-out
+risk. Classical predictions match independent Ridge normal equations. The
+corrected initial 82 consumers on untouched `ec1ff90` had 78 failures and four
+passes in 81.86s; after repair, those 82 passed in 87.69s. Early fixture drafts
+used a nonexistent RAG property and an incorrect retrieval argument. Additional
+CV assertions were corrected to count recorded warnings rather than result
+limitations and to inspect the frame without calling history-recording
+`to_pandas`. These fixture failures are not product-defect counts.
+
+Final fifteen-file subsets independently passed 253 tests with
+15 skips and one warning under Pandas 3.0.5 in
+260.93s, and 253 tests with 15 skips and
+one warning under Pandas 2.3.3 in 260.98s. All 15 skips in each profile were due to absent Polars before the isolated
+overlay. The one warning was an upstream LangChain deprecation.
+There are no coverage collection warnings. These are the same tests in separate
+runtimes, not combined test counts or coverage databases. Each runtime fits and
+loads its own artifacts; cross-version portability is not established.
+
+A separate six-file native subset then ran with isolated Polars 2.0.0, matching
+the accepted CI version, under Windows Pandas 3.0.5. It passed 35 tests,
+with 0 skips and 0 warnings in 44.53s.
+This executes the previously skipped Polars checkpoint/resource paths, including
+the new state-replacement checks; the main environment was not modified. Its
+separate reach is 8 unchanged/20 changed-new lines.
+The supplemental subset is not combined with either Pandas observation.
+
+Separate source-mapped reach versus verified complete source `ec1ff90` is
+89 previously missing unchanged / 20 changed-new
+executed production lines for Pandas3, and 89 unchanged /
+20 changed-new for Pandas2. All 814 production Python files and
+their hashes are frozen. Profile-specific optional paths contribute; this is
+not a projected full-suite percentage. Ruff, copy lint, diff and unchanged 586
+docstring budget passed. Targeted mypy is clean on all four changed production
+files, with zero findings both on the baseline and after repair; package-wide
+type cleanliness is not claimed.
+
+Latest accepted complete evidence is now 88.0076% (55,238/62,765), 7,956 passed
+and 77 skipped at `ec1ff90`, with matching tested/source trees and all four
+workflows passed. It supports raising expanded floor 86 to 87 with 1.0076 percentage points of
+headroom; core 70, package scope, coverage 7.16.2 and 566 exclusions are unchanged.
+The exact 90% gap is 1,251 lines at that source. The audit/checkpoint batch still
 requires its own complete remote suite after publication.

@@ -121,8 +121,8 @@ monolith** (**70** active after corrected thread/process tracing measured at lea
 (`python scripts/run_full_coverage.py --update-ratchet` or CI
 `pytest tests --cov=buildml`); do not lower it to silence a regression.
 The separate `expanded-coverage` CI job installs
-`requirements-expanded-coverage.txt` and runs the entire suite with an **86%**
-floor, supported by passing remote Linux87.0013% evidence at `a05ec41`.
+`requirements-expanded-coverage.txt` and runs the entire suite with an **87%**
+floor, supported by passing remote Linux 88.0076% evidence at `ec1ff90`.
 The broadened profile includes DoWhy and ONNX Runtime, using a compatible
 NumPy 2.4.1/SciPy 1.15.3/mlxtend 0.23.4 stack. Same-source complete local suites
 passed 85.5192% for this profile and85.3947% for its original-profile control;
@@ -230,12 +230,13 @@ and pick the next target, and `--path buildml/<pkg>` to audit work in progress.
 - Write public documentation for library users. Keep implementation instructions,
   release actions, and work plans in clearly labeled contributor material.
 
-Current expanded coverage evidence (2026-10-26, source `3021047`): remote Linux
-passed at **87.9362%** (55,158 / 62,725 lines), with 7,641 passed and 77 skipped.
-[CI run 40309978100](https://github.com/TechLeo-Libraries/BuildML/actions/runs/40309978100)
-passed, as did backend evidence, release acceptance and CodeQL. Tested merge `3582c1c2`
-and source trees are equal. This supports expanded floor **86%** with the required
-one-point headroom. Scope, coverage.py 7.16.2 and 566 excluded lines are unchanged;
-core floor stays 70%. The suite ran in 25:04 with 2,865 pytest warnings and no coverage
-collection warnings. Optional skips remain configuration-specific. Reaching 90%
-requires 1,295 further covered lines at this source; subset percentages are not added.
+Current expanded coverage evidence (2026-10-26, source `ec1ff90`): remote Linux
+passed at **88.0076%** (55,238 / 62,765 lines), with 7,956 passed and 77 skipped.
+[CI run 40320342842](https://github.com/TechLeo-Libraries/BuildML/actions/runs/40320342842)
+passed, as did backend evidence, release acceptance and CodeQL. Tested merge `fe3e32c4`
+and source trees are equal. The expanded floor rises from 86% to **87%** using
+1.0076 percentage points of headroom. Scope, coverage.py 7.16.2 and 566 excluded
+lines are unchanged; core floor stays 70%. The suite ran in 25:17 with 2,889 pytest
+warnings and no coverage collection warnings. Optional skips remain configuration-specific.
+Reaching 90% requires 1,251 further covered lines at this source; subset percentages
+are not added.
