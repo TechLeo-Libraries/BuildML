@@ -14,7 +14,8 @@ from typing import Any, Literal
 import numpy as np
 
 from buildml.core.errors import ValidationError
-from buildml.fairness.metrics import _as_bool_pred, group_selection_rates
+from buildml.fairness.groups import compose_group_keys
+from buildml.fairness.metrics import _as_bool_pred, _label_vector, group_selection_rates
 
 ThresholdTarget = Literal["demographic_parity", "equal_opportunity"]
 
@@ -134,9 +135,9 @@ def suggest_group_thresholds(
             f"Unknown threshold target {target!r}; "
             "use 'demographic_parity' or 'equal_opportunity'."
         )
-    yt = _vector(y_true, "y_true")
+    yt = _label_vector(y_true, "y_true")
     scores = _finite_scores(y_score)
-    sens = _vector(sensitive, "sensitive")
+    sens = compose_group_keys(_vector(np.asarray(sensitive, dtype=object), "sensitive"))
     if len(yt) != len(scores) or len(yt) != len(sens):
         raise ValidationError("y_true, y_score, and sensitive must have equal length.")
     if len(yt) == 0:
@@ -267,8 +268,8 @@ def suggest_reweighing_weights(
     ValidationError
         On non-vector inputs, length mismatch, or empty inputs.
     """
-    yt = _vector(y_true, "y_true")
-    sens = _vector(sensitive, "sensitive")
+    yt = _label_vector(y_true, "y_true")
+    sens = compose_group_keys(_vector(np.asarray(sensitive, dtype=object), "sensitive"))
     if len(yt) != len(sens):
         raise ValidationError("y_true and sensitive must have equal length.")
     n = len(yt)
@@ -367,7 +368,7 @@ def apply_group_thresholds(
     real values. Unknown groups retain the default threshold of 0.5.
     """
     scores = _finite_scores(y_score)
-    sens = _vector(sensitive, "sensitive")
+    sens = compose_group_keys(_vector(np.asarray(sensitive, dtype=object), "sensitive"))
     if len(scores) != len(sens):
         raise ValidationError("y_score and sensitive must have equal length.")
     thresholds: dict[str, float] = {}
@@ -399,6 +400,7 @@ def selection_rates_from_scores(
     negative_label: Any = 0,
 ) -> dict[str, float]:
     """Convenience: selection rates after applying group thresholds."""
+    sensitive = compose_group_keys(sensitive)
     y_pred = apply_group_thresholds(
         y_score,
         sensitive,

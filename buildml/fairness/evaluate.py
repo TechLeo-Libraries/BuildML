@@ -15,13 +15,19 @@ from buildml.fairness.groups import (
     sensitive_column_label,
 )
 from buildml.fairness.metrics import (
+    _label_vector,
     demographic_parity_difference,
     disparate_impact_ratio,
     equalized_odds_gaps,
     group_selection_rates,
 )
+from buildml.fairness.mitigation import _finite_scores
 from buildml.fairness.results import FairnessReport
-from buildml.fairness.stability import StabilityMethod, estimate_gap_stability
+from buildml.fairness.stability import (
+    StabilityMethod,
+    _validate_stability_options,
+    estimate_gap_stability,
+)
 
 
 def _unique_labels(values: np.ndarray) -> list[Any]:
@@ -120,7 +126,8 @@ def evaluate_fairness(
         When True (default), attach per-group accuracy/precision/recall/F1
         (and AUC when scores are available).
     bootstrap_samples:
-        When ``> 1``, attach stability bands via resampling. ``0`` disables.
+        Integer of at least two to attach stability bands. ``0`` disables;
+        boolean, fractional, string, and one-draw configurations are refused.
     stability_method, subsample_fraction, confidence_level, random_state:
         Stability configuration (see
         :func:`~buildml.fairness.stability.estimate_gap_stability`).
@@ -134,12 +141,15 @@ def evaluate_fairness(
     Raises
     ------
     ValidationError
-        When lengths disagree, inputs are empty, or ``positive_label`` is
-        misconfigured relative to observed labels.
+        When labels/scores are malformed, lengths disagree, inputs are empty,
+        group keys collide, or resampling controls / ``positive_label`` are invalid.
     """
-    yt = np.asarray(y_true)
-    yp = np.asarray(y_pred)
-    sens_raw = np.asarray(sensitive)
+    bootstrap_samples = _validate_stability_options(
+        bootstrap_samples, confidence_level, stability_method, subsample_fraction, allow_zero=True
+    )
+    yt = _label_vector(y_true, "y_true")
+    yp = _label_vector(y_pred, "y_pred")
+    sens_raw = np.asarray(sensitive, dtype=object)
     if sens_raw.ndim == 2:
         if sens_raw.shape[0] != len(yt):
             raise ValidationError(
@@ -158,9 +168,7 @@ def evaluate_fairness(
                     "sensitive attribute columns."
                 )
     elif sens_raw.ndim == 1:
-        sens = np.asarray(
-            [str(s) if s == s else "<NA>" for s in sens_raw], dtype=object
-        )
+        sens = compose_group_keys(sens_raw)
         cols = normalize_sensitive_columns(sensitive_column)
     else:
         raise ValidationError(
@@ -174,7 +182,7 @@ def evaluate_fairness(
 
     validate_positive_label(yt, yp, positive_label=positive_label)
 
-    scores = None if y_score is None else np.asarray(y_score, dtype=float)
+    scores = None if y_score is None else _finite_scores(y_score)
     if scores is not None and len(scores) != len(yt):
         raise ValidationError("y_score must have the same length as y_true.")
 

@@ -8,6 +8,7 @@ from buildml.core.errors import ValidationError
 from buildml.fairness.catalog import fairness_capability_matrix as _fairness_capability_matrix
 from buildml.fairness.evaluate import evaluate_fairness as _evaluate_fairness
 from buildml.fairness.groups import extract_sensitive_keys, normalize_sensitive_columns
+from buildml.fairness.metrics import _label_vector
 from buildml.fairness.mitigation import (
     GroupThresholdSuggestion,
     ReweighingSuggestion,
@@ -19,7 +20,7 @@ from buildml.fairness.mitigation import (
     suggest_reweighing_weights as _suggest_reweighing_weights,
 )
 from buildml.fairness.results import FairnessReport
-from buildml.fairness.stability import StabilityMethod
+from buildml.fairness.stability import StabilityMethod, _validate_stability_options
 
 
 def fairness_capability_matrix() -> dict[str, Any]:
@@ -186,16 +187,19 @@ def evaluate_fairness_op(
         )
 
     idx = _partition_indices(session, partition)
+    bootstrap_samples = _validate_stability_options(
+        bootstrap_samples, confidence_level, stability_method, subsample_fraction, allow_zero=True
+    )
+    frame = dataset._ensure_pandas().iloc[idx]
+    target = dataset.require_target()
+    y_true = _label_vector(frame[target].to_numpy(), "y_true")
+    sensitive = extract_sensitive_keys(frame, cols)
     y_hat = session.predict(partition=partition)  # type: ignore[misc]
     if hasattr(y_hat, "to_numpy"):
         y_hat_arr = y_hat.to_numpy()
     else:
         y_hat_arr = list(y_hat)
 
-    frame = dataset.frame.iloc[idx]
-    target = dataset.require_target()
-    y_true = frame[target].to_numpy()
-    sensitive = extract_sensitive_keys(frame, cols)
     if len(y_hat_arr) != len(y_true):
         raise ValidationError(
             "Prediction length does not match fairness partition rows."
@@ -221,19 +225,19 @@ def evaluate_fairness_op(
         random_state=random_state,
     )
     session._fairness_report = report
-    history = getattr(session, "history", None)
-    if isinstance(history, list):
-        history.append(
-            {
-                "operation": "evaluate_fairness",
-                "partition": partition,
-                "sensitive_column": list(cols),
-                "intersectional": report.intersectional,
-                "n_rows": report.n_rows,
-                "demographic_parity_difference": report.demographic_parity_difference,
-                "stability_enabled": report.stability is not None,
-            }
-        )
+    session._record(
+        "evaluate_fairness",
+        {"partition": partition, "sensitive_column": list(cols), "positive_label": positive_label,
+         "bootstrap_samples": bootstrap_samples, "stability_method": stability_method,
+         "confidence_level": confidence_level, "subsample_fraction": subsample_fraction,
+         "random_state": random_state, "include_scores": include_scores,
+         "include_classical_metrics": include_classical_metrics},
+        warnings=report.warnings,
+        result_summary={"n_rows": report.n_rows, "n_groups": len(report.groups),
+                        "intersectional": report.intersectional,
+                        "demographic_parity_difference": report.demographic_parity_difference,
+                        "stability_enabled": report.stability is not None},
+    )
     return report
 
 
@@ -305,7 +309,7 @@ def suggest_fairness_thresholds_op(
             f"sensitive_column(s) not in the Session dataset: {missing!r}."
         )
     idx = _partition_indices(session, partition)
-    frame = dataset.frame.iloc[idx]
+    frame = dataset._ensure_pandas().iloc[idx]
     target_col = dataset.require_target()
     y_true = frame[target_col].to_numpy()
     sensitive = extract_sensitive_keys(frame, cols)
@@ -324,17 +328,14 @@ def suggest_fairness_thresholds_op(
         grid_size=grid_size,
     )
     session._fairness_mitigation_suggestion = suggestion
-    history = getattr(session, "history", None)
-    if isinstance(history, list):
-        history.append(
-            {
-                "operation": "suggest_fairness_thresholds",
-                "partition": partition,
-                "sensitive_column": list(cols),
-                "target": target,
-                "n_rows": suggestion.n_rows,
-            }
-        )
+    session._record(
+        "suggest_fairness_thresholds",
+        {"partition": partition, "sensitive_column": list(cols), "positive_label": positive_label,
+         "target": target, "grid_size": grid_size},
+        warnings=suggestion.warnings,
+        result_summary={"n_rows": suggestion.n_rows, "target": suggestion.target,
+                        "thresholds_by_group": suggestion.thresholds_by_group},
+    )
     return suggestion
 
 
@@ -360,7 +361,7 @@ def suggest_fairness_reweighing_op(
             f"sensitive_column(s) not in the Session dataset: {missing!r}."
         )
     idx = _partition_indices(session, partition)
-    frame = dataset.frame.iloc[idx]
+    frame = dataset._ensure_pandas().iloc[idx]
     target_col = dataset.require_target()
     y_true = frame[target_col].to_numpy()
     sensitive = extract_sensitive_keys(frame, cols)
@@ -368,14 +369,10 @@ def suggest_fairness_reweighing_op(
         y_true, sensitive, positive_label=positive_label
     )
     session._fairness_mitigation_suggestion = suggestion
-    history = getattr(session, "history", None)
-    if isinstance(history, list):
-        history.append(
-            {
-                "operation": "suggest_fairness_reweighing",
-                "partition": partition,
-                "sensitive_column": list(cols),
-                "n_rows": suggestion.n_rows,
-            }
-        )
+    session._record(
+        "suggest_fairness_reweighing",
+        {"partition": partition, "sensitive_column": list(cols), "positive_label": positive_label},
+        warnings=suggestion.warnings,
+        result_summary={"n_rows": suggestion.n_rows, "weight_table": suggestion.weight_table},
+    )
     return suggestion

@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-10-26, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed: 88.0891% (55,290/62,766); 8,047 passed, 77 skipped | [CI40329845801](https://github.com/TechLeo-Libraries/BuildML/actions/runs/40329845801), source `3472fb0`, tested merge `18fa23cc`; matching trees and all four workflows passed. Scope/566 exclusions/coverage.py7.16.2 unchanged. Core70/expanded87 retained. Exact90% gap1,200 lines; 2,889 pytest warnings, no coverage collection warnings |
+| Current accepted remote expanded CPU whole-package gate | Passed: 88.1295% (55,333/62,786); 8,205 passed, 77 skipped | [CI40336277246](https://github.com/TechLeo-Libraries/BuildML/actions/runs/40336277246), source `e997b6b`, tested merge `020ab828`; matching trees and all four workflows passed. Scope/566 exclusions/coverage.py7.16.2 unchanged. Core70/expanded87 retained. Exact90% gap1,175 lines; 2,890 pytest warnings, no coverage collection warnings |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -3056,3 +3056,68 @@ docstring budget pass. The same targeted five-file mypy check improved 24 baseli
 findings to one retained `ordered_frame` return-type finding, with zero new
 findings; type cleanliness is not claimed. A fresh complete remote suite is
 required for this forecasting batch after publication.
+
+### Accepted forecasting whole-suite result (2026-10-26)
+
+Source `e997b6b` passed its complete expanded Linux CPU suite at **88.1295%**
+(55,333/62,786 lines), with **8,205 passed and 77 skipped** in 18:35. The XML
+contains 8,282 tests and zero failures/errors. There were 2,890 pytest warnings
+and no coverage collection warnings. CI 40336277246, backend evidence 40336277278,
+release acceptance 40336277171 and CodeQL 40336272046 passed. Tested merge
+`020ab828` and source have matching trees. The runtime records Pandas 2.3.3,
+Polars 2.0.0, Torch 2.7.1+cpu and coverage.py 7.16.2. Package scope and 566 excluded
+lines are unchanged. This is 43 more covered lines and 20 more statements than
+the preceding accepted `3472fb0`; the exact 90% gap is 1,175 lines. Core 70 and
+expanded 87 floors remain unchanged. Earlier subset observations remain separate
+and are not added to this full-suite percentage.
+
+### Fairness populations and resampling audit records (2026-10-26)
+
+Different observed sensitive populations could share one displayed group key:
+delimiter-containing intersectional levels, a missing value versus literal
+`<NA>`, or numeric and string levels that stringify identically. Composition
+now refuses those observed collisions. Raw audits, stability and policy helpers
+consistently retain nullable sensitive values as an explicit missing population.
+Callers must still review their category mapping over the deployment population,
+especially when reusing a threshold policy.
+
+Audit labels must be observed, aligned vectors; supplied scores must be finite
+aligned vectors. Resampling requires integer counts, zero only to disable report
+bands, and valid real confidence/subsampling controls. Invalid Session groups,
+controls and missing truth refuse before prediction records are added. Successful
+fairness evaluations and suggestions now use versioned operation records rather
+than append to the copy returned by `Session.history`. Real checkpoint replay
+preserves parameters, warnings and compact summaries. Per-row weights are kept
+out of history summaries.
+
+The main 101 new cases reproduced **78 failures / 23 passes** in 18.88s on an
+untouched package archived from verified source `e997b6b`. The initial 88 repaired
+checks passed in 8.44s; the final four-file fairness scope passed 184 in 10.71s
+before type-only float comparisons/docstrings. Independent scalar group rates,
+TPR/FPR gaps, seeded row draws and quantile calculations check bootstrap and
+stratified subsampling across confidence levels and label encodings. Actual
+classifiers, refusal-state checks and saved audit replay check the Session paths.
+
+Final TEN-file Windows profiles independently passed **313 tests / 6 skipped**
+on Pandas 3.0.5 in 180.15s and Pandas 2.3.3 in 185.58s, both with NumPy 2.4.6.
+The six skips are existing checkpoint cases needing locally absent Polars. Each
+profile reported one upstream LangChain deprecation warning and no coverage
+collection warnings. Six changed production files pass targeted mypy both at
+baseline and after repair; this is not package-wide type cleanliness. Ruff,
+copy lint, diff and the unchanged 586 docstring budget pass.
+
+Four separate Windows/Pandas 3 regression checks passed without skips or warnings
+in 27.58s. They verify undefined FPR/disparate-impact bands remain unknown rather
+than become zero-width certainty, and independently count finite bootstrap draws
+when a rare group disappears. They also read the real JSON/Markdown reports.
+Together the batch adds 105 distinct cases; the separate profile counts are not
+combined.
+
+Source-mapped reach against the complete verified `e997b6b` baseline is **10
+previously missing unchanged lines / 75 changed-new executed lines** in each
+main profile. The separate undefined-band run reached **8 unchanged / 46
+changed-new** lines. All 814 package sources and 11 test files have frozen hashes
+or copies. No files are unmapped. These are separate subset observations, not
+projected full-suite gains. A fresh complete remote suite is required after
+publication. Resampling bands remain descriptive observational variability;
+they do not establish population fairness or calibrated deployment uncertainty.

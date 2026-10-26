@@ -5,6 +5,22 @@ from __future__ import annotations
 from typing import Any
 
 import numpy as np
+import pandas as pd
+
+from buildml.core.errors import ValidationError
+
+
+def _label_vector(values: Any, name: str) -> np.ndarray:
+    """Require observed scalar labels before binary comparisons can broadcast."""
+    try:
+        labels = np.asarray(values, dtype=object)
+    except (TypeError, ValueError) as exc:
+        raise ValidationError(f"{name} must be a one-dimensional label vector.") from exc
+    if labels.ndim != 1:
+        raise ValidationError(f"{name} must be a one-dimensional label vector.")
+    if pd.isna(labels).any():
+        raise ValidationError(f"{name} contains missing labels; audit only observed outcomes.")
+    return labels
 
 
 def _as_bool_pred(y: np.ndarray, positive_label: Any) -> np.ndarray:

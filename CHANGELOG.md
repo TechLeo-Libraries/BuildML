@@ -14,6 +14,12 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Fairness reports and policy helpers refuse group-key collisions, preserve
+  nullable sensitive populations, and validate aligned observed labels, scores
+  and resampling controls. Session audits and suggestions now write persistent
+  operation records with compact summaries instead of appending to a history
+  copy. Invalid group populations and audit controls refuse before prediction.
+
 - Forecast generation conditions naive, drift and seasonal-naive baselines on
   the selected origin, while retaining the train-fitted mean and drift slope.
   Exogenous ARIMA/SARIMAX receive historical regressors at validation/test end.
