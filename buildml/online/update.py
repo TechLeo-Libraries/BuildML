@@ -56,7 +56,8 @@ def partial_fit_online(
     n_rows:
         Rows to take from unused train indices; defaults to ``plan.chunk_size``.
     indices:
-        Optional explicit train-partition dataset indices.
+        Optional explicit train row positions (validation/test refused).
+        Rehearsing earlier positions never rewinds the sequential cursor.
     frame:
         Optional user-provided incremental frame with role-aligned columns.
 
@@ -155,7 +156,6 @@ def partial_fit_online(
                 dataset,
                 plan,
                 split_plan,
-                chunk=chunk,
                 chunk_indices=chunk_indices,
                 external=external,
                 allow_refit_fallback=allow_refit,
@@ -268,7 +268,6 @@ def _refit_cumulative(
     plan: OnlinePlan,
     split_plan: SplitPlan | None,
     *,
-    chunk: pd.DataFrame,
     chunk_indices: Sequence[Any],
     external: bool,
     allow_refit_fallback: bool,
@@ -293,14 +292,10 @@ def _refit_cumulative(
             "Use an estimator with partial_fit for external updates, or fit a "
             "batch model on an explicitly retained complete training dataset."
         )
-    frames: list[pd.DataFrame] = []
-    if split_plan is not None and plan.seen_train_indices:
-        full = dataset._ensure_pandas()
-        frames.append(full.loc[list(plan.seen_train_indices)])
-    frames.append(chunk)
-    combined = pd.concat(frames, axis=0)
-    # Drop duplicate indices when current chunk overlaps seen.
-    combined = combined[~combined.index.duplicated(keep="last")]
+    # Membership is positional: duplicate pandas labels still represent distinct
+    # real rows, while a position repeated across chunks is included just once.
+    positions = list(dict.fromkeys([*plan.seen_train_indices, *chunk_indices]))
+    combined = dataset._ensure_pandas().iloc[positions]
     x = matrix_from_frame(combined, list(plan.columns))
     if plan.task == "classification":
         y, _, _ = encode_classification_targets(

@@ -35,8 +35,8 @@ def evaluate_online(
 
     Holdout rows are never used for ``partial_fit``. Prefer validation/test
     after streaming train chunks. When ``drift_check=True``, River ADWIN /
-    Page-Hinkley detectors (industry backend) or native mean-shift notes are
-    surfaced without updating the model.
+    Page-Hinkley detector copies (industry backend) or native mean-shift notes
+    are surfaced without changing the learner or its training drift state.
 
     Parameters
     ----------

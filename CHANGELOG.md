@@ -14,6 +14,12 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Online chunks and cumulative refits follow split row positions, preserving
+  distinct rows with duplicate pandas labels. Explicit rehearsal never rewinds
+  the sequential cursor. River logistic/PA streams use one-vs-rest for more
+  than two classes, and holdout drift checks leave training detectors intact.
+  Older binary River models with a multiclass vocabulary require refitting.
+
 - Native all-row consumers materialize their current DuckDB or Polars data
   before recommendation, ranking, KG scoring, allocation and TDA transforms.
   Ranker fitting validates real numeric dtypes, and synthetic train extension

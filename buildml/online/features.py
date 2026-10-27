@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
+from numbers import Integral
 from typing import Any
 
 import numpy as np
@@ -232,7 +233,8 @@ def carve_train_chunk(
     n_rows:
         Number of unused train rows to take when ``indices`` is ``None``.
     indices:
-        Optional explicit train-partition dataset indices.
+        Optional explicit dataset row positions from the train partition.
+        These are split positions, independent of pandas index labels.
 
     Returns
     -------
@@ -248,6 +250,11 @@ def carve_train_chunk(
     n_train = len(train_indices)
     if indices is not None:
         requested = list(indices)
+        if not requested:
+            raise ValidationError("Explicit online chunk positions must not be empty.")
+        if any(isinstance(i, (bool, np.bool_)) or not isinstance(i, Integral) for i in requested):
+            raise ValidationError("Online chunk positions must be integers, not booleans or labels.")
+        requested = [int(i) for i in requested]
         train_set = set(train_indices)
         bad = [i for i in requested if i not in train_set]
         if bad:
@@ -256,15 +263,15 @@ def carve_train_chunk(
                 f"leakage): {bad[:10]}{'...' if len(bad) > 10 else ''}."
             )
         full = dataset._ensure_pandas()
-        missing = [i for i in requested if i not in full.index]
+        missing = [i for i in requested if i < 0 or i >= len(full)]
         if missing:
             raise ValidationError(
-                f"Unknown dataset indices for online chunk: {missing[:10]}"
+                f"Unknown dataset positions for online chunk: {missing[:10]}"
             )
-        chunk = full.loc[requested]
+        chunk = full.iloc[requested]
         # Cursor advances past the highest train-order position among requested.
         positions = [train_indices.index(i) for i in requested]
-        new_cursor = max(positions) + 1 if positions else cursor
+        new_cursor = max(cursor, max(positions) + 1)
         return chunk, requested, int(new_cursor)
 
     if n_rows < 1:
@@ -277,7 +284,7 @@ def carve_train_chunk(
     end = min(cursor + int(n_rows), n_train)
     chosen = train_indices[cursor:end]
     full = dataset._ensure_pandas()
-    chunk = full.loc[chosen]
+    chunk = full.iloc[chosen]
     if not isinstance(chunk, pd.DataFrame):
         raise ValidationError(
             "next_train_chunk expected a DataFrame slice of train rows"

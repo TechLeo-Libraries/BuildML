@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-10-26, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed: 88.3007% (55,512/62,867); 9,608 passed, 117 skipped | [CI40392669881](https://github.com/TechLeo-Libraries/BuildML/actions/runs/40392669881), source `f604f48`, tested merge `a48fb36c`; matching trees and all four workflows passed. Scope/566 exclusions/coverage.py7.16.2 unchanged. Core70/expanded87 retained. Exact90% gap1,069 lines; 2,890 pytest warnings, no coverage collection warnings |
+| Current accepted remote expanded CPU whole-package gate | Passed: 88.3072% (55,517/62,868); 9,732 passed, 117 skipped | [CI 40416997738](https://github.com/TechLeo-Libraries/BuildML/actions/runs/40416997738), source `bb0ea63`, tested merge `9112d025`; matching trees and all four workflows passed. Scope/566 exclusions/coverage.py 7.16.2 unchanged. Core70/expanded87 retained. Exact90 gap1,065; 2,890 warnings, no collection warnings |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -3449,3 +3449,77 @@ annotation findings; package-wide type cleanliness is not claimed. The engine
 CI matrix installs real TDA dependencies and selects the new consumers. Latest
 accepted complete coverage remains **88.3007%**; a new full result requires
 remote CI.
+
+### Accepted native-consumer whole-suite result (2026-10-26)
+
+Source `bb0ea63` passed **88.3072%** (55,517/62,868 lines), with **9,732 passed
+and 117 skipped**. The XML has 9,849 tests and zero errors/failures. Runtime was
+16:37 (997.17s log/997.074s XML), with 2,890 pytest warnings and no coverage
+collection warnings. CI 40416997738, backend 40416997740, acceptance 40416997634
+and CodeQL 40416995838 passed. Source and tested merge `9112d025` trees match.
+Coverage.py 7.16.2, 566 exclusions, package scope and core70/expanded87 floors
+are unchanged. Relative to `f604f48`, this full run adds five covered lines and
+one statement; local subset reach was not an aggregate gain prediction. The
+exact 90% gap is 1,065 covered lines. Forty imitation skips executed in the
+separate compatible RL profile; optional/platform qualifications still apply.
+
+### Online streaming populations and drift (2026-10-27)
+
+River logistic/PA classifiers now use one-vs-rest when the full stream vocabulary
+contains more than two classes, including a class absent from the initial chunk.
+Holdout ADWIN/Page-Hinkley checks use detector copies and cannot contaminate later
+training updates. Online chunks and cumulative refits follow split row positions
+instead of pandas labels; duplicate labels retain distinct real rows, explicit
+rehearsal cannot rewind the cursor, and malformed position requests refuse before
+replacing model/history. Unsafe older binary River models with multiclass
+vocabularies require refitting before they can be loaded or saved.
+
+The 196 new cases on all 828 verified archived `bb0ea63` package/resource files
+reproduce **138 failures and 58 passes** in 29.78s. Of those failures, 128 expose
+behavior mismatches and 10 request refusal of unsafe bundles or malformed
+positions. Repaired focused verification passes all 196 in 25.80s with no skips
+or warnings. A preliminary 200-case design was narrowed so cursor checks use
+ordinary-index controls, independently of index-label failures. Earlier Session
+deepcopy fixture failures are excluded from product evidence.
+
+Independent direct River learners and scalar accuracy/F1/MAE/RMSE/R² arithmetic
+check train chunks, holdout predictions and bundle replay for all five River
+estimators. Real detector copies score constructed error shifts; future updates
+match a stream that never underwent holdout drift checks. Independent sklearn
+batch refits, exact row means and membership ledgers verify shuffled/duplicate
+indices, explicit position arrays and cumulative reconstruction. These bounded
+checks establish numerical and population contracts, not deployment accuracy or
+long-term drift-detection quality.
+
+Windows subsets across ten verification files, each measured independently with
+all 814 production sources and 10 verification files frozen and hash-verified:
+
+- Pandas 3.0.5/NumPy 2.4.6/River 0.26.1: **278 passed**, no skips or
+  warnings; 98.37s log/98.337s XML.
+- Pandas 2.3.3 with the same NumPy/River: **278 passed**, no skips or
+  warnings; 94.50s log/94.471s XML.
+
+All 196 new cases execute in each profile; the main environment is unchanged.
+River is isolated under reports and matches the accepted CI version. Each
+separate reach against the verified full `bb0ea63` baseline is
+**35 previously missing unchanged lines and 33 changed/new executed lines**
+(Pandas 3), and **35 unchanged/33 changed/new lines** (Pandas 2).
+These are broader subset observations, not gains attributable solely to new
+cases or a projected full-suite percentage. Profile/backend differences remain
+material. Both observations preserve coverage.py 7.16.2, package scope and 566
+exclusions and have no coverage collection warnings.
+
+Of the 35 unchanged lines, 31 are in the River adapter; four are in online
+prediction or optional-dependency catalog/probe paths. They remain separate
+observations of this local profile, not predicted gains for the complete gate.
+
+Seven bundles produced by the actual archived source provide separate legacy
+consumer evidence using ordinary RangeIndex data: five compatible
+binary/tree/regression models preserve
+predictions and resume updates exactly; two unsafe multiclass binary models
+refuse with a refit message. This is not seven additional pytest cases. Baseline
+and current targeted mypy are clean for six touched source files; package-wide
+type cleanliness is not claimed. The latest accepted full result remains
+**88.3072%** at `bb0ea63`; current edits require fresh complete CI verification.
+The position fix cannot undo wrong-row training in an existing model; such a
+model must be refitted.

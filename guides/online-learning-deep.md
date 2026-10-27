@@ -23,6 +23,15 @@ implicit full refit (`allow_refit_fallback`
 defaults to False). You decide chunk size, whether to pass `classes=`
 yourself, and whether to opt into a disclosed full-refit fallback.
 
+Explicit `indices=` values are dataset row positions from the split plan,
+independent of pandas index labels. Permuted and duplicate labels do not change
+which rows belong to train. Positions must be integers; booleans and labels are
+refused. An explicit request can rehearse earlier train rows, but the sequential
+cursor never moves backwards. A cumulative full-refit fallback reconstructs the
+union of seen row positions, retaining distinct rows with the same pandas label.
+This fixes new fits and updates; it cannot remove wrongly selected rows from an
+already trained model. Refit a model that consumed the wrong rows.
+
 Quickstart: [online quickstart](quickstart-online-learning.md).
 Proof: [stream-fraud-online](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/stream-fraud-online).
 
@@ -96,6 +105,20 @@ session.online.save_bundle("artifacts/online_bundle")
 
 Industry needs a successful River import, not just a wheel on disk.
 Torch replay and EWC use small tabular MLPs.
+
+`river_logistic` and `river_pa` use River's one-vs-rest classifier when the
+announced or discovered vocabulary contains more than two classes. A class may
+be in that vocabulary before it appears in a consumed train chunk; its rows are
+still learned only when consumed. Binary streams retain their binary model.
+Older bundles that paired a binary River model with a multiclass vocabulary
+cannot recover the missing class learners: loading or saving that state refuses
+with a refit message. Compatible older binary, tree and regression models retain
+their predictions and can resume updates.
+
+Holdout ADWIN/Page-Hinkley checks run on copies of the trained detectors. They
+report changes in the holdout error stream while leaving the training detector
+state and event ledger intact for later updates. Holdout rows never call
+`learn_one`.
 
 `drift_detector=None` picks `adwin` on industry when River is there,
 otherwise `mean_shift`. `adwin` and `page_hinkley` refuse on
