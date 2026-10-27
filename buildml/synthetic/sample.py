@@ -96,6 +96,16 @@ ValidationError
         "(merge_mode='none'). Pass merge_mode='extend_train' to append.",
         "Synthetic rows are not real observations: provenance should be tracked.",
     ]
+    warnings = list(plan.warnings)
+    if isinstance(generator, GaussianCopulaGenerator) and any(
+        isinstance(category, str)
+        for transform in generator.cat_transforms.values()
+        for category in transform.categories
+    ):
+        warnings.append(
+            "Legacy copula categorical transforms use text keys; refit the "
+            "synthesizer to preserve distinct scalar category populations."
+        )
     return SyntheticSampleResult(
         method=plan.method,
         n_rows=int(len(frame)),
@@ -105,7 +115,7 @@ ValidationError
         merge_mode="none",
         provenance_column=None,
         disclosures=tuple(disclosures),
-        warnings=tuple(plan.warnings),
+        warnings=tuple(warnings),
     )
 
 

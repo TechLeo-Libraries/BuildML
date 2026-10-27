@@ -173,6 +173,22 @@ when the input column preserves those types. NumPy scalar wrappers compare as
 their corresponding Python values. This avoids a perfect total-variation score
 caused by converting distinct categories to the same text.
 
+New native copulas fit categorical frequency bins with the same scalar type
+identities. Their categorical conditions require a matching type, so `True`
+does not select integer `1`. Conditions on continuous numeric columns retain
+numeric equality. Trusted saved plans retain the raw fitted vocabulary;
+JSON summaries keep their display labels. Sampling a new plan or reloading its
+bundle preserves both types and the training population.
+
+Vocabulary validation counts unknown nonmissing values divided by the total
+sample row count. Missing values contribute to the separate null-rate check.
+They never impersonate a literal `"__NA__"` category. Older text vocabularies
+retain text comparison and disclose that refitting is needed for typed checks.
+Older copula samples retain their fitted transforms with a refitting warning;
+refit on the original training data to recover populations merged by those
+transforms. Loading an older schema initializes its new metadata defaults so
+comparison, sampling and resaving remain usable.
+
 Classification TSTR and TRTR fit their probes on training labels represented
 by integer codes. Holdout labels never add training examples or model outputs;
 an unseen class counts as an error and participates in macro-F1. Missing

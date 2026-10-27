@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-10-26, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed: 88.4197% (55,662/62,952); 10,193 passed, 173 skipped | [CI40458779103](https://github.com/TechLeo-Libraries/BuildML/actions/runs/40458779103), source `03e72a0`, tested merge `1d292469`; matching trees and all four workflows passed. Scope/566 exclusions/coverage.py7.16.2 unchanged. Core70/expanded87 retained. Exact90% gap995 lines; 2,890 pytest warnings, no coverage collection warnings |
+| Current accepted remote expanded CPU whole-package gate | Passed: 88.4435% (55,692/62,969); 10,338 passed, 173 skipped | [CI 40466646805](https://github.com/TechLeo-Libraries/BuildML/actions/runs/40466646805), source `62a90ad`, tested merge `08416f33`; matching trees and all four workflows passed. Scope/566 exclusions/coverage.py 7.16.2 unchanged. Core 70/expanded 87 retained. Exact 90% gap 981 lines; 2,890 pytest warnings, no coverage collection warnings |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -3952,3 +3952,98 @@ The latest accepted complete Linux CPU result remains **88.4197%** at `03e72a0`,
 10,193 passed/173 skipped, with an exact 90% gap of 995 lines at that source.
 Local subset reach is separate from that full result. Core 70/expanded 87 floors
 remain unchanged, and the 90% target is open pending further complete evidence.
+
+### Accepted synthetic metric identity whole-suite result (2026-10-27)
+
+Source `62a90ad` passed the complete expanded Linux CPU suite at **88.4435%**
+(55,692/62,969 lines), with **10,338 passed and 173 skipped** in 28:13.
+The XML has 10,511 tests and zero failures/errors, with runtime 1693.115s.
+There were 2,890 pytest warnings and zero collection warnings. CI 40466646805,
+backend 40466646820, acceptance 40466646764 and CodeQL 40466644354 all passed.
+Tested merge `08416f33` and source trees match. Coverage.py 7.16.2 and 566
+exclusions remain unchanged. Full covered lines increased by 30 and statements
+by 17 from `03e72a0`; the exact 90% gap is 981 lines at this denominator.
+Core 70 and expanded 87 remain unchanged. Earlier subset reach remains separate.
+
+### Typed copula populations and synthetic vocabulary checks (2026-10-27)
+
+Native copulas previously merged categories with the same display text while
+fitting frequency bins. A model trained on integer `1` and string `"1"` could
+return only strings. Categorical conditions used Python equality, so boolean
+`True` could select integer `1`. Validation also accepted categories with the
+wrong type, and treated actual missing values as an unknown `"__NA__"` token,
+rejecting otherwise valid samples whose training data contained missingness.
+
+Copula bins and categorical conditions now retain scalar type identities,
+normalizing NumPy wrappers. Numeric conditions on continuous columns retain
+numeric comparison. Raw fitted vocabularies remain in trusted plan payloads;
+JSON summaries keep display labels. Unknown nonmissing values are counted over
+all sample rows, and null-rate checks handle missingness separately. Legacy
+text vocabularies retain their prior text comparison with a refitting warning.
+Legacy copula sampling keeps stored transforms and warns that refitting on the
+original training data is needed to recover categories those transforms merged.
+
+The 131 new public consumers across two files exercise unconditional typed
+populations, exact typed conditions, train extension/holdout integrity, OOV
+fractions and tolerance boundaries, missingness, refusal atomicity, trusted
+bundles and independent normal-rank/Pearson/CDF sampling calculations. One
+tracked v1 fixture was produced by the public bundle API using archived
+`62a90ad` code; its provenance and hashes are retained with the evidence.
+The exact final set against all 828 verified old package/resource files, plus
+two test files and three fixture files, had **57 failures and 74 passes in
+19.43s** (XML 19.376s), zero setup errors/skips. Two actual
+NumPy divide warnings came from the collapsed copula's constant latent column.
+
+Independent final Windows subsets freeze 814 production Python files,
+11 selected test files and all three fixture files:
+
+| Profile | Final result | Source-mapped reach vs `62a90ad` |
+| --- | --- | --- |
+| Pandas 3.0.5/NumPy 2.4.6/sklearn 1.9.0/Torch 2.13 CPU | 492 passed/1 skipped; 105.36s log/105.299s XML | 6 previously missing unchanged/38 changed-new executed lines |
+| Pandas 2.3.3, same other libraries | 492 passed/1 skipped; 100.66s log/100.607s XML | 6 unchanged/38 changed-new executed lines |
+
+Each XML has 493 tests, zero failures/errors and all 131 new checks executing.
+Each profile has 77 existing alias deprecations: 75 from AI flat sampling and
+two from existing SMOTE flat fit/sample aliases. There are zero collection
+warnings. One existing SDV check skips because SDV is absent. Each profile uses
+its own coverage database; unmapped reach files are empty. Scope, coverage.py
+7.16.2 and 566 exclusions remain unchanged. These broader subset observations
+include optional and platform paths; they are not a whole-package gain.
+All six previously missing unchanged lines come from catalog/dependency
+availability paths. The 38 changed-new
+executed lines comprise 22 in models, nine in validation, three each in sampling
+and checkpoint loading, and one in the schema type. They remain separate from
+the complete-suite percentage.
+
+The actual lean environment also passes **131 checks in 13.59s**
+(XML 13.536s), with zero skips/errors/warnings, on
+Python 3.12.8/Pandas 2.3.3/NumPy 2.4.1/sklearn 1.9.1/SciPy 1.15.3/PyArrow 26.
+Torch and visualization dependencies are absent. No optional package was hidden
+or mocked; the main environment was not modified. This focused check does not
+establish every remote Python version or a complete-suite percentage.
+
+Four actual older bundles (bootstrap/copula with colliding/control labels)
+retain identical seeded sampled frames and fitted generator hashes. Loading
+normalizes newly introduced schema metadata to its legacy default; full plan
+pickle hashes consequently change. A real old slotted schema initially failed
+comparison with AttributeError after loading. The loader now initializes the
+missing default, and the tracked fixture verifies comparison, sampling, JSON
+summary and resaving. Old vocabularies and copulas disclose their limitations;
+these checks do not claim that legacy merged populations have been recovered.
+
+An initial 130-case baseline had 58 failures/72 passes in 18.74s, including one
+false history assertion; three focused failures/127 passes in 15.65s came from
+checking history after a data read recorded its own operation. Moving that
+assertion before inspection produced the corrected baseline, 57 failures/73
+passes in 19.36s, and 130 focused passes in 17.67s. Intermediate broad profiles
+passed 491 with one skip in 103.06s/98.17s before the actual old-schema comparison
+failed separately in 4.23s. All intermediate artifacts are retained, superseded
+by the final 131-check baseline and profiles, and excluded from final counts.
+
+Targeted mypy retains the same five existing model DataFrame/Series diagnostics
+across five files as the archived source; no type-cleanliness claim is made.
+Ruff, copy lint, diff checks and the docstring budget (586 existing findings)
+pass. Latest accepted complete Linux CPU coverage remains **88.4435%** at
+`62a90ad`, 10,338 passed/173 skipped; its exact 90% gap is 981 lines. Fresh
+complete evidence is required for this new source. Core 70/expanded 87 remain,
+and the 90% target is open.

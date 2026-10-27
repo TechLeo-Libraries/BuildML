@@ -14,6 +14,12 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Native copulas preserve distinct scalar categorical populations and apply
+  categorical conditions using their fitted types. Vocabulary checks count
+  unknown nonmissing values separately from null-rate checks. Trusted bundles
+  retain fitted raw vocabularies; older text vocabularies disclose refitting
+  limits, and loading older slotted schemas keeps comparisons and resaving usable.
+
 - Synthetic fidelity and classification utility preserve scalar category and
   label identities. Missing categories differ from literal `"__NA__"` values;
   numeric and string labels with the same spelling remain distinct. TSTR/TRTR

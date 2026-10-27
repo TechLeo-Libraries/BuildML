@@ -129,6 +129,14 @@ labels count as errors; missing targets raise before storing an evaluation.
 These checks reuse the frozen generator, including a trusted saved bundle.
 Previously written reports keep their values until evaluation is run again.
 
+Native copulas also preserve these distinct categorical populations during
+sampling. For categorical conditions, use the fitted scalar type: `True`, `1`
+and `"1"` select distinct labels. Numeric conditions on continuous columns keep
+numeric value comparison. Vocabulary validation counts unknown nonmissing rows
+as a fraction of all sampled rows; null-rate checks handle missingness separately.
+An older bundle with a text vocabulary discloses that limit. Refit older copulas
+on the original training data to recover categories that their text keys merged.
+
 | Claim | Reality |
 | --- | --- |
 | Train-only fit | Always; never fits on validation/test |

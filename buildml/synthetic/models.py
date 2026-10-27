@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections import Counter
 from dataclasses import dataclass, field
 from numbers import Real
 from typing import Any
@@ -12,6 +13,13 @@ from scipy import stats
 
 from buildml.core.errors import MissingExtraError, ValidationError
 from buildml.synthetic.types import ColumnKind, ColumnSchemaSpec
+
+
+def _category_key(value: Any) -> tuple[type[Any], Any]:
+    """Normalize scalar wrappers while retaining categorical type identity."""
+    if isinstance(value, np.generic):
+        value = value.item()
+    return type(value), value
 
 
 def infer_column_kind(series: pd.Series) -> ColumnKind:
@@ -62,15 +70,19 @@ tuple[ColumnSchemaSpec, ...]
         series = frame[name]
         kind = infer_column_kind(series)
         cats: tuple[str, ...] = ()
+        raw_categories: tuple[Any, ...] | None = None
         if kind == "categorical":
             cats = tuple(str(v) for v in series.dropna().astype(str).unique().tolist())
+            raw_categories = tuple({_category_key(v): v for v in series.dropna()}.values())
         specs.append(
             ColumnSchemaSpec(
                 name=str(name),
                 kind=kind,
-                n_unique=int(series.nunique(dropna=True)),
+                n_unique=(len(raw_categories) if raw_categories is not None
+                          else int(series.nunique(dropna=True))),
                 n_null=int(series.isna().sum()),
                 categories=cats,
+                raw_categories_=raw_categories,
             )
         )
     return tuple(specs)
@@ -211,7 +223,7 @@ ValidationError
 
 @dataclass
 class _CatTransform:
-    categories: tuple[str, ...]
+    categories: tuple[Any, ...]
     thresholds: np.ndarray  # cumulative probs length = n_cats
     values: tuple[Any, ...] | None = None
     dtype: Any = None
@@ -304,21 +316,20 @@ ValidationError
                 u = np.clip(u, 1e-6, 1.0 - 1e-6)
                 z_cols.append(stats.norm.ppf(u))
             else:
-                as_str = series.astype("string")
-                observed = as_str.dropna()
+                observed = series.dropna()
                 if observed.empty:
                     raise ValidationError(
                         f"Categorical column {col!r} has no observed train values."
                     )
-                counts = observed.value_counts(normalize=True)
-                categories = tuple(str(c) for c in counts.index.tolist())
-                probs = counts.to_numpy(dtype=float)
+                keys = [_category_key(value) for value in observed]
+                counts = Counter(keys)
+                categories = tuple(key for key, _ in counts.most_common())
+                probs = np.array([counts[key] / len(observed) for key in categories])
                 thresholds = np.cumsum(probs)
                 thresholds[-1] = 1.0
-                # String labels are useful for probability lookup, but samples
-                # must retain the original labels and dtype (for example 0/1
-                # targets, booleans, or pandas categorical/string columns).
-                native_values = dict(zip(as_str.dropna(), series[series.notna()], strict=True))
+                # Typed lookup keys keep equal display text and bool/int values
+                # distinct. Inverse transforms retain the original values/dtype.
+                native_values = dict(zip(keys, observed, strict=True))
                 cat_transforms[col] = _CatTransform(
                     categories=categories, thresholds=thresholds,
                     values=tuple(native_values[category] for category in categories),
@@ -333,11 +344,11 @@ ValidationError
                     prev = float(thr)
                 mode_cat = categories[0]
                 u_rows = []
-                for val in as_str.tolist():
-                    if val is pd.NA or val is None or (isinstance(val, float) and np.isnan(val)):
+                for val in series.tolist():
+                    if pd.isna(val):
                         u_rows.append(cat_to_u[mode_cat])
                     else:
-                        u_rows.append(cat_to_u.get(str(val), cat_to_u[mode_cat]))
+                        u_rows.append(cat_to_u[_category_key(val)])
                 u_arr = np.clip(np.asarray(u_rows, dtype=float), 1e-6, 1.0 - 1e-6)
                 z_cols.append(stats.norm.ppf(u_arr))
 
@@ -436,8 +447,14 @@ ValidationError
                 mask = np.ones(len(frame), dtype=bool)
                 for key, value in condition.items():
                     series = frame[key]
-                    matches = (series.isna() if value is None
-                               else series.astype(object).eq(value).fillna(False))
+                    if value is None:
+                        matches = series.isna()
+                    elif self.kinds[key] == "categorical":
+                        requested = _category_key(value)
+                        matches = series.map(lambda item, requested=requested:
+                                             not pd.isna(item) and _category_key(item) == requested)
+                    else:
+                        matches = series.astype(object).eq(value).fillna(False)
                     mask &= matches.to_numpy(dtype=bool)
                 frame = frame.loc[mask].reset_index(drop=True)
             if len(frame) > remaining:
