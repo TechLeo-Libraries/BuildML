@@ -167,6 +167,20 @@ Calling `session.synthetic.fit()` with no arguments is native copula,
 not SDV, even on a machine where SDV is the catalog's
 `default_backend_when_installed`.
 
+Builtin fidelity uses typed scalar categories, with one separate category for
+missing values. Numeric `1`, string `"1"` and boolean `True` remain distinct
+when the input column preserves those types. NumPy scalar wrappers compare as
+their corresponding Python values. This avoids a perfect total-variation score
+caused by converting distinct categories to the same text.
+
+Classification TSTR and TRTR fit their probes on training labels represented
+by integer codes. Holdout labels never add training examples or model outputs;
+an unseen class counts as an error and participates in macro-F1. Missing
+classification targets raise before storing the result. Categorical feature
+preprocessing still uses the existing sklearn contract; this change does not
+extend the feature types that it accepts. Saved generators and their sampled
+rows remain unchanged. Rerun evaluation to correct a historical report.
+
 ## Merge vs resample
 
 `session.resample` rebalances **train** for a class mix and stays a

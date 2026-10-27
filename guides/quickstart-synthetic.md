@@ -122,6 +122,13 @@ reusable sampling, fidelity/TSTR, and controlled augmentation with provenance.
 
 ## Guarantees and limitations
 
+Builtin categorical fidelity compares scalar values and their types: `1` and
+`"1"` differ, and missing values differ from a literal `"__NA__"` category.
+Classification TSTR/TRTR follows the same label identities. Unseen holdout
+labels count as errors; missing targets raise before storing an evaluation.
+These checks reuse the frozen generator, including a trusted saved bundle.
+Previously written reports keep their values until evaluation is run again.
+
 | Claim | Reality |
 | --- | --- |
 | Train-only fit | Always; never fits on validation/test |

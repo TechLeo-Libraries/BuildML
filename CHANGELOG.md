@@ -14,6 +14,13 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Synthetic fidelity and classification utility preserve scalar category and
+  label identities. Missing categories differ from literal `"__NA__"` values;
+  numeric and string labels with the same spelling remain distinct. TSTR/TRTR
+  count unseen holdout classes as errors and refuse missing targets before
+  storing a report. Existing saved generators retain their samples; rerunning
+  evaluation corrects the metrics without refitting the generator.
+
 - Plot-board checks respect optional visualization dependencies in core CI.
   Both existing visualization jobs explicitly run the numerical consumer
   checks on Python 3.11 and 3.12.

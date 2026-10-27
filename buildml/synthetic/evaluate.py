@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections import Counter
 from numbers import Integral
 from typing import Any
 
@@ -45,13 +46,17 @@ Modes
 -----
 fidelity
     Column-wise KS (continuous/integer) and total-variation (categorical),
-    plus continuous pairwise correlation L1. When ``eval_backend='sdmetrics'``
+    plus continuous pairwise correlation L1. Categorical comparisons preserve
+    scalar types and count missing values separately from literal strings.
+    When ``eval_backend='sdmetrics'``
     or ``eval_backend='auto'`` with SDMetrics installed, also reports
     SDMetrics QualityReport scores.
 tstr
     Train-on-Synthetic, Test-on-Real: fit a simple sklearn estimator on
     synthetic samples, score on the real holdout partition. Discloses that
     this is a utility proxy, not a generative quality certificate.
+    Classification retains scalar label identities, counts unseen holdout
+    classes as errors and refuses missing targets.
 Never refits the generator on the evaluation partition.
 
 Parameters
@@ -219,6 +224,8 @@ ValidationError
                 metrics[f"trtr_{key}"] = value
             if "score" in trtr and "score" in metrics:
                 metrics["tstr_gap_vs_trtr"] = float(trtr["score"] - metrics["score"])
+    except ValidationError:
+        raise
     except Exception:
         warnings.append("TRTR baseline unavailable; reporting TSTR only.")
 
@@ -291,10 +298,31 @@ def _fidelity_metrics(
 
 
 def _total_variation(real: pd.Series, syn: pd.Series) -> float:
-    r = real.astype("string").fillna("__NA__").value_counts(normalize=True)
-    s = syn.astype("string").fillna("__NA__").value_counts(normalize=True)
-    keys = sorted(set(r.index) | set(s.index))
-    return 0.5 * float(sum(abs(r.get(k, 0.0) - s.get(k, 0.0)) for k in keys))
+    r, s = Counter(_category_keys(real)), Counter(_category_keys(syn))
+    keys = r.keys() | s.keys()
+    return 0.5 * sum(abs(r[key] / len(real) - s[key] / len(syn)) for key in keys)
+
+
+def _category_keys(series: pd.Series) -> list[tuple[type[Any], Any]]:
+    """Keep scalar identity, normalizing numpy wrappers and missing values."""
+    keys = []
+    for value in series:
+        if isinstance(value, np.generic):
+            value = value.item()
+        keys.append((type(None), None) if pd.isna(value) else (type(value), value))
+    return keys
+
+
+def _classification_codes(train: pd.Series, test: pd.Series) -> tuple[np.ndarray, np.ndarray]:
+    """Encode train labels first; unseen test classes receive distinct codes."""
+    if train.isna().any() or test.isna().any():
+        raise ValidationError("TSTR classification target contains null or missing labels.")
+    mapping: dict[tuple[type[Any], Any], int] = {}
+    encoded = []
+    for labels in (train, test):
+        encoded.append(np.array([mapping.setdefault(key, len(mapping))
+                                 for key in _category_keys(labels)], dtype=int))
+    return encoded[0], encoded[1]
 
 
 def _resolve_eval_backend(eval_backend: EvalBackend) -> str:
@@ -394,15 +422,15 @@ def _tstr_metrics(
         return {"score": score, "r2": score, "task_is_classification": 0.0}, warnings
 
     # classification
-    n_classes = int(pd.Series(y_train).nunique(dropna=True))
+    train_codes, y_true = _classification_codes(y_train, y_test)
+    n_classes = len(np.unique(train_codes))
     if estimator == "ridge" or (estimator == "auto" and n_classes > 10):
         clf: Any = RidgeClassifier(random_state=random_state)
     else:
         clf = LogisticRegression(max_iter=400, random_state=random_state)
     pipe = Pipeline([("pre", pre), ("model", clf)])
-    pipe.fit(x_train, y_train.astype(str))
+    pipe.fit(x_train, train_codes)
     pred = pipe.predict(x_test)
-    y_true = y_test.astype(str).to_numpy()
     acc = float(accuracy_score(y_true, pred))
     try:
         f1 = float(f1_score(y_true, pred, average="macro"))
