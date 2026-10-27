@@ -120,7 +120,8 @@ def fit_symbolic(
     Raises
     ------
     ValidationError
-        On invalid source/method pairing, empty declared rules, or bad targets.
+        On invalid source/method pairing, empty declared rules, bad targets,
+        or declared predicates that read the target or missing input columns.
     MissingExtraError
         When industry backend or Z3 verification is requested but not installed.
 
@@ -175,7 +176,7 @@ def fit_symbolic(
         kb = parse_declared_rules(
             rules, default_consequent=default_consequent, provenance="declared"
         )
-        validate_rule_columns(kb, list(train.columns))
+        validate_rule_columns(kb, list(train.columns), target_column=target)
         disclosures.extend(kb.disclosures)
         disclosures.append(
             "Declared rules are expert/caller-supplied; they were not induced "
@@ -445,7 +446,9 @@ def fit_neuro_symbolic(
     Raises
     ------
     ValidationError
-        On unknown mode, invalid backend pairing, or bad targets.
+        On unknown mode, invalid backend pairing, bad targets, or declared
+        predicates that read the target or reference missing columns. Context
+        inputs remain valid when excluded from the numeric base features.
     MissingExtraError
         When torch backend is requested but not installed.
 
@@ -501,15 +504,18 @@ def fit_neuro_symbolic(
     else:
         y_fit = regression_targets(train[target])
 
+    declared_kb = None
+    if rules:
+        declared_kb = parse_declared_rules(rules, provenance="declared")
+        validate_rule_columns(declared_kb, list(train.columns), target_column=target)
+
     if rule_src == "declared":
-        if not rules:
+        if declared_kb is None:
             raise ValidationError(
                 "neuro-symbolic rule_source='declared' requires rules=..."
             )
-        kb = parse_declared_rules(rules, provenance="declared")
-        validate_rule_columns(kb, list(train.columns))
         # Mark constraint kinds when hardness set.
-        kb = _tag_constraint_kinds(kb)
+        kb = _tag_constraint_kinds(declared_kb)
         disclosures.append(
             "Neuro-symbolic rules are expert/caller-declared "
             "(provenance=declared)."
@@ -558,8 +564,8 @@ def fit_neuro_symbolic(
             f"Neuro-symbolic rules induced via rule_source={rule_src} "
             "on Session train only (provenance disclosed on knowledge_base)."
         )
-        if rules:
-            declared = parse_declared_rules(rules, provenance="declared")
+        if declared_kb is not None:
+            declared = declared_kb
             merged = list(declared.rules) + list(kb.rules)
             kb = RuleKnowledgeBase(
                 rules=tuple(merged),

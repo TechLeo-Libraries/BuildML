@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-10-26, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed: 88.4916% (55,763/63,015); 11,076 passed, 173 skipped | [CI 40496324522](https://github.com/TechLeo-Libraries/BuildML/actions/runs/40496324522), source `3224164`, tested merge `8f8cb204`; matching trees and all four workflows passed. Scope/566 exclusions/coverage.py 7.16.2 unchanged. Core 70/expanded 87 retained. Exact 90% gap 951 lines; 2,890 pytest warnings, no coverage collection warnings |
+| Current accepted remote expanded CPU whole-package gate | Passed: 88.5186% (55,780/63,015); 11,248 passed, 173 skipped | [CI 40502542657](https://github.com/TechLeo-Libraries/BuildML/actions/runs/40502542657), source `044e573`, tested merge `27618e81`; matching trees and all four workflows passed. Scope/566 exclusions/coverage.py 7.16.2 unchanged. Core 70/expanded 87 retained. Exact 90% gap 934 lines; 2,890 pytest warnings, no coverage collection warnings |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -4384,3 +4384,93 @@ no production typing change. Latest accepted complete Linux CPU evidence is
 Skip-reason counters match `2334f25`. The exact 90% gap is 951 lines at that
 denominator. Floors remain core 70/expanded 87. Fresh complete CI must measure
 this batch; the target remains open.
+
+### Accepted semi-supervised attachment whole-suite result (2026-10-27)
+
+Source `044e573` passed the complete expanded Linux CPU suite at **88.5186%**
+(55,780/63,015 lines), with **11,248 passed and 173 skipped** in 30:28.
+The XML has 11,421 tests and zero failures/errors, with runtime 1828.247s.
+There were 2,890 pytest warnings and zero collection warnings. CI 40502542657,
+backend 40502542619, acceptance 40502542553 and CodeQL 40502537350 all passed.
+Tested merge `27618e81` and source trees match. The 800-file measured package
+scope, coverage.py 7.16.2 and 566 exclusions are unchanged. Full covered lines
+increased by 17 with the same statement denominator from `3224164`; the exact 90% gap is
+934 lines at this denominator. Core 70 and expanded 87 remain unchanged.
+The recorded Windows subsets and lean profile above remain separate evidence.
+
+### Symbolic rule input contracts and scalar hybrid consumers (2026-10-27)
+
+Declared symbolic predicates previously could read the fitted target. A real
+public reproducer with random class labels obtained perfect test accuracy in
+pure symbolic, constraint-overlay and rules-as-features paths by reading the
+answer. Separately, declared rules merged with induced rules could reference a
+missing context column: fitting succeeded, then prediction raised a KeyError.
+Predicates now validate before any hybrid induction/base fit and before stored
+rule prediction. Target-dependent old plans must rebuild rules and refit;
+their earlier scores do not establish independent prediction performance.
+Consequents still accept labels/regression values, and non-target group/ignored
+context columns remain valid without entering the numeric base features.
+
+The exact final 228 new public cases ran against all 828 archived `044e573`
+package/resource files: **88 failed/140 passed**, 182.04s log/181.802s XML,
+zero errors/skips/warnings. Failures comprise 40 target-fit refusals, 32 supplied
+target-dependent knowledge-base scoring refusals and 16 mixed-source missing
+column refusals. Eight other mixed-source cases already raised ValidationError
+later while building rule features; they now check the inputs earlier. All
+108 valid hybrid consumers passed on the old source. The initial same-count
+baseline differed only in import-block spacing (88 failed/140 passed, 173.07s)
+and is retained separately; final tests match the exact baseline hash.
+
+The valid consumers span padded strings, integer class codes, booleans and
+regression; logistic/ridge, decision-tree and random-forest bases; declared,
+tree-induced and list-induced rules; all three hybrid modes. Independent scalar
+logits/linear arithmetic, manual tree traversal and averaged normalized forest
+leaf probabilities/means verify both holdouts. Scalar predicates, rule feature
+augmentation and ordered hard overlays verify predictions, traces, duplicate
+row labels, repairs and accuracy/MAE/RMSE. Read-only consumers preserve frames
+and fitted-plan hashes; invalid fit/scoring requests preserve prior state and
+history. Owned bundles repeat these checks. Supplied-KB regression tests are
+identified separately from actual older production bundles.
+
+Actual public fit/save using the archived source produced 12 valid bundles
+across four target kinds and three base families, plus 16 target-dependent
+bundles across pure symbolic and hybrid paths. Current public load/predict/
+evaluate passes 24 scalar holdout evaluations for the valid bundles while
+preserving metadata/frozen estimates, and produces 32 atomic target refusals
+for the unsafe bundles. No cross-serialization pickle-hash identity or arbitrary
+version compatibility claim is made. No checkpoint schema change is needed.
+
+Final independent Windows profiles freeze all 814 production Python files,
+14 resources and eight selected test files. Both use NumPy 2.4.6/sklearn 1.9.0
+and private coverage databases:
+
+| Profile | Result | Source-mapped reach vs `044e573` |
+| --- | --- | --- |
+| Pandas 3.0.5 | 404 passed; 160.65s log/160.595s XML | 42 previously missing unchanged lines; 15 changed/new executed lines |
+| Pandas 2.3.3 | 404 passed; 139.64s/139.587s | 42 unchanged; 15 changed/new |
+
+All 228 new cases execute in each profile, with zero failures/errors/skips/
+pytest warnings/collection warnings. Coverage.py 7.16.2, the same 800-file package
+scope and 566 exclusions are retained. The edited source has 63,022
+statements in each subset report. `scripts/measure_coverage_reach.py` compares
+the verified accepted complete JSON and Git baseline with the exact frozen
+current root; unmapped lists are empty. Reach includes older selected consumers
+and runtime differences; it is neither a full-suite percentage nor a projection
+or attribution of every reached line to the new cases.
+
+The actual lean environment passes all **228** new cases in
+64.22s log/64.154s XML, zero errors/skips/warnings,
+with no deselection. NumPy 2.4.1/Pandas 2.3.3/sklearn 1.9.1/SciPy 1.15.3/PyArrow
+26; Torch/matplotlib/seaborn are actually absent, never hidden or mocked.
+These sklearn consumers do not establish every industry/Z3/Torch backend.
+
+Ruff, copy lint, diff checks and the unchanged 586-finding docstring budget pass.
+Targeted mypy on the three edited files reports the same one pre-existing
+Predicate/float assignment diagnostic as archived `044e573`, zero additional
+diagnostics; it is not typing-clean. The latest accepted complete Linux CPU
+source remains **88.5186%** at `044e573` (55,780/63,015), 11,248 passed/173 skipped,
+30:28, 2,890 pytest warnings/zero collection warnings, all four workflows passed.
+Skip-reason counters match `3224164`; optional/platform limitations remain.
+Core 70/expanded 87 floors and the headroom policy are unchanged. The exact
+90% gap is 934 at that accepted denominator; fresh complete CI must measure
+this source before any whole-package gain is claimed.

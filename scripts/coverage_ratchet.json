@@ -8,20 +8,20 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 88.49162897722765,
-      "covered_lines": 55763,
+      "percent_covered": 88.51860668094898,
+      "covered_lines": 55780,
       "num_statements": 63015,
       "excluded_lines": 566,
-      "source_revision": "3224164dc44dc5fe1478b10650c239932447000f",
-      "tested_revision": "8f8cb2045e0cf599788ef3006a98e7fd6f67109e",
+      "source_revision": "044e5735c7491a6db1de5cba127863f00b86b9e3",
+      "tested_revision": "27618e81f1f1e5de973d060f16734d4038ed1e81",
       "platform": "remote Linux, CPU expanded profile",
-      "run_id": 40496324522,
-      "result": "11076 passed, 173 skipped, zero failures/errors",
+      "run_id": 40502542657,
+      "result": "11248 passed, 173 skipped, zero failures/errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
-      "notes": "Observed segment populations accepted; all four workflows passed. Source/merge trees equal efe53eeffb0cbd05541b231f9093efe1f99b57f7. Coverage.py 7.16.2/566 exclusions and package scope unchanged; 2890 pytest warnings, zero collection warnings. Full 17:34; exact 90% gap 951. Core 70/expanded 87 retained; next floor requires one percentage point of headroom. Subset reach remains separate.",
+      "notes": "Frozen semi-supervised attachment consumers accepted; all four workflows passed. Source/merge trees equal a22a2ec02dfcb3a0c1f8933778023aa92298977b. Coverage.py 7.16.2/566 exclusions and package scope unchanged; 2890 pytest warnings, zero collection warnings. Full 30:28; exact 90% gap 934. Core 70/expanded 87 retained; next floor requires one percentage point of headroom. Subset reach remains separate.",
       "coverage_version": "7.16.2"
     },
     "latest_local_measurement": {

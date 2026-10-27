@@ -21,6 +21,7 @@ from buildml.symbolic.rules import (
     evaluate_predicate,
     fire_rules,
     rule_feature_matrix,
+    validate_rule_columns,
 )
 
 PartitionOrAll = PartitionName | Literal["all"]
@@ -56,8 +57,16 @@ def predict_symbolic(
     -------
     SymbolicPredictResult
         Predictions and optional explanation traces.
+
+    Raises
+    ------
+    ValidationError
+        If rule inputs are missing or include the fitted target column.
+        Stored target-dependent rule bases must be rebuilt and refitted;
+        they cannot supply independent predictions.
     """
     frame, indices = _partition_frame(dataset, split_plan, partition)
+    validate_rule_columns(plan.knowledge_base, list(frame.columns), target_column=plan.target_column)
     preds, traces, _ = fire_rules(frame, plan.knowledge_base, row_indices=indices)
     if not return_traces:
         traces = []
@@ -103,8 +112,16 @@ def predict_neuro_symbolic(
     -------
     SymbolicPredictResult
         Final predictions, neural baseline, traces, and repair counts.
+
+    Raises
+    ------
+    ValidationError
+        If rule inputs are missing or include the fitted target column.
+        This includes supplied or previously saved knowledge bases; checks
+        run before base-model prediction or rule-feature construction.
     """
     frame, indices = _partition_frame(dataset, split_plan, partition)
+    validate_rule_columns(plan.knowledge_base, list(frame.columns), target_column=plan.target_column)
     x = matrix_from_frame(frame, list(plan.columns))
     mode = plan.mode
 

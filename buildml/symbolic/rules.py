@@ -502,28 +502,40 @@ def rule_feature_matrix(
 def validate_rule_columns(
     knowledge_base: RuleKnowledgeBase,
     available: Iterable[str],
+    *,
+    target_column: str | None = None,
 ) -> None:
-    """Refuse rules that reference columns absent from the training frame.
+    """Refuse missing rule inputs and predicates that read the scoring target.
 
-    Called during fit before rule induction or compilation so missing columns
-    fail fast with a clear validation error.
+    Called at fit and prediction boundaries so invalid inputs fail before the
+    base estimator or scoring rules consume them.
 
     Parameters
     ----------
     knowledge_base:
         Compiled or declared rule base.
     available:
-        Column names present on the train partition frame.
+        Column names present on the fitting or prediction frame.
+    target_column:
+        Target excluded from predicate inputs. Consequents may still contain
+        target class labels or regression values. Other context columns remain
+        valid even when they are excluded from the base model's features.
 
     Raises
     ------
     ValidationError
-        When any referenced column is missing.
+        When a predicate reads the target or any referenced column is missing.
     """
     available_set = {str(c) for c in available}
-    missing = [
-        col for col in knowledge_base.columns_used if col not in available_set
-    ]
+    referenced = set(knowledge_base.columns_used) | {
+        predicate.column for rule in knowledge_base.rules for predicate in rule.antecedents
+    }
+    if target_column is not None and target_column in referenced:
+        raise ValidationError(
+            f"Symbolic rule predicates cannot read target column {target_column!r}; "
+            "rebuild the rules without target inputs and refit."
+        )
+    missing = sorted(col for col in referenced if col not in available_set)
     if missing:
         raise ValidationError(
             "Symbolic rules reference columns not present in the frame: "

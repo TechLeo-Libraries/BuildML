@@ -14,6 +14,12 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Symbolic and neuro-symbolic predicates cannot read the fitted target.
+  Declared rules merged with induced rules validate input columns before
+  fitting. Prediction also validates stored rule inputs before scoring, so
+  target-dependent saved rules require rebuilding and refitting. Other context
+  columns remain valid even when excluded from the numeric base model.
+
 - Semi-supervised prediction consumer checks cover frozen scalar logits/RBF
   scores, raw labels, duplicate row indices, attachment atomicity, saved plans,
   real filtered DuckDB/Polars populations and Parquet handoff. Existing runtime
