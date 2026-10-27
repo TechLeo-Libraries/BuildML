@@ -1,5 +1,6 @@
 """Evaluation figures retain fitted class meaning and numerical calibration."""
 
+from importlib.util import find_spec
 from pathlib import Path
 
 import joblib
@@ -11,6 +12,11 @@ from sklearn.tree import DecisionTreeClassifier
 
 from buildml import Session
 from buildml.core.errors import ValidationError
+
+pytestmark = pytest.mark.skipif(
+    find_spec("matplotlib") is None or find_spec("seaborn") is None,
+    reason="Plot-board consumers require matplotlib and seaborn (buildml[viz]).",
+)
 
 LABELS = [(2, 10), (0, 1), (False, True), (" no ", "yes")]
 

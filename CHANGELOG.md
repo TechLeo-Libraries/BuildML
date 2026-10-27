@@ -14,6 +14,10 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Plot-board checks respect optional visualization dependencies in core CI.
+  Both existing visualization jobs explicitly run the numerical consumer
+  checks on Python 3.11 and 3.12.
+
 - Evaluation plot boards keep confusion axes and binary positive-class meaning
   in fitted class order, including numeric codes such as 2 and 10. Calibration
   ECE uses sample-weighted bin gaps, matching numerical calibration reports.

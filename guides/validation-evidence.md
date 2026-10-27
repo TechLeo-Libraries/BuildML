@@ -3807,3 +3807,58 @@ baseline and current source; no new diagnostics or type-cleanliness claim.
 Latest accepted complete Linux CPU suite remains **88.4039%** at `75cb56e`,
 10,138 passed/173 skipped, with 1,005 further covered lines needed at that source.
 Core 70/expanded 87 remain unchanged. Fresh complete CI is required for this batch.
+
+### Visualization test dependency repair (2026-10-27)
+
+CI at `e0344cf` exposed a test dependency mistake: each core Python 3.10–3.13
+job failed all 55 new plotting checks because visualization packages were
+intentionally absent. The expanded job and other workflows passed, but that
+source's complete result was not promoted. Latest accepted complete coverage
+remains **88.4039% at `75cb56e`**, 10,138 passed/173 skipped, exact 90% gap 1,005.
+
+The plotting test module now skips only when matplotlib or seaborn is absent.
+Installed packages remain subject to real import and execution failures.
+Both existing visualization jobs on Python 3.11/3.12 explicitly select all 55
+numerical consumers; the expanded profile already includes real visualization
+dependencies. Core installation requirements, production code and coverage
+scope/exclusions/floors are unchanged.
+
+An actual isolated core-library/pytest environment (Python 3.12.8,
+Pandas 2.3.3/NumPy2.4.1/sklearn1.9.1/SciPy1.15.3/PyArrow26) contains neither
+matplotlib nor seaborn. No package was hidden or mocked. On all 828 verified
+archived `e0344cf` package/resources and the original test module, **55 failed
+in 20.67s**, all missing-extra failures. After repair, the same environment runs
+new and existing plot-board files at **2 passed/60 skipped in 6.19s**, zero
+warnings or setup errors. XML 62 has 55 skips for the numerical checks plus 5
+existing visualization skips. The two executed core checks include the actual
+missing-extra error contract. Pip dependency validation passes. This is a
+focused core check, not a complete core suite or a coverage percentage.
+
+Independent final real-visualization Windows subsets across eight test files,
+with all 814 production Python sources, eight tests and the workflow hash frozen:
+
+| Profile | Result | Repeated reach vs `75cb56e` |
+| --- | --- | --- |
+| Pandas3.0.5/NumPy2.4.6/sklearn1.9.0/Torch2.13CPU | 105 passed/1 skipped;103.06s log/103.041s XML | 10 previously missing unchanged/34 changed-new executed lines |
+| Pandas 2.3.3, same other libraries | 105 passed/1 skipped;91.96s log/91.929s XML | 10 unchanged/34 changed-new executed lines |
+
+Actual matplotlib 3.11.2/seaborn 0.13.2 run all 55 numerical checks in each profile.
+Each XML 106 has zero failures/errors; logs have zero warnings/collection
+warnings. The existing missing-viz-extra test skips because the packages are
+installed. Each profile uses its own coverage database. Coverage.py7.16.2 and
+566 exclusions remain unchanged. The main environment was not altered.
+
+All 814 production source hashes equal the previous report batch. This repair
+adds **zero production lines and claims no additional production coverage**.
+Repeated source-mapped broader-subset reach is evidence for the previous
+report implementation, not a guard gain or a complete-suite projection. The
+previous four actual older-pipeline proofs apply to identical production code;
+they are not rerun or counted as new tests here.
+
+One initial local runner lacked its new temp parent and produced 65 setup
+errors, 40 passes/one skip. Those artifacts are retained separately and excluded;
+creating the parent and rerunning both profiles produced the final results above.
+Both existing visualization matrix selections parse correctly; Ruff, final copy
+lint and diff checks pass. Production typing is unchanged, including the two
+previously documented targeted mypy diagnostics. Fresh complete CI is required
+before accepting any new whole-package measurement. Core 70/expanded 87 remain.

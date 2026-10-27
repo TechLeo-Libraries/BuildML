@@ -681,11 +681,13 @@ jobs:
             tests: >-
               tests/integration/test_eval_plot_boards.py
               tests/unit/test_model_reporting_milestone4.py
+              tests/unit/test_plot_board_numeric_consumers.py
           - python-version: "3.12"
             extra: viz
             tests: >-
               tests/integration/test_eval_plot_boards.py
               tests/unit/test_model_reporting_milestone4.py
+              tests/unit/test_plot_board_numeric_consumers.py
           - python-version: "3.11"
             extra: dashboard
             tests: >-
