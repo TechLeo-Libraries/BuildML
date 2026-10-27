@@ -2908,13 +2908,19 @@ def error_slices(
     ------
     ~buildml.core.errors.ValidationError
         No model has been fitted, no split exists, or a named column is
-        absent from the partition.
+        absent from the partition. Count limits must be positive integers.
+        Missing scoring targets, nonfinite or nonnumeric regression targets,
+        and observed segment values with ambiguous display keys also refuse
+        before replacing the prior report or writing HTML.
 
     Notes
     -----
     Observational only: segment gaps are not fairness proof. Prefer
     validation for exploration and keep test for a final estimate.
     Segments with ``n < min_segment_n`` are listed under ``small_segments``.
+    Only observed categorical levels count as segments. Recode mixed scalar
+    values such as ``1`` and ``"1"`` consistently if their display keys collide.
+    An unseen classification target is counted as a prediction error.
 
     A gap tells you where the model is worse, not why. Small segments have
     fewer training examples, may genuinely be harder to predict, and may

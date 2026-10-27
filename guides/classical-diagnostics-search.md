@@ -18,6 +18,18 @@ Use validation to select thresholds, features, and model families.
 Use test to assess the final choice. BuildML cannot stop you from using test results to select a model in your
 own notebook. It can refuse CV after Session-global fitted preprocessing.
 
+`error_slices(by=["region", "tier"], partition="validation")` reports observed
+combinations only, including missing group values as a distinct segment. Unused
+categorical levels do not increase the unique or omitted segment counts.
+`max_segments` keeps the most frequent segments; `min_segment_n` separates
+small groups from the primary ranking. Both limits require positive integers.
+Mixed values such as integer `1` and string `"1"` that share a report key must
+be recoded consistently first. Missing scoring targets and nonfinite or
+nonnumeric regression targets refuse before prediction or HTML export; an
+unseen classification label is counted as an error. A failed request preserves
+the prior report, history and HTML. Reevaluate existing models to correct earlier
+reports; no refit is required. Segment differences remain observational.
+
 For `nested_cv_score`, `inner_search` accepts `auto`, `grid`, `randomized`,
 `optuna`, or `evolutionary`. Unknown names raise `ValidationError` before
 fitting. Keep both estimator and recipe spaces in the same search family:

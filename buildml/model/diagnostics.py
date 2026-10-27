@@ -64,6 +64,7 @@ from sklearn.metrics import (
 from sklearn.model_selection import learning_curve
 
 from buildml.core.errors import ValidationError
+from buildml.core.validation import _positive_integer
 from buildml.data.dataset import Dataset
 from buildml.data.splits import SplitPlan, assert_fit_partition
 from buildml.explain.schemas import Finding, Recommendation
@@ -1196,13 +1197,15 @@ def segment_error_report(
         The fitted model to assess.
     by:
         Column or columns to slice on. Several columns produce the cross
-        product, which grows quickly and thins each segment.
+        product, which grows quickly and thins each segment. Only observed
+        values count; unused categorical levels are not populations.
     partition:
         Which partition to assess. Defaults to test.
     max_segments:
-        Cap on segments reported, keeping the largest.
+        Positive integer cap on segments reported, keeping the largest.
     min_segment_n:
-        Below this many rows, a segment is held aside as too small to rank.
+        Positive integer minimum. Below this many rows, a segment is held
+        aside as too small to rank.
     export_html:
         Path for an HTML report, if wanted.
 
@@ -1219,7 +1222,10 @@ def segment_error_report(
     ------
     ValidationError
         If the split is missing, or if a column named in ``by`` is not in the
-        dataset.
+        dataset. Also for invalid count limits, missing scoring targets,
+        nonfinite or nonnumeric regression targets, or observed segment values
+        sharing a display key. Recode ambiguous values consistently before
+        reporting. These checks precede prediction and HTML export.
 
     Notes
     -----
@@ -1270,10 +1276,8 @@ def segment_error_report(
     if partition not in {"train", "validation", "test"}:
         raise ValidationError("partition must be train, validation, or test")
     by_columns = _normalize_segment_columns(by, dataset.columns)
-    if max_segments < 1:
-        raise ValidationError("max_segments must be >= 1")
-    if min_segment_n < 1:
-        raise ValidationError("min_segment_n must be >= 1")
+    max_segments = _positive_integer(max_segments, name="max_segments")
+    min_segment_n = _positive_integer(min_segment_n, name="min_segment_n")
 
     frame = dataset._ensure_pandas()
     if partition == "train":
@@ -1287,8 +1291,15 @@ def segment_error_report(
     part = frame.iloc[indices]
     x = part[list(fit_result.feature_columns)]
     y = part[fit_result.target_column]
-    preds = fit_result.estimator.predict(x)
+    if y.isna().any():
+        raise ValidationError("Segment diagnostic target contains missing values")
+    y_true = y.to_numpy()
+    if fit_result.task != "classification":
+        y_true = pd.to_numeric(y, errors="coerce").to_numpy(dtype=float)
+        if not np.isfinite(y_true).all():
+            raise ValidationError("Segment diagnostic target must contain finite numeric values")
     segment_labels = _segment_label_series(part, by_columns)
+    preds = fit_result.estimator.predict(x)
 
     counts = segment_labels.value_counts(dropna=False)
     if counts.empty:
@@ -1305,7 +1316,6 @@ def segment_error_report(
     primary: list[dict[str, Any]] = []
     small: list[dict[str, Any]] = []
     if fit_result.task == "classification":
-        y_true = y.to_numpy()
         y_pred = np.asarray(preds)
         for value in top:
             mask = segment_labels.to_numpy() == value
@@ -1326,7 +1336,6 @@ def segment_error_report(
             f"(n >= {min_segment_n})."
         )
     else:
-        y_true = pd.to_numeric(y, errors="coerce").to_numpy(dtype=float)
         y_pred = np.asarray(preds, dtype=float)
         for value in top:
             mask = segment_labels.to_numpy() == value
@@ -1449,17 +1458,29 @@ def _validate_diagnostic_classes(y: Any, classes: Any) -> None:
 def _segment_label_series(frame: pd.DataFrame, columns: Sequence[str]) -> pd.Series:
     parts: list[pd.Series] = []
     for column in columns:
-        def render(value: Any) -> str:
+        seen: dict[str, Any] = {}
+
+        def render(value: Any, *, seen: dict[str, Any] = seen, column: str = column) -> str:
             if pd.isna(value):
                 return "<NA>"
             text = str(value)
             # Escape delimiters and the missing-value spelling so formatting
             # cannot collapse distinct observed groups into one segment.
             if text == "<NA>" or any(char in text for char in ('|', '"', "\\")):
-                return json.dumps(text, ensure_ascii=False)
+                text = json.dumps(text, ensure_ascii=False)
+            if text in seen:
+                previous = seen[text]
+                if isinstance(previous, str) != isinstance(value, str) or previous != value:
+                    raise ValidationError(
+                        f"Segment display-key collision in column {column!r}: "
+                        f"{previous!r} and {value!r}; recode values consistently"
+                    )
+            seen[text] = value
             return text
 
-        series = frame[column].map(render)
+        # Categorical.map retains unused levels and may skip missing values.
+        # Render the actual rows so counts and composite labels stay observed.
+        series = frame[column].astype(object).map(render)
         parts.append(series.map(lambda value, col=column: f"{col}={value}"))
     if len(parts) == 1:
         return parts[0]

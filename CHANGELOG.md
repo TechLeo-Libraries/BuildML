@@ -14,6 +14,12 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Segment diagnostics count observed categorical populations and reject
+  ambiguous display keys before prediction or replacing reports and HTML.
+  Missing scoring truth and nonfinite or nonnumeric regression targets refuse;
+  unseen classification labels remain prediction errors. Count limits require
+  positive integers, including NumPy integers. Existing models can be rescored.
+
 - Meta-learning evaluation honors all-task selection, preserves internal task
   holdout preference only when enabled, and refuses ambiguous per-task report
   keys. Reports disclose meta-training rows when selected. Episode counts and
