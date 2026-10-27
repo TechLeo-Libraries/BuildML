@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-10-26, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed: 88.3950% (55,619/62,921); 10,066 passed, 173 skipped | [CI40437175573](https://github.com/TechLeo-Libraries/BuildML/actions/runs/40437175573), source `70019ef`, tested merge `b36da0e7`; matching trees and all four workflows passed. Scope/566 exclusions/coverage.py7.16.2 unchanged. Core70/expanded87 retained. Exact90% gap1,010 lines; 2,890 pytest warnings, no coverage collection warnings |
+| Current accepted remote expanded CPU whole-package gate | Passed: 88.4039% (55,637/62,935); 10,138 passed, 173 skipped | [CI40442455407](https://github.com/TechLeo-Libraries/BuildML/actions/runs/40442455407), source `75cb56e`, tested merge `2fc5a0d6`; matching trees and all four workflows passed. Scope/566 exclusions/coverage.py7.16.2 unchanged. Core70/expanded87 retained. Exact90% gap1,005 lines; 2,890 pytest warnings, no coverage collection warnings |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -3738,3 +3738,72 @@ package-wide type claim. Latest accepted complete Linux CPU suite remains
 **88.3950%** at `70019ef`, 10,066 passed/173 skipped, with 1,010 more covered lines
 needed at that source. Core 70/expanded 87 remain unchanged. Fresh complete CI
 is required for the clustering batch.
+
+### Accepted clustering whole-suite result (2026-10-27)
+
+Source `75cb56e` passed the complete expanded Linux CPU suite at **88.4039%**
+(55,637/62,935 lines), with **10,138 passed and 173 skipped** in 21:58.
+The XML has 10,311 tests and zero failures/errors; there were 2,890
+pytest warnings and no coverage collection warnings. CI40442455407, backend40442455413,
+acceptance40442455453 and CodeQL40442453465 passed. Tested merge `2fc5a0d6`
+and source trees match. coverage.py7.16.2 and566 exclusions are unchanged.
+The exact90% gap is1,005 covered lines at this source. Core70 and expanded87
+remain unchanged. Earlier local clustering subset observations remain
+separate and are not added to this full-suite percentage.
+
+### Evaluation board class axes and weighted calibration (2026-10-27)
+
+Evaluation boards use fitted class order for confusion axes and binary positive
+meaning. Numeric codes 2/10 previously reversed false-positive and false-negative
+counts while ROC/calibration used the other order. Board ECE now weights
+nonempty quantile-bin gaps by row counts, matching numerical calibration
+reports. Single-class holdouts skip ROC/PR with reasons and omit those scores;
+confusion, calibration and thresholds remain available. Missing or unseen target
+labels refuse before replacing a working report/history or writing exports.
+
+The 55 final checks on all 828 verified archived `75cb56e` package/resource files
+produce **36 failures and 19 passes** in 38.99s, with 48 undefined ROC/PR warnings,
+zero skips and zero setup errors. An initial 55-failure run additionally required
+new positive-class metadata on probability-free controls; that assertion was
+removed. A second 37-failure/18-pass run included a test expecting raw JSON in an
+HTML metric table; its assertion was corrected. Two preliminary repaired focused
+runs each had 54 passes/one test-assertion failure. Neither is final evidence.
+Both frozen final profiles below execute all 55 new cases.
+
+Real decision-tree leaves and Perceptron classifiers cover numeric 2/10, 0/1,
+boolean and padded-string labels; mixed, positive-only and negative-only
+holdouts; duplicate frame indices; and live/pipeline-loaded consumers. Scalar
+counts check confusion, pairwise score comparisons check AUC, and independently
+assigned quantile-bin members check curves and weighted ECE. The numerical
+calibration API agrees. Actual PNGs, axis labels/cells/curves and offline HTML
+metric tables execute through both direct plotting and public evaluate hooks.
+An inspected exported confusion matrix has axes 2/10 and cells [6,18;2,12].
+These are bounded report correctness checks, not model-quality claims.
+
+Independent Windows subsets across eight verification files, with all 814
+production sources and eight verification files frozen and hash-verified:
+
+| Profile | Result | Separate reach vs `75cb56e` |
+| --- | --- | --- |
+| Pandas3.0.5/NumPy2.4.6/sklearn1.9.0/Torch2.13CPU | 105 passed/1 skipped;104.18s log/104.146s XML | 10 previously missing unchanged/34 changed-new executed lines |
+| Pandas2.3.3, same other libraries | 105 passed/1 skipped;96.67s log/96.652s XML | 10 unchanged/34 changed-new executed lines |
+
+Each XML has 106 cases, zero failures/errors/warnings/collection warnings. The
+one existing skip is the missing-viz-extra test because plotting dependencies
+are installed. All 55 new cases execute; no backends are faked and the main
+environment is unchanged. Coverage.py7.16.2, scope and 566 exclusions remain
+unchanged. Separate broader-subset reach is not a complete-suite projection.
+
+Four pipelines produced by the actual archived source retain predictions
+(tree/Perceptron across numeric/boolean labels). Two correct numeric confusion
+counts, and both tree reports correct ECE from 0.2673444976 to 0.3421052632,
+matching independent counts on the same frozen predictions. This is separate
+consumer evidence, not four extra pytest cases. Saved classifiers retain their
+geometry; old report files are not automatically rewritten.
+
+Ruff, unchanged docstring budget 586, copy lint and diff checks pass. Targeted
+mypy reports the same two pre-existing dataframe/series assignment errors at
+baseline and current source; no new diagnostics or type-cleanliness claim.
+Latest accepted complete Linux CPU suite remains **88.4039%** at `75cb56e`,
+10,138 passed/173 skipped, with 1,005 further covered lines needed at that source.
+Core 70/expanded 87 remain unchanged. Fresh complete CI is required for this batch.

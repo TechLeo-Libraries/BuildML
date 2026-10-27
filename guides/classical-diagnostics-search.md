@@ -252,6 +252,20 @@ thresholds on validation. Confirm the fixed policy on test.
 `evaluate(...)` returns metrics and diagnostics. `eval_plots(...)`
 requires `buildml[viz]` and produces task-specific plots.
 
+Classification confusion axes follow the fitted classifier's `classes_` order;
+the second fitted class defines binary positives throughout the board. Numeric
+codes such as `2` and `10` retain that order. Calibration ECE is the
+sample-weighted absolute gap in each nonempty quantile bin, matching
+`session.calibration(...)` with the same bin settings. The board records
+`ece_method` and `calibration_bin_counts` beside the score.
+
+When a partition contains only one fitted class, ROC and precision-recall
+panels are skipped with reasons. Confusion, calibration and threshold panels
+remain available when their other requirements hold. Missing target labels or
+labels outside the fitted vocabulary refuse before report replacement or
+export. Saved classifiers retain predictions; newly generated boards use
+these corrected diagnostics. Historical report files are not rewritten.
+
 ---
 
 ## Failure modes

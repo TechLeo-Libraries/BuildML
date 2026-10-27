@@ -14,6 +14,12 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Evaluation plot boards keep confusion axes and binary positive-class meaning
+  in fitted class order, including numeric codes such as 2 and 10. Calibration
+  ECE uses sample-weighted bin gaps, matching numerical calibration reports.
+  Single-class holdouts skip ROC/PR with reasons, and missing or unseen target
+  labels refuse before replacing a working report or writing exports.
+
 - Clustering stability compares labels on shared training row positions and
   reports unusable subsamples explicitly. OPTICS preserves fractional minimum
   cluster sizes. External agreement accepts mixed scalar labels and omits
