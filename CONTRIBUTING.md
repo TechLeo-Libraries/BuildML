@@ -122,7 +122,7 @@ monolith** (**70** active after corrected thread/process tracing measured at lea
 `pytest tests --cov=buildml`); do not lower it to silence a regression.
 The separate `expanded-coverage` CI job installs
 `requirements-expanded-coverage.txt` and runs the entire suite with an **87%**
-floor, supported by passing remote Linux 88.3072% evidence at `bb0ea63`.
+floor, supported by passing remote Linux 88.3617% evidence at `39547fe`.
 The broadened profile includes DoWhy and ONNX Runtime, using a compatible
 NumPy 2.4.1/SciPy 1.15.3/mlxtend 0.23.4 stack. Same-source complete local suites
 passed 85.5192% for this profile and85.3947% for its original-profile control;
@@ -230,13 +230,13 @@ and pick the next target, and `--path buildml/<pkg>` to audit work in progress.
 - Write public documentation for library users. Keep implementation instructions,
   release actions, and work plans in clearly labeled contributor material.
 
-Current expanded coverage evidence (2026-10-26, source `bb0ea63`): remote Linux
-passed at **88.3072%** (55,517 / 62,868 lines), with 9,732 passed and 117 skipped.
-[CI run 40416997738](https://github.com/TechLeo-Libraries/BuildML/actions/runs/40416997738)
-passed, as did backend evidence, release acceptance and CodeQL. Tested merge `9112d025`
-and source trees match. The expanded floor stays **87%**; increasing it requires
-at least one percentage point of headroom from a passing complete gate.
-Scope, coverage.py 7.16.2 and 566 exclusions are unchanged; core stays 70%.
-The suite ran in 16:37 with 2,890 pytest warnings and no coverage collection
+Current expanded coverage evidence (2026-10-27, source `39547fe`): remote Linux
+passed at **88.3617%** (55,568 / 62,887 lines), with 9,928 passed and 117 skipped.
+[CI run 40426133945](https://github.com/TechLeo-Libraries/BuildML/actions/runs/40426133945)
+passed, as did backend evidence, release acceptance and CodeQL. Tested merge `02adb395`
+and source trees are equal. The expanded floor stays **87%**; the next increase
+requires at least one percentage point of headroom from a passing complete gate.
+Scope, coverage.py 7.16.2 and 566 excluded lines are unchanged; core floor stays
+70%. The suite ran in 21:22 with 2,890 pytest warnings and no coverage collection
 warnings. Optional skips remain configuration-specific. Reaching 90% requires
-1,065 further covered lines at this source; subset percentages are not added.
+1,031 further covered lines at this source; subset percentages are not added.

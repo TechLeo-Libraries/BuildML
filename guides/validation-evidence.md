@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-10-26, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed: 88.3072% (55,517/62,868); 9,732 passed, 117 skipped | [CI 40416997738](https://github.com/TechLeo-Libraries/BuildML/actions/runs/40416997738), source `bb0ea63`, tested merge `9112d025`; matching trees and all four workflows passed. Scope/566 exclusions/coverage.py 7.16.2 unchanged. Core70/expanded87 retained. Exact90 gap1,065; 2,890 warnings, no collection warnings |
+| Current accepted remote expanded CPU whole-package gate | Passed: 88.3617% (55,568/62,887); 9,928 passed, 117 skipped | [CI40426133945](https://github.com/TechLeo-Libraries/BuildML/actions/runs/40426133945), source `39547fe`, tested merge `02adb395`; matching trees and all four workflows passed. Scope/566 exclusions/coverage.py7.16.2 unchanged. Core70/expanded87 retained. Exact90% gap1,031 lines; 2,890 pytest warnings, no coverage collection warnings |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -3523,3 +3523,81 @@ type cleanliness is not claimed. The latest accepted full result remains
 **88.3072%** at `bb0ea63`; current edits require fresh complete CI verification.
 The position fix cannot undo wrong-row training in an existing model; such a
 model must be refitted.
+
+### Accepted online-stream whole-suite result (2026-10-27)
+
+Source `39547fe` passed the complete expanded Linux CPU suite at **88.3617%**
+(55,568/62,887 lines), with **9,928 passed and 117 skipped** in 21:22.
+The XML has 10,045 tests and zero failures/errors; there were 2,890
+pytest warnings and no coverage collection warnings. CI40426133945, backend40426133642,
+acceptance40426133600 and CodeQL40426129678 passed. Tested merge `02adb395`
+and source trees match. coverage.py7.16.2 and566 exclusions are unchanged.
+The exact90% gap is1,031 covered lines at this source. Core70 and expanded87
+remain unchanged. Earlier local online-stream subset observations remain
+separate and are not added to this full-suite percentage.
+
+### TDA class identities and real Giotto pipelines (2026-10-27)
+
+TDA classification preserves original scalar labels in public predictions and
+trusted bundle replay, including padded numeric names, decimal strings and
+booleans. Typed labels sharing a string key refuse. Native and Giotto enforce
+the same topology configuration limits. Giotto pads each homology dimension at
+its minimum observed birth: zero-persistence padding previously changed grid
+limits when finite bars began above zero. The corrected train features match
+direct Giotto batches across Betti curves, landscapes and persistence images.
+
+The 74 new checks on all 828 verified archived `39547fe` package/resource files
+produce **52 failures and 22 passes** in 32.06s, with zero setup errors. Failures
+comprise 12 scalar predictions, 6 ambiguous vocabularies, 8 invalid configurations
+and 26 numerical/prediction comparisons. Repaired focused verification passes
+all 74 in 48.51s, with 3,428 existing Giotto NumPy `product` deprecation warnings.
+A preliminary 66-failure run included hashes of changing sklearn neighbor query
+counters; those preliminary counts are excluded from product claims. Final
+frozen checks compare learned matrices, scalers, vectorizers and heads.
+
+Independent Euclidean sorting constructs the local train clouds; direct Giotto
+batches fit the reference grids and transform heldout rows. Independent sklearn
+heads and scalar error/accuracy calculations check public predictions and
+metrics. Prim minimum-spanning-tree edge lengths verify finite H0 deaths, and
+the unit square verifies the H1 interval from 1 to sqrt(2). Raw/scaled features,
+random train subsampling, transformer-only and supervised modes, train-only
+Mapper summaries, validation/test/all populations and bundle replay execute.
+These are bounded numerical and population checks, not a claim of deployment
+accuracy or general topological model quality.
+
+Independent Windows subsets across 11 verification files preserve package scope,
+coverage.py7.16.2 and566 exclusions, with all 814 production sources and 11
+verification files frozen and hash-verified:
+
+| Profile | Result | Separate reach vs `39547fe` |
+| --- | --- | --- |
+| Pandas3.0.5/NumPy2.4.6/sklearn1.9.0, native TDA | 67 passed/66 skipped; 81.65s log/81.626s XML; 0 warnings | 3 previously missing unchanged / 45 changed-new executed lines |
+| Pandas2.3.3, same native NumPy/sklearn | 67 passed/66 skipped; 78.69s log/78.669s XML; 0 warnings | 3 unchanged / 45 changed-new lines |
+| Giotto0.6.2/NumPy1.26.4/Pandas2.3.3/sklearn1.3.2/SciPy1.11.4/PyArrow20.0.0 | 133 passed/0 skipped; 101.04s log/101.015s XML; 4637 warnings | 173 unchanged / 46 changed-new lines |
+
+There are zero collection warnings in every profile. Native profiles execute 18
+new cases and skip 56 requiring Giotto; the compatible profile executes all 74.
+Native profile 66 total skips are all Giotto-specific. Giotto's NumPy `product`
+deprecation warnings remain visible. Its required sklearn1.3.2 stack is isolated,
+matches the existing topology verification profile and passes `pip check`; the
+main environment is unchanged. The existing compatible Linux CI job now selects
+both new files and the native missing-extra test. A preliminary broad run found
+that test assumed native while allowing automatic Giotto selection. It now
+selects native explicitly; all final profiles were rerun after that repair.
+The three unchanged lines reached in each native profile are catalog/availability
+paths; the compatible profile's 173 include 138 Giotto adapter lines. These
+broader subset observations are separate, not gains solely attributable to new
+tests or percentages to add to the complete modern gate. Of its 4,637 warnings,
+4,636 are Giotto NumPy deprecations and one is the existing flat Session facade
+deprecation.
+
+Eight bundles produced by the actual archived source preserve predictions and
+feature matrices on current load: native and Giotto classifiers/regressors,
+including all three Giotto vectorizers. This is separate consumer evidence,
+not eight extra pytest cases. Legacy encoders retain prior decoding and warn
+that exact scalar identities require refitting. Existing grids/heads are not
+retrained by loading; refitting can change results with corrected padding.
+Baseline/current targeted mypy are clean for three touched production sources;
+package-wide type cleanliness is not claimed. Latest accepted full remains
+**88.3617%** at `39547fe`, with 1,031 further covered lines needed at that source.
+Core70/expanded87 remain unchanged. Fresh complete CI is required for this batch.

@@ -14,6 +14,13 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- TDA classification preserves original scalar class labels through prediction
+  and trusted bundles, refusing ambiguous encoding keys. Native and Giotto
+  share topology configuration checks. Giotto pads diagrams without extending
+  positive filtration grids to zero. Older bundles keep their fitted grids;
+  legacy class decoders preserve prior behavior and warn that exact scalar
+  identities require refitting.
+
 - Online chunks and cumulative refits follow split row positions, preserving
   distinct rows with duplicate pandas labels. Explicit rehearsal never rewinds
   the sequential cursor. River logistic/PA streams use one-vs-rest for more

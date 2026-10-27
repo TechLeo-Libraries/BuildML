@@ -8,20 +8,20 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 88.30724693007572,
-      "covered_lines": 55517,
-      "num_statements": 62868,
+      "percent_covered": 88.3616645729642,
+      "covered_lines": 55568,
+      "num_statements": 62887,
       "excluded_lines": 566,
-      "source_revision": "bb0ea6378d13b0a5fd0483e2807e80125d160fd8",
-      "tested_revision": "9112d0258033a47fcabd26034640322ee6951413",
+      "source_revision": "39547fe828e27f7e76da69a7adc0c58b726ee00b",
+      "tested_revision": "02adb3952f4aacaf414c3e02e85a0f4c94056208",
       "platform": "remote Linux, CPU expanded profile",
-      "run_id": 40416997738,
-      "result": "9732 passed, 117 skipped, zero failures/errors",
+      "run_id": 40426133945,
+      "result": "9928 passed, 117 skipped, zero failures/errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
-      "notes": "Native consumers accepted; all four workflows passed. Source/merge trees equal 1f369f6946ea9c1d53cd019aea1540e9aae6ee15. coverage.py7.16.2/566 exclusions unchanged;2890 warnings,no collection warnings. Full16:37;exact90 gap1065. Core70/expanded87 retained; subset reach is not aggregate.",
+      "notes": "Online stream consumers accepted; all four workflows passed. Source/merge trees equal ce75c1a9e927aacd3957cdafc3c51b60ea2e9e45. coverage.py7.16.2/566 exclusions unchanged;2890 pytest warnings,no collection warnings. Full21:22; exact90 gap1031. Core70/expanded87 retained;88 floor lacks required1pp headroom. Subset reach is not aggregate.",
       "coverage_version": "7.16.2"
     },
     "latest_local_measurement": {

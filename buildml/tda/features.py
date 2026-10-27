@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import warnings
 from collections.abc import Sequence
 from typing import Any
 
@@ -247,8 +248,9 @@ def encode_classification_targets(
 ) -> tuple[np.ndarray, Any, tuple[Any, ...]]:
     """Encode classification targets with a sklearn LabelEncoder.
 
-    Fit happens on train labels only; the encoder is stored on the plan for
-    holdout decode.
+    Fit happens on train labels only. The encoder records original scalar
+    values for prediction and bundle replay; numeric-looking names stay text.
+    Different labels with the same encoding key are refused.
 
     Parameters
     ----------
@@ -269,16 +271,34 @@ def encode_classification_targets(
     """
     from sklearn.preprocessing import LabelEncoder
 
+    observed = _classification_vocabulary(y)
+    values = [str(value.item() if isinstance(value, np.generic) else value) for value in y]
+    encoder = LabelEncoder()
+    fixed = observed if classes is None else _classification_vocabulary(pd.Series(list(classes), dtype=object))
+    encoder.fit(list(fixed))
+    for key, value in observed.items():
+        if key in fixed and (type(value) is not type(fixed[key]) or value != fixed[key]):
+            raise ValidationError(f"Ambiguous TDA classification label for key {key!r}.")
+    try:
+        codes = encoder.transform(values)
+    except ValueError as exc:
+        raise ValidationError(f"TDA classification contains an unknown label: {exc}") from exc
+    encoder.buildml_original_classes_ = tuple(fixed[key] for key in encoder.classes_)
+    return np.asarray(codes), encoder, tuple(encoder.classes_)
+
+
+def _classification_vocabulary(y: pd.Series) -> dict[str, Any]:
+    """Retain scalar identities and refuse different labels with the same key."""
     if y.isna().any():
         raise ValidationError("TDA classification head requires non-null train targets.")
-    values = y.astype(str)
-    encoder = LabelEncoder()
-    if classes is not None:
-        encoder.fit([str(c) for c in classes])
-        codes = encoder.transform(values)
-    else:
-        codes = encoder.fit_transform(values)
-    return np.asarray(codes), encoder, tuple(encoder.classes_)
+    vocabulary: dict[str, Any] = {}
+    for value in y:
+        value = value.item() if isinstance(value, np.generic) else value
+        key = str(value)
+        if key in vocabulary and (type(value) is not type(vocabulary[key]) or value != vocabulary[key]):
+            raise ValidationError(f"Ambiguous TDA classification labels share key {key!r}.")
+        vocabulary[key] = value
+    return vocabulary
 
 
 def decode_predictions(pred_codes: np.ndarray, label_encoder: Any) -> list[Any]:
@@ -297,10 +317,19 @@ def decode_predictions(pred_codes: np.ndarray, label_encoder: Any) -> list[Any]:
     Returns
     -------
     list
-        Decoded predictions (int, float, or str as appropriate).
+        Original scalar labels for new plans. Legacy encoders retain their
+        previous decoding behavior with a warning to refit for exact identities.
     """
     codes = np.asarray(pred_codes).astype(int)
     decoded = label_encoder.inverse_transform(codes)
+    original = getattr(label_encoder, "buildml_original_classes_", None)
+    if original is not None:
+        return [original[int(code)] for code in codes]
+    warnings.warn(
+        "Legacy TDA encoder has no original class identities; preserving its "
+        "previous decoding. Refit to preserve scalar label types exactly.",
+        RuntimeWarning, stacklevel=2,
+    )
     out: list[Any] = []
     for value in decoded:
         text = str(value)

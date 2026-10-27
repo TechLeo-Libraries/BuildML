@@ -116,7 +116,7 @@ def test_missing_extra_raises() -> None:
             side_effect=MissingExtraError("tda", "fit_tda"),
         ):
             with pytest.raises(MissingExtraError, match="buildml\\[tda\\]"):
-                session.tda.fit()
+                session.tda.fit(backend="native")
 
 
 def test_head_none_blocks_evaluate() -> None:

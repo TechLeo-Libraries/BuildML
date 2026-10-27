@@ -510,11 +510,14 @@ jobs:
         run: |
           python -m pip check
           python -c "import gtda, igraph, pyarrow, sklearn; print(gtda.__version__, igraph.__version__); assert pyarrow.table({'x': [1]}).to_pandas().shape == (1, 1)"
-      - name: Exercise real topology shape and graph contracts
+      - name: Exercise real topology pipelines, shapes and graph contracts
         run: >-
           pytest tests/unit/test_giotto_vector_shapes.py
           tests/unit/test_tda_giotto_padding.py tests/unit/test_tda_r5_industry.py
-          tests/unit/test_giotto_mapper_semantics.py -q
+          tests/unit/test_giotto_mapper_semantics.py
+          tests/unit/test_giotto_pipeline_consumers.py
+          tests/unit/test_tda_scalar_consumers.py
+          tests/unit/test_tda_slice.py -q
           --junitxml=artifacts/topology-contracts.xml
       - uses: actions/upload-artifact@v4
         if: always()
