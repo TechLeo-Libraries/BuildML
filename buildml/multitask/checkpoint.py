@@ -87,7 +87,9 @@ def save_multitask_bundle(
 def load_multitask_bundle(path: str | Path, *, trusted: bool = False) -> MultiTaskPlan:
     """Load a multi-task bundle into a :class:`MultiTaskPlan`.
 
-    Validates bundle format version and plan object type before returning.
+    Validates bundle format and fitted head contracts before returning.
+    Older fixed-task plans with contradictory head kinds require refitting;
+    loading cannot repair a model trained with the wrong head type.
 
     Parameters
     ----------
@@ -178,10 +180,21 @@ def _validate_plan_contract(plan: MultiTaskPlan) -> None:
     stored_targets = getattr(model, "target_columns", None)
     if stored_targets is not None and tuple(stored_targets) != tuple(plan.target_columns):
         raise ValidationError("Multi-task target order disagrees with fitted estimator.")
+    stored_kinds = getattr(model, "task_kinds", None)
     for target in plan.target_columns:
         kind = plan.task_kinds_.get(target, plan.task)
         if kind not in {"classification", "regression"}:
             raise ValidationError(f"Missing or invalid task kind for {target!r}.")
+        if plan.task != "mixed" and kind != plan.task:
+            raise ValidationError(
+                f"Multi-task fixed task {plan.task!r} disagrees with head {target!r}. "
+                "Refit this plan with consistent task kinds."
+            )
+        if stored_kinds is not None and stored_kinds.get(target) != kind:
+            raise ValidationError(
+                f"Multi-task head {target!r} disagrees with fitted estimator task kinds. "
+                "Refit this plan with consistent task kinds."
+            )
         if kind == "classification":
             encoder = plan.label_encoders_.get(target)
             classes = getattr(encoder, "classes_", None)

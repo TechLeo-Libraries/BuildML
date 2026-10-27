@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-10-26, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed: 88.3617% (55,568/62,887); 9,928 passed, 117 skipped | [CI40426133945](https://github.com/TechLeo-Libraries/BuildML/actions/runs/40426133945), source `39547fe`, tested merge `02adb395`; matching trees and all four workflows passed. Scope/566 exclusions/coverage.py7.16.2 unchanged. Core70/expanded87 retained. Exact90% gap1,031 lines; 2,890 pytest warnings, no coverage collection warnings |
+| Current accepted remote expanded CPU whole-package gate | Passed: 88.3637% (55,594/62,915); 9,946 passed, 173 skipped | [CI40432021095](https://github.com/TechLeo-Libraries/BuildML/actions/runs/40432021095), source `3edb061`, tested merge `5ecc1afa`; matching trees and all four workflows passed. Scope/566 exclusions/coverage.py7.16.2 unchanged. Core70/expanded87 retained. Exact90% gap1,030 lines; 2,890 pytest warnings, no coverage collection warnings |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -3600,4 +3600,73 @@ retrained by loading; refitting can change results with corrected padding.
 Baseline/current targeted mypy are clean for three touched production sources;
 package-wide type cleanliness is not claimed. Latest accepted full remains
 **88.3617%** at `39547fe`, with 1,031 further covered lines needed at that source.
+Core70/expanded87 remain unchanged. Fresh complete CI is required for this batch.
+
+### Accepted TDA whole-suite result (2026-10-27)
+
+Source `3edb061` passed the complete expanded Linux CPU suite at **88.3637%**
+(55,594/62,915 lines), with **9,946 passed and 173 skipped** in 21:00.
+The XML has 10,119 tests and zero failures/errors; there were 2,890
+pytest warnings and no coverage collection warnings. CI40432021095, backend40432021288,
+acceptance40432022822 and CodeQL40432016546 passed. Tested merge `5ecc1afa`
+and source trees match. coverage.py7.16.2 and566 exclusions are unchanged.
+The exact90% gap is1,030 covered lines at this source. Core70 and expanded87
+remain unchanged. Earlier local TDA subset observations remain
+separate and are not added to this full-suite percentage.
+
+### Explicit multi-target tasks and real LightGBM consumers (2026-10-27)
+
+An explicit classification/regression choice now governs every target's
+encoding, head type and metrics. Previously, low-cardinality numeric regression
+could report classification scores or fail to build Torch heads; numerous
+numeric class codes could acquire regression metadata or Torch regression
+heads. Mixed-task inference remains separate. LightGBM multi-target regression
+now fits independent scalar regressors, retaining target order. Contradictory
+fixed-task bundle metadata refuses before save writes or Session attachment.
+
+The 120 new checks on all 828 verified archived `3edb061` package/resource files
+produce **80 failures and 40 passes** in 32.49s, with zero setup errors, skips or
+warnings. Repaired focused verification passes all 120 in 42.80s, also with zero
+skips or warnings. A preliminary 48-failure/72-pass run used object-dtype numeric
+class controls, which did not exercise numeric-cardinality inference; it is
+superseded by the final nullable-integer class populations.
+
+Independent scalar LightGBM4.7.0 learners, independently configured sklearn
+multi-output/chain estimators and an independently constructed Torch network
+check predictions. The Torch oracle performs one AdamW step over one full CPU
+batch with externally controlled initialization; reproducibility from the
+public random_state alone is not claimed. Scalar per-target accuracy/F1/error/
+R² calculations and unweighted means check evaluation. Six populations cover
+low/mixed-cardinality regression, high/mixed-cardinality numeric classes and
+ordinary controls; both target orders, live/saved consumers, missing holdout
+labels and attachment without changing original targets execute. Bundle
+refusals preserve the previous model and history and leave no save directory.
+These bounded checks establish numerical and workflow contracts, not model
+quality or deployment accuracy.
+
+Independent Windows subsets across nine verification files, with all 814
+production sources and nine verification files frozen and hash-verified:
+
+| Profile | Result | Separate reach vs `3edb061` |
+| --- | --- | --- |
+| Pandas3.0.5/NumPy2.4.6/sklearn1.9.0/LightGBM4.7.0/Torch2.13CPU | 367 passed/1 skipped; 105.66s log/105.609s XML | 24 previously missing unchanged / 8 changed-new executed lines |
+| Pandas2.3.3, same NumPy/sklearn/LightGBM/Torch | 367 passed/1 skipped; 106.78s log/106.698s XML | 24 unchanged / 8 changed-new lines |
+
+Each profile executes all 120 new cases, has zero warnings/collection warnings
+and zero XML errors/failures, and skips one existing XGBoost case because that
+backend is absent locally. CatBoost is also absent; neither backend is faked.
+Installed LightGBM4.7.0 matches the accepted expanded profile; the main
+environment is unchanged. Coverage.py7.16.2, package scope and 566 exclusions
+are unchanged. Each profile has its own coverage database. These broader
+subset observations are not gains attributable solely to new tests or values
+to add to a complete-suite percentage.
+
+Eight bundles produced by the actual archived source provide separate consumer
+evidence: four consistent sklearn/Torch classification/regression plans retain
+their predictions, while four contradictory fixed-task plans refuse with a
+refit message before replacing healthy state. This is not eight extra pytest
+cases. Loading cannot repair training with the wrong neural head type.
+Baseline/current targeted mypy are clean for three changed production sources;
+package-wide type cleanliness is not claimed. Latest accepted full remains
+**88.3637%** at `3edb061`, with 1,030 further covered lines needed at that source.
 Core70/expanded87 remain unchanged. Fresh complete CI is required for this batch.

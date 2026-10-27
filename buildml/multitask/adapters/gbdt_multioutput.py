@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 from typing import Any, Literal
 
 import numpy as np
-from sklearn.multioutput import MultiOutputClassifier
+from sklearn.multioutput import MultiOutputClassifier, MultiOutputRegressor
 
 from buildml.core.errors import ValidationError
 from buildml.multitask.extras import require_catboost, require_lightgbm, require_xgboost
@@ -20,7 +20,11 @@ IndustryMultiTaskMethod = Literal[
 
 @dataclass
 class GBDTMultiTargetEstimator:
-    """Honest GBDT multi-target estimator (native reg / MultiOutput cls)."""
+    """GBDT multi-target estimator with independent LightGBM regression heads.
+
+    XGBoost and CatBoost regression use their native multi-target support.
+    LightGBM fits one regressor per target; classifiers use MultiOutputClassifier.
+    """
 
     method: IndustryMultiTaskMethod = "multi_output_xgb"
     task: str = "classification"
@@ -120,13 +124,14 @@ class GBDTMultiTargetEstimator:
         if self.method == "multi_output_lgbm":
             lgb = require_lightgbm()
             if self.task == "regression":
-                return lgb.LGBMRegressor(
+                base = lgb.LGBMRegressor(
                     n_estimators=160,
                     learning_rate=0.08,
                     num_leaves=31,
                     random_state=rs,
                     verbose=-1,
                 )
+                return MultiOutputRegressor(base)
             base = lgb.LGBMClassifier(
                 n_estimators=160,
                 learning_rate=0.08,

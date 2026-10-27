@@ -14,6 +14,12 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Multi-task explicit classification/regression choices now govern every head
+  and its metrics, including low-cardinality numeric regression and numerous
+  numeric class codes. LightGBM multi-target regression fits independent scalar
+  regressors. Contradictory fixed-task bundle metadata refuses before saving or
+  replacing a working plan and requires refitting.
+
 - TDA classification preserves original scalar class labels through prediction
   and trusted bundles, refusing ambiguous encoding keys. Native and Giotto
   share topology configuration checks. Giotto pads diagrams without extending
