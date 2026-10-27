@@ -10,6 +10,7 @@ from sklearn.linear_model import LogisticRegression, SGDClassifier
 from sklearn.metrics import accuracy_score
 
 from buildml.core.errors import ValidationError
+from buildml.core.validation import _positive_integer
 from buildml.data.dataset import Dataset
 from buildml.data.splits import SplitPlan, assert_fit_partition, frame_for_partition
 from buildml.metalearning.catalog import resolve_backend_method
@@ -101,13 +102,14 @@ def fit_metalearning(
     columns:
         Optional explicit feature columns.
     n_way:
-        Classes sampled per episode; ``None`` uses all present classes.
+        Integral classes per episode, at least two; ``None`` uses all present classes.
     k_shot:
-        Support examples per class per episode.
+        Positive integral support examples per class per episode.
     n_query:
-        Query examples per class per episode.
+        Positive integral query-size request per episode.
     n_episodes:
-        Episodes per meta-train epoch (backend-specific interpretation).
+        Positive integral episodes per meta-train epoch (backend-specific interpretation).
+        Boolean, fractional and string episode counts are refused.
     base_estimator:
         Sklearn base estimator for ``warm_start`` (``logistic_regression`` or
         ``sgd_classifier``).
@@ -153,12 +155,11 @@ def fit_metalearning(
         backend=backend,
         method=str(method),
     )
-    if int(k_shot) < 1:
-        raise ValidationError("k_shot must be >= 1.")
-    if int(n_query) < 1:
-        raise ValidationError("n_query must be >= 1.")
-    if int(n_episodes) < 1:
-        raise ValidationError("n_episodes must be >= 1.")
+    k_shot = _positive_integer(k_shot, name="k_shot")
+    n_query = _positive_integer(n_query, name="n_query")
+    n_episodes = _positive_integer(n_episodes, name="n_episodes")
+    if n_way is not None:
+        n_way = _positive_integer(n_way, name="n_way")
     if not (0.0 <= float(task_holdout_fraction) < 1.0):
         raise ValidationError(
             "task_holdout_fraction must be in [0, 1)."

@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-10-26, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed: 88.4465% (55,716/62,994); 10,469 passed, 173 skipped | [CI 40473732800](https://github.com/TechLeo-Libraries/BuildML/actions/runs/40473732800), source `a1ff30a`, tested merge `b13fe1f2`; matching trees and all four workflows passed. Scope/566 exclusions/coverage.py 7.16.2 unchanged. Core 70/expanded 87 retained. Exact 90% gap 979 lines; 2,890 pytest warnings, no coverage collection warnings |
+| Current accepted remote expanded CPU whole-package gate | Passed: 88.4700% (55,729/62,992); 10,673 passed, 173 skipped | [CI 40480386030](https://github.com/TechLeo-Libraries/BuildML/actions/runs/40480386030), source `4b2071f`, tested merge `36dc7967`; matching trees and all four workflows passed. Scope/566 exclusions/coverage.py 7.16.2 unchanged. Core 70/expanded 87 retained. Exact 90% gap 964 lines; 2,890 pytest warnings, no coverage collection warnings |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -4130,3 +4130,90 @@ findings) pass. Latest accepted complete Linux CPU evidence is **88.4465%** at
 `a1ff30a`, 10,469 passed/173 skipped. The full gate's optional/platform skips remain
 qualified above. Its exact 90% gap is 979 lines; core 70/expanded 87 remain.
 Fresh complete CI is required for this source, and the 90% target remains open.
+
+### Accepted fitted fairness class whole-suite result (2026-10-27)
+
+Source `4b2071f` passed the complete expanded Linux CPU suite at **88.4700%**
+(55,729/62,992 lines), with **10,673 passed and 173 skipped** in 30:13.
+The XML has 10,846 tests and zero failures/errors, with runtime 1813.063s.
+There were 2,890 pytest warnings and zero collection warnings. CI 40480386030,
+backend 40480386017, acceptance 40480386101 and CodeQL 40480383651 all passed.
+Tested merge `36dc7967` and source trees match. The 800-file measured package
+scope, coverage.py 7.16.2 and 566 exclusions are unchanged. Full covered lines
+increased by 13 and statements decreased by two from `a1ff30a`; the exact 90% gap is
+964 lines at this denominator. Core 70 and expanded 87 remain unchanged.
+The recorded Windows subsets and lean profile above remain separate evidence.
+
+### Meta-learning task populations and episode cardinalities (2026-10-27)
+
+Meta-learning evaluation previously ignored `prefer_novel_tasks=False`: a mixed
+holdout with three tasks reported only the two novel tasks, changing the stated
+population and aggregate score. The same flag could not opt out of internal
+held-out train tasks. Distinct selected task ids with the same display text,
+such as integer `1` and string `"1"`, silently overwrote per-task metrics while
+the aggregate still counted both. Train/all reports also claimed their rows
+had never been used for meta-training. Episode and support sizes accepted
+booleans, fractional values or numeric strings through lossy integer coercion.
+
+Evaluation now selects all observed tasks when requested, retains internal
+task-holdout preference only when enabled, refuses ambiguous selected report
+keys before replacing prior outputs, and discloses selected overlapping tasks
+and meta-training rows. Fit, evaluation and adaptation share the existing
+positive-integer validator for episode counts/support caps; NumPy integrals
+remain supported. The fitted learner stays unchanged and can be reevaluated.
+
+The 150 new public consumers cover native prototypical/warm-start methods,
+both selection policies, four partitions, internal holdout on/off, task-key
+collisions, invalid protocol sizes, explicit support refusal, anonymous support
+and owned bundle replay. Independent row-position sampling, scalar class
+centroids, fitted logistic logits and confusion-count F1 verify reported
+populations and metrics. The exact final tests against all 828 verified archived
+`4b2071f` package/resource files produce **102 failures and 48 passes in 23.99s**
+(XML 23.939s), zero setup errors/skips/warnings.
+
+Final independent Windows subsets freeze 814 production Python files and seven
+selected test files:
+
+| Profile | Result | Source-mapped reach vs `4b2071f` |
+| --- | --- | --- |
+| Pandas 3.0.5/NumPy 2.4.6/sklearn 1.9.0/Torch 2.13 CPU | 197 passed/1 skipped; 69.91s log/69.891s XML | 9 previously missing unchanged/28 changed-new executed lines |
+| Pandas 2.3.3, same other libraries | 197 passed/1 skipped; 76.50s log/76.482s XML | 9 unchanged/28 changed-new executed lines |
+
+Both XMLs contain 198 tests, all 150 new consumers, zero failures/errors. Each
+profile has 40 existing agent-dispatch alias deprecations (20 adaptation,
+10 saves, 10 loads), and zero collection warnings. One existing missing-Torch
+negative check skips because Torch is present. Existing native Torch meta-learning
+smokes execute in these broad profiles; the new numerical oracles cover the two
+native sklearn methods and do not establish a learn2learn backend result.
+Each uses a private coverage database, coverage.py 7.16.2, the same 800-file
+measured package scope and 566 exclusions. Unmapped reach lists are empty.
+Subset reach, including broader backend/availability paths, is not a complete
+coverage percentage or an attribution of every reached line to the new tests.
+Eight unchanged lines are in meta-learning (five evaluation, three adaptation);
+one is DL dependency discovery. Changed-new execution covers 19 evaluation,
+three adaptation and six fitting lines.
+
+The actual lean environment passes **150 checks in 17.22s** (XML
+17.191s), zero errors/skips/warnings, with NumPy 2.4.1/Pandas 2.3.3/
+sklearn 1.9.1/SciPy 1.15.3/PyArrow 26. Torch, matplotlib and seaborn are actually
+absent; no optional packages were hidden or mocked. Four actual public bundles
+written by archived `4b2071f` (both native methods, internal holdout on/off)
+preserve plan metadata, support adaptation summaries and stored coefficients.
+They pass 32 scalar public evaluations across all four partitions and both
+selection policies. Loaded plans remain unchanged by evaluation; no
+cross-serialization pickle hash identity is claimed. These checks concern the
+recorded backend versions, not every historical release.
+
+The initial 134-case baseline had 106 failures/28 passes in 24.21s, including
+incorrect facade spelling `.adapt_to_task`. Correcting it to `.adapt` produced
+102 failures/32 passes in 24.07s and 134 focused passes in 18.88s. Before freezing,
+16 explicit-support consumers were added from uncovered refusal paths. The exact
+final 150-case baseline and both full selected subsets supersede those earlier
+artifacts; the spelling failures are not production defects.
+
+Targeted mypy passes at baseline/current across the three changed source files.
+Ruff, copy lint, diff checks and the docstring budget (586 existing findings)
+pass. Latest accepted complete Linux CPU coverage is **88.4700%** at `4b2071f`,
+10,673 passed/173 skipped, with its qualified optional/platform skips. Its exact
+90% gap is 964 lines; core 70/expanded 87 remain. Fresh complete CI is required
+for this source. The 90% target is open.

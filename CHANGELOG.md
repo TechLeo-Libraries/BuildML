@@ -14,6 +14,11 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Meta-learning evaluation honors all-task selection, preserves internal task
+  holdout preference only when enabled, and refuses ambiguous per-task report
+  keys. Reports disclose meta-training rows when selected. Episode counts and
+  support caps reject lossy coercions before replacing working outputs.
+
 - Session fairness resolves numeric-equivalent positive labels against fitted
   classifier classes before selecting probability scores. Unknown classes and
   regression fits refuse before prediction or replacing prior reports and

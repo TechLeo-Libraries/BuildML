@@ -8,6 +8,7 @@ from typing import Any
 import pandas as pd
 
 from buildml.core.errors import ValidationError
+from buildml.core.validation import _positive_integer
 from buildml.data.dataset import Dataset
 from buildml.data.splits import PartitionName, SplitPlan, frame_for_partition
 from buildml.metalearning.features import (
@@ -53,7 +54,8 @@ def adapt_to_task(
     support_frame:
         Explicit labeled support rows; overrides partition sampling.
     max_support_per_class:
-        Optional cap on support rows sampled per class.
+        Optional positive integral cap on support rows sampled per class.
+        Boolean, fractional and string counts are refused.
     random_state:
         Seed for per-class subsampling when capping support.
 
@@ -69,6 +71,10 @@ def adapt_to_task(
     """
     if plan is None:
         raise ValidationError("No MetaLearningPlan. Call fit_metalearning first.")
+    if max_support_per_class is not None:
+        max_support_per_class = _positive_integer(
+            max_support_per_class, name="max_support_per_class"
+        )
 
     disclosures: list[str] = [
         "adapt_to_task freezes the meta-train plan and fits only on the "
@@ -129,8 +135,6 @@ def adapt_to_task(
         raise ValidationError("Meta-learning support target contains null labels.")
 
     if max_support_per_class is not None:
-        if int(max_support_per_class) < 1:
-            raise ValidationError("max_support_per_class must be >= 1.")
         import numpy as np
 
         rng = np.random.default_rng(random_state)
