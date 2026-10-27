@@ -14,6 +14,11 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Session fairness resolves numeric-equivalent positive labels against fitted
+  classifier classes before selecting probability scores. Unknown classes and
+  regression fits refuse before prediction or replacing prior reports and
+  threshold suggestions. Existing classifiers can be reevaluated without refitting.
+
 - Native copulas preserve distinct scalar categorical populations and apply
   categorical conditions using their fitted types. Vocabulary checks count
   unknown nonmissing values separately from null-rate checks. Trusted bundles

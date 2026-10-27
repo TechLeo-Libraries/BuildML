@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-10-26, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed: 88.4435% (55,692/62,969); 10,338 passed, 173 skipped | [CI 40466646805](https://github.com/TechLeo-Libraries/BuildML/actions/runs/40466646805), source `62a90ad`, tested merge `08416f33`; matching trees and all four workflows passed. Scope/566 exclusions/coverage.py 7.16.2 unchanged. Core 70/expanded 87 retained. Exact 90% gap 981 lines; 2,890 pytest warnings, no coverage collection warnings |
+| Current accepted remote expanded CPU whole-package gate | Passed: 88.4465% (55,716/62,994); 10,469 passed, 173 skipped | [CI 40473732800](https://github.com/TechLeo-Libraries/BuildML/actions/runs/40473732800), source `a1ff30a`, tested merge `b13fe1f2`; matching trees and all four workflows passed. Scope/566 exclusions/coverage.py 7.16.2 unchanged. Core 70/expanded 87 retained. Exact 90% gap 979 lines; 2,890 pytest warnings, no coverage collection warnings |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -4047,3 +4047,86 @@ pass. Latest accepted complete Linux CPU coverage remains **88.4435%** at
 `62a90ad`, 10,338 passed/173 skipped; its exact 90% gap is 981 lines. Fresh
 complete evidence is required for this new source. Core 70/expanded 87 remain,
 and the 90% target is open.
+
+### Accepted typed copula and vocabulary whole-suite result (2026-10-27)
+
+Source `a1ff30a` passed the complete expanded Linux CPU suite at **88.4465%**
+(55,716/62,994 lines), with **10,469 passed and 173 skipped** in 29:35.
+The XML has 10,642 tests and zero failures/errors, with runtime 1774.941s.
+There were 2,890 pytest warnings and zero collection warnings. CI 40473732800,
+backend 40473732829, acceptance 40473732879 and CodeQL 40473728813 all passed.
+Tested merge `b13fe1f2` and source trees match. The 800-file measured package
+scope, coverage.py 7.16.2 and 566 exclusions are unchanged. Full covered lines
+increased by 24 and statements by 25 from `62a90ad`; the exact 90% gap is
+979 lines at this denominator. Core 70 and expanded 87 remain unchanged.
+The recorded Windows subsets and lean profile above remain separate evidence.
+
+### Fitted classifier identity in fairness score consumers (2026-10-27)
+
+Equivalent numeric positive labels previously selected a fallback probability
+column: auditing boolean False as `0`, for example, could reverse group AUC
+from 0.967 to 0.033. Numeric class `2` requested as `2.0` had the same failure.
+Unknown fitted classes could produce demographic-parity threshold suggestions,
+and regression fits on binary outcomes could enter classifier fairness reports.
+
+Session evaluation, attachment and threshold suggestions now validate the fitted
+classification task and resolve the requested positive label against fitted
+`classes_` before prediction. Numeric equivalents retain their rate semantics;
+string lookalikes remain distinct. Scores use the resolved fitted class column.
+Unusable alternate probability layouts no longer select another class. Unknown
+classes and regression tasks refuse without replacing earlier outputs/history.
+Reweighing remains available without a fit. Existing classifiers can be
+reevaluated without refitting; prediction probabilities themselves are unchanged.
+
+The 204 new public consumers use logistic models, real pipelines and decision
+trees with boolean/integer outcomes, both positive classes and both holdout
+partitions. Independent logit calculations, counted training-leaf frequencies,
+pairwise AUC and scalar exhaustive threshold grids verify scores and suggestions.
+They also check unknown classes, regression tasks, prior-output preservation,
+data/model nonmutation and owned public model save/load roundtrips. The exact
+final tests against all 828 verified archived `a1ff30a` package/resource files
+produced **156 failures and 48 passes in 20.34s** (XML 20.218s), with
+zero setup errors/skips/warnings.
+
+Final independent Windows subsets freeze 814 production Python files and nine
+selected tests:
+
+| Profile | Result | Source-mapped reach vs `a1ff30a` |
+| --- | --- | --- |
+| Pandas 3.0.5/NumPy 2.4.6/sklearn 1.9.0/Torch 2.13 CPU | 407 passed; 115.66s log/115.622s XML | 2 previously missing unchanged/19 changed-new executed lines |
+| Pandas 2.3.3, same other libraries | 407 passed; 88.72s log/88.703s XML | 2 unchanged/19 changed-new executed lines |
+
+Both XMLs contain all 204 new consumers, zero failures/errors/skips. Each has one
+existing `langchain-community` deprecation from the classical alpha smoke's
+optional-dependency discovery, and zero coverage collection warnings. Each uses
+a private coverage database with coverage.py 7.16.2, the same 800-file package
+scope and 566 exclusions; unmapped reach files are empty. Subset reach remains
+separate from complete-suite coverage and includes broader availability paths.
+The two unchanged lines are DL/RAG dependency-discovery paths; the 19 changed-new
+lines are in fairness orchestration. They are not all gains attributable to the
+new tests and are not a projected full-suite increase.
+
+An actual lean environment passes all **204 new checks in 13.91s** (XML
+13.866s), zero errors/skips/warnings, with NumPy 2.4.1/Pandas 2.3.3/
+sklearn 1.9.1/SciPy 1.15.3/PyArrow 26. Torch, matplotlib and seaborn are absent;
+no optional packages were hidden or mocked. Nine actual model bundles saved by
+the public API at archived `a1ff30a` also preserve exact predictions/probabilities
+when loaded with the fix. Six classifiers pass 12 independent numerical score
+consumers, and three regression models refuse all 12 fairness requests atomically.
+These checks concern the recorded backend versions, not every historical release.
+
+Initial 204-case results (162 failed/42 passed in 18.16s, then 12 failed/192 passed
+in 14.00s) included an overstrict cross-serialization joblib hash assertion.
+Metadata/classes and public prediction equivalence replaced it; hashes still
+verify that each loaded fit remains unchanged by fairness operations. The exact
+final baseline was rerun. Intermediate broad profiles each passed 407 with one
+warning, but a source-docstring edit during verification caused the final freeze
+assertion to refuse acceptance. Both final profiles were rerun against frozen
+source. Superseded artifacts are retained and excluded from final counts/reach.
+
+Targeted mypy passes for the changed orchestration file at baseline and current
+source. Ruff, copy lint, diff checks and the docstring budget (586 existing
+findings) pass. Latest accepted complete Linux CPU evidence is **88.4465%** at
+`a1ff30a`, 10,469 passed/173 skipped. The full gate's optional/platform skips remain
+qualified above. Its exact 90% gap is 979 lines; core 70/expanded 87 remain.
+Fresh complete CI is required for this source, and the 90% target remains open.

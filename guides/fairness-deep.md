@@ -21,6 +21,18 @@ Boolean, fractional, string and one-draw configurations are refused.
 `session.fairness.suggest_reweighing` return suggestions only. They
 are not applied.
 
+Session evaluation, attachment and threshold suggestions require a fit whose
+task is classification and whose estimator exposes fitted `classes_`. A
+regression fit on numeric 0/1 outcomes still needs a classifier fit before these
+operations. Reweighing suggestions remain available without a fitted model.
+
+The requested positive label must match a fitted class. Numeric equivalents such
+as `2` and `2.0`, or `False` and `0`, select the same class for both rates and
+probability scores. A string `"2"` does not select numeric class `2`. Unknown
+classes are refused before prediction, preserving earlier reports, threshold
+suggestions and history. Existing classifier fits can be reevaluated to correct
+previous score-based reports; the fitted model does not need refitting.
+
 The API refuses a missing fit, a missing split, a missing sensitive
 column, an empty partition, and a `positive_label` that never appears
 in `y_true`. You still decide which column is sensitive, which

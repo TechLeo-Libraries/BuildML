@@ -13,6 +13,11 @@ a legal audit and not causal fairness.
 String labels need an explicit `positive_label`. Default `1` raises
 when the requested positive label is absent.
 
+Evaluation and threshold suggestions require a classification fit and a positive
+label from its fitted classes. Numeric equivalents such as `2.0` for class `2`
+use that class's probabilities; a string `"2"` is a different label. Unknown
+classes and regression fits are refused before prediction or report replacement.
+
 [Fairness deep](fairness-deep.md) ·
 Runnable example: [`examples/fairness_observational_loop.py`](../examples/fairness_observational_loop.py) ·
 Evidence: [loan-fairness-observational](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/loan-fairness-observational)

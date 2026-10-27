@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import Any, Sequence
 
+import numpy as np
+
 from buildml.core.errors import ValidationError
 from buildml.fairness.catalog import fairness_capability_matrix as _fairness_capability_matrix
 from buildml.fairness.evaluate import evaluate_fairness as _evaluate_fairness
@@ -80,10 +82,36 @@ def _resolve_last_eval_partition(session: Any, default: str = "test") -> str:
     return default
 
 
-def _positive_scores(session: Any, partition: str, positive_label: Any) -> Any | None:
-    """Best-effort positive-class scores via ``predict(..., return_proba=True)``."""
+def _classifier_positive_label(session: Any, positive_label: Any, operation: str) -> Any:
+    """Resolve numeric-equivalent labels against the fitted classifier's classes."""
     fit = getattr(session, "_fit_result", None)
-    if fit is not None and not callable(getattr(fit.estimator, "predict_proba", None)):
+    if fit is None or fit.task != "classification":
+        raise ValidationError(
+            f"{operation} requires a fitted classifier; call Session.fit "
+            "with task='classification' first."
+        )
+    classes = getattr(fit.estimator, "classes_", None)
+    if classes is None:
+        raise ValidationError(
+            f"{operation} requires fitted classifier classes_ to identify positive_label."
+        )
+    if np.ndim(positive_label) == 0:
+        for label in classes:
+            try:
+                if bool(label == positive_label):
+                    return label
+            except (TypeError, ValueError):
+                continue
+    raise ValidationError(
+        f"positive_label={positive_label!r} is not a fitted class. "
+        f"Pass an actual positive class value from {list(classes)!r}."
+    )
+
+
+def _positive_scores(session: Any, partition: str, positive_label: Any) -> Any | None:
+    """Best-effort scores for an already resolved fitted class."""
+    fit = session._fit_result
+    if not callable(getattr(fit.estimator, "predict_proba", None)):
         # Classical predict falls back to labels when probabilities are absent.
         # Those labels cannot serve as probability scores for AUC or thresholds.
         return None
@@ -98,25 +126,8 @@ def _positive_scores(session: Any, partition: str, positive_label: Any) -> Any |
         score_column = f"proba_{positive_label}"
         if score_column in cols:
             return proba[score_column].to_numpy()
-        if positive_label in cols:
-            return proba[positive_label].to_numpy()
-        # Common binary layout: columns [0, 1] or class labels
-        if len(cols) == 2:
-            # Prefer column matching positive_label string form, else last/col 1
-            for c in cols:
-                if str(c) == str(positive_label):
-                    return proba[c].to_numpy()
-            return proba[cols[-1]].to_numpy()
-        if len(cols) == 1:
-            return proba[cols[0]].to_numpy()
-        return None
-    import numpy as np
-
-    arr = np.asarray(proba)
-    if arr.ndim == 1:
-        return arr
-    if arr.ndim == 2 and arr.shape[1] >= 2:
-        return arr[:, -1]
+    # Classical prediction names every probability column from classes_. A
+    # missing class column is unusable; another column can reverse the outcome.
     return None
 
 
@@ -168,13 +179,11 @@ def evaluate_fairness_op(
     Raises
     ------
     ValidationError
-        When the Session lacks a fit/split/dataset, sensitive columns are
-        missing, the partition is empty/unknown, or prediction length mismatches.
+        When the Session lacks a classification fit with fitted classes, a
+        split/dataset, or sensitive columns; when the positive label is unknown,
+        the partition is empty/unknown, or prediction length mismatches.
     """
-    if getattr(session, "_fit_result", None) is None:
-        raise ValidationError(
-            "evaluate_fairness requires a fitted classifier; call Session.fit first."
-        )
+    fitted_positive = _classifier_positive_label(session, positive_label, "evaluate_fairness")
     dataset = session.dataset
     if dataset is None:
         raise ValidationError("Session has no dataset.")
@@ -207,7 +216,7 @@ def evaluate_fairness_op(
 
     y_score = None
     if include_scores:
-        y_score = _positive_scores(session, partition, positive_label)
+        y_score = _positive_scores(session, partition, fitted_positive)
 
     report = _evaluate_fairness(
         y_true,
@@ -294,11 +303,10 @@ def suggest_fairness_thresholds_op(
 
     Prefer ``session.fairness.suggest_thresholds(...)``. Default partition is
     ``validation`` to discourage test-set threshold fishing.
+    Requires a classification fit and a positive label matching its fitted
+    classes. Numeric-equivalent labels select the same probability column.
     """
-    if getattr(session, "_fit_result", None) is None:
-        raise ValidationError(
-            "suggest_thresholds requires a fitted classifier; call Session.fit first."
-        )
+    fitted_positive = _classifier_positive_label(session, positive_label, "suggest_thresholds")
     dataset = session.dataset
     if dataset is None:
         raise ValidationError("Session has no dataset.")
@@ -313,7 +321,7 @@ def suggest_fairness_thresholds_op(
     target_col = dataset.require_target()
     y_true = frame[target_col].to_numpy()
     sensitive = extract_sensitive_keys(frame, cols)
-    y_score = _positive_scores(session, partition, positive_label)
+    y_score = _positive_scores(session, partition, fitted_positive)
     if y_score is None:
         raise ValidationError(
             "suggest_thresholds requires predict_proba scores; the fitted "

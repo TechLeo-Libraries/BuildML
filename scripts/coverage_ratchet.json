@@ -8,20 +8,20 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 88.44351982721656,
-      "covered_lines": 55692,
-      "num_statements": 62969,
+      "percent_covered": 88.4465187160682,
+      "covered_lines": 55716,
+      "num_statements": 62994,
       "excluded_lines": 566,
-      "source_revision": "62a90adc9687e50985a14405f3b68abfedd82711",
-      "tested_revision": "08416f33871f7af3dc33f3cac3398e3465aa0ff9",
+      "source_revision": "a1ff30aefc4ef89365b94fa8acad53aa3ee56837",
+      "tested_revision": "b13fe1f292dbf1ae170751976e4d27e1d6278ed3",
       "platform": "remote Linux, CPU expanded profile",
-      "run_id": 40466646805,
-      "result": "10338 passed, 173 skipped, zero failures/errors",
+      "run_id": 40473732800,
+      "result": "10469 passed, 173 skipped, zero failures/errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
-      "notes": "Synthetic metric identity consumers accepted; all four workflows passed. Source/merge trees equal 809c2e8aeba85fbfc77d2b975ad42151e80aa391. Coverage.py7.16.2/566 exclusions unchanged;2890pytest warnings,zero collection warnings. Full28:13;exact90gap981. Core70/expanded87 retained;88floor lacks required1pp headroom. Subset reach remains separate.",
+      "notes": "Typed copula and vocabulary consumers accepted; all four workflows passed. Source/merge trees equal b301d6cea14d524e96fc212ed8d93da25fbbbcf0. Coverage.py 7.16.2/566 exclusions and package scope unchanged; 2890 pytest warnings, zero collection warnings. Full 29:35; exact 90% gap 979. Core 70/expanded 87 retained; next floor requires one percentage point of headroom. Subset reach remains separate.",
       "coverage_version": "7.16.2"
     },
     "latest_local_measurement": {
