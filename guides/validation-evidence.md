@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-10-26, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed: 88.4898% (55,753/63,005); 10,823 passed, 173 skipped | [CI 40487605262](https://github.com/TechLeo-Libraries/BuildML/actions/runs/40487605262), source `2334f25`, tested merge `72c578ed`; matching trees and all four workflows passed. Scope/566 exclusions/coverage.py 7.16.2 unchanged. Core 70/expanded 87 retained. Exact 90% gap 952 lines; 2,890 pytest warnings, no coverage collection warnings |
+| Current accepted remote expanded CPU whole-package gate | Passed: 88.4916% (55,763/63,015); 11,076 passed, 173 skipped | [CI 40496324522](https://github.com/TechLeo-Libraries/BuildML/actions/runs/40496324522), source `3224164`, tested merge `8f8cb204`; matching trees and all four workflows passed. Scope/566 exclusions/coverage.py 7.16.2 unchanged. Core 70/expanded 87 retained. Exact 90% gap 951 lines; 2,890 pytest warnings, no coverage collection warnings |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -4302,3 +4302,85 @@ pass. Latest accepted complete Linux CPU coverage is **88.4898%** at `2334f25`,
 10,823 passed/173 skipped, with identical skip-reason counts to `4b2071f`.
 Its exact 90% gap is 952 lines; core 70/expanded 87 remain. Fresh complete CI
 must establish this source's full percentage. The 90% target is open.
+
+### Accepted segment populations whole-suite result (2026-10-27)
+
+Source `3224164` passed the complete expanded Linux CPU suite at **88.4916%**
+(55,763/63,015 lines), with **11,076 passed and 173 skipped** in 17:34.
+The XML has 11,249 tests and zero failures/errors, with runtime 1054.469s.
+There were 2,890 pytest warnings and zero collection warnings. CI 40496324522,
+backend 40496324514, acceptance 40496324531 and CodeQL 40496322169 all passed.
+Tested merge `8f8cb204` and source trees match. The 800-file measured package
+scope, coverage.py 7.16.2 and 566 exclusions are unchanged. Full covered lines
+increased by 10 and statements increased by 10 from `2334f25`; the exact 90% gap is
+951 lines at this denominator. Core 70 and expanded 87 remain unchanged.
+The recorded Windows subsets and lean profile above remain separate evidence.
+
+### Frozen semi-supervised prediction attachment consumers (2026-10-27)
+
+This batch verifies existing prediction behavior and adds regression coverage;
+**production code is unchanged**. All 828 package/resource files, including all
+814 Python files, match accepted `3224164` by Git archive comparison (normalized
+text endings, byte equality for binary resources). The previously missing
+semi-supervised prediction paths include all-row scoring and attaching results
+to the current dataset. No artificial baseline failure or production fix is
+claimed for behavior that already works.
+
+The 172 new public consumers cover label propagation, label spreading and
+logistic self-training with padded strings, integer class codes and booleans.
+Independent scalar RBF-weighted fitted class distributions and frozen logistic
+logits check predictions across four partitions. Duplicate pandas row labels,
+targets with missing values, roles, split positions and fitted-plan hashes stay
+unchanged during read-only scoring. Attachment adds a feature column without
+altering targets or the frozen plan's feature list. Existing feature/target/id
+names and partial-partition attachment refuse without replacing prior state.
+
+Owned public bundles retain plan metadata and predictions, including receivers
+without a split for all-row inference. All 36 native cases execute against real
+Polars 2.0.0 and DuckDB 1.5.6, including filtered lazy populations. Original and
+newly rebuilt native handles are closed. Parquet consumers check every logical
+value, missing target, row ID and prediction scalar type. The Session frame is
+checked exactly; exported data intentionally omits the pandas index, and nullable
+object-backed storage may normalize to numeric/string dtypes on reload.
+
+Final independent Windows profiles freeze all 828 package/resource files and
+five test files. Both use NumPy 2.4.6/sklearn 1.9.0, the actual isolated Polars
+runtime and private coverage databases:
+
+| Profile | Result | Source-mapped reach vs `3224164` |
+| --- | --- | --- |
+| Pandas 3.0.5 | 436 passed; 118.58s log/118.460s XML | 20 previously missing unchanged production lines, zero changed/new |
+| Pandas 2.3.3 | 436 passed; 106.14s/106.052s | 20 unchanged, zero changed/new |
+
+Each XML contains all 172 new cases, including all 36 native cases; zero
+failures/errors/skips/pytest warnings/collection warnings. Scope remains the same
+800 measured files, 63,015 statements and 566 exclusions with coverage.py 7.16.2.
+`scripts/measure_coverage_reach.py` uses the verified same-source complete JSON
+and exact frozen current root; unmapped lists are empty. Reach includes older
+semi-supervised/bundle consumers and runtime differences. It is not a full-suite
+percentage, projection or attribution of every reached line to the new tests.
+
+The actual lean environment passes all **136 selected non-native cases** in
+12.61s log/12.537s XML, zero errors/skips/warnings;
+36 native cases are explicitly deselected. Python 3.12.8, NumPy 2.4.1/Pandas
+2.3.3/sklearn 1.9.1/SciPy 1.15.3/PyArrow 26; Torch/matplotlib/seaborn are actually
+absent. No optional packages are hidden or mocked. Broader profiles establish
+native evidence separately; this lean check does not cover every backend.
+
+Initial harness errors (1 pass/171 setup errors, 37.44s) came from a missing
+temporary-directory parent. After fixing it, 18 failures/154 passes (39.50s)
+exposed an incorrect expectation that Parquet preserves the pandas index.
+Resetting the expected index left storage-dtype assumptions too strict:
+intermediate Pandas 3 had 12 failures/424 passes (109.24s), lean had 6 failures/
+130 passes (13.98s). The final oracle checks logical values and missingness while
+retaining exact in-Session frames and strict prediction label types. Completed
+intermediate inputs/artifacts are retained and superseded; these are test
+corrections, not production defects. No frozen input changed during a run.
+
+Ruff, copy lint, diff checks and the unchanged docstring budget pass. There is
+no production typing change. Latest accepted complete Linux CPU evidence is
+**88.4916%** at `3224164` (55,763/63,015), 11,076 passed/173 skipped, 17:34,
+2,890 pytest warnings/zero collection warnings, all four workflows passed.
+Skip-reason counters match `2334f25`. The exact 90% gap is 951 lines at that
+denominator. Floors remain core 70/expanded 87. Fresh complete CI must measure
+this batch; the target remains open.

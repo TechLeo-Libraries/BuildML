@@ -14,6 +14,11 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Semi-supervised prediction consumer checks cover frozen scalar logits/RBF
+  scores, raw labels, duplicate row indices, attachment atomicity, saved plans,
+  real filtered DuckDB/Polars populations and Parquet handoff. Existing runtime
+  behavior is unchanged; guides explain attachment roles and row identity.
+
 - Segment diagnostics count observed categorical populations and reject
   ambiguous display keys before prediction or replacing reports and HTML.
   Missing scoring truth and nonfinite or nonnumeric regression targets refuse;
