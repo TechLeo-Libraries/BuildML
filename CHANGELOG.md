@@ -14,6 +14,12 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Clustering stability compares labels on shared training row positions and
+  reports unusable subsamples explicitly. OPTICS preserves fractional minimum
+  cluster sizes. External agreement accepts mixed scalar labels and omits
+  scores when no non-noise rows exist. Invalid stability settings refuse before
+  replacing the previous report or history.
+
 - Multi-task explicit classification/regression choices now govern every head
   and its metrics, including low-cardinality numeric regression and numerous
   numeric class codes. LightGBM multi-target regression fits independent scalar

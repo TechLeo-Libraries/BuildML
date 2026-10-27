@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-10-26, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed: 88.3637% (55,594/62,915); 9,946 passed, 173 skipped | [CI40432021095](https://github.com/TechLeo-Libraries/BuildML/actions/runs/40432021095), source `3edb061`, tested merge `5ecc1afa`; matching trees and all four workflows passed. Scope/566 exclusions/coverage.py7.16.2 unchanged. Core70/expanded87 retained. Exact90% gap1,030 lines; 2,890 pytest warnings, no coverage collection warnings |
+| Current accepted remote expanded CPU whole-package gate | Passed: 88.3950% (55,619/62,921); 10,066 passed, 173 skipped | [CI40437175573](https://github.com/TechLeo-Libraries/BuildML/actions/runs/40437175573), source `70019ef`, tested merge `b36da0e7`; matching trees and all four workflows passed. Scope/566 exclusions/coverage.py7.16.2 unchanged. Core70/expanded87 retained. Exact90% gap1,010 lines; 2,890 pytest warnings, no coverage collection warnings |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -3670,3 +3670,71 @@ Baseline/current targeted mypy are clean for three changed production sources;
 package-wide type cleanliness is not claimed. Latest accepted full remains
 **88.3637%** at `3edb061`, with 1,030 further covered lines needed at that source.
 Core70/expanded87 remain unchanged. Fresh complete CI is required for this batch.
+
+### Accepted multi-target whole-suite result (2026-10-27)
+
+Source `70019ef` passed the complete expanded Linux CPU suite at **88.3950%**
+(55,619/62,921 lines), with **10,066 passed and 173 skipped** in 28:36.
+The XML has 10,239 tests and zero failures/errors; there were 2,890
+pytest warnings and no coverage collection warnings. CI40437175573, backend40437175308,
+acceptance40437175318 and CodeQL40437173193 passed. Tested merge `b36da0e7`
+and source trees match. coverage.py7.16.2 and566 exclusions are unchanged.
+The exact90% gap is1,010 covered lines at this source. Core70 and expanded87
+remain unchanged. Earlier local multi-target subset observations remain
+separate and are not added to this full-suite percentage.
+
+### Clustering row-aligned diagnostics and OPTICS fractions (2026-10-27)
+
+Clustering stability now compares fitted labels on the same shared training
+row positions against the first subsample. Previously, unrelated rows occupied
+the same array positions and separated groups could report agreement near zero
+instead of 1.0. Sampling remains without replacement and uses train data only;
+this is a k-means diagnostic even for other fitted clustering methods. Reports
+count usable comparisons and omit scores when fewer than two shared rows make
+all comparisons unusable. Invalid run counts/fractions refuse before replacing
+the previous report/history. OPTICS retains fractional minimum cluster sizes;
+the prior integer cast truncated valid fractions to zero. External labels need
+no cross-type sort order, and empty non-noise populations have no agreement score.
+
+All 72 final public-consumer checks on all 828 verified archived `70019ef`
+package/resource files produce **62 failures and 10 passes** in 17.21s, with zero
+setup errors, skips or warnings. A preliminary 69-case reproduction produced
+61 failures/8 passes; a preliminary repaired 70-case focused run passed in 12.92s.
+Both final broader profiles execute all 72 new cases. Independent sklearn
+KMeans fits and a scalar contingency-table ARI calculation join labels by row
+identity; independent OPTICS fits check training labels and manually computed
+centroid distances check holdout assignment. Separated/overlapping populations,
+reversed row orders, duplicate pandas labels, full/fractional samples, live and
+saved consumers, mixed scalar references, all-noise/sparse intersections and
+holdout perturbations verify population and state boundaries. These are bounded
+numerical/workflow checks, not clustering quality or ground-truth claims.
+
+Independent Windows subsets across seven verification files, with all 814
+production sources and seven verification files frozen and hash-verified:
+
+| Profile | Result | Separate reach vs `70019ef` |
+| --- | --- | --- |
+| Pandas3.0.5/NumPy2.4.6/sklearn1.9.0/Torch2.13CPU | 124 passed/2 skipped;75.79s log/75.765s XML;5 warnings | 9 previously missing unchanged/24 changed-new executed lines |
+| Pandas2.3.3, same other libraries | 124 passed/2 skipped;74.00s log/73.957s XML;4 warnings | 9 unchanged/24 changed-new executed lines |
+
+Each XML has 126 cases and zero failures/errors/collection warnings. The two
+existing skips are absent HDBSCAN and UMAP dependencies; neither is faked.
+Both profiles have four existing flat-facade deprecation warnings. Pandas3 also
+has one existing DEC NumPy read-only tensor warning. The new 72 cases have no
+warnings or skips. The main environment is unchanged. Coverage.py7.16.2,
+package scope and 566 exclusions are unchanged. Separate databases and mapped
+broader-subset reach do not establish a complete-suite increase.
+
+Six bundles produced by the actual archived source (k-means, agglomerative,
+OPTICS across two populations) retain their predictions after loading. The four
+k-means/agglomerative bundles now report corrected stability matching the
+independent oracle. This separate proof has one Windows physical-core discovery
+warning and is not six extra pytest cases. Existing fitted cluster geometry
+is preserved; changed OPTICS settings require a new fit. Historical saved
+evaluation summaries are not rewritten automatically.
+
+Baseline/current targeted mypy are clean for four production sources; no
+package-wide type claim. Latest accepted complete Linux CPU suite remains
+**88.3950%** at `70019ef`, 10,066 passed/173 skipped, with 1,010 more covered lines
+needed at that source. Core 70/expanded 87 remain unchanged. Fresh complete CI
+is required for the clustering batch.
