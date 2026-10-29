@@ -73,6 +73,15 @@ session.graph.save_bundle("artifacts/graph_bundle")
 later drop or add rows, call `set_spec` again: the spec snapshots ids at
 attach time.
 
+Undirected reverse pairs and repeated edges collapse to one edge, including
+distinct identifiers with the same printed value, such as integer `1` and
+string `"1"`. Their original identities remain distinct. Directed reverse pairs
+remain separate edges. Null endpoints and self-loops are dropped. Adding a
+duplicate undirected pair therefore does not add a message-passing weight.
+Existing bundles retain their stored topology and fitted weights. If an older
+plan was fitted with duplicated edges caused by colliding printed identifiers,
+rebuild its graph specification and refit to remove that multiplicity.
+
 `evaluate` and `predict` default to **validation**. Look at test once you
 are done choosing.
 

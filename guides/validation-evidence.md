@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-10-26, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed: 88.5186% (55,780/63,015); 11,248 passed, 173 skipped | [CI 40502542657](https://github.com/TechLeo-Libraries/BuildML/actions/runs/40502542657), source `044e573`, tested merge `27618e81`; matching trees and all four workflows passed. Scope/566 exclusions/coverage.py 7.16.2 unchanged. Core 70/expanded 87 retained. Exact 90% gap 934 lines; 2,890 pytest warnings, no coverage collection warnings |
+| Current accepted remote expanded CPU whole-package gate | Passed: 88.5865% (55,829/63,022); 11,476 passed, 173 skipped | [CI 40538467220](https://github.com/TechLeo-Libraries/BuildML/actions/runs/40538467220), source `809122e`, tested merge `f19ddebe`; matching trees and all four workflows passed. Scope/566 exclusions/coverage.py 7.16.2 unchanged. Core 70/expanded 87 retained. Exact 90% gap 891 lines; 2,890 pytest warnings, no coverage collection warnings |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -4474,3 +4474,101 @@ Skip-reason counters match `3224164`; optional/platform limitations remain.
 Core 70/expanded 87 floors and the headroom policy are unchanged. The exact
 90% gap is 934 at that accepted denominator; fresh complete CI must measure
 this source before any whole-package gain is claimed.
+
+### Accepted symbolic input-contract whole-suite result (2026-10-27)
+
+Source `809122e` passed the complete expanded Linux CPU suite at **88.5865%**
+(55,829/63,022 lines), with **11,476 passed and 173 skipped** in 32:03.
+The XML has 11,649 tests and zero failures/errors, with runtime 1923.721s.
+There were 2,890 pytest warnings and zero collection warnings. CI 40538467220,
+backend 40538467225, acceptance 40538467412 and CodeQL 40538460624 all passed.
+Tested merge `f19ddebe` and source trees match. The 800-file measured package
+scope, coverage.py 7.16.2 and 566 exclusions are unchanged. Full covered lines
+increased by 49 while statements increased by 7 from `044e573`; the exact 90% gap is
+891 lines at this denominator. Core 70 and expanded 87 remain unchanged.
+The recorded Windows subsets and lean profile above remain separate evidence.
+
+### Graph endpoint identity and duplicate-edge consumers (2026-10-27)
+
+Undirected normalization used only endpoint display strings to choose an
+orientation. Distinct IDs such as integer 1 and string "1" tied, so adding
+their reversed pair kept a second edge. An actual PyG 2.8.0.post1/Torch 2.13.0
+CPU reproducer increased the edge count from 26 to 27 and changed predicted
+probabilities by up to 0.0684 (GCN), 0.1248 (GraphSAGE) and 0.0427 (GAT).
+The fix resolves display ties with endpoint equality codes while preserving
+original values and the existing ordering for ordinary IDs. Directed reverse
+pairs remain separate; repeated undirected pairs no longer add messages.
+
+The exact 164 new public cases ran against all 828 archived `809122e` package/
+resource files: **60 failed/104 passed**, 53.32s log/53.225s XML, zero errors/
+skips/warnings. All 60 failures involve mixed numeric/string IDs with the same
+display value. Ordinary IDs, directed controls and input refusals already pass.
+An initial baseline before adding an explicit optional-NetworkX guard had the
+same counts in 48.19s/48.119s XML; artifacts remain separate. Final tests and
+the archived copy have the exact same hash. The dependency guard lets core
+profiles without graph extras disclose those cases as skipped.
+
+The 120 topology consumers span four ID populations, pair sequences/object
+arrays/custom-column DataFrames, inductive/transductive modes, classical
+logistic regression, dense GCN and actual PyG GCN/GraphSAGE/GAT. Independent
+normalized adjacency arithmetic, neighbor means and scalar attention/softmax
+check neural outputs. Independent NetworkX topology metrics plus fitted scalar
+standardization/logits check classical outputs. Both holdouts and all nodes
+are checked, with accuracy, raw labels, unknown-edge disclosures, unique-edge
+counts, duplicate row indices, frame/plan immutability and owned bundle replay.
+Twelve directed controls use graph metrics alone and retain reversed pairs.
+Twenty attachment refusals and ten feature-input refusals preserve working
+state/history. Two entirely unmapped new specs refuse fit without recording a
+model. Null endpoints and self-loops are handled through real public calls.
+
+Actual archived public fit/save produced 20 valid bundles across string/mixed
+IDs, five backends and both modes. Current load passes 60 scalar population
+checks and 40 holdout metric checks, preserving metadata and frozen estimates.
+Six older duplicate-topology PyG bundles retain their exact recorded
+probabilities on load; their stored edges and weights are not silently changed.
+Rebuilding the spec and refitting changes their probabilities by 0.0374 to 0.1258
+on this bounded fixture. Affected old plans require that explicit refit to
+remove duplicate multiplicity. No checkpoint schema change, arbitrary-version
+compatibility or cross-serialization pickle-hash identity is claimed.
+
+Final Windows profiles freeze all 814 production Python files, 14 resources
+and eight selected test files. Both use NumPy 2.4.6/sklearn 1.9.0, actual Torch
+2.13.0 CPU and the actual isolated PyG 2.8.0.post1 runtime:
+
+| Profile | Result | Source-mapped reach vs `809122e` |
+| --- | --- | --- |
+| Pandas 3.0.5 | 504 passed/3 skipped; 219.05s log/219.005s XML; 26 pytest warnings | 26 previously missing unchanged lines; 7 changed/new executed lines |
+| Pandas 2.3.3 | 504 passed/3 skipped; 189.64s/189.591s; 25 pytest warnings | 26 unchanged; 7 changed/new |
+
+All 164 new cases execute in both profiles. There are zero failures/errors/
+collection warnings. The three skips are existing Windows DLL safeguards in
+older GCN/GraphSAGE/GAT tests; new consumers execute those actual backends.
+The broader selection also emits
+24 flat-alias deprecations and an anyio assertion-rewrite warning in each
+profile; Pandas 3 additionally reports a non-writable NumPy-to-Torch view in
+an existing configured-worker test. Those warnings remain visible, and the
+new read-only consumers verify their frames and plans stay unchanged.
+Coverage.py 7.16.2, the same 800-file package scope and 566 exclusions remain;
+the current subset reports contain 63,027 statements.
+`scripts/measure_coverage_reach.py` compares the verified complete baseline/Git
+source with the exact frozen current root; unmapped lists are empty. Reach
+includes older selected consumers/runtime paths and is not a whole-suite
+percentage, projection or attribution of every line to the new tests.
+
+The actual lean environment passes all **32 selected input-contract cases**
+in 6.99s log/6.960s XML, zero errors/skips/warnings.
+The 132 backend/numerical cases are explicitly deselected. NumPy 2.4.1/Pandas
+2.3.3/sklearn 1.9.1/SciPy 1.15.3/PyArrow 26; Torch/PyG/NetworkX/matplotlib/
+seaborn are actually absent, never hidden or mocked. Main profiles establish
+the backend evidence separately; these checks do not establish CUDA behavior.
+
+Ruff, copy lint, diff checks and the unchanged 586-finding docstring budget
+pass. Targeted mypy retains the same two pre-existing graph-data return-type
+diagnostics as the archived source, zero additional diagnostics; not typing-
+clean. Latest accepted complete Linux CPU source remains `809122e`:
+**88.5865%** (55,829/63,022), 11,476 passed/173 skipped, 32:03, 2,890 pytest
+warnings/zero collection warnings, all four workflows passed. Skip-reason
+counters match `044e573`; optional/platform limitations remain. Core 70/
+expanded 87 floors and headroom policy are unchanged. The exact 90% gap is
+891 at the accepted denominator. Fresh complete CI must measure this source
+before any whole-package gain is claimed.

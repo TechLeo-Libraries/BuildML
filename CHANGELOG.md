@@ -14,6 +14,11 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Undirected graph edges deduplicate reversed pairs whose distinct endpoint IDs
+  have the same printed value. Original identifier types remain intact, and
+  directed reverse pairs remain separate. Repeated undirected edges no longer
+  change PyG message-passing weights through this identity collision.
+
 - Symbolic and neuro-symbolic predicates cannot read the fitted target.
   Declared rules merged with induced rules validate input columns before
   fitting. Prediction also validates stored rule inputs before scoring, so
