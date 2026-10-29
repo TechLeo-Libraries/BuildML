@@ -37,6 +37,22 @@ Real tables are often larger than a notebook demo. Ingest with DuckDB or
 Polars for typed IO, narrow rows and columns with engine-native ops, then
 materialize a design matrix for sklearn only when needed.
 
+`Dataset.aggregate` reports the current population. Column `count` and
+`n_unique` exclude missing observations; `{"*": "count"}` counts all rows.
+An all-missing or empty sum is missing, rather than zero, and `std` is the
+sample standard deviation (`ddof=1`). Null group keys form their own group.
+Unused categorical levels do not create rows. Physical output dtypes can vary
+between engines; numeric values and missingness follow these same rules.
+These rules concern null values. Native floating NaN and infinity retain
+backend-specific behavior; they are not normalized by this reporting helper.
+
+Lazy summaries keep their own input population when you create sibling or
+nested summaries. Derived DuckDB datasets still share their owner's connection:
+consume or export them before closing the owner. Existing report files are
+unchanged by a library update; regenerate affected summaries when correcting
+older results. Aggregations are reporting helpers, not train-fitted transforms;
+whole-table group statistics must not become model inputs across a holdout.
+
 BuildML records engine and mode in ingest metadata. After Session
 preprocess it rebuilds native handles so `Dataset.project` /
 `prepare_design_matrix` can prefer engine ops where that path exists.

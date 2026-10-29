@@ -574,7 +574,7 @@ class PolarsEngine:
                 continue
             col = pl.col(column)
             if func == "sum":
-                exprs.append(col.sum().alias(alias))
+                exprs.append(pl.when(col.count() > 0).then(col.sum()).otherwise(None).alias(alias))
             elif func == "mean":
                 exprs.append(col.mean().alias(alias))
             elif func == "min":
@@ -584,7 +584,7 @@ class PolarsEngine:
             elif func == "count":
                 exprs.append(col.count().alias(alias))
             elif func == "n_unique":
-                exprs.append(col.n_unique().alias(alias))
+                exprs.append(col.drop_nulls().n_unique().alias(alias))
             elif func == "std":
                 exprs.append(col.std().alias(alias))
             else:

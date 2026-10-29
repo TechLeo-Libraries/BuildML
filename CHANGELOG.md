@@ -14,6 +14,12 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Native aggregation checks cover nonmissing counts, all-missing sums,
+  observed categorical groups, scalar statistics, nested and sibling lazy
+  summaries, and Parquet consumers. Polars excludes nulls from distinct counts
+  and retains missing sums, DuckDB summaries keep independent inputs, and
+  Pandas 2 omits unused categorical levels from grouped reports.
+
 - Undirected graph edges deduplicate reversed pairs whose distinct endpoint IDs
   have the same printed value. Original identifier types remain intact, and
   directed reverse pairs remain separate. Repeated undirected edges no longer

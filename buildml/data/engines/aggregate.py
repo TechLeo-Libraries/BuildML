@@ -379,6 +379,9 @@ def aggregate_pandas(
     **Group order follows first appearance**, not sort order, which keeps
     results reproducible.
 
+    **Only observed groups appear.** Unused categorical levels do not create
+    rows, including on pandas versions whose groupby default includes them.
+
     **Sums of all-missing columns are missing, not zero.** ``sum`` uses
     ``min_count=1``, because a zero would look like a real measurement.
 
@@ -403,7 +406,7 @@ def aggregate_pandas(
 
     by_cols = list(by)
     rows: list[dict[str, Any]] = []
-    grouped = frame.groupby(by_cols, dropna=False, sort=False)
+    grouped = frame.groupby(by_cols, dropna=False, sort=False, observed=True)
     for key, group in grouped:
         key_vals = key if isinstance(key, tuple) else (key,)
         row = {col: val for col, val in zip(by_cols, key_vals, strict=True)}

@@ -956,11 +956,14 @@ class DuckDBEngine:
         if con is None:
             raise RuntimeError("DuckDB aggregate requires a DuckDBTable with connection")
         select_list = sql_aggregate_select(pairs, by=by)
+        # A derived relation may reference an earlier aggregate's source view.
+        # Keep each source alias distinct so sibling/nested plans cannot rebind it.
+        source_view = f"_bml_aggregate_source_{uuid4().hex}"
         if by:
             group_list = ", ".join(_quote_identifier(c) for c in by)
-            sql = f"SELECT {select_list} FROM s GROUP BY {group_list}"
+            sql = f"SELECT {select_list} FROM {source_view} GROUP BY {group_list}"
         else:
-            sql = f"SELECT {select_list} FROM s"
+            sql = f"SELECT {select_list} FROM {source_view}"
         self._last_pushdown = "aggregate"
         self._bridge = "sql"
-        return _wrap(rel.query("s", sql), con)
+        return _wrap(rel.query(source_view, sql), con)

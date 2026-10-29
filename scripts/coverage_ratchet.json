@@ -8,20 +8,20 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 88.58652534035734,
-      "covered_lines": 55829,
-      "num_statements": 63022,
+      "percent_covered": 88.62709632379774,
+      "covered_lines": 55859,
+      "num_statements": 63027,
       "excluded_lines": 566,
-      "source_revision": "809122eef1d71484c6f1085a2654d3bc07d5a8c1",
-      "tested_revision": "f19ddebe1167db8d725e179580fc7a8dec8914d4",
+      "source_revision": "200642c912c6d513e01b2e96d41db7ba854ebeac",
+      "tested_revision": "5345b6014fc3a43750053c00213773bd0a8915d5",
       "platform": "remote Linux, CPU expanded profile",
-      "run_id": 40538467220,
-      "result": "11476 passed, 173 skipped, zero failures/errors",
+      "run_id": 40963370277,
+      "result": "11640 passed, 173 skipped, zero failures/errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
-      "notes": "Symbolic input-contract consumers accepted; all four workflows passed. Source/merge trees equal 1be2e6bb0aa85ab21f09feb6203a9662e828a792. Coverage.py 7.16.2/566 exclusions and package scope unchanged; 2890 pytest warnings, zero collection warnings. Full 32:03; exact 90% gap 891. Core 70/expanded 87 retained; next floor requires one percentage point of headroom. Subset reach remains separate.",
+      "notes": "Graph endpoint-identity consumers accepted; all four workflows passed. Source/merge trees equal 36d7e72fe03b26841bf1207575ff0598a830a545. Coverage.py 7.16.2/566 exclusions and package scope unchanged; 2890 pytest warnings, zero collection warnings. Full 31:13; exact 90% gap 866. Core 70/expanded 87 retained; next floor requires one percentage point of headroom. Subset reach remains separate.",
       "coverage_version": "7.16.2"
     },
     "latest_local_measurement": {

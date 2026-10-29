@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-10-26, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed: 88.5865% (55,829/63,022); 11,476 passed, 173 skipped | [CI 40538467220](https://github.com/TechLeo-Libraries/BuildML/actions/runs/40538467220), source `809122e`, tested merge `f19ddebe`; matching trees and all four workflows passed. Scope/566 exclusions/coverage.py 7.16.2 unchanged. Core 70/expanded 87 retained. Exact 90% gap 891 lines; 2,890 pytest warnings, no coverage collection warnings |
+| Current accepted remote expanded CPU whole-package gate | Passed: 88.6271% (55,859/63,027); 11,640 passed, 173 skipped | [CI 40963370277](https://github.com/TechLeo-Libraries/BuildML/actions/runs/40963370277), source `200642c`, tested merge `5345b601`; matching trees and all four workflows passed. Scope/566 exclusions/coverage.py 7.16.2 unchanged. Core 70/expanded 87 retained. Exact 90% gap 866 lines; 2,890 pytest warnings, no coverage collection warnings |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -4572,3 +4572,99 @@ counters match `044e573`; optional/platform limitations remain. Core 70/
 expanded 87 floors and headroom policy are unchanged. The exact 90% gap is
 891 at the accepted denominator. Fresh complete CI must measure this source
 before any whole-package gain is claimed.
+
+### Accepted graph endpoint-identity whole-suite result (2026-10-29)
+
+Source `200642c` passed the complete expanded Linux CPU suite at **88.6271%**
+(55,859/63,027 lines), with **11,640 passed and 173 skipped** in 31:13.
+The XML has 11,813 tests and zero failures/errors, with runtime 1872.986s.
+There were 2,890 pytest warnings and zero collection warnings. CI 40963370277,
+backend 40963370275, acceptance 40963370268 and CodeQL 40963363231 all passed.
+Tested merge `5345b601` and source trees match. The 800-file measured package
+scope, coverage.py 7.16.2 and 566 exclusions are unchanged. Full covered lines
+increased by 30 while statements increased by 5 from `809122e`; the exact 90% gap is
+866 lines at this denominator. Core 70 and expanded 87 remain unchanged.
+The recorded Windows subsets and lean profile above remain separate evidence.
+
+### Native aggregation populations and independent consumers (2026-10-29)
+
+Actual native reporting reproduced three failures. Polars counted null as a
+distinct observation and returned zero for all-missing sums, contrary to the
+pandas reference's nonmissing counts and `min_count=1` sum. DuckDB nested lazy
+aggregation raised a BinderError for infinite recursion after a shared source
+view was rebound. Pandas 2 also created zero-row groups for unused categorical
+levels. Polars now excludes nulls from distinct counts and keeps missing sums;
+DuckDB summaries retain independent source views; pandas grouping explicitly
+uses observed levels. Null group keys still form their own group.
+
+The exact final 220 public cases ran against all 828 archived `200642c`
+package/resource files. Pandas 3 baseline: **144 failed/76 passed**, 24.59s
+log/24.476s XML, zero errors/skips/warnings. All 144 native population consumers
+fail; ordinary pandas consumers and 40 invalid-request cases already pass.
+Pandas 2 baseline: **147 failed/73 passed**, 25.86s/25.712s, zero errors/skips,
+12 observed-default FutureWarnings. Three further cases expose unused
+categorical levels. The current focus passes 220 cases in 31.66s/31.580s,
+zero errors/skips/warnings. Initial collection failed once because `request`
+is a reserved pytest parameter (9.90s); renaming it to `aggregations` fixed the
+harness. That artifact is retained and superseded, not a production failure.
+Final baseline copies and tests share an exact hash; no later oracle changes.
+
+The 180 population consumers span pandas memory, Polars memory/lazy Parquet,
+DuckDB memory/lazy Parquet; string/integer/boolean/categorical group keys;
+global/one-key/two-key summaries; full/filtered/empty populations. Scalar Python
+observed-group sets, nonmissing counts, distinct values, sample variance and
+continuous quantile interpolation check 12 statistics plus a wholly missing
+column and row counts. No production aggregation helper supplies the oracle.
+Quoted column names, duplicate pandas indices and null group keys are included.
+
+Each consumer reduces its summary again, creates a sibling summary from a
+reversed projection, rereads fresh native projections, checks a materialized
+pandas control and reads an actual exported Parquet file. Fresh projections
+prevent a cached pandas result from hiding a changed native population.
+Comparisons check every logical value/missingness and preserve original owner
+rows, roles and history; summary roles are cleared. Forty invalid requests
+leave the original dataset and prior summary usable. Native owners are closed.
+Physical storage dtypes may differ; all-missing sums remain missing. These
+checks use actual nulls; native floating NaN/infinity retain backend semantics. This is
+reporting, not a fold-local model transform or proof of out-of-core fitting.
+
+Final Windows profiles freeze all 814 production Python files, 14 resources
+and eight selected test files. They use NumPy 2.4.6/sklearn 1.9.0, actual Polars
+2.0.0 and DuckDB 1.5.6, with separate coverage databases and temporary paths:
+
+| Profile | Result | Source-mapped reach vs `200642c` |
+| --- | --- | --- |
+| Pandas 3.0.5 | 254 passed/1 skipped; 73.21s log/73.162s XML | 25 previously missing unchanged lines; 7 changed/new executed lines |
+| Pandas 2.3.3 | 254 passed/1 skipped; 65.58s/65.531s | 25 unchanged; 7 changed/new |
+
+All 220 new cases execute in both. Zero failures/errors/pytest warnings/
+collection warnings. The one existing missing-Polars behavior test skips
+because actual Polars is installed. Coverage.py 7.16.2, the same 800-file package
+scope and 566 exclusions remain; the current subset has 63,028
+statements. `scripts/measure_coverage_reach.py` compares the verified complete
+baseline/Git source with the exact frozen current root; unmapped lists are
+empty. Reach includes older selected consumers and runtime paths; it is not a
+whole-suite percentage, projection or attribution of every reached line.
+
+The actual lean environment passes all **44 selected pandas cases** in
+10.46s log/10.421s XML, zero errors/skips/warnings;
+176 native cases are explicitly deselected. NumPy 2.4.1/Pandas 2.3.3/sklearn
+1.9.1/SciPy 1.15.3/PyArrow 26; Torch/Polars/DuckDB/matplotlib/seaborn are actually
+absent, never hidden or mocked. Main profiles establish native evidence.
+
+Ruff, copy lint, diff checks and the unchanged 586-finding docstring budget
+pass. Targeted mypy on four edited files matches the same 24 pre-existing
+diagnostics as the archived source, with zero additional diagnostics; not
+typing-clean. Dataset reporting objects and real data files are exercised;
+no model-bundle or arbitrary-version compatibility is claimed. Older report
+files are not rewritten by a library update: regenerate affected summaries.
+Derived DuckDB datasets still require their shared owner connection to stay
+open. These limits are stated in the engine guide and public docstring.
+
+Latest accepted complete Linux CPU source remains `200642c`: **88.6271%**
+(55,859/63,027), 11,640 passed/173 skipped, 31:13, 2,890 pytest warnings/zero
+collection warnings; all four workflows passed. Skip-reason counters match
+`809122e`; optional/platform limits remain. Floors core 70/expanded 87 and
+headroom policy are unchanged. The exact 90% gap is 866 at that accepted
+denominator. Fresh complete CI must measure this correction before any
+whole-package gain is claimed.
