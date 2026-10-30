@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-10-26, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed: 88.7262% (55,941/63,049); 12,482 passed, 173 skipped | [CI 40992113486](https://github.com/TechLeo-Libraries/BuildML/actions/runs/40992113486), source `c011ac3`, tested merge `0e657031`; matching trees and all four workflows passed. Scope/566 exclusions/coverage.py 7.16.2 unchanged. Core 70/expanded 87 retained. Exact 90% gap 804 lines; 2,890 pytest warnings, no coverage collection warnings |
+| Current accepted remote expanded CPU whole-package gate | Passed: 88.7576% (55,975/63,065); 12,692 passed, 173 skipped | [CI 40999462926](https://github.com/TechLeo-Libraries/BuildML/actions/runs/40999462926), source `de299b2`, tested merge `d2730cbb`; matching trees and all four workflows passed. Scope/566 exclusions/coverage.py 7.16.2 unchanged. Core 70/expanded 87 retained. Exact 90% gap 784 lines; 2,890 pytest warnings, no coverage collection warnings |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -5027,3 +5027,99 @@ Latest accepted complete Linux CPU coverage is still **88.7262%** at `c011ac3`
 collection warnings. All four workflows passed with matching whole source/
 tested-merge trees and an unchanged skip-reason counter. The exact 90% gap is
 804 at that accepted denominator; fresh complete CI must measure this source.
+
+### Accepted custom output whole-suite result (2026-10-30)
+
+Source `de299b2` passed the complete expanded Linux CPU suite at **88.7576%**
+(55,975/63,065 lines), with **12,692 passed and 173 skipped** in 33:08.
+The XML has 12,865 tests and zero failures/errors, with runtime 1988.561s.
+There were 2,890 pytest warnings and zero collection warnings. CI 40999462926,
+backend 40999462963, acceptance 40999462924 and CodeQL 40999461557 all passed.
+Tested merge `d2730cbb` and source trees match. The 800-file measured package
+scope, coverage.py 7.16.2 and 566 exclusions are unchanged. Full covered lines
+increased by 34 while statements increased by 16 from `c011ac3`; the exact 90% gap is
+784 lines at this denominator. Core 70 and expanded 87 remain unchanged.
+The recorded Windows subsets and lean profile above remain separate evidence.
+
+### Training-outcome validity for target encoding (2026-10-30)
+
+The public Session encoder accepted infinite numeric training outcomes and
+cast complex targets to real values. Pandas 2 also converted missing target
+labels into categories; Pandas 3 already refused those missing labels. Fold
+preprocessing already refused null/non-finite targets but accepted complex
+numeric dtypes. Target encoding now checks nulls before label conversion and
+requires numeric dtypes to be real and finite. Fold supervised target steps
+refuse complex dtypes before casting. Validation precedes replacing any plan,
+model, split or history state. Only training outcomes enter these checks;
+unused holdout outcomes and targets unused by other encoders remain ignored.
+Literal strings `"None"`, `"nan"` and `"<NA>"` remain distinct valid labels.
+Object-label factorization and categorical feature string conversion retain
+their existing policy; this is a numeric-dtype validity requirement.
+
+The 145 new public consumers cover 70 valid cases across seven target families,
+five real backings and two smoothing values; 42 invalid cases across Session,
+public encoder fitting and fold preprocessing; 18 unused-target cases for
+other encoders; and 15 holdout-only null/infinity cases. Independent scalar
+category shrinkage, KFold/StratifiedKFold out-of-fold priors and fold-local maps
+check learned features. Real Ridge/logistic models, scalar affine/logit/softmax
+arithmetic and saved/loaded inference check predictions, probabilities and raw
+class names. Tests preserve duplicate indices, target values, loaded prior
+fitted state, split and history, using actual Polars/DuckDB memory and lazy
+Parquet consumers. Native category storage/order and null sentinels may differ;
+target preservation compares logical values, null masks and row indices.
+
+All 828 archived `de299b2` package/resource bytes were verified before imports.
+Exact final 145-case baselines: **17 failed/128 passed** on Pandas 3,
+28.27s log/28.209s XML; **25 failed/120 passed** on Pandas 2,
+20.70s/20.634s. Both had 12 ComplexWarnings and zero errors/skips/
+collection warnings. The extra eight Pandas 2 failures are the missing-label
+acceptance through Session/public encoder fitting. The initial Pandas 3
+23-failure baseline included six test-only category-storage/null-sentinel
+assertions; those artifacts are retained. Logical-value comparisons were
+qualified, numerical oracles unchanged, and exact final baselines rerun on
+both versions. Current focus passes **145 tests**, 24.61s/24.548s,
+with zero warnings.
+
+| Final profile | Result | Runtime (log / XML) |
+| --- | --- | --- |
+| Windows Pandas 3.0.5, NumPy 2.4.6, sklearn 1.9.0 | 569 passed | 97.95s / 97.884s |
+| Windows Pandas 2.3.3, same NumPy/sklearn | 569 passed | 96.53s / 96.455s |
+| Actual minimal Pandas environment | 77 passed, 68 native cases explicitly deselected | 9.20s / 9.145s |
+
+Both broader profiles use real Polars 2.0.0, DuckDB 1.5.6 and Optuna. All new
+cases execute, with zero failures/errors/skips/pytest warnings/collection
+warnings. The minimal environment uses NumPy 2.4.1/Pandas 2.3.3/sklearn 1.9.1/
+SciPy 1.15.3 and actually lacks native engines, Torch, CVXPY and plotting
+packages; it has zero warnings. All 814 production Python files, 14 resources
+and seven selected test files were frozen and verified without input edits
+during the final profiles.
+
+Source-mapped subset reach against verified same-source complete `de299b2`
+JSON/Git using `measure_coverage_reach.py` and the exact frozen source is **0
+previously missing unchanged lines / 10 changed-new executed lines** in each
+broader profile, with empty unmapped lists (encoder eight, fold two new/changed
+lines). This correction addresses demonstrated validity defects. It establishes
+no whole-suite percentage or projected coverage gain. The subset denominator
+is 63,074 statements; measured scope remains 800 files, coverage.py 7.16.2
+and 566 exclusions.
+
+The actual archived writer saved seven valid target-encoded pipelines. Each
+current broader runtime passes **35 prediction and 25 probability checks**
+across five backings, preserving artifact bytes, raw class names and
+within-receiver fitted state. These are actual previous-source artifacts;
+they do not establish arbitrary-version compatibility or repair an invalid
+older model. Correct invalid training outcomes in the original data and refit.
+
+Ruff, copy lint, diff and the unchanged 586-finding docstring budget pass.
+Targeted mypy reports the same 22 existing errors across the edited modules
+as the archive after line-number normalization, with no new errors; no whole-
+package typing-clean claim is made. There is no schema, scope, exclusion or
+ratchet-policy change. Core 70/expanded 87 and one-point headroom remain.
+
+The prior custom-output correction is accepted: complete Linux CPU source
+`de299b2` has **88.7576%** (55,975/63,065), **12,692 passed/173 skipped**, 33:08,
+2,890 pytest warnings and zero collection warnings. All four workflows passed,
+with equal whole source/tested-merge trees and unchanged skip-reason counters.
+Covered lines increased by 34 and statements by 16 from `c011ac3`; the exact
+90% gap is 784 at that accepted denominator. Fresh complete CI must measure
+this target-validation source; subset reach remains separate.

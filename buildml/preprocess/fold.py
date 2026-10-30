@@ -154,6 +154,9 @@ class PreprocessRecipe:
         follows the same type; explicit scorers are always honored. Integer
         outcomes are classified as discrete; choose a regressor/scorer explicitly
         when those integers represent a continuous quantity.
+
+        Supervised target steps require non-null outcomes. Numeric target dtypes
+        must be real and finite; complex dtypes are refused before casting.
     outlier_action / iqr_multiplier / zscore_threshold:
         Outlier controls (``outlier_action`` defaults to ``cap``).
     n_bins / binning_encode_as:
@@ -1358,6 +1361,8 @@ def _numeric_target(series: pd.Series) -> np.ndarray:
     if series.isna().any():
         raise ValidationError("Fold-local target steps require a non-null target")
     if pd.api.types.is_numeric_dtype(series):
+        if pd.api.types.is_complex_dtype(series.dtype):
+            raise ValidationError("Fold-local target steps require real numeric target values")
         values = pd.to_numeric(series, errors="coerce")
         if values.isna().any():
             raise ValidationError("Fold-local target steps require a non-null target")

@@ -318,6 +318,11 @@ def fit_encoder(
     ``"1"`` are the same category here, which is usually what you want from
     mixed-type data but can merge distinctions you meant to keep.
 
+    Target encoding requires non-null training outcomes. Numeric target dtypes
+    must be real and finite; complex dtypes are refused before casting. Only
+    training outcomes enter these checks. Other encoding methods do not inspect
+    unused targets, and categorical feature string-conversion policy is unchanged.
+
     Examples
     --------
     >>> import numpy as np
@@ -646,11 +651,18 @@ def _smoothed_means(
 
 
 def _numeric_target(series: pd.Series) -> np.ndarray:
+    if series.isna().any():
+        raise ValidationError("Target encoding requires a non-null numeric or label target")
     if pd.api.types.is_numeric_dtype(series):
+        if pd.api.types.is_complex_dtype(series.dtype):
+            raise ValidationError("Target encoding requires real numeric target values")
         values = pd.to_numeric(series, errors="coerce")
         if values.isna().any():
             raise ValidationError("Target encoding requires a non-null numeric or label target")
-        return values.to_numpy(dtype=float)
+        numeric = values.to_numpy(dtype=float)
+        if not np.isfinite(numeric).all():
+            raise ValidationError("Target encoding requires finite numeric target values")
+        return numeric
     codes, _ = pd.factorize(series.astype(str), sort=True)
     if (codes < 0).any():
         raise ValidationError("Target encoding cannot proceed with null target labels")

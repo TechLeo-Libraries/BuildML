@@ -14,6 +14,14 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Target encoding refuses missing training outcomes and non-finite numeric
+  targets before replacing fitted state. Supervised fold preprocessing also
+  refuses complex numeric target dtypes before a cast can discard their
+  imaginary parts. Valid numeric and label encodings retain their maps,
+  out-of-fold features and saved predictions; unused holdout outcomes do not
+  enter training checks. Affected older workflows require corrected training
+  rows and refitting.
+
 - Model-driven allocations align costs and IDs by candidate position, including
   duplicate and MultiIndex row labels. Explicit IDs remain honored with unit
   costs. Missing metadata columns and non-finite/negative costs refuse during

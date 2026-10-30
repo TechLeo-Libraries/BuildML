@@ -8,20 +8,20 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 88.72622880616663,
-      "covered_lines": 55941,
-      "num_statements": 63049,
+      "percent_covered": 88.75763101561881,
+      "covered_lines": 55975,
+      "num_statements": 63065,
       "excluded_lines": 566,
-      "source_revision": "c011ac3bbe130f8da8eff818fdeeccd5873759f0",
-      "tested_revision": "0e6570317d6177a32c7a8afceed6998c5044b07d",
+      "source_revision": "de299b2b55631be0a8fff1141b84b482feadf545",
+      "tested_revision": "d2730cbbf161aac726f95732d799bbeffe02c916",
       "platform": "remote Linux, CPU expanded profile",
-      "run_id": 40992113486,
-      "result": "12482 passed, 173 skipped, zero failures/errors",
+      "run_id": 40999462926,
+      "result": "12692 passed, 173 skipped, zero failures/errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
-      "notes": "Native pipeline consumers accepted; all four workflows passed. Source/merge trees equal 6397162834aaa058bd64e23c40248ede32bd39d2. Coverage.py 7.16.2/566 exclusions and package scope unchanged; 2890 pytest warnings, zero collection warnings. Full 32:48; exact 90% gap 804. Core 70/expanded 87 retained; next floor requires one percentage point of headroom. Subset reach remains separate.",
+      "notes": "Custom output consumers accepted; all four workflows passed. Source/merge trees equal 7233abed35b9ad869a373987d829afef5ce0c85c. Coverage.py 7.16.2/566 exclusions and package scope unchanged; 2890 pytest warnings, zero collection warnings. Full 33:08; exact 90% gap 784. Core 70/expanded 87 retained; next floor requires one percentage point of headroom. Subset reach remains separate.",
       "coverage_version": "7.16.2"
     },
     "latest_local_measurement": {

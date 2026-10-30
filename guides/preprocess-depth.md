@@ -109,6 +109,21 @@ print(session.evaluate(partition="test").metrics)
 | `infrequent` | Pool rare train levels then one-hot | Long-tail categoricals |
 | `target` | Smoothed target means on train (OOF-style on train) | High-cardinality with care |
 
+Target encoding requires nonmissing training outcomes. Numeric target dtypes
+must contain only real, finite values; complex dtypes are refused before
+casting, including complex arrays whose imaginary parts are all zero. Label
+targets retain the existing sorted string-label mapping. Literal strings such
+as `"None"`, `"nan"` and `"<NA>"` are valid labels, distinct from missing values.
+Only training outcomes enter these checks and the learned category maps.
+Unused validation/test outcomes do not affect the encoded features, and the
+other encoding methods ignore an unused target. Categorical feature values
+still follow the existing string-conversion policy.
+
+The same real/finite requirement applies to numeric supervised targets in
+`PreprocessRecipe`. If an older target-encoded workflow learned from missing,
+infinite or complex training outcomes, rebuild it from corrected original
+training rows. Loading its saved plan cannot repair those maps or model weights.
+
 ```python
 import pandas as pd
 from buildml import Session
