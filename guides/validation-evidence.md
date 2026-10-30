@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-10-26, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed: 88.7959% (56,024/63,093); 13,069 passed, 173 skipped | [CI 41032961380](https://github.com/TechLeo-Libraries/BuildML/actions/runs/41032961380), source `eef195a`, tested merge `064f1aca`; matching trees and all four workflows passed. Scope/566 exclusions/coverage.py 7.16.2 unchanged. Core 70/expanded 87 retained. Exact 90% gap 760 lines; 2,890 pytest warnings, no coverage collection warnings |
+| Current accepted remote expanded CPU whole-package gate | Passed: 88.8102% (56,041/63,102); 13,357 passed, 173 skipped | [CI 41042859137](https://github.com/TechLeo-Libraries/BuildML/actions/runs/41042859137), source `58a757a`, tested merge `a0ac14e3`; matching trees and all four workflows passed. Scope/566 exclusions/coverage.py 7.16.2 unchanged. Core 70/expanded 87 retained. Exact 90% gap 751 lines; 2,890 pytest warnings, no coverage collection warnings |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -5403,3 +5403,96 @@ whole source/tested-merge trees and unchanged 173-skip/37-message counters.
 Covered lines increased by 11 and statements by three from `f3d459b`. The exact
 90% gap is 760 at that accepted denominator. Fresh complete CI must measure
 this correction. Core 70/expanded 87 and one-point headroom remain unchanged.
+
+### Accepted anomaly decision/population whole-suite result (2026-10-30)
+
+Source `58a757a` passed the complete expanded Linux CPU suite at **88.8102%**
+(56,041/63,102 lines), with **13,357 passed and 173 skipped** in 29:16.
+The XML has 13,530 tests and zero failures/errors, with runtime 1756.742s.
+There were 2,890 pytest warnings and zero collection warnings. CI 41042859137,
+backend 41042859136, acceptance 41042859191 and CodeQL 41042857107 all passed.
+Tested merge `a0ac14e3` and source trees match. The 800-file measured package
+scope, coverage.py 7.16.2 and 566 exclusions are unchanged. Full covered lines
+increased by 17 while statements increased by 9 from `eef195a`; the exact 90% gap is
+751 lines at this denominator. Core 70 and expanded 87 remain unchanged.
+The recorded Windows subsets and lean profile above remain separate evidence.
+
+### Discrete RL observation mapping and saved policy consumers (2026-10-30)
+
+Discrete observations were truncated with `int`, so fractions and numeric
+strings could silently choose another table row. NumPy complex values could
+discard their imaginary parts; NaN, infinity and None escaped as conversion
+exceptions. Gymnasium spaces with a nonzero `start` also failed on valid reset
+observations. Tabular discretization now requires exact integer-valued real
+scalars and maps physical IDs to table rows by subtracting `Discrete.start`.
+Batch actions preserve the original values, including integers above `2**53`,
+instead of coercing them through float64. Single-observation shape refusals,
+integer-valued floats and ordinary zero-based environments remain covered.
+
+The 304 new checks include 64 complete training/inspection/action/evaluation
+workflows: four TD algorithms, direct and Session routes, two known processes,
+and starts 0, 5, -4 and `2**53 + 5`. The two-step chain has analytic values
+`[2.5, 3, 0]` at gamma 0.5; the one-step bandit has action values `[1, 3]`.
+Tests compare both independently learned Double-Q tables, combined policy/value
+tables, epsilon-greedy probability masses and actual action frequencies.
+They verify observed rewards, visits, fresh rollout returns, closed real
+registered environments and policy immutability. Session routes save/reload
+bundles and preserve exact physical observations, scores and receiving data.
+There are also 180 invalid-scalar refusals through public inspectors/actions,
+32 single-observation shape refusals and 28 exact-integer controls. These are
+real Gymnasium 1.2.3 consumers without mocked backends or mirrored TD updates.
+
+All 828 archived `58a757a` package/resource bytes and the exact final test
+were copied and verified. Each archived baseline has **244 failed/60 passed**,
+zero errors/skips/collection warnings and 40 ComplexWarnings. The 244 include
+16 new start-metadata expectations, 48 unsupported observation-offset workflows
+and 180 incorrect scalar acceptances/exceptions; they are not 244 distinct
+defects. Baseline Pandas 3 takes 35.12s log/34.909s XML;
+Pandas 2 takes 27.49s/27.284s. No test observer or numerical
+oracle was corrected. The current focused run has **304 passed**, zero warnings,
+28.40s/28.321s.
+
+| Final profile | Result | Runtime (log / XML) |
+| --- | --- | --- |
+| Windows Pandas 3.0.5, NumPy 2.4.6, sklearn 1.9.0 | 614 passed, one skipped, three warnings | 155.49s / 155.438s |
+| Windows Pandas 2.3.3, same NumPy/sklearn | 614 passed, one skipped, three warnings | 137.26s / 137.152s |
+| Actual lean environment, all new cases | 304 passed, zero warnings | 20.64s / 20.579s |
+
+All 304 new cases execute in every profile. The broader skip is an existing
+missing-extra negative control because Gymnasium is installed. The three
+warnings are existing deprecated flat Session aliases in a REINFORCE test;
+CPU Torch is real. There are zero failures/errors/collection warnings. The
+lean environment uses NumPy 2.4.1/Pandas 2.3.3/sklearn 1.9.1/SciPy 1.15.3 and
+real Gymnasium 1.2.3 with Farama notifications 0.0.6. Torch, CVXPY, plotting,
+Polars and DuckDB are actually absent there; no package availability is hidden.
+All 814 production Python files, 14 resources and six selected tests were
+frozen and verified unchanged during final profiles.
+
+Mapped reach via `measure_coverage_reach.py` against verified same-source
+complete `58a757a` JSON/Git and the exact frozen source is **10 previously
+missing unchanged / 20 changed-new executed lines** per broader profile,
+with empty unmapped lists. Existing consumers and backend availability
+contribute. Subset scope is 800 files/63,117 statements, coverage.py 7.16.2
+and 566 excluded lines. This is separate from full-suite percentages and
+does not project a gain.
+
+An appended default-zero `start` dataclass field and discrete JSON metadata
+record the mapping. The bundle format string remains v1; that does not mean
+the payload has no change. An actual archived `58a757a` writer saved eight
+zero-start policy bundles without the field. Each current Pandas runtime
+passes **44 consumer checks** against the same eight immutable artifacts,
+including raw inspection, batch actions and direct/Session rollouts. The old
+discretizer remains without an instance field and retains its zero-based
+mapping; policy, dataset and original artifact hashes are unchanged. No
+arbitrary-version compatibility, action-offset support or new GPU claim is
+made. Box mapping is unchanged. Ruff, copy lint, diff and the unchanged
+586-finding docstring budget pass. Targeted mypy has zero errors on both
+edited modules and their archived source; no whole-package typing claim.
+
+The prior anomaly batch is accepted: complete Linux CPU source `58a757a` has
+**88.8102%** (56,041/63,102), **13,357 passed/173 skipped**, 29:16, 2,890 pytest
+warnings and zero collection warnings. All four workflows passed with equal
+whole source/tested-merge trees and unchanged skip counters. Core 70/expanded
+87 and the one-point headroom rule remain. **90% remains open**, with 751
+further covered lines needed at that accepted denominator. New-source full
+CI must pass before reporting any complete-suite gain from this batch.

@@ -259,7 +259,18 @@ print(ev.metrics["mean_return"], ev.metrics["unseen_state_rate"])
 print(session.rl.act(observations=[0, 1, 2]).scores)
 ```
 
-`Discrete` observation spaces index directly. `Box` spaces are binned
+`Discrete(n, start)` observation IDs map to table rows by subtracting `start`.
+Pass the environment's physical IDs to `q_values`, policy `act` and
+`session.rl.act(observations=...)`, including nonzero or negative starts.
+Table inspections such as `q_values_for_state` use zero-based row indices.
+Discrete observations must be exact integer-valued real scalars; fractional,
+non-finite, complex and string values raise `ValidationError`. Integer-valued
+floats remain accepted. Batch actions preserve integer precision above `2**53`.
+Saved plan configuration records the discrete `start`; older zero-based bundles
+without that field retain their zero-based mapping. This supports observation
+offsets; action indices still follow the lite backend's zero-based contract.
+
+`Box` spaces are binned
 uniformly into `n_bins` (default 8) per dimension. Bounds come from the
 declared space where finite, else from a seeded random-policy probe.
 `session.rl.plan.config["discretizer"]` records `n_states`, per-dimension

@@ -181,7 +181,7 @@ class ObservationDiscretizer:
     """Map an environment observation to a single integer state index.
 
     ``kind='discrete'``
-        Pass-through for Gymnasium ``Discrete`` observation spaces.
+        Map Gymnasium ``Discrete`` physical IDs to rows by subtracting ``start``.
     ``kind='box'``
         Uniform per-dimension binning combined as a mixed-radix index.
     """
@@ -194,6 +194,7 @@ class ObservationDiscretizer:
     low: tuple[float, ...] = ()
     high: tuple[float, ...] = ()
     bound_sources: tuple[str, ...] = ()
+    start: int = 0
 
     def index(self, observation: Any) -> int:
         """Convert one raw environment observation into a Q-table row number.
@@ -218,8 +219,9 @@ class ObservationDiscretizer:
         Raises
         ------
         ValidationError
-            If a discrete observation is not scalar or falls outside
-            ``[0, n_states)``, or if a box observation has the wrong length.
+            If a discrete observation is not an exact integer-valued scalar
+            in ``[start, start + n_states)``, or if a box observation has the
+            wrong length.
             Both indicate the discretizer was built for a different
             environment than the one being stepped.
 
@@ -238,12 +240,27 @@ class ObservationDiscretizer:
                     "Discrete observation spaces expect a scalar observation; "
                     f"got shape {np.shape(observation)!r}."
                 )
-            code = int(flat[0])
-            if not 0 <= code < self.n_states:
+            raw = flat[0]
+            try:
+                if np.iscomplexobj(raw):
+                    raise ValueError("Complex observations are not discrete state IDs.")
+                code = int(raw)
+                if raw != code:
+                    raise ValueError("Observation is not exactly integer-valued.")
+            except (TypeError, ValueError, OverflowError) as exc:
                 raise ValidationError(
-                    f"Discrete observation {code} outside [0, {self.n_states})."
+                    "Discrete observation spaces expect an exact integer-valued "
+                    f"real scalar; got {raw!r}."
+                ) from exc
+            # Bundles written before start was recorded represent zero-based
+            # spaces. Retain that mapping when loading those discretizers.
+            start = int(getattr(self, "start", 0))
+            state = code - start
+            if not 0 <= state < self.n_states:
+                raise ValidationError(
+                    f"Discrete observation {code} outside [{start}, {start + self.n_states})."
                 )
-            return code
+            return state
 
         flat = np.asarray(observation, dtype=float).reshape(-1)
         if flat.size != self.obs_dim:
@@ -275,10 +292,11 @@ class ObservationDiscretizer:
         -------
         dict of str to Any
             Space kind, state and dimension counts, bin count, per-dimension
-            ranges, and where each range came from. Bin edges are omitted:
+            ranges, and where each range came from. Discrete spaces also
+            record their first physical state ID as ``start``. Bin edges are omitted:
             they are derivable from the ranges and would dominate the plan.
         """
-        return {
+        result: dict[str, Any] = {
             "kind": self.kind,
             "n_states": self.n_states,
             "obs_dim": self.obs_dim,
@@ -287,6 +305,9 @@ class ObservationDiscretizer:
             "high": list(self.high),
             "bound_sources": list(self.bound_sources),
         }
+        if self.kind == "discrete":
+            result["start"] = int(getattr(self, "start", 0))
+        return result
 
 
 def _probe_observation_ranges(
@@ -338,7 +359,8 @@ def build_discretizer(
 
     Runs once at the start of :func:`train_tabular_control`, before the
     Q-table is allocated, because the table's row count is whatever this
-    function decides. ``Discrete`` spaces pass through untouched; ``Box``
+    function decides. ``Discrete`` spaces subtract their ``start`` to obtain
+    zero-based table rows; ``Box``
     spaces are cut into uniform bins per dimension and combined into a single
     mixed-radix index.
 
@@ -390,15 +412,17 @@ def build_discretizer(
 
     if hasattr(obs_space, "n") and not getattr(obs_space, "shape", ()):
         n_states = int(obs_space.n)
+        start = int(getattr(obs_space, "start", 0))
         disclosures.append(
-            f"Observation space is Discrete(n={n_states}); "
-            "states are used directly with no discretization."
+            f"Observation space is Discrete(n={n_states}, start={start}); "
+            "physical state IDs map to table rows by subtracting start."
         )
         return (
             ObservationDiscretizer(
                 kind="discrete",
                 n_states=n_states,
                 obs_dim=1,
+                start=start,
             ),
             disclosures,
         )

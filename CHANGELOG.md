@@ -14,6 +14,13 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Tabular RL maps Gymnasium discrete observation offsets to zero-based table
+  rows and preserves exact integer IDs in batch actions. Fractional, non-finite,
+  complex and string observations raise validation errors before selecting a
+  state. Saved policies record the offset; older zero-based policies retain
+  their mapping. Real environment consumers check all four TD algorithms
+  against analytic values, including double-table inspection and bundle reloads.
+
 - Anomaly fitting, scoring and evaluation refuse NaN thresholds and normalize
   invalid threshold conversions to validation errors. Signed infinite bounds
   remain supported. Novelty fitting checks missing training labels before
