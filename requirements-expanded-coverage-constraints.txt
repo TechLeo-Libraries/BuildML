@@ -52,3 +52,19 @@ pydot==4.0.1
 
 # Active-learning host signature helper.
 makefun==1.16.0
+
+# Bound the cold resolver to transitive versions from accepted full source 5f1ee7d.
+# Preserve that assessed environment while adding the real NeuralForecast stack.
+filelock==4.2.4
+fsspec==2026.7.0
+grpcio-health-checking==1.81.1
+hf-xet==1.8.0
+huggingface-hub==1.33.0
+protobuf==6.33.6
+regex==2026.9.29
+tokenizers==0.23.3
+grpcio==1.85.0
+deepecho==0.8.1
+websockets==17.3
+markupsafe==3.0.3
+setuptools==78.1.0

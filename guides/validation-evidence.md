@@ -5813,3 +5813,50 @@ percentages and are not combined or projected. Latest accepted complete result
 remains **88.8715%** (56,101/63,126),14,129 passed/173 skipped at `5f1ee7d`. Core 70 and
 expanded 87 stay unchanged; next 88 requires a passing complete >=89 gate. The
 90% target remains open; 713 lines are needed at the accepted denominator.
+
+### Cold expanded-profile dependency resolution repair (2026-10-30)
+
+The first expanded job at `f0daea3` failed its installation step with pip
+`resolution-too-deep` (CI 41080686023, job 124148652707). No tests ran and no XML
+or coverage artifact was produced. Backend evidence, release acceptance and
+CodeQL passed, but that does not accept a whole-package measurement. The
+previous added-backend-only dependency plan did not verify this cold full
+installation path. Its narrower success was insufficient evidence.
+
+Thirteen transitive constraints now select versions from the actual accepted
+`5f1ee7d` environment. Eight bound the branches seen backtracking (filelock,
+fsspec, grpcio-health-checking, hf-xet, huggingface-hub, protobuf, regex and
+tokenizers). Five retain the previous grpcio, deepecho, websockets, MarkupSafe
+and setuptools versions instead of allowing unrelated upgrades. Existing
+Torch, numerical and backend pins, package scope, exclusions and floors stay
+unchanged. No production or test code is changed by this repair.
+
+A complete **cold Linux pip plan** succeeds with the exact final constraints:
+280 selected packages, all 267 pre-existing selected versions preserved and
+only 13 intended NeuralForecast dependencies added. Pip itself is a bootstrap
+package outside the plan and stays 26.2.2. The graph uses CPython 3.12.3 on
+Ubuntu/WSL x86-64, glibc 2.39, `--ignore-installed`, all expanded requirements
+and the same CPU Torch 2.7.1+cpu/torchvision 0.22.1+cpu wheels as CI. The final
+plan took 80.275s with a reused download/metadata cache. `--ignore-installed`
+prevents an installed-runtime shortcut; the timing is diagnostic, not a
+performance guarantee. The 1,958-file clean source snapshot was byte-verified from
+committed `f0daea3`, with only the intended constraints patch; all 828 production
+and resource files are unchanged. This checks the entire requirements graph,
+not an already installed or added-backend-only environment.
+
+An initial workspace metadata scan was stopped because it traversed unrelated
+local report/environment directories; its incomplete receipt is retained.
+An eight-bound cold plan first succeeded in 124.677s but proposed five unrelated
+upgrades. The final thirteen-bound plan removes all five. These are resolver
+checks, with no model fitting, test coverage or combined percentage claimed.
+Actual Linux installation, imports, all 283 N-BEATS/all 252 Prophet cases and the
+complete coverage gate still require the fresh remote CI run to pass. The
+original Windows 619P/1S numerical profiles remain evidence for unchanged code
+at `f0daea3`; this resolver repair is a separate profile verification.
+
+Latest accepted whole-package coverage remains **88.8715%** at `5f1ee7d`
+(56,101/63,126; 14,129 passed/173 skipped). The failed install creates no coverage
+gain. Core 70/expanded 87, one-point headroom, 800-file scope/566 exclusions and
+coverage.py 7.16.2 are unchanged. The 90% target remains open, with 713 lines needed
+at that accepted denominator. The next loader tensor-contract batch remains
+uncommitted while this actual CI failure takes priority.

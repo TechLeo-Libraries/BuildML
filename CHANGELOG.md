@@ -14,6 +14,12 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Expanded CI bounds thirteen transitive dependencies to versions from its
+  last passing assessment after the cold installer exhausted pip's resolver.
+  A complete cold Linux plan preserves all 267 previously selected versions
+  and adds only the thirteen intended NeuralForecast dependencies. The full
+  test and coverage gate must pass independently.
+
 - N-BEATS returns forecasts from the next observation for short requests and
   extends longer requests with successive native prediction blocks. One-step
   fits use an identity stack; invalid sizes and insufficient context raise
