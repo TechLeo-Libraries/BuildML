@@ -8,20 +8,20 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 88.72305667020889,
-      "covered_lines": 55939,
+      "percent_covered": 88.72622880616663,
+      "covered_lines": 55941,
       "num_statements": 63049,
       "excluded_lines": 566,
-      "source_revision": "48e2ac0522978fdcfda3a6b8747a2569a2786905",
-      "tested_revision": "7ac0a57be2294bec662c7345be6e0d727f270153",
+      "source_revision": "c011ac3bbe130f8da8eff818fdeeccd5873759f0",
+      "tested_revision": "0e6570317d6177a32c7a8afceed6998c5044b07d",
       "platform": "remote Linux, CPU expanded profile",
-      "run_id": 40986133288,
-      "result": "12218 passed, 173 skipped, zero failures/errors",
+      "run_id": 40992113486,
+      "result": "12482 passed, 173 skipped, zero failures/errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
-      "notes": "Checkpoint snapshot consumers accepted; all four workflows passed. Source/merge trees equal c69a714d3e13fc161b460bb112d05c33e87a5d43. Coverage.py 7.16.2/566 exclusions and package scope unchanged; 2890 pytest warnings, zero collection warnings. Full 32:33; exact 90% gap 806. Core 70/expanded 87 retained; next floor requires one percentage point of headroom. Subset reach remains separate.",
+      "notes": "Native pipeline consumers accepted; all four workflows passed. Source/merge trees equal 6397162834aaa058bd64e23c40248ede32bd39d2. Coverage.py 7.16.2/566 exclusions and package scope unchanged; 2890 pytest warnings, zero collection warnings. Full 32:48; exact 90% gap 804. Core 70/expanded 87 retained; next floor requires one percentage point of headroom. Subset reach remains separate.",
       "coverage_version": "7.16.2"
     },
     "latest_local_measurement": {

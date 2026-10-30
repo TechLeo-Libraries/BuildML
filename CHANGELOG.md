@@ -806,6 +806,11 @@ from the current release; use the installation guide for current requirements.
 
 ### Fixed
 
+- Custom preprocessing outputs cannot overwrite retained columns outside their
+  selected inputs. Fitting and replay reject duplicate output names, and the
+  training-row probe validates declared outputs before a plan is returned.
+  Explicit input replacement and prepared-feature scoring remain supported.
+
 - Saved-pipeline scoring promotes live Polars/DuckDB rows before validation,
   including lazy scans and derived views whose Pandas cache is still empty.
   Empty Polars row filters use a Boolean mask, allowing scoring to report an

@@ -192,6 +192,15 @@ Custom transforms are never fold-local inside `cv_score`. For preprocessing that
 use a supported recipe step or implement the transform inside an
 sklearn-compatible estimator pipeline.
 
+Custom outputs must have unique names. They may replace explicitly selected
+inputs, but cannot overwrite other retained columns, including targets, IDs,
+weights, timestamps or fields added by a caller at inference. Declared
+`output_columns` must appear in the training-row probe; declaring names does
+not skip that validation. The same boundary is checked when replaying a plan.
+Use `apply_plans=False` when a pipeline receives correctly prepared features.
+If an older transform overwrote retained values, rebuild the affected workflow
+from the original rows; loading a plan cannot reconstruct those values.
+
 ---
 
 ## Resample strategies (train only)
