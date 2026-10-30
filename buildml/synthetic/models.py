@@ -110,7 +110,7 @@ def _nearest_ppf(sorted_vals: np.ndarray, u: np.ndarray) -> np.ndarray:
 
 @dataclass
 class BootstrapGenerator:
-    """Row bootstrap with optional Gaussian smoothing on continuous columns."""
+    """Row bootstrap with optional Gaussian smoothing on numeric columns."""
 
     frame: pd.DataFrame
     continuous_cols: tuple[str, ...]
@@ -177,6 +177,8 @@ ValidationError
         """Resample stored training rows with replacement.
 
 Positive smoothing adds Gaussian noise scaled by each numeric column standard deviation; integer columns are rounded afterward.
+Missing numeric values stay missing. Nullable integer columns retain their dtype
+after rounding, so missing entries are not cast into integer sentinel values.
 
 Parameters
 ----------
@@ -217,7 +219,11 @@ ValidationError
                         pd.to_numeric(out[col], errors="coerce").to_numpy(dtype=float)
                         + rng.normal(0.0, sigma, size=len(out))
                     )
-                    out[col] = np.rint(noisy).astype(np.int64)
+                    rounded = np.rint(noisy)
+                    if pd.api.types.is_extension_array_dtype(out[col].dtype):
+                        out[col] = pd.array(rounded, dtype=out[col].dtype)
+                    else:
+                        out[col] = rounded.astype(np.int64)
         return out
 
 

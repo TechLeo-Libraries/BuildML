@@ -122,7 +122,7 @@ monolith** (**70** active after corrected thread/process tracing measured at lea
 `pytest tests --cov=buildml`); do not lower it to silence a regression.
 The separate `expanded-coverage` CI job installs
 `requirements-expanded-coverage.txt` and runs the entire suite with an **87%**
-floor, supported by passing remote Linux 88.7576% evidence at `de299b2`.
+floor, supported by passing remote Linux 88.7592% evidence at `ebd8936`.
 The broadened profile includes DoWhy and ONNX Runtime, using a compatible
 NumPy 2.4.1/SciPy 1.15.3/mlxtend 0.23.4 stack. Same-source complete local suites
 passed 85.5192% for this profile and85.3947% for its original-profile control;
@@ -230,13 +230,13 @@ and pick the next target, and `--path buildml/<pkg>` to audit work in progress.
 - Write public documentation for library users. Keep implementation instructions,
   release actions, and work plans in clearly labeled contributor material.
 
-Current expanded coverage evidence (2026-10-30, source `de299b2`): remote Linux
-passed at **88.7576%** (55,975 / 63,065 lines), with 12,692 passed and 173 skipped.
-[CI run 40999462926](https://github.com/TechLeo-Libraries/BuildML/actions/runs/40999462926)
-passed, as did backend evidence, release acceptance and CodeQL. Tested merge `d2730cbb`
+Current expanded coverage evidence (2026-10-30, source `ebd8936`): remote Linux
+passed at **88.7592%** (55,984 / 63,074 lines), with 12,837 passed and 173 skipped.
+[CI run 41004624126](https://github.com/TechLeo-Libraries/BuildML/actions/runs/41004624126)
+passed, as did backend evidence, release acceptance and CodeQL. Tested merge `b3ed3243`
 and source trees are equal. The expanded floor stays **87%**; the next increase
 requires at least one percentage point of headroom from a passing complete gate.
 Scope, coverage.py 7.16.2 and 566 excluded lines are unchanged; core floor stays
 70%. The suite ran in 33:08 with 2,890 pytest warnings and no coverage collection
 warnings. Optional skips remain configuration-specific. Reaching 90% requires
-784 further covered lines at this source; subset percentages are not added.
+783 further covered lines at this source; subset percentages are not added.

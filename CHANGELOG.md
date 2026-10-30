@@ -14,6 +14,12 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Smoothed bootstrap retains nullable integer dtypes and missing values instead
+  of replacing nulls with minimum-integer sentinels. Synthetic train merges
+  preserve nullable integer holdout dtypes and refuse fractional or out-of-range
+  generated values before changing state. Numeric copula consumers check null
+  rates, empirical marginals, exact conditions and saved-generator replay.
+
 - Target encoding refuses missing training outcomes and non-finite numeric
   targets before replacing fitted state. Supervised fold preprocessing also
   refuses complex numeric target dtypes before a cast can discard their

@@ -23,6 +23,21 @@ change. `merge_mode="extend_train"` appends rows, marks them with
 classical `FitResult`** because train membership changed. Validation
 and test values stay as they were.
 
+Smoothed bootstrap sampling retains missing numeric values. Nullable integer
+columns keep their integer dtype after rounding; missing entries remain null.
+Before extending train, generated values for nullable integer columns must be
+integral and fit the original dtype's range. Fractional or out-of-range values
+refuse the merge before changing data, splits or fitted results. Only generated
+rows are converted, so holdout values and dtypes stay intact. A larger observed
+range is valid when the values still fit the dtype.
+
+Native backends may materialize nullable integers as floating-point columns;
+the fitted column kind follows the actual ingested dtype. Inspect the fitted
+schema when integer rounding is important. A saved bootstrap generator that
+retains the original training nulls can be sampled again with the correction.
+Previously generated sentinel values must be regenerated, and downstream
+models trained on those rows must be refitted.
+
 You choose method, sample size, and whether to merge. The API refuses
 fit before `split`, SDV methods without the extra, and sample/evaluate
 without a synthesizer plan.

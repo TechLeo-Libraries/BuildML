@@ -8,20 +8,20 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 88.75763101561881,
-      "covered_lines": 55975,
-      "num_statements": 63065,
+      "percent_covered": 88.75923518406951,
+      "covered_lines": 55984,
+      "num_statements": 63074,
       "excluded_lines": 566,
-      "source_revision": "de299b2b55631be0a8fff1141b84b482feadf545",
-      "tested_revision": "d2730cbbf161aac726f95732d799bbeffe02c916",
+      "source_revision": "ebd89369e77997e817072709b72d4ab9ade598cb",
+      "tested_revision": "b3ed32439cfa37061f8e100c830cc9c18496fc51",
       "platform": "remote Linux, CPU expanded profile",
-      "run_id": 40999462926,
-      "result": "12692 passed, 173 skipped, zero failures/errors",
+      "run_id": 41004624126,
+      "result": "12837 passed, 173 skipped, zero failures/errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
-      "notes": "Custom output consumers accepted; all four workflows passed. Source/merge trees equal 7233abed35b9ad869a373987d829afef5ce0c85c. Coverage.py 7.16.2/566 exclusions and package scope unchanged; 2890 pytest warnings, zero collection warnings. Full 33:08; exact 90% gap 784. Core 70/expanded 87 retained; next floor requires one percentage point of headroom. Subset reach remains separate.",
+      "notes": "Target validation consumers accepted; all four workflows passed. Source/merge trees equal 4800c7eb4573238899088bf2750aad2b71d804f4. Coverage.py 7.16.2/566 exclusions and package scope unchanged; 2890 pytest warnings, zero collection warnings. Full 33:08; exact 90% gap 783. Core 70/expanded 87 retained; next floor requires one percentage point of headroom. Subset reach remains separate.",
       "coverage_version": "7.16.2"
     },
     "latest_local_measurement": {

@@ -5,6 +5,7 @@ from __future__ import annotations
 from numbers import Integral
 from typing import Any
 
+import numpy as np
 import pandas as pd
 
 from buildml.core.errors import ValidationError
@@ -133,6 +134,10 @@ The provenance column is assigned role ``ignore`` so it cannot silently
 become a modeling feature. Existing roles for real columns are preserved;
 no roles are invented for missing columns.
 
+    Generated nullable integer columns must be exactly representable in the
+    original dtype. Only generated rows are converted; holdout values and
+    dtypes remain unchanged. Incompatible samples refuse before merging.
+
 Parameters
 ----------
 dataset:
@@ -174,6 +179,20 @@ ValidationError
     syn[provenance_column] = mark_value
 
     frame = dataset.to_pandas()
+    for col in ordered_cols:
+        dtype = frame[col].dtype
+        if pd.api.types.is_integer_dtype(dtype) and pd.api.types.is_extension_array_dtype(dtype):
+            try:
+                bounds = np.iinfo(getattr(dtype, "numpy_dtype", None))
+                for value in syn[col].dropna():
+                    integer = int(value)
+                    if value != integer or not bounds.min <= integer <= bounds.max:
+                        raise ValueError("Value would change during integer conversion")
+                syn[col] = syn[col].astype(dtype)
+            except (TypeError, ValueError, OverflowError) as exc:
+                raise ValidationError(
+                    f"Synthetic column {col!r} cannot be represented as nullable integer {dtype}."
+                ) from exc
     train = frame.iloc[list(split_plan.train_indices)].reset_index(drop=True)
     valid = (
         frame.iloc[list(split_plan.validation_indices)].reset_index(drop=True)
