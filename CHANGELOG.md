@@ -14,6 +14,11 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Model-driven allocations align costs and IDs by candidate position, including
+  duplicate and MultiIndex row labels. Explicit IDs remain honored with unit
+  costs. Missing metadata columns and non-finite/negative costs refuse during
+  policy fit and replay, preserving prior state.
+
 - Native aggregation checks cover nonmissing counts, all-missing sums,
   observed categorical groups, scalar statistics, nested and sibling lazy
   summaries, and Parquet consumers. Polars excludes nulls from distinct counts

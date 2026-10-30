@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-10-26, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed: 88.6271% (55,859/63,027); 11,640 passed, 173 skipped | [CI 40963370277](https://github.com/TechLeo-Libraries/BuildML/actions/runs/40963370277), source `200642c`, tested merge `5345b601`; matching trees and all four workflows passed. Scope/566 exclusions/coverage.py 7.16.2 unchanged. Core 70/expanded 87 retained. Exact 90% gap 866 lines; 2,890 pytest warnings, no coverage collection warnings |
+| Current accepted remote expanded CPU whole-package gate | Passed: 88.6685% (55,886/63,028); 11,860 passed, 173 skipped | [CI 40972211969](https://github.com/TechLeo-Libraries/BuildML/actions/runs/40972211969), source `95a8f42`, tested merge `14883310`; matching trees and all four workflows passed. Scope/566 exclusions/coverage.py 7.16.2 unchanged. Core 70/expanded 87 retained. Exact 90% gap 840 lines; 2,890 pytest warnings, no coverage collection warnings |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -4668,3 +4668,101 @@ collection warnings; all four workflows passed. Skip-reason counters match
 headroom policy are unchanged. The exact 90% gap is 866 at that accepted
 denominator. Fresh complete CI must measure this correction before any
 whole-package gain is claimed.
+
+### Accepted native aggregation whole-suite result (2026-10-30)
+
+Source `95a8f42` passed the complete expanded Linux CPU suite at **88.6685%**
+(55,886/63,028 lines), with **11,860 passed and 173 skipped** in 23:06.
+The XML has 12,033 tests and zero failures/errors, with runtime 1386.865s.
+There were 2,890 pytest warnings and zero collection warnings. CI 40972211969,
+backend 40972211967, acceptance 40972212004 and CodeQL 40972208940 all passed.
+Tested merge `14883310` and source trees match. The 800-file measured package
+scope, coverage.py 7.16.2 and 566 exclusions are unchanged. Full covered lines
+increased by 27 while statements increased by 1 from `200642c`; the exact 90% gap is
+840 lines at this denominator. Core 70 and expanded 87 remain unchanged.
+The recorded Windows subsets and lean profile above remain separate evidence.
+
+### Model allocation candidate identity and costs (2026-10-30)
+
+Actual public model-driven allocations failed on duplicate pandas row labels:
+label-based cost lookup expanded the candidate rows and made costs disagree
+with scores. With default unit costs, an explicit ID column was ignored and
+index labels were returned instead. Some invalid model costs were accepted or
+raised unhelpful conversion exceptions, unlike the column-driven contract.
+Costs and IDs now follow the same candidate positions as scores, including
+duplicate MultiIndex labels. Explicit IDs work with unit costs. Named columns
+must exist; costs are converted and checked for finite, non-negative values.
+Failed fit/apply/evaluate requests preserve prior policy state and results.
+
+The exact 232 new cases ran against all 828 archived `95a8f42` package/resource
+files: **185 failed/47 passed**, 62.13s log/62.027s XML, zero errors/skips and
+three runtime warnings from invalid old inputs. Initial native-only baseline
+had 177 failed/39 passed/16 skipped, 51.68s/51.578s, three warnings. The skips
+were actual missing CVXPY. A real isolated runtime was installed, matching
+accepted CI's CVXPY 1.9.3, Clarabel 0.11.1, SCS 3.3.1, OSQP 1.1.3 and compatible
+HiGHS 1.14.0. Declared qdldl/sparsediffpy dependencies resolved an initial import
+setup error; logs remain. The final baseline and tests have an exact hash.
+The corrected focus passes all 232 cases in 93.94s/93.871s, zero errors/skips/
+warnings. No backend is hidden or mocked.
+
+The 144 primary consumers span binary strings/integers/booleans and multiclass
+labels; unique/duplicate integer/duplicate MultiIndex row labels; probability/
+decision-function scores; explicit/unit costs; top-K, knapsack and native LP.
+Independent frozen scalar logits/softmax, exhaustive eight-candidate knapsack
+and fractional value/cost ratio oracles verify both holdouts. Checks include
+raw IDs, relative row positions, fractions, cost/value totals, positive-rate
+metrics, fitting-population disclosures, plan/classifier hashes, unchanged data
+and owned policy bundle replay. Sixteen actual CVXPY consumers also exercise
+empty eligibility and fractional allocations. CVXPY fractions agree within
+2e-7; tiny positive solver shares may remain, so exact sparse support is not
+claimed. Seventy-two invalid cost/missing-column requests verify atomic refusal
+across all three methods and fit/apply/evaluate.
+
+Actual archived public fit/save produced 18 valid policy bundles across three
+binary label kinds, two score sources and three methods on unique row labels.
+Current public load replays them on duplicate row labels with 36 scalar
+allocation checks and 36 metric checks. Real reconstructed classifiers have
+coefficients, intercepts and raw class vocabularies exactly matching producers;
+policy metadata remains unchanged. Policies store no replacement classifier:
+callers retain the matching fitted Session model. No arbitrary-version or
+cross-serialization pickle-hash identity is claimed.
+
+Final Windows profiles freeze all 814 production Python files, 14 resources
+and eight selected test files. NumPy 2.4.6/sklearn 1.9.0/SciPy 1.18.0 and the
+actual isolated CVXPY runtime are used with separate coverage databases:
+
+| Profile | Result | Source-mapped reach vs `95a8f42` |
+| --- | --- | --- |
+| Pandas 3.0.5 | 331 passed/6 skipped; 178.03s log/177.970s XML; 0 pytest warnings | 43 previously missing unchanged lines; 11 changed/new executed lines |
+| Pandas 2.3.3 | 331 passed/6 skipped; 159.16s/159.105s; 0 warnings | 43 unchanged; 11 changed/new |
+
+All 232 new cases execute in both profiles, with zero failures/errors/collection
+warnings. Older PuLP, OR-Tools and XGBoost tests account for the six dependency
+skips; these backends are not claimed locally verified by this batch.
+Coverage.py 7.16.2, the same 800-file package scope and 566 exclusions remain;
+current subset reports contain 63,036 statements. Source-mapped
+reach uses `scripts/measure_coverage_reach.py`, the verified complete baseline/
+Git source and exact frozen current root; unmapped lists are empty. Reach
+includes older selected consumers and runtime paths. It is not a whole-suite
+percentage, projection or attribution of every line to the new tests.
+
+The actual lean environment passes all **216 selected native cases** in
+93.86s log/93.811s XML, zero errors/skips/warnings;
+16 CVXPY cases are explicitly deselected. NumPy 2.4.1/Pandas 2.3.3/sklearn 1.9.1/
+SciPy 1.15.3/PyArrow 26; Torch/CVXPY/matplotlib/seaborn are actually absent.
+This supplies separate native-solver evidence on SciPy 1.15.3 rather than
+assuming the main SciPy 1.18.0 profile is identical to complete Linux CI.
+
+Ruff, copy lint, diff checks and the unchanged 586-finding docstring budget
+pass. Targeted mypy on the edited fit module passes, matching the clean
+archived module; no whole-package typing claim is made. No plan/schema or
+coverage-policy changes. The guide documents positional allocation identity
+and validation on policy replay.
+
+Latest accepted complete Linux CPU source remains `95a8f42`: **88.6685%**
+(55,886/63,028), 11,860 passed/173 skipped, 23:06, 2,890 pytest warnings/zero
+collection warnings; all four workflows passed. Skip-reason counters match
+`200642c`, retaining optional/platform limits. Floors core 70/expanded 87 and
+headroom policy are unchanged. The exact 90% gap is 840 at that accepted
+denominator. Fresh complete CI must measure this source before any whole-
+package gain is claimed.
