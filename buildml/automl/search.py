@@ -235,6 +235,9 @@ def run_automl(
     budget:
         Optional :class:`~buildml.automl.types.AutoMLBudget` caps on trials,
         families, recipes, ensembles, and wall-clock time.
+        Multi-objective Optuna studies record both objectives and disable
+        pruning, whose intermediate reports require a single objective.
+        AutoML still ranks and refits the winner by the primary metric.
     time_budget:
         Optional wall-clock cap (seconds). Industry backends use this directly;
         native search stops after the current trial when exceeded.
@@ -990,6 +993,7 @@ def _run_optuna_trials(
     higher_is_better = metric not in _LOWER_IS_BETTER
     secondary = budget.secondary_metric
     multi_obj = bool(budget.multi_objective and secondary)
+    pruning_enabled = budget.enable_pruning and not multi_obj
     if multi_obj:
         directions = [
             "maximize" if higher_is_better else "minimize",
@@ -1002,7 +1006,7 @@ def _run_optuna_trials(
     sampler = optuna.samplers.TPESampler(seed=random_state)
     pruner = (
         optuna.pruners.MedianPruner(n_startup_trials=3, n_warmup_steps=1)
-        if budget.enable_pruning
+        if pruning_enabled
         else optuna.pruners.NopPruner()
     )
     study_kwargs: dict[str, Any] = {"sampler": sampler, "pruner": pruner}
@@ -1080,7 +1084,7 @@ def _run_optuna_trials(
                 std_metrics=std_metrics,
             )
         )
-        if budget.enable_pruning:
+        if pruning_enabled:
             trial.report(mean_score, step=0)
             if trial.should_prune():
                 raise optuna.exceptions.TrialPruned()
@@ -1683,6 +1687,11 @@ def _disclosures(
             tips.append(
                 f"Multi-objective Optuna: primary={metric}, secondary={budget.secondary_metric}."
             )
+            if budget.enable_pruning:
+                tips.append(
+                    "Pruning disabled for multi-objective Optuna studies; "
+                    "Optuna does not support intermediate trial reports with multiple objectives."
+                )
     if method == "evolutionary":
         tips.append("Native evolutionary (GA) search over family/recipe/param genes.")
     if backend in {"flaml", "autogluon"}:

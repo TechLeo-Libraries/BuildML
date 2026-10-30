@@ -18,6 +18,15 @@ fold-local recipes are bypassed.
 Quickstart: [AutoML quickstart](quickstart-automl.md) ·
 [Leakage](leakage-cv-recipes.md).
 
+For Optuna, `AutoMLBudget(multi_objective=True, secondary_metric=...)` records
+both objective values and their metric directions. Multi-objective studies
+disable pruning because Optuna's intermediate trial reports require a single
+objective. The result discloses this when pruning was requested; the supplied
+budget retains its requested settings. Single-objective pruning is unchanged.
+AutoML ranks and refits its winner by the primary metric, while the Optuna
+study retains both objectives. With `study_storage`, repeated compatible calls
+append trials to the named study; the per-call trial budget still applies.
+
 ## When this is the right call
 
 Use `grid_search` / `optuna_search` / `evolutionary_search` when the

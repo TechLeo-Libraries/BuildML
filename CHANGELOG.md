@@ -14,6 +14,12 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Multi-objective Optuna AutoML disables unsupported intermediate pruning
+  reports, so default pruning settings no longer abort the first trial.
+  Independent weighted objectives, persisted study continuation and saved
+  winner checks cover regression and classification. The primary metric
+  continues to select the AutoML winner; single-objective pruning is unchanged.
+
 - Smoothed bootstrap retains nullable integer dtypes and missing values instead
   of replacing nulls with minimum-integer sentinels. Synthetic train merges
   preserve nullable integer holdout dtypes and refuse fractional or out-of-range
