@@ -8,21 +8,21 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 88.9348025711662,
-      "covered_lines": 56173,
-      "num_statements": 63162,
+      "percent_covered": 88.95854110272118,
+      "covered_lines": 56196,
+      "num_statements": 63171,
       "excluded_lines": 566,
-      "source_revision": "7c943d67260271b2acc699697f4c1b44ec813d1f",
-      "tested_revision": "659e801ee8ab9121bcdd3221d830c260cfdd5f18",
+      "source_revision": "09aaa4e18f7e61f2a212d884c2b3972e52ceb695",
+      "tested_revision": "4ce5ea2c398bbee33b4835fbbec74d167f42cf74",
       "platform": "remote Linux, CPU expanded profile",
-      "run_id": 41117199223,
-      "result": "15184 passed,173 skipped,zero failures/errors",
+      "run_id": 41127810796,
+      "result": "15376 passed,173 skipped,zero failures/errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
       "coverage_version": "7.16.2",
-      "notes": "Torch target/numeric/grayscale corrections accepted; all four workflows passed and source/merge trees equal 7af3fb42886d828fc75c6786ace93114e8a4968c. All772 Torch and535 forecasting consumer cases execute; skip counters unchanged. Full2316.920s log/2316.714s XML,3435 pytest warnings,zero collection warnings. Scope800/566 exclusions unchanged; full+29covered/+22statements vs8f. Fixed numerical/Torch pins unchanged, but transitive boto3/botocore1.43.122->1.43.123 and copulas0.14.1->0.15.0 drift; profile contributions are not excluded. Artifact quota error recovered before acceptance. Exact90gap673;core70/expanded87 retained;next88 needs passing complete>=89 with1ppheadroom. Subsequent NLP subset separate."
+      "notes": "NLP discrete-resource correction accepted; all four workflows pass and source/merge trees equal 890bc4dfe5907789eb5918757078d5a85832b6ac. All1499 required consumers execute (252Prophet/283NBEATS/329target/443numeric/192NLP). Scope800/566 exclusions unchanged; full+23covered/+9statements vs7c. Entire environment and skip173/37message counters unchanged. Full2335.920s log/2335.714s XML,3435 pytest warnings,zero collection warnings. Exact90gap658. Exact88.9585 remains below89:core70/expanded87 retained;next88 needs passing complete>=89 with1ppheadroom. Subsequent randomized-recipe subsets separate."
     },
     "latest_local_measurement": {
       "percent_covered": 85.51916984547746,

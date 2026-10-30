@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-10-26, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed: 88.9348% (56,173/63,162); 15,184 passed, 173 skipped | [CI41117199223](https://github.com/TechLeo-Libraries/BuildML/actions/runs/41117199223), source `7c943d6`, tested merge `659e801e`; matching trees/all four workflows pass. Scope800/566 exclusions/coverage.py7.16.2 unchanged; all772 Torch/all535 forecasting cases execute. Three transitive versions drifted; full+29covered/+22statements includes possible profile contributions. Core70/expanded87 retained; exact90gap673. 3,435 pytest warnings/no collection warnings |
+| Current accepted remote expanded CPU whole-package gate | Passed: 88.9585% (56,196/63,171);15,376 passed,173 skipped | [CI41127810796](https://github.com/TechLeo-Libraries/BuildML/actions/runs/41127810796), source `09aaa4e`, tested merge `4ce5ea2c`; matching trees/all4 workflows pass. Same800files/566 exclusions/coverage7.16.2;all1499 required consumers execute. Entire environment and skip counts unchanged7c;full+23covered/+9statements. Core70/expanded87 retained;exact90gap658. 3,435 pytest warnings/no collection warnings |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -6058,3 +6058,67 @@ counts; NLP source is identical between those baseline revisions. Scope remains
 counts, separate from whole-package percentages. Latest accepted full coverage
 remains88.9348% at `7c943d6`, with exact90gap673 and unchanged70/87 floors; the
 subsequent NLP changes require their own complete CI.
+
+### Accepted NLP whole-package measurement (2026-10-30)
+
+Source `09aaa4e` supersedes the pending NLP gate above: **88.9585%**
+(56,196/63,171), **15,376 passed/173 skipped**, zero failures/errors,2335.920s
+log/2335.714s XML. All192 NLP cases execute, alongside329 target/grayscale,
+443 numeric,283 N-BEATS and252 Prophet cases (1499 total). CI41127810796,
+backend41127810643, acceptance41127810646 and CodeQL41127807276 pass. Source and
+tested merge `4ce5ea2c` have equal tree `890bc4df`. The entire artifact environment
+and all173 skips/37message Counters match accepted7c;scope800 files/566 excluded
+lines/coverage.py7.16.2 are unchanged. There are3,435 pytest warnings and zero
+collection warnings. Full+23covered/+9statements is a complete measurement,
+separate from the earlier15/27 subset reach. Exact90gap658. The exact result
+88.9585 is below89:core70/expanded87 remain, and next88 requires passingcomplete
+>=89 with1ppheadroom. No percentage is rounded upward for the ratchet.
+
+### Randomized recipe search and frozen winning pipelines (2026-10-30)
+
+The next coverage batch exercises the public randomized-search workflow with
+joint estimator/recipe distributions and recipe-only spaces. Each trial fits
+outlier caps, median imputation, standardization and restricted univariate
+selection inside the training fold. Independent NumPy fences/statistics,
+F-score rankings and regularized linear solves reproduce the resulting fold
+MSE means/deviations and winning full-train predictions. Five configurations
+bound each search; these checks establish arithmetic and replay consistency,
+without claiming global optimality or generalization quality.
+
+The 68 new cases span Pandas memory/Parquet, lazy Polars and lazy DuckDB,
+refit/no-refit and poisoned validation/test rows. Thirty-two numerical cases
+derive 480 independent fold calculations per runtime. Four namespace cases
+compare explicit parameter prefixes with joint recipe-space routing. Twenty-
+eight invalid-space/feature-set cases retain working fitted predictions,
+history and data; four non-numeric selector cases retain an unfitted state.
+Sixteen winning pipelines per runtime are actually saved and consumed by both
+path and loaded-object routes, matching independent predictions while keeping
+indices, loaded objects and artifact bytes unchanged.
+
+An exploratory unsupported `scale` recipe knob and `clip` action were correctly
+refused; valid requests use the allowlisted z-score threshold and `cap` action.
+The first broad harness used a nonexistent `session.model` facade:68 failed/
+105 passed in58.54s, reaching no new model assertions. That harness receipt is
+retained and contributes no product-defect or coverage claim. Calls were
+corrected to the supported direct Session core API; five key focus cases passed
+in11.44s before the final frozen runs. Numerical assertions were retained.
+
+The four-file frozen suite passes **173 tests** on each profile, zero skips,
+warnings, failures, errors or collection warnings:102.37s (102.366s XML) on
+Pandas3/sklearn1.9.0 and96.47s (96.481s XML) on the expanded numerical pins/
+Pandas2/sklearn1.9.1. All68 new cases execute. Production package files remain
+identical to accepted `09aaa4e`; all828 production/resources plus tracked tests
+and profile inputs are frozen/hashed. Ruff, Python3.10 syntax and changed-copy
+checks pass. CI additionally requires the new module to execute without skips;
+its separate guard accepts1567 actual consumer cases and rejects missing/skipped
+negatives. Joined XML guard receipts are not a whole-suite measurement.
+
+`measure_coverage_reach.py` against the verified same-source `09aaa4e` complete
+JSON/Git and exact frozen source reports **11 previously missing unchanged /
+0 changed-new executed lines** per runtime, no unmapped files:8 in search-space
+handling,2 in fold preprocessing and1 in Session refit attachment. All are
+production workflow paths. Scope800 files/566 exclusions/63,171 statements and
+coverage.py7.16.2 are unchanged. These are subset reach counts; they are not
+combined with or projected onto whole-suite percentages. Latest accepted full
+coverage remains88.9585%, exact90gap658, with70/87 floors. This added consumer
+coverage and its CI enforcement require a fresh complete measurement.

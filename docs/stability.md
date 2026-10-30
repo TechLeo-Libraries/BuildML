@@ -55,15 +55,13 @@ Measure the complete suite with `python scripts/run_full_coverage.py`; subset
 runs are not comparable to the project coverage threshold.
 The separate expanded Linux job runs the complete test directory with
 `requirements-expanded-coverage.txt` and an **87%** floor. Latest accepted remote
-CPU source `7c943d6` passed **88.9348%** (56,173/63,162), with 15,184 passed and
-173 skipped. CI41117199223, backend41117199290, acceptance41117199438 and
-CodeQL41117193795 all passed. Tested merge `659e801e` and source trees match.
-Exact90gap673. Core70/expanded87 remain; next88 requires a passing complete>=89
-with one point of headroom. Scope800/566 exclusions/coverage.py7.16.2 remain.
-All772 Torch/all535 forecasting cases execute; skip counters are unchanged.
-Full+29covered/+22statements from8f includes possible profile contributions:
-boto3/botocore1.43.122->1.43.123 and copulas0.14.1->0.15.0 changed transitively;
-fixed numerical/Torch pins did not. Runtime2316.920s,3,435 pytest warnings
+CPU source `09aaa4e` passed **88.9585%** (56,196/63,171), with15,376 passed and
+173 skipped. CI41127810796, backend41127810643, acceptance41127810646 and
+CodeQL41127807276 all passed. Tested merge `4ce5ea2c` and source trees match.
+Exact90gap658. Core70/expanded87 remain: the exact result is below89, so next88
+still requires a passing complete>=89 with1ppheadroom. Scope800/566 exclusions/
+coverage7.16.2, the entire environment and skip counters match7c. All1499 required
+consumers execute. Full+23covered/+9statements,2335.920s,3,435 pytest warnings
 and no coverage collection warnings.
 
 The subsequent `8594200` gate passed its tests, but coverage.py upgraded from

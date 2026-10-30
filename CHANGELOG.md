@@ -14,6 +14,11 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Randomized recipe-search consumers independently check fold-local outlier
+  caps, imputation, scaling, restricted feature selection and Ridge scores.
+  Joint and recipe-only spaces, namespace routing, protected existing fits and
+  saved winner replay are covered across four real data backings.
+
 - NLP classifier and topic workflows validate n-gram pairs, token lengths,
   vocabulary/hash sizes and topic/iteration counts before conversion. Malformed,
   boolean, fractional and non-finite counts raise validation errors while valid
