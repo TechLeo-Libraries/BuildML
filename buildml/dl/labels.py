@@ -1,4 +1,4 @@
-"""Contiguous class-id encoding for Torch classification paths.
+"""Prepare contiguous class IDs and finite regression targets for Torch.
 
 CrossEntropyLoss expects targets in ``{0, …, K-1}``. Callers often pass
 sparse integer ids (e.g. ``{10, 20, 30}``). Using ``n_classes = len(unique)``
@@ -7,6 +7,8 @@ while leaving raw ids in the tensors is a label-mapping mismatch.
 This mirrors classical BuildML / sklearn ``LabelEncoder`` behavior: fit the
 mapping on train labels only, store original ids in ``class_labels`` (index
 ``i`` ↔ original label), and encode every partition to contiguous indices.
+Regression labels must remain finite in the float32 representation consumed
+by loaders and loss functions.
 """
 
 from __future__ import annotations
@@ -18,6 +20,40 @@ import numpy as np
 import pandas as pd
 
 from buildml.core.errors import ValidationError
+
+
+def regression_targets_to_float32(y: Any) -> np.ndarray:
+    """Convert regression targets without admitting non-finite float32 values.
+
+    Validate the representation used by Torch before a loader or fold model
+    can consume it. A finite float64 label can overflow during conversion, so
+    checking the original values alone does not protect training labels.
+
+    Parameters
+    ----------
+    y:
+        Regression labels prepared for a Torch dataset.
+
+    Returns
+    -------
+    numpy.ndarray
+        Float32 labels with the original shape.
+
+    Raises
+    ------
+    ValidationError
+        If conversion fails, labels contain NaN or infinity, or finite input
+        values overflow the float32 representation used by Torch loaders.
+    """
+    message = "Regression targets must be finite float32 values (no NaN, infinity or overflow)"
+    try:
+        with np.errstate(over="ignore", invalid="ignore"):
+            values = np.asarray(y, dtype=np.float32)
+    except (TypeError, ValueError, OverflowError) as exc:
+        raise ValidationError(message) from exc
+    if not np.isfinite(values).all():
+        raise ValidationError(message)
+    return values
 
 
 def fit_class_labels(y: Any) -> tuple[Any, ...]:

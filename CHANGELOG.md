@@ -14,6 +14,11 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Torch regression loaders and cross-validation refuse labels that become
+  NaN or infinity in float32, including finite values that overflow during
+  conversion. One-channel PNG paths now retain their image channel axis.
+  Independent loss, gradient, pixel and saved-model checks cover both fixes.
+
 - Expanded CI bounds thirteen transitive dependencies to versions from its
   last passing assessment after the cold installer exhausted pip's resolver.
   A complete cold Linux plan preserves all 267 previously selected versions

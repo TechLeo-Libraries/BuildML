@@ -140,6 +140,8 @@ def _decode_path(path: Path, *, size: tuple[int, int], channels: int) -> np.ndar
             img = img.convert("RGB")
         img = img.resize((size[1], size[0]))  # PIL: (W, H)
         arr = np.asarray(img, dtype=np.float32) / 255.0
+    if channels == 1:
+        arr = arr[..., None]
     return _to_chw(arr, channels=channels)
 
 

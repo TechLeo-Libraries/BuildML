@@ -55,7 +55,7 @@ from buildml.dl.image import (
     fit_image_channel_stats,
     stack_image_column,
 )
-from buildml.dl.labels import encode_class_targets, fit_class_labels
+from buildml.dl.labels import encode_class_targets, fit_class_labels, regression_targets_to_float32
 from buildml.dl.results import LoaderReport, TorchLoaderBundle
 from buildml.dl.text import fit_vocab, texts_to_ids
 from buildml.dl.transforms import apply_standardize, fit_standardize, frame_to_numeric_matrix
@@ -943,7 +943,8 @@ def make_multimodal_loaders(
     ValidationError
         If fewer than two modalities are present, if a named column is absent,
         if the image and audio columns are the same, if text inference is
-        ambiguous, if the target is non-numeric or contains ``NaN``, if the
+        ambiguous, if the target is non-numeric or contains ``NaN``, if regression
+        labels are non-finite or overflow float32, if the
         train partition is empty, or if a config value is out of range.
 
     Notes
@@ -1223,11 +1224,7 @@ def make_multimodal_loaders(
             y = encode_class_targets(part[target], class_labels)
             y_t = torch.as_tensor(y, dtype=torch.long)
         else:
-            y = part[target].to_numpy(dtype=np.float64, copy=True)
-            if np.isnan(y).any():
-                raise ValidationError(
-                    "Target contains NaN; clean labels before multimodal loaders"
-                )
+            y = regression_targets_to_float32(part[target])
             y_t = torch.as_tensor(y, dtype=torch.float32).unsqueeze(-1)
         dataset_t = torch.utils.data.TensorDataset(*tensors, y_t)
         shuffle = bool(cfg.shuffle_train and name == "train")

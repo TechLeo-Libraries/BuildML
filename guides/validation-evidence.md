@@ -5858,5 +5858,57 @@ Latest accepted whole-package coverage remains **88.8715%** at `5f1ee7d`
 (56,101/63,126; 14,129 passed/173 skipped). The failed install creates no coverage
 gain. Core 70/expanded 87, one-point headroom, 800-file scope/566 exclusions and
 coverage.py 7.16.2 are unchanged. The 90% target remains open, with 713 lines needed
-at that accepted denominator. The next loader tensor-contract batch remains
-uncommitted while this actual CI failure takes priority.
+at that accepted denominator. The loader tensor-contract verification below
+continues independently while the repaired complete gate runs.
+
+### Torch target representation and grayscale PNG consumers (2026-10-30)
+
+Regression targets were checked for NaN before conversion, allowing infinities
+and finite float64 values such as `1e100` to become non-finite float32 training
+labels. Tabular and multimodal loaders now share a conversion check; Torch CV
+validates its target population before constructing fold models. Refusals leave
+Session loaders, training results, history and source data unchanged. Separately,
+Pillow grayscale paths returned an HW array to a decoder requiring HWC; the path
+decoder now restores the singleton channel. RGB handling is unchanged.
+
+The final 329-case corpus covers six modalities, four real dataset backings
+(Pandas memory/Parquet, lazy Polars and DuckDB), all three partitions, direct
+tensor conversion, CV and classification controls. Independent NumPy loss and
+SGD-gradient calculations check actual Torch batches; known PNG pixels and
+independent convolution arithmetic check both one- and three-channel consumers.
+Exact archived `8f2376d` code produces **277 failed/52 passed** on each runtime,
+with zero errors/skips. Some valid and existing NaN controls expose the grayscale
+defect; the 277 failures are not all target-conversion defects. Earlier 325/327
+corpora and preliminary receipts are retained, separate from this final corpus.
+
+Nine frozen test files pass on Windows CPU: **404 passed/8 skipped in 75.99s**
+(Pandas 3.0.5/Torch 2.13.0) and **403 passed/9 skipped in 79.33s** (Pandas 2.3.3,
+NumPy 2.4.1/sklearn 1.9.1/Torch 2.7.1, matching the expanded numerical pins).
+Both execute all 329 new cases, with two existing facade deprecations and zero
+collection warnings. Skips are three absent ONNX exports, four unavailable CUDA
+cases and one installed-Torch absence control; the second profile also lacks
+SoundFile for one existing file-audio test. New audio consumers use real arrays.
+Four trusted models saved by actual archived code (tabular and grayscale-image
+regression in each runtime) pass 48 current partition checks across the four
+backings. Inputs, predictions, weights, preprocessing and bundle files remain
+exact; independent MSE calculations agree. No cross-runtime pickle, GPU,
+convergence or general finite-loss guarantee is claimed.
+
+All 828 production/resource files and tracked tests/configurations were hashed
+in the frozen source. Ruff, Python 3.10 syntax checks and the documentation audit
+pass. A missing helper description caught by the first audit was corrected and
+both profiles rerun. Scoped mypy retains exactly the same five errors as the
+archived baseline (one dataset/four multimodal); this is not a clean type check.
+CI now requires this consumer module, alongside both forecast modules, to execute
+without skips. The new guard is checked separately from the numerical runs.
+
+`measure_coverage_reach.py` against verified complete `5f1ee7d` JSON/Git and the
+exact frozen source reports **8 previously missing unchanged/18 changed-new
+executed lines** per profile, with no unmapped files. The affected five production
+files are identical in the baseline and archived parent. Of the eight old lines,
+seven are DL data/image/audio paths and one is a Windows-only Torch probe. Of
+18 changed-new lines, one is an already-published forecasting import relative to
+the older baseline; it is not a new line from this repair. Scope remains 800 files,
+566 exclusions and coverage.py 7.16.2. These are subset reach counts, separate
+from full-suite percentages. The latest accepted complete result and floors above
+remain unchanged until the repaired complete CI artifact is verified.
