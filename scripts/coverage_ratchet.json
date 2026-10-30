@@ -8,21 +8,21 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 88.87146342236163,
-      "covered_lines": 56101,
-      "num_statements": 63126,
+      "percent_covered": 88.9198606271777,
+      "covered_lines": 56144,
+      "num_statements": 63140,
       "excluded_lines": 566,
-      "source_revision": "5f1ee7da1771532eb8fc747951988e6f3569e96d",
-      "tested_revision": "d3844d2629a9cf31553ad72b12821dcd4f7e3a0a",
+      "source_revision": "8f2376d75c8ded2a76596159246cb0c284633515",
+      "tested_revision": "12bd80df3ffdefb252c2cdbcf25925958de439ed",
       "platform": "remote Linux, CPU expanded profile",
-      "run_id": 41066626501,
-      "result": "14129 passed, 173 skipped, zero failures/errors",
+      "run_id": 41090120083,
+      "result": "14412 passed, 173 skipped, zero failures/errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
       "coverage_version": "7.16.2",
-      "notes": "Real Prophet profile accepted; all four workflows passed and source/merge trees equal 8f9d47acc2d72b967693965c2391c6cc8b04280a. Scope800/566 exclusions unchanged. Full35:50,2890 pytest warnings,zero collection warnings; exact90gap713. Native backend/profile addition contributes; complete+23covered/+1statement. Core70/expanded87 retained; next88 needs complete>=89. Subset reach separate."
+      "notes": "Real NeuralForecast stack and complete cold-install repair accepted; all four workflows passed and source/merge trees equal 52b079f7880a36d75802570a95f95ec5add086c5. Scope800/566 exclusions unchanged. Full2384.760s log/2384.552s XML;3435 pytest warnings,zero collection warnings. All283 NBEATS and252 Prophet consumers execute; skip counters and existing environment versions unchanged. Deliberate backend/profile expansion contributes to full+43covered/+14statements. Exact90gap682. Core70/expanded87 retained; next88 needs passing complete>=89. Subsequent Torch subsets remain separate."
     },
     "latest_local_measurement": {
       "percent_covered": 85.51916984547746,

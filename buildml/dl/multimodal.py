@@ -58,7 +58,12 @@ from buildml.dl.image import (
 from buildml.dl.labels import encode_class_targets, fit_class_labels, regression_targets_to_float32
 from buildml.dl.results import LoaderReport, TorchLoaderBundle
 from buildml.dl.text import fit_vocab, texts_to_ids
-from buildml.dl.transforms import apply_standardize, fit_standardize, frame_to_numeric_matrix
+from buildml.dl.transforms import (
+    apply_standardize,
+    fit_standardize,
+    frame_to_numeric_matrix,
+    numeric_matrix_to_float32,
+)
 from buildml.dl.types import FeatureContract
 
 ModalityName = Literal["numeric", "tokens", "image", "audio"]
@@ -944,7 +949,8 @@ def make_multimodal_loaders(
         If fewer than two modalities are present, if a named column is absent,
         if the image and audio columns are the same, if text inference is
         ambiguous, if the target is non-numeric or contains ``NaN``, if regression
-        labels are non-finite or overflow float32, if the
+        labels are non-finite or overflow float32, if numeric features are
+        non-finite or overflow float32 after preprocessing, if the
         train partition is empty, or if a config value is out of range.
 
     Notes
@@ -1194,7 +1200,7 @@ def make_multimodal_loaders(
             x = frame_to_numeric_matrix(part, numeric_cols)
             if cfg.normalize and mean is not None and std is not None:
                 x = apply_standardize(x, mean, std)
-            tensors.append(torch.as_tensor(x, dtype=torch.float32))
+            tensors.append(torch.as_tensor(numeric_matrix_to_float32(x), dtype=torch.float32))
         if has_text:
             assert text_col is not None and vocab is not None
             tokens = texts_to_ids(part[text_col].astype(str).tolist(), vocab)

@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-10-26, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed: 88.8715% (56,101/63,126); 14,129 passed, 173 skipped | [CI 41066626501](https://github.com/TechLeo-Libraries/BuildML/actions/runs/41066626501), source `5f1ee7d`, tested merge `d3844d26`; matching trees/all four workflows pass. The 800-file scope and 566 exclusions/coverage.py7.16.2 unchanged; all252 Prophet cases execute. Backend/profile expansion contributes; full+23covered/+1statement. Core 70/expanded 87 retained; exact90gap713. 2,890 pytest warnings/no collection warnings |
+| Current accepted remote expanded CPU whole-package gate | Passed: 88.9199% (56,144/63,140); 14,412 passed, 173 skipped | [CI 41090120083](https://github.com/TechLeo-Libraries/BuildML/actions/runs/41090120083), source `8f2376d`, tested merge `12bd80df`; matching trees/all four workflows pass. Scope800/566 exclusions/coverage.py7.16.2 unchanged; all283 N-BEATS/all252 Prophet cases execute. Backend/profile expansion contributes; full+43covered/+14statements. Core70/expanded87 retained; exact90gap682. 3,435 pytest warnings/no collection warnings |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -5912,3 +5912,76 @@ the older baseline; it is not a new line from this repair. Scope remains 800 fil
 566 exclusions and coverage.py 7.16.2. These are subset reach counts, separate
 from full-suite percentages. The latest accepted complete result and floors above
 remain unchanged until the repaired complete CI artifact is verified.
+
+### Accepted NeuralForecast profile and installer repair (2026-10-30)
+
+The complete gate at `8f2376d` supersedes the pending repair above:
+**88.9199%** (56,144/63,140), **14,412 passed/173 skipped**, zero failures/errors
+in2384.760s log/2384.552s XML. CI41090120083, backend41090120101,
+acceptance41090120164 and CodeQL41090113190 all passed. Tested merge `12bd80df`
+and source have the same tree `52b079f7`. Actual cold installation, imports and
+all283 N-BEATS/all252 Prophet consumers passed. The complete artifact retains
+all800 normalized files,566 exclusions and coverage.py7.16.2. All173 skips/37
+message counts and every pre-existing environment version match accepted5f;
+NeuralForecast3.1.2 is present. There are3,435 pytest warnings and zero collection
+warnings. Deliberately adding the real backend/profile contributes to the full
++43 covered/+14 statement change; this is separate from local subset reach.
+Core70/expanded87 remain; next88 needs passing complete>=89 with one-point
+headroom. Exact90gap682. Subsequent Torch fixes still require their own full CI.
+
+The completed target/grayscale subset was also remeasured against this newly
+verified same-source baseline using its original frozen source:8 previously
+missing unchanged/17 changed-new lines per profile, no unmapped files. This
+removes the previously published forecasting import from its changed-line count.
+Seven old lines are DL data/image/audio paths; one remains Windows-only. The
+earlier5f8/18 receipt remains historical evidence, not a combined percentage.
+
+### Numeric Torch feature representation and CV construction (2026-10-30)
+
+An adjacent real-loader probe admitted 34 non-finite numeric batches, while two
+large finite training-value controls normalized safely. Numeric source matrices
+now refuse NaN/infinity before fitting statistics, and tabular/multimodal numeric
+features are checked again in float32 after preprocessing. Validation therefore
+preserves finite values such as `1e100` when training normalization makes their
+tensor representation safe. Direct tensor conversion has the same boundary.
+Images and audio retain their existing preprocessing contracts.
+
+The 443 new consumers cover six modalities, four real data backings, train,
+validation and test partitions, both normalization settings, direct conversion
+and CV. Independent training-only NumPy statistics, MSE and SGD gradients check
+24 valid large-value controls per runtime. Exact archived `260264a` baselines
+produce **417 failed/26 passed** each, zero errors/skips (31.88s/23.47s).
+The first broader correction caught a real ordering failure: **1 failed/846
+passed/8 skipped**, because CV constructed the module before checking tensor
+conversion. The failure receipt is retained. Dataset construction now precedes
+the affected fold's model factory, preserving the existing random seed sequence;
+the assertions were unchanged and the final frozen profiles rerun.
+
+Ten frozen files pass: **847 passed/8 skipped/2 warnings in 106.07s** on Pandas
+3/Torch 2.13 CPU and **846 passed/9 skipped/2 warnings in 94.96s** on the expanded
+numerical pins/Pandas 2/Torch 2.7.1 CPU. All 443 numeric-feature and 329 preceding
+target/grayscale cases execute, with zero collection warnings. The same existing
+ONNX/CUDA/installed-Torch skips apply; the second profile also lacks SoundFile
+for one existing test. Four trusted archived `8f2376d` models are consumed again
+in matching runtimes: all 48 partition checks retain exact inputs, predictions,
+weights, preprocessing and bundle files, with independent MSE checks. Their
+original consumer receipts remain separate. No GPU, cross-runtime pickle,
+convergence or universal finite-loss claim is made.
+
+All 828 production/resources and tracked tests/configurations are frozen and
+hashed. Ruff, Python 3.10 syntax and the documentation audit pass. The four-file
+scoped mypy check has the same 21 errors as archived `260264a`, including existing
+Pandas stubs; it is not a clean type check. The actual CI guard accepts 1,307
+unskipped consumer cases from verified XMLs and rejects missing/skipped cases;
+this guard check joins receipts only and is not a whole-suite measurement.
+
+Mapped reach against verified complete `8f2376d` is **9 previously missing
+unchanged/32 changed-new executed lines** per profile, with no unmapped files.
+These totals include the preceding target/grayscale batch. Comparing old-line
+identities with that earlier frozen subset adds exactly one previously missing
+line (`dl/transforms.py`), with none lost. Eight of the nine old lines are DL
+data/media paths; one is a Windows-only probe. Package scope remains800 files,
+566 exclusions and coverage.py7.16.2. These subset counts are neither combined
+with full coverage nor projected. Latest accepted whole-package coverage remains
+88.9199% at `8f2376d`, with exact90gap682 and floors70/87. Fresh full CI is required
+for both subsequent Torch corrections.

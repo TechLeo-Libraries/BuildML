@@ -14,6 +14,10 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Numeric Torch inputs refuse NaN, infinity and float32 overflow after
+  preprocessing. Large finite training values remain usable when normalization
+  rescales them safely. CV validates tensors before constructing each fold model.
+
 - Torch regression loaders and cross-validation refuse labels that become
   NaN or infinity in float32, including finite values that overflow during
   conversion. One-channel PNG paths now retain their image channel axis.
@@ -23,7 +27,8 @@ from the current release; use the installation guide for current requirements.
   last passing assessment after the cold installer exhausted pip's resolver.
   A complete cold Linux plan preserves all 267 previously selected versions
   and adds only the thirteen intended NeuralForecast dependencies. The full
-  test and coverage gate must pass independently.
+  test and coverage gate subsequently passed at 88.9199% whole-package line
+  coverage with 14,412 tests passed and 173 skipped at source `8f2376d`.
 
 - N-BEATS returns forecasts from the next observation for short requests and
   extends longer requests with successive native prediction blocks. One-step

@@ -55,15 +55,16 @@ Measure the complete suite with `python scripts/run_full_coverage.py`; subset
 runs are not comparable to the project coverage threshold.
 The separate expanded Linux job runs the complete test directory with
 `requirements-expanded-coverage.txt` and an **87%** floor. Latest accepted remote
-CPU source `5f1ee7d` passed **88.8715%** (56,101/63,126 lines), with
-14,129 passed and 173 skipped. CI 41066626501, backend evidence 41066626514,
-release acceptance 41066626570 and CodeQL 41066621551 all passed. Tested merge
-`d3844d26` and source trees match. Exact 90% gap: 713 covered lines at this source.
-Core 70/expanded 87 remain; the next increase needs a passing complete gate with
-one percentage point of headroom. The 800-file scope and 566 exclusions are unchanged. All 252
-new Prophet cases execute; adding this real backend to the profile contributes
-to the full +23 covered/+1 statement change. Skip-message counts are unchanged.
-The complete suite ran in 35:50 with 2,890 pytest warnings
+CPU source `8f2376d` passed **88.9199%** (56,144/63,140 lines), with 14,412 passed
+and 173 skipped. CI 41090120083, backend evidence 41090120101, release acceptance
+41090120164 and CodeQL 41090113190 all passed. Tested merge `12bd80df` and source
+trees match. Exact 90% gap: 682 covered lines at this source. Core 70/expanded 87
+remain; the next increase needs a passing complete gate with one percentage
+point of headroom. Scope800/566 exclusions and coverage.py7.16.2 are unchanged.
+All283 N-BEATS/all252 Prophet consumers execute; the deliberate real-backend
+profile expansion contributes to the complete +43 covered/+14 statement change.
+Skip-message counts and existing environment versions are unchanged. The
+complete suite ran in2384.760s with3,435 pytest warnings
 and no coverage collection warnings.
 
 The subsequent `8594200` gate passed its tests, but coverage.py upgraded from

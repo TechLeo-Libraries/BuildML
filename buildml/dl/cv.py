@@ -333,7 +333,8 @@ def cross_validate_torch(
     ValidationError
         If ``n_folds`` is below 2, if there are fewer rows than folds, if the
         target is non-numeric or contains ``NaN``, if regression labels are
-        non-finite or overflow float32, or if a feature column is non-numeric.
+        non-finite or overflow float32, or if numeric features are non-finite
+        or overflow float32 after fold preprocessing.
 
     Notes
     -----
@@ -441,6 +442,8 @@ def cross_validate_torch(
         else:
             class_labels = ()
             n_classes = 1
+        train_ds = arrays_to_tensor_dataset(x_train, y_train, task=resolved_task)
+        val_ds = arrays_to_tensor_dataset(x_val, y_val, task=resolved_task)
         torch.manual_seed(int(seed) + fold_i)
         module = factory(len(feature_cols), resolved_task, n_classes)
         contract = FeatureContract(
@@ -451,8 +454,6 @@ def cross_validate_torch(
             normalize_mean=None if mean is None else tuple(float(v) for v in mean),
             normalize_std=None if std is None else tuple(float(v) for v in std),
         )
-        train_ds = arrays_to_tensor_dataset(x_train, y_train, task=resolved_task)
-        val_ds = arrays_to_tensor_dataset(x_val, y_val, task=resolved_task)
         generator = torch.Generator().manual_seed(int(seed) + fold_i)
         loaders = {
             "train": torch.utils.data.DataLoader(
