@@ -24,3 +24,9 @@ stable-baselines3==2.7.0
 langchain-classic==1.0.8
 langchain-community==0.4.2
 langchain-core==1.6.12
+
+# Real Prophet forecasting consumers use the packaged CmdStan solver.
+prophet==1.5.0
+cmdstanpy==1.3.0
+holidays==0.107
+stanio==0.5.1

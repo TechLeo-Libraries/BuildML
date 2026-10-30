@@ -146,6 +146,17 @@ parameters and receive the matching historical exogenous rows. Saved forecast
 bundles retain these rules when loaded into a Session with the matching data
 and chronological split.
 
+Prophet advances its synthetic daily forecast clock with the selected origin.
+`validation_end`, `test_end` and rolling evaluation therefore predict the dates
+after the supplied history, rather than repeatedly forecasting from train end.
+Its fitted trend and seasonal parameters stay fixed: later target values do
+not refit Prophet. The synthetic daily alignment remains a limitation for
+irregular clocks; this does not map forecasts to the original calendar.
+Saved Prophet bundles use the same origin rule when replayed.
+Use compatible dependency versions for replay: validation uses matching
+Pandas producer/reader versions. A Prophet artifact written with Pandas 3
+failed to unpickle under Pandas 2 because of its stored datetime array format.
+
 ## Exogenous
 
 ```python

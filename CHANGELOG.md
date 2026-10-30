@@ -14,6 +14,11 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Prophet horizon generation and rolling evaluation advance the synthetic
+  daily clock with the supplied history. Saved plans retain fitted trend and
+  seasonal parameters while honoring validation/test origins. Real Prophet
+  consumer checks now run in the expanded profile with pinned dependencies.
+
 - Fold-local calendar, text and binning features refuse ambiguous generated
   names during fit and saved replay. Binning preserves missing one-hot values,
   validates integer bin counts and reads every original source before creating

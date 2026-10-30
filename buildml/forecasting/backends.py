@@ -403,7 +403,9 @@ def industry_predict(
     steps:
         Number of future periods to forecast.
     history:
-        Target history required for N-BEATS rolling context.
+        Target history required for N-BEATS rolling context. For Prophet,
+        its length advances the synthetic daily forecast origin; values do
+        not refit the learned trend or seasonal parameters.
     exog_future:
         Future exogenous rows for ARIMA/SARIMAX exog-aware models.
     history_exog:
@@ -436,13 +438,13 @@ def industry_predict(
         return tuple(float(v) for v in np.asarray(fc, dtype=float).tolist())
 
     if kind == "prophet":
-        future = result.make_future_dataframe(periods=steps, freq="D", include_history=False)
+        n_history = len(result.history_dates) if history is None else len(history)
+        first = pd.Timestamp(result.start) + pd.Timedelta(days=n_history)
+        future = pd.DataFrame({"ds": pd.date_range(first, periods=steps, freq="D")})
         pred = result.predict(future)
         return tuple(float(v) for v in pred["yhat"].tolist()[-steps:])
 
     if kind == "nbeats":
-        import pandas as pd
-
         nf = result
         h = int(estimator.get("horizon", steps))
         if history is None:

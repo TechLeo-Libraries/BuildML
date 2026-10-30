@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-10-26, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed: 88.8287% (56,066/63,117); 13,661 passed, 173 skipped | [CI 41048868532](https://github.com/TechLeo-Libraries/BuildML/actions/runs/41048868532), source `a03678e`, tested merge `71211a6d`; matching trees and all four workflows passed. Scope/566 exclusions/coverage.py 7.16.2 unchanged. Core 70/expanded 87 retained. Exact 90% gap 740 lines; 2,890 pytest warnings, no coverage collection warnings |
+| Current accepted remote expanded CPU whole-package gate | Passed: 88.8364% (56,078/63,125); 13,877 passed, 173 skipped | [CI 41056677449](https://github.com/TechLeo-Libraries/BuildML/actions/runs/41056677449), source `c736233`, tested merge `55fbddd1`; matching trees and all four workflows passed. Scope/566 exclusions/coverage.py 7.16.2 unchanged. Core 70/expanded 87 retained. Exact 90% gap 735 lines; 2,890 pytest warnings, no coverage collection warnings |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -5601,3 +5601,113 @@ unchanged skip counters. Floors stay core 70/expanded 87 with one-point
 headroom. **90% remains open**, with an exact gap of 740 covered lines at
 the accepted denominator. New-source complete CI must pass before reporting
 any whole-package gain from this batch.
+
+### Accepted fold generated-feature whole-suite result (2026-10-30)
+
+Source `c736233` passed the complete expanded Linux CPU suite at **88.8364%**
+(56,078/63,125 lines), with **13,877 passed and 173 skipped** in 34:10.
+The XML has 14,050 tests and zero failures/errors, with runtime 2050.223s.
+There were 2,890 pytest warnings and zero collection warnings. CI 41056677449,
+backend 41056677297, acceptance 41056677357 and CodeQL 41056674497 all passed.
+Tested merge `55fbddd1` and source trees match. The 800-file measured package
+scope, coverage.py 7.16.2 and 566 exclusions are unchanged. Full covered lines
+increased by 12 while statements increased by 8 from `a03678e`; the exact 90% gap is
+735 lines at this denominator. Core 70 and expanded 87 remain unchanged.
+The recorded Windows subsets and lean profile above remain separate evidence.
+
+### Real Prophet forecast origins and frozen replay (2026-10-30)
+
+Prophet horizon generation always built future dates from the end of fitting,
+even when the requested origin included validation or earlier test rows.
+Rolling evaluation consequently reused dates or repeated the first training-end
+forecast. A real Prophet 1.5 model fitted to `4 + 0.7*t` reproduced an origin
+error of 1.4 after adding two observations to history. Prediction now builds
+synthetic daily dates from the frozen start plus the supplied history length
+(fitting length when history is absent). Learned trend/seasonal parameters stay
+fixed; later target values do not refit Prophet. Synthetic daily alignment is
+still a limitation for irregular or real calendar timestamps. No fitted field,
+bundle format or package coverage scope changed.
+
+The 252 new cases cover four actual model families: linear, weekly, constant
+and a 370-row fitting history activating yearly seasonality. They include
+72 saved-generation checks across six real backings and three named origins;
+144 partition/strategy backtests; 20 direct history controls; and 16 invalid
+explicit-history refusals. Explicit dates supplied directly to real fitted
+Prophet provide the model-native reference; known linear/seasonal processes
+supply a separate numerical sanity check. MAE/RMSE/MAPE are computed from those
+reference predictions. Poisoned history values cannot change fitted parameters;
+short explicit histories are clock-alignment controls, not claims about past
+generalization. Original data, ID values, split, metadata, parameters, fitting
+history and bundle-file hashes are checked. Real Pandas memory/Parquet and
+Polars/DuckDB memory/lazy routes execute without backend or model mocks.
+
+All 828 archived `c736233` package/resource bytes and the exact final test were
+verified. Both archived baselines have **135 failed/117 passed**, zero errors,
+skips, pytest warnings or collection warnings. These are failing cases across
+three varying signal families, rather than 135 distinct defects; the constant
+model and training-end controls pass. Pandas 3 takes 104.88s log/
+104.702s XML, and Pandas 2 79.46s/79.308s.
+The corrected focus passes **252 tests**, zero warnings, 86.31s/
+86.254s. No test or numerical oracle was changed. A first-patch
+focus caught an introduced local pandas import shadowing the module import;
+the redundant local import was removed before final freezing. The initial
+236-failed/16-passed focus/source snapshots are retained and are not baseline
+defect evidence.
+
+| Final profile | Result | Runtime (log / XML) |
+| --- | --- | --- |
+| Windows Pandas 3.0.5, NumPy 2.4.6, sklearn 1.9.0 | 311 passed, one skipped, 161 warnings | 164.22s / 164.184s |
+| Windows Pandas 2.3.3, same NumPy/sklearn | 311 passed, one skipped, 161 warnings | 146.70s / 146.666s |
+| Separate real Prophet environment | 108 passed, 144 native-backing cases explicitly deselected, zero warnings | 32.55s / 32.492s |
+
+All 252 new cases execute in both broader profiles, with actual Polars 2.0.0
+and DuckDB 1.5.6. The skip is an existing missing-statsmodels negative control
+because statsmodels is installed. The 161 warnings are 157 existing flat-alias
+deprecations and four existing ETS log-zero information-criterion warnings.
+There are zero failures/errors/collection warnings. The separate environment
+uses expanded numerical pins: NumPy 2.4.1/Pandas 2.3.3/sklearn 1.9.1/SciPy 1.15.3/
+PyArrow 26.0.0. Actual Prophet 1.5.0/CmdStanPy 1.3.0/Holidays 0.107/Stanio 0.5.1
+and required Matplotlib 3.11.2 are installed. Torch, CVXPY, seaborn, Polars and
+DuckDB are absent there; Prophet prints its optional Plotly-unavailable note.
+No plotting or new GPU capability is claimed. Existing environments were not
+modified: the main runtime extension and new isolated environment live in reports.
+
+The packaged native Windows solver initially failed to launch under restricted
+execution (WinError 623). Normal approved native execution succeeded, and all
+native fitting/profile checks use that execution mode with workspace temporary
+directories. This was a launch restriction, not a skipped or simulated fit.
+The expanded requirements explicitly add the four pinned Prophet dependencies
+so the real new consumers execute in the remote complete gate. The previously
+accepted complete profile did not include Prophet; backend availability and
+profile expansion contribute to reach. Linux execution of the new profile
+remains pending until that gate passes.
+
+All 814 production Python files, 14 resources, six selected tests and two
+profile files were frozen: **836 inputs**, verified unchanged during final runs.
+Mapped reach via `measure_coverage_reach.py` against verified same-source
+complete `c736233` JSON/Git plus the exact frozen source is **21 previously
+missing unchanged / 3 changed-new executed lines** on each Pandas version.
+Unmapped lists are empty; subset scope is 800 files/63,126 statements,
+coverage.py 7.16.2 and 566 exclusions. This does not project a whole-suite gain.
+
+Eight actual old-source bundles were reused from the archived pytest fixture
+writers: four produced under each Pandas major, copied byte-exact into two
+cohorts. Each runtime-matched current reader passes **72 generation checks**
+across six backings, **24 Pandas partition/strategy backtests** and **72 metric
+checks**. Parameters, training history, metadata, receiving data and artifact
+hashes remain unchanged; no model fields are patched. An additional attempt
+to read a Pandas 3 artifact under Pandas 2 fails before prediction with
+`NotImplementedError` for the stored `datetime64[us]` array. The original failure
+and artifacts are retained. This is a compatibility limit, not a successful
+cross-major test or an automatically repaired bundle. Use compatible producer/
+reader dependency versions; arbitrary-version compatibility is not claimed.
+
+Ruff, copy lint, diff and the unchanged 586-finding docstring budget pass.
+Targeted mypy has zero errors on the edited backend and its archived source;
+this is not a whole-package typing claim. The prior fold batch is accepted at
+**88.8364%** (56,078/63,125), **13,877 passed/173 skipped**, 34:10, 2,890 pytest
+warnings and zero collection warnings. All four workflows passed with equal
+whole source/tested-merge trees and unchanged skip counters. Core 70/expanded
+87 and one-point headroom remain. **90% remains open**, with an exact gap of
+735 covered lines at the accepted denominator. New-source complete results
+must be accepted independently before reporting any whole-package gain.
