@@ -14,6 +14,11 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Lazy DuckDB random samples keep distinct source views. Creating another
+  sample no longer changes an earlier sample's source, replaces a user view
+  named `s`, or makes nested samples recursively reference themselves. Native
+  row checks and saved Ridge consumers verify isolation.
+
 - Threshold tuning accepts finite Python and NumPy real scalar costs and
   benefits. Oversized integers raise validation errors; booleans, non-finite
   values and negative FP/FN costs remain invalid. Independent Gaussian

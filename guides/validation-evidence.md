@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-10-26, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed: 88.9760% (56,207/63,171); 15,444 passed, 173 skipped | [CI41136382992](https://github.com/TechLeo-Libraries/BuildML/actions/runs/41136382992), source `5d73f09`, tested merge `ec345066`; matching trees and all four workflows pass. Same 800 files, 566 exclusions and coverage.py 7.16.2; all 1,567 required consumers execute. Environment and skip counts unchanged from `09aaa4e`; full +11 covered lines, no statement changes. Core 70/expanded 87 retained; exact 90% gap 647. 3,435 pytest warnings, no collection warnings |
+| Current accepted remote expanded CPU whole-package gate | Passed: 88.9847% (56,217/63,176); 15,680 passed, 173 skipped | [CI41141608574](https://github.com/TechLeo-Libraries/BuildML/actions/runs/41141608574), source `17d08a8`, tested merge `0a5d678b`; matching trees and all four workflows pass. Same 800 files, 566 exclusions and coverage.py 7.16.2; all 1,803 required consumers execute. Environment and skip counts unchanged from `5d73f09`; full +10 covered lines, +5 statements. Core 70/expanded 87 retained; exact 90% gap 642. 3,487 pytest warnings (+52), no collection warnings |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -6194,3 +6194,78 @@ these ancillary lines is presented as a portable diagnostic gain. Scope remains
 800 files and 566 exclusions under coverage.py 7.16.2; this source has 63,176
 statements. These subset counts are separate from accepted 88.9760% coverage;
 no new whole-package percentage or remaining gap is projected for the fix.
+
+### Accepted threshold-scalar whole-package measurement (2026-10-30)
+
+Source `17d08a8` supersedes the pending threshold measurement above: **88.9847%**
+(56,217/63,176), **15,680 passed/173 skipped**, zero failures or errors, 1358.480s
+log/1358.323s XML. All 236 new scalar cases execute with the prior 1,567 required
+forecast, Torch, NLP and search cases (1,803 total). CI41141608574,
+backend41141608592, acceptance41141608594 and CodeQL41141606534 passed. Source
+and tested merge `0a5d678b` have equal tree `cb7bb0ff`. The artifact environment
+and all 173 skips across 37 messages match accepted `5d73f09`; scope remains
+800 files, 566 excluded lines and coverage.py 7.16.2. The full run records 3,487
+pytest warnings, 52 more than the prior gate, and no collection warnings. Its
+complete totals add 10 covered lines and five statements; the earlier subset
+counts are separate evidence. The exact result is 88.984741%, below 89% despite
+the rounded coverage display of 89.0. Core 70/expanded 87 remain. The next floor
+of 88 still requires a passing complete result of at least 89%. Reaching 90%
+requires 642 more covered lines at this source; later changes require their
+own full measurement and remaining-gap calculation.
+
+### Lazy DuckDB sampling isolation and real saved consumers (2026-10-30)
+
+The unseeded native sampling path reused the SQL source alias `s` on its shared
+connection. A later sibling sample could therefore replace an earlier sample's
+source with a disjoint table, replace a user's registered `s` view, or make a
+nested sample recursively reference itself. A real DuckDB 1.5.6 probe reproduced
+both incorrect source rows and the recursive-view error. Each unseeded sample
+now retains a distinct source alias, matching the isolation used by native mask
+and aggregate plans. Re-executing an unseeded plan may still draw different rows
+from its original source; these checks make no sampling-uniformity claim.
+
+The 120 new cases use real Pandas, Parquet and SQL-view source relations on one
+connection. Sibling draws cover identity, projection, filtering and grouped
+sum/mean plans, seeded controls, small and clamped draw sizes, and repeated
+execution. Independent row lookups and Pandas sums/means verify source support,
+uniqueness, counts and values. Nested draws and a real user view named `s` check
+that unrelated queries remain usable. Twelve actual sampled Ridge models per
+runtime match independent centered linear solves; their saved bundles support
+24 path/object replays while preserving indices, loaded state and artifact
+bytes. Fitting uses one materialized random draw, without assuming an unseeded
+lazy plan produces identical rows on later executions.
+
+The identical final corpus on the archived 828-file `17d08a8` package gives
+**54 failures/66 passing controls** in both runtimes, without skips or errors:
+36 sibling cases, six nested cases, six user-view cases and six saved-consumer
+workflows. The latter fail at incorrect or unreadable sample inputs before
+model fitting; independent numerical and saved-model assertions execute after
+the fix. Initial receipts had an unnecessary Arrow setup before replacing its
+handle with SQL. That setup was removed in favor of the direct native SQL
+handle, and both old-source and fixed-source profiles were repeated with the
+exact corrected corpus. Superseded receipts are retained and contribute no
+reach claim; no native methods or backends were mocked to force branches.
+
+Frozen five-file verification passes **146 tests** in each runtime, with all
+120 new cases unskipped: **48.88s** (48.882s XML) on Pandas 3/NumPy 2.4.6/
+sklearn 1.9.0 and **43.68s** (43.710s XML) on the expanded numerical pins/Pandas 2/
+NumPy 2.4.1/sklearn 1.9.1. Both use real DuckDB 1.5.6 and Polars 2.0.0. Neither
+records failures, errors, skips, pytest warnings or collection warnings. Ruff,
+Python 3.10 syntax and changed-copy checks pass. Both old and current DuckDB
+module type checks pass cleanly; historical diagnostics-module type limitations
+remain separate. All production resources, tracked tests and numerical profile
+inputs are frozen and hashed. Expanded CI adds an eighth required consumer
+module; a separate guard accepts 1,923 actual cases and refuses missing/skipped
+new-module cases. Joined XML is guard evidence, not a complete or combined
+coverage measurement.
+
+`scripts/measure_coverage_reach.py` maps against verified same-source `17d08a8`
+complete JSON/Git and the exact final frozen tree: **2 previously missing
+unchanged/2 changed-new executed lines** per runtime, with no unmapped files.
+The old lines are native empty-sample handling; changed lines implement the
+isolated source alias. No unused Arrow setup, platform housekeeping or
+distribution-quality credit is included. Scope remains 800 files and 566
+exclusions under coverage.py 7.16.2; this source has 63,177 statements. These
+small reach counts are separate from the source-corruption fix and accepted
+88.9847% whole-package coverage. No new full percentage or remaining gap is
+projected before the next complete measurement.

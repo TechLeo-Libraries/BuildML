@@ -708,6 +708,10 @@ class DuckDBEngine:
 
         **Sampling requires a row count**, which executes enough of the plan to
         produce one.
+
+        Unseeded samples keep a distinct source view on the shared connection,
+        so later samples cannot replace their source. Materialising the same
+        unseeded plan again may draw different rows from that source.
         """
         rel = _as_relation(table)
         con = _connection_of(table, None)
@@ -719,7 +723,10 @@ class DuckDBEngine:
             return _wrap(rel.limit(0), con)
         if random_state is None:
             try:
-                sampled = rel.query("s", f"SELECT * FROM s USING SAMPLE {take} ROWS")
+                # Keep the source alias alive and distinct for sibling/nested
+                # lazy samples and existing user views on this connection.
+                source_view = f"_bml_sample_source_{uuid4().hex}"
+                sampled = rel.query(source_view, f"SELECT * FROM {source_view} USING SAMPLE {take} ROWS")
                 self._last_pushdown = "using_sample"
                 self._bridge = "sql"
                 return _wrap(sampled, con)
