@@ -14,6 +14,13 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Fold-local calendar, text and binning features refuse ambiguous generated
+  names during fit and saved replay. Binning preserves missing one-hot values,
+  validates integer bin counts and reads every original source before creating
+  outputs. Composed ordinal scaling follows the original source columns.
+  Independent feature matrices, Ridge predictions and foldwise CV checks cover
+  duplicate indices, real data backings and state-preserving refusals.
+
 - Tabular RL maps Gymnasium discrete observation offsets to zero-based table
   rows and preserves exact integer IDs in batch actions. Fractional, non-finite,
   complex and string observations raise validation errors before selecting a

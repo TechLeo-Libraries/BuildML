@@ -160,7 +160,9 @@ class PreprocessRecipe:
     outlier_action / iqr_multiplier / zscore_threshold:
         Outlier controls (``outlier_action`` defaults to ``cap``).
     n_bins / binning_encode_as:
-        Binning controls (defaults: 5 bins, ordinal codes).
+        Binning controls (defaults: 5 bins, ordinal codes). ``n_bins`` must be
+        an integer at least two. Missing observations retain missing ordinal
+        codes or missing one-hot indicators rather than an all-zero row.
     date_include_time / date_drop_original:
         Date-expansion controls.
     text_max_features / text_ngram_range / text_drop_input:
@@ -497,9 +499,10 @@ class FoldLocalPreprocessor(TransformerMixin, BaseEstimator):
         ~buildml.core.errors.ValidationError
             Labels are needed but absent; an outlier action of ``'drop'`` was
             requested, which cannot work inside a fold because removing rows
-            would change fold membership; ``n_bins`` is below 2; text settings
+            would change fold membership; ``n_bins`` is not an integer at
+            least 2; text settings
             are malformed; the reduce method or prefix is unsupported; or
-            encoding outputs duplicate each other or a retained column name.
+            generated outputs duplicate each other or a retained column name.
 
         Notes
         -----
@@ -519,8 +522,12 @@ class FoldLocalPreprocessor(TransformerMixin, BaseEstimator):
                 "Fold-local outliers support only action='detect' or 'cap' "
                 "(row drops are not applied inside CV folds)."
             )
-        if recipe.binning is not None and recipe.n_bins < 2:
-            raise ValidationError("n_bins must be at least 2 for fold-local binning")
+        if recipe.binning is not None and (
+            isinstance(recipe.n_bins, (bool, np.bool_))
+            or not isinstance(recipe.n_bins, Integral)
+            or recipe.n_bins < 2
+        ):
+            raise ValidationError("n_bins must be an integer at least 2 for fold-local binning")
         if recipe.text is not None:
             if recipe.text_max_features is not None and recipe.text_max_features < 1:
                 raise ValidationError("text_max_features must be >= 1 when provided")
@@ -658,8 +665,9 @@ class FoldLocalPreprocessor(TransformerMixin, BaseEstimator):
         ~buildml.core.errors.ValidationError
             :meth:`fit` has not run, or selection retained no column that
             exists in this frame: which means the frame does not match what
-            was fitted. Encoding also refuses names colliding with retained
-            replay inputs, including extra columns absent during fitting.
+            was fitted. Encoding, calendar, text and binning outputs also
+            refuse names colliding with retained replay inputs, including
+            extra columns absent during fitting.
         """
         if not self._feature_names_ and self._selector is None:
             raise ValidationError("FoldLocalPreprocessor must be fitted before transform")
@@ -728,6 +736,9 @@ class FoldLocalPreprocessor(TransformerMixin, BaseEstimator):
             names = _feature_names_for_column(column, vectorizer, width, recipe.text)
             feature_names.extend(names)
             vectorizers[column] = vectorizer
+        _validate_encoded_names(
+            x_train.columns, cols if recipe.text_drop_input else (), feature_names
+        )
         self._text_columns = list(cols)
         self._text_vectorizers = vectorizers
         self._text_feature_names = feature_names
@@ -741,6 +752,11 @@ class FoldLocalPreprocessor(TransformerMixin, BaseEstimator):
         missing = [c for c in self._text_columns if c not in frame.columns]
         if missing:
             raise ValidationError(f"Fold-local text columns missing: {missing}")
+        _validate_encoded_names(
+            frame.columns,
+            self._text_columns if recipe.text_drop_input else (),
+            self._text_feature_names,
+        )
         blocks: list[pd.DataFrame] = []
         for column in self._text_columns:
             documents = _as_text(frame[column])
@@ -982,6 +998,8 @@ class FoldLocalPreprocessor(TransformerMixin, BaseEstimator):
             )
             if self.recipe.date_include_time:
                 created.extend([f"{col}_hour", f"{col}_minute", f"{col}_second"])
+        # All date sources are still needed while calendar parts are built.
+        _validate_encoded_names(x_train.columns, (), created)
         self._date_created = created
 
     def _apply_dates(self, frame: pd.DataFrame) -> pd.DataFrame:
@@ -990,6 +1008,7 @@ class FoldLocalPreprocessor(TransformerMixin, BaseEstimator):
         missing = [c for c in self._date_columns if c not in frame.columns]
         if missing:
             raise ValidationError(f"Fold-local date columns missing: {missing}")
+        _validate_encoded_names(frame.columns, (), self._date_created)
         out = frame.copy()
         for col in self._date_columns:
             parsed = _parse_fold_datetimes(out[col], col)
@@ -1066,6 +1085,12 @@ class FoldLocalPreprocessor(TransformerMixin, BaseEstimator):
             edge_list = [float(v) for v in raw_edges]
             edges[column] = edge_list
             labels[column] = [f"{column}_bin_{i}" for i in range(len(edge_list) - 1)]
+        names = (
+            [f"{column}_bin" for column in cols]
+            if recipe.binning_encode_as == "ordinal"
+            else [name for column in cols for name in labels[column]]
+        )
+        _validate_encoded_names(x_train.columns, cols, names)
         self._binning_columns = list(cols)
         self._binning_edges = edges
         self._binning_labels = labels
@@ -1076,9 +1101,15 @@ class FoldLocalPreprocessor(TransformerMixin, BaseEstimator):
         missing = [c for c in self._binning_columns if c not in frame.columns]
         if missing:
             raise ValidationError(f"Fold-local binning columns missing: {missing}")
-        out = frame.copy()
+        names = (
+            [f"{column}_bin" for column in self._binning_columns]
+            if self.recipe.binning_encode_as == "ordinal"
+            else [name for column in self._binning_columns for name in self._binning_labels[column]]
+        )
+        _validate_encoded_names(frame.columns, self._binning_columns, names)
+        encoded: dict[str, pd.Series] = {}
         for column in self._binning_columns:
-            values = pd.to_numeric(out[column], errors="coerce")
+            values = pd.to_numeric(frame[column], errors="coerce")
             edges = self._binning_edges[column]
             codes = pd.cut(
                 values,
@@ -1088,12 +1119,14 @@ class FoldLocalPreprocessor(TransformerMixin, BaseEstimator):
                 right=True,
             )
             if self.recipe.binning_encode_as == "ordinal":
-                out[f"{column}_bin"] = codes.astype("float")
+                encoded[f"{column}_bin"] = codes.astype("float")
             else:
                 for level, name in enumerate(self._binning_labels[column]):
-                    out[name] = (codes == level).astype("float")
-            del out[column]
-        return out
+                    encoded[name] = (codes == level).astype("float").where(codes.notna())
+        return pd.concat(
+            [frame.drop(columns=self._binning_columns), pd.DataFrame(encoded, index=frame.index)],
+            axis=1,
+        )
 
     def _transform_encoded(self, x: pd.DataFrame) -> pd.DataFrame:
         cols = self._encode_columns
@@ -1287,10 +1320,11 @@ def _remap_scaled_columns(
     resolved: list[str] = []
     binned_set = set(binned)
     for column in pending:
-        if column in frame.columns:
+        if column in binned_set:
+            if f"{column}_bin" in frame.columns:
+                resolved.append(f"{column}_bin")
+        elif column in frame.columns:
             resolved.append(column)
-        elif column in binned_set and f"{column}_bin" in frame.columns:
-            resolved.append(f"{column}_bin")
     return resolved
 
 

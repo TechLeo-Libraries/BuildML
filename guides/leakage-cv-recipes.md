@@ -111,6 +111,22 @@ names raise `ValidationError` before downstream model fitting.
 Outliers inside a recipe may `detect` or `cap`. **Drop** is refused:
 dropping rows would rewrite fold membership.
 
+Calendar, text and binning output names must be unique and cannot replace
+retained input columns, including extra replay columns. For example,
+`when_year`, `review__red` and `x_bin` may already belong to the incoming data.
+Ambiguous requests raise `ValidationError` during fitting or frozen replay.
+Rename conflicting columns and refit the preprocessor and estimator together;
+older saved pipelines follow the same replay checks. Date expansion also
+protects source columns needed to compute other calendar parts.
+
+Fold-local binning requires an integer `n_bins >= 2`; NumPy integers are
+accepted, while booleans, fractions, strings and non-finite counts are refused.
+All source values are read before bin outputs are assembled, so binning both
+`x` and `x_bin` can safely produce `x_bin` and `x_bin_bin`. Ordinal scaling
+follows each original source. Missing observations remain missing in ordinal
+codes and every one-hot indicator. Use recipe imputation, which runs before
+binning, when the downstream estimator requires complete numeric inputs.
+
 These stay Session-global and are never fold-local:
 
 - `resample` (it rewrites train rows)
