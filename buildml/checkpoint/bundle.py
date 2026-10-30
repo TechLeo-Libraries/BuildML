@@ -224,6 +224,9 @@ def save_checkpoint(
     **The sidecar knobs are optional and backward compatible.** Omitting them
     preserves prior defaults, and older single-file sidecars still load.
 
+    Saving into an existing directory replaces its recorded snapshot. If this
+    session has no preprocessing plans, any previous ``plans.joblib`` is removed.
+
     Examples
     --------
     .. code-block:: python
@@ -314,6 +317,9 @@ def save_checkpoint(
         plans_path = root / "plans.joblib"
         joblib.dump(pack_plans_payload(**plan_payload), plans_path)
         hashes["plans.joblib"] = _sha256_file(plans_path)
+    else:
+        # Reusing a directory must not resurrect the previous snapshot's plans.
+        (root / "plans.joblib").unlink(missing_ok=True)
 
     manifest = {
         "created_at": datetime.now(timezone.utc).isoformat(),
@@ -387,6 +393,12 @@ def load_checkpoint(
     the snapshot taken at save time, so anything that depended on the upstream
     query is gone.
 
+    Partitioned sidecars with a recorded ``parts`` list must contain exactly
+    those Parquet files. Extra or missing partitions refuse resume before a
+    native handle is opened. ``data_only=True`` reads the canonical frame.
+    An explicit ``meta.has_plans=False`` skips a leftover inactive plans file;
+    older metadata without this flag still loads its plans with trust required.
+
     See Also
     --------
     save_checkpoint : Writing what this reads.
@@ -408,6 +420,9 @@ def load_checkpoint(
     splits_payload = None if data_only else _read_json(root / "splits.json")
     history_payload = None if data_only else _read_json(root / "history.json")
     manifest = None if data_only else _read_json(root / "MANIFEST.json")
+
+    if isinstance(meta, dict):
+        _validate_sidecar_parts(root, meta.get("native_sidecar"))
 
     # Verify recorded member hashes when present (tamper detection; not trust).
     if isinstance(manifest, dict) and isinstance(manifest.get("hashes"), dict):
@@ -469,7 +484,7 @@ def load_checkpoint(
 
     plans: dict[str, Any] = {}
     plans_path = root / "plans.joblib"
-    if not data_only and plans_path.exists():
+    if not data_only and plans_path.exists() and (meta or {}).get("has_plans", True):
         from buildml.pipeline.bundle import unpack_plans_payload
 
         # plans.joblib is pickle/joblib: only load trusted checkpoint trees.
@@ -709,6 +724,28 @@ def _resolve_sidecar_path(root: Path, sidecar_info: dict[str, Any]) -> Path | No
     if partitioned.is_dir() and any(partitioned.glob("*.parquet")):
         return partitioned
     return None
+
+
+def _validate_sidecar_parts(root: Path, sidecar_info: Any) -> None:
+    """Keep directory scans within the partition membership recorded at save."""
+    if not isinstance(sidecar_info, dict) or sidecar_info.get("layout") != "partitioned":
+        return
+    parts = sidecar_info.get("parts")
+    if parts is None:
+        return  # Legacy sidecars did not record individual partition names.
+    target = root / str(sidecar_info.get("relative_path") or NATIVE_SIDECAR_DIR_RELATIVE)
+    actual = {part.name for part in target.glob("*.parquet") if part.is_file()}
+    if (
+        not isinstance(parts, list)
+        or not parts
+        or any(not isinstance(part, str) or Path(part).name != part for part in parts)
+        or len(set(parts)) != len(parts)
+        or set(parts) != actual
+    ):
+        raise ValidationError(
+            "Checkpoint native sidecar partitions do not match the recorded snapshot. "
+            "Restore the original partition files or use data_only=True for the canonical data."
+        )
 
 
 def _reattach_native_handle(

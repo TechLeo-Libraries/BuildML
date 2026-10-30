@@ -119,6 +119,21 @@ restored.save_model("artifacts/model_only")
 `data_only=True` on load discards prior workflow semantics. Use it when
 you want the frame without replaying history.
 
+Saving successfully into a reused checkpoint directory replaces the recorded
+snapshot, including its preprocessing plans. Saving a session with no plans
+removes the previous plans file. Restore also honors an explicit
+`meta.has_plans=False` in checkpoints written by older versions that left an
+inactive file behind. Metadata without that flag retains the legacy behavior:
+loading a plans file requires `trusted=True`.
+
+When a partitioned native sidecar records a `parts` list, restore requires exactly
+those Parquet files. An added or missing partition raises `ValidationError`
+before native reattachment, preserving the current Session on a failed
+`reattach`. Recover the original files to resume the saved split, or use
+`data_only=True` to read `data/frame.parquet` as fresh ingest, then assign roles
+and create a new split. Split membership is positional; store a meaningful
+pandas index as an explicit column.
+
 `session.reattach(...)` replaces the current in-memory workflow state while
 keeping the Session object's identity. Models, domain plans, retrieval indexes,
 AI configuration and cached reports from the previous dataset are discarded.

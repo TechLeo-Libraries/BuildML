@@ -8,20 +8,20 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 88.66852827314844,
-      "covered_lines": 55886,
-      "num_statements": 63028,
+      "percent_covered": 88.70169426994099,
+      "covered_lines": 55914,
+      "num_statements": 63036,
       "excluded_lines": 566,
-      "source_revision": "95a8f428c2226da687768b4d4f0d6a9b15e5343e",
-      "tested_revision": "148833100ca1dbf3ffe07969c9e556fdede8166c",
+      "source_revision": "bdbc07ed7154137ca145957540a80e675c4ecd51",
+      "tested_revision": "365b73bf2b7503b46c579943fa0265b64010a2be",
       "platform": "remote Linux, CPU expanded profile",
-      "run_id": 40972211969,
-      "result": "11860 passed, 173 skipped, zero failures/errors",
+      "run_id": 40980535475,
+      "result": "12092 passed, 173 skipped, zero failures/errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
-      "notes": "Native aggregation consumers accepted; all four workflows passed. Source/merge trees equal bf222721c52b1b8b5a3689450eb593beb2e42a5f. Coverage.py 7.16.2/566 exclusions and package scope unchanged; 2890 pytest warnings, zero collection warnings. Full 23:06; exact 90% gap 840. Core 70/expanded 87 retained; next floor requires one percentage point of headroom. Subset reach remains separate.",
+      "notes": "Allocation identity consumers accepted; all four workflows passed. Source/merge trees equal 5465a0b76a532f67d195416be7fc3d8b857bd31c. Coverage.py 7.16.2/566 exclusions and package scope unchanged; 2890 pytest warnings, zero collection warnings. Full 21:30; exact 90% gap 819. Core 70/expanded 87 retained; next floor requires one percentage point of headroom. Subset reach remains separate.",
       "coverage_version": "7.16.2"
     },
     "latest_local_measurement": {

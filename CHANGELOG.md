@@ -806,6 +806,11 @@ from the current release; use the installation guide for current requirements.
 
 ### Fixed
 
+- Replacing a checkpoint removes obsolete preprocessing plans, and restore
+  skips a leftover file explicitly marked inactive. Partitioned native sidecars
+  refuse added or missing recorded Parquet parts before reattachment, preserving
+  the receiver on failure. Data-only restore continues to use the canonical frame.
+
 - Fold-local supervised selection uses target type rather than a cardinality
   cutoff, honors explicit F-test scorers, refuses infinite numeric targets,
   and retains a serializable fallback when thresholding would discard all features.

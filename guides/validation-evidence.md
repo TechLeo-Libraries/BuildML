@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-10-26, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed: 88.6685% (55,886/63,028); 11,860 passed, 173 skipped | [CI 40972211969](https://github.com/TechLeo-Libraries/BuildML/actions/runs/40972211969), source `95a8f42`, tested merge `14883310`; matching trees and all four workflows passed. Scope/566 exclusions/coverage.py 7.16.2 unchanged. Core 70/expanded 87 retained. Exact 90% gap 840 lines; 2,890 pytest warnings, no coverage collection warnings |
+| Current accepted remote expanded CPU whole-package gate | Passed: 88.7017% (55,914/63,036); 12,092 passed, 173 skipped | [CI 40980535475](https://github.com/TechLeo-Libraries/BuildML/actions/runs/40980535475), source `bdbc07e`, tested merge `365b73bf`; matching trees and all four workflows passed. Scope/566 exclusions/coverage.py 7.16.2 unchanged. Core 70/expanded 87 retained. Exact 90% gap 819 lines; 2,890 pytest warnings, no coverage collection warnings |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -4766,3 +4766,89 @@ collection warnings; all four workflows passed. Skip-reason counters match
 headroom policy are unchanged. The exact 90% gap is 840 at that accepted
 denominator. Fresh complete CI must measure this source before any whole-
 package gain is claimed.
+
+### Accepted allocation identity whole-suite result (2026-10-30)
+
+Source `bdbc07e` passed the complete expanded Linux CPU suite at **88.7017%**
+(55,914/63,036 lines), with **12,092 passed and 173 skipped** in 21:30.
+The XML has 12,265 tests and zero failures/errors, with runtime 1290.168s.
+There were 2,890 pytest warnings and zero collection warnings. CI 40980535475,
+backend 40980535700, acceptance 40980535477 and CodeQL 40980531454 all passed.
+Tested merge `365b73bf` and source trees match. The 800-file measured package
+scope, coverage.py 7.16.2 and 566 exclusions are unchanged. Full covered lines
+increased by 28 while statements increased by 8 from `95a8f42`; the exact 90% gap is
+819 lines at this denominator. Core 70 and expanded 87 remain unchanged.
+The recorded Windows subsets and lean profile above remain separate evidence.
+
+### Checkpoint snapshot replacement consumers (2026-10-30)
+
+Saving into a reused checkpoint directory left the previous `plans.joblib`
+behind when the new session had no plans. Restore could then attach the old
+plans despite `meta.has_plans=False`. Partitioned native reads also consumed
+unrecorded Parquet files through a directory glob. Save now removes inactive
+plans; restore honors explicit inactive metadata while retaining the legacy
+trust requirement when the flag is absent. Recorded partition membership is
+validated before hashes and native reattachment. Added or missing parts refuse
+resume with `ValidationError`; data-only restore still reads the canonical
+frame, and a refused in-place reattach preserves the receiver.
+
+An archived-source reproduction with an extra three-row file reported `resume`
+while returning 51 rows instead of the saved 48 and shifting 11 of 12 test-row
+IDs, on all four native backings. The archived Pandas loader also restored an
+old scale plan despite explicit inactive metadata.
+
+The 126 new public consumers span Pandas, Polars memory/lazy, DuckDB memory/lazy,
+four plan transitions, two sidecar layouts and load/in-place reattach. Separate
+partition consumers cover 1/7/48 rows per part and zstd/snappy. Train-only scalar
+median/scaling and NumPy least-squares oracles check rows, IDs, splits, both
+holdout predictions and MAE/R2, plus unchanged fitted preprocessing plans.
+Changed sidecar membership and inactive legacy payloads exercise recovery.
+Parquet preserves row values and positions; store meaningful pandas indexes
+as explicit columns. There is no claim that a failed save rolls back disk writes.
+
+All 828 package/resource inputs from archived accepted `bdbc07e` were verified.
+The exact final-test baseline has **42 failed/84 passed**, 46.14s log/46.061s XML,
+zero errors/skips/warnings. Current focus: **126 passed**, 51.07s/50.982s.
+An initial focus had 12 test-only history assertions after a public `to_pandas`
+read recorded history; assertion order was corrected and the exact final-test
+baseline rerun. Initial artifacts remain available; that run is superseded.
+
+Final frozen Windows profiles include 10 selected test files:
+
+| Profile | Tests | Runtime (log / XML) |
+| --- | --- | --- |
+| Pandas 3.0.5, NumPy 2.4.6, sklearn 1.9.0 | 171 passed | 113.66s / 113.611s |
+| Pandas 2.3.3, same NumPy/sklearn | 171 passed | 92.65s / 92.599s |
+| Actual minimal environment, Pandas 2.3.3/NumPy 2.4.1/sklearn 1.9.1 | 18 passed, 108 explicitly deselected | 12.44s / 12.381s |
+
+Both broader profiles use real Polars 2.0.0 and DuckDB 1.5.6; all 126 new cases
+execute, with zero failures/errors/skips/pytest warnings/collection warnings.
+The minimal environment actually lacks Torch, CVXPY, Polars, DuckDB and plotting
+packages; it supplies Pandas evidence, with native cases explicitly deselected.
+All 814 production Python files, 14 resources and 10 selected test files are
+frozen and verified. No source or test edits occurred during final profiles.
+
+Source-mapped reach against verified same-source accepted `bdbc07e` is **12
+previously missing unchanged lines / 13 changed-new executed lines** in each
+broader profile, with empty unmapped lists. Six unchanged lines are in checkpoint
+restore/write paths, four in scaling and one each in DuckDB and Polars.
+The subset denominator is 63,049 statements; the 800-file package
+scope, coverage.py 7.16.2 and 566 exclusions are unchanged. Reach includes older
+selected consumers and availability differences; it is not a whole-suite
+percentage, projection, or attribution of every line to new tests.
+
+The actual archived writer produced 20 checkpoints: 10 with active plans and
+10 successful replacements retaining stale inactive payloads. Current public
+consumers in each broader runtime pass 40 holdout prediction checks and 80
+scalar metric checks, preserving all artifact bytes. This verifies those real
+`bdbc07e` artifacts, with no arbitrary-version or cross-serialization identity
+claim. Core 70/expanded 87 floors and headroom policy remain unchanged.
+
+Ruff, copy lint, diff checks and the unchanged 586-finding docstring budget
+pass. Targeted mypy on the edited checkpoint module passes, matching the
+archived module; this is not a whole-package typing claim. No checkpoint schema
+or package exclusions changed. Latest accepted complete Linux CPU coverage is
+still **88.7017%** at `bdbc07e` (55,914/63,036), 12,092 passed/173 skipped,
+21:30, 2,890 pytest warnings and zero collection warnings. All four workflows
+passed with matching whole source/tested-merge trees. The exact 90% gap remains
+819 at that accepted denominator; fresh complete CI must measure this correction.
