@@ -8,21 +8,21 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 88.9198606271777,
-      "covered_lines": 56144,
-      "num_statements": 63140,
+      "percent_covered": 88.9348025711662,
+      "covered_lines": 56173,
+      "num_statements": 63162,
       "excluded_lines": 566,
-      "source_revision": "8f2376d75c8ded2a76596159246cb0c284633515",
-      "tested_revision": "12bd80df3ffdefb252c2cdbcf25925958de439ed",
+      "source_revision": "7c943d67260271b2acc699697f4c1b44ec813d1f",
+      "tested_revision": "659e801ee8ab9121bcdd3221d830c260cfdd5f18",
       "platform": "remote Linux, CPU expanded profile",
-      "run_id": 41090120083,
-      "result": "14412 passed, 173 skipped, zero failures/errors",
+      "run_id": 41117199223,
+      "result": "15184 passed,173 skipped,zero failures/errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
       "coverage_version": "7.16.2",
-      "notes": "Real NeuralForecast stack and complete cold-install repair accepted; all four workflows passed and source/merge trees equal 52b079f7880a36d75802570a95f95ec5add086c5. Scope800/566 exclusions unchanged. Full2384.760s log/2384.552s XML;3435 pytest warnings,zero collection warnings. All283 NBEATS and252 Prophet consumers execute; skip counters and existing environment versions unchanged. Deliberate backend/profile expansion contributes to full+43covered/+14statements. Exact90gap682. Core70/expanded87 retained; next88 needs passing complete>=89. Subsequent Torch subsets remain separate."
+      "notes": "Torch target/numeric/grayscale corrections accepted; all four workflows passed and source/merge trees equal 7af3fb42886d828fc75c6786ace93114e8a4968c. All772 Torch and535 forecasting consumer cases execute; skip counters unchanged. Full2316.920s log/2316.714s XML,3435 pytest warnings,zero collection warnings. Scope800/566 exclusions unchanged; full+29covered/+22statements vs8f. Fixed numerical/Torch pins unchanged, but transitive boto3/botocore1.43.122->1.43.123 and copulas0.14.1->0.15.0 drift; profile contributions are not excluded. Artifact quota error recovered before acceptance. Exact90gap673;core70/expanded87 retained;next88 needs passing complete>=89 with1ppheadroom. Subsequent NLP subset separate."
     },
     "latest_local_measurement": {
       "percent_covered": 85.51916984547746,

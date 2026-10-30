@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-10-26, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed: 88.9199% (56,144/63,140); 14,412 passed, 173 skipped | [CI 41090120083](https://github.com/TechLeo-Libraries/BuildML/actions/runs/41090120083), source `8f2376d`, tested merge `12bd80df`; matching trees/all four workflows pass. Scope800/566 exclusions/coverage.py7.16.2 unchanged; all283 N-BEATS/all252 Prophet cases execute. Backend/profile expansion contributes; full+43covered/+14statements. Core70/expanded87 retained; exact90gap682. 3,435 pytest warnings/no collection warnings |
+| Current accepted remote expanded CPU whole-package gate | Passed: 88.9348% (56,173/63,162); 15,184 passed, 173 skipped | [CI41117199223](https://github.com/TechLeo-Libraries/BuildML/actions/runs/41117199223), source `7c943d6`, tested merge `659e801e`; matching trees/all four workflows pass. Scope800/566 exclusions/coverage.py7.16.2 unchanged; all772 Torch/all535 forecasting cases execute. Three transitive versions drifted; full+29covered/+22statements includes possible profile contributions. Core70/expanded87 retained; exact90gap673. 3,435 pytest warnings/no collection warnings |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -5985,3 +5985,76 @@ data/media paths; one is a Windows-only probe. Package scope remains800 files,
 with full coverage nor projected. Latest accepted whole-package coverage remains
 88.9199% at `8f2376d`, with exact90gap682 and floors70/87. Fresh full CI is required
 for both subsequent Torch corrections.
+
+### Accepted Torch whole-package measurement (2026-10-30)
+
+Source `7c943d6` supersedes the pending Torch gate above: **88.9348%**
+(56,173/63,162), **15,184 passed/173 skipped**, zero failures/errors,2316.920s
+log/2316.714s XML. All329 target/grayscale/all443 numeric-input cases execute,
+alongside283 N-BEATS/252 Prophet cases. CI41117199223, backend41117199290,
+acceptance41117199438 and CodeQL41117193795 pass. Source/tested merge `659e801e`
+have equal tree `7af3fb42`. Scope800 files/566 exclusions/coverage.py7.16.2 and
+all173 skips/37 message counts are unchanged. There are3,435 pytest warnings
+and zero collection warnings. Numerical/Torch pins are unchanged, but the
+artifact environment confirms transitive drift: boto3/botocore1.43.122->1.43.123
+and copulas0.14.1->0.15.0. The complete +29 covered/+22 statement change therefore
+retains a profile qualification; it is not attributed solely to code changes.
+Initial artifact download attempts returned a storage-service quota error.
+Decoded job logs and equal source trees were checked independently; the JSON,
+XML and environment were accepted only after a later bounded retry recovered
+the actual five-file artifact. No passing full run was repeated for retrieval.
+Core70/expanded87 remain; next88 needs a passing complete>=89 with one-point
+headroom. Exact90gap673; the target remains open.
+
+### NLP discrete resource controls and saved classifiers (2026-10-30)
+
+Actual classifier/topic calls at `7c943d6` accepted nine malformed requests and
+raised three raw ValueError/IndexError exceptions; one existing refusal was
+correct. Early integer coercions truncated fractional n-gram/hash/topic sizes,
+accepted boolean/string values and silently discarded extra n-gram entries.
+NLP now reuses the existing positive-integer validator before conversion for
+token lengths, vocabulary/hash sizes, topic counts, reported term counts and
+iteration budgets. A shared n-gram boundary checks pair shape and ordered
+positive integer bounds. Valid NumPy integer scalars remain usable; optional
+vocabulary caps and document-frequency count/proportion semantics are retained.
+No fitted-plan schema or bundle version changes.
+
+The 192 new real consumers cover classifiers plus NMF/LDA across Pandas memory,
+Pandas Parquet, lazy Polars and lazy DuckDB. Refusals preserve the prior fitted
+plan, weights, history and dataset. Twenty-four valid controls use independent
+word/bigram counters, training-only TF-IDF, hash buckets and closed-form Naive
+Bayes probabilities. Actual saved/reloaded classifiers retain exact predictions.
+Exact archived `7c943d6` baselines produce **132 failed/60 passed** each, zero
+errors/skips, four warnings,32.45s/27.55s. The passes include 36 existing refusals
+and 24 numerical controls; failed assertions are not all new exception paths.
+
+An initial broader run retained **12 failed/230 passed in 103.09s**: classifier
+ingress still converted token lengths before the new check. Those casts were
+corrected without changing the assertions. Final three-file frozen profiles
+each pass **242 tests**, zero skips/warnings/errors/collection warnings,104.01s
+on Pandas3/sklearn1.9.0 and60.32s on Pandas2.3.3/NumPy2.4.1/sklearn1.9.1. All192
+new cases execute. Six actual archived-source count/TF-IDF/hash models are also
+consumed in their matching runtimes across four backings and all partitions:
+72 checks agree with independent feature/NB arithmetic, preserving exact fitted
+weights, dataset values and artifact bytes. This does not claim cross-runtime
+pickle compatibility, GPU execution or topic quality/convergence.
+
+All828 production/resource files and tracked tests/configurations were frozen
+and hashed. Ruff, Python3.10 syntax, documentation audit and changed-copy checks
+pass. Scoped mypy retains the same two pre-existing normalization errors as
+archived `7c943d6`; it is not a clean type check. CI additionally requires this
+NLP module to execute without skips. Its separate guard accepts1,499 actual
+consumer cases from verified XMLs and rejects missing/skipped cases; joining
+guard receipts is not a whole-suite run or combined coverage measurement.
+
+Mapped reach against verified complete `7c943d6` JSON/Git and the exact frozen
+source is **15 previously missing unchanged/27 changed-new executed lines** per
+profile, with no unmapped files. Eleven old lines are classifier/vectorizer
+paths; three are existing NLP capability branches. Pandas3 adds a Windows-only
+Torch probe; Pandas2 instead adds an NLP catalog availability branch. All27
+changed-new lines are NLP source. The earlier verified8f baseline gives the same
+counts; NLP source is identical between those baseline revisions. Scope remains
+800 normalized files/566 exclusions/coverage.py7.16.2. These are subset reach
+counts, separate from whole-package percentages. Latest accepted full coverage
+remains88.9348% at `7c943d6`, with exact90gap673 and unchanged70/87 floors; the
+subsequent NLP changes require their own complete CI.

@@ -122,7 +122,7 @@ monolith** (**70** active after corrected thread/process tracing measured at lea
 `pytest tests --cov=buildml`); do not lower it to silence a regression.
 The separate `expanded-coverage` CI job installs
 `requirements-expanded-coverage.txt` and runs the entire suite with an **87%**
-floor, supported by passing remote Linux 88.9199% evidence at `8f2376d`.
+floor, supported by passing remote Linux 88.9348% evidence at `7c943d6`.
 The broadened profile includes DoWhy and ONNX Runtime, using a compatible
 NumPy 2.4.1/SciPy 1.15.3/mlxtend 0.23.4 stack. Same-source complete local suites
 passed 85.5192% for this profile and85.3947% for its original-profile control;
@@ -230,16 +230,16 @@ and pick the next target, and `--path buildml/<pkg>` to audit work in progress.
 - Write public documentation for library users. Keep implementation instructions,
   release actions, and work plans in clearly labeled contributor material.
 
-Current expanded coverage evidence (2026-10-30, source `8f2376d`): remote Linux
-passed at **88.9199%** (56,144 / 63,140 lines), with 14,412 passed and 173 skipped.
-[CI run 41090120083](https://github.com/TechLeo-Libraries/BuildML/actions/runs/41090120083)
+Current expanded coverage evidence (2026-10-30, source `7c943d6`): remote Linux
+passed at **88.9348%** (56,173 / 63,162 lines), with 15,184 passed and 173 skipped.
+[CI run 41117199223](https://github.com/TechLeo-Libraries/BuildML/actions/runs/41117199223)
 passed, as did backend evidence, release acceptance and CodeQL. Tested merge
-`12bd80df` and source trees are equal. Core 70/expanded 87 stay unchanged; the next
+`659e801e` and source trees are equal. Core 70/expanded 87 stay unchanged; the next
 expanded increase requires a passing complete gate with one point of headroom.
-The same 800 files/566 excluded lines/coverage.py 7.16.2 were measured in
-2384.760s, with 3,435 pytest warnings and no collection warnings. Skip-message
-counts and pre-existing runtime versions are unchanged. All 283 N-BEATS and
-252 Prophet consumers execute. Adding the real NeuralForecast backend to the
-profile contributes to the complete +43 covered/+14 statement change. Reaching
-90% requires 682 further covered lines at this source; subsequent Torch subset
-reach is separate from whole-package percentages.
+Scope remains 800 files/566 exclusions/coverage.py 7.16.2. The suite took
+2316.920s with 3,435 pytest warnings and no collection warnings. All 772 Torch
+and 535 forecast consumer cases execute; skip-message counts are unchanged.
+The full change is +29 covered/+22 statements from8f. Numerical/Torch pins stay
+fixed, while boto3/botocore1.43.122->1.43.123 and copulas0.14.1->0.15.0 changed
+transitively; profile contributions are not excluded. Reaching 90% requires
+673 further covered lines at this source. NLP subset reach remains separate.

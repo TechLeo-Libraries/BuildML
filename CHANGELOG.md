@@ -14,6 +14,12 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- NLP classifier and topic workflows validate n-gram pairs, token lengths,
+  vocabulary/hash sizes and topic/iteration counts before conversion. Malformed,
+  boolean, fractional and non-finite counts raise validation errors while valid
+  Python/NumPy integers retain their meaning. Existing fitted plans survive
+  refusals; independent feature/probability and saved-model checks cover replay.
+
 - Numeric Torch inputs refuse NaN, infinity and float32 overflow after
   preprocessing. Large finite training values remain usable when normalization
   rescales them safely. CV validates tensors before constructing each fold model.

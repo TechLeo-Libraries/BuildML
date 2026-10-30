@@ -13,6 +13,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from buildml.core.errors import ValidationError
+from buildml.core.validation import _positive_integer
 from buildml.nlp.extras import nltk_available, require_nltk
 from buildml.nlp.lexicons import SUFFIX_STEM_RULES, stopwords_for
 from buildml.nlp.types import (
@@ -149,6 +150,17 @@ class TextNormalizePlan:
         }
 
 
+def _ngram_bounds(value: Any) -> tuple[int, int]:
+    """Validate a discrete inclusive n-gram pair without lossy coercion."""
+    if not isinstance(value, (tuple, list)) or len(value) != 2:
+        raise ValidationError("ngram_range must be a pair of positive integers.")
+    low = _positive_integer(value[0], name="ngram_range min_n")
+    high = _positive_integer(value[1], name="ngram_range max_n")
+    if high < low:
+        raise ValidationError("ngram_range must satisfy 1 <= min_n <= max_n.")
+    return low, high
+
+
 def build_normalize_plan(config: TextNormalizeConfig | None = None) -> TextNormalizePlan:
     """Turn normalisation settings into a concrete, reproducible plan.
 
@@ -172,8 +184,8 @@ def build_normalize_plan(config: TextNormalizeConfig | None = None) -> TextNorma
     Raises
     ------
     ~buildml.core.errors.ValidationError
-        A step name is unrecognised, ``min_token_length`` is below 1, or
-        ``max_token_length`` is below ``min_token_length``.
+        A step name is unrecognised, token lengths are not positive integers,
+        or ``max_token_length`` is below ``min_token_length``.
     ~buildml.core.errors.MissingExtraError
         Lemmatisation was requested without NLTK. Unlike stemming there is no
         built-in fallback: a lemmatiser needs a dictionary, and approximating
@@ -204,9 +216,9 @@ def build_normalize_plan(config: TextNormalizeConfig | None = None) -> TextNorma
             f"Unknown normalization step(s) {unknown}. "
             f"Choose from {sorted(VALID_NORMALIZE_STEPS)}."
         )
-    if cfg.min_token_length < 1:
-        raise ValidationError("min_token_length must be >= 1.")
-    if cfg.max_token_length < cfg.min_token_length:
+    min_length = _positive_integer(cfg.min_token_length, name="min_token_length")
+    max_length = _positive_integer(cfg.max_token_length, name="max_token_length")
+    if max_length < min_length:
         raise ValidationError("max_token_length must be >= min_token_length.")
 
     disclosures: list[str] = []
@@ -249,8 +261,8 @@ def build_normalize_plan(config: TextNormalizeConfig | None = None) -> TextNorma
         steps=tuple(cfg.steps),
         stopwords=frozenset(words),
         stopword_language=cfg.stopword_language,
-        min_token_length=cfg.min_token_length,
-        max_token_length=cfg.max_token_length,
+        min_token_length=min_length,
+        max_token_length=max_length,
         stem=cfg.stem,
         lemmatize=cfg.lemmatize,
         keep_emoji=cfg.keep_emoji,
@@ -559,11 +571,7 @@ class TextAnalyzer:
         ~buildml.core.errors.ValidationError
             ``min_n`` is below 1 or ``max_n`` is below ``min_n``.
         """
-        low, high = int(ngram_range[0]), int(ngram_range[1])
-        if low < 1 or high < low:
-            raise ValidationError(
-                "ngram_range must be (min_n, max_n) with 1 <= min_n <= max_n."
-            )
+        low, high = _ngram_bounds(ngram_range)
         self.plan = plan
         self.low = low
         self.high = high
