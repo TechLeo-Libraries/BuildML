@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-10-26, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed: 88.9585% (56,196/63,171);15,376 passed,173 skipped | [CI41127810796](https://github.com/TechLeo-Libraries/BuildML/actions/runs/41127810796), source `09aaa4e`, tested merge `4ce5ea2c`; matching trees/all4 workflows pass. Same800files/566 exclusions/coverage7.16.2;all1499 required consumers execute. Entire environment and skip counts unchanged7c;full+23covered/+9statements. Core70/expanded87 retained;exact90gap658. 3,435 pytest warnings/no collection warnings |
+| Current accepted remote expanded CPU whole-package gate | Passed: 88.9760% (56,207/63,171); 15,444 passed, 173 skipped | [CI41136382992](https://github.com/TechLeo-Libraries/BuildML/actions/runs/41136382992), source `5d73f09`, tested merge `ec345066`; matching trees and all four workflows pass. Same 800 files, 566 exclusions and coverage.py 7.16.2; all 1,567 required consumers execute. Environment and skip counts unchanged from `09aaa4e`; full +11 covered lines, no statement changes. Core 70/expanded 87 retained; exact 90% gap 647. 3,435 pytest warnings, no collection warnings |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -6122,3 +6122,75 @@ coverage.py7.16.2 are unchanged. These are subset reach counts; they are not
 combined with or projected onto whole-suite percentages. Latest accepted full
 coverage remains88.9585%, exact90gap658, with70/87 floors. This added consumer
 coverage and its CI enforcement require a fresh complete measurement.
+
+### Accepted randomized-search whole-package measurement (2026-10-30)
+
+Source `5d73f09` supersedes the pending search measurement above: **88.9760%**
+(56,207/63,171), **15,444 passed/173 skipped**, zero failures or errors, 2302.320s
+log/2302.118s XML. All 68 new search cases execute with the prior 1,499 required
+forecast, Torch and NLP cases (1,567 total). CI41136382992, backend41136383013,
+acceptance41136382998 and CodeQL41136380791 passed. Source and tested merge
+`ec345066` have equal tree `37ff217d`. The entire artifact environment and all
+173 skips across 37 messages match accepted `09aaa4e`; scope remains 800 files,
+566 excluded lines and coverage.py 7.16.2. There are 3,435 pytest warnings and no
+collection warnings. The complete run adds exactly 11 covered lines with no
+losses or statement changes: eight in model selection, two in fold preprocessing
+and one in Session refit attachment. This confirms the prior subset reach with
+a separate complete measurement. The exact result is 88.975954%, below 89%:
+core 70/expanded 87 remain, and the next expanded floor of 88 still requires a
+passing complete result of at least 89%. Reaching 90% requires 647 more covered
+lines at this source. Later source changes require their own full measurement.
+
+### Real scalar threshold costs and saved probabilistic consumers (2026-10-30)
+
+Threshold tuning refused finite `numpy.float32`, `numpy.int64` and
+`numpy.uint32` costs and benefits, while oversized Python integers leaked a raw
+`OverflowError`. It now accepts real scalar coefficients, validates finite
+float conversion and reports invalid values through `ValidationError`. FP/FN
+costs remain nonnegative; negative benefits keep their signed penalty meaning.
+Booleans, strings, complex and non-finite values remain invalid.
+
+The 236 new cases train real GaussianNB models through Pandas memory/Parquet,
+lazy Polars and lazy DuckDB. Independent train moments, smoothed variances and
+Gaussian densities reproduce fitted parameters and probabilities. Boolean
+enumeration independently checks every confusion count and cost sum, including
+the minimum-cost/F1/threshold tie policy and all-positive/all-negative choices.
+Sixteen real bundles per runtime are consumed by path and loaded-object routes
+(32 replays), preserving indices, loaded state and artifact bytes. Actual Ridge,
+LinearSVC and an unsplit saved-model receiver check unsupported tuning; refused
+coefficients preserve fitted weights, data, splits, history and the prior report.
+These establish arithmetic and replay consistency, without a calibration,
+generalization, GPU or cross-runtime pickle claim.
+
+The exact corrected corpus on the archived 828-file `5d73f09` package gives
+**80 failed/156 passed** in both runtimes, without skips or errors: 48 accepted
+NumPy coefficients, 16 oversized integer domain errors, eight signed NumPy
+benefits and eight negative NumPy cost error messages. Initial 212-failure
+receipts came from a harness that checked history after a recorded `to_pandas`
+read and named the wrong report-cache attribute. Those receipts are retained
+separately and contribute no product-defect claim; both old-source runs were
+repeated with the corrected, identical final corpus.
+
+Frozen four-file verification passes **259 tests** in 67.85s (67.841s XML) on
+Pandas 3/NumPy 2.4.6/sklearn 1.9.0, and **258 tests with one skip** in 54.75s
+(54.782s XML) on Pandas 2/NumPy 2.4.1/sklearn 1.9.1. The sole skip is an adjacent
+learning-curve plot test because the local second runtime lacks Seaborn; all 236
+new cases execute in each runtime. Neither has failures, errors, pytest warnings
+or collection warnings. Ruff, Python 3.10 syntax and changed-copy checks pass.
+A paired diagnostics-module type check retains the same 11 inherited errors,
+with no new errors; this is not a clean type-check result. All production,
+tracked tests and numerical profile inputs are frozen and hashed. The expanded
+CI guard now requires seven consumer modules; a separate check accepts 1,803
+actual cases and refuses missing/skipped new-module cases. Joined XML is guard
+evidence, not a combined full-suite run.
+
+`scripts/measure_coverage_reach.py` maps against the verified same-source
+`5d73f09` complete JSON/Git and the exact frozen tree: **7 previously missing
+unchanged/8 changed-new executed lines** in the first runtime and **6/8** in the
+second, with no unmapped files. Five old lines are diagnostic refusal paths in
+both; one is a pipeline dtype fallback. The first runtime's extra line switches
+the plotting backend to Agg, a runtime-dependent housekeeping path. None of
+these ancillary lines is presented as a portable diagnostic gain. Scope remains
+800 files and 566 exclusions under coverage.py 7.16.2; this source has 63,176
+statements. These subset counts are separate from accepted 88.9760% coverage;
+no new whole-package percentage or remaining gap is projected for the fix.

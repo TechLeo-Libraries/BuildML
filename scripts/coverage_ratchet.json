@@ -8,21 +8,21 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 88.95854110272118,
-      "covered_lines": 56196,
+      "percent_covered": 88.97595415617926,
+      "covered_lines": 56207,
       "num_statements": 63171,
       "excluded_lines": 566,
-      "source_revision": "09aaa4e18f7e61f2a212d884c2b3972e52ceb695",
-      "tested_revision": "4ce5ea2c398bbee33b4835fbbec74d167f42cf74",
+      "source_revision": "5d73f0954f176fac4b036fc9c63cc1c77804804b",
+      "tested_revision": "ec3450664a24200466ee629e135e1ccd6f5e0e38",
       "platform": "remote Linux, CPU expanded profile",
-      "run_id": 41127810796,
-      "result": "15376 passed,173 skipped,zero failures/errors",
+      "run_id": 41136382992,
+      "result": "15444 passed,173 skipped,zero failures/errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
       "coverage_version": "7.16.2",
-      "notes": "NLP discrete-resource correction accepted; all four workflows pass and source/merge trees equal 890bc4dfe5907789eb5918757078d5a85832b6ac. All1499 required consumers execute (252Prophet/283NBEATS/329target/443numeric/192NLP). Scope800/566 exclusions unchanged; full+23covered/+9statements vs7c. Entire environment and skip173/37message counters unchanged. Full2335.920s log/2335.714s XML,3435 pytest warnings,zero collection warnings. Exact90gap658. Exact88.9585 remains below89:core70/expanded87 retained;next88 needs passing complete>=89 with1ppheadroom. Subsequent randomized-recipe subsets separate."
+      "notes": "Randomized recipe consumers accepted; all four workflows pass and source/merge trees equal 37ff217d397a98390631f10922aa80172532a2a4. All1567 required consumers execute. Scope800/566 exclusions unchanged; full+11covered/0statements vs09. Entire environment and skip173/37message counters unchanged. Full2302.320s log/2302.118s XML,3435 pytest warnings,zero collection warnings. Exact90gap647. Exact88.975954 remains below89:core70/expanded87 retained;next88 needs passing complete>=89 with1ppheadroom. Subsequent threshold scalar subsets remain separate."
     },
     "latest_local_measurement": {
       "percent_covered": 85.51916984547746,

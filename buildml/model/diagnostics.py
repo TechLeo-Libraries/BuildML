@@ -44,6 +44,7 @@ from __future__ import annotations
 import json
 from collections.abc import Sequence
 from dataclasses import dataclass, field
+from numbers import Real
 from pathlib import Path
 from typing import Any, Literal
 
@@ -496,13 +497,16 @@ def threshold_report(
         Which partition to sweep on. Use validation: a threshold tuned on test
         is a threshold fitted to test.
     fp_cost:
-        Cost of one false positive. Must be given together with ``fn_cost``.
+        Nonnegative finite real scalar cost of one false positive. Must be
+        given together with ``fn_cost``. Python and NumPy real numbers are
+        accepted; booleans are not costs.
     fn_cost:
-        Cost of one false negative.
+        Nonnegative finite real scalar cost of one false negative.
     tp_benefit:
-        Benefit of a true positive, subtracted from cost.
+        Finite real scalar benefit of a true positive, subtracted from cost.
+        A negative benefit therefore adds a penalty.
     tn_benefit:
-        Benefit of a true negative, subtracted from cost.
+        Finite real scalar benefit of a true negative, subtracted from cost.
     export_figures:
         Directory for ROC, precision-recall, and trade-off plots.
     export_html:
@@ -519,13 +523,13 @@ def threshold_report(
     ------
     ValidationError
         If the model is not a probabilistic classifier, if the split is missing,
-        if only one of ``fp_cost`` and ``fn_cost`` is given, or if a cost or
-        benefit is negative or not finite.
+        if only one of ``fp_cost`` and ``fn_cost`` is given, if an FP/FN cost is
+        negative, or if any cost or benefit is not a finite real scalar.
 
     Notes
     -----
-    **Only the ratio of the costs matters, not their units.** Setting them to 1
-    and 10 gives the same threshold as 100 and 1000. That makes the input far
+    **With zero benefits, only the ratio of the costs matters.** Setting them
+    to 1 and 10 gives the same threshold as 100 and 1000. That makes the input far
     easier to supply than it first appears: you need the relative severity, not
     a currency figure.
 
@@ -589,11 +593,15 @@ def threshold_report(
             ("tp_benefit", tp_benefit),
             ("tn_benefit", tn_benefit),
         ):
-            if not isinstance(value, (int, float)) or isinstance(value, bool):
+            if not isinstance(value, Real) or isinstance(value, bool):
                 raise ValidationError(f"{name} must be a finite number")
-            if not np.isfinite(float(value)):
+            try:
+                numeric_value = float(value)
+            except (OverflowError, TypeError, ValueError):
+                raise ValidationError(f"{name} must be a finite number") from None
+            if not np.isfinite(numeric_value):
                 raise ValidationError(f"{name} must be a finite number")
-            if name in {"fp_cost", "fn_cost"} and float(value) < 0:
+            if name in {"fp_cost", "fn_cost"} and numeric_value < 0:
                 raise ValidationError(f"{name} must be >= 0")
 
     x, y, _, _, _ = _feature_target_frames(dataset, split_plan, partition)

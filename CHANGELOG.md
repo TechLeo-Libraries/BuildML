@@ -14,6 +14,11 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Threshold tuning accepts finite Python and NumPy real scalar costs and
+  benefits. Oversized integers raise validation errors; booleans, non-finite
+  values and negative FP/FN costs remain invalid. Independent Gaussian
+  probability and decision-cost sums check fitted and saved consumers.
+
 - Randomized recipe-search consumers independently check fold-local outlier
   caps, imputation, scaling, restricted feature selection and Ridge scores.
   Joint and recipe-only spaces, namespace routing, protected existing fits and
