@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 
 from buildml.anomaly.features import matrix_from_frame
-from buildml.anomaly.fit import anomaly_scores
+from buildml.anomaly.fit import _decision_threshold, anomaly_scores
 from buildml.anomaly.results import AnomalyPlan, AnomalyScoreResult
 from buildml.core.errors import ValidationError
 from buildml.core.types import ColumnRole
@@ -40,6 +40,8 @@ attach:
 override_threshold:
     Optional absolute threshold on higher-is-more-anomalous scores. When set,
     it is disclosed and does not mutate the stored plan threshold.
+    NaN thresholds are refused. Signed infinities remain valid bounds selecting
+    no rows or all rows. Stored thresholds follow the same check during scoring.
 dataset:
     BuildML dataset with features, target, and role metadata.
 plan:
@@ -61,9 +63,12 @@ ValidationError
     missing = [c for c in plan.columns if c not in frame.columns]
     if missing:
         raise ValidationError(f"Anomaly plan columns missing from dataset: {missing}")
+    threshold = _decision_threshold(
+        plan.threshold_ if override_threshold is None else override_threshold,
+        name="AnomalyPlan threshold" if override_threshold is None else "override_threshold",
+    )
     x = matrix_from_frame(frame, list(plan.columns))
     scores = anomaly_scores(plan, x)
-    threshold = float(plan.threshold_ if override_threshold is None else override_threshold)
     flags = (scores >= threshold).astype(int)
     n_flagged = int(flags.sum())
     n_rows = int(len(flags))
@@ -77,7 +82,7 @@ ValidationError
     )
     if override_threshold is not None:
         disclosures.append(
-            f"override_threshold={float(override_threshold)} used for this score call; "
+            f"override_threshold={threshold} used for this score call; "
             "AnomalyPlan.threshold_ was not mutated."
         )
     if part_name != "train":

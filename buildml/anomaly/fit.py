@@ -95,7 +95,9 @@ backend:
 method:
     Method or strategy identifier for the resolved backend.
 mode:
-    Anomaly detection mode (``unsupervised`` or ``supervised``).
+    Anomaly detection mode (``unsupervised``, ``novelty`` or ``supervised``).
+    Novelty training labels must be nonmissing before normal-row selection.
+    Unsupervised fitting ignores labels it does not use.
 columns:
     Optional explicit feature column list; ``None`` auto-selects numerics.
 random_state:
@@ -105,7 +107,8 @@ contamination:
 threshold_policy:
     How the decision threshold is chosen from train scores.
 score_threshold:
-    Fixed score cutoff when threshold policy is ``fixed``.
+    Fixed score cutoff when threshold policy is ``score_threshold``. NaN is
+    refused; signed infinities remain valid bounds selecting no rows or all rows.
 quantile:
     Quantile for score threshold when policy is ``quantile``.
 n_estimators:
@@ -490,6 +493,17 @@ def _score_calibration_disclosures(backend: str, method: str) -> list[str]:
     return []
 
 
+def _decision_threshold(value: Any, *, name: str) -> float:
+    """Convert an ordered decision bound, retaining signed infinities."""
+    try:
+        threshold = float(value)
+    except (TypeError, ValueError, OverflowError) as exc:
+        raise ValidationError(f"{name} must be a real threshold and cannot be NaN") from exc
+    if np.isnan(threshold):
+        raise ValidationError(f"{name} cannot be a NaN threshold")
+    return threshold
+
+
 def _resolve_threshold(
     scores: np.ndarray,
     *,
@@ -510,11 +524,12 @@ def _resolve_threshold(
             raise ValidationError(
                 "threshold_policy='score_threshold' requires score_threshold=..."
             )
+        threshold = _decision_threshold(score_threshold, name="score_threshold")
         disclosures.append(
-            f"Absolute score_threshold={float(score_threshold)} applied to "
+            f"Absolute score_threshold={threshold} applied to "
             "higher-is-more-anomalous scores (flag when score >= threshold)."
         )
-        return float(score_threshold), disclosures
+        return threshold, disclosures
 
     if policy == "decision_zero":
         if method != "one_class_svm":
@@ -597,7 +612,7 @@ def _select_fit_rows(
                 f"normal_label_column '{label_col}' not found on the train partition"
             )
         mask = train[label_col] == normal_label_value
-        if mask.isna().any():
+        if train[label_col].isna().any() or mask.isna().any():
             raise ValidationError(
                 "normal_label_column contains nulls; drop or impute before novelty fit"
             )

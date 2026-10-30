@@ -14,6 +14,12 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Anomaly fitting, scoring and evaluation refuse NaN thresholds and normalize
+  invalid threshold conversions to validation errors. Signed infinite bounds
+  remain supported. Novelty fitting checks missing training labels before
+  selecting normal rows, consistently across label dtypes. Invalid calls
+  preserve existing fitted plans, results, input data and history.
+
 - Multi-objective Optuna AutoML disables unsupported intermediate pruning
   reports, so default pruning settings no longer abort the first trial.
   Independent weighted objectives, persisted study continuation and saved

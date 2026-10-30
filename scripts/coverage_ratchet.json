@@ -8,20 +8,20 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 88.78269139324775,
-      "covered_lines": 56013,
-      "num_statements": 63090,
+      "percent_covered": 88.79590445849777,
+      "covered_lines": 56024,
+      "num_statements": 63093,
       "excluded_lines": 566,
-      "source_revision": "f3d459bdf27f9aed58d613843ef7f84ad235c582",
-      "tested_revision": "3a272e11e327d484670e1a6ab1c1f2dd35669585",
+      "source_revision": "eef195aed57f4708612a5ed57bcf728a7ce1c51d",
+      "tested_revision": "064f1acadf01352621bb83a9dabaad7a9c7d0b50",
       "platform": "remote Linux, CPU expanded profile",
-      "run_id": 41009328008,
-      "result": "12987 passed, 173 skipped, zero failures/errors",
+      "run_id": 41032961380,
+      "result": "13069 passed, 173 skipped, zero failures/errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
-      "notes": "Nullable synthesis consumers accepted; all four workflows passed. Source/merge trees equal 3116a41bf018ed78c57eed3509b3052e05084729. Coverage.py 7.16.2/566 exclusions and package scope unchanged; 2890 pytest warnings, zero collection warnings. Full 36:47; exact 90% gap 768. Core 70/expanded 87 retained; next floor requires one percentage point of headroom. Subset reach remains separate.",
+      "notes": "AutoML objective consumers accepted; all four workflows passed. Source/merge trees equal 398101a3f57edc22caa4d61059e75de2e91bf58e. Coverage.py 7.16.2/566 exclusions and package scope unchanged; 2890 pytest warnings, zero collection warnings. Full 32:26; exact 90% gap 760. Core 70/expanded 87 retained; next floor requires one percentage point of headroom. Subset reach remains separate.",
       "coverage_version": "7.16.2"
     },
     "latest_local_measurement": {
