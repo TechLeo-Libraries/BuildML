@@ -158,10 +158,15 @@ def generate_forecast(
         disclosures = [
             f"Industry horizon generate (backend={plan.backend}, method={plan.method}); no refit.",
         ]
-        if plan.method in {"prophet", "nbeats"}:
+        if plan.method == "prophet":
             disclosures.append(
                 "Prophet/N-BEATS use model-native multi-step paths; "
                 "not recursive lag composition."
+            )
+        elif plan.method == "nbeats":
+            disclosures.append(
+                "N-BEATS uses native forecast blocks; requests beyond the fitted "
+                "horizon append predictions to context without refitting."
             )
         return ForecastGenerateResult(
             method=plan.method,

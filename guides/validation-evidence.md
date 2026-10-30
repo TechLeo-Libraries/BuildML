@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-10-26, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed: 88.8364% (56,078/63,125); 13,877 passed, 173 skipped | [CI 41056677449](https://github.com/TechLeo-Libraries/BuildML/actions/runs/41056677449), source `c736233`, tested merge `55fbddd1`; matching trees and all four workflows passed. Scope/566 exclusions/coverage.py 7.16.2 unchanged. Core 70/expanded 87 retained. Exact 90% gap 735 lines; 2,890 pytest warnings, no coverage collection warnings |
+| Current accepted remote expanded CPU whole-package gate | Passed: 88.8715% (56,101/63,126); 14,129 passed, 173 skipped | [CI 41066626501](https://github.com/TechLeo-Libraries/BuildML/actions/runs/41066626501), source `5f1ee7d`, tested merge `d3844d26`; matching trees/all four workflows pass. The 800-file scope and 566 exclusions/coverage.py7.16.2 unchanged; all252 Prophet cases execute. Backend/profile expansion contributes; full+23covered/+1statement. Core 70/expanded 87 retained; exact90gap713. 2,890 pytest warnings/no collection warnings |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -3331,7 +3331,7 @@ and Session history. Neural2epochs/GAIL128steps establish integration behavior,
 not online reward improvement or policy quality. Compatible CI selects the new
 tabular and neural consumers on both Windows and Linux. Reach belongs to each
 nine-file runtime profile, not solely to the new cases, and is never added to
-the accepted **88.2733%** whole-suite percentage. Core70/expanded87 stay unchanged.
+the accepted **88.2733%** whole-suite percentage. Core 70/expanded 87 stay unchanged.
 
 ### Accepted RL action whole-suite result (2026-10-26)
 
@@ -3389,7 +3389,7 @@ the unchanged586 docstring budget pass. The main environment is unchanged.
 The accepted full result remains **88.2843%**,55,477/62,839 lines at`30beca5`,
 with9,461 passed/117 skipped and zero collection warnings. Forty added skips
 are the imitation consumers exercised in the separate compatible RL profile.
-No databases or subset reaches are combined. Core70/expanded87 stay unchanged.
+No databases or subset reaches are combined. Core 70/expanded 87 stay unchanged.
 
 ### Accepted observed-rating whole-suite result (2026-10-26)
 
@@ -3600,7 +3600,7 @@ retrained by loading; refitting can change results with corrected padding.
 Baseline/current targeted mypy are clean for three touched production sources;
 package-wide type cleanliness is not claimed. Latest accepted full remains
 **88.3617%** at `39547fe`, with 1,031 further covered lines needed at that source.
-Core70/expanded87 remain unchanged. Fresh complete CI is required for this batch.
+Core 70/expanded 87 remain unchanged. Fresh complete CI is required for this batch.
 
 ### Accepted TDA whole-suite result (2026-10-27)
 
@@ -3669,7 +3669,7 @@ cases. Loading cannot repair training with the wrong neural head type.
 Baseline/current targeted mypy are clean for three changed production sources;
 package-wide type cleanliness is not claimed. Latest accepted full remains
 **88.3637%** at `3edb061`, with 1,030 further covered lines needed at that source.
-Core70/expanded87 remain unchanged. Fresh complete CI is required for this batch.
+Core 70/expanded 87 remain unchanged. Fresh complete CI is required for this batch.
 
 ### Accepted multi-target whole-suite result (2026-10-27)
 
@@ -5711,3 +5711,105 @@ whole source/tested-merge trees and unchanged skip counters. Core 70/expanded
 87 and one-point headroom remain. **90% remains open**, with an exact gap of
 735 covered lines at the accepted denominator. New-source complete results
 must be accepted independently before reporting any whole-package gain.
+
+### Accepted Prophet whole-package profile (2026-10-30)
+
+Source `5f1ee7d` supersedes the pending gate above: **88.8715%**
+(56,101/63,126), **14,129 passed/173 skipped**, zero failures/errors in 35:50
+(2150.300s log/2150.119s XML). All 252 new Prophet cases executed. CI 41066626501,
+backend 41066626514, acceptance 41066626570 and CodeQL 41066621551 passed. Tested
+merge `d3844d26` has the same whole tree `8f9d47ac` as source. The 800-file scope,
+566 excluded lines and coverage.py7.16.2 remain. All 173 skips/37 message counts
+match c736. There were 2,890 pytest warnings and zero collection warnings.
+Real Prophet 1.5.0/CmdStanPy 1.3.0/Holidays 0.107/Stanio 0.5.1 were verified in the
+artifact environment. This deliberate backend/profile expansion contributes to
+the complete +23 covered/+1 statement change; it is separate from the earlier
+21-line subset reach. The exact 90% gap is 713 lines. Core 70/expanded 87 retained; next 88 requires
+passing complete >=89 with one-point headroom. Target 90 remains open.
+
+### Real N-BEATS horizon blocks and frozen replay (2026-10-30)
+
+A real NeuralForecast 3.1.2 model with native horizon four returned the last
+forecast positions for short requests: one step returned 25.6819 instead of the
+next 19.8351 in the retained reproduction. Seven requested steps returned only
+four values. The default native one-step fit also refused the trend/seasonality
+bases. The adapter now consumes chronological prefixes and extends context
+with successive native prediction blocks, keeping fitted weights fixed. A
+one-step native horizon uses an identity stack. Positive integer sizes and
+sufficient context are required; no bundle schema/version fields were added.
+The real cold import took 14.219s, exceeding the previous 12s gate. The bounded
+90s default probe now succeeds after clearing its cache (17.891s measured).
+
+The 283 new cases include 180 saved horizons across six actual backings and
+three origins, 72 backtests across both holdouts/all three strategies, eight
+context/one-step checks, two secondary native comparisons, a real default
+one-step bundle, eight context refusals and 12 invalid-size refusals. Bare tensor
+inference from the fitted identity-scaled network is the independent primary
+oracle. Older context cannot change predictions; recent context can. Native
+weights, training data, metadata, receiving data/splits and artifact hashes are
+checked. One optimizer step establishes alignment/replay, without establishing
+forecast quality, tuning convergence or GPU behavior.
+
+| Verification | Result | Log / XML runtime |
+| --- | --- | --- |
+| Exact final test on archived `5f1ee7d`, Pandas 3/Torch 2.13 CPU | 243 failed, 40 passed; 414 warnings; zero errors/skips | 122.77s / 122.635s |
+| Exact final test on archived `5f1ee7d`, Pandas 2/Torch 2.7.1 CPU | 243 failed, 40 passed; 16 warnings; zero errors/skips | 117.28s / 117.084s |
+| Final Pandas 3 profile | 619 passed, 1 skipped; 701 warnings | 404.14s / 404.052s |
+| Final expanded-compatible profile | 619 passed, 1 skipped;164 warnings | 356.70s / 356.651s |
+
+All 283 new cases execute in both final profiles; there are zero failures/errors
+or collection warnings. The existing statsmodels-absence control skips because
+that backend is installed. Warnings include existing alias/ETS diagnostics and
+native Lightning notices; Torch 2.13 adds its PyTree deprecation. The main
+profile uses Pandas 3.0.5/NumPy 2.4.6/sklearn 1.9.0/SciPy 1.18.0/Torch 2.13 CPU.
+The separate profile uses the assessment's Pandas 2.3.3/NumPy 2.4.1/sklearn 1.9.1/
+SciPy 1.15.3/Torch 2.7.1 CPU. Both use real Polars 2/DuckDB 1.5.6/Prophet 1.5/NF 3.1.2.
+The latter prints an optional Plotly-unavailable note; it does not skip these
+forecasting consumers. Required dependencies are real installed packages.
+
+Four actual old-source bundles from archived `5f1ee7d` writers were copied byte-exact
+before subsequent baseline reruns reused their original temporary paths. Two
+runtime-matched cohorts each passed 108 six-backing generation, 72 backtest and
+216 metric checks. The immutable copies retain their original hashes. Fitted
+weights/training data/metadata and receiving data/artifacts remain unchanged.
+Cross-runtime or arbitrary library-version pickle compatibility is not claimed.
+
+A secondary check initially assumed native `predict(h=9)` was correct. Real
+NeuralForecast3.1.2 partial-block prediction disagreed with the unchanged tensor
+oracle (errors 3.28463 for h7 and 19.46863 for h9); complete h8/h12 agreed exactly.
+The secondary check now requests complete native blocks before taking its
+prefix. Its two failures and the initial 2F/617P/1S run were retained; the exact
+final test was rerun against archived source and both final profiles. The
+primary expected values and production fix did not change. Initial temporary
+folder/dependency setup errors and a test-only Python3.10 directory-helper
+incompatibility were corrected before final measurement. Their logs and the
+interrupted profile are retained separately, without counting them as gains.
+
+All 828 archived package/resource bytes were verified. The 838 local frozen
+package/resource/test/profile inputs remained unchanged during final runs;
+committed inputs additionally include one CI guard validated separately after
+measurement. The guard imports both forecasting backends and requires both
+consumer modules to execute without skips. It passes both real 535-case XML
+artifacts and refuses the previous complete artifact, which lacks N-BEATS cases.
+Ruff and the 586-finding docstring budget pass; targeted typing on four changed
+production modules is clean on both archived and current sources.
+
+Expanded requirements explicitly add NF 3.1.2/coreforecast 0.0.19/Lightning 2.6.6/
+Lightning-utilities 0.15.3/Torchmetrics 1.9/utilsforecast 0.2.17/Ray[tune] 2.59 while
+retaining Torch 2.7.1 and all existing numerical pins. Resolution alongside the
+accepted whole environment succeeds with protobuf 6.33.6/Pydantic 2.14.2. Local
+extensions instead use actual protobuf 7.36.2/Pydantic 2.13.4; fresh Linux execution
+remains required. Backend/profile expansion contributes to coverage.
+
+Mapped subset reach via `measure_coverage_reach.py` against verified complete
+`5f1ee7d` JSON/Git plus the exact frozen source is **32 previously missing unchanged /
+21 changed-new executed lines** on each profile, with empty unmapped lists.
+Of the 32 unchanged lines, 25 are in forecasting, six are adjacent existing
+capability controls and one is a Windows-only Torch probe. These ancillary
+control/platform paths are not credited as native N-BEATS consumer reach.
+The same normalized 800 files/566 exclusions/coverage.py 7.16.2 are measured;
+the subset denominator is 63,140. These counts are separate from whole-suite
+percentages and are not combined or projected. Latest accepted complete result
+remains **88.8715%** (56,101/63,126),14,129 passed/173 skipped at `5f1ee7d`. Core 70 and
+expanded 87 stay unchanged; next 88 requires a passing complete >=89 gate. The
+90% target remains open; 713 lines are needed at the accepted denominator.

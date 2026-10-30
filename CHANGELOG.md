@@ -14,6 +14,13 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- N-BEATS returns forecasts from the next observation for short requests and
+  extends longer requests with successive native prediction blocks. One-step
+  fits use an identity stack; invalid sizes and insufficient context raise
+  validation errors. Saved replay and rolling evaluation keep fitted weights
+  fixed. The expanded assessment adds a real NeuralForecast stack compatible
+  with its existing Torch 2.7.1 pin.
+
 - Prophet horizon generation and rolling evaluation advance the synthetic
   daily clock with the supplied history. Saved plans retain fitted trend and
   seasonal parameters while honoring validation/test origins. Real Prophet

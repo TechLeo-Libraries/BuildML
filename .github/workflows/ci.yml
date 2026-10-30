@@ -440,6 +440,7 @@ jobs:
           python -c "from imodels import SkopeRulesClassifier; print('Maintained SkopeRules runtime ready')"
           python -c "from sentence_transformers import SentenceTransformer; print('Offline text consumer runtime ready')"
           python -c "import ruptures; print('Penalized changepoint runtime ready')"
+          python -c "from prophet import Prophet; from neuralforecast import NeuralForecast; from neuralforecast.models import NBEATS; print('Native forecasting runtimes ready')"
       - name: Preserve source and actual dependency evidence
         run: |
           mkdir -p artifacts
@@ -450,6 +451,15 @@ jobs:
           pytest tests -q --cov=buildml --cov-fail-under=87
           --cov-report=term --cov-report=json:artifacts/expanded-coverage.json
           --junitxml=artifacts/expanded-tests.xml --tb=short
+      - name: Require real forecast consumer execution
+        run: |
+          python - <<'PY'
+          import xml.etree.ElementTree as ET
+          tests = list(ET.parse('artifacts/expanded-tests.xml').iter('testcase'))
+          for module in ('test_prophet_forecast_origin_consumers', 'test_nbeats_horizon_consumers'):
+              cases = [test for test in tests if module in test.get('classname', '')]
+              assert cases and all(test.find('skipped') is None for test in cases), module
+          PY
       - uses: actions/upload-artifact@v4
         if: always()
         with:

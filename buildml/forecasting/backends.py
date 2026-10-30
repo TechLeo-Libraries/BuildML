@@ -9,6 +9,7 @@ import numpy as np
 import pandas as pd
 
 from buildml.core.errors import MissingExtraError, ValidationError
+from buildml.core.validation import _positive_integer
 from buildml.forecasting.extras import (
     neuralforecast_available,
     prophet_available,
@@ -302,6 +303,9 @@ def _fit_nbeats(
     from neuralforecast import NeuralForecast
     from neuralforecast.models import NBEATS
 
+    input_size = _positive_integer(input_size, name="nbeats_input_size")
+    horizon = _positive_integer(horizon, name="nbeats_horizon")
+    max_steps = _positive_integer(max_steps, name="max_iter")
     n = len(y)
     if n < input_size + horizon:
         raise ValidationError(
@@ -319,6 +323,7 @@ def _fit_nbeats(
         h=int(horizon),
         max_steps=int(max_steps),
         random_seed=random_state or 0,
+        **({"stack_types": ["identity"]} if horizon == 1 else {}),
     )
     nf = NeuralForecast(models=[model], freq="D")
     nf.fit(df=ds)
@@ -446,20 +451,30 @@ def industry_predict(
 
     if kind == "nbeats":
         nf = result
-        h = int(estimator.get("horizon", steps))
         if history is None:
             raise ValidationError("N-BEATS predict requires history for rolling context")
-        n = len(history)
-        ds = pd.DataFrame(
-            {
-                "unique_id": ["series"] * n,
-                "ds": pd.date_range("2000-01-01", periods=n, freq="D"),
-                "y": history,
-            }
-        )
-        pred = nf.predict(df=ds)
-        vals = pred["NBEATS"].tolist()[-steps:]
-        return tuple(float(v) for v in vals)
+        if len(history) < int(estimator["input_size"]):
+            raise ValidationError("N-BEATS history must contain at least input_size observations")
+        working = list(history)
+        values: list[float] = []
+        while len(values) < steps:
+            n = len(working)
+            ds = pd.DataFrame(
+                {
+                    "unique_id": ["series"] * n,
+                    "ds": pd.date_range("2000-01-01", periods=n, freq="D"),
+                    "y": working,
+                }
+            )
+            # Consume the next native block in chronological order. Extending
+            # context with predictions also supports older NeuralForecast APIs.
+            pred = nf.predict(df=ds)["NBEATS"].tolist()[:steps - len(values)]
+            if not pred:
+                raise ValidationError("N-BEATS returned an empty forecast block")
+            block = [float(v) for v in pred]
+            values.extend(block)
+            working.extend(block)
+        return tuple(values)
 
     raise ValidationError(f"Unsupported industry estimator kind '{kind}'")
 

@@ -246,7 +246,7 @@ def fit_forecaster(
         exog_mat = None
         if exog:
             exog_mat = _exog_matrix(train, exog, rows=n_train, name="Exogenous columns")
-        nb_h = int(nbeats_horizon if nbeats_horizon is not None else horizon)
+        nb_h = nbeats_horizon if nbeats_horizon is not None else horizon
         outcome = fit_industry_backend(
             y,
             method=method,
@@ -267,7 +267,7 @@ def fit_forecaster(
         if method == "nbeats":
             disclosures.append(
                 "N-BEATS generate uses the neuralforecast model directly; "
-                "rolling eval may refit slices (disclosed in evaluate)."
+                "long horizons append native prediction blocks without refitting."
             )
     else:
         raise ValidationError(f"Unsupported forecast method '{method}'")

@@ -46,6 +46,7 @@ _SLOW_IMPORT_TIMEOUTS: dict[str, float] = {
     "persim": 90.0,
     "imodels": 90.0,
     "flaml": 90.0,
+    "neuralforecast": 90.0,
 }
 
 

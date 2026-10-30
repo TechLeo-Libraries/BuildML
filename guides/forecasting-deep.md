@@ -146,6 +146,17 @@ parameters and receive the matching historical exogenous rows. Saved forecast
 bundles retain these rules when loaded into a Session with the matching data
 and chronological split.
 
+N-BEATS returns the first requested positions of each native forecast block.
+When a request exceeds `nbeats_horizon`, subsequent blocks use the preceding
+predictions as context. Rolling evaluation appends observed holdout values
+after scoring each window; it keeps fitted network weights fixed. The default
+one-step native horizon uses an identity stack because the native trend and
+seasonal bases require more than one output position. Input size, native horizon
+and training steps must be positive integers, and supplied history must contain
+at least `nbeats_input_size` observations. Native predictions use a synthetic
+daily clock. These checks establish alignment and replay, without establishing
+forecast quality from a short training run.
+
 Prophet advances its synthetic daily forecast clock with the selected origin.
 `validation_end`, `test_end` and rolling evaluation therefore predict the dates
 after the supplied history, rather than repeatedly forecasting from train end.

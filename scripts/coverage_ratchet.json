@@ -8,21 +8,21 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 88.83643564356436,
-      "covered_lines": 56078,
-      "num_statements": 63125,
+      "percent_covered": 88.87146342236163,
+      "covered_lines": 56101,
+      "num_statements": 63126,
       "excluded_lines": 566,
-      "source_revision": "c7362333d63aaaed3e19de6f07da9b74303a6716",
-      "tested_revision": "55fbddd11dffe66d0c65c41b42bd87ed73fe1e2e",
+      "source_revision": "5f1ee7da1771532eb8fc747951988e6f3569e96d",
+      "tested_revision": "d3844d2629a9cf31553ad72b12821dcd4f7e3a0a",
       "platform": "remote Linux, CPU expanded profile",
-      "run_id": 41056677449,
-      "result": "13877 passed, 173 skipped, zero failures/errors",
+      "run_id": 41066626501,
+      "result": "14129 passed, 173 skipped, zero failures/errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
-      "notes": "Fold generated-feature consumers accepted; all four workflows passed. Source/merge trees equal 30da2b131def7192d36f7d78dfd3eaae315bf911. Coverage.py 7.16.2/566 exclusions and package scope unchanged; 2890 pytest warnings, zero collection warnings. Full 34:10; exact 90% gap 735. Core 70/expanded 87 retained; next floor requires one percentage point of headroom. Subset reach remains separate.",
-      "coverage_version": "7.16.2"
+      "coverage_version": "7.16.2",
+      "notes": "Real Prophet profile accepted; all four workflows passed and source/merge trees equal 8f9d47acc2d72b967693965c2391c6cc8b04280a. Scope800/566 exclusions unchanged. Full35:50,2890 pytest warnings,zero collection warnings; exact90gap713. Native backend/profile addition contributes; complete+23covered/+1statement. Core70/expanded87 retained; next88 needs complete>=89. Subset reach separate."
     },
     "latest_local_measurement": {
       "percent_covered": 85.51916984547746,
