@@ -211,6 +211,10 @@ def predict_from_pipeline(
     **Bundles without a contract still work**, with only the feature-column
     check applied: which catches missing columns but not wrong types.
 
+    Native Dataset inputs are materialized from their live handle before
+    validation. This refreshes the Pandas cache without replacing the source
+    native handle or changing its rows. Scoring requires an in-memory matrix.
+
     Examples
     --------
     .. code-block:: python
@@ -251,7 +255,7 @@ def predict_from_pipeline(
     warnings: list[str] = []
     apply_result: ApplyPlansResult | None = None
 
-    raw_frame = data.frame if isinstance(data, Dataset) else data
+    raw_frame = data._ensure_pandas() if isinstance(data, Dataset) else data
     if not isinstance(raw_frame, pd.DataFrame):
         raise ValidationError("predict_from_pipeline expects a Dataset or pandas.DataFrame")
     if len(raw_frame) == 0:
@@ -328,7 +332,7 @@ def predict_from_pipeline(
     elif apply_plans and bundle.resample_plan is not None:
         warnings.append("ResamplePlan is lineage-only and was not reapplied at score time.")
 
-    frame = working.frame if isinstance(working, Dataset) else working
+    frame = working._ensure_pandas() if isinstance(working, Dataset) else working
     if not isinstance(frame, pd.DataFrame):
         raise ValidationError("predict_from_pipeline expects a Dataset or pandas.DataFrame")
 

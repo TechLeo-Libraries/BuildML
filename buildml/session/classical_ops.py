@@ -2112,10 +2112,10 @@ def predict_from_pipeline(
     its preprocessing plans, transforms the rows exactly as training did,
     and returns the predictions.
 
-    Nothing on the session changes: not the dataset, not
-    :attr:`fit_result`, not the plans. That makes it safe to call inside a
-    batch job or a service handler, repeatedly, against different bundles,
-    without one call contaminating the next.
+    Rows, :attr:`fit_result` and fitted plans stay unchanged. A native input's
+    Pandas cache is refreshed when scoring needs its live rows, and an operation
+    record is appended to the session history. Repeated calls can score against
+    different bundles without replacing the session's model or plans.
 
     Parameters
     ----------

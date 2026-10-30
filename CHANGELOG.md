@@ -806,6 +806,11 @@ from the current release; use the installation guide for current requirements.
 
 ### Fixed
 
+- Saved-pipeline scoring promotes live Polars/DuckDB rows before validation,
+  including lazy scans and derived views whose Pandas cache is still empty.
+  Empty Polars row filters use a Boolean mask, allowing scoring to report an
+  empty-input error consistently. Source rows and fitted plans are preserved.
+
 - Replacing a checkpoint removes obsolete preprocessing plans, and restore
   skips a leftover file explicitly marked inactive. Partitioned native sidecars
   refuse added or missing recorded Parquet parts before reattachment, preserving

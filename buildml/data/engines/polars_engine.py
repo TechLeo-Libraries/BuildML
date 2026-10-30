@@ -436,7 +436,7 @@ class PolarsEngine:
             raise ValueError(
                 f"filter mask length {len(mask)} does not match table rows {eager.height}"
             )
-        return eager.filter(self._pl.Series("_buildml_mask", list(mask)))
+        return eager.filter(self._pl.Series("_buildml_mask", list(mask), dtype=self._pl.Boolean))
 
     def filter_expr(self, table: Any, expression: str) -> Any:
         """Filter with a predicate the optimiser can push into the scan.

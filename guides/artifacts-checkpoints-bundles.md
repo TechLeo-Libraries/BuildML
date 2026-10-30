@@ -207,6 +207,17 @@ print(scored)
 Schema mismatches raise clearly. Resample plans do not synthesize
 inference rows.
 
+Pipeline scoring accepts native Polars and DuckDB datasets, including lazy
+Parquet scans and filtered or projected views. It materializes live rows when
+the Pandas cache is stale, then validates and replays the saved plans. Scoring
+uses an in-memory estimator matrix. The source rows, native handle, roles and
+fitted model or plans stay intact; the cache and inferred schema can refresh.
+The Session method also appends an audit record.
+
+Predictions retain the input Pandas index when it is available. Native file
+inputs use their materialized row order; keep record IDs in explicit columns
+when joining results back. Empty inputs still raise `ValidationError`.
+
 ---
 
 ## Torch, RAG, and AI artifacts
