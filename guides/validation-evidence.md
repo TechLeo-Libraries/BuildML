@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-10-26, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed: 88.9847% (56,217/63,176); 15,680 passed, 173 skipped | [CI41141608574](https://github.com/TechLeo-Libraries/BuildML/actions/runs/41141608574), source `17d08a8`, tested merge `0a5d678b`; matching trees and all four workflows pass. Same 800 files, 566 exclusions and coverage.py 7.16.2; all 1,803 required consumers execute. Environment and skip counts unchanged from `5d73f09`; full +10 covered lines, +5 statements. Core 70/expanded 87 retained; exact 90% gap 642. 3,487 pytest warnings (+52), no collection warnings |
+| Current accepted remote expanded CPU whole-package gate | Passed: 88.9881% (56,220/63,177); 15,800 passed, 173 skipped | [CI41147385869](https://github.com/TechLeo-Libraries/BuildML/actions/runs/41147385869), source `4213850`, tested merge `720da2ed`; matching trees and all four workflows pass. Same 800 files, 566 exclusions and coverage.py 7.16.2; all 1,923 required consumers execute. Environment, skip and warning counts unchanged from `17d08a8`; full +3 covered lines, +1 statement. Core 70/expanded 87 retained; exact 90% gap 640. 3,487 pytest warnings, no collection warnings |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -6269,3 +6269,80 @@ exclusions under coverage.py 7.16.2; this source has 63,177 statements. These
 small reach counts are separate from the source-corruption fix and accepted
 88.9847% whole-package coverage. No new full percentage or remaining gap is
 projected before the next complete measurement.
+
+### Accepted DuckDB-sampling whole-package measurement (2026-10-31)
+
+Source `4213850` supersedes the pending sampling measurement above: **88.9881%**
+(56,220/63,177), **15,800 passed/173 skipped**, zero failures or errors, 1776.660s
+log/1776.469s XML. All 120 new sampling cases execute with the prior 1,803
+required consumers (1,923 total). CI41147385869, backend41147385836,
+acceptance41147385835 and CodeQL41147383533 passed. Source and tested merge
+`720da2ed` have equal tree `1cea4c91`. The artifact environment, all 173 skips
+across 37 messages, and 3,487 pytest warnings match accepted `17d08a8`; scope
+remains 800 files, 566 excluded lines and coverage.py 7.16.2. There are no
+collection warnings. The complete totals add three covered lines and one
+statement; earlier subset counts remain separate evidence. The exact result
+is 88.988081%, below 89% despite the rounded display of 89.0. Core 70/expanded 87
+remain. The next floor of 88 requires a passing complete result of at least
+89%. Reaching 90% requires 640 more covered lines at this source. Later source
+changes require their own full measurement and remaining-gap calculation.
+
+### Explicit active-learning requests and saved query consumers (2026-10-31)
+
+An invalid fresh active-learning strategy could silently choose an installed
+backend and a different strategy, including training Torch/BALD for a typo.
+Empty or false query overrides could also inherit the stored strategy/backend.
+The catalog now validates explicit names before inference. Query overrides use
+the stored policy only for `None`; other invalid explicit values raise
+`ValidationError`. The default fit remains the named `margin` strategy, and
+valid named strategies still infer their supported backend. Replacing the
+faulty fallback changes statement counts; package scope and exclusions remain
+unchanged.
+
+The 132 new cases span Pandas memory/Parquet, lazy Polars and lazy DuckDB.
+Twenty-four positive workflows check least-confidence, margin and entropy with
+ordinary or poisoned validation/test rows. An independent Newton solve of
+regularized logistic loss checks fitted coefficients within the estimator's
+optimization tolerance (1e-3); scalar sigmoid/acquisition equations check query
+scores to 1e-11 and exact stable rankings. User-supplied labels update two train
+pool rows, trigger a real refit and leave heldouts untouched. Budget checks
+retain the existing effective-batch semantics. Twenty-four real plan bundles
+per runtime support 48 loaded-plan/Session query replays, checking scores to
+1e-12, pool indices, remaining budget, loaded hashes and unchanged artifacts.
+These checks establish arithmetic and replay consistency rather than improved
+label efficiency or calibrated uncertainty.
+
+The identical final corpus on archived `4213850` production gives **56 failures/
+76 passing controls** in both runtimes without skips or errors: 32 fresh-fit
+substitutions, 12 ignored query-strategy overrides and 12 ignored direct-query
+backend overrides. Refusals protect the existing plan/model, cached results,
+data, splits and history. The initial positive focus expected the original
+request of three rows after only two labels remained; the established result
+field reports the effective batch of two. That harness assertion was corrected
+before either defect baseline. Its 24-failure receipt is retained separately
+and contributes no product-defect or coverage claim. Corrected focus: 24 passed
+in 13.56s, with numerical assertions retained.
+
+Frozen five-file verification passes **207 tests** in each runtime, with all
+132 new cases unskipped: **122.04s** (122.036s XML) on Pandas 3/NumPy 2.4.6/
+sklearn 1.9.0 and **53.41s** (53.424s XML) on the expanded numerical pins/Pandas 2/
+NumPy 2.4.1/sklearn 1.9.1. Neither records failures, errors, skips, pytest warnings
+or collection warnings. Ruff, Python 3.10 syntax, changed-copy checks and paired
+old/current two-module type checks pass. Production resources, tracked tests
+and numerical profile inputs are frozen and hashed. Expanded CI adds a ninth
+required consumer module; a separate guard accepts 2,055 actual cases and
+refuses missing/skipped new-module cases. Joined XML is guard evidence, not a
+complete or combined measurement.
+
+`scripts/measure_coverage_reach.py` maps against verified same-source `4213850`
+complete JSON/Git and the exact frozen tree: **27 previously missing unchanged/
+6 changed-new executed lines** in the first runtime and **36/6** in the second,
+with no unmapped files. The old lines belong to local optional-dependency
+capability/import paths, including Windows import handling. Active learning
+itself has zero old-line reach in the first profile and one native-fallback
+availability disclosure in the second. These ancillary paths are not presented
+as portable acquisition gains. Six changed/new refusal/default lines execute
+in both. Scope remains 800 files and 566 exclusions under coverage.py 7.16.2;
+the corrected source has 63,175 statements, two fewer after replacing faulty
+fallback logic. These subset counts are separate from accepted 88.9881%
+whole-package coverage. No new full percentage or remaining gap is projected.

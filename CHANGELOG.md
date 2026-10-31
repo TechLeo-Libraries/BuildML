@@ -14,6 +14,11 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Active learning refuses invalid explicit strategies and backends instead of
+  silently switching to another strategy or learner. Query overrides inherit
+  the stored policy only when omitted with `None`. Numerical acquisition,
+  label/refit, saved-plan and refusal checks protect existing learners.
+
 - Lazy DuckDB random samples keep distinct source views. Creating another
   sample no longer changes an earlier sample's source, replaces a user view
   named `s`, or makes nested samples recursively reference themselves. Native
