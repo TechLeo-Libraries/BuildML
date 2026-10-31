@@ -158,7 +158,8 @@ class PreprocessRecipe:
         Supervised target steps require non-null outcomes. Numeric target dtypes
         must be real and finite; complex dtypes are refused before casting.
     outlier_action / iqr_multiplier / zscore_threshold:
-        Outlier controls (``outlier_action`` defaults to ``cap``).
+        Outlier controls (``outlier_action`` defaults to ``cap``). Thresholds
+        must be positive finite real numbers; booleans are not thresholds.
     n_bins / binning_encode_as:
         Binning controls (defaults: 5 bins, ordinal codes). ``n_bins`` must be
         an integer at least two. Missing observations retain missing ordinal
@@ -500,7 +501,8 @@ class FoldLocalPreprocessor(TransformerMixin, BaseEstimator):
             Labels are needed but absent; an outlier action of ``'drop'`` was
             requested, which cannot work inside a fold because removing rows
             would change fold membership; ``n_bins`` is not an integer at
-            least 2; text settings
+            least 2; numeric policies or outlier thresholds are invalid;
+            outlier/binning samples are complex; text settings
             are malformed; the reduce method or prefix is unsupported; or
             generated outputs duplicate each other or a retained column name.
 
@@ -512,12 +514,27 @@ class FoldLocalPreprocessor(TransformerMixin, BaseEstimator):
         against ten folds.
         """
         recipe = self.recipe
+        for name, allowed in (
+            ("outliers", {"iqr", "zscore"}),
+            ("binning", {"quantile", "uniform"}),
+        ):
+            value = getattr(recipe, name)
+            if value is not None and (not isinstance(value, str) or value not in allowed):
+                raise ValidationError(f"Unsupported fold-local {name} method {value!r}")
+        if recipe.binning is not None and (
+            not isinstance(recipe.binning_encode_as, str)
+            or recipe.binning_encode_as not in {"ordinal", "onehot"}
+        ):
+            raise ValidationError("Fold-local binning_encode_as must be 'ordinal' or 'onehot'")
         if recipe.requires_target() and y_train is None:
             raise ValidationError(
                 "PreprocessRecipe encode='target' or select in "
                 "{'univariate','model'} requires fold-train labels"
             )
-        if recipe.outliers is not None and recipe.outlier_action not in {"detect", "cap"}:
+        if recipe.outliers is not None and (
+            not isinstance(recipe.outlier_action, str)
+            or recipe.outlier_action not in {"detect", "cap"}
+        ):
             raise ValidationError(
                 "Fold-local outliers support only action='detect' or 'cap' "
                 "(row drops are not applied inside CV folds)."
@@ -842,12 +859,12 @@ class FoldLocalPreprocessor(TransformerMixin, BaseEstimator):
         cols = _resolve_numeric(x_train, recipe.outlier_columns)
         if not cols:
             raise ValidationError("Fold-local outliers require numeric columns")
-        if recipe.iqr_multiplier <= 0 or recipe.zscore_threshold <= 0:
-            raise ValidationError("Outlier fence multipliers/thresholds must be positive")
+        iqr_multiplier = _positive_fold_threshold(recipe.iqr_multiplier, "iqr_multiplier")
+        zscore_threshold = _positive_fold_threshold(recipe.zscore_threshold, "zscore_threshold")
         lower: dict[str, float] = {}
         upper: dict[str, float] = {}
         for column in cols:
-            series = pd.to_numeric(x_train[column], errors="coerce").replace([np.inf, -np.inf], np.nan).dropna()
+            series = _real_fold_values(x_train[column], column).replace([np.inf, -np.inf], np.nan).dropna()
             if series.empty:
                 raise ValidationError(
                     f"Column '{column}' has no finite fold-train values for outlier fences"
@@ -856,8 +873,8 @@ class FoldLocalPreprocessor(TransformerMixin, BaseEstimator):
                 q1 = float(series.quantile(0.25))
                 q3 = float(series.quantile(0.75))
                 iqr = q3 - q1
-                lower[column] = q1 - recipe.iqr_multiplier * iqr
-                upper[column] = q3 + recipe.iqr_multiplier * iqr
+                lower[column] = q1 - iqr_multiplier * iqr
+                upper[column] = q3 + iqr_multiplier * iqr
             else:
                 mean = float(series.mean())
                 std = float(series.std(ddof=0))
@@ -865,8 +882,8 @@ class FoldLocalPreprocessor(TransformerMixin, BaseEstimator):
                     lower[column] = mean
                     upper[column] = mean
                 else:
-                    lower[column] = mean - recipe.zscore_threshold * std
-                    upper[column] = mean + recipe.zscore_threshold * std
+                    lower[column] = mean - zscore_threshold * std
+                    upper[column] = mean + zscore_threshold * std
         self._outlier_columns = list(cols)
         self._outlier_lower = lower
         self._outlier_upper = upper
@@ -881,7 +898,7 @@ class FoldLocalPreprocessor(TransformerMixin, BaseEstimator):
             raise ValidationError(f"Fold-local outlier columns missing: {missing}")
         out = frame.copy()
         for column in self._outlier_columns:
-            values = pd.to_numeric(out[column], errors="coerce")
+            values = _real_fold_values(out[column], column)
             out[column] = values.clip(
                 lower=self._outlier_lower[column],
                 upper=self._outlier_upper[column],
@@ -1062,7 +1079,7 @@ class FoldLocalPreprocessor(TransformerMixin, BaseEstimator):
         edges: dict[str, list[float]] = {}
         labels: dict[str, list[str]] = {}
         for column in cols:
-            series = pd.to_numeric(x_train[column], errors="coerce").replace([np.inf, -np.inf], np.nan).dropna()
+            series = _real_fold_values(x_train[column], column).replace([np.inf, -np.inf], np.nan).dropna()
             if series.empty:
                 raise ValidationError(
                     f"Column '{column}' has no finite fold-train values for binning"
@@ -1109,7 +1126,7 @@ class FoldLocalPreprocessor(TransformerMixin, BaseEstimator):
         _validate_encoded_names(frame.columns, self._binning_columns, names)
         encoded: dict[str, pd.Series] = {}
         for column in self._binning_columns:
-            values = pd.to_numeric(frame[column], errors="coerce")
+            values = _real_fold_values(frame[column], column)
             edges = self._binning_edges[column]
             codes = pd.cut(
                 values,
@@ -1270,6 +1287,27 @@ def _pca_values(frame: pd.DataFrame, columns: list[str]) -> np.ndarray:
     if not np.isfinite(numeric).all():
         raise ValidationError("Fold-local PCA requires finite real, non-null features; impute before reduce")
     return numeric
+
+
+def _positive_fold_threshold(value: Any, name: str) -> float:
+    """Keep valid NumPy scalar knobs from reducing fence arithmetic precision."""
+    if isinstance(value, (bool, np.bool_)) or not isinstance(value, Real):
+        raise ValidationError(f"{name} must be a positive finite real number")
+    try:
+        number = float(value)
+    except (TypeError, ValueError, OverflowError) as exc:
+        raise ValidationError(f"{name} must be a positive finite real number") from exc
+    if not np.isfinite(number) or number <= 0:
+        raise ValidationError(f"{name} must be a positive finite real number")
+    return number
+
+
+def _real_fold_values(series: pd.Series, column: str) -> pd.Series:
+    """Refuse complex samples before numeric summaries or replay lose information."""
+    values = cast(pd.Series, pd.to_numeric(series, errors="coerce"))
+    if pd.api.types.is_complex_dtype(values.dtype):
+        raise ValidationError(f"Fold-local numeric column '{column}' must contain real values")
+    return values
 
 
 def _make_scaler(method: ScaleMethod) -> Any:

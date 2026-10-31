@@ -8,21 +8,21 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 89.13198234540364,
-      "covered_lines": 56343,
-      "num_statements": 63213,
+      "percent_covered": 89.18025527069132,
+      "covered_lines": 56386,
+      "num_statements": 63227,
       "excluded_lines": 566,
-      "source_revision": "2666c7b2f6479faa2f038b6385b10079a543d5f9",
-      "tested_revision": "dc72941469b29834377cb50ee0d23ed84242c97c",
+      "source_revision": "fc61109cbf75d6b4e8862d9545075ead55b14e35",
+      "tested_revision": "25364ff5ae4fdc6586be21fc5b6606fe3ff57342",
       "platform": "remote Linux, CPU expanded profile",
-      "run_id": 41174311898,
-      "result": "16672 passed,173 skipped,zero failures/errors",
+      "run_id": 41179400782,
+      "result": "16883 passed,173 skipped,zero failures/errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
       "coverage_version": "7.16.2",
-      "notes": "Native NLP attribution corrections accepted; all four workflows pass and source/merge whole trees equal 58e4de87c05b7419dea76e51affce00f7de731f9. All2795 required consumers execute. Scope800/566 exclusions unchanged; full+21covered/+2statements vsafc. Entire environment and173skips/37message counters unchanged. 3487pytest warnings (+52 NMF convergence warnings in existing NLP resource consumers);zero collection warnings. Full1793.500s log/1793.301s XML. Exact90gap549 at this source. Core70/expanded88 retained;next89 requires passing complete>=90 with1ppheadroom. Subsequent audio subset reach remains separate."
+      "notes": "Native audio timing/validation corrections accepted; all four workflows pass and source/merge whole trees equal 0cacfa1ae0d44a3dec6cbe62f76cd5913610aa6d. All3006 required consumers execute. Scope800/566 exclusions unchanged; full+43covered/+14statements vs2666. Entire environment,173skips/37message counters and3487pytest warnings unchanged;zero collection warnings. Full1817.360s log/1817.138s XML. Exact90gap519 at this source. Core70/expanded88 retained;next89 requires passing complete>=90 with1ppheadroom. Subsequent fold-numeric subset reach remains separate."
     },
     "latest_local_measurement": {
       "percent_covered": 85.51916984547746,

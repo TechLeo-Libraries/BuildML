@@ -14,6 +14,12 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Fold-local outlier and binning recipes refuse unsupported methods and
+  encodings. Outlier thresholds require positive finite real values, and
+  complex samples are refused before numeric summaries or replay can lose
+  information. Independent fences, bin codes and Ridge equations check native
+  cross-validation, duplicate row indices and saved regressors.
+
 - Audio resampling evaluates the signal at recording sample times and retains
   the final sample at the clip boundary. Rates and window lengths require
   positive integers. Non-finite or complex waveforms are refused before native
