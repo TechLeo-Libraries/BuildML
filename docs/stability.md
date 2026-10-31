@@ -55,16 +55,17 @@ Measure the complete suite with `python scripts/run_full_coverage.py`; subset
 runs are not comparable to the project coverage threshold.
 The separate expanded Linux job runs the complete test directory with
 `requirements-expanded-coverage.txt` and an **88%** floor. Latest accepted remote
-CPU source `fc61109` passed **89.1803%** (56,386/63,227), with 16,883 passed and
-173 skipped. CI41179400782, backend41179400804, acceptance41179400763 and
-CodeQL41179399632 passed. Tested merge `25364ff5` and source trees match.
+CPU source `2a4ff11` passed **89.1965%** (56,415/63,248), with 17,026 passed and
+173 skipped. CI41183019495, backend41183019381, acceptance41183019547 and
+CodeQL41183017784 passed. Tested merge `c3ed043d` and source trees match.
 Core 70/expanded 88 remain; the next expanded floor of 89 requires a passing
 complete result of at least 90%, providing the existing one point of headroom.
-Reaching 90% requires 519 more covered lines at this measured source. Scope
-(800 files, 566 exclusions, coverage.py 7.16.2), the entire environment, skip
-messages and warning counts match `2666c7b`. All 3,006 required consumers execute.
-The complete result adds 43 covered lines and 14 statements in 1817.360s, with
-3,487 pytest warnings, zero failures and no coverage collection warnings.
+Reaching 90% requires 509 more covered lines at this measured source. Scope
+(800 files, 566 exclusions, coverage.py 7.16.2), the entire environment and skip
+messages match `fc61109`. All 3,149 required consumers execute. The complete
+result adds 29 covered lines and 21 statements in 2514.740s, with 3,435 pytest
+warnings (52 fewer NMF convergence warnings in existing NLP resource checks),
+zero failures and no coverage collection warnings.
 
 The subsequent `8594200` gate passed its tests, but coverage.py upgraded from
 7.16.2 to7.17.0 and reported607 excluded lines instead of566. Its raw86.5151%

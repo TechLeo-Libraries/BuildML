@@ -118,12 +118,12 @@ class OutlierPlan:
             "columns": list(self.columns),
             "method": self.method,
             "action": self.action,
-            "lower_": dict(self.lower_),
-            "upper_": dict(self.upper_),
+            "lower_": {column: float(value) for column, value in self.lower_.items()},
+            "upper_": {column: float(value) for column, value in self.upper_.items()},
             "n_flagged_train": self.n_flagged_train,
             "n_dropped": self.n_dropped,
-            "iqr_multiplier": self.iqr_multiplier,
-            "zscore_threshold": self.zscore_threshold,
+            "iqr_multiplier": float(self.iqr_multiplier),
+            "zscore_threshold": float(self.zscore_threshold),
         }
 
 
@@ -198,8 +198,9 @@ def fit_outlier_plan(
     ~buildml.core.errors.LeakageError
         No split plan was supplied.
     ~buildml.core.errors.ValidationError
-        ``method`` or ``action`` is unrecognised, a threshold is not positive,
-        no numeric columns resolved, or a column has no finite training values.
+        ``method`` or ``action`` is unrecognised, a threshold is not a positive
+        finite real number, samples are complex, no numeric columns resolved,
+        or a column has no finite training values.
 
     Notes
     -----
@@ -231,14 +232,12 @@ def fit_outlier_plan(
     """
     assert_fit_partition(split_plan, "train")
     assert split_plan is not None
-    if method not in {"iqr", "zscore"}:
+    if not isinstance(method, str) or method not in {"iqr", "zscore"}:
         raise ValidationError(f"Unsupported outlier method '{method}'")
-    if action not in {"detect", "cap", "drop"}:
+    if not isinstance(action, str) or action not in {"detect", "cap", "drop"}:
         raise ValidationError(f"Unsupported outlier action '{action}'")
-    for name, value in (("iqr_multiplier", iqr_multiplier), ("zscore_threshold", zscore_threshold)):
-        if (isinstance(value, bool) or not isinstance(value, Real)
-                or not np.isfinite(float(value)) or float(value) <= 0):
-            raise ValidationError(f"{name} must be a positive finite number")
+    iqr_multiplier = _positive_outlier_threshold(iqr_multiplier, "iqr_multiplier")
+    zscore_threshold = _positive_outlier_threshold(zscore_threshold, "zscore_threshold")
 
     train = frame_for_partition(dataset, split_plan, "train")
     cols = resolve_transform_columns(
@@ -323,9 +322,11 @@ def apply_outlier_plan(
     Raises
     ------
     ~buildml.core.errors.ValidationError
-        A column the plan expects is missing, or dropping would empty the
-        training or test partition entirely. The latter is a hard stop rather
-        than a warning, since it means the fences are catastrophically tight.
+        A column the plan expects is missing, cap/drop samples are not real
+        finite numbers, or dropping would empty the training or test partition
+        entirely. The latter is a hard stop rather than a warning, since it
+        means the fences are catastrophically tight. Missing samples remain
+        missing.
 
     Notes
     -----
@@ -425,9 +426,24 @@ def apply_outlier_plan(
     return new_dataset, new_split, updated, _build_result(updated, mutated=True)
 
 
+def _positive_outlier_threshold(value: Any, name: str) -> float:
+    """Validate before casting and retain full fence arithmetic precision."""
+    if isinstance(value, (bool, np.bool_)) or not isinstance(value, Real):
+        raise ValidationError(f"{name} must be a positive finite number")
+    try:
+        number = float(value)
+    except (TypeError, ValueError, OverflowError) as exc:
+        raise ValidationError(f"{name} must be a positive finite number") from exc
+    if not np.isfinite(number) or number <= 0:
+        raise ValidationError(f"{name} must be a positive finite number")
+    return number
+
+
 def _numeric_outlier_values(series: pd.Series, column: str) -> pd.Series:
     """Preserve true missingness while refusing lossy numeric coercion/infinity."""
     values = cast(pd.Series, pd.to_numeric(series, errors="coerce"))
+    if pd.api.types.is_complex_dtype(values.dtype):
+        raise ValidationError(f"Outlier column '{column}' must contain real numeric values")
     if (series.notna() & values.isna()).any():
         raise ValidationError(f"Outlier column '{column}' contains non-numeric values")
     if np.isinf(values.dropna().to_numpy(dtype=float)).any():

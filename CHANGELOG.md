@@ -14,6 +14,12 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Outlier plans refuse complex observations before fitting or replay can lose
+  their imaginary values. Valid NumPy thresholds retain fence precision, while
+  malformed controls raise validation errors. Fence summaries export plain
+  floats, including plans loaded from older artifacts. Independent predictions,
+  positional drop checks and saved pipeline consumers verify the behavior.
+
 - Fold-local outlier and binning recipes refuse unsupported methods and
   encodings. Outlier thresholds require positive finite real values, and
   complex samples are refused before numeric summaries or replay can lose
