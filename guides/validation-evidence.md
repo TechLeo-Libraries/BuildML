@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-10-26, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed: 88.9972% (56,224/63,175); 15,932 passed, 173 skipped | [CI41152667473](https://github.com/TechLeo-Libraries/BuildML/actions/runs/41152667473), source `2d70dc8`, tested merge `74746a4a`; matching trees and all four workflows pass. Same 800 files, 566 exclusions and coverage.py 7.16.2; all 2,055 required consumers execute. Environment, skip and warning counts unchanged from `4213850`; full +4 covered lines, -2 statements from corrected fallback logic. Core 70/expanded 87 retained; exact 90% gap 634. 3,487 pytest warnings, no collection warnings |
+| Current accepted remote expanded CPU whole-package gate | Passed: 89.0243% (56,258/63,194); 16,099 passed, 173 skipped | [CI41159198670](https://github.com/TechLeo-Libraries/BuildML/actions/runs/41159198670), source `489641e`, tested merge `dc410ee6`; matching trees and all four workflows pass. Same 800 files, 566 exclusions and coverage.py 7.16.2; all 2,222 required consumers execute. Entire environment, skip and warning counts unchanged from `2d70dc8`; full +34 covered lines/+19 statements. Core 70 retained; expanded floor 87 to 88 with 1.024274pp headroom. Exact 90% gap 617 at that source. 3,487 pytest warnings, no collection warnings |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -6430,3 +6430,75 @@ portable SSL gains. The 21 changed lines implement encoder/dataframe guards.
 Scope remains 800 files and 566 exclusions under coverage.py 7.16.2; the new
 source has 63,194 statements. These subset counts remain separate from accepted
 88.9972% whole-package coverage; no new full percentage or gap is projected.
+
+### Accepted generative-SSL whole-package measurement (2026-10-31)
+
+Source `489641e` supersedes the pending generative-encoder gate above:
+**89.0243%** (56,258/63,194), **16,099 passed/173 skipped**, zero failures or
+errors, 1689.990s log/1689.829s XML. All 167 new SSL cases execute with the
+prior 2,055 required consumers (2,222 total). CI41159198670, backend41159198666,
+acceptance41159198835 and CodeQL41159196339 passed. Source and tested merge
+`dc410ee6` have equal tree `75307f4a`. The entire artifact environment, all
+173 skips across 37 messages and 3,487 pytest warnings match `2d70dc8`. Scope
+remains 800 files, 566 exclusions and coverage.py 7.16.2; no collection warnings.
+The complete totals add 34 covered lines and 19 statements. Core 70 remains;
+expanded rises from 87 to 88 with 1.024274 percentage points of headroom under
+its existing policy. Reaching 90% requires 617 further covered lines at that
+measured source. Later retrieval changes require their own complete assessment.
+
+### Retrieval passage and document-replacement consumers (2026-10-31)
+
+Recursive chunking previously returned 39 characters for a size of 20 and an
+overlap of 19. Carrying overlap now leaves room for new source characters and
+preserves exact offsets without searching repeated text for its origin. Index
+size/overlap overrides retain the chosen strategy and separators. Whole-document
+upserts now replace all old passages, including obsolete tails after a shorter
+revision; the earlier documented manual-delete limitation is removed. Chunk-level
+upserts retain their existing replace-by-chunk-ID behavior. New vectors are
+prepared before publishing a document replacement, so embedding refusal leaves
+the previous store usable and unrelated document vectors unchanged.
+
+The final identical 231-case corpus on archived `489641e` production gives
+66 failures and 165 passing controls in both runtimes, with no warnings or skips.
+Failures comprise 37 passage invariants, 24 module index/update consumers,
+four Session consumers and one config-override consumer. The corrected frozen
+five-file suites give:
+
+| Local profile | Result | Runtime |
+| --- | --- | --- |
+| Pandas 3.0.5 / NumPy 2.4.6 / sklearn 1.9.0 / Torch 2.13 CPU | 268 passed, 3 adjacent skips, 1 warning | 95.36s |
+| Expanded numerical pins: Pandas 2.3.3 / NumPy 2.4.1 / sklearn 1.9.1 / Torch 2.7.1 CPU | 269 passed, 2 adjacent skips, no warnings | 38.62s |
+
+All 231 new cases execute in each profile; no failures, errors or collection
+warnings occur. The first profile skips three missing-extra controls because
+its text stack is available; its warning concerns langchain-community
+deprecation in an adjacent test. The second skips two actual sentence-transformer
+or reranker consumers because that local optional stack is unavailable. These
+differences do not establish remote backend support. The new consumers use the
+explicit local hashing backend and make no semantic retrieval-quality claim.
+
+Source slicing, complete text reconstruction, exact overlap, forward progress
+and positional IDs are checked across empty, repeated, Unicode, separator-rich
+and oversized-token documents. Fixed windows have an independent position
+reference. Manual NumPy normalization and cosine scores from lexical counts
+verify every retrieved passage and citation. Twenty-eight real bundle workflows
+per runtime cover module/Session ingestion, config overrides, shorter revisions
+and applicable longer revisions. Existing vectors and original bundles remain
+unchanged. Actual user-supplied callable embedding refusal and eval-only
+replacement checks preserve the prior usable index.
+
+`scripts/measure_coverage_reach.py` compares the exact frozen source with verified
+same-source `489641e` complete JSON/Git. The profiles exercise 22 and 25 previously
+missing unchanged lines, respectively, plus 18 changed/new lines each. Nineteen
+old RAG/Session lines are common: 16 chunking, one document serialization, one
+whole-document update and one Session strategy path. The remaining three/six
+lines involve adjacent optional-backend or Windows import paths and are excluded
+from portable RAG gain claims. No files are unmapped. Scope remains 800 files,
+566 exclusions and coverage.py 7.16.2; the changed source has 63,196 statements.
+These subset counts do not project a full percentage or a new remaining gap.
+
+Paired old/current three-module type checks, Ruff and Python 3.10 syntax pass.
+Expanded CI requires eleven consumer modules; its separate guard accepts 2,453
+actual cases and rejects missing/skipped new-module negatives. Joined XML is
+guard evidence, without combining coverage databases. A fresh complete gate
+must independently assess this retrieval batch under the expanded 88% floor.

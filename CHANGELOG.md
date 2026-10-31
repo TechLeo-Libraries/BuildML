@@ -14,6 +14,17 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Recursive retrieval chunks respect their character limit and retain exact
+  source spans and overlap. Size/overlap overrides preserve the chosen strategy
+  and separators. Whole-document updates remove obsolete passages after a
+  shorter replacement, while failed embedding leaves the previous index usable.
+  Independent lexical scores and saved-index consumers verify these changes.
+
+- Expanded whole-package Linux coverage passed at 89.0243% at `489641e`, with
+  16,099 passed and 173 skipped. The expanded floor rises from 87% to 88% under
+  its existing one-point headroom policy; core 70%, scope and exclusions remain.
+  The 90% target remains outstanding.
+
 - Torch self-supervised fit, encoding and MAE/VAE reconstruction validate real,
   finite float32 features before changing fitted state. Reconstruction enforces
   the documented matrix shape; conversion and width failures raise validation

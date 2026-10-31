@@ -3,26 +3,26 @@
   "source": "pyproject.toml [tool.coverage.report] fail_under",
   "current": 70,
   "expanded": {
-    "current": 87,
+    "current": 88,
     "source": ".github/workflows/ci.yml expanded-coverage job --cov-fail-under",
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 88.99722991689751,
-      "covered_lines": 56224,
-      "num_statements": 63175,
+      "percent_covered": 89.02427445643573,
+      "covered_lines": 56258,
+      "num_statements": 63194,
       "excluded_lines": 566,
-      "source_revision": "2d70dc8eeb6c9d6193e1633458fac912db59bc17",
-      "tested_revision": "74746a4ac61adf37d3b85eeb775aa6af334ca826",
+      "source_revision": "489641e82124dbae3a5351b2701dfd819898826a",
+      "tested_revision": "dc410ee67f4023688c9c2bf47b458e24afad6d53",
       "platform": "remote Linux, CPU expanded profile",
-      "run_id": 41152667473,
-      "result": "15932 passed,173 skipped,zero failures/errors",
+      "run_id": 41159198670,
+      "result": "16099 passed,173 skipped,zero failures/errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
       "coverage_version": "7.16.2",
-      "notes": "Active-learning request correction accepted; all four workflows pass and source/merge trees equal 1996e37039e6c950d04a8fe6dbad020ad43efee0. All2055 required consumers execute. Scope800/566 exclusions unchanged; full+4covered/-2statements vs421 (faulty fallback replaced). Entire environment, skip173/37message counters and3487pytest warnings unchanged;zero collection warnings. Full1330.490s log/1330.326s XML. Exact90gap634. Exact88.997229 remains below89:core70/expanded87 retained;next88 needs passing complete>=89 with1ppheadroom. Subsequent generative SSL subsets remain separate."
+      "notes": "Generative SSL correction accepted; all four workflows pass and source/merge trees equal 75307f4adf3dadd478331d57f2bb13d0c9a084fd. All2222 required consumers execute. Scope800/566 exclusions unchanged; full+34covered/+19statements vs2d70. Entire environment, skip173/37message counters and3487pytest warnings unchanged;zero collection warnings. Full1689.990s log/1689.829s XML. Exact90gap617 at this measured source. Core70 retained;expanded floor87->88 with1.024274ppheadroom. Subsequent retrieval subsets remain separate."
     },
     "latest_local_measurement": {
       "percent_covered": 85.51916984547746,
@@ -69,13 +69,13 @@
       "notes": "Not promoted: automatic coverage.py upgrade from7.16.2 changed TYPE_CHECKING exclusion accounting across40 files (+41 excluded lines). Source/merge trees equal fbacba31e290aee2038d5d45c3216171a93ca80b. Full12:47,1900 warnings,no coverage collection warnings. Development coverage pinned to7.16.2; static package exclusions restored566. Fresh whole-suite gate required. Latest accepted4c06bd3 remains86.4734%."
     },
     "last_raise": {
-      "previous": 86,
-      "current": 87,
-      "source_revision": "ec1ff90373e0f83222c051e1cd7c3e4e56a5a832",
-      "run_id": 40320342842,
-      "percent_covered": 88.00764757428503,
-      "headroom_percentage_points": 1.0076475742850306,
-      "qualification": "Passing complete expanded Linux CPU suite, all four workflows passed, source/merge trees match. Scope/coverage7.16.2/566 exclusions unchanged; core70 retained."
+      "previous": 87,
+      "current": 88,
+      "source_revision": "489641e82124dbae3a5351b2701dfd819898826a",
+      "run_id": 41159198670,
+      "percent_covered": 89.02427445643573,
+      "headroom_percentage_points": 1.0242744564357338,
+      "qualification": "Passing complete expanded Linux CPU suite; all four workflows pass and source/merge trees match. Scope800/566 exclusions/coverage7.16.2 unchanged; core70 retained."
     }
   },
   "schedule": [
