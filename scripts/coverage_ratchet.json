@@ -8,21 +8,21 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 89.02427445643573,
-      "covered_lines": 56258,
-      "num_statements": 63194,
+      "percent_covered": 89.07051079182227,
+      "covered_lines": 56289,
+      "num_statements": 63196,
       "excluded_lines": 566,
-      "source_revision": "489641e82124dbae3a5351b2701dfd819898826a",
-      "tested_revision": "dc410ee67f4023688c9c2bf47b458e24afad6d53",
+      "source_revision": "73bbfb37ec926877bf0620d84f5d494a218f561f",
+      "tested_revision": "4bfa1183f34b51ea592eeff53254060aab530d61",
       "platform": "remote Linux, CPU expanded profile",
-      "run_id": 41159198670,
-      "result": "16099 passed,173 skipped,zero failures/errors",
+      "run_id": 41162403812,
+      "result": "16330 passed,173 skipped,zero failures/errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
       "coverage_version": "7.16.2",
-      "notes": "Generative SSL correction accepted; all four workflows pass and source/merge trees equal 75307f4adf3dadd478331d57f2bb13d0c9a084fd. All2222 required consumers execute. Scope800/566 exclusions unchanged; full+34covered/+19statements vs2d70. Entire environment, skip173/37message counters and3487pytest warnings unchanged;zero collection warnings. Full1689.990s log/1689.829s XML. Exact90gap617 at this measured source. Core70 retained;expanded floor87->88 with1.024274ppheadroom. Subsequent retrieval subsets remain separate."
+      "notes": "Retrieval source-span/document-replacement correction accepted; all four workflows pass and source/merge trees equal 9020ba453e84b632b98ff07114fb124fd65d3d7e. All2453 required consumers execute. Scope800/566 exclusions unchanged; full+31covered/+2statements vs489. Entire environment and173skips/37message counters match489.3435pytest warnings,52fewer NLP-resource NMF300-iteration ConvergenceWarnings;zero collection warnings. No warning-filter/profile change or performance/quality claim. Full2399.470s log/2399.233s XML. Exact90gap588 at this source. Core70/expanded88 retained; next89 requires passing complete>=90 with1ppheadroom. Subsequent blend-label subsets stay separate."
     },
     "latest_local_measurement": {
       "percent_covered": 85.51916984547746,

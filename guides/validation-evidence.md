@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-10-26, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed: 89.0243% (56,258/63,194); 16,099 passed, 173 skipped | [CI41159198670](https://github.com/TechLeo-Libraries/BuildML/actions/runs/41159198670), source `489641e`, tested merge `dc410ee6`; matching trees and all four workflows pass. Same 800 files, 566 exclusions and coverage.py 7.16.2; all 2,222 required consumers execute. Entire environment, skip and warning counts unchanged from `2d70dc8`; full +34 covered lines/+19 statements. Core 70 retained; expanded floor 87 to 88 with 1.024274pp headroom. Exact 90% gap 617 at that source. 3,487 pytest warnings, no collection warnings |
+| Current accepted remote expanded CPU whole-package gate | Passed: 89.0705% (56,289/63,196); 16,330 passed, 173 skipped | [CI41162403812](https://github.com/TechLeo-Libraries/BuildML/actions/runs/41162403812), source `73bbfb3`, tested merge `4bfa1183`; equal whole trees and all four workflows pass. Same 800 files, 566 exclusions and coverage.py 7.16.2; all 2,453 required consumers execute. Entire environment and skip counters match `489641e`; full +31 covered lines/+2 statements. Core 70/expanded 88 retained; exact 90% gap 588 at this source. 3,435 pytest warnings, 52 fewer NMF convergence warnings without a profile/filter change; no collection warnings or quality/performance claim |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -6502,3 +6502,84 @@ Expanded CI requires eleven consumer modules; its separate guard accepts 2,453
 actual cases and rejects missing/skipped new-module negatives. Joined XML is
 guard evidence, without combining coverage databases. A fresh complete gate
 must independently assess this retrieval batch under the expanded 88% floor.
+
+### Accepted retrieval whole-package measurement (2026-10-31)
+
+Source `73bbfb3` supersedes the pending retrieval gate above: **89.0705%**
+(56,289/63,196), **16,330 passed/173 skipped**, zero failures/errors,
+2399.470s log/2399.233s XML. All 231 new retrieval cases execute with the
+prior 2,222 required consumers (2,453 total). CI41162403812, backend41162403837,
+acceptance41162403792 and CodeQL41162402962 passed. Source and tested merge
+`4bfa1183` have equal whole tree `9020ba45`. The entire environment and all
+173 skips across 37 messages match `489641e`. Scope remains 800 files,
+566 exclusions and coverage.py 7.16.2; no collection warnings. Complete totals
+add 31 covered lines and two statements. The 3,435 pytest warnings are 52 fewer
+than before: NLP resource consumers did not emit their previous 300-iteration
+NMF ConvergenceWarnings. There was no profile or warning-filter change, and no
+quality or performance improvement is inferred. Core 70/expanded 88 remain.
+The next expanded floor of 89 requires passing complete coverage of at least
+90%. Reaching 90% requires 588 further covered lines at this measured source;
+subsequent changes require their own complete assessment.
+
+### Blending label and numerical consumers (2026-10-31)
+
+Hard-prediction blending previously cast raw class labels to floats, so ordinary
+string labels failed during fitting. The same error affected the automatic
+fallback when a base lacked probabilities. New fits encode class vocabularies
+that are not finite numeric values using each base's train-fitted classes.
+The choice depends on the complete fitted vocabulary, preserving consistency
+between single-row and batch inference, including mixed numeric/text labels.
+Finite numeric and numeric-text features retain their existing values.
+
+The encoding mode is persisted on newly fitted classifiers. Older fitted
+objects default to their original mode. This also preserves an actual older
+blend whose native tree meta-model had learned from NaN-text features; changing
+that representation during loading would silently change predictions.
+
+The final identical 180-case corpus on archived `73bbfb3` production gives
+**80 failures/100 passing controls** in each runtime, without skips or warnings.
+All failures occur in hard-label or automatic-fallback classification workflows.
+Final frozen four-file suites give:
+
+| Local numerical profile | Result | Runtime |
+| --- | --- | --- |
+| Pandas 3.0.5 / NumPy 2.4.6 / sklearn 1.9.0 / Torch 2.13 CPU | 298 passed, no skips, 160 warnings | 128.33s |
+| Expanded numerical pins: Pandas 2.3.3 / NumPy 2.4.1 / sklearn 1.9.1 / Torch 2.7.1 CPU | 298 passed, no skips, 160 warnings | 114.39s |
+
+All 180 new cases execute in both profiles. There are no failures, errors or
+collection warnings. The 160 warnings are deprecated flat Session aliases in
+adjacent ensemble-bundle tests. A separate actual core runtime without Polars
+or DuckDB passes 92 cases and skips 44 per missing engine, 88 total, without
+warnings; that is a compatibility check without coverage collection.
+
+The 168 classification workflows cross four real backings (Pandas memory and
+Parquet, lazy Polars and DuckDB), seven vocabularies, three requested modes and
+two deployment options. Explicit weighted fits reconstruct the inner 45-row
+base/15-row meta split from 60 Session training rows. Independent affine,
+sigmoid/softmax and class-design calculations match fitted meta weights,
+predictions, probabilities and contribution metrics. Poisoned heldouts remain
+outside fitting. Single-row probabilities match batch results. Eight regression
+controls retain numeric designs; unfitted and missing-probability controls keep
+their original refusal behavior. Reporting uses actual fitted bases throughout.
+
+Each numerical profile checks 168 actual new ensemble-bundle workflows and
+88 actual older-source bundles. The older bundles replay identical labels,
+probabilities and classes in current source, without file changes. An additional
+older NaN-text/tree-meta-model artifact replays identically in each runtime.
+These are paired source comparisons within each runtime, without a cross-runtime
+serialization or predictive-quality claim.
+
+`scripts/measure_coverage_reach.py`, against verified same-source `73bbfb3`
+complete JSON/Git and the exact frozen current source, reports **20 previously
+missing unchanged lines and 15 changed/new executed lines** per profile. All
+20 old lines belong to ensemble consumers: 11 reporting, five blending and four
+builder/disclosure lines. There are no unmapped files or ancillary backend
+gains. Scope stays 800 files, 566 exclusions and coverage.py 7.16.2; the changed
+source has 63,211 statements. Subset reach does not project a full percentage
+or a remaining gap onto the changed source.
+
+Paired old/current module type checks, frozen Python 3.10 syntax and Ruff pass.
+Expanded CI requires twelve consumer modules; its separate guard accepts 2,633
+actual cases and refuses missing/skipped new-module negatives. Joined XML is
+guard evidence without combining coverage databases. A fresh complete gate
+must assess this blending correction under the existing expanded 88% floor.

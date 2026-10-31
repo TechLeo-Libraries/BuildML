@@ -14,6 +14,13 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Blending classifiers accept nonnumeric and nonfinite-text class labels when
+  combining hard predictions, including automatic probability fallback. Codes
+  come from train-fitted class vocabularies and stay consistent for single rows
+  and batches. Finite numeric features retain their values; saved older blends
+  keep their original encoding. Independent weighted holdout designs and actual
+  older artifacts verify numerical predictions and replay.
+
 - Recursive retrieval chunks respect their character limit and retain exact
   source spans and overlap. Size/overlap overrides preserve the chosen strategy
   and separators. Whole-document updates remove obsolete passages after a

@@ -55,6 +55,7 @@ def _meta_features_from_estimators(
     *,
     task: Literal["classification", "regression"],
     blend_method: Literal["predict", "predict_proba"],
+    class_prediction_codes: bool = False,
 ) -> np.ndarray:
     blocks: list[np.ndarray] = []
     for _, est in fitted:
@@ -72,8 +73,25 @@ def _meta_features_from_estimators(
             else:
                 blocks.append(proba)
         else:
-            pred = np.asarray(est.predict(X), dtype=float).reshape(-1, 1)
-            blocks.append(pred)
+            predicted = np.asarray(est.predict(X)).reshape(-1)
+            if task == "classification" and class_prediction_codes:
+                classes = np.asarray(getattr(est, "classes_", []))
+                try:
+                    numeric_vocabulary = bool(np.isfinite(classes.astype(float)).all())
+                except (TypeError, ValueError, OverflowError):
+                    numeric_vocabulary = False
+                if not numeric_vocabulary:
+                    # Decide from the entire train-fitted vocabulary so a
+                    # single-row request uses the same design as a batch.
+                    if classes.ndim != 1 or not len(classes):
+                        raise ValueError("Non-numeric predictions require fitted classes_.")
+                    matches = predicted[:, None] == classes[None, :]
+                    if not matches.any(axis=1).all():
+                        raise ValueError("Predictions contain labels outside fitted classes_.")
+                    blocks.append(matches.argmax(axis=1).astype(float).reshape(-1, 1))
+                    continue
+            # Preserve finite numeric features, including older bundles.
+            blocks.append(np.asarray(predicted, dtype=float).reshape(-1, 1))
     return np.hstack(blocks)
 
 
@@ -296,6 +314,7 @@ class HoldoutBlendClassifier(ClassifierMixin, BaseEstimator):
             x_meta,
             task="classification",
             blend_method=self.blend_method,
+            class_prediction_codes=True,
         )
         if self.passthrough:
             meta_x = np.hstack([meta_x, np.asarray(x_meta, dtype=float)])
@@ -320,6 +339,7 @@ class HoldoutBlendClassifier(ClassifierMixin, BaseEstimator):
         self.n_features_in_ = int(np.asarray(X).shape[1])
         self.blend_holdout_rows_ = int(len(np.asarray(y_meta)))
         self.blend_base_rows_ = int(len(np.asarray(y_base)))
+        self.class_prediction_codes_ = True
         return self
 
     def _transform_meta(self, X: Any) -> np.ndarray:
@@ -329,6 +349,7 @@ class HoldoutBlendClassifier(ClassifierMixin, BaseEstimator):
             X,
             task="classification",
             blend_method=self.blend_method,
+            class_prediction_codes=bool(getattr(self, "class_prediction_codes_", False)),
         )
         if self.passthrough:
             meta = np.hstack([meta, np.asarray(X, dtype=float)])
