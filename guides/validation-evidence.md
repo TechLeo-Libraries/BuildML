@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-10-26, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed: 88.9881% (56,220/63,177); 15,800 passed, 173 skipped | [CI41147385869](https://github.com/TechLeo-Libraries/BuildML/actions/runs/41147385869), source `4213850`, tested merge `720da2ed`; matching trees and all four workflows pass. Same 800 files, 566 exclusions and coverage.py 7.16.2; all 1,923 required consumers execute. Environment, skip and warning counts unchanged from `17d08a8`; full +3 covered lines, +1 statement. Core 70/expanded 87 retained; exact 90% gap 640. 3,487 pytest warnings, no collection warnings |
+| Current accepted remote expanded CPU whole-package gate | Passed: 88.9972% (56,224/63,175); 15,932 passed, 173 skipped | [CI41152667473](https://github.com/TechLeo-Libraries/BuildML/actions/runs/41152667473), source `2d70dc8`, tested merge `74746a4a`; matching trees and all four workflows pass. Same 800 files, 566 exclusions and coverage.py 7.16.2; all 2,055 required consumers execute. Environment, skip and warning counts unchanged from `4213850`; full +4 covered lines, -2 statements from corrected fallback logic. Core 70/expanded 87 retained; exact 90% gap 634. 3,487 pytest warnings, no collection warnings |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -6346,3 +6346,87 @@ in both. Scope remains 800 files and 566 exclusions under coverage.py 7.16.2;
 the corrected source has 63,175 statements, two fewer after replacing faulty
 fallback logic. These subset counts are separate from accepted 88.9881%
 whole-package coverage. No new full percentage or remaining gap is projected.
+
+### Accepted active-learning-request whole-package measurement (2026-10-31)
+
+Source `2d70dc8` supersedes the pending request-validation gate above:
+**88.9972%** (56,224/63,175), **15,932 passed/173 skipped**, zero failures or
+errors, 1330.490s log/1330.326s XML. All 132 new request cases execute with the
+prior 1,923 required consumers (2,055 total). CI41152667473, backend41152667387,
+acceptance41152667413 and CodeQL41152664823 passed. Source and tested merge
+`74746a4a` have equal tree `1996e370`. The entire artifact environment, all
+173 skips across 37 messages and 3,487 pytest warnings match `4213850`. Scope
+remains 800 files, 566 exclusions and coverage.py 7.16.2; no collection warnings.
+The complete totals add four covered lines and remove two statements through
+replacement of faulty fallback logic. Ancillary local subset reach is not
+projected onto this result. Exact coverage is 88.997229%, below 89% despite the
+rounded display of 89.0. Core 70/expanded 87 remain. The next floor of 88 needs
+a passing complete result of at least 89%. Reaching 90% requires 634 more
+covered lines at this source; later changes need their own complete measure.
+
+### Generative Torch SSL matrices and real saved encoders (2026-10-31)
+
+Trained MAE/VAE encoders accepted non-finite values and float32 conversion
+overflow during encoding and reconstruction. Reconstruction also accepted
+one-dimensional and three-dimensional arrays despite its 2D feature contract,
+and width/conversion errors leaked raw exceptions. Complex values could lose
+their imaginary components during conversion, including at the Session
+dataframe boundary before the encoder saw them. Shared real/numeric/finite
+float32 validation now protects fit, transform and reconstruction; reconstruction
+checks the saved feature width. The dataframe boundary refuses complex values
+before conversion. Invalid requests preserve fitted objects, weights, mode,
+Torch RNG, and the applicable Session plan/history/data.
+
+The final 167 cases include 32 positive numerical workflows across Pandas
+memory/Parquet, lazy Polars and lazy DuckDB, two generative methods, two hidden
+architectures and ordinary/poisoned heldouts. Explicit train-only fits match
+Session weights at the same seed and mask ratio. Independent NumPy affine/ReLU
+sums and the VAE eval-mode latent mean reproduce encodings and reconstructions
+at 2e-5 relative/1e-6 absolute tolerance. Empty batches retain their documented
+shapes. Public state-dict restoration and 32 actual bundles per runtime support
+loaded-encoder and frozen-plan transformation consumers, preserving weights,
+source data and artifact bytes. These establish arithmetic and persistence
+consistency, without a representation-quality, generative-quality, GPU or
+cross-runtime serialization claim.
+
+The 120 malformed-matrix cases cover fit/transform/reconstruct through live and
+loaded models; four unfitted and three actual contrastive encoders check refusal
+boundaries. Eight further Session/module fit/transform cases prove that complex
+dataframes cannot bypass validation through an earlier cast. The identical
+final corpus on archived `2d70dc8` production gives **88 failures/79 passing
+controls**, with **32 conversion warnings**, no skips/errors/collection warnings
+in both runtimes: 80 direct encoder failures (12 fit, 28 transform, 40 reconstruct)
+and eight dataframe-boundary failures. The warnings are actual overflow and
+discarded-complex-component warnings; the fix refuses these inputs before that
+conversion. No native model or backend is mocked to force a branch.
+
+An initial focus used different MAE mask ratios in the Session and explicit
+train-only control (0.15 versus 0.3), causing 16 failures/23 passes in 17.70s.
+The control was explicitly matched to 0.15 before either defect baseline;
+the corrected focus passed 39 cases in 17.20s. Those numerical cases remain
+unchanged. Initial 159-case direct-encoder receipts are retained as superseded
+after the dataframe-boundary extension. Both old-source and both final frozen
+profiles were repeated with the identical 167-case corpus. No defect or reach
+claim uses either superseded setup.
+
+Final three-file verification gives **185 passed/one skipped** in each runtime:
+**80.92s** (80.917s XML) on Pandas 3/NumPy 2.4.6/sklearn 1.9.0 and **53.79s**
+(53.826s XML) on the expanded numerical pins/Pandas 2/NumPy 2.4.1/sklearn 1.9.1.
+All 167 new tabular cases execute; the sole adjacent vision SSL test lacks
+usable Torchvision locally. Neither final run records failures, errors, pytest
+warnings or collection warnings. Ruff, Python 3.10 syntax, changed-copy checks
+and paired old/current features/encoder type checks pass. Production resources,
+tracked tests and numerical profile inputs are frozen and hashed. Expanded CI
+adds a tenth required module; a separate guard accepts 2,222 actual cases and
+refuses missing/skipped new-module cases. Joined XML is guard evidence, not a
+complete or combined coverage measurement.
+
+`scripts/measure_coverage_reach.py` maps against verified same-source `2d70dc8`
+complete JSON/Git and the exact final frozen tree: **19 previously missing
+unchanged/21 changed-new executed lines** per runtime, with no unmapped files.
+Sixteen old lines belong to SSL encoder workflows/refusals. Two missing-vision
+paths and one Windows import path are ancillary and are not presented as
+portable SSL gains. The 21 changed lines implement encoder/dataframe guards.
+Scope remains 800 files and 566 exclusions under coverage.py 7.16.2; the new
+source has 63,194 statements. These subset counts remain separate from accepted
+88.9972% whole-package coverage; no new full percentage or gap is projected.

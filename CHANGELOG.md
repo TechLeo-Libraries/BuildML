@@ -14,6 +14,12 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Torch self-supervised fit, encoding and MAE/VAE reconstruction validate real,
+  finite float32 features before changing fitted state. Reconstruction enforces
+  the documented matrix shape; conversion and width failures raise validation
+  errors. The Session dataframe boundary refuses complex features before any
+  lossy conversion. Independent dense forward sums and saved encoders check replay.
+
 - Active learning refuses invalid explicit strategies and backends instead of
   silently switching to another strategy or learner. Query overrides inherit
   the stored policy only when omitted with `None`. Numerical acquisition,

@@ -8,21 +8,21 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 88.9880811054656,
-      "covered_lines": 56220,
-      "num_statements": 63177,
+      "percent_covered": 88.99722991689751,
+      "covered_lines": 56224,
+      "num_statements": 63175,
       "excluded_lines": 566,
-      "source_revision": "4213850cf59b566cab2a5f8fa26b4e18c3aff7c7",
-      "tested_revision": "720da2ed4189811b7db229f8bb2d18a1bc981342",
+      "source_revision": "2d70dc8eeb6c9d6193e1633458fac912db59bc17",
+      "tested_revision": "74746a4ac61adf37d3b85eeb775aa6af334ca826",
       "platform": "remote Linux, CPU expanded profile",
-      "run_id": 41147385869,
-      "result": "15800 passed,173 skipped,zero failures/errors",
+      "run_id": 41152667473,
+      "result": "15932 passed,173 skipped,zero failures/errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
       "coverage_version": "7.16.2",
-      "notes": "DuckDB sample isolation accepted; all four workflows pass and source/merge trees equal 1cea4c91eac37ff2447d193362c6743c70e49d9b. All1923 required consumers execute. Scope800/566 exclusions unchanged; full+3covered/+1statement vs17d. Entire environment, skip173/37message counters and3487 pytest warnings unchanged;zero collection warnings. Full1776.660s log/1776.469s XML. Exact90gap640. Exact88.988081 remains below89:core70/expanded87 retained;next88 needs passing complete>=89 with1ppheadroom. Subsequent active-learning request subsets remain separate."
+      "notes": "Active-learning request correction accepted; all four workflows pass and source/merge trees equal 1996e37039e6c950d04a8fe6dbad020ad43efee0. All2055 required consumers execute. Scope800/566 exclusions unchanged; full+4covered/-2statements vs421 (faulty fallback replaced). Entire environment, skip173/37message counters and3487pytest warnings unchanged;zero collection warnings. Full1330.490s log/1330.326s XML. Exact90gap634. Exact88.997229 remains below89:core70/expanded87 retained;next88 needs passing complete>=89 with1ppheadroom. Subsequent generative SSL subsets remain separate."
     },
     "latest_local_measurement": {
       "percent_covered": 85.51916984547746,

@@ -100,7 +100,8 @@ def resolve_ssl_columns(
 def matrix_from_frame(frame: pd.DataFrame, columns: list[str]) -> np.ndarray:
     """Build a float design matrix from selected frame columns.
 
-    Refuses null values because SSL pretext expects complete numeric features.
+    Refuses null and complex values because SSL pretext expects complete real
+    numeric features.
 
     Parameters
     ----------
@@ -117,7 +118,7 @@ def matrix_from_frame(frame: pd.DataFrame, columns: list[str]) -> np.ndarray:
     Raises
     ------
     ValidationError
-        When any selected column contains null values.
+        When a selected column contains null, complex, or nonnumeric values.
     """
     block = frame[list(columns)]
     if block.isna().any().any():
@@ -125,7 +126,12 @@ def matrix_from_frame(frame: pd.DataFrame, columns: list[str]) -> np.ndarray:
             "Self-supervised learning requires non-null features. "
             "Call session.impute(...) first (and typically session.scale(...))."
         )
-    return block.to_numpy(dtype=float)
+    if np.iscomplexobj(block.to_numpy()):
+        raise ValidationError("Self-supervised features must be real numeric values.")
+    try:
+        return block.to_numpy(dtype=float)
+    except (TypeError, ValueError, OverflowError):
+        raise ValidationError("Self-supervised features must be numeric values.") from None
 
 
 def encode_ssl_frame(frame: pd.DataFrame, plan: SelfSupervisedPlan) -> np.ndarray:
