@@ -34,7 +34,7 @@ from __future__ import annotations
 
 import hashlib
 import importlib.util
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass, field, replace
 from pathlib import Path
 from typing import Any, Literal
 
@@ -46,6 +46,7 @@ from buildml.core.types import ColumnRole
 from buildml.data.dataset import Dataset
 from buildml.data.splits import SplitPlan, assert_fit_partition
 from buildml.dl.audio import (
+    _validate_audio_parameters,
     apply_audio_waveform_stats,
     decode_audio_cell,
     fit_audio_waveform_stats,
@@ -1010,8 +1011,12 @@ def make_speech_loaders(
     cfg = config or SpeechLoaderConfig()
     if cfg.batch_size < 1:
         raise ValidationError("batch_size must be >= 1")
-    if cfg.max_samples < 1:
-        raise ValidationError("max_samples must be >= 1")
+    sample_rate, max_samples, source_sample_rate = _validate_audio_parameters(
+        cfg.sample_rate, cfg.max_samples, cfg.source_sample_rate
+    )
+    cfg = replace(
+        cfg, sample_rate=sample_rate, max_samples=max_samples, source_sample_rate=source_sample_rate
+    )
 
     audio_col, target = _resolve_audio_target(dataset, audio_column)
     frame = dataset._ensure_pandas()

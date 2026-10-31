@@ -30,12 +30,33 @@ buildml.dl.speech : Transcription and pretrained speech models.
 
 from __future__ import annotations
 
+from numbers import Integral
 from pathlib import Path
 from typing import Any
 
 import numpy as np
 
 from buildml.core.errors import MissingExtraError, ValidationError
+
+
+def _validate_audio_parameters(
+    sample_rate: int, max_samples: int, source_sample_rate: int | None
+) -> tuple[int, int, int | None]:
+    """Validate counts before casts or empty-column shortcuts lose information."""
+    for name, value in (
+        ("sample_rate", sample_rate),
+        ("max_samples", max_samples),
+        ("source_sample_rate", source_sample_rate),
+    ):
+        if name == "source_sample_rate" and value is None:
+            continue
+        if isinstance(value, bool) or not isinstance(value, Integral) or value < 1:
+            raise ValidationError(f"{name} must be a positive integer")
+    return (
+        int(sample_rate),
+        int(max_samples),
+        (None if source_sample_rate is None else int(source_sample_rate)),
+    )
 
 
 def require_soundfile(*, feature: str = "Audio path loading") -> Any:
@@ -104,8 +125,8 @@ def decode_audio_cell(
         If a path is given and soundfile is not installed.
     ValidationError
         If the file does not exist or cannot be read, if the array shape is
-        ambiguous, if the cell type is unsupported, or if ``sample_rate`` or
-        ``max_samples`` is not positive.
+        ambiguous, if samples are not finite real float32 values, if the cell
+        type is unsupported, or if rates/counts are not positive integers.
 
     Notes
     -----
@@ -115,9 +136,11 @@ def decode_audio_cell(
     could be either, and picking wrong would silently produce a waveform that is
     not the recording. Reshape explicitly in that case.
 
-    **Resampling is linear interpolation.** Adequate for feature extraction, and
-    not the band-limited resampling a high-fidelity pipeline would use. Supply
-    audio already at your target rate when quality matters.
+    **Resampling is linear interpolation at recording sample times.** The
+    output has ``round(N * target_rate / source_rate)`` samples (at least one
+    for a nonempty clip); positions past the final source sample hold its
+    value. This is not band-limited resampling. Supply audio already at your
+    target rate when quality matters.
 
     See Also
     --------
@@ -125,8 +148,8 @@ def decode_audio_cell(
     """
     cell, _length = _decode_audio_cell_with_length(
         value,
-        sample_rate=int(sample_rate),
-        max_samples=int(max_samples),
+        sample_rate=sample_rate,
+        max_samples=max_samples,
         source_sample_rate=source_sample_rate,
     )
     return cell
@@ -139,17 +162,19 @@ def _mono_wave_from_array(
     source_sample_rate: int | None,
 ) -> np.ndarray:
     arr = np.asarray(arr)
+    if arr.dtype.kind not in "biuf" or not np.isfinite(arr).all():
+        raise ValidationError("Audio waveform samples must be finite real numbers")
     if arr.ndim == 1:
-        wave = arr.astype(np.float32, copy=False)
+        wave = arr
     elif arr.ndim == 2:
         # Only accept unambiguous channel layouts: one dim is C<=8 and strictly
         # smaller than the time dim. Equal/square/both-large shapes are refused
         # rather than silently flattened into a wrong waveform.
         n0, n1 = int(arr.shape[0]), int(arr.shape[1])
         if n0 <= 8 and n0 < n1:
-            wave = arr.mean(axis=0).astype(np.float32, copy=False)
+            wave = arr.mean(axis=0, dtype=np.float64)
         elif n1 <= 8 and n1 < n0:
-            wave = arr.mean(axis=1).astype(np.float32, copy=False)
+            wave = arr.mean(axis=1, dtype=np.float64)
         else:
             raise ValidationError(
                 f"Ambiguous 2D audio array shape {arr.shape}: expected 1D (T,), "
@@ -160,10 +185,12 @@ def _mono_wave_from_array(
         raise ValidationError(
             f"Audio array must be 1D waveform or 2D (C,T)/(T,C); got shape {arr.shape}"
         )
-    if source_sample_rate is not None and int(source_sample_rate) != int(sample_rate):
-        wave = _resample_mono(
-            wave, src_sr=int(source_sample_rate), dst_sr=int(sample_rate)
-        )
+    with np.errstate(over="ignore", invalid="ignore"):
+        wave = wave.astype(np.float32, copy=False)
+    if not np.isfinite(wave).all():
+        raise ValidationError("Audio waveform samples must be finite in float32")
+    if source_sample_rate is not None and source_sample_rate != sample_rate:
+        wave = _resample_mono(wave, src_sr=source_sample_rate, dst_sr=sample_rate)
     return wave
 
 
@@ -174,8 +201,8 @@ def _resample_mono(wave: np.ndarray, *, src_sr: int, dst_sr: int) -> np.ndarray:
         raise ValidationError("sample rates must be positive")
     duration = wave.shape[0] / float(src_sr)
     n_out = max(1, int(round(duration * dst_sr)))
-    x_old = np.linspace(0.0, 1.0, num=wave.shape[0], endpoint=True)
-    x_new = np.linspace(0.0, 1.0, num=n_out, endpoint=True)
+    x_old = np.arange(wave.shape[0], dtype=np.float64) / src_sr
+    x_new = np.arange(n_out, dtype=np.float64) / dst_sr
     return np.interp(x_new, x_old, wave.astype(np.float64)).astype(np.float32)
 
 
@@ -251,6 +278,9 @@ def stack_audio_column(
     decode_audio_cell : The single-cell version.
     fit_audio_waveform_stats : The consumer of the lengths.
     """
+    sample_rate, max_samples, source_sample_rate = _validate_audio_parameters(
+        sample_rate, max_samples, source_sample_rate
+    )
     decoded: list[np.ndarray] = []
     lengths: list[int] = []
     for v in values:
@@ -281,12 +311,12 @@ def _decode_audio_cell_with_length(
     source_sample_rate: int | None,
 ) -> tuple[np.ndarray, int]:
     """Decode one cell and report the unpadded (pre-tile) length in samples."""
-    sr = int(sample_rate)
-    t_max = int(max_samples)
-    if sr < 1:
-        raise ValidationError("sample_rate must be positive")
-    if t_max < 1:
-        raise ValidationError("max_samples must be positive")
+    # A path carries its own source rate; the array-only declaration is ignored.
+    sr, t_max, source_sample_rate = _validate_audio_parameters(
+        sample_rate,
+        max_samples,
+        None if isinstance(value, (str, Path)) else source_sample_rate,
+    )
 
     if isinstance(value, (str, Path)):
         sf = require_soundfile(feature="Audio path multimodal loaders")
@@ -297,13 +327,14 @@ def _decode_audio_cell_with_length(
             data, file_sr = sf.read(str(path), always_2d=True, dtype="float32")
         except Exception as exc:  # noqa: BLE001
             raise ValidationError(f"Failed to read audio file {path}: {exc}") from exc
-        # soundfile returns (T, C)
-        wave = data.mean(axis=1).astype(np.float32, copy=False)
+        # Validate the recording before resampling can omit invalid samples.
+        if not np.isfinite(data).all():
+            raise ValidationError("Audio waveform samples must be finite real numbers")
+        # soundfile returns (T, C); accumulate in float64 before the float32 cast.
+        wave = data.mean(axis=1, dtype=np.float64).astype(np.float32, copy=False)
         wave = _resample_mono(wave, src_sr=int(file_sr), dst_sr=sr)
     elif isinstance(value, np.ndarray):
-        wave = _mono_wave_from_array(
-            value, sample_rate=sr, source_sample_rate=source_sample_rate
-        )
+        wave = _mono_wave_from_array(value, sample_rate=sr, source_sample_rate=source_sample_rate)
     elif isinstance(value, (list, tuple)):
         wave = _mono_wave_from_array(
             np.asarray(value), sample_rate=sr, source_sample_rate=source_sample_rate
@@ -314,6 +345,8 @@ def _decode_audio_cell_with_length(
             f"got {type(value).__name__}"
         )
     wave = np.asarray(wave, dtype=np.float32).reshape(-1)
+    if not np.isfinite(wave).all():
+        raise ValidationError("Audio waveform samples must be finite in float32")
     raw_len = int(min(wave.shape[0], t_max))
     return _pad_or_truncate(wave, max_samples=t_max), raw_len
 

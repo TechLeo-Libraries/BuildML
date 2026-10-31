@@ -44,6 +44,7 @@ from buildml.core.types import ColumnRole
 from buildml.data.dataset import Dataset
 from buildml.data.splits import SplitPlan, assert_fit_partition
 from buildml.dl.audio import (
+    _validate_audio_parameters,
     apply_audio_waveform_stats,
     fit_audio_waveform_stats,
     stack_audio_column,
@@ -1005,8 +1006,15 @@ def make_multimodal_loaders(
         raise ValidationError("batch_size must be >= 1")
     if cfg.image_channels not in {1, 3}:
         raise ValidationError("image_channels must be 1 or 3")
-    if cfg.audio_sample_rate < 1 or cfg.audio_max_samples < 1:
-        raise ValidationError("audio_sample_rate and audio_max_samples must be positive")
+    sample_rate, max_samples, source_sample_rate = _validate_audio_parameters(
+        cfg.audio_sample_rate, cfg.audio_max_samples, cfg.audio_source_sample_rate
+    )
+    cfg = replace(
+        cfg,
+        audio_sample_rate=sample_rate,
+        audio_max_samples=max_samples,
+        audio_source_sample_rate=source_sample_rate,
+    )
 
     frozen: MultimodalContract | None = None
     if preprocess is not None:

@@ -14,6 +14,13 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Audio resampling evaluates the signal at recording sample times and retains
+  the final sample at the clip boundary. Rates and window lengths require
+  positive integers. Non-finite or complex waveforms are refused before native
+  loaders are published, and stereo mixing avoids float32 accumulation overflow.
+  Independent sample-time identities, real WAV files, train-only statistics and
+  saved native audio consumers verify conversion and replay.
+
 - Complement Naive Bayes token attributions retain the fitted model's score
   direction. Linear text heads also support native sparse coefficient storage.
   Attribution limits require integer counts, and global explanations export
