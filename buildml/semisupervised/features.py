@@ -173,7 +173,8 @@ def is_unlabeled_mask(series: pd.Series, unlabeled_marker: Any = None) -> np.nda
     missing = series.isna().to_numpy(dtype=bool)
     if unlabeled_marker is None:
         return missing
-    return missing | (series.to_numpy(dtype=object) == unlabeled_marker)
+    matches = series.eq(unlabeled_marker).fillna(False).to_numpy(dtype=bool)
+    return missing | matches
 
 
 def encode_targets_for_sklearn(
@@ -229,14 +230,19 @@ def encode_targets_for_sklearn(
     labeled_values = y.loc[~mask]
     if label_encoder is None:
         encoder = LabelEncoder()
-        encoder.fit(labeled_values.astype(str))
+        try:
+            encoder.fit(labeled_values.to_numpy())
+        except (TypeError, ValueError) as exc:
+            raise ValidationError("Class labels must use consistent, compatible types.") from exc
+        encoder._buildml_raw_class_labels_ = True
     else:
         encoder = label_encoder
 
     y_sk = np.full(shape=len(y), fill_value=SKLEARN_UNLABELED, dtype=int)
-    encoded = encoder.transform(labeled_values.astype(str))
+    values = labeled_values.to_numpy() if getattr(encoder, "_buildml_raw_class_labels_", False) else labeled_values.astype(str)
+    encoded = encoder.transform(values)
     y_sk[~mask] = encoded
-    classes = tuple(encoder.classes_)
+    classes = tuple(value.item() if isinstance(value, np.generic) else value for value in encoder.classes_)
     if len(classes) < 2:
         raise ValidationError(
             "Semi-supervised classification requires at least 2 classes among "
@@ -270,6 +276,8 @@ def decode_predictions(pred_codes: np.ndarray, label_encoder: Any) -> list[Any]:
     else:
         codes = codes.astype(int)
     decoded = label_encoder.inverse_transform(codes)
+    if getattr(label_encoder, "_buildml_raw_class_labels_", False):
+        return [value.item() if isinstance(value, np.generic) else value for value in decoded]
     # Prefer original dtype-ish: if all look like ints, cast back
     out: list[Any] = []
     for value in decoded:

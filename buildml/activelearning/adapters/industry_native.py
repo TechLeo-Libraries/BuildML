@@ -100,7 +100,7 @@ def _member_probas(committee: Any, x_pool: np.ndarray) -> np.ndarray:
 
 
 def _qbc_kl_scores(committee: Any, x_pool: np.ndarray) -> np.ndarray:
-    """Mean pairwise KL divergence among committee member distributions."""
+    """Mean KL over ordered member pairs, independent of committee ordering."""
     stack = _member_probas(committee, x_pool)
     stack = np.clip(stack, 1e-12, 1.0)
     n_members = stack.shape[0]
@@ -112,7 +112,9 @@ def _qbc_kl_scores(committee: Any, x_pool: np.ndarray) -> np.ndarray:
         for j in range(i + 1, n_members):
             p = stack[i]
             q = stack[j]
-            kl = np.sum(p * (np.log(p) - np.log(q)), axis=1)
+            # Average both directions: an arbitrary member order must not
+            # change the disagreement score or the resulting query priorities.
+            kl = 0.5 * np.sum((p - q) * (np.log(p) - np.log(q)), axis=1)
             kl_sum += kl
             pairs += 1
     return kl_sum / float(pairs)

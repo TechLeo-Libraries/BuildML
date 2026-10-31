@@ -23,6 +23,21 @@ change. `merge_mode="extend_train"` appends rows, marks them with
 classical `FitResult`** because train membership changed. Validation
 and test values stay as they were.
 
+Smoothed bootstrap sampling retains missing numeric values. Nullable integer
+columns keep their integer dtype after rounding; missing entries remain null.
+Before extending train, generated values for nullable integer columns must be
+integral and fit the original dtype's range. Fractional or out-of-range values
+refuse the merge before changing data, splits or fitted results. Only generated
+rows are converted, so holdout values and dtypes stay intact. A larger observed
+range is valid when the values still fit the dtype.
+
+Native backends may materialize nullable integers as floating-point columns;
+the fitted column kind follows the actual ingested dtype. Inspect the fitted
+schema when integer rounding is important. A saved bootstrap generator that
+retains the original training nulls can be sampled again with the correction.
+Previously generated sentinel values must be regenerated, and downstream
+models trained on those rows must be refitted.
+
 You choose method, sample size, and whether to merge. The API refuses
 fit before `split`, SDV methods without the extra, and sample/evaluate
 without a synthesizer plan.
@@ -98,6 +113,16 @@ for the gap.
 **gaussian_copula**: mixed-type empirical CDF plus a correlation
 latent (`correlation_ridge=1e-3`). Optional
 `condition={col: value}` rejection sampling on `sample`.
+Conditions compare values without converting them to text: `1` differs from
+`"1"`, and `None` selects missing values rather than a literal `"None"` label.
+Keys must name fitted columns, and values must be finite numbers, strings,
+booleans or `None`. All conditions must hold. Invalid requests and conditions
+not satisfied within the rejection-sampling limit raise without appending rows.
+An empty dictionary or `None` requests unconditional sampling. AI sampling tools
+carry the same `condition` argument through confirmed plans and explicit autonomy;
+the proposed conditions appear before confirmation. Other synthesizers refuse
+non-empty conditions. Post-sample validation checks the full fitted marginals,
+so a deliberately conditioned sample may trigger distribution warnings.
 
 **smote**: imblearn wrap. Needs `buildml[imbalanced]`. Target from
 `target_column` or the Session target. `k_neighbors` default 5.
@@ -156,6 +181,36 @@ session.synthetic.evaluate(mode="fidelity", eval_backend="auto")
 Calling `session.synthetic.fit()` with no arguments is native copula,
 not SDV, even on a machine where SDV is the catalog's
 `default_backend_when_installed`.
+
+Builtin fidelity uses typed scalar categories, with one separate category for
+missing values. Numeric `1`, string `"1"` and boolean `True` remain distinct
+when the input column preserves those types. NumPy scalar wrappers compare as
+their corresponding Python values. This avoids a perfect total-variation score
+caused by converting distinct categories to the same text.
+
+New native copulas fit categorical frequency bins with the same scalar type
+identities. Their categorical conditions require a matching type, so `True`
+does not select integer `1`. Conditions on continuous numeric columns retain
+numeric equality. Trusted saved plans retain the raw fitted vocabulary;
+JSON summaries keep their display labels. Sampling a new plan or reloading its
+bundle preserves both types and the training population.
+
+Vocabulary validation counts unknown nonmissing values divided by the total
+sample row count. Missing values contribute to the separate null-rate check.
+They never impersonate a literal `"__NA__"` category. Older text vocabularies
+retain text comparison and disclose that refitting is needed for typed checks.
+Older copula samples retain their fitted transforms with a refitting warning;
+refit on the original training data to recover populations merged by those
+transforms. Loading an older schema initializes its new metadata defaults so
+comparison, sampling and resaving remain usable.
+
+Classification TSTR and TRTR fit their probes on training labels represented
+by integer codes. Holdout labels never add training examples or model outputs;
+an unseen class counts as an error and participates in macro-F1. Missing
+classification targets raise before storing the result. Categorical feature
+preprocessing still uses the existing sklearn contract; this change does not
+extend the feature types that it accepts. Saved generators and their sampled
+rows remain unchanged. Rerun evaluation to correct a historical report.
 
 ## Merge vs resample
 

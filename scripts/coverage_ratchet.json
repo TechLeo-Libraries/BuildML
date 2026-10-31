@@ -1,7 +1,83 @@
 {
   "policy": "Coverage fail_under is a one-way ratchet on the Linux CI monolith (pytest --cov=buildml). Raise when that gate improves; never lower to silence a regression. Floors must be set from that gate or scripts/run_full_coverage.py in monolith mode, never from a tiny subset or from a Windows isolated combine that skips crashed modules.",
   "source": "pyproject.toml [tool.coverage.report] fail_under",
-  "current": 66,
+  "current": 70,
+  "expanded": {
+    "current": 88,
+    "source": ".github/workflows/ci.yml expanded-coverage job --cov-fail-under",
+    "profile": "requirements-expanded-coverage.txt",
+    "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
+    "latest_measurement": {
+      "percent_covered": 89.19649633189982,
+      "covered_lines": 56415,
+      "num_statements": 63248,
+      "excluded_lines": 566,
+      "source_revision": "2a4ff11d36ce65261a09eed13ba8386879cc6ffd",
+      "tested_revision": "c3ed043d6b88d6f8d23823f0a92be7cb56921ad9",
+      "platform": "remote Linux, CPU expanded profile",
+      "run_id": 41183019495,
+      "result": "17026 passed,173 skipped,zero failures/errors",
+      "trace_concurrency": [
+        "multiprocessing",
+        "thread"
+      ],
+      "coverage_version": "7.16.2",
+      "notes": "Fold numeric policy corrections accepted; all four workflows pass and source/merge whole trees equal ff9946ea3ebecfb3dc6419cdced2e785506e294b. All3149 required consumers execute. Scope800/566 exclusions unchanged; full+29covered/+21statements vsfc. Entire environment and173skips/37message counters unchanged. 3435pytest warnings (52 fewer NMF convergence warnings from existing NLP resource tests);zero collection warnings. Full2514.740s log/2514.513s XML. Exact90gap509 at this source. Core70/expanded88 retained;next89 requires passing complete>=90 with1ppheadroom. Subsequent outlier-plan subset reach remains separate."
+    },
+    "latest_local_measurement": {
+      "percent_covered": 85.51916984547746,
+      "covered_lines": 52909,
+      "num_statements": 61868,
+      "excluded_lines": 566,
+      "source_revision": "4fcceb2d1b68b843b7611019f45c00ed11a797d8",
+      "platform": "local Linux, broadened expanded profile with DoWhy and CUDA-capable Torch",
+      "result": "3337 passed, 59 skipped, zero failures; no coverage collection warnings",
+      "notes": "Full suite24:50. Same-source paired control passed85.3947%,3333passed63skipped. Candidate gained80lines/lost3,net77. Exactly five DoWhy positive tests replace skips; one missing-package test now skips. Both source archives hash5c9edd06ac1d18a93a55adc2c04295a72bd9026d6c49fd41a64c6ae5420782a2. Profile usesNumPy2.4.1/SciPy1.15.3/mlxtend0.23.4/DoWhy0.14 and ONNXRuntime1.31.0. Not remote CI acceptance."
+    },
+    "seed_measurement": {
+      "percent_covered": 82.69421622061336,
+      "covered_lines": 50828,
+      "num_statements": 61465,
+      "source_revision": "1518598",
+      "platform": "local Linux, CUDA-capable Torch",
+      "result": "2235 passed, 42 skipped, no failures",
+      "notes": "The new remote CPU profile must pass independently; this local result does not establish that outcome. The 90 percent target remains outstanding."
+    },
+    "same_source_profile_comparison": {
+      "source_revision": "4fcceb2d1b68b843b7611019f45c00ed11a797d8",
+      "original_percent": 85.39471132087671,
+      "original_covered_lines": 52832,
+      "candidate_percent": 85.51916984547746,
+      "candidate_covered_lines": 52909,
+      "num_statements": 61868,
+      "added_lines": 80,
+      "lost_lines": 3,
+      "net_covered_change": 77,
+      "qualification": "Separate complete local measurements; no database combination. Broader profile subsequently passed remote CPU CI at85.4319 percent."
+    },
+    "noncomparable_measurement": {
+      "source_revision": "8594200dc8a6e5bdde35aac3c0919fa123b600b0",
+      "tested_revision": "ff016ce979856a60088da57f69623e052dac5543",
+      "run_id": 39812389575,
+      "result": "3834 passed, 77 skipped, zero failures/errors; all three workflows passed",
+      "coverage_version": "7.17.0",
+      "percent_covered": 86.51511736484528,
+      "covered_lines": 53738,
+      "num_statements": 62114,
+      "excluded_lines": 607,
+      "eligible_for_floor": false,
+      "notes": "Not promoted: automatic coverage.py upgrade from7.16.2 changed TYPE_CHECKING exclusion accounting across40 files (+41 excluded lines). Source/merge trees equal fbacba31e290aee2038d5d45c3216171a93ca80b. Full12:47,1900 warnings,no coverage collection warnings. Development coverage pinned to7.16.2; static package exclusions restored566. Fresh whole-suite gate required. Latest accepted4c06bd3 remains86.4734%."
+    },
+    "last_raise": {
+      "previous": 87,
+      "current": 88,
+      "source_revision": "489641e82124dbae3a5351b2701dfd819898826a",
+      "run_id": 41159198670,
+      "percent_covered": 89.02427445643573,
+      "headroom_percentage_points": 1.0242744564357338,
+      "qualification": "Passing complete expanded Linux CPU suite; all four workflows pass and source/merge trees match. Scope800/566 exclusions/coverage7.16.2 unchanged; core70 retained."
+    }
+  },
   "schedule": [
     {
       "target": 27,
@@ -30,8 +106,26 @@
     {
       "target": 66,
       "release": "2.6.0",
-      "status": "active",
+      "status": "superseded",
       "notes": "Linux CI monolith (pytest --cov=buildml) measured 66.67% (40630/60938) on the 2.6.0 cut. That job is the coverage gate."
+    },
+    {
+      "target": 67,
+      "release": "unreleased",
+      "status": "superseded",
+      "notes": "Passing Linux CI monolith measured 68.33% on 2026-10-12, run 38213125336, commit 6369eeb; 1540 passed, 256 skipped."
+    },
+    {
+      "target": 69,
+      "release": "unreleased",
+      "status": "superseded",
+      "notes": "Passing Linux CI monolith measured 70.04-70.05% across Python3.10-3.13 on 2026-10-12, run38219062877, commitf94dff0; 1645 passed,261 skipped per configuration."
+    },
+    {
+      "target": 70,
+      "release": "unreleased",
+      "status": "active",
+      "notes": "Corrected thread/process collection; Linux Python3.10-3.13 monoliths passed71.28-71.29%,2172passed398skipped,run38589015544,commit2837fb3. Package scope and exclusions unchanged."
     }
   ],
   "how_to_raise": [
@@ -42,15 +136,19 @@
     "Update CONTRIBUTING.md ratchet note, docs/stability.md, and CHANGELOG"
   ],
   "measured": {
-    "percent_covered": 66.67,
-    "covered_lines": 40630,
-    "num_statements": 60938,
+    "percent_covered": 71.2820346355477,
     "platform": "linux",
-    "python": "3.11",
+    "python": "3.12",
     "mode": "monolith",
     "command": "pytest --cov=buildml --cov-report=term-missing",
-    "notes": "GitHub Actions test (3.11) on 2.6.0 cut commit cf981e3; 1120 passed, 228 skipped"
+    "notes": "Linux Python3.12 run38589015544,source2837fb3,2172passed398skipped. All four core configurations passed with>=1ppheadroom above70.",
+    "covered_lines": 43919,
+    "num_statements": 61613,
+    "trace_concurrency": [
+      "multiprocessing",
+      "thread"
+    ]
   },
-  "last_full_suite_percent": 66.67,
-  "suggested_fail_under": 66
+  "last_full_suite_percent": 71.2820346355477,
+  "suggested_fail_under": 70
 }

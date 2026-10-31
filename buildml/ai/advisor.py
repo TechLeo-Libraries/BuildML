@@ -82,6 +82,7 @@ with the following structure for each step:
 - rationale: Why this step is appropriate now
 - prerequisites: What must be true before this step
 - expected_changes: What will change after this step
+- parameters: An object containing the operation's named arguments
 
 IMPORTANT:
 - Only recommend operations that are available in the current workflow state
@@ -102,7 +103,8 @@ Respond with valid JSON matching this schema:
       "prerequisites": ["string"],
       "expected_changes": ["string"],
       "evidence": ["string"],
-      "warnings": ["string"]
+      "warnings": ["string"],
+      "parameters": {{}}
     }}
   ],
   "current_state_summary": "string",
@@ -511,6 +513,39 @@ def run_advisor(
     )
 
 
+def _validate_plan_data(data: Any) -> None:
+    """Validate the entire provider response before constructing usable steps."""
+    if not isinstance(data, dict):
+        raise ValueError("The plan must be an object.")
+    steps = data.get("steps", [])
+    if not isinstance(steps, list):
+        raise ValueError("steps must be an array.")
+    for index, step in enumerate(steps):
+        path = f"steps[{index}]"
+        if not isinstance(step, dict):
+            raise ValueError(f"{path} must be an object.")
+        operation = step.get("operation")
+        if not isinstance(operation, str) or not operation.strip():
+            raise ValueError(f"{path}.operation must be a non-empty string.")
+        for key in ("description", "rationale"):
+            if not isinstance(step.get(key, ""), str):
+                raise ValueError(f"{path}.{key} must be a string.")
+        if not isinstance(step.get("parameters", {}), dict):
+            raise ValueError(f"{path}.parameters must be an object.")
+    if not isinstance(data.get("current_state_summary", ""), str):
+        raise ValueError("current_state_summary must be a string.")
+    text_fields: list[tuple[dict[str, Any], str, tuple[str, ...]]] = [
+        (data, "plan", ("assumptions", "limitations", "alternatives"))
+    ]
+    text_fields.extend((step, f"steps[{index}]", ("prerequisites", "expected_changes", "evidence", "warnings"))
+                       for index, step in enumerate(steps))
+    for item, path, keys in text_fields:
+        for key in keys:
+            value = item.get(key)
+            if value is not None and (not isinstance(value, list) or any(not isinstance(v, str) for v in value)):
+                raise ValueError(f"{path}.{key} must be an array of strings or null.")
+
+
 def run_plan(
     session: Any,
     goal: str,
@@ -550,9 +585,11 @@ def run_plan(
     Notes
     -----
     **A malformed response degrades rather than raises.** When the model
-    returns something that is not the requested JSON, the raw text is kept in
-    ``raw_response`` and the structured fields come back thin. Check
-    ``steps`` before relying on them.
+    returns invalid JSON or fields with the wrong structure, the entire plan
+    is refused: ``steps`` is empty and ``limitations`` explains the failure.
+    ``raw_response``, usage and the egress manifest are retained. Optional
+    lists may be absent or null. Operation arguments in ``parameters`` are
+    preserved; their tool-specific validation happens before execution.
 
     **No tools are called.** The plan comes from the state digest and the
     egress payload alone; nothing is inspected beyond that.
@@ -637,13 +674,16 @@ Recent history: {digest.history_summary}
 
     try:
         plan_data = json.loads(response.content)
-    except json.JSONDecodeError:
+        _validate_plan_data(plan_data)
+    except ValueError as exc:
+        reason = ("Response was not valid JSON." if isinstance(exc, json.JSONDecodeError)
+                  else f"Response did not match the plan schema: {exc}")
         return PlanResult(
             goal=goal,
             steps=(),
             current_state_summary="Failed to parse plan response.",
             assumptions=(),
-            limitations=("Response was not valid JSON.",),
+            limitations=(reason,),
             egress_manifest=manifest,
             raw_response=response.content,
             usage=usage,
@@ -658,6 +698,7 @@ Recent history: {digest.history_summary}
             expected_changes=tuple(s.get("expected_changes") or []),
             evidence=tuple(s.get("evidence") or []),
             warnings=tuple(s.get("warnings") or []),
+            parameters=dict(s.get("parameters", {})),
         )
         for s in plan_data.get("steps", [])
     )
@@ -929,12 +970,12 @@ def _retrieve_rag_context(
         return "", []
 
     try:
-        from buildml.rag.retriever import retrieve_chunks
+        from buildml.rag.retrieve import retrieve
     except ImportError:
         return "", []
 
     try:
-        chunks = retrieve_chunks(rag_index, query, top_k=top_k)
+        chunks = retrieve(rag_index, query, k=top_k).hits
     except Exception:
         return "", []
 
@@ -946,7 +987,7 @@ def _retrieve_rag_context(
 
     for chunk in chunks:
         text = getattr(chunk, "text", str(chunk))
-        source = getattr(chunk, "source_id", "unknown")
+        source = chunk.doc_id
         sanitized = mark_untrusted_data(text, f"rag_chunk_{source}")
         texts.append(sanitized)
         sources.append(str(source))

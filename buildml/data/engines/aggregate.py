@@ -379,6 +379,9 @@ def aggregate_pandas(
     **Group order follows first appearance**, not sort order, which keeps
     results reproducible.
 
+    **Only observed groups appear.** Unused categorical levels do not create
+    rows, including on pandas versions whose groupby default includes them.
+
     **Sums of all-missing columns are missing, not zero.** ``sum`` uses
     ``min_count=1``, because a zero would look like a real measurement.
 
@@ -403,7 +406,7 @@ def aggregate_pandas(
 
     by_cols = list(by)
     rows: list[dict[str, Any]] = []
-    grouped = frame.groupby(by_cols, dropna=False, sort=False)
+    grouped = frame.groupby(by_cols, dropna=False, sort=False, observed=True)
     for key, group in grouped:
         key_vals = key if isinstance(key, tuple) else (key,)
         row = {col: val for col, val in zip(by_cols, key_vals, strict=True)}
@@ -420,6 +423,10 @@ def aggregate_pandas(
     out = pd.DataFrame(rows)
     ordered = by_cols + [output_name(c, f) for c, f in pairs]
     return out.loc[:, ordered].copy()
+
+
+def _quote_identifier(name: str) -> str:
+    return '"' + str(name).replace('"', '""') + '"'
 
 
 def sql_aggregate_select(
@@ -461,20 +468,20 @@ def sql_aggregate_select(
     """
     parts: list[str] = []
     if by:
-        parts.extend(f'"{c}"' for c in by)
+        parts.extend(_quote_identifier(c) for c in by)
     for column, func in pairs:
         alias = output_name(column, func)
         if column == "*":
-            parts.append(f'COUNT(*) AS "{alias}"')
+            parts.append(f'COUNT(*) AS {_quote_identifier(alias)}')
             continue
-        expr = f'"{column}"'
+        expr = _quote_identifier(column)
         q = quantile_level(func)
         if q is not None:
-            parts.append(f'quantile_cont({expr}, {q}) AS "{alias}"')
+            parts.append(f'quantile_cont({expr}, {q}) AS {_quote_identifier(alias)}')
             continue
         template = _SQL_AGG[func]
         if "{expr}" in template:
-            parts.append(f'{template.format(expr=expr)} AS "{alias}"')
+            parts.append(f'{template.format(expr=expr)} AS {_quote_identifier(alias)}')
         else:
-            parts.append(f'{template}({expr}) AS "{alias}"')
+            parts.append(f'{template}({expr}) AS {_quote_identifier(alias)}')
     return ", ".join(parts)

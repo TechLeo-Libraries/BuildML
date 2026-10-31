@@ -47,13 +47,15 @@ buildml.model.compare : Comparing estimators once configured.
 from __future__ import annotations
 
 from collections.abc import Callable
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from itertools import product
+from numbers import Integral
 from typing import Any, Literal
 
 import numpy as np
 import pandas as pd
 from sklearn.base import clone
+from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import (
     accuracy_score,
     balanced_accuracy_score,
@@ -75,6 +77,7 @@ from sklearn.pipeline import Pipeline as SkPipeline
 
 from buildml.core.errors import LeakageError, ValidationError
 from buildml.core.types import ColumnRole
+from buildml.core.validation import _positive_integer
 from buildml.data.dataset import Dataset
 from buildml.data.splits import SplitPlan, assert_fit_partition, frame_for_partition
 from buildml.model.supervised import (
@@ -1047,7 +1050,7 @@ def cv_score(
                 f"Unsupported recipe knobs: {unknown}. Allowed: {sorted(SAFE_RECIPE_KNOBS)}"
             )
         knob_params = {**knob_params, **dict(recipe_knobs)}
-    active_recipe = _recipe_with_knobs(preprocess, knob_params)
+    active_recipe = _recipe_with_knobs(preprocess, knob_params, task=resolved_task)
 
     model = clone(estimator)
     if est_params:
@@ -1087,6 +1090,8 @@ def cv_score(
     )
 
     for fold_id, (train_pos, eval_pos) in enumerate(split_iter):
+        train_pos = _validated_fold_positions(train_pos, len(x_reset))
+        eval_pos = _validated_fold_positions(eval_pos, len(x_reset))
         if set(train_pos) & set(eval_pos):
             raise LeakageError("CV fold train/eval indices overlap")
         x_fold_train = x_reset.iloc[list(train_pos)]
@@ -1347,7 +1352,8 @@ def randomized_search(
     recipe_distributions:
         Fold-local recipe knobs, in the same forms. Requires ``preprocess``.
     n_iter:
-        How many configurations to try. The whole budget.
+        Positive integer number of configurations to try. Booleans and
+        fractional counts are refused; NumPy integer counts are accepted.
     random_state:
         Seed, so the sampled configurations reproduce.
     task:
@@ -1420,8 +1426,7 @@ def randomized_search(
     grid_search : Exhaustive, for small spaces.
     optuna_search : Adaptive, concentrating on promising regions.
     """
-    if n_iter < 1:
-        raise ValidationError("n_iter must be >= 1")
+    n_iter = _positive_integer(n_iter, name="n_iter")
     trials = _expand_randomized_trials(
         param_distributions=param_distributions,
         recipe_distributions=recipe_distributions,
@@ -1496,7 +1501,8 @@ def optuna_search(
     recipe_space:
         The same forms, for fold-local recipe knobs. Requires ``preprocess``.
     n_trials:
-        How many configurations to evaluate.
+        Positive integer number of configurations to evaluate. Booleans and
+        fractional counts are refused before creating or advancing a study.
     random_state:
         Seed for the TPE sampler.
     task:
@@ -1581,6 +1587,7 @@ def optuna_search(
     randomized_search : No extra dependency, easy to parallelise.
     evolutionary_search : Better on rugged spaces with interacting parameters.
     """
+    n_trials = _positive_integer(n_trials, name="n_trials")
     try:
         import optuna
     except ImportError as exc:
@@ -1588,10 +1595,14 @@ def optuna_search(
 
         raise MissingExtraError("optuna", "Optuna hyperparameter search") from exc
 
-    if n_trials < 1:
-        raise ValidationError("n_trials must be >= 1")
     if param_space is None and recipe_space is None:
         raise ValidationError("Provide param_space and/or recipe_space")
+    # Refuse malformed declared domains before creating/advancing a caller's study.
+    # Callable spaces remain runtime suggestions supplied by the caller.
+    for space in (param_space, recipe_space):
+        if space is not None and not callable(space):
+            for name, spec in space.items():
+                _gene_from_spec(name, spec, engine="Optuna")
     _require_recipe_for_knobs(preprocess, recipe_space is not None)
 
     assert_fit_partition(split_plan, "train")
@@ -1864,6 +1875,17 @@ def evolutionary_search(
     optuna_search : Usually stronger when parameters act independently.
     randomized_search : The simplest baseline worth beating.
     """
+    for name, value in (
+        ("population_size", population_size),
+        ("n_generations", n_generations),
+        ("elite_size", elite_size),
+        ("tournament_size", tournament_size),
+        ("max_evaluations", max_evaluations),
+    ):
+        if value is None and name == "max_evaluations":
+            continue
+        if isinstance(value, (bool, np.bool_)) or not isinstance(value, Integral):
+            raise ValidationError(f"{name} must be an integer")
     if population_size < 2:
         raise ValidationError("population_size must be >= 2")
     if n_generations < 1:
@@ -2140,9 +2162,9 @@ def nested_cv_score(
         ``'auto'`` to infer from the spaces given, or an explicit ``'grid'``,
         ``'randomized'``, ``'optuna'``, or ``'evolutionary'``.
     n_iter:
-        Trials per inner randomized search.
+        Positive integer trials per inner randomized search.
     n_trials:
-        Trials per inner Optuna search; also the evaluation ceiling for
+        Positive integer trials per inner Optuna search; also the evaluation ceiling for
         evolutionary.
     population_size:
         Configurations alive at once in an evolutionary inner search.
@@ -2290,8 +2312,10 @@ def nested_cv_score(
             "warm_start_studies=True requires Optuna inner search "
             "(inner_search='optuna' or auto with param_space/recipe_space)"
         )
-    if search_method in {"optuna", "evolutionary"} and n_trials < 1:
-        raise ValidationError("n_trials must be >= 1")
+    if search_method in {"optuna", "evolutionary"}:
+        n_trials = _positive_integer(n_trials, name="n_trials")
+    elif search_method == "randomized":
+        n_iter = _positive_integer(n_iter, name="n_iter")
     if param_grid is not None and not param_grid:
         raise ValidationError("param_grid must not be empty when provided")
     if param_distributions is not None and not param_distributions:
@@ -2359,10 +2383,12 @@ def nested_cv_score(
     selected_params: list[dict[str, Any]] = []
     selected_recipe_knobs: list[dict[str, Any]] = []
     inner_strategy_name = outer_strategy
-    inner_n_splits = int(inner_cv) if isinstance(inner_cv, int) else 0
+    inner_n_splits = int(inner_cv) if isinstance(inner_cv, Integral) else 0
     shared_study: Any | None = None
 
     for fold_id, (outer_train_pos, outer_eval_pos) in enumerate(split_iter):
+        outer_train_pos = _validated_fold_positions(outer_train_pos, len(x_reset))
+        outer_eval_pos = _validated_fold_positions(outer_eval_pos, len(x_reset))
         if set(outer_train_pos) & set(outer_eval_pos):
             raise LeakageError("Nested CV outer fold train/eval indices overlap")
         outer_train_idx = tuple(int(i) for i in position_map[list(outer_train_pos)])
@@ -2488,7 +2514,7 @@ def nested_cv_score(
         model = clone(estimator)
         if fold_search.best_params:
             model.set_params(**fold_search.best_params)
-        active_recipe = _recipe_with_knobs(preprocess, fold_search.best_recipe_knobs)
+        active_recipe = _recipe_with_knobs(preprocess, fold_search.best_recipe_knobs, task=resolved_task)
         base = dataset._ensure_pandas()
         x_outer_train = base.iloc[list(outer_train_idx)][list(_feature_cols)]
         y_outer_train = base.iloc[list(outer_train_idx)][_target]
@@ -2803,7 +2829,7 @@ def _finalize_search_result(
         model = clone(estimator)
         if best.params:
             model.set_params(**best.params)
-        active_recipe = _recipe_with_knobs(preprocess, best.recipe_knobs)
+        active_recipe = _recipe_with_knobs(preprocess, best.recipe_knobs, task=resolved_task)
         if active_recipe is not None and not active_recipe.is_empty():
             x_train, y_train, feature_cols, target, sample_weight = _feature_target_frames(
                 dataset,
@@ -2919,33 +2945,16 @@ def _suggest_from_space(
     out: dict[str, Any] = {}
     for name, spec in space.items():
         key = f"{prefix}__{name}"
-        if isinstance(spec, (list, tuple)):
-            out[name] = trial.suggest_categorical(key, list(spec))
-            continue
-        if not isinstance(spec, dict):
-            raise ValidationError(
-                f"Optuna space entry '{name}' must be a dict spec or a list of choices"
-            )
-        kind = str(spec.get("type", "")).lower()
-        if kind == "float":
-            out[name] = trial.suggest_float(
-                key,
-                float(spec["low"]),
-                float(spec["high"]),
-                log=bool(spec.get("log", False)),
-            )
-        elif kind == "int":
-            out[name] = trial.suggest_int(key, int(spec["low"]), int(spec["high"]))
-        elif kind == "categorical":
-            choices = list(spec.get("choices") or [])
-            if not choices:
-                raise ValidationError(f"Optuna categorical space '{name}' needs non-empty choices")
-            out[name] = trial.suggest_categorical(key, choices)
+        gene = _gene_from_spec(name, spec, engine="Optuna")
+        if gene.kind == "categorical":
+            assert gene.choices is not None
+            out[name] = trial.suggest_categorical(key, list(gene.choices))
         else:
-            raise ValidationError(
-                f"Unsupported Optuna space type '{kind}' for '{name}'. "
-                "Use float, int, or categorical."
-            )
+            assert gene.low is not None and gene.high is not None
+            if gene.kind == "int":
+                out[name] = trial.suggest_int(key, int(gene.low), int(gene.high))
+            else:
+                out[name] = trial.suggest_float(key, gene.low, gene.high, log=gene.log)
     return out
 
 
@@ -2971,14 +2980,21 @@ def _split_trial_params(params: dict[str, Any]) -> tuple[dict[str, Any], dict[st
 def _recipe_with_knobs(
     preprocess: PreprocessRecipe | None,
     knobs: dict[str, Any] | None,
+    *,
+    task: str | None = None,
 ) -> PreprocessRecipe | None:
     if preprocess is None:
         if knobs:
             raise ValidationError("recipe knobs require a base PreprocessRecipe")
         return None
-    if not knobs:
-        return preprocess
-    return preprocess.with_knobs(knobs)
+    recipe = preprocess.with_knobs(knobs) if knobs else preprocess
+    # CV already knows the estimator/task semantics, including integer-valued
+    # regression outcomes. Preserve explicit selector/scorer overrides.
+    if recipe.select == "univariate" and recipe.select_score_func == "auto" and task is not None:
+        recipe = replace(recipe, select_score_func="f_regression" if task == "regression" else "f_classif")
+    if recipe.select == "model" and recipe.select_estimator is None and task == "regression":
+        recipe = replace(recipe, select_estimator=RandomForestRegressor(n_estimators=40, random_state=0))
+    return recipe
 
 
 def _resolve_inner_search(
@@ -2992,9 +3008,17 @@ def _resolve_inner_search(
     recipe_space: OptunaSpace | None,
 ) -> SearchMethod:
     """Resolve nested-CV inner search method from explicit choice or spaces."""
+    if inner_search not in ("auto", "grid", "randomized", "optuna", "evolutionary"):
+        raise ValidationError(f"Unsupported inner_search {inner_search!r}")
     has_space = param_space is not None or recipe_space is not None
     has_grid = param_grid is not None or recipe_grid is not None
     has_random = param_distributions is not None or recipe_distributions is not None
+    if has_grid and has_random:
+        raise ValidationError(
+            "nested_cv_score accepts at most one of param_grid or param_distributions, "
+            "and at most one of recipe_grid or recipe_distributions; "
+            "cannot mix grid and randomized search families"
+        )
 
     if inner_search == "optuna":
         return "optuna"
@@ -3071,42 +3095,54 @@ def _parse_evolutionary_genes(
     return list(by_name.values())
 
 
-def _gene_from_spec(name: str, spec: Any) -> _GeneSpec:
+def _gene_from_spec(name: str, spec: Any, *, engine: str = "Evolutionary") -> _GeneSpec:
     if isinstance(spec, (list, tuple)):
         choices = tuple(spec)
         if not choices:
-            raise ValidationError(f"Evolutionary categorical space '{name}' needs non-empty choices")
+            raise ValidationError(f"{engine} categorical space '{name}' needs non-empty choices")
         return _GeneSpec(name=name, kind="categorical", choices=choices)
     if not isinstance(spec, dict):
         raise ValidationError(
-            f"Evolutionary space entry '{name}' must be a dict spec or a list of choices"
+            f"{engine} space entry '{name}' must be a dict spec or a list of choices"
         )
     kind = str(spec.get("type", "")).lower()
-    if kind == "float":
-        low = float(spec["low"])
-        high = float(spec["high"])
+    if kind in {"float", "int"}:
+        try:
+            raw_low, raw_high = spec["low"], spec["high"]
+            if isinstance(raw_low, bool) or isinstance(raw_high, bool):
+                raise ValueError("boolean bounds are not numeric domains")
+            low, high = float(raw_low), float(raw_high)
+        except (KeyError, TypeError, ValueError, OverflowError) as exc:
+            raise ValidationError(
+                f"{engine} {kind} space '{name}' requires numeric low and high bounds"
+            ) from exc
+        if not np.isfinite(low) or not np.isfinite(high):
+            raise ValidationError(f"{engine} {kind} space '{name}' requires finite bounds")
         if high < low:
-            raise ValidationError(f"Evolutionary float space '{name}' has high < low")
+            raise ValidationError(f"{engine} {kind} space '{name}' has high < low")
+        if kind == "int":
+            if not low.is_integer() or not high.is_integer():
+                raise ValidationError(f"{engine} int space '{name}' requires integer bounds")
+            return _GeneSpec(name=name, kind="int", low=low, high=high)
+        log = spec.get("log", False)
+        if not isinstance(log, bool):
+            raise ValidationError(f"{engine} float space '{name}' log must be a boolean")
+        if log and low <= 0:
+            raise ValidationError(f"{engine} log space '{name}' requires positive bounds")
         return _GeneSpec(
             name=name,
             kind="float",
             low=low,
             high=high,
-            log=bool(spec.get("log", False)),
+            log=log,
         )
-    if kind == "int":
-        low_i = int(spec["low"])
-        high_i = int(spec["high"])
-        if high_i < low_i:
-            raise ValidationError(f"Evolutionary int space '{name}' has high < low")
-        return _GeneSpec(name=name, kind="int", low=float(low_i), high=float(high_i))
     if kind == "categorical":
         choices = tuple(spec.get("choices") or [])
         if not choices:
-            raise ValidationError(f"Evolutionary categorical space '{name}' needs non-empty choices")
+            raise ValidationError(f"{engine} categorical space '{name}' needs non-empty choices")
         return _GeneSpec(name=name, kind="categorical", choices=choices)
     raise ValidationError(
-        f"Unsupported evolutionary space type '{kind}' for '{name}'. "
+        f"Unsupported {engine} space type '{kind}' for '{name}'. "
         "Use float, int, or categorical."
     )
 
@@ -3292,6 +3328,18 @@ def _expand_randomized_trials(
     return [_split_trial_params(dict(params)) for params in sampler]
 
 
+def _validated_fold_positions(positions: Any, n_rows: int) -> np.ndarray:
+    """Reject ambiguous indexing before iloc can alias or repeat observations."""
+    values = np.asarray(positions)
+    if values.ndim != 1 or values.size == 0 or values.dtype.kind not in "iu":
+        raise ValidationError("CV fold indices must be a non-empty one-dimensional integer array")
+    if np.any(values < 0) or np.any(values >= n_rows):
+        raise ValidationError("CV fold indices must lie within the training population")
+    if len(np.unique(values)) != len(values):
+        raise ValidationError("CV fold indices must not repeat observations")
+    return values
+
+
 def _resolve_splitter(
     *,
     dataset: Dataset,
@@ -3302,10 +3350,19 @@ def _resolve_splitter(
     groups: pd.Series | None,
     task: Literal["classification", "regression"],
 ) -> tuple[pd.Series | None, str, Any, np.ndarray | None]:
-    if not isinstance(cv, int):
-        splitter = check_cv(cv, y=y_train, classifier=task == "classification")
+    if groups is not None:
+        if np.ndim(groups) != 1:
+            raise ValidationError("groups must be one-dimensional and aligned to the train partition")
+        if len(groups) != len(y_train):
+            raise ValidationError("groups length must match the train partition")
+    if not isinstance(cv, Integral):
+        try:
+            splitter = check_cv(cv, y=y_train, classifier=task == "classification")
+        except (TypeError, ValueError) as exc:
+            raise ValidationError("cv must be an integer >= 2 or a CV splitter") from exc
         return groups, type(splitter).__name__, splitter, None
 
+    cv = _positive_integer(cv, name="cv")
     if cv < 2:
         raise ValidationError("cv must be an integer >= 2 or a CV splitter")
 

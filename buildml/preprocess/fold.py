@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, fields, replace
-from typing import Any, Literal
+from numbers import Integral, Real
+from typing import Any, Literal, cast
 
 import numpy as np
 import pandas as pd
-from sklearn.base import BaseEstimator, TransformerMixin
+from scipy.sparse import issparse
+from sklearn.base import BaseEstimator, TransformerMixin, clone
 from sklearn.decomposition import PCA
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.feature_selection import (
@@ -20,9 +22,18 @@ from sklearn.feature_selection import (
 from sklearn.impute import SimpleImputer
 from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import MinMaxScaler, OneHotEncoder, OrdinalEncoder, StandardScaler
+from sklearn.utils.multiclass import type_of_target
 
 from buildml.core.errors import ValidationError
-from buildml.preprocess.encode import INFREQUENT_LABEL, _smoothed_means
+from buildml.preprocess.encode import (
+    INFREQUENT_LABEL,
+    _check_reserved_infrequent,
+    _frequency_threshold,
+    _normalize_min_frequency,
+    _normalize_target_smoothing,
+    _smoothed_means,
+    _validate_encoded_names,
+)
 from buildml.preprocess.text import (
     _as_text,
     _build_vectorizer,
@@ -139,11 +150,20 @@ class PreprocessRecipe:
     select_threshold / select_k / select_score_func / select_estimator:
         Feature-selection controls. ``select_estimator`` is used only for
         ``select='model'``; when omitted, a small default classifier/regressor
-        is chosen from fold-train label cardinality.
+        is chosen from the fold-train target type. ``select_score_func='auto'``
+        follows the same type; explicit scorers are always honored. Integer
+        outcomes are classified as discrete; choose a regressor/scorer explicitly
+        when those integers represent a continuous quantity.
+
+        Supervised target steps require non-null outcomes. Numeric target dtypes
+        must be real and finite; complex dtypes are refused before casting.
     outlier_action / iqr_multiplier / zscore_threshold:
-        Outlier controls (``outlier_action`` defaults to ``cap``).
+        Outlier controls (``outlier_action`` defaults to ``cap``). Thresholds
+        must be positive finite real numbers; booleans are not thresholds.
     n_bins / binning_encode_as:
-        Binning controls (defaults: 5 bins, ordinal codes).
+        Binning controls (defaults: 5 bins, ordinal codes). ``n_bins`` must be
+        an integer at least two. Missing observations retain missing ordinal
+        codes or missing one-hot indicators rather than an all-zero row.
     date_include_time / date_drop_original:
         Date-expansion controls.
     text_max_features / text_ngram_range / text_drop_input:
@@ -189,7 +209,7 @@ class PreprocessRecipe:
     min_frequency: float | int = 0.05
     select_threshold: float = 0.0
     select_k: int = 10
-    select_score_func: Literal["f_classif", "f_regression"] = "f_classif"
+    select_score_func: Literal["auto", "f_classif", "f_regression"] = "auto"
     select_estimator: Any | None = None
     outlier_action: OutlierAction = "cap"
     iqr_multiplier: float = 1.5
@@ -244,7 +264,9 @@ class PreprocessRecipe:
             "text_columns": None if self.text_columns is None else list(self.text_columns),
             "reduce_columns": None if self.reduce_columns is None else list(self.reduce_columns),
             "fill_value": self.fill_value,
-            "min_frequency": self.min_frequency,
+            "min_frequency": (
+                _normalize_min_frequency(self.min_frequency) if self.encode == "infrequent" else self.min_frequency
+            ),
             "select_threshold": self.select_threshold,
             "select_k": self.select_k,
             "select_score_func": self.select_score_func,
@@ -262,7 +284,10 @@ class PreprocessRecipe:
             "reduce_n_components": self.reduce_n_components,
             "reduce_prefix": self.reduce_prefix,
             "reduce_drop_input": self.reduce_drop_input,
-            "target_smoothing": self.target_smoothing,
+            "target_smoothing": (
+                _normalize_target_smoothing(self.target_smoothing, name="target_smoothing")
+                if self.encode == "target" else self.target_smoothing
+            ),
             "fold_local_order": list(FOLD_LOCAL_ORDER),
             "session_global_only": list(SESSION_GLOBAL_ONLY_STEPS),
         }
@@ -475,8 +500,11 @@ class FoldLocalPreprocessor(TransformerMixin, BaseEstimator):
         ~buildml.core.errors.ValidationError
             Labels are needed but absent; an outlier action of ``'drop'`` was
             requested, which cannot work inside a fold because removing rows
-            would change fold membership; ``n_bins`` is below 2; text settings
-            are malformed; or the reduce method or prefix is unsupported.
+            would change fold membership; ``n_bins`` is not an integer at
+            least 2; numeric policies or outlier thresholds are invalid;
+            outlier/binning samples are complex; text settings
+            are malformed; the reduce method or prefix is unsupported; or
+            generated outputs duplicate each other or a retained column name.
 
         Notes
         -----
@@ -486,18 +514,37 @@ class FoldLocalPreprocessor(TransformerMixin, BaseEstimator):
         against ten folds.
         """
         recipe = self.recipe
+        for name, allowed in (
+            ("outliers", {"iqr", "zscore"}),
+            ("binning", {"quantile", "uniform"}),
+        ):
+            value = getattr(recipe, name)
+            if value is not None and (not isinstance(value, str) or value not in allowed):
+                raise ValidationError(f"Unsupported fold-local {name} method {value!r}")
+        if recipe.binning is not None and (
+            not isinstance(recipe.binning_encode_as, str)
+            or recipe.binning_encode_as not in {"ordinal", "onehot"}
+        ):
+            raise ValidationError("Fold-local binning_encode_as must be 'ordinal' or 'onehot'")
         if recipe.requires_target() and y_train is None:
             raise ValidationError(
                 "PreprocessRecipe encode='target' or select in "
                 "{'univariate','model'} requires fold-train labels"
             )
-        if recipe.outliers is not None and recipe.outlier_action not in {"detect", "cap"}:
+        if recipe.outliers is not None and (
+            not isinstance(recipe.outlier_action, str)
+            or recipe.outlier_action not in {"detect", "cap"}
+        ):
             raise ValidationError(
                 "Fold-local outliers support only action='detect' or 'cap' "
                 "(row drops are not applied inside CV folds)."
             )
-        if recipe.binning is not None and recipe.n_bins < 2:
-            raise ValidationError("n_bins must be at least 2 for fold-local binning")
+        if recipe.binning is not None and (
+            isinstance(recipe.n_bins, (bool, np.bool_))
+            or not isinstance(recipe.n_bins, Integral)
+            or recipe.n_bins < 2
+        ):
+            raise ValidationError("n_bins must be an integer at least 2 for fold-local binning")
         if recipe.text is not None:
             if recipe.text_max_features is not None and recipe.text_max_features < 1:
                 raise ValidationError("text_max_features must be >= 1 when provided")
@@ -635,7 +682,9 @@ class FoldLocalPreprocessor(TransformerMixin, BaseEstimator):
         ~buildml.core.errors.ValidationError
             :meth:`fit` has not run, or selection retained no column that
             exists in this frame: which means the frame does not match what
-            was fitted.
+            was fitted. Encoding, calendar, text and binning outputs also
+            refuse names colliding with retained replay inputs, including
+            extra columns absent during fitting.
         """
         if not self._feature_names_ and self._selector is None:
             raise ValidationError("FoldLocalPreprocessor must be fitted before transform")
@@ -704,6 +753,9 @@ class FoldLocalPreprocessor(TransformerMixin, BaseEstimator):
             names = _feature_names_for_column(column, vectorizer, width, recipe.text)
             feature_names.extend(names)
             vectorizers[column] = vectorizer
+        _validate_encoded_names(
+            x_train.columns, cols if recipe.text_drop_input else (), feature_names
+        )
         self._text_columns = list(cols)
         self._text_vectorizers = vectorizers
         self._text_feature_names = feature_names
@@ -717,6 +769,11 @@ class FoldLocalPreprocessor(TransformerMixin, BaseEstimator):
         missing = [c for c in self._text_columns if c not in frame.columns]
         if missing:
             raise ValidationError(f"Fold-local text columns missing: {missing}")
+        _validate_encoded_names(
+            frame.columns,
+            self._text_columns if recipe.text_drop_input else (),
+            self._text_feature_names,
+        )
         blocks: list[pd.DataFrame] = []
         for column in self._text_columns:
             documents = _as_text(frame[column])
@@ -744,11 +801,7 @@ class FoldLocalPreprocessor(TransformerMixin, BaseEstimator):
         cols = _resolve_numeric(x_train, recipe.reduce_columns)
         if not cols:
             raise ValidationError("Fold-local PCA requires numeric columns")
-        values = x_train[cols].to_numpy(dtype=float)
-        if np.isnan(values).any():
-            raise ValidationError(
-                "Fold-local PCA requires non-null features; impute before reduce."
-            )
+        values = _pca_values(x_train, cols)
         n_samples, n_features = values.shape
         max_components = min(n_samples, n_features)
         if max_components < 1:
@@ -756,19 +809,29 @@ class FoldLocalPreprocessor(TransformerMixin, BaseEstimator):
         n_components = recipe.reduce_n_components
         if n_components is None:
             pca_n: int | float = max_components
-        elif isinstance(n_components, float):
-            if not (0.0 < n_components <= 1.0):
-                raise ValidationError("Float reduce_n_components must be in (0, 1]")
-            pca_n = n_components
-        else:
-            if int(n_components) < 1:
+        elif isinstance(n_components, (bool, np.bool_)):
+            raise ValidationError("reduce_n_components must be an integer count or variance fraction")
+        elif isinstance(n_components, Integral):
+            if n_components < 1:
                 raise ValidationError("Integer reduce_n_components must be >= 1")
             pca_n = min(int(n_components), max_components)
+        elif isinstance(n_components, Real):
+            fraction = float(n_components)
+            if not np.isfinite(fraction) or not (0.0 < fraction <= 1.0):
+                raise ValidationError("Float reduce_n_components must be in (0, 1]")
+            pca_n = max_components if fraction == 1.0 else fraction
+        else:
+            raise ValidationError("reduce_n_components must be an integer count or variance fraction")
         reducer = PCA(n_components=pca_n, svd_solver="full")
         reducer.fit(values)
         n_out = int(np.asarray(reducer.explained_variance_ratio_).shape[0])
+        names = [f"{recipe.reduce_prefix}_{i + 1}" for i in range(n_out)]
+        retained = set(x_train.columns) - (set(cols) if recipe.reduce_drop_input else set())
+        collisions = sorted(retained.intersection(names))
+        if collisions:
+            raise ValidationError(f"Fold-local PCA component names collide with retained columns: {collisions}")
         self._reduce_columns = list(cols)
-        self._reduce_feature_names = [f"{recipe.reduce_prefix}_{i + 1}" for i in range(n_out)]
+        self._reduce_feature_names = names
         self._reducer = reducer
 
     def _apply_reduce(self, frame: pd.DataFrame) -> pd.DataFrame:
@@ -777,20 +840,17 @@ class FoldLocalPreprocessor(TransformerMixin, BaseEstimator):
         missing = [c for c in self._reduce_columns if c not in frame.columns]
         if missing:
             raise ValidationError(f"Fold-local reduce columns missing: {missing}")
-        values = frame[self._reduce_columns].to_numpy(dtype=float)
-        if np.isnan(values).any():
-            raise ValidationError(
-                "Fold-local PCA transform found nulls; impute before reduce."
-            )
+        out = frame.drop(columns=list(self._reduce_columns)) if self.recipe.reduce_drop_input else frame
+        collisions = sorted(set(out.columns).intersection(self._reduce_feature_names))
+        if collisions:
+            raise ValidationError(f"Fold-local PCA component names collide with retained columns: {collisions}")
+        values = _pca_values(frame, self._reduce_columns)
         transformed = self._reducer.transform(values)
         component_frame = pd.DataFrame(
             transformed,
             columns=list(self._reduce_feature_names),
             index=frame.index,
         )
-        out = frame
-        if self.recipe.reduce_drop_input:
-            out = out.drop(columns=list(self._reduce_columns))
         return pd.concat([out, component_frame], axis=1)
 
     def _fit_outliers(self, x_train: pd.DataFrame) -> None:
@@ -799,12 +859,12 @@ class FoldLocalPreprocessor(TransformerMixin, BaseEstimator):
         cols = _resolve_numeric(x_train, recipe.outlier_columns)
         if not cols:
             raise ValidationError("Fold-local outliers require numeric columns")
-        if recipe.iqr_multiplier <= 0 or recipe.zscore_threshold <= 0:
-            raise ValidationError("Outlier fence multipliers/thresholds must be positive")
+        iqr_multiplier = _positive_fold_threshold(recipe.iqr_multiplier, "iqr_multiplier")
+        zscore_threshold = _positive_fold_threshold(recipe.zscore_threshold, "zscore_threshold")
         lower: dict[str, float] = {}
         upper: dict[str, float] = {}
         for column in cols:
-            series = pd.to_numeric(x_train[column], errors="coerce").dropna()
+            series = _real_fold_values(x_train[column], column).replace([np.inf, -np.inf], np.nan).dropna()
             if series.empty:
                 raise ValidationError(
                     f"Column '{column}' has no finite fold-train values for outlier fences"
@@ -813,8 +873,8 @@ class FoldLocalPreprocessor(TransformerMixin, BaseEstimator):
                 q1 = float(series.quantile(0.25))
                 q3 = float(series.quantile(0.75))
                 iqr = q3 - q1
-                lower[column] = q1 - recipe.iqr_multiplier * iqr
-                upper[column] = q3 + recipe.iqr_multiplier * iqr
+                lower[column] = q1 - iqr_multiplier * iqr
+                upper[column] = q3 + iqr_multiplier * iqr
             else:
                 mean = float(series.mean())
                 std = float(series.std(ddof=0))
@@ -822,8 +882,8 @@ class FoldLocalPreprocessor(TransformerMixin, BaseEstimator):
                     lower[column] = mean
                     upper[column] = mean
                 else:
-                    lower[column] = mean - recipe.zscore_threshold * std
-                    upper[column] = mean + recipe.zscore_threshold * std
+                    lower[column] = mean - zscore_threshold * std
+                    upper[column] = mean + zscore_threshold * std
         self._outlier_columns = list(cols)
         self._outlier_lower = lower
         self._outlier_upper = upper
@@ -838,7 +898,7 @@ class FoldLocalPreprocessor(TransformerMixin, BaseEstimator):
             raise ValidationError(f"Fold-local outlier columns missing: {missing}")
         out = frame.copy()
         for column in self._outlier_columns:
-            values = pd.to_numeric(out[column], errors="coerce")
+            values = _real_fold_values(out[column], column)
             out[column] = values.clip(
                 lower=self._outlier_lower[column],
                 upper=self._outlier_upper[column],
@@ -857,10 +917,11 @@ class FoldLocalPreprocessor(TransformerMixin, BaseEstimator):
         if method == "infrequent":
             maps: dict[str, list[str]] = {}
             collapsed = x_train[cols].astype(str).copy()
+            threshold = _frequency_threshold(recipe.min_frequency, len(collapsed))
             for column in cols:
                 counts = collapsed[column].value_counts(dropna=False)
-                threshold = _frequency_threshold(recipe.min_frequency, len(collapsed))
                 rare = [str(level) for level, count in counts.items() if float(count) < threshold]
+                _check_reserved_infrequent(collapsed[column], rare, column=column)
                 maps[column] = rare
                 collapsed[column] = collapsed[column].where(
                     ~collapsed[column].isin(rare),
@@ -873,6 +934,7 @@ class FoldLocalPreprocessor(TransformerMixin, BaseEstimator):
             return
         if method == "target":
             assert y_train is not None
+            smoothing = _normalize_target_smoothing(recipe.target_smoothing, name="target_smoothing")
             y = _numeric_target(y_train)
             prior = float(np.mean(y))
             self._target_prior = prior
@@ -882,7 +944,7 @@ class FoldLocalPreprocessor(TransformerMixin, BaseEstimator):
                     x_train[column].astype(str),
                     y,
                     prior=prior,
-                    smoothing=recipe.target_smoothing,
+                    smoothing=smoothing,
                 )
             self._target_maps = maps_target
             self._encoder = "target"
@@ -899,23 +961,27 @@ class FoldLocalPreprocessor(TransformerMixin, BaseEstimator):
             return
         assert y_train is not None
         y = _numeric_target(y_train)
+        target_kind = type_of_target(y_train)
+        regression = target_kind == "continuous"
         if recipe.select == "univariate":
-            score_func = f_regression if recipe.select_score_func == "f_regression" else f_classif
-            # Heuristic: discrete few-level targets prefer classification scores.
-            if recipe.select_score_func == "f_classif":
-                unique = pd.unique(y)
-                if len(unique) > 20:
-                    score_func = f_regression
+            if not isinstance(recipe.select_score_func, str) or recipe.select_score_func not in {
+                "auto", "f_classif", "f_regression",
+            }:
+                raise ValidationError("select_score_func must be auto, f_classif, or f_regression")
+            use_regression = recipe.select_score_func == "f_regression" or (
+                recipe.select_score_func == "auto" and regression
+            )
+            score_func = f_regression if use_regression else f_classif
             k_eff = min(max(1, recipe.select_k), frame.shape[1])
             selector = SelectKBest(score_func=score_func, k=k_eff)
             selector.fit(frame, y)
             self._selector = selector
             return
         # model-based: fit estimator on fold-train only, then SelectFromModel.
-        model = recipe.select_estimator
+        model = clone(recipe.select_estimator) if recipe.select_estimator is not None else None
         if model is None:
             n_classes = int(pd.Series(y).nunique())
-            if n_classes > 20:
+            if regression:
                 model = RandomForestRegressor(n_estimators=40, random_state=0)
             elif n_classes > 2:
                 model = RandomForestClassifier(n_estimators=40, random_state=0)
@@ -923,24 +989,9 @@ class FoldLocalPreprocessor(TransformerMixin, BaseEstimator):
                 model = LogisticRegression(max_iter=400)
         model.fit(frame, y_train if y_train is not None else y)
         selector = SelectFromModel(model, prefit=True)
-        # Ensure get_support works even when all features are below threshold.
+        # Keep the strongest feature using a serializable sklearn selector.
         if not any(selector.get_support()):
-            if hasattr(model, "feature_importances_"):
-                importances = np.asarray(model.feature_importances_, dtype=float)
-            elif hasattr(model, "coef_"):
-                coef = np.asarray(model.coef_, dtype=float)
-                importances = np.mean(np.abs(coef), axis=0) if coef.ndim > 1 else np.abs(coef)
-            else:
-                importances = np.ones(frame.shape[1], dtype=float)
-            keep = np.zeros(frame.shape[1], dtype=bool)
-            keep[int(np.argmax(importances))] = True
-
-            class _Support:
-                def get_support(self_inner) -> np.ndarray:
-                    return keep
-
-            self._selector = _Support()
-            return
+            selector = SelectFromModel(model, prefit=True, threshold=-np.inf, max_features=1)
         self._selector = selector
 
     def _fit_dates(self, x_train: pd.DataFrame) -> None:
@@ -964,6 +1015,8 @@ class FoldLocalPreprocessor(TransformerMixin, BaseEstimator):
             )
             if self.recipe.date_include_time:
                 created.extend([f"{col}_hour", f"{col}_minute", f"{col}_second"])
+        # All date sources are still needed while calendar parts are built.
+        _validate_encoded_names(x_train.columns, (), created)
         self._date_created = created
 
     def _apply_dates(self, frame: pd.DataFrame) -> pd.DataFrame:
@@ -972,9 +1025,10 @@ class FoldLocalPreprocessor(TransformerMixin, BaseEstimator):
         missing = [c for c in self._date_columns if c not in frame.columns]
         if missing:
             raise ValidationError(f"Fold-local date columns missing: {missing}")
+        _validate_encoded_names(frame.columns, (), self._date_created)
         out = frame.copy()
         for col in self._date_columns:
-            parsed = pd.to_datetime(out[col], errors="coerce", utc=False)
+            parsed = _parse_fold_datetimes(out[col], col)
             out[f"{col}_year"] = parsed.dt.year
             out[f"{col}_month"] = parsed.dt.month
             out[f"{col}_day"] = parsed.dt.day
@@ -1025,7 +1079,7 @@ class FoldLocalPreprocessor(TransformerMixin, BaseEstimator):
         edges: dict[str, list[float]] = {}
         labels: dict[str, list[str]] = {}
         for column in cols:
-            series = pd.to_numeric(x_train[column], errors="coerce").dropna()
+            series = _real_fold_values(x_train[column], column).replace([np.inf, -np.inf], np.nan).dropna()
             if series.empty:
                 raise ValidationError(
                     f"Column '{column}' has no finite fold-train values for binning"
@@ -1048,6 +1102,12 @@ class FoldLocalPreprocessor(TransformerMixin, BaseEstimator):
             edge_list = [float(v) for v in raw_edges]
             edges[column] = edge_list
             labels[column] = [f"{column}_bin_{i}" for i in range(len(edge_list) - 1)]
+        names = (
+            [f"{column}_bin" for column in cols]
+            if recipe.binning_encode_as == "ordinal"
+            else [name for column in cols for name in labels[column]]
+        )
+        _validate_encoded_names(x_train.columns, cols, names)
         self._binning_columns = list(cols)
         self._binning_edges = edges
         self._binning_labels = labels
@@ -1058,9 +1118,15 @@ class FoldLocalPreprocessor(TransformerMixin, BaseEstimator):
         missing = [c for c in self._binning_columns if c not in frame.columns]
         if missing:
             raise ValidationError(f"Fold-local binning columns missing: {missing}")
-        out = frame.copy()
+        names = (
+            [f"{column}_bin" for column in self._binning_columns]
+            if self.recipe.binning_encode_as == "ordinal"
+            else [name for column in self._binning_columns for name in self._binning_labels[column]]
+        )
+        _validate_encoded_names(frame.columns, self._binning_columns, names)
+        encoded: dict[str, pd.Series] = {}
         for column in self._binning_columns:
-            values = pd.to_numeric(out[column], errors="coerce")
+            values = _real_fold_values(frame[column], column)
             edges = self._binning_edges[column]
             codes = pd.cut(
                 values,
@@ -1070,12 +1136,14 @@ class FoldLocalPreprocessor(TransformerMixin, BaseEstimator):
                 right=True,
             )
             if self.recipe.binning_encode_as == "ordinal":
-                out[f"{column}_bin"] = codes.astype("float")
+                encoded[f"{column}_bin"] = codes.astype("float")
             else:
                 for level, name in enumerate(self._binning_labels[column]):
-                    out[name] = (codes == level).astype("float")
-            del out[column]
-        return out
+                    encoded[name] = (codes == level).astype("float").where(codes.notna())
+        return pd.concat(
+            [frame.drop(columns=self._binning_columns), pd.DataFrame(encoded, index=frame.index)],
+            axis=1,
+        )
 
     def _transform_encoded(self, x: pd.DataFrame) -> pd.DataFrame:
         cols = self._encode_columns
@@ -1083,6 +1151,14 @@ class FoldLocalPreprocessor(TransformerMixin, BaseEstimator):
         if missing:
             raise ValidationError(f"Categorical recipe columns missing: {missing}")
         method = self.recipe.encode
+        if method == "target":
+            names = [f"{column}_target" for column in cols]
+        elif method in {"onehot", "infrequent"}:
+            assert self._encoder is not None
+            names = list(self._encoder.get_feature_names_out(cols))
+        else:
+            names = list(cols)
+        _validate_encoded_names(x.columns, cols, names)
         work = x[cols].astype(str)
         if method == "target":
             prior = float(self._target_prior if self._target_prior is not None else 0.0)
@@ -1094,13 +1170,10 @@ class FoldLocalPreprocessor(TransformerMixin, BaseEstimator):
         if method == "infrequent":
             for column in cols:
                 rare = set(self._infrequent_maps.get(column, ()))
+                _check_reserved_infrequent(work[column], rare, column=column)
                 work[column] = work[column].where(~work[column].isin(rare), INFREQUENT_LABEL)
         assert self._encoder is not None and self._encoder != "target"
         matrix = self._encoder.transform(work)
-        if method == "onehot" or method == "infrequent":
-            names = list(self._encoder.get_feature_names_out(cols))
-        else:
-            names = list(cols)
         return pd.DataFrame(matrix, index=x.index, columns=names)
 
 
@@ -1169,7 +1242,14 @@ def transform_fold_features(preprocessor: Any, x: pd.DataFrame) -> pd.DataFrame:
     -------
     ~pandas.DataFrame
         The transformed features. Column names come from the transformer when
-        it provides them, and are positional integers otherwise.
+        it provides them, and are positional integers otherwise. Sparse matrices
+        retain sparse storage in the returned DataFrame.
+
+    Raises
+    ------
+    ValidationError
+        When output shape or names do not match, row identity changes, or
+        feature names are duplicated.
 
     See Also
     --------
@@ -1177,11 +1257,57 @@ def transform_fold_features(preprocessor: Any, x: pd.DataFrame) -> pd.DataFrame:
     """
     transformed = preprocessor.transform(x)
     if isinstance(transformed, pd.DataFrame):
-        return transformed
-    names = None
-    if hasattr(preprocessor, "get_feature_names_out"):
-        names = list(preprocessor.get_feature_names_out())
-    return pd.DataFrame(transformed, index=x.index, columns=names)
+        result = transformed
+    else:
+        names = None
+        if hasattr(preprocessor, "get_feature_names_out"):
+            names = list(preprocessor.get_feature_names_out())
+        try:
+            if issparse(transformed):
+                result = cast(Any, pd.DataFrame.sparse).from_spmatrix(transformed, index=x.index, columns=names)
+            else:
+                result = pd.DataFrame(transformed, index=x.index, columns=names)
+        except (TypeError, ValueError) as exc:
+            raise ValidationError("Transformed feature shape or names do not match input rows") from exc
+    if not result.index.equals(x.index):
+        raise ValidationError("Transformed features must preserve input row index and order")
+    if not result.columns.is_unique:
+        raise ValidationError("Transformed feature names must be unique; duplicate names are ambiguous")
+    return result
+
+
+def _pca_values(frame: pd.DataFrame, columns: list[str]) -> np.ndarray:
+    values = frame[columns].to_numpy()
+    if np.iscomplexobj(values):
+        raise ValidationError("Fold-local PCA requires finite real, non-null numeric features")
+    try:
+        numeric = np.asarray(values, dtype=float)
+    except (TypeError, ValueError, OverflowError) as exc:
+        raise ValidationError("Fold-local PCA requires finite real, non-null numeric features") from exc
+    if not np.isfinite(numeric).all():
+        raise ValidationError("Fold-local PCA requires finite real, non-null features; impute before reduce")
+    return numeric
+
+
+def _positive_fold_threshold(value: Any, name: str) -> float:
+    """Keep valid NumPy scalar knobs from reducing fence arithmetic precision."""
+    if isinstance(value, (bool, np.bool_)) or not isinstance(value, Real):
+        raise ValidationError(f"{name} must be a positive finite real number")
+    try:
+        number = float(value)
+    except (TypeError, ValueError, OverflowError) as exc:
+        raise ValidationError(f"{name} must be a positive finite real number") from exc
+    if not np.isfinite(number) or number <= 0:
+        raise ValidationError(f"{name} must be a positive finite real number")
+    return number
+
+
+def _real_fold_values(series: pd.Series, column: str) -> pd.Series:
+    """Refuse complex samples before numeric summaries or replay lose information."""
+    values = cast(pd.Series, pd.to_numeric(series, errors="coerce"))
+    if pd.api.types.is_complex_dtype(values.dtype):
+        raise ValidationError(f"Fold-local numeric column '{column}' must contain real values")
+    return values
 
 
 def _make_scaler(method: ScaleMethod) -> Any:
@@ -1232,11 +1358,26 @@ def _remap_scaled_columns(
     resolved: list[str] = []
     binned_set = set(binned)
     for column in pending:
-        if column in frame.columns:
+        if column in binned_set:
+            if f"{column}_bin" in frame.columns:
+                resolved.append(f"{column}_bin")
+        elif column in frame.columns:
             resolved.append(column)
-        elif column in binned_set and f"{column}_bin" in frame.columns:
-            resolved.append(f"{column}_bin")
     return resolved
+
+
+def _parse_fold_datetimes(values: pd.Series, column: str) -> pd.Series:
+    try:
+        parsed = pd.to_datetime(values, errors="coerce", format="mixed", utc=False)
+    except (ValueError, TypeError) as exc:
+        raise ValidationError(
+            f"Could not parse fold-local date column '{column}'; normalize date formats and timezone explicitly"
+        ) from exc
+    if not pd.api.types.is_datetime64_any_dtype(parsed.dtype):
+        raise ValidationError(
+            f"Fold-local date column '{column}' must use a consistent timezone; normalize it before preprocessing"
+        )
+    return cast(pd.Series, parsed)
 
 
 def _resolve_datetime(frame: pd.DataFrame, columns: tuple[str, ...] | None) -> list[str]:
@@ -1254,7 +1395,7 @@ def _resolve_datetime(frame: pd.DataFrame, columns: tuple[str, ...] | None) -> l
         if pd.api.types.is_object_dtype(frame[column]) or pd.api.types.is_string_dtype(
             frame[column]
         ):
-            parsed = pd.to_datetime(frame[column], errors="coerce")
+            parsed = _parse_fold_datetimes(frame[column], name)
             if parsed.notna().mean() >= 0.8:
                 resolved.append(name)
     return resolved
@@ -1288,22 +1429,19 @@ def _resolve_text(frame: pd.DataFrame, columns: tuple[str, ...] | None) -> list[
     return names
 
 
-def _frequency_threshold(min_frequency: float | int, n_rows: int) -> float:
-    if isinstance(min_frequency, float):
-        if not 0.0 < min_frequency < 1.0:
-            raise ValidationError("float min_frequency must be in (0, 1)")
-        return min_frequency * n_rows
-    if int(min_frequency) < 1:
-        raise ValidationError("integer min_frequency must be >= 1")
-    return float(min_frequency)
-
-
 def _numeric_target(series: pd.Series) -> np.ndarray:
+    if series.isna().any():
+        raise ValidationError("Fold-local target steps require a non-null target")
     if pd.api.types.is_numeric_dtype(series):
+        if pd.api.types.is_complex_dtype(series.dtype):
+            raise ValidationError("Fold-local target steps require real numeric target values")
         values = pd.to_numeric(series, errors="coerce")
         if values.isna().any():
             raise ValidationError("Fold-local target steps require a non-null target")
-        return values.to_numpy(dtype=float)
+        numeric = values.to_numpy(dtype=float)
+        if not np.isfinite(numeric).all():
+            raise ValidationError("Fold-local target steps require finite target values")
+        return numeric
     codes, _ = pd.factorize(series.astype(str), sort=True)
     if (codes < 0).any():
         raise ValidationError("Fold-local target steps cannot proceed with null labels")

@@ -481,8 +481,16 @@ def _classification_board(
     y_pred: Any,
     metrics: dict[str, Any],
 ) -> None:
-    labels = sorted(pd.unique(pd.concat([y_true.astype(str), pd.Series(y_pred).astype(str)])))
-    cm = confusion_matrix(y_true.astype(str), pd.Series(y_pred).astype(str), labels=labels)
+    from buildml.model.diagnostics import _validate_diagnostic_classes
+
+    classes = list(getattr(estimator, "classes_", pd.unique(pd.concat([y_true, pd.Series(y_pred)]))))
+    _validate_diagnostic_classes(y_true, classes)
+    _validate_diagnostic_classes(y_pred, classes)
+    # Match probability-column meaning; string sorting can reverse numeric codes.
+    actual_codes = pd.Categorical(y_true, categories=classes).codes
+    predicted_codes = pd.Categorical(y_pred, categories=classes).codes
+    labels = [str(value) for value in classes]
+    cm = confusion_matrix(actual_codes, predicted_codes, labels=list(range(len(classes))))
     figures["confusion_matrix"] = _plot_confusion(cm, labels, plt, sns)
     diag = float(np.trace(cm))
     total = float(cm.sum()) or 1.0
@@ -496,6 +504,8 @@ def _classification_board(
             "n_labels": len(labels),
         }
     )
+    if len(classes) == 2:
+        metrics["positive_class"] = str(classes[1])
     # Off-diagonal concentration tip
     if cm.shape[0] == 2 and total > 0:
         fn = float(cm[1, 0]) if cm.shape == (2, 2) else 0.0
@@ -530,7 +540,6 @@ def _classification_board(
             skipped.append({"panel": panel, "reason": f"predict_proba failed: {exc}"})
         return
 
-    classes = list(getattr(estimator, "classes_", range(proba.shape[1])))
     if len(classes) != 2:
         skipped.append(
             {
@@ -562,50 +571,62 @@ def _classification_board(
         )
         return
 
-    y_bin = pd.Series(y_true).astype(str)
+    y_bin = pd.Series(y_true)
     positive = str(classes[1])
-    y_pos = (y_bin == positive).astype(int).to_numpy()
+    y_pos = (y_bin == classes[1]).astype(int).to_numpy()
     prob_pos = proba[:, 1]
 
-    fpr, tpr, _ = roc_curve(y_pos, prob_pos)
-    prec, rec, _ = precision_recall_curve(y_pos, prob_pos)
-    roc_auc = float(roc_auc_score(y_pos, prob_pos))
-    ap = float(average_precision_score(y_pos, prob_pos))
-    figures["roc_curve"] = _plot_roc(fpr, tpr, roc_auc, plt)
-    figures["pr_curve"] = _plot_pr(rec, prec, ap, plt)
-    interpretation.append(
-        f"ROC-AUC={roc_auc:.3f}; Average Precision (PR-AUC)={ap:.3f} "
-        f"(positive class='{positive}')."
-    )
     metrics.update(
         {
-            "roc_auc": roc_auc,
-            "average_precision": ap,
             "positive_class": positive,
             "prevalence": float(y_pos.mean()),
         }
     )
-    if roc_auc < 0.65:
-        recommendations.append(
-            "ROC-AUC is weak: revisit features/model family before thresholding."
+    if len(np.unique(y_pos)) == 2:
+        fpr, tpr, _ = roc_curve(y_pos, prob_pos)
+        prec, rec, _ = precision_recall_curve(y_pos, prob_pos)
+        roc_auc = float(roc_auc_score(y_pos, prob_pos))
+        ap = float(average_precision_score(y_pos, prob_pos))
+        figures["roc_curve"] = _plot_roc(fpr, tpr, roc_auc, plt)
+        figures["pr_curve"] = _plot_pr(rec, prec, ap, plt)
+        metrics.update({"roc_auc": roc_auc, "average_precision": ap})
+        interpretation.append(
+            f"ROC-AUC={roc_auc:.3f}; Average Precision (PR-AUC)={ap:.3f} "
+            f"(positive class='{positive}')."
         )
-    if ap + 1e-9 < (y_pos.mean() + 0.05):
-        recommendations.append(
-            "PR-AUC near prevalence: ranking quality may be limited "
-            "for the minority class."
+        if roc_auc < 0.65:
+            recommendations.append(
+                "ROC-AUC is weak: revisit features/model family before thresholding."
+            )
+        if ap + 1e-9 < (y_pos.mean() + 0.05):
+            recommendations.append(
+                "PR-AUC near prevalence: ranking quality may be limited "
+                "for the minority class."
+            )
+    else:
+        skipped.extend(
+            {"panel": panel, "reason": "requires both fitted classes on this partition"}
+            for panel in ("roc_curve", "pr_curve")
         )
 
     try:
+        n_bins = min(10, max(3, len(y_pos) // 5))
         frac_pos, mean_pred = calibration_curve(
-            y_pos, prob_pos, n_bins=min(10, max(3, len(y_pos) // 5)), strategy="quantile"
+            y_pos, prob_pos, n_bins=n_bins, strategy="quantile"
         )
-        ece = float(np.mean(np.abs(np.asarray(frac_pos) - np.asarray(mean_pred))))
+        edges = np.percentile(prob_pos, np.linspace(0, 100, n_bins + 1))
+        bin_ids = np.searchsorted(edges[1:-1], prob_pos)
+        counts = np.bincount(bin_ids, minlength=len(edges))
+        nonempty_counts = counts[counts > 0]
+        ece = float(np.average(np.abs(np.asarray(frac_pos) - np.asarray(mean_pred)), weights=nonempty_counts))
         figures["calibration"] = _plot_calibration(mean_pred, frac_pos, ece, plt)
         interpretation.append(
-            f"Calibration ECE (bin-mean |frac-mean_pred|) ≈ {ece:.3f}; "
+            f"Calibration ECE (sample-weighted bin gap) ≈ {ece:.3f}; "
             "0 is perfect reliability."
         )
         metrics["ece"] = ece
+        metrics["ece_method"] = "sample-weighted mean absolute bin gap"
+        metrics["calibration_bin_counts"] = [int(count) for count in nonempty_counts]
         if ece > 0.1:
             recommendations.append(
                 "Reliability gap is material: apply CalibratedClassifierCV "

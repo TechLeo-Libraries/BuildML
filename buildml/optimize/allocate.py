@@ -274,7 +274,7 @@ def select_knapsack(
     if min_score is not None:
         mask &= values >= float(min_score)
     eligible = np.where(mask)[0]
-    if eligible.size == 0 or budget == 0:
+    if eligible.size == 0:
         return {
             "selected_indices": (),
             "selected_ids": (),
@@ -456,11 +456,8 @@ def _greedy_knapsack(
     eligible: np.ndarray,
     ids: np.ndarray,
 ) -> dict[str, Any]:
-    density = np.where(
-        costs[eligible] > 0,
-        values[eligible] / costs[eligible],
-        np.where(values[eligible] > 0, np.inf, -np.inf),
-    )
+    density = np.where(values[eligible] > 0, np.inf, -np.inf)
+    np.divide(values[eligible], costs[eligible], out=density, where=costs[eligible] > 0)
     order = eligible[np.argsort(-density, kind="mergesort")]
     chosen: list[int] = []
     spent = 0.0

@@ -64,6 +64,10 @@ class ProbabilisticPlan:
             "conformal": self.conformal,
             "interval_method": self.interval_method,
             "classes": None if self.classes_ is None else list(self.classes_),
+            "original_classes": (
+                None if not hasattr(self.label_encoder_, "buildml_original_classes_")
+                else list(self.label_encoder_.buildml_original_classes_)
+            ),
             "conformal_quantile": self.conformal_quantile_,
             "supports_return_std": self.supports_return_std,
             "supports_predict_proba": self.supports_predict_proba,

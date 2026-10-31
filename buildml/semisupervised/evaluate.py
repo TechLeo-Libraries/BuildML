@@ -121,9 +121,16 @@ ValidationError
     pred_all = np.asarray(scored.predictions, dtype=object)
     y_pred = pred_all[~unlabeled]
 
-    # Normalize both sides to string for robust comparison across int/str labels
-    y_true_s = y_true.astype(str).to_numpy()
-    y_pred_s = np.asarray([str(v) for v in y_pred])
+    encoder = plan.label_encoder_
+    if getattr(encoder, "_buildml_raw_class_labels_", False):
+        if not y_true.isin(encoder.classes_).all():
+            raise ValidationError("Evaluation class labels are outside the semi-supervised classes.")
+        y_true_s = encoder.transform(y_true.to_numpy())
+        y_pred_s = encoder.transform(y_pred)
+    else:
+        y_true_s = y_true.astype(str).to_numpy()
+        y_pred_s = np.asarray([str(v) for v in y_pred])
+        warnings.append("Legacy semi-supervised plan uses stored string labels; refit to preserve raw class types.")
 
     metrics["accuracy"] = float(accuracy_score(y_true_s, y_pred_s))
     metrics["f1_macro"] = float(

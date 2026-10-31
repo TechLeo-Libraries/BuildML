@@ -295,8 +295,8 @@ def map_plan_step_to_tool(
 
     A model writes ``'split'``, ``'split_data'``, or ``'Split the data'`` for
     the same intent. Matching normalises case and separators and accepts a
-    substring match in either direction, then falls back to an exact registry
-    name.
+    substring match in either direction. Exact registered names, including
+    normalized case and separators, take precedence over generic aliases.
 
     Parameters
     ----------
@@ -313,6 +313,9 @@ def map_plan_step_to_tool(
 
     Notes
     -----
+    **Exact registered names retain their identity.** For example, ``fit_graph``
+    cannot be redirected to the generic ``fit`` tool by substring matching.
+
     **Substring matching is lenient in both directions**, which is what makes
     it tolerant of a model's phrasing and also what makes it capable of a wrong
     match on a short or unusual operation name. The first match in the mapping
@@ -328,15 +331,18 @@ def map_plan_step_to_tool(
     op = step.operation.lower().replace("_", "").replace("-", "")
     step_params = dict(getattr(step, "parameters", None) or {})
 
+    if step.operation in registry:
+        return step.operation, step_params
+    for tool in registry.tools:
+        if tool.name.lower().replace("_", "").replace("-", "") == op:
+            return tool.name, step_params
+
     for key, (tool_name, default_args) in _OPERATION_TO_TOOL.items():
         if key.replace("_", "") in op or op in key.replace("_", ""):
             if tool_name in registry:
                 merged = dict(default_args)
                 merged.update(step_params)
                 return tool_name, merged
-
-    if step.operation in registry:
-        return step.operation, step_params
 
     return None
 

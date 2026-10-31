@@ -49,6 +49,37 @@ deprecation rules, and dependency availability.
 ## Coverage requirements
 
 See `scripts/coverage_ratchet.json` and `pyproject.toml` `fail_under`.
-Active floor **66** (Linux CI monolith measured 66.67% on the 2.6.0 cut).
+Active floor **70** (corrected thread/process tracing measured 71.28-71.29%
+across Linux Python 3.10-3.13, run 38589015544, commit 2837fb3).
 Measure the complete suite with `python scripts/run_full_coverage.py`; subset
 runs are not comparable to the project coverage threshold.
+The separate expanded Linux job runs the complete test directory with
+`requirements-expanded-coverage.txt` and an **88%** floor. Latest accepted remote
+CPU source `2a4ff11` passed **89.1965%** (56,415/63,248), with 17,026 passed and
+173 skipped. CI41183019495, backend41183019381, acceptance41183019547 and
+CodeQL41183017784 passed. Tested merge `c3ed043d` and source trees match.
+Core 70/expanded 88 remain; the next expanded floor of 89 requires a passing
+complete result of at least 90%, providing the existing one point of headroom.
+Reaching 90% requires 509 more covered lines at this measured source. Scope
+(800 files, 566 exclusions, coverage.py 7.16.2), the entire environment and skip
+messages match `fc61109`. All 3,149 required consumers execute. The complete
+result adds 29 covered lines and 21 statements in 2514.740s, with 3,435 pytest
+warnings (52 fewer NMF convergence warnings in existing NLP resource checks),
+zero failures and no coverage collection warnings.
+
+The subsequent `8594200` gate passed its tests, but coverage.py upgraded from
+7.16.2 to7.17.0 and reported607 excluded lines instead of566. Its raw86.5151%
+is not accepted as a comparable coverage gain. Development coverage tooling is
+now pinned to7.16.2; the subsequent91b34d6 gate passed with566 exclusions
+with the same exclusion accounting used by the current accepted measurement above.
+
+The accepted expanded profile includes scikit-activeml1.0.1, DoWhy0.14 and ONNX Runtime1.31.0 using
+NumPy2.4.1/SciPy1.15.3/mlxtend0.23.4. A prior same-source local comparison
+passed85.3947% (original) and85.5192% (broader), gained80/lost3 lines, net77,
+without combining databases or collection warnings. Local and remote results
+are recorded separately; they do not establish coverage for every backend.
+
+The Linux Gloo forkserver workaround passed50 repetitions on each remote
+Python3.11/3.12 stack and50 locally on Python3.11.17/Torch2.14.1 CPU, without
+retries. This bounded evidence does not establish multi-GPU/NCCL reliability
+or a long-term production SLA. The requested90% coverage target remains open.

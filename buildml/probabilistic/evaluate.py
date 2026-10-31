@@ -138,12 +138,13 @@ def evaluate_probabilistic(
         )
 
     y_true = frame[plan.target_column]
+    labeled_mask = ~y_true.isna().to_numpy()
     if y_true.isna().any():
         warnings.append(
             "Evaluation partition contains null targets; those rows are dropped."
         )
         mask = ~y_true.isna()
-        frame = frame.loc[mask]
+        frame = frame[labeled_mask]
         y_true = y_true.loc[mask]
         n_rows = int(len(frame))
 
@@ -211,9 +212,11 @@ def evaluate_probabilistic(
             if interval.lower is not None and interval.upper is not None:
                 lo = np.asarray(interval.lower, dtype=float)
                 hi = np.asarray(interval.upper, dtype=float)
-                # Align lengths if partition='all' vs filtered frame: rebuild
-                # from the same x used above when lengths mismatch.
-                if lo.shape[0] != y_num.shape[0]:
+                # Keep the original calibrated bounds on exactly the labeled
+                # rows. Rebuilding through a native fallback loses MAPIE bounds.
+                if lo.shape[0] == len(labeled_mask):
+                    lo, hi = lo[labeled_mask], hi[labeled_mask]
+                elif lo.shape[0] != y_num.shape[0]:
                     lo, hi = _regression_bounds_for_x(
                         plan, x, y_hat=y_hat, alpha=resolved_alpha
                     )
@@ -238,7 +241,9 @@ def evaluate_probabilistic(
         else:
             raw = plan.estimator_.predict(x)
             preds = decode_predictions(raw, plan.label_encoder_)
-        y_true_s = y_true.astype(str).to_numpy()
+        y_true_s = np.asarray([
+            str(v.item() if isinstance(v, np.generic) else v) for v in y_true
+        ])
         y_pred_s = np.asarray([str(v) for v in preds])
         metrics["accuracy"] = float(accuracy_score(y_true_s, y_pred_s))
         metrics["f1_macro"] = float(
@@ -249,12 +254,9 @@ def evaluate_probabilistic(
         )
         if plan.supports_predict_proba:
             if plan.backend == "mapie":
-                from buildml.probabilistic.adapters.mapie import MapieWrapper
+                from buildml.probabilistic.adapters.mapie import mapie_predict_proba
 
-                handle = plan.estimator_
-                est = handle.estimator if isinstance(handle, MapieWrapper) else handle
-                base = getattr(est, "estimator", est)
-                proba = np.asarray(base.predict_proba(x), dtype=float)
+                proba = mapie_predict_proba(plan.estimator_, x)
             else:
                 proba = np.asarray(plan.estimator_.predict_proba(x), dtype=float)
             classes = [str(c) for c in (plan.classes_ or ())]
@@ -282,22 +284,10 @@ def evaluate_probabilistic(
                 disclosures.extend(interval.disclosures)
                 if interval.prediction_sets is not None:
                     sets = interval.prediction_sets
-                    if len(sets) != n_rows:
-                        # Rebuild on filtered frame features.
-                        from buildml.probabilistic.conformal import (
-                            classification_prediction_sets,
-                        )
-
-                        proba = np.asarray(
-                            plan.estimator_.predict_proba(x), dtype=float
-                        )
-                        sets = tuple(
-                            classification_prediction_sets(
-                                proba,
-                                plan.conformal_quantile_,
-                                plan.classes_ or (),
-                            )
-                        )
+                    if len(sets) == len(labeled_mask):
+                        sets = tuple(row for row, keep in zip(sets, labeled_mask, strict=True) if keep)
+                    elif len(sets) != n_rows:
+                        raise ValidationError("Prediction-set rows do not match the evaluation population")
                     hits = [
                         y_true_s[i] in {str(v) for v in sets[i]}
                         for i in range(n_rows)

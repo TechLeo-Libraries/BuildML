@@ -34,7 +34,7 @@ session = (
 )
 
 # backend=None → industry ANN when hnswlib or faiss imports, else sklearn
-# (Windows stays sklearn unless BUILDML_ALLOW_CBR_INDUSTRY_WINDOWS=1)
+# Windows inference stays sklearn; explicitly request industry for isolated ANN.
 print(session.cbr.capability_matrix()["default_backend_when_installed"])
 
 fit = session.cbr.fit(

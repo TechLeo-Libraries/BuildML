@@ -270,6 +270,8 @@ def export_torchscript(
     load_torchscript : Reading the result back.
     """
     torch = require_torch(feature="TorchScript export")
+    if method not in {"trace", "script"}:
+        raise ValidationError("TorchScript method must be 'trace' or 'script'.")
     destination = Path(path)
     destination.parent.mkdir(parents=True, exist_ok=True)
     module = module.eval()
@@ -428,7 +430,8 @@ def export_onnx(
     if dynamic_batch:
         for name in names:
             dynamic_axes[name] = {0: "batch"}
-        dynamic_axes[outs[0]] = {0: "batch"}
+        for name in outs:
+            dynamic_axes[name] = {0: "batch"}
 
     warnings: list[str] = []
     export_kwargs: dict[str, Any] = {

@@ -111,6 +111,7 @@ class RagIndex:
         queries land in a different space.
         """
         self.store = store
+        self._bm25_cache: tuple[Any, float, float, Any] | None = None
         self.embedder = embedder
         self.embed_config = embed_config
         self.chunk_config = chunk_config
@@ -260,6 +261,7 @@ class RagIndex:
             raise ValidationError("rag delete requires chunk_ids and/or doc_ids.")
         before = len(self.store.chunks)
         self.store = self.store.without_ids(chunk_ids=chunk_ids, doc_ids=doc_ids)
+        self._bm25_cache = None
         removed = before - len(self.store.chunks)
         self._refresh_doc_count()
         self._refresh_disclosures(note=f"deleted_chunks={removed}")
@@ -295,9 +297,9 @@ class RagIndex:
         anything referring to chunks by ID is unaffected.
 
         **Chunk IDs are positional, and that matters here.** Re-chunking an
-        edited document produces the same IDs with different content, so
-        upserting a subset of them leaves the rest describing text that no
-        longer exists. Upsert the whole document's chunks, or delete first.
+        edited document produces the same IDs with different content. Use
+        :meth:`upsert_documents` to replace a whole document, including removing
+        old passages when the revised document is shorter.
 
         **The index embedder is used**, so new chunks land in the same space.
 
@@ -306,6 +308,12 @@ class RagIndex:
         upsert_documents : The document-level form.
         delete : Removing instead.
         """
+        return self._upsert_chunks(chunks)
+
+    def _upsert_chunks(
+        self, chunks: Sequence[Chunk], *, replace_doc_ids: set[str] | None = None
+    ) -> IndexResult:
+        """Prepare replacement vectors before publishing any store changes."""
         incoming = list(chunks)
         if not incoming:
             raise ValidationError("upsert_chunks requires at least one chunk.")
@@ -321,7 +329,8 @@ class RagIndex:
         )
 
         to_encode: list[Chunk] = []
-        replace_ids: set[str] = set()
+        document_ids = replace_doc_ids or set()
+        replace_ids = {c.chunk_id for c in self.store.chunks if c.doc_id in document_ids}
         for chunk in incoming:
             if chunk.chunk_id in by_id:
                 replace_ids.add(chunk.chunk_id)
@@ -357,6 +366,7 @@ class RagIndex:
             embeddings=np.asarray(final_emb, dtype=np.float32),
             dim=self.embed_config.dim,
         )
+        self._bm25_cache = None
         self._refresh_doc_count()
         self._refresh_disclosures(
             note=f"upserted_chunks={len(to_encode)}; replaced={len(replace_ids)}"
@@ -401,10 +411,11 @@ class RagIndex:
         **The leakage guard runs on every upsert**, not only at build time, so
         held-out documents cannot enter an index later.
 
-        **Adding a document does not replace an earlier version of it** unless
-        the chunk IDs coincide. When a document has been edited, delete it by
-        ``doc_id`` first: otherwise both versions are searchable and retrieval
-        can cite the stale one.
+        **Each supplied document replaces its entire earlier version.** Old
+        passages are removed even when the replacement has fewer chunks. New
+        vectors are prepared before the store changes, so a failed embedding
+        leaves the original documents searchable. Other documents keep their
+        existing vectors.
 
         Examples
         --------
@@ -432,9 +443,10 @@ class RagIndex:
         """
         corpus = corpus_from_documents(documents)
         refuse_eval_only_index(corpus)
+        replace_doc_ids = {d.doc_id for d in corpus.documents}
         if chunk:
             chunked = chunk_documents(corpus, config=self.chunk_config)
-            return self.upsert_chunks(chunked.chunks)
+            return self._upsert_chunks(chunked.chunks, replace_doc_ids=replace_doc_ids)
         # Treat each document as a single chunk when chunk=False.
         synthetic = [
             Chunk(
@@ -447,7 +459,7 @@ class RagIndex:
             )
             for d in corpus.documents
         ]
-        return self.upsert_chunks(synthetic)
+        return self._upsert_chunks(synthetic, replace_doc_ids=replace_doc_ids)
 
 
 def build_index(
@@ -543,6 +555,8 @@ def build_index(
         cfg = ChunkConfig(
             size=cfg.size if chunk_size is None else chunk_size,
             overlap=cfg.overlap if chunk_overlap is None else chunk_overlap,
+            strategy=cfg.strategy,
+            separators=cfg.separators,
         )
     if chunks is None:
         chunk_result = chunk_documents(corpus, config=cfg)

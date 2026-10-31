@@ -111,6 +111,7 @@ example; detailed guides cover additional use cases, errors, and related methods
    :maxdepth: 1
    :caption: Reference
 
+   validation-evidence
    glossary
 
 On GitHub, browse the same files under `guides/ <https://github.com/TechLeo-Libraries/BuildML/tree/main/guides>`_.

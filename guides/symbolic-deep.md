@@ -30,6 +30,15 @@ Quickstart: [symbolic quickstart](quickstart-symbolic.md). Proof:
 ## Induce, predict, evaluate
 
 Fit needs a split and exactly one target. Induction sees **train only**.
+
+Rule predicates must use available input or context columns. They cannot read
+the target, including when declared constraints are merged with induced rules
+or used as extra model features. Consequents may still be target class labels
+or regression values. Group or ignored context columns can be used by rules
+without entering the numeric base model. Invalid inputs refuse before replacing
+a fitted plan; prediction validates stored rule inputs before scoring too.
+Rebuild and refit older target-dependent rule bases. Scores obtained by reading
+the target are not independent prediction evidence.
 `predict` defaults to test and, with `return_traces=True` (the default),
 returns fired rule ids and the chosen rule. `evaluate` defaults to
 validation: accuracy / F1 for classification, RMSE / R² for regression,

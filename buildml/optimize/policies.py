@@ -390,6 +390,8 @@ def fit_cost_matrix_policy(
     disclosures = [
         "method='cost_matrix' chooses argmin_a Σ_y P(y|x) C[y,a] (Bayes decision).",
         "Cost matrix is user-supplied: not estimated from the evaluation partition.",
+        "Expected cost is the total probability-weighted loss; realized costs "
+        "use observed labels and are reported separately in metrics.",
         "Multi-class expected-cost helper for ML scores: not a general OR platform.",
     ]
     warnings: list[str] = []
@@ -412,7 +414,7 @@ def fit_cost_matrix_policy(
         class_labels=labels,
         action_labels=labels,
         n_rows_fitted=int(len(actions)),
-        expected_cost_at_fit=float(realized),
+        expected_cost_at_fit=float(expected.min(axis=1).sum()),
         feature_columns=tuple(fit_result.feature_columns),
         target_column=fit_result.target_column,
         task=fit_result.task,

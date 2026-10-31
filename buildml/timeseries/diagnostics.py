@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from numbers import Integral
+
 import numpy as np
 
 from buildml.core.errors import ValidationError
@@ -23,15 +25,15 @@ def compute_diagnostics(
 
     Uses statsmodels FFT ACF and Yule-Walker PACF when available; falls back to
     numpy autocorrelation without confidence bands or unit-root tests. Interpret
-    ADF and KPSS jointly: conflicting signals often indicate trend-stationarity
-    or undetected structural breaks.
+    ADF and KPSS jointly, accounting for their selected deterministic terms;
+    neither test establishes stationarity for every future population.
 
     Parameters
     ----------
     y:
-        One-dimensional observation vector in temporal order.
+        Finite real, nonconstant, one-dimensional observation vector in temporal order.
     acf_lags, pacf_lags:
-        Maximum lags to compute (capped by series length).
+        Positive integer maximum lags to compute (capped by series length).
     adf_regression, kpss_regression:
         Deterministic term codes passed to statsmodels (``c``, ``ct``, etc.).
     target_column, time_column:
@@ -46,12 +48,30 @@ def compute_diagnostics(
     Raises
     ------
     ValidationError
-        When ``y`` has fewer than four points or requested lags exceed length.
+        When the series is invalid or has fewer than four points, lags are not
+        positive integers, or deterministic term codes are unsupported.
     """
-    y = np.asarray(y, dtype=float).reshape(-1)
+    for name, value in (("acf_lags", acf_lags), ("pacf_lags", pacf_lags)):
+        if isinstance(value, (bool, np.bool_)) or not isinstance(value, Integral) or value < 1:
+            raise ValidationError(f"{name} must be a positive integer")
+    for name, term, choices in (
+        ("adf_regression", adf_regression, ("n", "c", "ct", "ctt")),
+        ("kpss_regression", kpss_regression, ("c", "ct")),
+    ):
+        if not isinstance(term, str) or term not in choices:
+            raise ValidationError(f"{name} must be one of {choices}")
+    try:
+        values = np.asarray(y)
+        if values.ndim != 1 or np.iscomplexobj(values):
+            raise ValidationError("Diagnostic series must be one-dimensional and real")
+        y = np.asarray(values, dtype=float)
+    except (TypeError, ValueError, OverflowError) as exc:
+        raise ValidationError("Diagnostic series must contain finite real values") from exc
     n = int(y.shape[0])
     if n < 4:
         raise ValidationError("Need at least 4 points for diagnostics")
+    if not np.isfinite(y).all() or np.ptp(y) == 0:
+        raise ValidationError("Diagnostic series must be finite and nonconstant")
     max_lag = min(int(acf_lags), n - 2)
     max_pacf = min(int(pacf_lags), n // 2 - 1)
     if max_lag < 1:
@@ -60,7 +80,10 @@ def compute_diagnostics(
     warnings: list[str] = []
     disclosures: list[str] = [
         f"Diagnostics on n={n} points; acf_lags={max_lag}, pacf_lags={max_pacf}.",
-        "ADF/KPSS are complementary: ADF tests unit root; KPSS tests stationarity around a trend.",
+        f"ADF regression={adf_regression}: null hypothesis is a unit root, "
+        "conditional on the selected deterministic terms.",
+        f"KPSS regression={kpss_regression}: null hypothesis is "
+        f"{'level stationarity' if kpss_regression == 'c' else 'trend stationarity'}.",
     ]
 
     if statsmodels_available():
@@ -164,6 +187,6 @@ def _numpy_pacf(y: np.ndarray, nlags: int) -> np.ndarray:
         den = 1.0 - sum(phi[k - 2, j] * acf[j + 1] for j in range(k - 1))
         pacf[k] = num / den if den != 0 else 0.0
         phi[k - 1, k - 1] = pacf[k]
-        for j in range(k - 2):
+        for j in range(k - 1):
             phi[k - 1, j] = phi[k - 2, j] - pacf[k] * phi[k - 2, k - j - 2]
     return pacf[: nlags + 1]

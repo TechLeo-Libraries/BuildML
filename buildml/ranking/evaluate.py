@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from buildml.core.errors import ValidationError
+from buildml.core.validation import _positive_integer
 from buildml.data.dataset import Dataset
 from buildml.data.splits import SplitPlan
 from buildml.ranking.features import (
@@ -45,7 +45,8 @@ def evaluate_ranker(
     partition:
         Holdout partition name, typically ``test`` or ``validation``.
     k:
-        Cutoff for nDCG, MAP, and MRR metrics.
+        Positive integer cutoff for nDCG, MAP, and MRR metrics. Boolean,
+        fractional and textual counts are refused; NumPy integers are accepted.
     backend:
         Optional backend override; must match the frozen plan backend.
 
@@ -57,7 +58,7 @@ def evaluate_ranker(
     Raises
     ------
     ValidationError
-        When ``k`` is less than 1 or scoring inputs are invalid.
+        When ``k`` is not a positive integer or scoring inputs are invalid.
 
     Notes
     -----
@@ -65,8 +66,7 @@ def evaluate_ranker(
     relevance > ``plan.relevance_threshold`` as relevant. Tabular LTR metrics
     on labeled judgments: not RAG retrieve eval and not recommender CF metrics.
     """
-    if int(k) < 1:
-        raise ValidationError("k must be >= 1.")
+    k = _positive_integer(k, name="k")
 
     holdout = partition_frame(dataset, split_plan, partition)
     n_holdout = int(len(holdout))
@@ -100,8 +100,6 @@ def evaluate_ranker(
         )
 
     scores = score_rows(plan, holdout, backend=backend)
-    frame = holdout.copy()
-    frame["__score__"] = scores
     qcol = plan.query_column
     rel_col = plan.relevance_column
     threshold = float(plan.relevance_threshold)
@@ -111,13 +109,13 @@ def evaluate_ranker(
     mrrs: list[float] = []
     skipped_no_rel = 0
 
-    for _, sub in frame.groupby(qcol, sort=False):
-        rels = sub[rel_col].to_numpy(dtype=float)
+    for positions in holdout.groupby(qcol, sort=False).indices.values():
+        rels = holdout.iloc[positions][rel_col].to_numpy(dtype=float)
         if not np.any(rels > threshold):
             skipped_no_rel += 1
             continue
-        ordered = sub.sort_values("__score__", ascending=False)
-        ranked_rels = ordered[rel_col].tolist()
+        order = np.argsort(-scores[positions], kind="stable")
+        ranked_rels = rels[order].tolist()
         ndcgs.append(ndcg_at_k_graded(ranked_rels, int(k)))
         maps.append(
             average_precision_at_k(ranked_rels, int(k), threshold=threshold)

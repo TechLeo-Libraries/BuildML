@@ -12,7 +12,7 @@ from sklearn.preprocessing import LabelEncoder
 from buildml.core.errors import ValidationError
 from buildml.data.dataset import Dataset
 from buildml.data.splits import SplitPlan, assert_fit_partition, frame_for_partition
-from buildml.selfsupervised.features import matrix_from_frame
+from buildml.selfsupervised.features import encode_ssl_frame
 from buildml.selfsupervised.results import (
     SelfSupervisedPlan,
     SSLHeadFitResult,
@@ -74,25 +74,6 @@ def finetune_ssl_head(
 
     target = dataset.require_target()
     train = frame_for_partition(dataset, split_plan, "train")
-    modality = getattr(ssl_plan, "modality", "tabular")
-    if modality == "text":
-        col = ssl_plan.columns[0]
-        if col not in train.columns:
-            raise ValidationError(f"Missing text column {col!r}.")
-        emb = np.asarray(
-            ssl_plan.encoder_.transform(train[col].astype(str).tolist()), dtype=float
-        )
-    elif modality == "vision":
-        col = ssl_plan.columns[0]
-        if col not in train.columns:
-            raise ValidationError(f"Missing image column {col!r}.")
-        emb = np.asarray(ssl_plan.encoder_.transform(train[col].tolist()), dtype=float)
-    else:
-        missing = [c for c in ssl_plan.columns if c not in train.columns]
-        if missing:
-            raise ValidationError(f"Missing SSL feature columns: {missing}")
-        x_raw = matrix_from_frame(train, list(ssl_plan.columns))
-        emb = np.asarray(ssl_plan.encoder_.transform(x_raw), dtype=float)
     unlabeled = is_unlabeled_mask(train[target], unlabeled_marker)
     n_unlabeled = int(unlabeled.sum())
     n_labeled = int((~unlabeled).sum())
@@ -104,18 +85,20 @@ def finetune_ssl_head(
 
     y_labeled = train.loc[~unlabeled, target]
     encoder = LabelEncoder()
-    y_codes = encoder.fit_transform(y_labeled.astype(str))
+    try:
+        y_codes = encoder.fit_transform(y_labeled.to_numpy())
+    except (TypeError, ValueError) as exc:
+        raise ValidationError("SSL class labels must have compatible raw types.") from exc
     if len(encoder.classes_) < 2:
         raise ValidationError(
             "SSL head fine-tune requires at least 2 classes among labeled train rows."
         )
-    x_labeled = emb[~unlabeled]
-
     key = str(estimator).lower().replace("-", "_")
     if key not in _HEADS:
         raise ValidationError(
             f"Unknown SSL head estimator={estimator!r}. Supported: {sorted(_HEADS)}"
         )
+    x_labeled = encode_ssl_frame(train.loc[~unlabeled], ssl_plan)
     model = _HEADS[key](random_state)
     model.fit(x_labeled, y_codes)
 
@@ -139,7 +122,7 @@ def finetune_ssl_head(
         representation_columns=ssl_plan.representation_columns,
         n_labeled_train=n_labeled,
         n_unlabeled_skipped=n_unlabeled,
-        classes_=tuple(encoder.classes_),
+        classes_=tuple(v.item() if isinstance(v, np.generic) else v for v in encoder.classes_),
         estimator_=model,
         task="classification",
         disclosures=tuple(disclosures),
@@ -147,6 +130,7 @@ def finetune_ssl_head(
     )
     # Stash encoder on plan via estimator attributes for predict decode
     plan.estimator_._buildml_label_encoder_ = encoder  # type: ignore[attr-defined]
+    plan.estimator_._buildml_raw_class_labels_ = True  # type: ignore[attr-defined]
     plan.estimator_._buildml_ssl_columns_ = tuple(ssl_plan.columns)  # type: ignore[attr-defined]
 
     result = SSLHeadFitResult(
@@ -155,7 +139,7 @@ def finetune_ssl_head(
         n_unlabeled_skipped=n_unlabeled,
         representation_columns=ssl_plan.representation_columns,
         target_column=target,
-        classes=tuple(encoder.classes_),
+        classes=plan.classes_,
         disclosures=tuple(disclosures),
         warnings=tuple(warnings),
     )

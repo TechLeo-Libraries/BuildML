@@ -32,6 +32,7 @@ import itertools
 import math
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
+from inspect import signature
 from typing import Any, Literal
 
 import numpy as np
@@ -433,10 +434,20 @@ def _sample_distributions(
             elif hasattr(dist, "rvs"):
                 # scipy.stats prefers an int seed / RandomState; Generator often fails.
                 seed_i = int(rng.integers(0, 2**31 - 1))
+                sampler = dist.rvs
                 try:
-                    params[key] = dist.rvs(random_state=seed_i)
-                except TypeError:
-                    params[key] = dist.rvs()
+                    sampler_signature = signature(sampler)
+                except (TypeError, ValueError):
+                    sampler_signature = None
+                if sampler_signature is not None:
+                    try:
+                        sampler_signature.bind(random_state=seed_i)
+                    except TypeError:
+                        params[key] = sampler()
+                        continue
+                # A sampler's internal TypeError is a real failure, not
+                # permission to retry without the requested random seed.
+                params[key] = sampler(random_state=seed_i)
             else:
                 raise ValidationError(
                     f"Distribution for {key!r} must be a sequence or scipy-like rvs object"
@@ -541,6 +552,7 @@ def _fit_score_params(
     else:
         class_labels = ()
         n_classes = 1
+    torch.manual_seed(int(seed))
     module = module_factory(len(feature_cols), task, n_classes, params)
     epochs = int(params.get("epochs", base_epochs))
     batch_size = int(params.get("batch_size", base_batch_size))
@@ -729,7 +741,9 @@ def search_torch(
         Every combination to try, as name to list of values. Exhaustive.
     param_distributions:
         Distributions to sample from, as name to sequence or scipy-style object
-        with ``rvs``. Supply exactly one of this and ``param_grid``.
+        with ``rvs``. Supply exactly one of this and ``param_grid``. Seed-aware
+        samplers receive a derived integer seed; legacy samplers without that
+        parameter control their own randomness. Internal sampler errors propagate.
     inner_search:
         ``'grid'``, ``'randomized'``, or ``'auto'`` to follow whichever space
         you provided.
@@ -744,7 +758,8 @@ def search_torch(
     normalize:
         Standardise features using each fold's training statistics.
     seed:
-        Controls fold assignment and sampling.
+        Controls fold assignment, sampling, Torch model initialization and Torch
+        training randomness. External randomness in custom factories is caller-owned.
     stratify:
         Preserve class balance across folds, for classification.
     task:
@@ -940,7 +955,8 @@ def nested_cv_torch(
         Every combination to try, as name to list of values.
     param_distributions:
         Distributions to sample from. Supply exactly one of this and
-        ``param_grid``.
+        ``param_grid``. Seed-aware samplers receive a derived seed; legacy
+        samplers without that parameter control their own randomness.
     inner_search:
         ``'grid'``, ``'randomized'``, or ``'auto'``.
     n_iter:
@@ -956,8 +972,9 @@ def nested_cv_torch(
     normalize:
         Standardise using each fold's own training statistics.
     seed:
-        Controls fold assignment and sampling. Inner and outer loops use
-        derived seeds so they do not partition identically.
+        Controls fold assignment, sampling, Torch model initialization and Torch
+        training randomness. Inner and outer loops use derived seeds. External
+        randomness in custom factories is caller-owned.
     stratify:
         Preserve class balance across folds, for classification.
     task:

@@ -18,10 +18,12 @@ spec:
   selector:
     matchLabels:
       app.kubernetes.io/name: buildml-serve
+      app.kubernetes.io/instance: __DEPLOY_NAME__
   template:
     metadata:
       labels:
         app.kubernetes.io/name: buildml-serve
+        app.kubernetes.io/instance: __DEPLOY_NAME__
     spec:
 __SA_LINE__      securityContext:
         runAsNonRoot: true
@@ -93,6 +95,7 @@ spec:
   type: ClusterIP
   selector:
     app.kubernetes.io/name: buildml-serve
+    app.kubernetes.io/instance: __DEPLOY_NAME__
   ports:
     - name: http
       port: __PORT__

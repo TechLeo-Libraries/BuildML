@@ -5,6 +5,8 @@ from __future__ import annotations
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal, cast
 
+from buildml.core._defaults import _INHERIT_PERMISSION
+
 if TYPE_CHECKING:
     from buildml.session.session import Session
 
@@ -483,6 +485,8 @@ def cross_validate_torch(
     Normalize stats are fit per fold. Classical Session plans are disclosed as
     a limitation unless you supply a custom factory path: this helper does not
     silently refit Session-global plans inside each fold.
+    With an attached split, only its train rows enter CV; validation and test
+    remain reserved. Without a split, CV uses all attached rows.
     Delegates to :func:`buildml.dl.cv.cross_validate_torch`.
 
     Parameters
@@ -524,8 +528,22 @@ def cross_validate_torch(
 
     if session._dataset is None:
         raise ValidationError("No dataset attached. Call ingest(...) first.")
+    population = "all"
+    held_out: list[str] = []
+    cv_dataset = session.dataset
+    if session._split_plan is not None:
+        from buildml.data.dataset import Dataset
+        from buildml.data.splits import assert_fit_partition, frame_for_partition
+
+        assert_fit_partition(session._split_plan)
+        session._split_plan.assert_disjoint()
+        training = frame_for_partition(session.dataset, session._split_plan, "train")
+        cv_dataset = Dataset.from_transformed(session.dataset, training)
+        population = "train"
+        held_out = [name for name in ("validation", "test")
+                    if session._split_plan.indices_for(name)]
     result = _cv(
-        session.dataset,
+        cv_dataset,
         n_folds=n_folds,
         epochs=epochs,
         batch_size=batch_size,
@@ -536,6 +554,13 @@ def cross_validate_torch(
         stratify=stratify,
         task=task,
         module_factory=module_factory,
+    )
+    result.config.update(population=population, n_rows=len(cv_dataset._ensure_pandas()),
+                         held_out_partitions=held_out)
+    result.disclosures += (
+        "Session Torch CV uses only the attached split's train rows; outer holdouts remain reserved."
+        if population == "train" else
+        "Unsplit Session Torch CV uses all attached rows; no outer holdout is reserved.",
     )
     session._dl_cv_result = result
     session._record(
@@ -1842,10 +1867,10 @@ def serve_bundle(
     session,
     path: str | Path | None = None,
     *,
-    kind: Literal["pipeline", "torchscript"] = "pipeline",
-    host: str = "127.0.0.1",
-    port: int = 8080,
-    title: str = "BuildML Serve",
+    kind: Literal["pipeline", "torchscript"] | None = None,
+    host: str | None = None,
+    port: int | None = None,
+    title: str | None = None,
     blocking: bool = False,
     api_keys: str | list[str] | tuple[str, ...] | None = None,
     basic_auth: str
@@ -1854,10 +1879,10 @@ def serve_bundle(
     | dict[str, str]
     | None = None,
     docs_enabled: bool | None = None,
-    allow_insecure_public_bind: bool = False,
+    allow_insecure_public_bind: bool = _INHERIT_PERMISSION,
     ssl_certfile: str | Path | None = None,
     ssl_keyfile: str | Path | None = None,
-    trusted: bool = False,
+    trusted: bool = _INHERIT_PERMISSION,
     config: Any | None = None,
 ) -> Any:
     """Launch BuildML managed serving for a pipeline or TorchScript artifact.
@@ -2079,13 +2104,12 @@ def attach_backbone_head(
         raise ValidationError(
             "attach_backbone_head requires a prior load_pretrained_backbone(...)."
         )
-    if int(n_classes) < 2:
-        raise ValidationError("n_classes must be >= 2")
     head = _attach(
         backbone,
-        n_classes=int(n_classes),
+        n_classes=n_classes,
         freeze_backbone=freeze_backbone,
     )
+    session._dl_backbone = head.backbone
     session._dl_backbone_head = head
     session._record(
         "attach_backbone_head",
@@ -2146,7 +2170,7 @@ def evaluate_asr(
                 "transcribe_speech result with texts."
             )
         hyps = list(texts)
-    result = _eval(hypotheses=hyps, references=list(references), lowercase=lowercase)
+    result = _eval(hypotheses=hyps, references=references, lowercase=lowercase)
     session._dl_asr_eval = result
     session._record(
         "evaluate_asr",

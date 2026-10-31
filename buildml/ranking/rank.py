@@ -9,6 +9,7 @@ import numpy as np
 import pandas as pd
 
 from buildml.core.errors import ValidationError
+from buildml.core.validation import _positive_integer
 from buildml.data.dataset import Dataset
 from buildml.data.splits import SplitPlan
 from buildml.ranking.adapters import (
@@ -134,7 +135,8 @@ def rank_queries(
     query_ids:
         Optional explicit query order; defaults to first-seen order in ``frame``.
     k:
-        Number of items to retain per query after sorting.
+        Positive integer number of items to retain per query. Boolean,
+        fractional and textual counts are refused; NumPy integers are accepted.
     backend:
         Optional backend override; must match the frozen plan backend.
 
@@ -146,11 +148,10 @@ def rank_queries(
     Raises
     ------
     ValidationError
-        When ``k`` is less than 1 or requested ``query_ids`` are absent from
+        When ``k`` is not a positive integer or requested ``query_ids`` are absent from
         ``frame``.
     """
-    if int(k) < 1:
-        raise ValidationError("k must be >= 1.")
+    k = _positive_integer(k, name="k")
     if frame.empty:
         return RankResult(
             k=int(k),
@@ -177,29 +178,29 @@ def rank_queries(
             )
 
     scores_all = score_rows(plan, frame, backend=backend)
-    frame = frame.copy()
-    frame["__score__"] = scores_all
 
     rankings: list[tuple[Any, ...]] = []
     score_lists: list[tuple[float, ...]] = []
     n_cands: list[int] = []
     for qid in ordered_queries:
-        sub = frame.loc[frame[qcol] == qid]
-        n_cands.append(int(len(sub)))
-        if sub.empty:
+        positions = np.flatnonzero(frame[qcol].eq(qid).fillna(False).to_numpy(dtype=bool))
+        n_cands.append(int(len(positions)))
+        if not len(positions):
             rankings.append(())
             score_lists.append(())
             continue
-        ordered = sub.sort_values("__score__", ascending=False)
-        top = ordered.head(int(k))
+        order = np.argsort(-scores_all[positions], kind="stable")
+        top_positions = positions[order[:k]]
+        top = frame.iloc[top_positions]
         rankings.append(tuple(top[icol].tolist()))
-        score_lists.append(tuple(float(s) for s in top["__score__"].tolist()))
+        score_lists.append(tuple(float(s) for s in scores_all[top_positions]))
 
     disclosures = [
         f"Ranked {len(ordered_queries)} query(ies) with frozen "
         f"{plan.backend}/{plan.method} ranker.",
         "Scores use train-fitted standardization; relevance labels are not used "
         "at rank time.",
+        "Equal scores retain candidate row order within each query.",
         "Tabular LTR is not RAG retrieve and not recommender CF.",
     ]
     return RankResult(
@@ -239,7 +240,8 @@ def rank(
     split_plan:
         Split plan defining partition indices when ``partition`` is set.
     partition:
-        Partition name such as ``test``; ignored when ``query_ids`` is set.
+        Partition name such as ``test``. When also supplying ``query_ids``,
+        query selection is restricted to this partition.
     query_ids:
         Explicit query ids to rank from the selected frame.
     k:
@@ -255,7 +257,7 @@ def rank(
     if query_ids is None and partition is None:
         partition = "test"
     if partition is None:
-        frame = dataset.frame.copy()
+        frame = dataset.to_pandas()
     else:
         frame = partition_frame(dataset, split_plan, partition)
     return rank_queries(

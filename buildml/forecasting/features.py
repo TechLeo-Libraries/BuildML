@@ -9,6 +9,7 @@ import pandas as pd
 
 from buildml.core.errors import LeakageError, ValidationError
 from buildml.core.types import ColumnRole
+from buildml.core.validation import _positive_integer
 from buildml.data.dataset import Dataset
 from buildml.data.splits import SplitPlan, frame_for_partition
 
@@ -156,6 +157,7 @@ def ordered_frame(
     ValidationError
         When timestamps in ``time_column`` cannot be parsed.
     """
+    frame: pd.DataFrame
     if partition == "all":
         frame = dataset._ensure_pandas().copy()
     else:
@@ -178,10 +180,10 @@ def assert_partition_time_order(
     *,
     time_column: str,
 ) -> None:
-    """Ensure train ends before validation or test in clock time.
+    """Ensure train, validation, and test advance in clock time.
 
-    Detects temporal leakage when a holdout partition starts before the last
-    train timestamp after chronological ordering.
+    Detects temporal leakage when a partition starts before the preceding
+    partition ends after chronological ordering.
 
     Parameters
     ----------
@@ -197,12 +199,13 @@ def assert_partition_time_order(
     ValidationError
         When the train partition is empty after ordering.
     LeakageError
-        When validation or test starts before train ends in clock time.
+        When a partition starts before its preceding partition ends.
     """
     train = ordered_frame(dataset, split_plan, "train", time_column=time_column)
     if train.empty:
         raise ValidationError("Train partition is empty after time ordering")
-    train_end = train[time_column].iloc[-1]
+    previous_end = train[time_column].iloc[-1]
+    previous_name = "train"
     for name in ("validation", "test"):
         indices = split_plan.indices_for(name)  # type: ignore[arg-type]
         if not indices:
@@ -211,12 +214,14 @@ def assert_partition_time_order(
         if part.empty:
             continue
         part_start = part[time_column].iloc[0]
-        if part_start < train_end:
+        if part_start < previous_end:
             raise LeakageError(
                 f"Temporal leakage: {name} starts at {part_start} before "
-                f"train ends at {train_end}. Forecasting requires "
+                f"{previous_name} ends at {previous_end}. Forecasting requires "
                 "chronological partition order (use time_split)."
             )
+        previous_end = part[time_column].iloc[-1]
+        previous_name = name
 
 
 def normalize_lags(lags: list[int] | tuple[int, ...] | None) -> tuple[int, ...]:
@@ -238,11 +243,11 @@ def normalize_lags(lags: list[int] | tuple[int, ...] | None) -> tuple[int, ...]:
     Raises
     ------
     ValidationError
-        When ``lags`` is empty or contains values below ``1``.
+        When ``lags`` is empty or contains values other than positive integers.
     """
     if lags is None:
         lags = (1, 2, 3, 7)
-    cleaned = tuple(sorted({int(v) for v in lags}))
+    cleaned = tuple(sorted({_positive_integer(v, name="lags") for v in lags}))
     if not cleaned or any(v < 1 for v in cleaned):
         raise ValidationError("lags must be a non-empty collection of integers >= 1")
     return cleaned
@@ -321,7 +326,7 @@ def target_series(frame: pd.DataFrame, target_column: str) -> np.ndarray:
     Raises
     ------
     ValidationError
-        When the column is missing or contains null/non-numeric values.
+        When the column is missing or contains null, non-numeric, or infinite values.
     """
     if target_column not in frame.columns:
         raise ValidationError(f"Target '{target_column}' missing from frame")
@@ -331,7 +336,30 @@ def target_series(frame: pd.DataFrame, target_column: str) -> np.ndarray:
             f"Target '{target_column}' has {int(series.isna().sum())} null/non-numeric "
             "value(s); impute or drop before forecasting"
         )
-    return series.to_numpy(dtype=float)
+    values = series.to_numpy(dtype=float)
+    if not np.isfinite(values).all():
+        raise ValidationError(f"Target '{target_column}' must contain only finite values")
+    return values
+
+
+def _exog_matrix(values: Any, columns: tuple[str, ...], *, rows: int, name: str) -> np.ndarray:
+    """Validate finite numeric exogenous rows in the plan's column order."""
+    if isinstance(values, pd.DataFrame):
+        missing = [column for column in columns if column not in values.columns]
+        if missing:
+            raise ValidationError(f"{name} missing columns: {missing}")
+        values = values[list(columns)]
+    try:
+        matrix = np.asarray(values, dtype=float)
+    except (TypeError, ValueError, OverflowError) as exc:
+        raise ValidationError(f"{name} must contain finite numeric values") from exc
+    if matrix.ndim == 1:
+        matrix = matrix.reshape(-1, 1)
+    if matrix.shape != (rows, len(columns)):
+        raise ValidationError(f"{name} shape {matrix.shape} != ({rows}, {len(columns)})")
+    if not np.isfinite(matrix).all():
+        raise ValidationError(f"{name} contains nulls or non-finite values")
+    return matrix
 
 
 def build_lag_matrix(

@@ -14,6 +14,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import dataclass
+from numbers import Integral
 from typing import Any
 
 from buildml.core.errors import ValidationError
@@ -125,7 +126,7 @@ class LangChainGroundedAdapter:
             Retrieved passages. Must be non-empty.
         config:
             Generation settings. Only ``k`` is honoured, bounding how many
-            passages go into the recorded prompt context; templates,
+            passages reach the chain and recorded context/citations; templates,
             temperature, and token caps belong to the LangChain model.
 
         Returns
@@ -151,6 +152,9 @@ class LangChainGroundedAdapter:
         if not hits:
             raise ValidationError("LangChain adapter requires at least one retrieval hit.")
         cfg = config or GenerateConfig()
+        if isinstance(cfg.k, bool) or not isinstance(cfg.k, Integral) or cfg.k < 1:
+            raise ValidationError("k must be a positive integer.")
+        hits = hits[:int(cfg.k)]
         citations = hits_to_citations(hits)
         try:
             from langchain_classic.chains.question_answering import load_qa_chain

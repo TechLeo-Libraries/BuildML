@@ -814,6 +814,16 @@ class Dataset:
         diverge. Pass ``materialize=True`` when the pandas value is the one that
         matters.
 
+        **Missing observations are excluded from column counts and distinct
+        counts.** A sum with no observed values is missing, rather than zero;
+        ``std`` uses sample variance (``ddof=1``). Null group keys form their
+        own group, and unused categorical levels do not create summary rows.
+        The row count requested with ``'*'`` includes rows with missing values.
+
+        Lazy native summaries retain their own input population when further
+        summaries are created from the same connection. Derived DuckDB tables
+        still share the owner's connection and must be consumed before it closes.
+
         Examples
         --------
         .. code-block:: python

@@ -15,10 +15,23 @@ You name `sensitive_column`. BuildML will not infer protected class
 from the rest of the table. Default evaluate partition is `test`.
 Default `positive_label` is `1`; string labels need an explicit
 value or the call raises when the requested positive label is absent. Stability
-bands are off until `bootstrap_samples > 1`.
+bands are off at `bootstrap_samples=0`; an integer of at least two enables them.
+Boolean, fractional, string and one-draw configurations are refused.
 `session.fairness.suggest_thresholds` and
 `session.fairness.suggest_reweighing` return suggestions only. They
 are not applied.
+
+Session evaluation, attachment and threshold suggestions require a fit whose
+task is classification and whose estimator exposes fitted `classes_`. A
+regression fit on numeric 0/1 outcomes still needs a classifier fit before these
+operations. Reweighing suggestions remain available without a fitted model.
+
+The requested positive label must match a fitted class. Numeric equivalents such
+as `2` and `2.0`, or `False` and `0`, select the same class for both rates and
+probability scores. A string `"2"` does not select numeric class `2`. Unknown
+classes are refused before prediction, preserving earlier reports, threshold
+suggestions and history. Existing classifier fits can be reevaluated to correct
+previous score-based reports; the fitted model does not need refitting.
 
 The API refuses a missing fit, a missing split, a missing sensitive
 column, an empty partition, and a `positive_label` that never appears
@@ -27,6 +40,23 @@ partition to quote, and whether to act on a suggestion.
 
 Quickstart: [fairness quickstart](quickstart-fairness.md). Proof:
 [loan-fairness-observational](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/loan-fairness-observational).
+
+Labels and optional AUC scores must be aligned one-dimensional vectors. Missing
+outcome or prediction labels are refused; supplied scores must be finite. Missing
+sensitive values remain an explicit `<NA>` population across reporting,
+resampling and policy helpers.
+
+Group keys must distinguish the populations being audited. For example,
+`("A|B", "C")` and `("A", "B|C")` both render as `A|B|C` with the default
+separator. BuildML refuses such observed collisions, including missing values
+versus a literal `<NA>` category and numeric versus string categories that render
+identically. Recode ambiguous category labels, or compose keys with a different
+separator before passing them to the low-level APIs. Review the category mapping
+over the deployment population when reusing a threshold policy.
+
+Successful Session fairness evaluations and suggestions create versioned audit
+records with parameters, warnings and compact result summaries. Checkpoints
+preserve those records; they do not reconstruct the fitted model or live report.
 
 ## Report after fit
 

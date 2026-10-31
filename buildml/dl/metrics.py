@@ -127,13 +127,13 @@ def resolve_device(requested: str = "auto") -> DeviceSpec:
         return DeviceSpec(requested=want, resolved="cpu")
 
     if want.startswith("cuda:"):
+        try:
+            idx = int(want.split(":", 1)[1])
+        except ValueError as exc:
+            raise ValidationError(
+                f"Unknown device '{requested}'. Use cuda:N with integer N."
+            ) from exc
         if torch.cuda.is_available():
-            try:
-                idx = int(want.split(":", 1)[1])
-            except ValueError as exc:
-                raise ValidationError(
-                    f"Unknown device '{requested}'. Use cuda:N with integer N."
-                ) from exc
             if idx < 0 or idx >= torch.cuda.device_count():
                 warning = (
                     f"CUDA device {idx} unavailable "

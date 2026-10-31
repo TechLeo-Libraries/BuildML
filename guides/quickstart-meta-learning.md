@@ -8,6 +8,11 @@ Episodic few-shot on a task/group column. You need at least two distinct
 train task ids. Default is tabular prototypical. Holdout is never used
 for meta-train. The examples focus on small tabular tasks.
 
+Evaluation prefers novel tasks by default. Set `prefer_novel_tasks=False` to
+include all observed tasks, with overlap warnings. Selected task ids must have
+unique display text so per-task report entries stay distinct. Episode sizes and
+support caps require positive integers; booleans, fractions and strings refuse.
+
 [Meta-learning deep](meta-learning-deep.md) ·
 Runnable example: [`examples/metalearning_prototypical_loop.py`](../examples/metalearning_prototypical_loop.py) ·
 Evidence: [few-shot-domain-adapt](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/few-shot-domain-adapt)

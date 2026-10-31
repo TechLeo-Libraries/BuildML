@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, cast
 
 import numpy as np
 import pandas as pd
@@ -74,7 +74,7 @@ def partition_frame(
         When a named partition is requested without a split plan.
     """
     if partition == "all":
-        return dataset.frame.copy()
+        return dataset.to_pandas()
     if split_plan is None:
         raise ValidationError(
             "A SplitPlan is required for partitioned knowledge-graph evaluation."
@@ -204,7 +204,7 @@ def build_triples(
     before = len(triples)
     triples = triples.drop_duplicates()
     triples.attrs["n_duplicate_dropped"] = int(before - len(triples))
-    return triples.reset_index(drop=True)
+    return cast(pd.DataFrame, triples.reset_index(drop=True))
 
 
 def build_vocabularies(

@@ -112,6 +112,12 @@ def fit_multitask(
     ------
     ValidationError
         When targets, task type, backend/method pairing, or partitions are invalid.
+
+    Notes
+    -----
+    An explicit classification or regression task applies to every target,
+    including head construction and evaluation. Per-target inference is used
+    for mixed tasks; it cannot override an explicit homogeneous task.
     """
     assert_fit_partition(split_plan, "train")
     assert split_plan is not None
@@ -131,7 +137,11 @@ def fit_multitask(
         allow_mixed=allow_mixed,
     )
     disclosures.extend(task_notes)
-    task_kinds = infer_task_kinds(train, target_cols)
+    task_kinds = (
+        infer_task_kinds(train, target_cols)
+        if resolved_task == "mixed"
+        else dict.fromkeys(target_cols, resolved_task)
+    )
 
     if method_key == "classifier_chain" and resolved_task != "classification":
         raise ValidationError(

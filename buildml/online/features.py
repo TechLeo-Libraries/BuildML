@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
+from numbers import Integral
 from typing import Any
 
 import numpy as np
@@ -145,33 +146,40 @@ def encode_classification_targets(
             "Blank rows are for active/semi-supervised pools, not partial_fit."
         )
 
-    values = y.astype(str)
+    values = y.to_numpy()
     if label_encoder is None:
         encoder = LabelEncoder()
-        if classes is not None:
-            encoder.fit([str(c) for c in classes])
-            codes = encoder.transform(values)
-        else:
-            codes = encoder.fit_transform(values)
+        try:
+            encoder.fit(pd.Series(classes).to_numpy() if classes is not None else values)
+        except (TypeError, ValueError) as exc:
+            raise ValidationError("Online class labels must use a consistent supported label type.") from exc
+        encoder._buildml_raw_class_labels_ = True
     else:
         encoder = label_encoder
-        known = {str(c) for c in encoder.classes_}
-        incoming = {str(v) for v in np.asarray(values).tolist()}
-        unknown = sorted(incoming - known)
-        if unknown:
-            raise ValidationError(
-                "Online classifier saw new class label(s) not declared at init: "
-                f"{unknown}. Pass classes= covering the full label vocabulary on "
-                "fit_online (or ensure train targets already span all classes)."
-            )
-        codes = encoder.transform(values)
-    return np.asarray(codes), encoder, tuple(encoder.classes_)
+        if not getattr(encoder, "_buildml_raw_class_labels_", False):
+            # Existing model weights use the legacy string class ordering.
+            values = y.astype(str).to_numpy()
+    known = pd.Series(values).isin(encoder.classes_).to_numpy()
+    if not known.all():
+        unknown = sorted({repr(value) for value in values[~known]})
+        raise ValidationError(
+            "Online classifier saw new class label(s) not declared at init: "
+            f"{unknown}. Pass classes= covering the full label vocabulary on "
+            "fit_online (or ensure train targets already span all classes)."
+        )
+    try:
+            codes = encoder.transform(values)
+    except (TypeError, ValueError) as exc:
+        raise ValidationError("Online class labels do not match the declared vocabulary.") from exc
+    classes_out = tuple(value.item() if isinstance(value, np.generic) else value for value in encoder.classes_)
+    return np.asarray(codes), encoder, classes_out
 
 
 def decode_predictions(pred_codes: np.ndarray, label_encoder: Any) -> list[Any]:
     """Map integer class codes back toward original label values.
 
-    Attempts to restore numeric types when the original labels were numeric.
+    New encoders preserve raw labels. Unmarked legacy encoders retain their
+    original numeric-guessing behavior for compatibility with persisted models.
 
     Parameters
     ----------
@@ -187,6 +195,8 @@ def decode_predictions(pred_codes: np.ndarray, label_encoder: Any) -> list[Any]:
     """
     codes = np.asarray(pred_codes).astype(int)
     decoded = label_encoder.inverse_transform(codes)
+    if getattr(label_encoder, "_buildml_raw_class_labels_", False):
+        return [value.item() if isinstance(value, np.generic) else value for value in decoded]
     out: list[Any] = []
     for value in decoded:
         text = str(value)
@@ -223,7 +233,8 @@ def carve_train_chunk(
     n_rows:
         Number of unused train rows to take when ``indices`` is ``None``.
     indices:
-        Optional explicit train-partition dataset indices.
+        Optional explicit dataset row positions from the train partition.
+        These are split positions, independent of pandas index labels.
 
     Returns
     -------
@@ -239,6 +250,11 @@ def carve_train_chunk(
     n_train = len(train_indices)
     if indices is not None:
         requested = list(indices)
+        if not requested:
+            raise ValidationError("Explicit online chunk positions must not be empty.")
+        if any(isinstance(i, (bool, np.bool_)) or not isinstance(i, Integral) for i in requested):
+            raise ValidationError("Online chunk positions must be integers, not booleans or labels.")
+        requested = [int(i) for i in requested]
         train_set = set(train_indices)
         bad = [i for i in requested if i not in train_set]
         if bad:
@@ -247,15 +263,15 @@ def carve_train_chunk(
                 f"leakage): {bad[:10]}{'...' if len(bad) > 10 else ''}."
             )
         full = dataset._ensure_pandas()
-        missing = [i for i in requested if i not in full.index]
+        missing = [i for i in requested if i < 0 or i >= len(full)]
         if missing:
             raise ValidationError(
-                f"Unknown dataset indices for online chunk: {missing[:10]}"
+                f"Unknown dataset positions for online chunk: {missing[:10]}"
             )
-        chunk = full.loc[requested]
+        chunk = full.iloc[requested]
         # Cursor advances past the highest train-order position among requested.
         positions = [train_indices.index(i) for i in requested]
-        new_cursor = max(positions) + 1 if positions else cursor
+        new_cursor = max(cursor, max(positions) + 1)
         return chunk, requested, int(new_cursor)
 
     if n_rows < 1:
@@ -268,7 +284,7 @@ def carve_train_chunk(
     end = min(cursor + int(n_rows), n_train)
     chosen = train_indices[cursor:end]
     full = dataset._ensure_pandas()
-    chunk = full.loc[chosen]
+    chunk = full.iloc[chosen]
     if not isinstance(chunk, pd.DataFrame):
         raise ValidationError(
             "next_train_chunk expected a DataFrame slice of train rows"

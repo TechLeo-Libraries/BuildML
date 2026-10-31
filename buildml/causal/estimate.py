@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from numbers import Integral
 from typing import Any
 
 import numpy as np
@@ -127,9 +128,9 @@ def estimate_causal(
 ) -> CausalEstimateResult:
     """Estimate ATE on a partition with the fitted nuisance models.
 
-    Reuses train-fitted nuisances (or the EconML/DoWhy backend artifact) to
-    score the requested partition without refitting. Optional bootstrap resamples
-    partition rows while keeping nuisances fixed.
+    Native and EconML backends reuse train-fitted nuisances. DoWhy instead
+    identifies and estimates a fresh backdoor effect on the requested partition.
+    Optional native bootstrap resamples partition rows with fixed nuisances.
 
     Notes
     -----
@@ -168,6 +169,10 @@ def estimate_causal(
     """
     if plan is None:
         raise ValidationError("No CausalPlan. Call fit_causal first.")
+    n_boot = plan.bootstrap_samples if bootstrap_samples is None else bootstrap_samples
+    if isinstance(n_boot, bool) or not isinstance(n_boot, Integral) or n_boot < 0:
+        raise ValidationError("bootstrap_samples must be a non-negative integer.")
+    n_boot = int(n_boot)
     frame = partition_frame(dataset, split_plan, partition)
     validate_columns_present(frame, plan.assumptions)
 
@@ -204,11 +209,11 @@ def estimate_causal(
 
         ate, extras = score_econml_partition(plan, x, t, y)
     elif backend == "dowhy":
-        ate = float(plan.ate)
-        extras = {}
-        warnings.append(
-            "DoWhy backend reports train-identified ATE; partition re-estimation "
-            "is not performed: use native/econml for holdout ATE scoring."
+        from buildml.causal.adapters.dowhy import estimate_dowhy_partition
+
+        ate, extras = estimate_dowhy_partition(
+            plan, dataset, split_plan, partition=partition,
+            random_state=plan.config.get("random_state") if random_state is None else random_state,
         )
     else:
         ate, extras = estimate_ate_from_models(
@@ -222,7 +227,6 @@ def estimate_causal(
             clip_propensity=plan.clip_propensity,
         )
 
-    n_boot = plan.bootstrap_samples if bootstrap_samples is None else int(bootstrap_samples)
     seed = plan.config.get("random_state") if random_state is None else random_state
     ate_std = ate_ci_low = ate_ci_high = None
     disclosures = [
@@ -232,6 +236,17 @@ def estimate_causal(
         "caller-declared backdoor adjustment.",
         "EDA / association screens are not used here.",
     ]
+    if backend == "dowhy":
+        disclosures.append(
+            "DoWhy ATE is a fresh backdoor estimate on the requested partition, "
+            "not the train ATE copied forward."
+        )
+    if n_boot > 0 and backend != "native":
+        warnings.append(
+            f"Partition bootstrap requested={n_boot} but not performed for "
+            f"backend={backend!r}; uncertainty intervals are unavailable."
+        )
+        n_boot = 0
     if n_boot and n_boot > 0 and backend == "native":
         boots = _bootstrap_scores(
             x,

@@ -33,6 +33,7 @@ high-dimensional observations: that is exactly what function approximation
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from numbers import Integral
 from typing import Any, Literal
 
 import numpy as np
@@ -129,7 +130,7 @@ def epsilon_greedy_probabilities(
         Action values for one state, i.e. a row of the Q-table. Flattened
         before use, so a ``(1, n_actions)`` row is accepted.
     epsilon : float
-        Exploration rate. ``0.0`` gives a purely greedy distribution and
+        Finite exploration rate. ``0.0`` gives a purely greedy distribution and
         ``1.0`` a uniform one; values are clipped into ``[0, 1]`` rather than
         rejected, because callers pass decayed schedules.
 
@@ -141,7 +142,7 @@ def epsilon_greedy_probabilities(
     Raises
     ------
     ValidationError
-        If ``q_row`` is empty, which would leave no action to assign mass to.
+        If ``q_row`` is empty, complex or non-finite, or ``epsilon`` is invalid.
 
     Notes
     -----
@@ -150,11 +151,25 @@ def epsilon_greedy_probabilities(
     whole ``1 - epsilon`` to action 0 would bias Expected SARSA's target from
     the first update onwards.
     """
-    q = np.asarray(q_row, dtype=float).reshape(-1)
+    try:
+        values = np.asarray(q_row)
+        if np.iscomplexobj(values):
+            raise ValidationError("Action values must be finite and real.")
+        q = np.asarray(values, dtype=float).reshape(-1)
+    except (TypeError, ValueError, OverflowError) as exc:
+        raise ValidationError("Action values must be finite and real.") from exc
     n_actions = int(q.size)
     if n_actions == 0:
         raise ValidationError("Cannot build action probabilities for 0 actions.")
-    eps = float(np.clip(epsilon, 0.0, 1.0))
+    if not np.isfinite(q).all():
+        raise ValidationError("Action values must be finite and real.")
+    try:
+        eps = float(epsilon)
+    except (TypeError, ValueError, OverflowError) as exc:
+        raise ValidationError("epsilon must be finite.") from exc
+    if not np.isfinite(eps):
+        raise ValidationError("epsilon must be finite.")
+    eps = float(np.clip(eps, 0.0, 1.0))
     probs = np.full(n_actions, eps / n_actions, dtype=float)
     greedy = np.flatnonzero(q == q.max())
     probs[greedy] += (1.0 - eps) / float(greedy.size)
@@ -166,7 +181,7 @@ class ObservationDiscretizer:
     """Map an environment observation to a single integer state index.
 
     ``kind='discrete'``
-        Pass-through for Gymnasium ``Discrete`` observation spaces.
+        Map Gymnasium ``Discrete`` physical IDs to rows by subtracting ``start``.
     ``kind='box'``
         Uniform per-dimension binning combined as a mixed-radix index.
     """
@@ -179,6 +194,7 @@ class ObservationDiscretizer:
     low: tuple[float, ...] = ()
     high: tuple[float, ...] = ()
     bound_sources: tuple[str, ...] = ()
+    start: int = 0
 
     def index(self, observation: Any) -> int:
         """Convert one raw environment observation into a Q-table row number.
@@ -203,8 +219,9 @@ class ObservationDiscretizer:
         Raises
         ------
         ValidationError
-            If a discrete observation is not scalar or falls outside
-            ``[0, n_states)``, or if a box observation has the wrong length.
+            If a discrete observation is not an exact integer-valued scalar
+            in ``[start, start + n_states)``, or if a box observation has the
+            wrong length.
             Both indicate the discretizer was built for a different
             environment than the one being stepped.
 
@@ -223,12 +240,27 @@ class ObservationDiscretizer:
                     "Discrete observation spaces expect a scalar observation; "
                     f"got shape {np.shape(observation)!r}."
                 )
-            code = int(flat[0])
-            if not 0 <= code < self.n_states:
+            raw = flat[0]
+            try:
+                if np.iscomplexobj(raw):
+                    raise ValueError("Complex observations are not discrete state IDs.")
+                code = int(raw)
+                if raw != code:
+                    raise ValueError("Observation is not exactly integer-valued.")
+            except (TypeError, ValueError, OverflowError) as exc:
                 raise ValidationError(
-                    f"Discrete observation {code} outside [0, {self.n_states})."
+                    "Discrete observation spaces expect an exact integer-valued "
+                    f"real scalar; got {raw!r}."
+                ) from exc
+            # Bundles written before start was recorded represent zero-based
+            # spaces. Retain that mapping when loading those discretizers.
+            start = int(getattr(self, "start", 0))
+            state = code - start
+            if not 0 <= state < self.n_states:
+                raise ValidationError(
+                    f"Discrete observation {code} outside [{start}, {start + self.n_states})."
                 )
-            return code
+            return state
 
         flat = np.asarray(observation, dtype=float).reshape(-1)
         if flat.size != self.obs_dim:
@@ -260,10 +292,11 @@ class ObservationDiscretizer:
         -------
         dict of str to Any
             Space kind, state and dimension counts, bin count, per-dimension
-            ranges, and where each range came from. Bin edges are omitted:
+            ranges, and where each range came from. Discrete spaces also
+            record their first physical state ID as ``start``. Bin edges are omitted:
             they are derivable from the ranges and would dominate the plan.
         """
-        return {
+        result: dict[str, Any] = {
             "kind": self.kind,
             "n_states": self.n_states,
             "obs_dim": self.obs_dim,
@@ -272,6 +305,9 @@ class ObservationDiscretizer:
             "high": list(self.high),
             "bound_sources": list(self.bound_sources),
         }
+        if self.kind == "discrete":
+            result["start"] = int(getattr(self, "start", 0))
+        return result
 
 
 def _probe_observation_ranges(
@@ -323,7 +359,8 @@ def build_discretizer(
 
     Runs once at the start of :func:`train_tabular_control`, before the
     Q-table is allocated, because the table's row count is whatever this
-    function decides. ``Discrete`` spaces pass through untouched; ``Box``
+    function decides. ``Discrete`` spaces subtract their ``start`` to obtain
+    zero-based table rows; ``Box``
     spaces are cut into uniform bins per dimension and combined into a single
     mixed-radix index.
 
@@ -375,15 +412,17 @@ def build_discretizer(
 
     if hasattr(obs_space, "n") and not getattr(obs_space, "shape", ()):
         n_states = int(obs_space.n)
+        start = int(getattr(obs_space, "start", 0))
         disclosures.append(
-            f"Observation space is Discrete(n={n_states}); "
-            "states are used directly with no discretization."
+            f"Observation space is Discrete(n={n_states}, start={start}); "
+            "physical state IDs map to table rows by subtracting start."
         )
         return (
             ObservationDiscretizer(
                 kind="discrete",
                 n_states=n_states,
                 obs_dim=1,
+                start=start,
             ),
             disclosures,
         )
@@ -827,6 +866,12 @@ class TabularValuePolicy:
         return float(np.count_nonzero(self.state_visits) / self.state_visits.size)
 
 
+def _validate_rollout_counts(n_episodes: int, max_steps: int) -> None:
+    for name, value in (("n_episodes", n_episodes), ("max_steps", max_steps)):
+        if isinstance(value, (bool, np.bool_)) or not isinstance(value, Integral) or value < 1:
+            raise ValidationError(f"tabular_q requires {name} to be a positive integer.")
+
+
 def _validate_hyperparameters(
     *,
     n_episodes: int,
@@ -837,10 +882,7 @@ def _validate_hyperparameters(
     epsilon_min: float,
     epsilon_decay: float,
 ) -> None:
-    if int(n_episodes) < 1:
-        raise ValidationError("tabular_q requires n_episodes >= 1.")
-    if int(max_steps) < 1:
-        raise ValidationError("tabular_q requires max_steps >= 1.")
+    _validate_rollout_counts(n_episodes, max_steps)
     if not 0.0 < float(learning_rate) <= 1.0:
         raise ValidationError(
             "tabular_q requires 0 < learning_rate <= 1 (TD step size alpha)."
@@ -1226,7 +1268,7 @@ def evaluate_tabular_policy(
         If ``gymnasium`` is not installed. Install ``buildml[rl]``.
     ValidationError
         If no environment id is available from either the argument or the
-        policy.
+        policy, or rollout counts are not positive integers.
 
     Notes
     -----
@@ -1234,6 +1276,7 @@ def evaluate_tabular_policy(
     policy is mostly acting on untrained entries, so the mean return describes
     initial values rather than anything that was learned.
     """
+    _validate_rollout_counts(n_episodes, max_steps)
     gymnasium = require_gymnasium(feature="evaluate_rl(mode='tabular_q')")
     resolved_env = env_id or policy.env_id
     if not resolved_env:

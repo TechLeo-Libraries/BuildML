@@ -33,7 +33,10 @@ explicitly rather than silently.
 
 from __future__ import annotations
 
+from collections import Counter
+from collections.abc import Iterable
 from dataclasses import dataclass, field
+from numbers import Integral, Real
 from typing import Any, Literal
 
 import numpy as np
@@ -43,6 +46,7 @@ from sklearn.preprocessing import OneHotEncoder, OrdinalEncoder
 
 from buildml.core.errors import ValidationError
 from buildml.core.types import ColumnRole
+from buildml.core.validation import _positive_integer
 from buildml.data.dataset import Dataset
 from buildml.data.splits import SplitPlan, assert_fit_partition, frame_for_partition
 from buildml.explain.schemas import (
@@ -60,6 +64,65 @@ from buildml.preprocess.result import PreprocessResult
 
 EncodeMethod = Literal["onehot", "ordinal", "infrequent", "target"]
 INFREQUENT_LABEL = "__infrequent__"
+
+
+def _validate_encoded_names(
+    input_columns: Iterable[str],
+    source_columns: Iterable[str],
+    feature_names: Iterable[str],
+) -> None:
+    """Keep generated features distinct from each other and retained inputs."""
+    counts = Counter(feature_names)
+    duplicates = sorted(name for name, count in counts.items() if count > 1)
+    retained = set(input_columns).difference(source_columns)
+    collisions = sorted(retained.intersection(counts))
+    if duplicates or collisions:
+        raise ValidationError(
+            "Encoding output names are ambiguous: "
+            f"duplicate outputs={duplicates}; retained columns={collisions}. "
+            "Rename source columns or category labels before fitting or replay."
+        )
+
+
+def _normalize_min_frequency(value: Any) -> float | int:
+    """Keep count and proportion semantics without accepting lossy coercions."""
+    if isinstance(value, (bool, np.bool_)) or not isinstance(value, Real):
+        raise ValidationError("min_frequency must be a positive integer count or a real proportion in (0, 1)")
+    if isinstance(value, Integral):
+        if value < 1:
+            raise ValidationError("integer min_frequency must be >= 1")
+        return int(value)
+    proportion = float(value)
+    if not np.isfinite(proportion) or not 0.0 < proportion < 1.0:
+        raise ValidationError("float min_frequency must be finite and in (0, 1)")
+    return proportion
+
+
+def _normalize_target_smoothing(value: Any, *, name: str = "smoothing") -> float:
+    """Require a finite non-negative shrinkage weight without lossy coercions."""
+    if isinstance(value, (bool, np.bool_)) or not isinstance(value, Real):
+        raise ValidationError(f"{name} must be a finite non-negative real number")
+    try:
+        number = float(value)
+    except OverflowError as exc:
+        raise ValidationError(f"{name} must be a finite non-negative real number") from exc
+    if not np.isfinite(number) or number < 0:
+        raise ValidationError(f"{name} must be a finite non-negative real number")
+    return number
+
+
+def _frequency_threshold(min_frequency: float | int, n_rows: int) -> float | int:
+    value = _normalize_min_frequency(min_frequency)
+    return value if isinstance(value, int) else value * n_rows
+
+
+def _check_reserved_infrequent(values: Any, rare: list[str] | set[str], *, column: str) -> None:
+    """Refuse literal values that would alias an active internal pooling label."""
+    if rare and INFREQUENT_LABEL not in rare and bool(values.eq(INFREQUENT_LABEL).any()):
+        raise ValidationError(
+            f"Column {column!r} contains reserved label '{INFREQUENT_LABEL}' while rare pooling is active; "
+        "rename that retained or unseen literal category before fitting or replay."
+        )
 
 
 @dataclass(slots=True)
@@ -108,6 +171,9 @@ class EncodePlan:
     smoothing:
         How strongly a category's mean is pulled toward the prior. Higher means
         a category needs more rows before its own mean is trusted.
+    input_dtypes_:
+        Raw categorical column types before encoding. Saved input contracts use
+        these when an output reuses a source name but has become numeric.
     """
 
     columns: tuple[str, ...]
@@ -121,6 +187,7 @@ class EncodePlan:
     n_folds: int = 5
     random_state: int = 0
     smoothing: float = 10.0
+    input_dtypes_: dict[str, str] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
         """Return the plan as plain JSON-safe values.
@@ -135,14 +202,18 @@ class EncodePlan:
             ``'infrequent'`` plan adds ``infrequent_maps_`` and
             ``min_frequency``; a ``'target'`` plan adds ``target_maps_``,
             ``target_prior_``, ``n_folds``, ``random_state``, and
-            ``smoothing``. The fitted encoder object is omitted, since it does
-            not serialise to JSON: use a saved pipeline to round-trip it.
+            ``smoothing``. New plans also include ``input_dtypes_`` when raw
+            types were recorded. The fitted encoder object is omitted, since
+            it does not serialise to JSON: use a saved pipeline to round-trip it.
         """
         payload: dict[str, Any] = {
             "columns": list(self.columns),
             "method": self.method,
             "feature_names_": list(self.feature_names_),
         }
+        input_dtypes = getattr(self, "input_dtypes_", {})
+        if input_dtypes:
+            payload["input_dtypes_"] = dict(input_dtypes)
         if self.method == "infrequent":
             payload["infrequent_maps_"] = {
                 key: list(values) for key, values in self.infrequent_maps_.items()
@@ -197,13 +268,18 @@ def fit_encoder(
         For ``'infrequent'``, how common a category must be to keep its own
         column. A float is a proportion of training rows, so ``0.05`` means
         anything under five percent is folded into the shared bucket; an
-        integer is a raw row count. Raise it to compress harder, lower it to
-        preserve more distinctions. Ignored by the other methods.
+        integer is a raw row count. NumPy real/integer scalars are accepted;
+        booleans, text and non-finite proportions are refused. Raise it to
+        compress harder, lower it to preserve more distinctions. Ignored by
+        the other methods. A retained literal ``'__infrequent__'`` category
+        conflicts with an active internal bucket and must be renamed. If
+        that literal is itself fitted as rare, it joins the pool normally.
     n_folds:
         For ``'target'``, how many out-of-fold splits are used when encoding
         the training rows. More folds means each row's encoding is computed
         from more data and is less noisy, at proportionally more work. Five is
-        a reasonable default.
+        a reasonable default. Requires an integer count of at least two;
+        NumPy integers are accepted. At least two training rows are required.
     random_state:
         Seed for the out-of-fold assignment, so target encoding reproduces.
     smoothing:
@@ -211,7 +287,10 @@ def fit_encoder(
         overall mean. This is the guard against trusting a category seen three
         times: at the default of 10, a category needs roughly ten rows before
         its own average outweighs the prior. Raise it when categories are
-        sparse, lower it when every category has plenty of support.
+        sparse, lower it when every category has plenty of support. Requires a
+        finite non-negative real number; NumPy reals are accepted, while
+        booleans and text are refused. Each OOF fold uses only its fitting
+        labels for both category means and the smoothing/fallback prior.
 
     Returns
     -------
@@ -225,7 +304,8 @@ def fit_encoder(
     ~buildml.core.errors.ValidationError
         ``method`` is unrecognised, no categorical columns resolved, or
         ``'target'`` was requested without a target column having a role
-        assigned.
+        assigned. Duplicate output names or outputs colliding with retained
+        columns are refused; rename source columns or category labels first.
 
     Notes
     -----
@@ -237,6 +317,11 @@ def fit_encoder(
     **Values are compared as strings.** The integer ``1`` and the string
     ``"1"`` are the same category here, which is usually what you want from
     mixed-type data but can merge distinctions you meant to keep.
+
+    Target encoding requires non-null training outcomes. Numeric target dtypes
+    must be real and finite; complex dtypes are refused before casting. Only
+    training outcomes enter these checks. Other encoding methods do not inspect
+    unused targets, and categorical feature string-conversion policy is unchanged.
 
     Examples
     --------
@@ -268,6 +353,7 @@ def fit_encoder(
             "Pass columns=... explicitly to include ignore/id roles."
         ),
     )
+    input_dtypes = {column: str(train[column].dtype) for column in cols}
 
     if method in {"onehot", "ordinal"}:
         if method == "onehot":
@@ -283,27 +369,24 @@ def fit_encoder(
             if method == "onehot"
             else tuple(cols)
         )
+        _validate_encoded_names(dataset.columns, cols, feature_names)
         return EncodePlan(
             columns=tuple(cols),
             method=method,
             feature_names_=feature_names,
             encoder=encoder,
+            input_dtypes_=input_dtypes,
         )
 
     if method == "infrequent":
+        min_frequency = _normalize_min_frequency(min_frequency)
         maps: dict[str, list[str]] = {}
         collapsed = train[list(cols)].astype(str).copy()
+        threshold = _frequency_threshold(min_frequency, len(collapsed))
         for column in cols:
             counts = collapsed[column].value_counts(dropna=False)
-            if isinstance(min_frequency, float):
-                if not 0.0 < min_frequency < 1.0:
-                    raise ValidationError("float min_frequency must be in (0, 1)")
-                threshold = min_frequency * len(collapsed)
-            else:
-                if int(min_frequency) < 1:
-                    raise ValidationError("integer min_frequency must be >= 1")
-                threshold = float(min_frequency)
             rare = [str(level) for level, count in counts.items() if float(count) < threshold]
+            _check_reserved_infrequent(collapsed[column], rare, column=column)
             maps[column] = rare
             collapsed[column] = collapsed[column].where(
                 ~collapsed[column].isin(rare),
@@ -312,6 +395,7 @@ def fit_encoder(
         encoder = OneHotEncoder(handle_unknown="ignore", sparse_output=False)
         encoder.fit(collapsed)
         feature_names = tuple(str(n) for n in encoder.get_feature_names_out(cols))
+        _validate_encoded_names(dataset.columns, cols, feature_names)
         return EncodePlan(
             columns=tuple(cols),
             method=method,
@@ -319,13 +403,18 @@ def fit_encoder(
             encoder=encoder,
             infrequent_maps_=maps,
             min_frequency=min_frequency,
+            input_dtypes_=input_dtypes,
         )
 
     if method == "target":
+        feature_names = tuple(f"{c}_target" for c in cols)
+        _validate_encoded_names(dataset.columns, cols, feature_names)
+        n_folds = _positive_integer(n_folds, name="n_folds")
         if n_folds < 2:
             raise ValidationError("target encoding n_folds must be at least 2")
-        if smoothing < 0:
-            raise ValidationError("smoothing must be non-negative")
+        smoothing = _normalize_target_smoothing(smoothing)
+        if len(train) < 2:
+            raise ValidationError("Target encoding requires at least two training rows for out-of-fold features")
         target_name = dataset.require_target()
         y_raw = train[target_name]
         y = _numeric_target(y_raw)
@@ -341,12 +430,13 @@ def fit_encoder(
         return EncodePlan(
             columns=tuple(cols),
             method=method,
-            feature_names_=tuple(f"{c}_target" for c in cols),
+            feature_names_=feature_names,
             target_maps_=maps_target,
             target_prior_=prior,
             n_folds=n_folds,
             random_state=random_state,
             smoothing=smoothing,
+            input_dtypes_=input_dtypes,
         )
 
     raise ValidationError(f"Unsupported encode method '{method}'")
@@ -387,20 +477,26 @@ def transform_encoder(
     ------
     ~buildml.core.errors.ValidationError
         A column the plan expects is missing, or a ``'target'`` plan was passed
-        without a split plan.
+        without a split plan. Output names must be unique and cannot replace
+        retained columns, including protected roles and extra replay inputs.
 
     Notes
     -----
     **Unseen categories are handled, not rejected.** With one-hot they produce
     all zeros; with ordinal they take the encoder's unknown value; with
-    infrequent they join the rare bucket; with target they fall back to the
+    infrequent, known rare labels join the bucket and unseen labels produce
+    all zeros; with target they fall back to the
     training prior. All four are reasonable, and none of them is a signal you
     will notice unless you look: the returned result reports how often it
     happened, and a high rate means training and serving data have diverged.
 
-    **Missing values are encoded as the literal string** ``"nan"``, so they
-    become a category rather than propagating. Impute first if you want
-    different behaviour.
+    **The literal** ``'__infrequent__'`` **is refused when a rare bucket is
+    active unless it is itself a fitted rare label.** Otherwise it cannot be
+    distinguished from the internal pooling label. Rename that value before
+    replay, including for older saved plans.
+
+    **Missing values use their string representation**, such as ``"nan"`` or
+    ``"None"``, and become categories. Impute first for different behaviour.
 
     See Also
     --------
@@ -409,6 +505,7 @@ def transform_encoder(
     missing = [c for c in plan.columns if c not in dataset.columns]
     if missing:
         raise ValidationError(f"Encode plan columns missing from dataset: {missing}")
+    _validate_encoded_names(dataset.columns, plan.columns, plan.feature_names_)
 
     if plan.method == "target":
         if split_plan is None:
@@ -423,6 +520,7 @@ def transform_encoder(
     if plan.method == "infrequent":
         for column in plan.columns:
             rare = set(plan.infrequent_maps_.get(column, ()))
+            _check_reserved_infrequent(work[column], rare, column=column)
             work[column] = work[column].where(~work[column].isin(rare), INFREQUENT_LABEL)
 
     encoded = plan.encoder.transform(work)
@@ -482,17 +580,19 @@ def _transform_target(
         fold_iter = list(splitter.split(np.zeros(len(y))))
 
     roles = {k: v for k, v in dataset.roles.items() if k not in plan.columns}
+    encoded = pd.DataFrame(index=frame.index)
     for column, out_name in zip(plan.columns, plan.feature_names_, strict=True):
         oof = np.full(len(frame), np.nan, dtype=float)
         col_train = train[column].astype(str).to_numpy()
         for fit_pos, pred_pos in fold_iter:
+            fold_prior = float(np.mean(y[fit_pos]))
             means = _smoothed_means(
                 pd.Series(col_train[fit_pos]),
                 y[fit_pos],
-                prior=prior,
+                prior=fold_prior,
                 smoothing=plan.smoothing,
             )
-            mapped = pd.Series(col_train[pred_pos]).map(means).fillna(prior).to_numpy(dtype=float)
+            mapped = pd.Series(col_train[pred_pos]).map(means).fillna(fold_prior).to_numpy(dtype=float)
             global_positions = [train_idx[i] for i in pred_pos]
             oof[global_positions] = mapped
 
@@ -512,10 +612,10 @@ def _transform_target(
         unresolved = np.isnan(oof)
         if unresolved.any():
             oof[unresolved] = prior
-        frame[out_name] = oof
+        encoded[out_name] = oof
         roles[out_name] = ColumnRole.FEATURE
 
-    frame = frame.drop(columns=list(plan.columns))
+    frame = pd.concat([frame.drop(columns=list(plan.columns)), encoded], axis=1)
     new_dataset = Dataset.from_transformed(
         dataset,
         frame,
@@ -551,11 +651,18 @@ def _smoothed_means(
 
 
 def _numeric_target(series: pd.Series) -> np.ndarray:
+    if series.isna().any():
+        raise ValidationError("Target encoding requires a non-null numeric or label target")
     if pd.api.types.is_numeric_dtype(series):
+        if pd.api.types.is_complex_dtype(series.dtype):
+            raise ValidationError("Target encoding requires real numeric target values")
         values = pd.to_numeric(series, errors="coerce")
         if values.isna().any():
             raise ValidationError("Target encoding requires a non-null numeric or label target")
-        return values.to_numpy(dtype=float)
+        numeric = values.to_numpy(dtype=float)
+        if not np.isfinite(numeric).all():
+            raise ValidationError("Target encoding requires finite numeric target values")
+        return numeric
     codes, _ = pd.factorize(series.astype(str), sort=True)
     if (codes < 0).any():
         raise ValidationError("Target encoding cannot proceed with null target labels")
@@ -636,6 +743,10 @@ def _build_result(plan: EncodePlan) -> PreprocessResult:
         "Encoding vocabularies and target means are train-fitted only.",
         "Ordinal codes invent numeric order unless the domain supplies one.",
     ]
+    if plan.method == "infrequent":
+        limitations.append(
+            "Unseen categories produce all-zero indicators; only training-fitted rare labels use the shared bucket."
+        )
     if plan.method == "target":
         limitations.append(
             "Target encoding without out-of-fold discipline leaks labels into train features."

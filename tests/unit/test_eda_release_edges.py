@@ -47,7 +47,7 @@ def test_small_regression_statistics_are_unavailable_not_invalid(dtype):
     frame = pd.DataFrame({"x": [1, 2], "y": pd.Series([.5, None], dtype=dtype)})
     report = Session.ingest(frame).set_roles({"y": "target"}).eda()
     assert report.target["summary"] == {
-        "type": "regression_target", "mean": .5, "std": None, "skew": None,
+        "type": "regression_target", "mean": .5, "median": .5, "std": None, "skew": None,
     }
 
 

@@ -47,10 +47,10 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Install package (core + dev)
+      - name: Install package (core + dev + native graph contracts)
         run: |
           python -m pip install --upgrade pip
-          pip install -e ".[dev]"
+          pip install -e ".[dev,graph]"
 
       - name: Import smoke
         run: python -c "import buildml; print(buildml.__version__); assert hasattr(buildml, 'Session')"
@@ -113,7 +113,7 @@ jobs:
         run: python scripts/domain_maturity_index.py --check --report
 
       # Coverage fail_under comes from pyproject.toml [tool.coverage.report]
-      # and scripts/coverage_ratchet.json (active 66; Linux CI monolith).
+      # and scripts/coverage_ratchet.json (active 69; Linux CI monolith).
       - name: Pytest
         run: pytest --cov=buildml --cov-report=term-missing
 
@@ -199,18 +199,19 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Install package with engines + dev
+      - name: Install package with engines, native TDA and dev
         run: |
           python -m pip install --upgrade pip
-          pip install -e ".[dev,engines]"
+          pip install -e ".[dev,engines,tda]"
 
       - name: Require engine backends
-        run: python -c "import polars, duckdb"
+        run: python -c "import polars, duckdb, ripser, persim"
 
       - name: Engine adapter and native-depth tests
         run: |
           pytest \
             tests/unit/test_engines.py \
+            tests/unit/test_engine_persistence_contracts.py \
             tests/unit/test_engine_aggregate.py \
             tests/unit/test_duckdb_pushdown.py \
             tests/unit/test_duckdb_arrow_ipc.py \
@@ -223,7 +224,33 @@ jobs:
             tests/unit/test_checkpoint_sidecar_layout.py \
             tests/unit/test_lazy_native_disclosure.py \
             tests/unit/test_lazy_native_ingest.py \
+            tests/unit/test_native_population_consumers.py \
             -q
+
+  optimization-contracts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install real optimization backends
+        run: python -m pip install --no-cache-dir -e ".[dev,optimize-industry]"
+      - name: Require optimization dependencies
+        run: |
+          python -m pip check
+          python -c "import pulp, cvxpy; from ortools.linear_solver import pywraplp; assert pulp.COIN_CMD().available(); assert pywraplp.Solver.CreateSolver('SCIP') is not None"
+          python -c "from ortools.linear_solver import pywraplp; import cvxpy; assert pywraplp.Solver.CreateSolver('SCIP') is not None"
+      - name: Proven optimality and budget contracts
+        run: >
+          python -m pytest
+          tests/unit/test_pulp_compatibility.py
+          tests/unit/test_ortools_optimality_contracts.py
+          tests/unit/test_optimize_industry_depth.py
+          tests/unit/test_optimize_cvxpy_adapter.py
+          tests/unit/test_optimize_slice.py
+          tests/integration/test_optimize_alpha_smoke.py
+          -q
 
   optuna:
     runs-on: ubuntu-latest
@@ -255,6 +282,10 @@ jobs:
 
   torch:
     runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      PYTHONFAULTHANDLER: "1"
+      TORCH_SHOW_CPP_STACKTRACES: "1"
     strategy:
       fail-fast: false
       matrix:
@@ -277,10 +308,22 @@ jobs:
       - name: Core import smoke without relying on classical extras
         run: python -c "import buildml; print(buildml.__version__)"
 
+      - name: Enable bounded native crash diagnostics
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq gdb
+          mkdir -p artifacts/native-cores artifacts/native-backtraces
+          sudo sysctl -w "kernel.core_pattern=$PWD/artifacts/native-cores/core.%p"
+
       - name: Torch DL slice + M2 depth + Phase C + Pass G/J/L/O/Q/R + DL alpha-gate smoke
         run: |
+          ulimit -c 2097152
           pytest \
             tests/unit/test_dl_torch_slice.py \
+            tests/unit/test_ddp_sampling_contracts.py \
+            tests/unit/test_ddp_result_transfer.py \
+            tests/unit/test_tabular_torch_prediction_contracts.py \
+            tests/unit/test_meta_adaptation_contracts.py \
             tests/unit/test_dl_m2_depth.py \
             tests/unit/test_dl_phase_c.py \
             tests/unit/test_pass_g_dl_depth.py \
@@ -297,10 +340,260 @@ jobs:
       - name: DL alpha-gate smoke (explicit)
         run: pytest tests/integration/test_dl_alpha_smoke.py -q
 
+      - name: Repeated buffered DDP validation on this Torch/Python stack
+        timeout-minutes: 25
+        run: |
+          ulimit -c 2097152
+          python scripts/verify_ddp_reliability.py --repetitions 50 --output artifacts/ddp-reliability
+
+      - name: Extract native crash backtraces
+        if: always()
+        run: |
+          shopt -s nullglob
+          for core in artifacts/native-cores/core.*; do
+            gdb --batch -ex "set pagination off" -ex "thread apply all bt" \
+              "$(command -v python)" "$core" > "artifacts/native-backtraces/$(basename "$core").txt" 2>&1 || true
+          done
+
+      - name: Preserve DDP repetitions and native failure diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ddp-reliability-python-${{ matrix.python-version }}
+          path: |
+            artifacts/ddp-reliability
+            artifacts/native-backtraces
+          if-no-files-found: warn
+
       - name: Torch anomaly autoencoder acceptance
         run: |
           python -c "import torch"
           python -m pytest tests/unit/test_anomaly_industry_depth.py::test_torch_autoencoder_fit -q
+
+  autogluon-compatible-contracts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      OMP_NUM_THREADS: "1"
+      OPENBLAS_NUM_THREADS: "1"
+      MKL_NUM_THREADS: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install isolated AutoGluon profile
+        run: |
+          python -m pip install -r requirements-autogluon-verification.txt
+          python -m pip check
+          python -c "from autogluon.tabular import TabularPredictor; assert TabularPredictor"
+          mkdir -p artifacts
+          python -m pip list --format=json > artifacts/autogluon-environment.json
+          git rev-parse HEAD > artifacts/autogluon-source-revision.txt
+      - name: Exercise real binary, multiclass and regression contracts
+        run: |
+          pytest tests/unit/test_autogluon_adapter_contracts.py \
+            tests/unit/test_automl_r5_industry.py::test_autogluon_backend_train_only \
+            -q --no-cov --junitxml=artifacts/autogluon-contracts.xml
+          python -c "import xml.etree.ElementTree as E; suites=list(E.parse('artifacts/autogluon-contracts.xml').iter('testsuite')); assert suites and all(int(s.get('skipped',0)) == 0 for s in suites), 'AutoGluon contracts must execute without skips'"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: autogluon-compatible-contracts
+          path: artifacts/autogluon-*
+
+  expanded-coverage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      OMP_NUM_THREADS: "1"
+      OPENBLAS_NUM_THREADS: "1"
+      MKL_NUM_THREADS: "1"
+      TOKENIZERS_PARALLELISM: "false"
+      HNSWLIB_NO_NATIVE: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: |
+            requirements-expanded-coverage.txt
+            requirements-expanded-coverage-constraints.txt
+      - name: Install CPU Torch and the assessed backend profile
+        run: |
+          python -m pip install torch==2.7.1 torchvision==0.22.1 --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -r requirements-expanded-coverage.txt
+          # Cached source-built wheels can contain instructions from another CPU.
+          python -m pip install --force-reinstall --no-deps --no-cache-dir --no-binary=hnswlib hnswlib==0.8.0
+          python -m pip check
+      - name: Require the portable ANN backend
+        run: |
+          python -c "import hnswlib; print(hnswlib.__file__)"
+          pytest tests/unit/test_cbr_industry_depth.py::test_industry_session_path -q
+      - name: Require real optional backend runtimes
+        run: |
+          python -c "from dowhy import CausalModel; import onnxruntime as ort; assert 'CPUExecutionProvider' in ort.get_available_providers(); print(ort.__version__)"
+          python -c "from skactiveml.pool import GreedySamplingX, QueryByCommittee; print('active-learning host imports passed')"
+          python -c "from stable_baselines3 import PPO, DQN, A2C; print('SB3 runtimes imported')"
+          python -c "from langchain_classic.chains.question_answering import load_qa_chain; from langchain_core.language_models.fake import FakeListLLM; import langchain_community; print('LangChain offline consumers ready')"
+          python -c "from imodels import SkopeRulesClassifier; print('Maintained SkopeRules runtime ready')"
+          python -c "from sentence_transformers import SentenceTransformer; print('Offline text consumer runtime ready')"
+          python -c "import ruptures; print('Penalized changepoint runtime ready')"
+          python -c "from prophet import Prophet; from neuralforecast import NeuralForecast; from neuralforecast.models import NBEATS; print('Native forecasting runtimes ready')"
+      - name: Preserve source and actual dependency evidence
+        run: |
+          mkdir -p artifacts
+          git rev-parse HEAD > artifacts/expanded-source-revision.txt
+          python -m pip list --format=json > artifacts/expanded-environment.json
+      - name: Whole-package expanded coverage gate
+        run: >-
+          pytest tests -q --cov=buildml --cov-fail-under=88
+          --cov-report=term --cov-report=json:artifacts/expanded-coverage.json
+          --junitxml=artifacts/expanded-tests.xml --tb=short
+      - name: Require real domain consumer execution
+        run: |
+          python - <<'PY'
+          import xml.etree.ElementTree as ET
+          tests = list(ET.parse('artifacts/expanded-tests.xml').iter('testcase'))
+          for module in ('test_prophet_forecast_origin_consumers', 'test_nbeats_horizon_consumers', 'test_torch_regression_target_consumers', 'test_torch_numeric_input_consumers', 'test_nlp_resource_consumers', 'test_randomized_recipe_consumers', 'test_threshold_scalar_consumers', 'test_duckdb_sample_isolation_consumers', 'test_activelearning_request_consumers', 'test_ssl_generative_input_consumers', 'test_rag_chunk_span_consumers', 'test_blend_label_consumers', 'test_nlp_attribution_consumers', 'test_audio_timebase_consumers', 'test_fold_numeric_recipe_consumers', 'test_outlier_plan_consumers'):
+              cases = [test for test in tests if module in test.get('classname', '')]
+              assert cases and all(test.find('skipped') is None for test in cases), module
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: expanded-whole-package-coverage
+          include-hidden-files: true
+          path: |
+            artifacts/expanded-*
+            .coverage
+
+  rl-compatible-contracts:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    env:
+      OMP_NUM_THREADS: "1"
+      OPENBLAS_NUM_THREADS: "1"
+      MKL_NUM_THREADS: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install CPU Torch and the compatible RL profile
+        run: |
+          python -m pip install torch==2.7.1 --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install -r requirements-rl-verification.txt
+          python -m pip check
+      - name: Require real RL dependencies
+        run: python -c "import torch, pyarrow, stable_baselines3, imitation; assert pyarrow.table({'x':[1]}).to_pandas().shape == (1,1)"
+      - name: Exercise real RL and imitation contracts
+        run: >-
+          pytest tests/unit/test_rl_industry.py tests/unit/test_imitation_real_contracts.py
+          tests/unit/test_rl_action_identity_consumers.py tests/unit/test_imitation_action_identity_consumers.py
+          -q --junitxml=artifacts/rl-contracts.xml
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: rl-compatible-contracts-${{ matrix.os }}
+          path: artifacts/rl-contracts.xml
+
+  topology-compatible-contracts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      OMP_NUM_THREADS: "1"
+      OPENBLAS_NUM_THREADS: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install the compatible topology profile
+        run: python -m pip install -r requirements-topology-verification.txt
+      - name: Require real topology dependencies
+        run: |
+          python -m pip check
+          python -c "import gtda, igraph, pyarrow, sklearn; print(gtda.__version__, igraph.__version__); assert pyarrow.table({'x': [1]}).to_pandas().shape == (1, 1)"
+      - name: Exercise real topology pipelines, shapes and graph contracts
+        run: >-
+          pytest tests/unit/test_giotto_vector_shapes.py
+          tests/unit/test_tda_giotto_padding.py tests/unit/test_tda_r5_industry.py
+          tests/unit/test_giotto_mapper_semantics.py
+          tests/unit/test_giotto_pipeline_consumers.py
+          tests/unit/test_tda_scalar_consumers.py
+          tests/unit/test_tda_slice.py -q
+          --junitxml=artifacts/topology-contracts.xml
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: topology-compatible-contracts
+          path: artifacts/topology-contracts.xml
+
+  causal-compatible-contracts:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install compatible causal profile
+        run: python -m pip install -r requirements-causal-verification.txt
+      - name: Require real causal backends
+        run: |
+          python -m pip check
+          python -c "from dowhy import CausalModel; from econml.policy import DRPolicyTree; from econml.dml import LinearDML, CausalForestDML"
+      - name: Known-effect, graph-name and policy contracts
+        run: >-
+          pytest tests/unit/test_dowhy_column_name_contracts.py
+          tests/unit/test_econml_policy_contracts.py
+          tests/unit/test_causal_industry_depth.py::test_dowhy_backend_recovers_ate
+          tests/unit/test_causal_industry_depth.py::test_econml_dml_recovers_ate
+          tests/unit/test_causal_industry_depth.py::test_econml_causal_forest_cate_std
+          -q --junitxml=artifacts/causal-compatible-contracts.xml
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: causal-compatible-contracts-${{ matrix.os }}
+          path: artifacts/causal-compatible-contracts.xml
+
+  econml-contracts:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install real EconML backend
+        run: python -m pip install -c requirements-expanded-coverage-constraints.txt -e ".[dev]" econml==0.17.0
+      - name: Require usable policy and effect estimators
+        run: |
+          python -m pip check
+          python -c "from econml.policy import DRPolicyTree; from econml.dml import LinearDML, CausalForestDML"
+      - name: Known-effect and policy contracts
+        run: >-
+          pytest tests/unit/test_econml_policy_contracts.py
+          tests/unit/test_causal_industry_depth.py::test_econml_dml_recovers_ate
+          tests/unit/test_causal_industry_depth.py::test_econml_causal_forest_cate_std
+          -q --junitxml=artifacts/econml-contracts.xml
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: econml-contracts-${{ matrix.os }}
+          path: artifacts/econml-contracts.xml
 
   rag:
     runs-on: ubuntu-latest
@@ -317,10 +610,10 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Install package with rag + lean test deps
+      - name: Install package with rag/ssl + lean test deps
         run: |
           python -m pip install --upgrade pip
-          pip install -e ".[rag]"
+          pip install -e ".[rag,ssl]"
           pip install pytest pytest-cov ruff
 
       - name: Core import smoke without relying on RAG internals
@@ -335,6 +628,13 @@ jobs:
             tests/integration/test_rag_smoke.py \
             tests/integration/test_rag_alpha_smoke.py \
             -q
+
+      - name: Real local encoder checkpoints without downloads
+        env:
+          HF_HUB_OFFLINE: "1"
+          TRANSFORMERS_OFFLINE: "1"
+          TOKENIZERS_PARALLELISM: "false"
+        run: pytest tests/unit/test_offline_local_encoder_contracts.py tests/unit/test_ai_runtime_workflow_contracts.py -q
 
       - name: RAG alpha-gate smoke (explicit)
         run: pytest tests/integration/test_rag_alpha_smoke.py -q
@@ -391,19 +691,27 @@ jobs:
             tests: >-
               tests/integration/test_eval_plot_boards.py
               tests/unit/test_model_reporting_milestone4.py
+              tests/unit/test_plot_board_numeric_consumers.py
           - python-version: "3.12"
             extra: viz
             tests: >-
               tests/integration/test_eval_plot_boards.py
               tests/unit/test_model_reporting_milestone4.py
+              tests/unit/test_plot_board_numeric_consumers.py
           - python-version: "3.11"
             extra: dashboard
             tests: >-
               tests/unit/test_eda_dashboard.py
+              tests/unit/test_dashboard_export_integrity.py
+              tests/unit/test_dashboard_json_integrity.py
+              tests/unit/test_dashboard_api_integrity.py
           - python-version: "3.12"
             extra: dashboard
             tests: >-
               tests/unit/test_eda_dashboard.py
+              tests/unit/test_dashboard_export_integrity.py
+              tests/unit/test_dashboard_json_integrity.py
+              tests/unit/test_dashboard_api_integrity.py
           - python-version: "3.11"
             extra: serve
             tests: >-

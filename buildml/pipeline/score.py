@@ -181,7 +181,7 @@ def predict_from_pipeline(
     Raises
     ------
     ValidationError
-        If ``data`` is neither a Dataset nor a DataFrame; if the frame fails
+        If ``data`` is neither a Dataset nor a DataFrame, or has no rows; if the frame fails
         contract validation; if feature columns are still missing after replay;
         if the frame has rows but no usable features; or if the estimator itself
         fails during predict. The last case is wrapped rather than propagated,
@@ -210,6 +210,10 @@ def predict_from_pipeline(
 
     **Bundles without a contract still work**, with only the feature-column
     check applied: which catches missing columns but not wrong types.
+
+    Native Dataset inputs are materialized from their live handle before
+    validation. This refreshes the Pandas cache without replacing the source
+    native handle or changing its rows. Scoring requires an in-memory matrix.
 
     Examples
     --------
@@ -250,11 +254,14 @@ def predict_from_pipeline(
     fit_result = bundle.fit_result
     warnings: list[str] = []
     apply_result: ApplyPlansResult | None = None
-    working: Dataset | pd.DataFrame = data
 
-    raw_frame = data.frame if isinstance(data, Dataset) else data
+    raw_frame = data._ensure_pandas() if isinstance(data, Dataset) else data
     if not isinstance(raw_frame, pd.DataFrame):
         raise ValidationError("predict_from_pipeline expects a Dataset or pandas.DataFrame")
+    if len(raw_frame) == 0:
+        raise ValidationError(
+            "Pipeline scoring requires at least one input row; the score frame is empty."
+        )
 
     plan_present = any(
         plan is not None
@@ -280,6 +287,11 @@ def predict_from_pipeline(
         raw_frame,
         bundle.schema_contract,
         stage=contract_stage,
+        stringify_columns=(
+            bundle.encode_plan.columns
+            if contract_stage == "input" and bundle.encode_plan is not None
+            else ()
+        ),
     )
     warnings.extend(contract_validation.warnings)
     raise_for_contract(contract_validation, allow_extra=True)
@@ -296,6 +308,7 @@ def predict_from_pipeline(
             sync_native=False,
         )
 
+    working: Dataset | pd.DataFrame = data
     if apply_plans and plan_present:
         apply_result = apply_preprocess_plans(
             data,
@@ -317,11 +330,9 @@ def predict_from_pipeline(
         working = apply_result.dataset
         warnings.extend(apply_result.warnings)
     elif apply_plans and bundle.resample_plan is not None:
-        warnings.append(
-            "ResamplePlan is lineage-only and was not reapplied at score time."
-        )
+        warnings.append("ResamplePlan is lineage-only and was not reapplied at score time.")
 
-    frame = working.frame if isinstance(working, Dataset) else working
+    frame = working._ensure_pandas() if isinstance(working, Dataset) else working
     if not isinstance(frame, pd.DataFrame):
         raise ValidationError("predict_from_pipeline expects a Dataset or pandas.DataFrame")
 
@@ -343,9 +354,7 @@ def predict_from_pipeline(
     # Extra columns are ignored; require a non-empty design matrix.
     x = frame.loc[:, feature_columns]
     if not isinstance(x, pd.DataFrame):
-        raise ValidationError(
-            "Score feature selection did not produce a DataFrame design matrix"
-        )
+        raise ValidationError("Score feature selection did not produce a DataFrame design matrix")
     if x.empty and len(frame) > 0:
         raise ValidationError("Score frame has rows but no usable feature columns after selection")
 

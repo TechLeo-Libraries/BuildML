@@ -37,7 +37,12 @@ from buildml.core.errors import ValidationError
 from buildml.data.dataset import Dataset
 from buildml.dl.dataset import arrays_to_tensor_dataset, infer_task, resolve_feature_target
 from buildml.dl.extras import require_torch
-from buildml.dl.labels import encode_class_targets, fit_class_labels, n_classes_from_labels
+from buildml.dl.labels import (
+    encode_class_targets,
+    fit_class_labels,
+    n_classes_from_labels,
+    regression_targets_to_float32,
+)
 from buildml.dl.models import build_tabular_mlp
 from buildml.dl.transforms import apply_standardize, fit_standardize, frame_to_numeric_matrix
 from buildml.dl.types import TrainConfig
@@ -294,8 +299,8 @@ def cross_validate_torch(
     normalize:
         Standardise features using each fold's training statistics.
     seed:
-        Controls fold assignment and shuffling, so the same seed reproduces the
-        same folds.
+        Controls fold assignment, shuffling, Torch model initialization and Torch
+        training randomness. External randomness in custom factories is caller-owned.
     stratify:
         Keep class proportions roughly equal across folds. Applies to
         classification only, and matters most when a class is rare: without
@@ -327,8 +332,9 @@ def cross_validate_torch(
         If PyTorch is not installed.
     ValidationError
         If ``n_folds`` is below 2, if there are fewer rows than folds, if the
-        target is non-numeric or contains ``NaN``, or if a feature column is
-        non-numeric.
+        target is non-numeric or contains ``NaN``, if regression labels are
+        non-finite or overflow float32, or if numeric features are non-finite
+        or overflow float32 after fold preprocessing.
 
     Notes
     -----
@@ -390,6 +396,8 @@ def cross_validate_torch(
         )
     y_values = y_all.to_numpy()
     resolved_task = infer_task(y_all, task)
+    if resolved_task == "regression":
+        regression_targets_to_float32(y_all)
     fold_pairs = _make_fold_indices(
         len(frame),
         n_folds=n_folds,
@@ -434,6 +442,9 @@ def cross_validate_torch(
         else:
             class_labels = ()
             n_classes = 1
+        train_ds = arrays_to_tensor_dataset(x_train, y_train, task=resolved_task)
+        val_ds = arrays_to_tensor_dataset(x_val, y_val, task=resolved_task)
+        torch.manual_seed(int(seed) + fold_i)
         module = factory(len(feature_cols), resolved_task, n_classes)
         contract = FeatureContract(
             feature_columns=tuple(feature_cols),
@@ -443,8 +454,6 @@ def cross_validate_torch(
             normalize_mean=None if mean is None else tuple(float(v) for v in mean),
             normalize_std=None if std is None else tuple(float(v) for v in std),
         )
-        train_ds = arrays_to_tensor_dataset(x_train, y_train, task=resolved_task)
-        val_ds = arrays_to_tensor_dataset(x_val, y_val, task=resolved_task)
         generator = torch.Generator().manual_seed(int(seed) + fold_i)
         loaders = {
             "train": torch.utils.data.DataLoader(

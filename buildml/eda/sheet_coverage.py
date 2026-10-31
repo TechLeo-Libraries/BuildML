@@ -201,7 +201,7 @@ def build_ledger_groups(
             if not isinstance(row, Mapping):
                 continue
             name = row.get("feature") or row.get("column") or row.get("key")
-            score = row.get("mi") or row.get("score") or row.get("value")
+            score = next((row[key] for key in ("mi", "score", "value") if row.get(key) is not None), None)
             if name is None:
                 continue
             mi_items.append((str(name), fmt_metric(score)))

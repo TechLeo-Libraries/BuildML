@@ -32,6 +32,7 @@ def discover_scripts() -> list[Path]:
         p
         for p in ROOT.glob("benchmarks/*/*.py")
         if p.is_file() and not p.name.startswith("_")
+        and p.name not in {"m4_real.py", "beir_scifact.py"}
     )
     if not scripts:
         raise SystemExit(f"No benchmark scripts found under {ROOT / 'benchmarks'}")

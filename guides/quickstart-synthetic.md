@@ -10,6 +10,10 @@ Train-fitted generators. Default is native Gaussian copula. This is not
 `session.resample` and not differential privacy. `extend_train` merge
 clears a classical `FitResult`.
 
+Sampling `n` must be a positive integer; `None` uses the fitted training row
+count. Booleans, strings, fractional counts and non-finite values are refused
+before drawing or merging rows. NumPy integer counts are supported.
+
 [Synthetic deep](synthetic-deep.md) ·
 Runnable example: [`examples/synthetic_copula_loop.py`](../examples/synthetic_copula_loop.py) ·
 Evidence: [synthetic-privacy-utility](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/synthetic-privacy-utility)
@@ -117,6 +121,21 @@ reusable sampling, fidelity/TSTR, and controlled augmentation with provenance.
 ---
 
 ## Guarantees and limitations
+
+Builtin categorical fidelity compares scalar values and their types: `1` and
+`"1"` differ, and missing values differ from a literal `"__NA__"` category.
+Classification TSTR/TRTR follows the same label identities. Unseen holdout
+labels count as errors; missing targets raise before storing an evaluation.
+These checks reuse the frozen generator, including a trusted saved bundle.
+Previously written reports keep their values until evaluation is run again.
+
+Native copulas also preserve these distinct categorical populations during
+sampling. For categorical conditions, use the fitted scalar type: `True`, `1`
+and `"1"` select distinct labels. Numeric conditions on continuous columns keep
+numeric value comparison. Vocabulary validation counts unknown nonmissing rows
+as a fraction of all sampled rows; null-rate checks handle missingness separately.
+An older bundle with a text vocabulary discloses that limit. Refit older copulas
+on the original training data to recover categories that their text keys merged.
 
 | Claim | Reality |
 | --- | --- |

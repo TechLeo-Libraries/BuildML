@@ -112,7 +112,7 @@ def induce_imodels_rules(
                 antecedents=antecedents,
                 consequent=consequent,
                 priority=int(1000 - int(rank) if isinstance(rank, (int, np.integer)) else rank),
-                source=f"induced_{method_key}",
+                source="induced_rulefit" if method_key == "rulefit" else "induced_boosted_rules",
                 confidence=abs(coef) if task == "classification" else None,
             )
         )
@@ -152,7 +152,8 @@ def _normalize_imodels_rules(
     if isinstance(rules_raw, pd.DataFrame):
         for rank, row in rules_raw.head(max_rules).iterrows():
             rule_str = str(row.get("rule", row.iloc[0] if len(row) else ""))
-            coef = float(row.get("coef", row.get("coefficient", 1.0)) or 1.0)
+            coef_raw = row.get("coef", row.get("coefficient", 1.0))
+            coef = float(1.0 if coef_raw is None else coef_raw)
             rows.append((int(rank) if isinstance(rank, (int, np.integer)) else len(rows), rule_str, coef))
         return rows
 
@@ -163,7 +164,8 @@ def _normalize_imodels_rules(
             continue
         if isinstance(item, dict):
             rule_str = str(item.get("rule", item.get("rule_str", "")))
-            coef = float(item.get("coef", item.get("coefficient", 1.0)) or 1.0)
+            coef_raw = item.get("coef", item.get("coefficient", 1.0))
+            coef = float(1.0 if coef_raw is None else coef_raw)
             rows.append((rank, rule_str, coef))
             continue
         rule_str = str(getattr(item, "rule", getattr(item, "rule_str", item)))
@@ -195,29 +197,18 @@ def _parse_imodels_rule_string(rule_str: str, columns: list[str]) -> tuple[Predi
     from buildml.symbolic.adapters.skope_rules import _parse_skope_rule_string
 
     preds = _parse_skope_rule_string(rule_str, columns)
-    if preds:
-        return preds
-    # Fallback: single feature threshold patterns like "feature_0 <= 0.5"
-    parts = re.split(r"\s+and\s+", str(rule_str).strip(), flags=re.IGNORECASE)
     out: list[Predicate] = []
-    pattern = re.compile(
-        r"^(?P<col>[\w.]+)\s*(?P<op><=|>=|<|>|==|!=)\s*(?P<val>-?\d+(?:\.\d+)?)$"
-    )
-    for part in parts:
-        m = pattern.match(part.strip())
-        if not m:
-            continue
-        col_raw = m.group("col")
-        col = columns[int(col_raw.split("_")[-1])] if col_raw.startswith("feature_") and col_raw.split("_")[-1].isdigit() else col_raw
-        if col not in columns:
-            idx_match = re.search(r"(\d+)$", col_raw)
-            if idx_match:
-                idx = int(idx_match.group(1))
-                if 0 <= idx < len(columns):
-                    col = columns[idx]
-        out.append(
-            Predicate(column=str(col), op=m.group("op"), value=float(m.group("val")))  # type: ignore[arg-type]
-        )
+    for predicate in preds:
+        column = predicate.column
+        placeholder = re.fullmatch(r"(?:X_?|feature_)(\d+)", column)
+        if placeholder:
+            index = int(placeholder.group(1))
+            if index >= len(columns):
+                raise ValidationError(f"imodels feature index {index} is out of range.")
+            column = columns[index]
+        if column not in columns:
+            raise ValidationError(f"Unknown imodels rule feature {column!r}.")
+        out.append(Predicate(column=column, op=predicate.op, value=predicate.value))
     return tuple(out)
 
 

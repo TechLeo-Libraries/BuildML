@@ -5,6 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
+import numpy as np
+
 from buildml.symbolic.extras import z3_available
 from buildml.symbolic.rules import RuleKnowledgeBase
 
@@ -48,8 +50,9 @@ def verify_rule_constraints(
     """Check whether hard constraint rule antecedents are jointly satisfiable.
 
     Encodes numeric predicates from hard rules into a lightweight Z3 solver.
-    Skips when Z3 is missing, no hard constraints exist, or predicates are
-    non-numeric.
+    Preserves exact integer, decimal and rational bounds without a float
+    conversion. Skips when Z3 is missing, no hard constraints exist, or no
+    predicates can be encoded. Partial numeric checks disclose skipped predicates.
 
     Parameters
     ----------
@@ -108,16 +111,23 @@ def verify_rule_constraints(
         reals[col] = z3.Real(col)
 
     n_checked = 0
+    n_skipped = 0
     for rule in hard_rules:
         if not rule.antecedents:
             continue
         expr = None
         for pred in rule.antecedents:
-            if pred.column not in reals:
+            if pred.column not in reals or pred.op not in {"<", "<=", ">", ">=", "==", "!="}:
+                n_skipped += 1
                 continue
             var = reals[pred.column]
-            rhs = z3.RealVal(float(pred.value)) if pred.value is not None else None
-            if rhs is None:
+            try:
+                # Text retains integer/Decimal/Fraction precision; float() can
+                # collapse distinct valid bounds and reverse SAT outcomes.
+                value = int(pred.value) if isinstance(pred.value, (bool, np.bool_)) else pred.value
+                rhs = z3.RealVal(str(value))
+            except z3.Z3Exception:
+                n_skipped += 1
                 continue
             if pred.op == "<":
                 clause = var < rhs
@@ -154,6 +164,11 @@ def verify_rule_constraints(
     sat = result == z3.sat
     status = "sat" if sat else "unsat"
     warnings: list[str] = []
+    if n_skipped:
+        warnings.append(
+            f"Partial numeric check: {n_skipped} predicate(s) were not encoded; "
+            "only encoded numeric antecedents were checked."
+        )
     if not sat:
         warnings.append(
             "Hard constraint antecedents are jointly unsatisfiable: review rule set."

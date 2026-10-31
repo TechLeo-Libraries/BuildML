@@ -60,6 +60,8 @@ class RecommenderPlan:
     disclosures: tuple[str, ...] = ()
     warnings: tuple[str, ...] = ()
     config: dict[str, Any] = field(default_factory=dict)
+    # None denotes legacy bundles whose zero-valued interaction membership is unknown.
+    observed_mask_: np.ndarray | None = field(default=None, repr=False)
 
     def to_dict(self) -> dict[str, Any]:
         """Serialise the recommender plan for bundles and history logs.
@@ -91,6 +93,7 @@ class RecommenderPlan:
             "cold_start": self.cold_start,
             "min_rating": self.min_rating,
             "global_mean": self.global_mean_,
+            "has_observed_history": getattr(self, "observed_mask_", None) is not None,
             "disclosures": list(self.disclosures),
             "warnings": list(self.warnings),
             "config": dict(self.config),

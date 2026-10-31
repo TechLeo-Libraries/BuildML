@@ -11,7 +11,7 @@ from buildml.core.errors import MissingExtraError
 from buildml.dl.extras import torch_spec_available
 from buildml.symbolic.catalog import symbolic_capability_matrix
 from buildml.symbolic.extras import (
-    imodels_available,
+    imodels_spec_present,
     skope_rules_available,
     symbolic_industry_available,
 )
@@ -64,7 +64,7 @@ def test_skope_rules_industry_backend() -> None:
     assert fit.n_rules >= 1
 
 
-@pytest.mark.skipif(not imodels_available(), reason="imodels not installed")
+@pytest.mark.skipif(not imodels_spec_present(), reason="imodels not installed")
 def test_rulefit_industry_backend() -> None:
     session = _clf_session()
     fit = session.fit_symbolic(backend="industry", method="rulefit", max_depth=3)

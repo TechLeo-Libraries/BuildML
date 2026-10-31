@@ -9,6 +9,7 @@ pooled transformers) instead of returning a plausible-looking guess.
 
 from __future__ import annotations
 
+from numbers import Integral
 from typing import Any
 
 import numpy as np
@@ -52,7 +53,8 @@ def _coefficient_matrix(plan: NlpTextPlan) -> tuple[np.ndarray, str]:
     if head is None:
         raise ValidationError("The NLP plan has no fitted head.")
     if plan.estimator in LINEAR_ESTIMATORS:
-        coef = np.asarray(head.coef_, dtype=float)
+        raw_coef = head.coef_.toarray() if sparse.issparse(head.coef_) else head.coef_
+        coef = np.asarray(raw_coef, dtype=float)
         if coef.ndim == 1:
             coef = coef.reshape(1, -1)
         if coef.shape[0] == 1 and len(plan.classes_) == 2:
@@ -62,11 +64,8 @@ def _coefficient_matrix(plan: NlpTextPlan) -> tuple[np.ndarray, str]:
     if plan.estimator in NAIVE_BAYES_ESTIMATORS:
         log_prob = np.asarray(head.feature_log_prob_, dtype=float)
         centred = log_prob - log_prob.mean(axis=0, keepdims=True)
-        if plan.estimator == "complement_nb":
-            # ComplementNB weights are already complement-oriented (higher means
-            # more evidence *against* the class), so flip to keep the sign
-            # convention "positive contribution supports the class".
-            centred = -centred
+        # ComplementNB stores the negated complement log frequencies and uses
+        # them directly as class-score weights. Both NB heads keep that sign.
         return centred, "centred naive-Bayes log-likelihood x feature-value"
     raise ValidationError(
         f"estimator='{plan.estimator}' does not expose per-feature weights."
@@ -186,7 +185,8 @@ def interpret_text_prediction(
     Raises
     ------
     ~buildml.core.errors.ValidationError
-        ``top_k`` is below 1 or ``max_documents`` is negative; the backend is
+        Counts are not integers, ``top_k`` is below 1 or ``max_documents`` is
+        negative; the backend is
         not sklearn; the vectorizer is ``'hashing'``; the plan stored no feature
         names; the head exposes no per-feature weights; or ``target_class`` is
         not one of the fitted classes.
@@ -232,10 +232,11 @@ def interpret_text_prediction(
     buildml.nlp.evaluate.evaluate_text_classifier : Where the model fails.
     buildml.nlp.keyphrases.extract_keyphrases : Salient terms without a model.
     """
-    if top_k < 1:
-        raise ValidationError("top_k must be >= 1.")
-    if max_documents < 0:
-        raise ValidationError("max_documents must be >= 0.")
+    if isinstance(top_k, bool) or not isinstance(top_k, Integral) or top_k < 1:
+        raise ValidationError("top_k must be an integer >= 1.")
+    if isinstance(max_documents, bool) or not isinstance(max_documents, Integral) or max_documents < 0:
+        raise ValidationError("max_documents must be an integer >= 0.")
+    top_k, max_documents = int(top_k), int(max_documents)
 
     names = _require_invertible(plan)
     weights_matrix, method = _coefficient_matrix(plan)

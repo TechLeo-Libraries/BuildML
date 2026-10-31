@@ -18,6 +18,7 @@ from buildml.data.dataset import Dataset
 from buildml.data.splits import SplitPlan
 from buildml.federated.extras import require_flwr
 from buildml.federated.features import (
+    clone_estimator_with_params,
     frame_for_client,
     matrix_from_frame,
     set_linear_params,
@@ -156,14 +157,13 @@ class _BuildMLSklearnClient:
     ) -> tuple[float, int, dict[str, float]]:
         """Evaluate the global model on the client slice (Flower-shaped loss)."""
         from buildml.federated.features import encode_labels
-        from buildml.federated.fit import _make_estimator
 
         _ = config
         params = _ndarrays_to_linear(parameters, template=self.global_template)
-        est = _make_estimator(self.estimator_key, self.random_state)
-        set_linear_params(est, params)
-        if self.classes is not None and hasattr(est, "classes_"):
-            est.classes_ = np.asarray(self.label_encoder.classes_)
+        est = clone_estimator_with_params(
+            self.global_template, params,
+            classes=np.arange(len(self.classes)) if self.classes is not None else None,
+        )
         x = matrix_from_frame(self.partition.frame, self.columns)
         if self.task == "classification":
             y, _, _ = encode_labels(
@@ -328,7 +328,7 @@ def fit_flower(
             _ndarrays_to_linear(global_ndarrays, template=ctx.global_est),
         )
         if ctx.classes_tuple is not None and hasattr(ctx.global_est, "classes_"):
-            ctx.global_est.classes_ = np.asarray(ctx.label_encoder.classes_)
+            ctx.global_est.classes_ = np.arange(len(ctx.classes_tuple))
 
         mean_client = float(np.mean(client_metrics)) if client_metrics else None
         final_metric = mean_client

@@ -23,6 +23,30 @@ do not use that gate.
 | Pipeline bundle | `save_pipeline` / `load_pipeline` | plans + estimator + model card + schema contract | Dataset rows, full history, Torch/RAG |
 | Score helper | `predict_from_pipeline` | one-shot inference | Does not mutate Session |
 
+Categorical pipeline contracts distinguish raw labels from prepared numeric
+features. Ordinal encoding can keep the same column name in both stages:
+raw labels `"01"` and `"1"` remain distinct, while `apply_plans=False` expects
+their already encoded numeric values. Newly fitted encode plans retain their
+raw column types. Raw source columns remain required even when another encoded
+output reuses their name. Missing raw inputs and malformed numeric features
+raise `ValidationError`.
+
+For native encode plans, raw categorical inputs use the encoder's string
+conversion policy before replay. Nullable-string coercion must not merge the
+null labels learned at fitting. Null-category behavior was checked separately
+under Pandas 2.3.3 and 3.0.5, each using bundles fitted in that runtime. Ordinary
+nullable-string coercion still applies when no native encode plan consumes the
+column, and numeric contract checks retain their normal validation.
+
+Older bundles may already contain an input contract inferred from post-encoding
+types. Loading does not reconstruct missing raw type information. For an
+affected ordinal bundle, refit the encoder and model from the original raw data
+and save a new bundle, or rebuild an explicit schema contract from the known raw
+schema using `build_schema_contract` and pass it to `save_pipeline_bundle`.
+Include the encoded output names in `encoded_numeric_columns` so feature-stage
+validation remains numeric. Passing transformed values as raw labels can change
+their meaning; validate the replacement bundle against known predictions.
+
 A domain mixin that fits also has `save_bundle` / `load_bundle`. That
 file holds the domain's `*Plan` (estimator or factors, plus the
 disclosures that domain needs). It does not hold the dataset, split
@@ -95,6 +119,36 @@ restored.save_model("artifacts/model_only")
 `data_only=True` on load discards prior workflow semantics. Use it when
 you want the frame without replaying history.
 
+Saving successfully into a reused checkpoint directory replaces the recorded
+snapshot, including its preprocessing plans. Saving a session with no plans
+removes the previous plans file. Restore also honors an explicit
+`meta.has_plans=False` in checkpoints written by older versions that left an
+inactive file behind. Metadata without that flag retains the legacy behavior:
+loading a plans file requires `trusted=True`.
+
+When a partitioned native sidecar records a `parts` list, restore requires exactly
+those Parquet files. An added or missing partition raises `ValidationError`
+before native reattachment, preserving the current Session on a failed
+`reattach`. Recover the original files to resume the saved split, or use
+`data_only=True` to read `data/frame.parquet` as fresh ingest, then assign roles
+and create a new split. Split membership is positional; store a meaningful
+pandas index as an explicit column.
+
+`session.reattach(...)` replaces the current in-memory workflow state while
+keeping the Session object's identity. Models, domain plans, retrieval indexes,
+AI configuration and cached reports from the previous dataset are discarded.
+It restores the checkpoint's rows, split, history and preprocessing plans; load
+the appropriate trusted model/domain bundle explicitly before scoring.
+
+Historical fit/evaluate records remain part of the audit trail. They do not make
+those operations available when a required fitted model is absent. Workflow,
+explain and dry-run views report the current missing prerequisites. Dry-run
+accepts flat names and facade paths such as `classical.evaluate` or
+`session.graph.evaluate`, returning their canonical names in the report.
+Unknown names remain blocked steps with `status="unknown"`. Previews and
+printed audit summaries do not fit, transform or append history; risk rankings
+remain heuristic review cues.
+
 ---
 
 ## Use case: predict_from_pipeline on new rows
@@ -152,6 +206,17 @@ print(scored)
 
 Schema mismatches raise clearly. Resample plans do not synthesize
 inference rows.
+
+Pipeline scoring accepts native Polars and DuckDB datasets, including lazy
+Parquet scans and filtered or projected views. It materializes live rows when
+the Pandas cache is stale, then validates and replays the saved plans. Scoring
+uses an in-memory estimator matrix. The source rows, native handle, roles and
+fitted model or plans stay intact; the cache and inferred schema can refresh.
+The Session method also appends an audit record.
+
+Predictions retain the input Pandas index when it is available. Native file
+inputs use their materialized row order; keep record IDs in explicit columns
+when joining results back. Empty inputs still raise `ValidationError`.
 
 ---
 

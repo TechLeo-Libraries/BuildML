@@ -32,10 +32,11 @@ import numpy as np
 from scipy import sparse
 
 from buildml.core.errors import ValidationError
+from buildml.core.validation import _positive_integer
 from buildml.data.dataset import Dataset
 from buildml.data.splits import SplitPlan, assert_fit_partition
 from buildml.nlp.features import PartitionOrAll, documents_for, resolve_text_column
-from buildml.nlp.normalize import build_normalize_plan
+from buildml.nlp.normalize import _ngram_bounds, build_normalize_plan
 from buildml.nlp.results import (
     NlpTopicAssignResult,
     NlpTopicPlan,
@@ -271,10 +272,11 @@ def fit_topics(
         raise ValidationError(
             f"method={method!r} is not supported. Choose from {list(VALID_TOPIC_METHODS)}."
         )
+    n_topics = _positive_integer(n_topics, name="n_topics")
+    top_terms = _positive_integer(top_terms, name="top_terms")
+    max_iter = _positive_integer(max_iter, name="max_iter")
     if n_topics < 2:
         raise ValidationError("n_topics must be >= 2.")
-    if top_terms < 1:
-        raise ValidationError("top_terms must be >= 1.")
     assert_fit_partition(split_plan, "train")
     assert split_plan is not None
 
@@ -307,8 +309,8 @@ def fit_topics(
     vectorize_config = NlpVectorizeConfig(
         kind=kind,  # type: ignore[arg-type]
         analyzer="word",
-        ngram_range=(int(ngram_range[0]), int(ngram_range[1])),
-        max_features=max_features,
+        ngram_range=_ngram_bounds(ngram_range),
+        max_features=None if max_features is None else _positive_integer(max_features, name="max_features"),
         min_df=min_df,
         max_df=max_df,
         sublinear_tf=True,

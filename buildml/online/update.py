@@ -7,6 +7,7 @@ from typing import Any
 
 import numpy as np
 import pandas as pd
+from sklearn.base import clone
 
 from buildml.core.errors import ValidationError
 from buildml.data.dataset import Dataset
@@ -41,6 +42,8 @@ def partial_fit_online(
 
     Validation/test are never used for updates. Silent full refits are refused
     unless the plan was created with ``allow_refit_fallback=True`` (disclosed).
+    Refit fallback requires reconstructable Session train rows; external frames
+    are supported only by estimators with native ``partial_fit``.
 
     Parameters
     ----------
@@ -53,7 +56,8 @@ def partial_fit_online(
     n_rows:
         Rows to take from unused train indices; defaults to ``plan.chunk_size``.
     indices:
-        Optional explicit train-partition dataset indices.
+        Optional explicit train row positions (validation/test refused).
+        Rehearsing earlier positions never rewinds the sequential cursor.
     frame:
         Optional user-provided incremental frame with role-aligned columns.
 
@@ -152,7 +156,6 @@ def partial_fit_online(
                 dataset,
                 plan,
                 split_plan,
-                chunk=chunk,
                 chunk_indices=chunk_indices,
                 external=external,
                 allow_refit_fallback=allow_refit,
@@ -265,7 +268,6 @@ def _refit_cumulative(
     plan: OnlinePlan,
     split_plan: SplitPlan | None,
     *,
-    chunk: pd.DataFrame,
     chunk_indices: Sequence[Any],
     external: bool,
     allow_refit_fallback: bool,
@@ -284,14 +286,16 @@ def _refit_cumulative(
             warnings=warnings,
             disclosures=disclosures,
         )
-    frames: list[pd.DataFrame] = []
-    if split_plan is not None and plan.seen_train_indices:
-        full = dataset._ensure_pandas()
-        frames.append(full.loc[list(plan.seen_train_indices)])
-    frames.append(chunk)
-    combined = pd.concat(frames, axis=0)
-    # Drop duplicate indices when current chunk overlaps seen.
-    combined = combined[~combined.index.duplicated(keep="last")]
+    if external or any(h.get("kind") == "external_frame" for h in plan.update_history):
+        raise ValidationError(
+            "Cumulative refit cannot reconstruct external frame history. "
+            "Use an estimator with partial_fit for external updates, or fit a "
+            "batch model on an explicitly retained complete training dataset."
+        )
+    # Membership is positional: duplicate pandas labels still represent distinct
+    # real rows, while a position repeated across chunks is included just once.
+    positions = list(dict.fromkeys([*plan.seen_train_indices, *chunk_indices]))
+    combined = dataset._ensure_pandas().iloc[positions]
     x = matrix_from_frame(combined, list(plan.columns))
     if plan.task == "classification":
         y, _, _ = encode_classification_targets(
@@ -301,7 +305,8 @@ def _refit_cumulative(
         )
     else:
         y = regression_targets(combined[plan.target_column])
-    plan.estimator_.fit(x, y)
+    estimator = clone(plan.estimator_)
+    estimator.fit(x, y)
     msg = (
         f"REFIT FALLBACK (disclosed): estimator={plan.estimator_name!r} lacks "
         f"partial_fit; full .fit on n={len(combined)} cumulative rows "
@@ -309,4 +314,4 @@ def _refit_cumulative(
     )
     warnings.append(msg)
     disclosures.append(msg)
-    return True, "refit_fallback", plan.estimator_
+    return True, "refit_fallback", estimator

@@ -46,9 +46,10 @@ def suggest_query(
     batch_size:
         Optional override for how many indices to suggest this round.
     strategy:
-        Optional query strategy override; defaults to ``plan.strategy``.
+        Optional query strategy override; ``None`` uses ``plan.strategy``.
+        Invalid explicit values raise instead of using the stored strategy.
     backend:
-        Optional backend override; defaults to ``plan.backend``.
+        Optional backend override; ``None`` uses ``plan.backend``.
 
     Returns
     -------
@@ -85,9 +86,9 @@ def suggest_query(
                 f"Index {idx!r} is outside the train pool."
             )
 
-    resolved_strategy = strategy or plan.strategy
+    resolved_strategy = plan.strategy if strategy is None else strategy
     backend_arg = cast(
-        ActiveLearningBackendName | None, backend or plan.backend
+        ActiveLearningBackendName | None, plan.backend if backend is None else backend
     )
     resolved_backend, resolved_strategy = resolve_backend_strategy(
         backend=backend_arg, strategy=resolved_strategy

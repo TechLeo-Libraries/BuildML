@@ -274,9 +274,10 @@ def evaluate_clusters(
     compute_stability:
         When True, run bootstrap stability diagnostics.
     stability_runs:
-        Number of bootstrap runs for stability analysis.
+        Number of training subsamples for stability analysis, at least two.
     stability_sample_fraction:
-        Fraction of rows sampled per stability bootstrap.
+        Fraction in (0, 1] sampled without replacement. Agreement uses shared
+        training rows against the first subsample; holdout rows are excluded.
     compute_elbow:
         When True, compute elbow curve for k-means k selection diagnostics.
     elbow_k_min:

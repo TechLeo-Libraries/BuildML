@@ -129,20 +129,27 @@ def encode_labeled_targets(
         )
 
     labeled_values = y.loc[labeled_mask]
+    values = labeled_values.to_numpy()
+    raw_labels = label_encoder is None or getattr(label_encoder, "_buildml_raw_class_labels_", False)
+    if not raw_labels:
+        # Old model codes and query utilities use the original string ordering.
+        values = labeled_values.astype(str).to_numpy()
     if label_encoder is None:
         encoder = LabelEncoder()
-        encoder.fit(labeled_values.astype(str))
     else:
         encoder = label_encoder
-        # Allow new classes from user-provided labels after seed fit.
-        known = set(str(c) for c in encoder.classes_)
-        incoming = set(labeled_values.astype(str))
-        if not incoming.issubset(known):
+        if not pd.Series(values).isin(encoder.classes_).all():
+            # Full refit below rebuilds every model from the expanded vocabulary.
             encoder = LabelEncoder()
-            encoder.fit(labeled_values.astype(str))
-
-    y_codes = encoder.transform(labeled_values.astype(str))
-    classes = tuple(encoder.classes_)
+    try:
+        if not hasattr(encoder, "classes_"):
+            encoder.fit(values)
+        y_codes = encoder.transform(values)
+    except (TypeError, ValueError) as exc:
+        raise ValidationError("Active-learning class labels must use a consistent supported label type.") from exc
+    if raw_labels:
+        encoder._buildml_raw_class_labels_ = True
+    classes = tuple(value.item() if isinstance(value, np.generic) else value for value in encoder.classes_)
     if len(classes) < 2:
         raise ValidationError(
             "Active learning classification requires at least 2 classes among "
@@ -161,8 +168,8 @@ def encode_labeled_targets(
 def decode_predictions(pred_codes: np.ndarray, label_encoder: Any) -> list[Any]:
     """Map integer class codes back toward original label values.
 
-    Attempts numeric coercion when the inverse-transformed label looks like a
-    number so integer/float targets round-trip cleanly.
+    New encoders preserve raw identities. Unmarked legacy encoders retain their
+    original numeric guessing to preserve persisted-model behavior.
 
     Parameters
     ----------
@@ -178,6 +185,8 @@ def decode_predictions(pred_codes: np.ndarray, label_encoder: Any) -> list[Any]:
     """
     codes = np.asarray(pred_codes).astype(int)
     decoded = label_encoder.inverse_transform(codes)
+    if getattr(label_encoder, "_buildml_raw_class_labels_", False):
+        return [value.item() if isinstance(value, np.generic) else value for value in decoded]
     out: list[Any] = []
     for value in decoded:
         text = str(value)

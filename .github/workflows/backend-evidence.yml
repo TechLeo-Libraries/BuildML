@@ -1,0 +1,62 @@
+name: Backend evidence
+on:
+  workflow_dispatch:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  real-backends:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install tested backend groups
+        run: python -m pip install -e ".[dev,engines,timeseries,imbalanced,rl,tda,graph,probabilistic-industry,cbr-industry,serve]"
+      - name: Dependency consistency
+        run: python -m pip check
+      - name: Require and exercise real backends
+        run: python scripts/backend_support_report.py
+      - name: Scale and bounded serving checks
+        run: python scripts/verify_operational_limits.py --rows 100000 1000000 --soak-seconds 30
+      - name: Real HTTP process recovery and load contracts
+        run: |
+          python -m pip install psutil==7.2.2
+          python scripts/verify_http_reliability.py --seconds 60 --out artifacts/http-reliability.json
+          python scripts/verify_http_reliability.py --seconds 60 --continuous --out artifacts/http-continuous.json
+      - name: Bounded allocation failure containment
+        run: python scripts/verify_operational_limits.py --rows 100000 1000000 --soak-seconds 1 --memory-budget-mib 512 --out artifacts/memory-pressure.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: backend-evidence-${{ matrix.os }}
+          path: |
+            artifacts/backend-support/
+            artifacts/operational-limits.json
+            artifacts/http-reliability.json
+            artifacts/http-continuous.json
+            artifacts/memory-pressure.json
+  public-benchmarks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -e .
+      - uses: actions/cache@v4
+        with:
+          path: artifacts/public-data/
+          key: public-data-m4-scifact-v1
+      - run: python -m benchmarks.timeseries.m4_real --download
+      - run: python -m benchmarks.rag.beir_scifact --download
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: public-benchmark-evidence
+          path: artifacts/benchmarks/

@@ -32,6 +32,7 @@ sklearn.ensemble.StackingClassifier : Out-of-fold meta-features instead.
 from __future__ import annotations
 
 import logging
+from inspect import signature
 from typing import Any, Literal
 
 import numpy as np
@@ -54,6 +55,7 @@ def _meta_features_from_estimators(
     *,
     task: Literal["classification", "regression"],
     blend_method: Literal["predict", "predict_proba"],
+    class_prediction_codes: bool = False,
 ) -> np.ndarray:
     blocks: list[np.ndarray] = []
     for _, est in fitted:
@@ -71,8 +73,25 @@ def _meta_features_from_estimators(
             else:
                 blocks.append(proba)
         else:
-            pred = np.asarray(est.predict(X), dtype=float).reshape(-1, 1)
-            blocks.append(pred)
+            predicted = np.asarray(est.predict(X)).reshape(-1)
+            if task == "classification" and class_prediction_codes:
+                classes = np.asarray(getattr(est, "classes_", []))
+                try:
+                    numeric_vocabulary = bool(np.isfinite(classes.astype(float)).all())
+                except (TypeError, ValueError, OverflowError):
+                    numeric_vocabulary = False
+                if not numeric_vocabulary:
+                    # Decide from the entire train-fitted vocabulary so a
+                    # single-row request uses the same design as a batch.
+                    if classes.ndim != 1 or not len(classes):
+                        raise ValueError("Non-numeric predictions require fitted classes_.")
+                    matches = predicted[:, None] == classes[None, :]
+                    if not matches.any(axis=1).all():
+                        raise ValueError("Predictions contain labels outside fitted classes_.")
+                    blocks.append(matches.argmax(axis=1).astype(float).reshape(-1, 1))
+                    continue
+            # Preserve finite numeric features, including older bundles.
+            blocks.append(np.asarray(predicted, dtype=float).reshape(-1, 1))
     return np.hstack(blocks)
 
 
@@ -80,14 +99,20 @@ def _fit_one(est: Any, X: Any, y: Any, sample_weight: Any | None) -> Any:
     model = clone(est)
     if sample_weight is not None:
         try:
-            model.fit(X, y, sample_weight=sample_weight)
-            return model
-        except TypeError:
-            # Estimator rejects sample_weight; refit without it (sklearn-compatible fallback).
-            logger.debug(
-                "blending: estimator rejected sample_weight; fitting without weights",
-                exc_info=True,
-            )
+            fit_signature = signature(model.fit)
+        except (TypeError, ValueError):
+            # Unknown signatures must not turn internal failures into an
+            # apparently successful, unweighted fit.
+            fit_signature = None
+        if fit_signature is not None:
+            try:
+                fit_signature.bind(X, y, sample_weight=sample_weight)
+            except TypeError:
+                logger.debug("blending: estimator has no sample_weight parameter; fitting unweighted")
+                model.fit(X, y)
+                return model
+        model.fit(X, y, sample_weight=sample_weight)
+        return model
     model.fit(X, y)
     return model
 
@@ -289,6 +314,7 @@ class HoldoutBlendClassifier(ClassifierMixin, BaseEstimator):
             x_meta,
             task="classification",
             blend_method=self.blend_method,
+            class_prediction_codes=True,
         )
         if self.passthrough:
             meta_x = np.hstack([meta_x, np.asarray(x_meta, dtype=float)])
@@ -313,6 +339,7 @@ class HoldoutBlendClassifier(ClassifierMixin, BaseEstimator):
         self.n_features_in_ = int(np.asarray(X).shape[1])
         self.blend_holdout_rows_ = int(len(np.asarray(y_meta)))
         self.blend_base_rows_ = int(len(np.asarray(y_base)))
+        self.class_prediction_codes_ = True
         return self
 
     def _transform_meta(self, X: Any) -> np.ndarray:
@@ -322,6 +349,7 @@ class HoldoutBlendClassifier(ClassifierMixin, BaseEstimator):
             X,
             task="classification",
             blend_method=self.blend_method,
+            class_prediction_codes=bool(getattr(self, "class_prediction_codes_", False)),
         )
         if self.passthrough:
             meta = np.hstack([meta, np.asarray(X, dtype=float)])
@@ -354,6 +382,7 @@ class HoldoutBlendClassifier(ClassifierMixin, BaseEstimator):
         blend of four models is roughly four times the latency of one, which is
         the trade a blend makes.
         """
+        check_is_fitted(self, ["estimators_", "final_estimator_"])
         return self.final_estimator_.predict(self._transform_meta(X))
 
     def predict_proba(self, X: Any) -> np.ndarray:
@@ -388,6 +417,7 @@ class HoldoutBlendClassifier(ClassifierMixin, BaseEstimator):
         :func:`buildml.model.diagnostics.calibration_report` before treating
         them as probabilities rather than scores.
         """
+        check_is_fitted(self, ["estimators_", "final_estimator_"])
         if not hasattr(self.final_estimator_, "predict_proba"):
             raise AttributeError(
                 f"{type(self.final_estimator_).__name__} does not implement predict_proba"
@@ -600,4 +630,5 @@ class HoldoutBlendRegressor(RegressorMixin, BaseEstimator):
         has a physical floor: a count, a price, a duration. Clip afterwards if
         the domain requires it.
         """
+        check_is_fitted(self, ["estimators_", "final_estimator_"])
         return self.final_estimator_.predict(self._transform_meta(X))

@@ -1668,6 +1668,14 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
                 "type": "object",
                 "properties": {
                     "path": {"type": "string", "description": "Bundle directory."},
+                    "trusted": {
+                        "type": "boolean",
+                        "default": False,
+                        "description": (
+                            "Set true only for artifacts you created or fully trust. "
+                            "Allows deserialization of executable model payloads."
+                        ),
+                    },
                 },
                 "required": ["path"],
             },
@@ -1817,6 +1825,14 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
                 "type": "object",
                 "properties": {
                     "path": {"type": "string", "description": "Bundle directory."},
+                    "trusted": {
+                        "type": "boolean",
+                        "default": False,
+                        "description": (
+                            "Set true only for artifacts you created or fully trust. "
+                            "Allows deserialization of executable model payloads."
+                        ),
+                    },
                 },
                 "required": ["path"],
             },
@@ -1849,6 +1865,18 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
                             "Declare-style space: "
                             "{name: {type: float|int|categorical, ...}} or list choices."
                         ),
+                    },
+                    "preprocess": {
+                        "type": "object",
+                        "description": "Unfitted fold-local base recipe; required when searching recipe knobs.",
+                        "properties": {
+                            "impute": {"enum": [None, "mean", "median", "most_frequent", "constant"]},
+                            "scale": {"enum": [None, "standard", "minmax"]},
+                            "select": {"enum": [None, "variance", "univariate", "model"]},
+                            "select_k": {"type": "integer", "minimum": 1},
+                            "select_threshold": {"type": "number", "minimum": 0},
+                        },
+                        "additionalProperties": False,
                     },
                     "recipe_space": {
                         "type": "object",
@@ -1990,6 +2018,14 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
                 "type": "object",
                 "properties": {
                     "path": {"type": "string", "description": "Bundle directory."},
+                    "trusted": {
+                        "type": "boolean",
+                        "default": False,
+                        "description": (
+                            "Set true only for artifacts you created or fully trust. "
+                            "Allows deserialization of executable model payloads."
+                        ),
+                    },
                 },
                 "required": ["path"],
             },
@@ -2065,6 +2101,14 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
                 "type": "object",
                 "properties": {
                     "horizon": {"type": "integer", "description": "Steps ahead."},
+                    "future_exog": {
+                        "type": "array",
+                        "items": {"type": "array", "items": {"type": "number"}},
+                        "description": (
+                            "Known future values: one row per forecast step, columns in "
+                            "the fitted exog_columns order. Required for exogenous plans."
+                        ),
+                    },
                     "origin": {
                         "type": "string",
                         "enum": ["train_end", "validation_end", "test_end"],
@@ -2127,6 +2171,14 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
                 "type": "object",
                 "properties": {
                     "path": {"type": "string", "description": "Bundle directory."},
+                    "trusted": {
+                        "type": "boolean",
+                        "default": False,
+                        "description": (
+                            "Set true only for artifacts you created or fully trust. "
+                            "Allows deserialization of executable model payloads."
+                        ),
+                    },
                 },
                 "required": ["path"],
             },
@@ -2381,6 +2433,14 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
                 "type": "object",
                 "properties": {
                     "path": {"type": "string", "description": "Bundle directory."},
+                    "trusted": {
+                        "type": "boolean",
+                        "default": False,
+                        "description": (
+                            "Set true only for artifacts you created or fully trust. "
+                            "Allows deserialization of executable model payloads."
+                        ),
+                    },
                 },
                 "required": ["path"],
             },
@@ -2496,6 +2556,14 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
                 "type": "object",
                 "properties": {
                     "path": {"type": "string", "description": "Bundle directory."},
+                    "trusted": {
+                        "type": "boolean",
+                        "default": False,
+                        "description": (
+                            "Set true only for artifacts you created or fully trust. "
+                            "Allows deserialization of executable model payloads."
+                        ),
+                    },
                 },
                 "required": ["path"],
             },
@@ -2507,15 +2575,17 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
         ToolSpec(
             name="fit_ssl_pretext",
             description=(
-                "Fit a self-supervised masked tabular pretext on the train partition "
-                "(labels ignored). Not BERT-from-scratch. Write operation."
+                "Fit a self-supervised tabular pretext on training rows, ignoring labels. "
+                "Torch methods accept explicit epoch, batch and device budgets; "
+                "masked_tabular retains the legacy sklearn path."
             ),
             parameters={
                 "type": "object",
                 "properties": {
                     "method": {
                         "type": "string",
-                        "enum": ["masked_tabular"],
+                        "enum": ["masked_tabular", "simclr_tabular", "byol_tabular",
+                                 "vicreg_tabular", "mae_tabular", "vae_tabular"],
                     },
                     "latent_dim": {
                         "type": "integer",
@@ -2526,6 +2596,13 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
                         "description": "Fraction of features masked per view.",
                     },
                     "prefer_reduce_components": {"type": "boolean"},
+                    "columns": {"type": "array", "items": {"type": "string"}},
+                    "epochs": {"type": "integer"},
+                    "batch_size": {"type": "integer"},
+                    "learning_rate": {"type": "number"},
+                    "max_iter": {"type": "integer"},
+                    "random_state": {"type": "integer"},
+                    "device": {"type": "string", "enum": ["cpu", "cuda"]},
                 },
                 "required": [],
             },
@@ -2603,6 +2680,14 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
                 "type": "object",
                 "properties": {
                     "path": {"type": "string", "description": "Bundle directory."},
+                    "trusted": {
+                        "type": "boolean",
+                        "default": False,
+                        "description": (
+                            "Set true only for artifacts you created or fully trust. "
+                            "Allows deserialization of executable model payloads."
+                        ),
+                    },
                 },
                 "required": ["path"],
             },
@@ -2736,6 +2821,14 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
                 "type": "object",
                 "properties": {
                     "path": {"type": "string", "description": "Bundle directory."},
+                    "trusted": {
+                        "type": "boolean",
+                        "default": False,
+                        "description": (
+                            "Set true only for artifacts you created or fully trust. "
+                            "Allows deserialization of executable model payloads."
+                        ),
+                    },
                 },
                 "required": ["path"],
             },
@@ -2843,6 +2936,14 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
                 "type": "object",
                 "properties": {
                     "path": {"type": "string", "description": "Bundle directory."},
+                    "trusted": {
+                        "type": "boolean",
+                        "default": False,
+                        "description": (
+                            "Set true only for artifacts you created or fully trust. "
+                            "Allows deserialization of executable model payloads."
+                        ),
+                    },
                 },
                 "required": ["path"],
             },
@@ -2949,6 +3050,14 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
                 "type": "object",
                 "properties": {
                     "path": {"type": "string", "description": "Bundle directory."},
+                    "trusted": {
+                        "type": "boolean",
+                        "default": False,
+                        "description": (
+                            "Set true only for artifacts you created or fully trust. "
+                            "Allows deserialization of executable model payloads."
+                        ),
+                    },
                 },
                 "required": ["path"],
             },
@@ -3077,6 +3186,14 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
                 "type": "object",
                 "properties": {
                     "path": {"type": "string", "description": "Bundle directory."},
+                    "trusted": {
+                        "type": "boolean",
+                        "default": False,
+                        "description": (
+                            "Set true only for artifacts you created or fully trust. "
+                            "Allows deserialization of executable model payloads."
+                        ),
+                    },
                 },
                 "required": ["path"],
             },
@@ -3199,6 +3316,14 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
                 "type": "object",
                 "properties": {
                     "path": {"type": "string", "description": "Bundle directory."},
+                    "trusted": {
+                        "type": "boolean",
+                        "default": False,
+                        "description": (
+                            "Set true only for artifacts you created or fully trust. "
+                            "Allows deserialization of executable model payloads."
+                        ),
+                    },
                 },
                 "required": ["path"],
             },
@@ -3365,6 +3490,14 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
                 "type": "object",
                 "properties": {
                     "path": {"type": "string", "description": "Bundle directory."},
+                    "trusted": {
+                        "type": "boolean",
+                        "default": False,
+                        "description": (
+                            "Set true only for artifacts you created or fully trust. "
+                            "Allows deserialization of executable model payloads."
+                        ),
+                    },
                 },
                 "required": ["path"],
             },
@@ -3549,6 +3682,14 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
                 "type": "object",
                 "properties": {
                     "path": {"type": "string", "description": "Bundle directory."},
+                    "trusted": {
+                        "type": "boolean",
+                        "default": False,
+                        "description": (
+                            "Set true only for artifacts you created or fully trust. "
+                            "Allows deserialization of executable model payloads."
+                        ),
+                    },
                 },
                 "required": ["path"],
             },
@@ -3693,6 +3834,14 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
                 "type": "object",
                 "properties": {
                     "path": {"type": "string", "description": "Bundle directory."},
+                    "trusted": {
+                        "type": "boolean",
+                        "default": False,
+                        "description": (
+                            "Set true only for artifacts you created or fully trust. "
+                            "Allows deserialization of executable model payloads."
+                        ),
+                    },
                 },
                 "required": ["path"],
             },
@@ -3910,6 +4059,14 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
                 "type": "object",
                 "properties": {
                     "path": {"type": "string", "description": "Bundle directory."},
+                    "trusted": {
+                        "type": "boolean",
+                        "default": False,
+                        "description": (
+                            "Set true only for artifacts you created or fully trust. "
+                            "Allows deserialization of executable model payloads."
+                        ),
+                    },
                 },
                 "required": ["path"],
             },
@@ -3963,6 +4120,8 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
                     "distance_eps": {"type": "number"},
                     "random_state": {"type": "integer"},
                     "prefer_reduce_components": {"type": "boolean"},
+                    "torch_epochs": {"type": "integer", "minimum": 1},
+                    "device": {"type": "string"},
                 },
                 "required": [],
             },
@@ -4047,8 +4206,8 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
         ToolSpec(
             name="retain_cbr",
             description=(
-                "Retain newly labeled cases into case memory. Requires "
-                "source_disclosure. Refuses Session validation/test indices. "
+                "Retain labeled dataset rows into case memory. Requires "
+                "row_indices and source_disclosure. Refuses Session validation/test indices. "
                 "Write operation."
             ),
             parameters={
@@ -4059,9 +4218,15 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
                         "description": "Required provenance for new labels.",
                     },
                     "solution_column": {"type": "string"},
+                    "row_indices": {
+                        "type": "array",
+                        "minItems": 1,
+                        "items": {"anyOf": [{"type": "integer"}, {"type": "string"}]},
+                        "description": "Dataset index labels, not positional row offsets.",
+                    },
                     "allow_overlap_with_train": {"type": "boolean"},
                 },
-                "required": ["source_disclosure"],
+                "required": ["source_disclosure", "row_indices"],
             },
             confirm_policy=ConfirmPolicy.CONFIRM,
             session_method="retain_cbr",
@@ -4094,6 +4259,14 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
                 "type": "object",
                 "properties": {
                     "path": {"type": "string", "description": "Bundle directory."},
+                    "trusted": {
+                        "type": "boolean",
+                        "default": False,
+                        "description": (
+                            "Set true only for artifacts you created or fully trust. "
+                            "Allows deserialization of executable model payloads."
+                        ),
+                    },
                 },
                 "required": ["path"],
             },
@@ -4511,9 +4684,12 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
                         "type": "string",
                         "enum": ["bc_mlp", "gail_lite"],
                     },
+                    "columns": {"type": "array", "items": {"type": "string"}},
                     "action_column": {"type": "string"},
                     "env_id": {"type": "string"},
                     "n_epochs": {"type": "integer"},
+                    "total_timesteps": {"type": "integer", "minimum": 1},
+                    "allow_variable_horizon": {"type": "boolean"},
                     "random_state": {"type": "integer"},
                     "prefer_reduce_components": {"type": "boolean"},
                 },
@@ -4585,6 +4761,14 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
                 "type": "object",
                 "properties": {
                     "path": {"type": "string", "description": "Bundle directory."},
+                    "trusted": {
+                        "type": "boolean",
+                        "default": False,
+                        "description": (
+                            "Set true only for artifacts you created or fully trust. "
+                            "Allows deserialization of executable model payloads."
+                        ),
+                    },
                 },
                 "required": ["path"],
             },
@@ -4727,6 +4911,14 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
                 "type": "object",
                 "properties": {
                     "path": {"type": "string", "description": "Bundle directory."},
+                    "trusted": {
+                        "type": "boolean",
+                        "default": False,
+                        "description": (
+                            "Set true only for artifacts you created or fully trust. "
+                            "Allows deserialization of executable model payloads."
+                        ),
+                    },
                 },
                 "required": ["path"],
             },
@@ -4885,6 +5077,14 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
                 "type": "object",
                 "properties": {
                     "path": {"type": "string", "description": "Bundle directory."},
+                    "trusted": {
+                        "type": "boolean",
+                        "default": False,
+                        "description": (
+                            "Set true only for artifacts you created or fully trust. "
+                            "Allows deserialization of executable model payloads."
+                        ),
+                    },
                 },
                 "required": ["path"],
             },
@@ -5022,6 +5222,14 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
                 "type": "object",
                 "properties": {
                     "path": {"type": "string", "description": "Bundle directory."},
+                    "trusted": {
+                        "type": "boolean",
+                        "default": False,
+                        "description": (
+                            "Set true only for artifacts you created or fully trust. "
+                            "Allows deserialization of executable model payloads."
+                        ),
+                    },
                 },
                 "required": ["path"],
             },
@@ -5109,11 +5317,20 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
             name="rank",
             description=(
                 "Order items for queries with the frozen tabular ranker "
-                "(top-K item ids + scores per query)."
+                "(top-K item ids + scores per query). Explicit query_ids select "
+                "the full dataset unless partition is also provided."
             ),
             parameters={
                 "type": "object",
                 "properties": {
+                    "query_ids": {
+                        "type": ["array", "null"],
+                        "items": {"type": ["string", "number", "boolean"]},
+                        "description": (
+                            "Explicit query order. With partition, selects only from that "
+                            "partition; otherwise selects from the full dataset."
+                        ),
+                    },
                     "partition": {
                         "type": "string",
                         "enum": ["train", "validation", "test", "all"],
@@ -5179,6 +5396,14 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
                 "type": "object",
                 "properties": {
                     "path": {"type": "string", "description": "Bundle directory."},
+                    "trusted": {
+                        "type": "boolean",
+                        "default": False,
+                        "description": (
+                            "Set true only for artifacts you created or fully trust. "
+                            "Allows deserialization of executable model payloads."
+                        ),
+                    },
                 },
                 "required": ["path"],
             },
@@ -5347,6 +5572,14 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
                 "type": "object",
                 "properties": {
                     "path": {"type": "string", "description": "Bundle directory."},
+                    "trusted": {
+                        "type": "boolean",
+                        "default": False,
+                        "description": (
+                            "Set true only for artifacts you created or fully trust. "
+                            "Allows deserialization of executable model payloads."
+                        ),
+                    },
                 },
                 "required": ["path"],
             },
@@ -5515,6 +5748,14 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
                 "type": "object",
                 "properties": {
                     "path": {"type": "string", "description": "Bundle directory."},
+                    "trusted": {
+                        "type": "boolean",
+                        "default": False,
+                        "description": (
+                            "Set true only for artifacts you created or fully trust. "
+                            "Allows deserialization of executable model payloads."
+                        ),
+                    },
                 },
                 "required": ["path"],
             },
@@ -5586,13 +5827,25 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
             name="sample_synthetic",
             description=(
                 "Sample from a frozen synthesizer. Default returns a Frame; "
-                "merge_mode=extend_train appends to train with provenance."
+                "merge_mode=extend_train appends to train with provenance. "
+                "Only native gaussian_copula supports equality conditions."
             ),
             parameters={
                 "type": "object",
                 "properties": {
                     "n": {"type": "integer"},
                     "random_state": {"type": "integer"},
+                    "condition": {
+                        "type": ["object", "null"],
+                        "additionalProperties": {
+                            "type": ["string", "number", "boolean", "null"],
+                        },
+                        "description": (
+                            "Column-to-value equality conditions for native gaussian_copula. "
+                            "Values retain their types; null selects missing values. "
+                            "Unsatisfiable conditions fail instead of returning other rows."
+                        ),
+                    },
                     "merge_mode": {
                         "type": "string",
                         "enum": ["none", "extend_train"],
@@ -5668,6 +5921,14 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
                 "type": "object",
                 "properties": {
                     "path": {"type": "string", "description": "Bundle directory."},
+                    "trusted": {
+                        "type": "boolean",
+                        "default": False,
+                        "description": (
+                            "Set true only for artifacts you created or fully trust. "
+                            "Allows deserialization of executable model payloads."
+                        ),
+                    },
                 },
                 "required": ["path"],
             },

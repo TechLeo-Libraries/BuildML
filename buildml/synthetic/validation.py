@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from numbers import Real
 from typing import Any
 
 import numpy as np
@@ -10,6 +11,7 @@ import pandas as pd
 
 from buildml.core.errors import ValidationError
 from buildml.synthetic.extras import great_expectations_available
+from buildml.synthetic.models import _category_key
 from buildml.synthetic.results import SynthesizerPlan
 
 
@@ -70,6 +72,22 @@ ValidationError
         raise ValidationError("No SynthesizerPlan for validate_synthetic.")
     if frame is None or frame.empty:
         raise ValidationError("Cannot validate an empty synthetic frame.")
+    if not frame.columns.is_unique:
+        raise ValidationError("Cannot validate synthetic frame with duplicate columns.")
+    for name, value, upper in (
+        ("null_rate_tolerance", null_rate_tolerance, 1),
+        ("categorical_oov_tolerance", categorical_oov_tolerance, 1),
+        ("numeric_range_slack", numeric_range_slack, None),
+    ):
+        if (
+            isinstance(value, (bool, np.bool_))
+            or not isinstance(value, Real)
+            or not np.isfinite(value)
+            or value < 0
+            or (upper is not None and value > upper)
+        ):
+            raise ValidationError(f"{name} must be finite and non-negative"
+                                  + (" and at most 1." if upper is not None else "."))
 
     cols = [c for c in plan.columns if c in frame.columns]
     missing = [c for c in plan.columns if c not in frame.columns]
@@ -103,11 +121,19 @@ ValidationError
                 f"train {train_null_rate:.3f} beyond tolerance {null_rate_tolerance}."
             )
 
-        if kind == "categorical" and spec is not None and spec.categories:
-            vocab = set(spec.categories)
-            oov = series.astype("string").fillna("__NA__").map(
-                lambda v, _vocab=vocab: v not in _vocab
-            )
+        if kind == "categorical" and spec is not None:
+            raw_categories = getattr(spec, "raw_categories_", None)
+            if raw_categories is None:
+                vocab = set(spec.categories)
+                oov = series.notna() & ~series.astype("string").isin(vocab)
+                warnings.append(
+                    f"Legacy categorical vocabulary for {col!r} uses text labels; "
+                    "refit the synthesizer to validate scalar type identities."
+                )
+            else:
+                typed_vocab = {_category_key(value) for value in raw_categories}
+                oov = series.map(lambda value, vocab=typed_vocab:
+                                 not pd.isna(value) and _category_key(value) not in vocab)
             oov_rate = float(oov.mean())
             metrics[f"oov_rate::{col}"] = oov_rate
             oov_ok = oov_rate <= categorical_oov_tolerance
@@ -120,6 +146,19 @@ ValidationError
                 )
         elif kind in {"continuous", "integer"}:
             numeric = pd.to_numeric(series, errors="coerce")
+            if pd.api.types.is_complex_dtype(numeric.dtype):
+                numeric = pd.Series(np.nan, index=series.index)
+            finite = numeric.notna() & np.isfinite(numeric)
+            valid = series.isna() | finite
+            checks[f"numeric_values::{col}"] = bool(valid.all())
+            if not valid.all():
+                warnings.append(f"Column {col!r} contains non-numeric or non-finite values.")
+            if kind == "integer":
+                checks[f"integer_values::{col}"] = bool(
+                    (series.isna() | (finite & (numeric % 1 == 0))).all()
+                )
+            # Invalid values fail explicitly; they must not poison summary metrics.
+            numeric = numeric.where(finite)
             if numeric.notna().any():
                 metrics[f"mean::{col}"] = float(numeric.mean())
                 if spec is not None and spec.extras.get("train_min") is not None:
@@ -134,7 +173,7 @@ ValidationError
                     if oor_rate > categorical_oov_tolerance:
                         failed += 1
 
-    ge_checks = 0
+    ge_checks: dict[str, bool] = {}
     if run_great_expectations and great_expectations_available():
         ge_checks, ge_failed, ge_warn = _run_ge_lite(frame, plan.columns)
         checks.update(ge_checks)
@@ -146,7 +185,8 @@ ValidationError
     disclosures = [
         f"Validated n={len(frame)} synthetic rows against plan method={plan.method!r}.",
         "Built-in checks: column presence, null rates, categorical vocabulary, "
-        "numeric range slack: not a privacy or leakage audit.",
+        "finite numeric values, integer constraints and numeric range slack: "
+        "not a privacy or leakage audit.",
     ]
     if ge_checks:
         disclosures.append(
@@ -228,6 +268,7 @@ tuple[Any, ...]
                 n_null=spec.n_null,
                 categories=spec.categories,
                 extras=extras,
+                raw_categories_=getattr(spec, "raw_categories_", None),
             )
         )
     return tuple(enriched)

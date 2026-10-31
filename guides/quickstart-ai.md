@@ -185,6 +185,15 @@ for step in plan.steps:
 
 Plans are proposals. Nothing executes until you explicitly confirm.
 
+Provider responses are checked as a whole before any steps are returned. Invalid
+JSON or malformed fields produce an empty `steps` tuple with the reason in
+`plan.limitations`; usage, the egress manifest and `raw_response` remain available.
+Check those fields before executing or interpreting an empty plan as success.
+Optional text lists may be omitted or null. Each step's `parameters` object keeps
+the proposed named arguments, such as a split seed or estimator. The executor
+still checks those arguments against the tool schema and requires confirmation
+for writes. A structurally valid plan does not establish that its advice is sound.
+
 ## Execute: propose → confirm → execute
 
 `session.ai.execute` follows a two-phase pattern:

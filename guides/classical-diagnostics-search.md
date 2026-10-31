@@ -18,6 +18,26 @@ Use validation to select thresholds, features, and model families.
 Use test to assess the final choice. BuildML cannot stop you from using test results to select a model in your
 own notebook. It can refuse CV after Session-global fitted preprocessing.
 
+`error_slices(by=["region", "tier"], partition="validation")` reports observed
+combinations only, including missing group values as a distinct segment. Unused
+categorical levels do not increase the unique or omitted segment counts.
+`max_segments` keeps the most frequent segments; `min_segment_n` separates
+small groups from the primary ranking. Both limits require positive integers.
+Mixed values such as integer `1` and string `"1"` that share a report key must
+be recoded consistently first. Missing scoring targets and nonfinite or
+nonnumeric regression targets refuse before prediction or HTML export; an
+unseen classification label is counted as an error. A failed request preserves
+the prior report, history and HTML. Reevaluate existing models to correct earlier
+reports; no refit is required. Segment differences remain observational.
+
+For `nested_cv_score`, `inner_search` accepts `auto`, `grid`, `randomized`,
+`optuna`, or `evolutionary`. Unknown names raise `ValidationError` before
+fitting. Keep both estimator and recipe spaces in the same search family:
+`param_grid` with `recipe_grid`, or `param_distributions` with
+`recipe_distributions`. Mixing grid and randomized spaces is refused so that
+neither space can be silently ignored. Optuna/evolutionary use `param_space`
+and `recipe_space` instead.
+
 [Classical end-to-end](classical-end-to-end.md) ·
 Runnable script: [`examples/evolutionary_search_loop.py`](../examples/evolutionary_search_loop.py)
 
@@ -243,6 +263,20 @@ thresholds on validation. Confirm the fixed policy on test.
 
 `evaluate(...)` returns metrics and diagnostics. `eval_plots(...)`
 requires `buildml[viz]` and produces task-specific plots.
+
+Classification confusion axes follow the fitted classifier's `classes_` order;
+the second fitted class defines binary positives throughout the board. Numeric
+codes such as `2` and `10` retain that order. Calibration ECE is the
+sample-weighted absolute gap in each nonempty quantile bin, matching
+`session.calibration(...)` with the same bin settings. The board records
+`ece_method` and `calibration_bin_counts` beside the score.
+
+When a partition contains only one fitted class, ROC and precision-recall
+panels are skipped with reasons. Confusion, calibration and threshold panels
+remain available when their other requirements hold. Missing target labels or
+labels outside the fitted vocabulary refuse before report replacement or
+export. Saved classifiers retain predictions; newly generated boards use
+these corrected diagnostics. Historical report files are not rewritten.
 
 ---
 

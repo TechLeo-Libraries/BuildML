@@ -24,6 +24,7 @@ buildml.rl.tabular : Value-based control without a neural network.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from numbers import Integral
 from typing import Any, Literal
 
 import numpy as np
@@ -133,6 +134,11 @@ def _make_sb3_model(
     )
 
 
+def _positive_count(value: int, name: str) -> None:
+    if isinstance(value, bool) or not isinstance(value, Integral) or value < 1:
+        raise ValidationError(f"{name} must be a positive integer")
+
+
 def train_sb3_policy(
     *,
     env_id: str = "CartPole-v1",
@@ -160,9 +166,10 @@ def train_sb3_policy(
         experience and needs fewer interactions, at the cost of being harder to
         tune. ``'a2c'`` is faster per step and less stable.
     total_timesteps:
-        The interaction budget: the single setting that most determines
-        whether the policy learns anything. Deep RL needs far more steps than
-        feels reasonable; 20,000 is a starting point, not a sufficient one.
+        Requested interaction count. SB3 finishes rollout blocks, so execution
+        may exceed this count; returned metrics and policy metadata report the
+        actual steps and disclose the requested count separately. Deep RL needs
+        far more steps than feels reasonable; 20,000 is a starting point.
     max_steps:
         Per-episode cap for the evaluation probe.
     learning_rate:
@@ -207,6 +214,8 @@ def train_sb3_policy(
     --------
     evaluate_sb3_policy : A proper measurement of the trained policy.
     """
+    _positive_count(total_timesteps, "total_timesteps")
+    _positive_count(max_steps, "max_steps")
     gymnasium = require_gymnasium(feature="fit_rl(mode='gym_sb3')")
     require_stable_baselines3(feature="fit_rl(mode='gym_sb3')")
     disclosures = [
@@ -248,6 +257,12 @@ def train_sb3_policy(
             seed=random_state,
         )
         model.learn(total_timesteps=int(total_timesteps))
+        actual_timesteps = int(model.num_timesteps)
+        disclosures.append(
+            f"Training requested {total_timesteps} interactions and executed {actual_timesteps}."
+        )
+        if actual_timesteps != total_timesteps:
+            warnings.append("SB3 completed rollout blocks beyond the requested interaction count; actual executed steps are reported.")
 
         # Quick in-env return probe for train metrics.
         eval_metrics = evaluate_sb3_policy(
@@ -257,7 +272,7 @@ def train_sb3_policy(
                 algorithm=algorithm,
                 obs_dim=obs_dim,
                 n_actions=n_actions,
-                total_timesteps=total_timesteps,
+                total_timesteps=actual_timesteps,
             ),
             n_episodes=10,
             max_steps=max_steps,
@@ -273,11 +288,12 @@ def train_sb3_policy(
         algorithm=algorithm,
         obs_dim=obs_dim,
         n_actions=n_actions,
-        total_timesteps=int(total_timesteps),
+        total_timesteps=actual_timesteps,
         disclosures=tuple(disclosures),
     )
     metrics = {
-        "total_timesteps": float(total_timesteps),
+        "total_timesteps": float(actual_timesteps),
+        "requested_timesteps": float(total_timesteps),
         "n_eval_episodes": eval_metrics.get("n_eval_episodes", 0.0),
         "mean_return": eval_metrics.get("mean_return", float("nan")),
         "std_return": eval_metrics.get("std_return", float("nan")),
@@ -348,6 +364,8 @@ def evaluate_sb3_policy(
     --------
     train_sb3_policy : Produce the policy.
     """
+    _positive_count(n_episodes, "n_episodes")
+    _positive_count(max_steps, "max_steps")
     gymnasium = require_gymnasium(feature="evaluate_rl(mode='gym_sb3')")
     resolved_env = env_id or policy.env_id
     env = gymnasium.make(resolved_env)

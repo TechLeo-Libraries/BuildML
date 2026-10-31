@@ -25,6 +25,16 @@ includes holdout rows and discloses that.
 Focused calls: `session.timeseries.decompose` and
 `session.timeseries.diagnostics`.
 
+Diagnostics require a finite, real, nonconstant one-dimensional series and
+positive integer `acf_lags`/`pacf_lags`, capped by the available sample size.
+Invalid requests raise `ValidationError` before backend work. ADF accepts
+`adf_regression='n'`, `'c'`, `'ct'`, or `'ctt'`; KPSS accepts
+`kpss_regression='c'` or `'ct'`. ADF's null is a unit root conditional on its
+selected deterministic terms. KPSS tests level stationarity with `'c'` and
+trend stationarity with `'ct'`. Reports record these choices. Interpret both
+tests together; numerical test failures remain disclosed as unavailable, and
+sample results do not establish stationarity for future observations.
+
 Core (no extra): moving-average decompose, numpy ACF/PACF, CUSUM
 changepoints, rolling stats. With `buildml[timeseries]`: STL, classical
 decompose, ADF/KPSS, Welch spectrum, PELT/binseg.

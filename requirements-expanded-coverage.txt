@@ -1,0 +1,41 @@
+# Reproduce the expanded Linux assessment; CPU Torch is installed first in CI.
+-c requirements-expanded-coverage-constraints.txt
+-e .[dev,engines,pretrained,rag,ssl,graph,timeseries,imbalanced,rl,tda,unsupervised,cbr-industry,probabilistic-industry,optimize-industry,online-industry,federated-industry,synthetic-industry,recommenders-industry,onnx,shap,excel,optuna,viz,graph-pyg,kg-industry,causal-industry,activelearning-industry]
+econml==0.17.0
+dowhy==0.14
+imodels==3.0.4
+flaml==2.7.0
+pyod==3.6.7
+lightgbm==4.7.0
+xgboost==3.0.5
+z3-solver==5.1.0.0
+langdetect==1.0.9
+
+# Execute ONNX consumer checks rather than skipping their runtime dependency.
+onnxruntime==1.31.0
+
+# Require real optional active-learning host consumers in the full assessment.
+scikit-activeml==1.0.1
+
+# Modern SB3 is independent of the separately compatible imitation profile.
+stable-baselines3==2.7.0
+
+# Real offline LangChain adapter consumers (no provider account required).
+langchain-classic==1.0.8
+langchain-community==0.4.2
+langchain-core==1.6.12
+
+# Real Prophet forecasting consumers use the packaged CmdStan solver.
+prophet==1.5.0
+cmdstanpy==1.3.0
+holidays==0.107
+stanio==0.5.1
+
+# Real N-BEATS consumers; retain the existing Torch 2.7.1 assessment pin.
+neuralforecast==3.1.2
+coreforecast==0.0.19
+pytorch-lightning==2.6.6
+lightning-utilities==0.15.3
+torchmetrics==1.9.0
+utilsforecast==0.2.17
+ray[tune]==2.59.0

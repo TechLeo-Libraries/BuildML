@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from numbers import Real
+
 import numpy as np
 
 from buildml.core.errors import ValidationError
@@ -44,9 +46,27 @@ def detect_changepoints(
     Raises
     ------
     ValidationError
-        When ``y`` has fewer than four points or ``method`` is unsupported.
+        When the series is not finite, real and one-dimensional, has fewer
+        than four points, the penalty is not finite and non-negative, or the
+        method is unsupported.
     """
-    y = np.asarray(y, dtype=float).reshape(-1)
+    if isinstance(penalty, bool) or not isinstance(penalty, Real):
+        raise ValidationError("penalty must be a finite non-negative real number")
+    try:
+        penalty = float(penalty)
+    except (TypeError, ValueError, OverflowError) as exc:
+        raise ValidationError("penalty must be a finite non-negative real number") from exc
+    if not np.isfinite(penalty) or penalty < 0:
+        raise ValidationError("penalty must be a finite non-negative real number")
+    try:
+        values = np.asarray(y)
+        if values.ndim != 1 or np.iscomplexobj(values):
+            raise ValueError("expected a real one-dimensional vector")
+        y = np.asarray(values, dtype=float)
+        if not np.isfinite(y).all():
+            raise ValueError("non-finite observations")
+    except (TypeError, ValueError) as exc:
+        raise ValidationError("series must be a finite real one-dimensional vector") from exc
     n = int(y.shape[0])
     if n < 4:
         raise ValidationError("Need at least 4 points for changepoint detection")
@@ -79,12 +99,11 @@ def detect_changepoints(
         require_ruptures(feature="Binary segmentation changepoint detection")
         import ruptures as rpt
 
-        n_bkps = max(1, min(5, n // 10))
         algo = rpt.Binseg(model="l2", min_size=2, jump=1).fit(y.reshape(-1, 1))
-        bkps = algo.predict(n_bkps=n_bkps)
+        bkps = algo.predict(pen=float(penalty))
         indices = tuple(int(b) for b in bkps[:-1])
         disclosures.append(
-            f"Binary segmentation via ruptures (n_bkps={n_bkps}, L2 cost)."
+            f"Binary segmentation via ruptures (penalty={penalty}, L2 cost)."
         )
         used = "binseg"
     elif method == "cusum":

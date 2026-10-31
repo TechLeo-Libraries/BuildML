@@ -11,6 +11,7 @@ import joblib
 from buildml._version import __version__
 from buildml.core.errors import ValidationError
 from buildml.core.serialization import joblib_load_trusted
+from buildml.online.adapters.river import RiverOnlineWrapper
 from buildml.online.results import OnlineEvalResult, OnlineFitResult, OnlinePlan
 
 BUNDLE_FORMAT = "buildml.online_bundle.v1"
@@ -63,6 +64,7 @@ def save_online_bundle(
     """
     if plan is None:
         raise ValidationError("No OnlinePlan to save.")
+    _validate_river_vocabulary(plan)
     destination = Path(path)
     destination.mkdir(parents=True, exist_ok=True)
     payload = {"plan": plan}
@@ -118,6 +120,7 @@ def load_online_bundle(path: str | Path, *, trusted: bool = False) -> OnlinePlan
         )
     loaded = joblib_load_trusted(plan_path, trusted=trusted, artifact="joblib plan")
     if isinstance(loaded, OnlinePlan):
+        _validate_river_vocabulary(loaded)
         return loaded
     if not isinstance(loaded, dict) or "plan" not in loaded:
         raise ValidationError(
@@ -126,4 +129,10 @@ def load_online_bundle(path: str | Path, *, trusted: bool = False) -> OnlinePlan
     plan = loaded["plan"]
     if not isinstance(plan, OnlinePlan):
         raise ValidationError("Loaded plan object is not an OnlinePlan")
+    _validate_river_vocabulary(plan)
     return plan
+
+
+def _validate_river_vocabulary(plan: OnlinePlan) -> None:
+    if isinstance(plan.estimator_, RiverOnlineWrapper):
+        plan.estimator_._validate_classes(plan.classes_)

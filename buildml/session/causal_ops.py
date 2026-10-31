@@ -106,9 +106,9 @@ def declare_causal_assumptions_op(
         estimand=estimand,  # type: ignore[arg-type]
         identification=identification,  # type: ignore[arg-type]
         instruments=tuple(str(c) for c in (instruments or ())),
-        acknowledge_unconfoundedness=bool(acknowledge_unconfoundedness),
-        acknowledge_positivity=bool(acknowledge_positivity),
-        allow_empty_confounders=bool(allow_empty_confounders),
+        acknowledge_unconfoundedness=acknowledge_unconfoundedness,
+        acknowledge_positivity=acknowledge_positivity,
+        allow_empty_confounders=allow_empty_confounders,
     )
     assumptions.validate()
     session._causal_assumptions = assumptions

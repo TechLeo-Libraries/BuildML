@@ -10,7 +10,7 @@ import pandas as pd
 from buildml.core.errors import ValidationError
 from buildml.data.dataset import Dataset
 from buildml.data.splits import PartitionName, SplitPlan, frame_for_partition
-from buildml.symbolic.features import decode_predictions, matrix_from_frame
+from buildml.symbolic.features import classification_accuracy, decode_predictions, matrix_from_frame
 from buildml.symbolic.results import (
     NeuroSymbolicPlan,
     SymbolicPlan,
@@ -21,6 +21,7 @@ from buildml.symbolic.rules import (
     evaluate_predicate,
     fire_rules,
     rule_feature_matrix,
+    validate_rule_columns,
 )
 
 PartitionOrAll = PartitionName | Literal["all"]
@@ -56,8 +57,16 @@ def predict_symbolic(
     -------
     SymbolicPredictResult
         Predictions and optional explanation traces.
+
+    Raises
+    ------
+    ValidationError
+        If rule inputs are missing or include the fitted target column.
+        Stored target-dependent rule bases must be rebuilt and refitted;
+        they cannot supply independent predictions.
     """
     frame, indices = _partition_frame(dataset, split_plan, partition)
+    validate_rule_columns(plan.knowledge_base, list(frame.columns), target_column=plan.target_column)
     preds, traces, _ = fire_rules(frame, plan.knowledge_base, row_indices=indices)
     if not return_traces:
         traces = []
@@ -69,7 +78,7 @@ def predict_symbolic(
         predictions=tuple(preds),
         traces=tuple(traces),
         disclosures=plan.disclosures,
-        warnings=(),
+        warnings=plan.warnings,
     )
 
 
@@ -103,8 +112,16 @@ def predict_neuro_symbolic(
     -------
     SymbolicPredictResult
         Final predictions, neural baseline, traces, and repair counts.
+
+    Raises
+    ------
+    ValidationError
+        If rule inputs are missing or include the fitted target column.
+        This includes supplied or previously saved knowledge bases; checks
+        run before base-model prediction or rule-feature construction.
     """
     frame, indices = _partition_frame(dataset, split_plan, partition)
+    validate_rule_columns(plan.knowledge_base, list(frame.columns), target_column=plan.target_column)
     x = matrix_from_frame(frame, list(plan.columns))
     mode = plan.mode
 
@@ -154,7 +171,11 @@ def predict_neuro_symbolic(
         neural_predictions=tuple(neural_preds),
         n_repaired=n_repaired,
         disclosures=plan.disclosures,
-        warnings=(),
+        warnings=plan.warnings + (
+            ("Legacy symbolic classifier uses string label encoding; refit to preserve raw class identities.",)
+            if plan.task == "classification" and not getattr(plan.label_encoder_, "_buildml_raw_class_labels_", False)
+            else ()
+        ),
     )
 
 
@@ -205,7 +226,7 @@ def _apply_symbolic_overlay(
                     "constraint",
                 }:
                     # Hard overlay / repair: override neural prediction.
-                    if str(pred) != str(rule.consequent):
+                    if classification_accuracy([pred], [rule.consequent], legacy_labels=not plan.config.get("raw_class_labels", False)) != 1.0:
                         if repair or rule.kind == "constraint":
                             repaired = True
                             notes.append(
@@ -239,7 +260,7 @@ def _apply_symbolic_overlay(
                 else:
                     # Soft classification: override when strength*soft >= 0.5
                     if soft * rule.strength >= 0.5:
-                        if str(pred) != str(rule.consequent):
+                        if classification_accuracy([pred], [rule.consequent], legacy_labels=not plan.config.get("raw_class_labels", False)) != 1.0:
                             notes.append(
                                 f"Soft rule {rule.rule_id} preferred "
                                 f"(strength={soft * rule.strength:.3f})."

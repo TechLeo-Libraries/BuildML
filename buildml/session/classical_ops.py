@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from numbers import Integral
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal, Sequence, cast
 
@@ -774,7 +775,7 @@ def cv_score(
         {
             "estimator": type(estimator).__name__,
             "task": task,
-            "cv": cv if isinstance(cv, int) else type(cv).__name__,
+            "cv": int(cv) if isinstance(cv, Integral) else type(cv).__name__,
             "cv_strategy": cv_strategy,
             "scoring_metric": scoring_metric,
             "fold_preprocess": None if preprocess is None else preprocess.to_dict(),
@@ -996,13 +997,14 @@ def nested_cv_score(
         {
             "estimator": type(estimator).__name__,
             "task": task,
-            "outer_cv": outer_cv if isinstance(outer_cv, int) else type(outer_cv).__name__,
-            "inner_cv": inner_cv if isinstance(inner_cv, int) else type(inner_cv).__name__,
+            "outer_cv": int(outer_cv) if isinstance(outer_cv, Integral) else type(outer_cv).__name__,
+            "inner_cv": int(inner_cv) if isinstance(inner_cv, Integral) else type(inner_cv).__name__,
             "cv_strategy": cv_strategy,
             "scoring_metric": scoring_metric,
             "search_method": result.search_method,
             "inner_search": inner_search,
-            "n_trials": n_trials if result.search_method in {"optuna", "evolutionary"} else None,
+            "n_iter": int(n_iter) if result.search_method == "randomized" else None,
+            "n_trials": int(n_trials) if result.search_method in {"optuna", "evolutionary"} else None,
             "population_size": population_size
             if result.search_method == "evolutionary"
             else None,
@@ -1183,7 +1185,7 @@ def grid_search(
             if recipe_grid is None
             else {k: list(v) for k, v in recipe_grid.items()},
             "task": task,
-            "cv": cv if isinstance(cv, int) else type(cv).__name__,
+            "cv": int(cv) if isinstance(cv, Integral) else type(cv).__name__,
             "cv_strategy": cv_strategy,
             "ranking_metric": ranking_metric,
             "refit": refit,
@@ -1344,10 +1346,10 @@ def randomized_search(
             "recipe_distributions": None
             if recipe_distributions is None
             else {k: str(v) for k, v in recipe_distributions.items()},
-            "n_iter": n_iter,
+            "n_iter": int(n_iter),
             "random_state": random_state,
             "task": task,
-            "cv": cv if isinstance(cv, int) else type(cv).__name__,
+            "cv": int(cv) if isinstance(cv, Integral) else type(cv).__name__,
             "cv_strategy": cv_strategy,
             "ranking_metric": ranking_metric,
             "refit": refit,
@@ -1510,10 +1512,10 @@ def optuna_search(
         "optuna_search",
         {
             "estimator": type(estimator).__name__,
-            "n_trials": n_trials,
+            "n_trials": int(n_trials),
             "random_state": random_state,
             "task": task,
-            "cv": cv if isinstance(cv, int) else type(cv).__name__,
+            "cv": int(cv) if isinstance(cv, Integral) else type(cv).__name__,
             "cv_strategy": cv_strategy,
             "ranking_metric": ranking_metric,
             "refit": refit,
@@ -1727,7 +1729,7 @@ def evolutionary_search(
             "max_evaluations": max_evaluations,
             "random_state": random_state,
             "task": task,
-            "cv": cv if isinstance(cv, int) else type(cv).__name__,
+            "cv": int(cv) if isinstance(cv, Integral) else type(cv).__name__,
             "cv_strategy": cv_strategy,
             "ranking_metric": ranking_metric,
             "refit": refit,
@@ -2110,10 +2112,10 @@ def predict_from_pipeline(
     its preprocessing plans, transforms the rows exactly as training did,
     and returns the predictions.
 
-    Nothing on the session changes: not the dataset, not
-    :attr:`fit_result`, not the plans. That makes it safe to call inside a
-    batch job or a service handler, repeatedly, against different bundles,
-    without one call contaminating the next.
+    Rows, :attr:`fit_result` and fitted plans stay unchanged. A native input's
+    Pandas cache is refreshed when scoring needs its live rows, and an operation
+    record is appended to the session history. Repeated calls can score against
+    different bundles without replacing the session's model or plans.
 
     Parameters
     ----------
@@ -2906,13 +2908,19 @@ def error_slices(
     ------
     ~buildml.core.errors.ValidationError
         No model has been fitted, no split exists, or a named column is
-        absent from the partition.
+        absent from the partition. Count limits must be positive integers.
+        Missing scoring targets, nonfinite or nonnumeric regression targets,
+        and observed segment values with ambiguous display keys also refuse
+        before replacing the prior report or writing HTML.
 
     Notes
     -----
     Observational only: segment gaps are not fairness proof. Prefer
     validation for exploration and keep test for a final estimate.
     Segments with ``n < min_segment_n`` are listed under ``small_segments``.
+    Only observed categorical levels count as segments. Recode mixed scalar
+    values such as ``1`` and ``"1"`` consistently if their display keys collide.
+    An unseen classification target is counted as a prediction error.
 
     A gap tells you where the model is worse, not why. Small segments have
     fewer training examples, may genuinely be harder to predict, and may

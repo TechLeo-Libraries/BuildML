@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, cast
 
 import numpy as np
 import pandas as pd
@@ -11,6 +11,7 @@ from buildml.core.errors import ValidationError
 from buildml.core.types import ColumnRole
 from buildml.data.dataset import Dataset
 from buildml.data.splits import SplitPlan, frame_for_partition
+from buildml.recommenders.models import _observed_entries
 
 __all__ = [
     "resolve_interaction_columns",
@@ -76,7 +77,7 @@ def partition_frame(
         When ``partition`` is not ``"all"`` and ``split_plan`` is ``None``.
     """
     if partition == "all":
-        return dataset.frame.copy()
+        return dataset.to_pandas()
     if split_plan is None:
         raise ValidationError(
             "A SplitPlan is required for partitioned recommender evaluation."
@@ -243,7 +244,7 @@ def build_interactions(
     if missing:
         raise ValidationError(f"Interaction frame missing columns: {missing}")
 
-    out = frame[needed].copy()
+    out = cast(pd.DataFrame, frame[needed].copy())
     out = out.dropna(subset=[user_column, item_column])
     if out.empty:
         raise ValidationError("No interactions remain after dropping null user/item ids.")
@@ -266,7 +267,7 @@ def build_interactions(
             out.groupby([user_column, item_column], as_index=False)["__rating__"]
             .mean()
         )
-    return out.reset_index(drop=True)
+    return cast(pd.DataFrame, out.reset_index(drop=True))
 
 
 def build_user_item_matrix(
@@ -382,7 +383,7 @@ def precision_at_k(recommended: list[Any], relevant: set[Any], k: int) -> float:
 
     Measures what fraction of the top-``k`` recommended items appear in the
     user's relevant holdout set. Used by :func:`evaluate_recommender` for
-    micro-averaged ranking metrics.
+    macro-averaged ranking metrics.
 
     Parameters
     ----------
@@ -411,7 +412,7 @@ def recall_at_k(recommended: list[Any], relevant: set[Any], k: int) -> float:
     """Compute Recall@K for one user's recommendation list.
 
     Measures what fraction of the user's relevant items appear in the top-``k``
-    recommendations. Used by :func:`evaluate_recommender` for micro-averaged
+    recommendations. Used by :func:`evaluate_recommender` for macro-averaged
     ranking metrics.
 
     Parameters
@@ -539,3 +540,14 @@ def mean_average_precision(
     if not scores:
         return 0.0
     return float(np.mean(scores))
+
+
+def _observed_interactions(plan: Any) -> np.ndarray:
+    """Recover validated train membership, preserving legacy nonzero semantics."""
+    stored = getattr(plan, "observed_mask_", None)
+    mask = _observed_entries(plan.matrix_, stored)
+    if mask.shape != (plan.n_users, plan.n_items):
+        raise ValidationError("Recommender observation matrix disagrees with catalog shape.")
+    if stored is not None and int(mask.sum()) != plan.n_train_interactions:
+        raise ValidationError("Recommender observation count disagrees with train interactions.")
+    return mask

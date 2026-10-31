@@ -9,6 +9,7 @@ import numpy as np
 import pandas as pd
 
 from buildml.core.errors import MissingExtraError, ValidationError
+from buildml.core.validation import _positive_integer
 from buildml.forecasting.extras import (
     neuralforecast_available,
     prophet_available,
@@ -187,7 +188,9 @@ def _fit_statsmodels(
         model = ARIMA(y, order=ord_)
         fitted = model.fit()
         disclosures.append(
-            f"auto_arima: selected ARIMA{ord_} via AIC grid search on low orders."
+            f"auto_arima: using explicit ARIMA{ord_}; no order search performed."
+            if order is not None
+            else f"auto_arima: selected ARIMA{ord_} via AIC grid search on low orders."
         )
         warnings.append(
             "auto_arima is a lightweight AIC search: not pmdarima; "
@@ -300,6 +303,9 @@ def _fit_nbeats(
     from neuralforecast import NeuralForecast
     from neuralforecast.models import NBEATS
 
+    input_size = _positive_integer(input_size, name="nbeats_input_size")
+    horizon = _positive_integer(horizon, name="nbeats_horizon")
+    max_steps = _positive_integer(max_steps, name="max_iter")
     n = len(y)
     if n < input_size + horizon:
         raise ValidationError(
@@ -317,6 +323,7 @@ def _fit_nbeats(
         h=int(horizon),
         max_steps=int(max_steps),
         random_seed=random_state or 0,
+        **({"stack_types": ["identity"]} if horizon == 1 else {}),
     )
     nf = NeuralForecast(models=[model], freq="D")
     nf.fit(df=ds)
@@ -343,12 +350,51 @@ def _fit_nbeats(
     )
 
 
+def _condition_on_history(estimator: dict[str, Any], history: list[float],
+                          history_exog: np.ndarray | None) -> Any:
+    """Advance fitted states using prior observations, keeping parameters fixed."""
+    result = estimator["result"]
+    kind = estimator["kind"]
+    values = np.asarray(history, dtype=float)
+    original = np.asarray(result.model.endog, dtype=float).reshape(-1)
+    if history_exog is None and np.array_equal(values, original):
+        return result
+    if kind in {"arima", "sarimax"}:
+        if result.model.k_exog and history_exog is None:
+            raise ValidationError("Advancing an exogenous forecast requires aligned history_exog.")
+        return result.apply(values, exog=history_exog, refit=False)
+    if kind == "ets":
+        from statsmodels.tsa.holtwinters import ExponentialSmoothing
+
+        model, params = result.model, result.params
+        initial: dict[str, Any] = {"initial_level": params["initial_level"]}
+        fixed: dict[str, Any] = {"smoothing_level": params["smoothing_level"]}
+        if model.trend:
+            initial["initial_trend"] = params["initial_trend"]
+            fixed["smoothing_trend"] = params["smoothing_trend"]
+        if model.seasonal:
+            initial["initial_seasonal"] = params["initial_seasons"]
+            fixed["smoothing_seasonal"] = params["smoothing_seasonal"]
+        if model.damped_trend:
+            fixed["damping_trend"] = params["damping_trend"]
+        boxcox = params["use_boxcox"]
+        if boxcox is True:
+            boxcox = params["lamda"]
+        updated = ExponentialSmoothing(
+            values, trend=model.trend, damped_trend=model.damped_trend,
+            seasonal=model.seasonal, seasonal_periods=model.seasonal_periods,
+            initialization_method="known", use_boxcox=boxcox, **initial)
+        return updated.fit(optimized=False, remove_bias=params["remove_bias"], **fixed)
+    return result
+
+
 def industry_predict(
     estimator: Any,
     *,
     steps: int,
     history: list[float] | None = None,
     exog_future: np.ndarray | None = None,
+    history_exog: np.ndarray | None = None,
 ) -> tuple[float, ...]:
     """Generate a multi-step forecast from a fitted industry estimator wrapper.
 
@@ -362,9 +408,13 @@ def industry_predict(
     steps:
         Number of future periods to forecast.
     history:
-        Target history required for N-BEATS rolling context.
+        Target history required for N-BEATS rolling context. For Prophet,
+        its length advances the synthetic daily forecast origin; values do
+        not refit the learned trend or seasonal parameters.
     exog_future:
         Future exogenous rows for ARIMA/SARIMAX exog-aware models.
+    history_exog:
+        Historical exogenous rows aligned with the supplied target history.
 
     Returns
     -------
@@ -381,6 +431,8 @@ def industry_predict(
         raise ValidationError("Invalid industry estimator payload")
     kind = estimator["kind"]
     result = estimator["result"]
+    if history is not None and kind in {"ets", "arima", "sarimax"}:
+        result = _condition_on_history(estimator, history, history_exog)
 
     if kind == "ets":
         fc = result.forecast(steps)
@@ -391,28 +443,38 @@ def industry_predict(
         return tuple(float(v) for v in np.asarray(fc, dtype=float).tolist())
 
     if kind == "prophet":
-        future = result.make_future_dataframe(periods=steps, freq="D", include_history=False)
+        n_history = len(result.history_dates) if history is None else len(history)
+        first = pd.Timestamp(result.start) + pd.Timedelta(days=n_history)
+        future = pd.DataFrame({"ds": pd.date_range(first, periods=steps, freq="D")})
         pred = result.predict(future)
         return tuple(float(v) for v in pred["yhat"].tolist()[-steps:])
 
     if kind == "nbeats":
-        import pandas as pd
-
         nf = result
-        h = int(estimator.get("horizon", steps))
         if history is None:
             raise ValidationError("N-BEATS predict requires history for rolling context")
-        n = len(history)
-        ds = pd.DataFrame(
-            {
-                "unique_id": ["series"] * n,
-                "ds": pd.date_range("2000-01-01", periods=n, freq="D"),
-                "y": history,
-            }
-        )
-        pred = nf.predict(df=ds)
-        vals = pred["NBEATS"].tolist()[-steps:]
-        return tuple(float(v) for v in vals)
+        if len(history) < int(estimator["input_size"]):
+            raise ValidationError("N-BEATS history must contain at least input_size observations")
+        working = list(history)
+        values: list[float] = []
+        while len(values) < steps:
+            n = len(working)
+            ds = pd.DataFrame(
+                {
+                    "unique_id": ["series"] * n,
+                    "ds": pd.date_range("2000-01-01", periods=n, freq="D"),
+                    "y": working,
+                }
+            )
+            # Consume the next native block in chronological order. Extending
+            # context with predictions also supports older NeuralForecast APIs.
+            pred = nf.predict(df=ds)["NBEATS"].tolist()[:steps - len(values)]
+            if not pred:
+                raise ValidationError("N-BEATS returned an empty forecast block")
+            block = [float(v) for v in pred]
+            values.extend(block)
+            working.extend(block)
+        return tuple(values)
 
     raise ValidationError(f"Unsupported industry estimator kind '{kind}'")
 
@@ -422,6 +484,7 @@ def industry_one_step(
     history: list[float],
     *,
     exog_row: np.ndarray | None = None,
+    history_exog: np.ndarray | None = None,
 ) -> float:
     """Predict one step ahead for rolling holdout evaluation.
 
@@ -437,6 +500,8 @@ def industry_one_step(
         Chronologically ordered target history ending at the forecast origin.
     exog_row:
         Optional contemporaneous exogenous values for the scored step.
+    history_exog:
+        Prior exogenous observations aligned with target history.
 
     Returns
     -------
@@ -448,5 +513,7 @@ def industry_one_step(
     ValidationError
         When the estimator payload is invalid or N-BEATS history is missing.
     """
-    preds = industry_predict(estimator, steps=1, history=history, exog_future=exog_row)
+    preds = industry_predict(estimator, steps=1, history=history,
+                             exog_future=None if exog_row is None else np.asarray(exog_row).reshape(1, -1),
+                             history_exog=history_exog)
     return float(preds[0])

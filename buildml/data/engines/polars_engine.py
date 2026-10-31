@@ -436,7 +436,7 @@ class PolarsEngine:
             raise ValueError(
                 f"filter mask length {len(mask)} does not match table rows {eager.height}"
             )
-        return eager.filter(self._pl.Series("_buildml_mask", list(mask)))
+        return eager.filter(self._pl.Series("_buildml_mask", list(mask), dtype=self._pl.Boolean))
 
     def filter_expr(self, table: Any, expression: str) -> Any:
         """Filter with a predicate the optimiser can push into the scan.
@@ -574,7 +574,7 @@ class PolarsEngine:
                 continue
             col = pl.col(column)
             if func == "sum":
-                exprs.append(col.sum().alias(alias))
+                exprs.append(pl.when(col.count() > 0).then(col.sum()).otherwise(None).alias(alias))
             elif func == "mean":
                 exprs.append(col.mean().alias(alias))
             elif func == "min":
@@ -584,7 +584,7 @@ class PolarsEngine:
             elif func == "count":
                 exprs.append(col.count().alias(alias))
             elif func == "n_unique":
-                exprs.append(col.n_unique().alias(alias))
+                exprs.append(col.drop_nulls().n_unique().alias(alias))
             elif func == "std":
                 exprs.append(col.std().alias(alias))
             else:

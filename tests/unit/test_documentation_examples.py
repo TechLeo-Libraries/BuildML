@@ -1,6 +1,7 @@
 """Documentation examples must provide their own imports and data."""
 
 import ast
+import os
 
 import pytest
 
@@ -46,6 +47,23 @@ def test_each_execution_starts_with_empty_globals():
     second = Example("two.md", 1, "python", "print(remembered)", "fence")
     assert execute(first, 10)["status"] == "passed"
     assert execute(second, 10)["status"] == "failed"
+
+
+def test_example_process_can_import_declared_dependency_paths(monkeypatch, tmp_path):
+    first = tmp_path / "first"
+    second = tmp_path / "second"
+    first.mkdir()
+    second.mkdir()
+    (first / "example_profile_dependency.py").write_text("value = 19\n", encoding="utf-8")
+    (second / "another_profile_dependency.py").write_text("value = 23\n", encoding="utf-8")
+    monkeypatch.setenv("PYTHONPATH", os.pathsep.join((str(first), str(second))))
+    example = Example("profile.md", 1, "python",
+                      "from example_profile_dependency import value as a\n"
+                      "from another_profile_dependency import value as b\n"
+                      "assert a + b == 42\nprint(a + b)", "fence")
+    result = execute(example, 10)
+    assert result["status"] == "passed", result
+    assert result["stdout"].strip() == "42"
 
 
 def test_rst_literal_examples_are_inventoried_without_losing_unknown_blocks():

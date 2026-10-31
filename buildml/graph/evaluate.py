@@ -28,6 +28,9 @@ def evaluate_graph(
 
     Uses the fitted plan only: never refits on the evaluation partition.
     Falls back from validation to test when validation indices are absent.
+    Only selected nodes require labels. Accuracy and macro-F1 include novel
+    evaluation labels as errors; binary ROC-AUC is omitted with a warning
+    unless both trained classes and no unknown classes occur in that partition.
 
     Parameters
     ----------
@@ -76,7 +79,7 @@ def evaluate_graph(
         score_mask = np.ones(n_nodes, dtype=bool)
     else:
         score_mask = partition_node_mask(n_nodes, split_plan, resolved)
-    y_true = target_array(frame, plan.target_column)[score_mask]
+    y_true = target_array(frame.loc[score_mask], plan.target_column)
     y_pred = np.asarray(pred.predictions)
     if len(y_true) != len(y_pred):
         raise ValidationError(
@@ -105,15 +108,24 @@ def evaluate_graph(
         and len(plan.classes_) == 2
         and pred.probabilities
     ):
-        try:
+        if not np.isin(y_true, plan.classes_).all():
+            warnings.append("roc_auc omitted: evaluation labels include classes absent from training.")
+        elif len(np.unique(y_true)) != 2:
+            warnings.append("roc_auc omitted: both trained classes are required in the evaluation partition.")
+        else:
             # Positive class = classes_[1]
-            proba = np.asarray(pred.probabilities, dtype=np.float64)[:, 1]
-            # Map labels to {0,1} aligned with plan.classes_
-            pos = plan.classes_[1]
-            y_bin = (y_true == pos).astype(int)
-            metrics["roc_auc"] = float(roc_auc_score(y_bin, proba))
-        except Exception:
-            warnings.append("roc_auc could not be computed for this partition.")
+            try:
+                proba = np.asarray(pred.probabilities, dtype=np.float64)[:, 1]
+                # Map labels to {0,1} aligned with plan.classes_
+                pos = plan.classes_[1]
+                y_bin = (y_true == pos).astype(int)
+                value = float(roc_auc_score(y_bin, proba))
+                if np.isfinite(value):
+                    metrics["roc_auc"] = value
+                else:
+                    warnings.append("roc_auc could not be computed for this partition.")
+            except Exception:
+                warnings.append("roc_auc could not be computed for this partition.")
 
     return GraphEvalResult(
         partition=resolved,

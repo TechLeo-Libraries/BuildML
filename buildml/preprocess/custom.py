@@ -25,11 +25,15 @@ replaying it later requires that name to still be registered. Make the artifact
 picklable and the whole thing round-trips through a saved pipeline; leave it
 unpicklable and you are limited to the current process, which the registration
 records via its declared ``serializable`` flag.
+
+Output names must be unique. A callback may replace a selected input column,
+but it cannot overwrite a retained column outside that selection. Both fitting
+and replay check this boundary, including extra columns supplied at inference.
 """
 
 from __future__ import annotations
 
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -79,9 +83,8 @@ class CustomTransformSpec:
         What the transform does, surfaced in listings and reports.
     output_columns:
         Optional ``(artifact, input_columns) -> list[str]`` declaring the
-        output names up front. Worth providing when the output width depends on
-        what was learned, since it removes the need to infer names from a probe
-        run.
+        output names up front. A training-row probe still validates that the
+        callback produces these names and preserves row identity.
     drop_input_columns:
         Whether the source columns are removed after transforming. Columns that
         also appear in the output are kept regardless.
@@ -224,9 +227,8 @@ def register_transform(
         :func:`list_transforms` and included in reports.
     output_columns:
         Optional ``(artifact, input_columns) -> list[str]`` declaring the
-        output names. Without it, the names are inferred by running the
-        transform once on the training rows at fit time; supplying it avoids
-        that probe.
+        output names. Without it, the names are inferred from a training-row
+        probe. The probe runs in both cases to validate the callback's output.
     drop_input_columns:
         Remove the source columns after transforming. Set this when your
         transform replaces its inputs rather than adding to them. A column that
@@ -431,7 +433,8 @@ def fit_custom_transform(
     ~buildml.core.errors.ValidationError
         The transform is not registered, ``columns`` is empty or names a column
         that does not exist, the transform returned something other than a
-        DataFrame, it changed the row index, or it produced no columns.
+        DataFrame, it changed the row index, produced duplicate output names,
+        omitted declared outputs, or would overwrite a retained column.
 
     Notes
     -----
@@ -463,12 +466,18 @@ def fit_custom_transform(
         raise ValidationError(
             f"Custom transform '{spec.name}' must preserve the input row index"
         )
+    if not probe.columns.is_unique:
+        raise ValidationError(f"Custom transform '{spec.name}' output columns must be unique")
     if spec.output_columns is not None:
         feature_names = [str(c) for c in spec.output_columns(artifact, cols)]
     else:
         feature_names = [str(c) for c in probe.columns]
-    if not feature_names:
-        raise ValidationError(f"Custom transform '{spec.name}' produced no output columns")
+    _validate_custom_outputs(dataset.columns, cols, feature_names, spec.name)
+    missing = [column for column in feature_names if column not in probe.columns]
+    if missing:
+        raise ValidationError(
+            f"Custom transform '{spec.name}' probe missing expected output columns: {missing}"
+        )
     return CustomTransformPlan(
         name=spec.name,
         columns=cols,
@@ -507,7 +516,8 @@ def transform_custom(
     ------
     ~buildml.core.errors.ValidationError
         The transform is no longer registered, a required column is missing,
-        the transform did not return a DataFrame, or it changed the row index.
+        the transform did not return a DataFrame, changed the row index,
+        produced duplicate columns, or would overwrite a retained column.
 
     Notes
     -----
@@ -523,6 +533,7 @@ def transform_custom(
     missing = [c for c in plan.columns if c not in dataset.columns]
     if missing:
         raise ValidationError(f"Custom transform columns missing from dataset: {missing}")
+    _validate_custom_outputs(dataset.columns, plan.columns, plan.feature_names_, plan.name)
 
     frame = dataset._ensure_pandas().copy()
     transformed = spec.transform(frame[list(plan.columns)].copy(), plan.artifact_)
@@ -534,6 +545,8 @@ def transform_custom(
         raise ValidationError(
             f"Custom transform '{plan.name}' must preserve the input row index"
         )
+    if not transformed.columns.is_unique:
+        raise ValidationError(f"Custom transform '{plan.name}' output columns must be unique")
     # Align to the fitted column contract.
     for name in plan.feature_names_:
         if name not in transformed.columns:
@@ -573,6 +586,22 @@ def transform_custom(
             "pipeline/checkpoint plan persistence may fail or be incomplete."
         )
     return new_dataset, _build_result(plan, warnings=warnings)
+
+
+def _validate_custom_outputs(
+    columns: Sequence[str], inputs: Sequence[str], outputs: Sequence[str], name: str,
+) -> None:
+    """Allow replacing selected inputs while protecting every retained column."""
+    if not outputs:
+        raise ValidationError(f"Custom transform '{name}' produced no output columns")
+    if len(set(outputs)) != len(outputs):
+        raise ValidationError(f"Custom transform '{name}' output columns must be unique")
+    retained = set(columns) - set(inputs)
+    collisions = [column for column in outputs if column in retained]
+    if collisions:
+        raise ValidationError(
+            f"Custom transform '{name}' outputs collide with retained columns: {collisions}"
+        )
 
 
 def _build_result(

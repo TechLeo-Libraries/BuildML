@@ -12,6 +12,7 @@ import numpy as np
 from buildml._version import __version__
 from buildml.core.errors import ValidationError
 from buildml.core.serialization import joblib_load_trusted
+from buildml.recommenders.features import _observed_interactions
 from buildml.recommenders.results import (
     RecommenderEvalResult,
     RecommenderFitResult,
@@ -32,6 +33,25 @@ CHECKPOINT_BOUNDARY = (
     "Honesty: Session CF + optional content: not a Netflix-scale platform; "
     "distinct from RAG retrieve/generate and from EDA Recommendation Findings."
 )
+
+
+def _validate_catalog(plan: RecommenderPlan) -> None:
+    """Reject inconsistent catalog identity before persistence or consumption."""
+    for kind in ("user", "item"):
+        ids = getattr(plan, f"{kind}_ids")
+        count = getattr(plan, f"n_{kind}s")
+        index = getattr(plan, f"{kind}_index_")
+        try:
+            canonical = {value: position for position, value in enumerate(ids)}
+        except TypeError as exc:
+            raise ValidationError("Recommender catalog IDs must be hashable.") from exc
+        if count != len(ids) or not ids or len(canonical) != len(ids):
+            raise ValidationError(f"Invalid recommender {kind} catalog size or duplicate IDs.")
+        if index and index != canonical:
+            raise ValidationError(f"Recommender {kind} catalog index disagrees with ID order.")
+    if np.shape(plan.matrix_) != (plan.n_users, plan.n_items):
+        raise ValidationError("Recommender matrix shape disagrees with catalog dimensions.")
+    _observed_interactions(plan)
 
 
 def save_recommender_bundle(
@@ -70,15 +90,17 @@ def save_recommender_bundle(
     Raises
     ------
     ValidationError
-        When ``plan`` is ``None``.
+        When the plan is missing or its catalog and interaction matrix disagree.
     """
     if plan is None:
         raise ValidationError("No RecommenderPlan to save.")
+    _validate_catalog(plan)
     destination = Path(path)
     destination.mkdir(parents=True, exist_ok=True)
     payload = {
         "plan": plan,
         "matrix": np.asarray(plan.matrix_),
+        "observed_mask": getattr(plan, "observed_mask_", None),
         "similarity": None if plan.similarity_ is None else np.asarray(plan.similarity_),
         "user_factors": (
             None if plan.user_factors_ is None else np.asarray(plan.user_factors_)
@@ -156,7 +178,12 @@ def load_recommender_bundle(path: str | Path, *, trusted: bool = False) -> Recom
             f"Incomplete recommender bundle at {root}. "
             f"Expected meta.json and recommender_plan.joblib ({BUNDLE_FORMAT})."
         )
-    meta = json.loads(meta_path.read_text(encoding="utf-8"))
+    try:
+        meta = json.loads(meta_path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, UnicodeDecodeError) as exc:
+        raise ValidationError("Invalid recommender bundle metadata: expected UTF-8 JSON.") from exc
+    if not isinstance(meta, dict):
+        raise ValidationError("Invalid recommender bundle metadata: expected a JSON object.")
     fmt = meta.get("format")
     if fmt != BUNDLE_FORMAT:
         raise ValidationError(
@@ -164,7 +191,8 @@ def load_recommender_bundle(path: str | Path, *, trusted: bool = False) -> Recom
         )
     loaded = joblib_load_trusted(plan_path, trusted=trusted, artifact="joblib plan")
     if isinstance(loaded, RecommenderPlan):
-        return loaded
+        # Direct legacy plans need the same catalog-index restoration as dict payloads.
+        loaded = {"plan": loaded}
     if not isinstance(loaded, dict) or "plan" not in loaded:
         raise ValidationError(
             "recommender_plan.joblib must contain a RecommenderPlan or a payload "
@@ -177,6 +205,8 @@ def load_recommender_bundle(path: str | Path, *, trusted: bool = False) -> Recom
         plan.matrix_ is None or plan.matrix_.size == 0
     ):
         plan.matrix_ = np.asarray(loaded["matrix"], dtype=float)
+    if loaded.get("observed_mask") is not None and getattr(plan, "observed_mask_", None) is None:
+        plan.observed_mask_ = np.asarray(loaded["observed_mask"])
     if loaded.get("similarity") is not None and plan.similarity_ is None:
         plan.similarity_ = np.asarray(loaded["similarity"], dtype=float)
     if loaded.get("user_factors") is not None and plan.user_factors_ is None:
@@ -212,4 +242,5 @@ def load_recommender_bundle(path: str | Path, *, trusted: bool = False) -> Recom
         plan.user_index_ = {u: i for i, u in enumerate(plan.user_ids)}
     if not plan.item_index_ and plan.item_ids:
         plan.item_index_ = {it: i for i, it in enumerate(plan.item_ids)}
+    _validate_catalog(plan)
     return plan

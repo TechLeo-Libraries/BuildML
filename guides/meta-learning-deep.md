@@ -40,11 +40,31 @@ A **task** is the rows that share a task/group id (`role="group"` or
 An **episode** samples `k_shot` support rows per class plus `n_query`
 query rows. Defaults: `k_shot=5`, `n_query=10`, `n_episodes=20`.
 `n_way` is inferred when you leave it `None`.
+Episode counts and support caps must be positive integers; `n_way` must be at
+least two and no larger than the fitted class vocabulary. NumPy integral values
+are accepted. Boolean, fractional and string counts are refused before changing
+an existing plan, report or adaptation.
 
 **Adapt** freezes the meta-train plan and fits only on one task's
 support set. **Evaluate** prefers novel task ids on holdout partitions
 (`prefer_novel_tasks=True`) and lists `overlapping_task_ids` when a
 random row split put the same id in more than one partition.
+Set `prefer_novel_tasks=False` to score every observed task in the requested
+partition, including overlapping tasks. Internal held-out train tasks take
+priority only with the default preference enabled. Overlapping tasks are
+disclosed; selecting them on `train` or `all` includes meta-training rows and
+does not establish out-of-task generalization.
+
+Per-task report keys use task display text. If selected task ids such as integer
+`1` and string `"1"` share that text, evaluation refuses before replacing the
+previous report. Recode ambiguous ids to unique text before evaluation.
+
+An explicit support frame must describe one task when a task column is present;
+missing, mixed or contradictory task ids are refused. Missing support targets
+are rejected before per-class capping. Adaptation reports the classes actually
+present in support, which may be fewer than the meta-train vocabulary. Episode
+sampling preserves feature names and keeps support/query rows disjoint by row
+position, including when pandas index labels repeat.
 
 ```python
 import numpy as np
@@ -239,3 +259,13 @@ Random row splits may place the same task id in train and holdout.
 need a hard boundary.
 
 [Meta-learning quickstart](quickstart-meta-learning.md)
+
+### Class label identity
+
+New meta-learning fits preserve original string, numeric and boolean labels.
+For example, `"01"` and `"1"` remain distinct string classes in episode reports
+and adaptation prototype keys. Support and query labels must belong to the
+train-fitted vocabulary; incompatible mixed types and unseen labels are refused.
+Bundles retain this encoder behavior after loading. Older, unmarked encoders
+keep their historical string transforms and numeric-string decoding so loading
+an existing bundle does not silently change its interpretation.

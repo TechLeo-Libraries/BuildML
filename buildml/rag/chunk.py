@@ -70,18 +70,18 @@ def _merge_splits(splits: list[str], *, size: int, overlap: int) -> list[str]:
         if len(candidate) <= size:
             current = candidate
             continue
-        if current:
+        if len(current) > overlap:
             merged.append(current)
-            if overlap > 0 and len(current) > overlap:
-                current = current[-overlap:] + piece
-            else:
-                current = piece
-        else:
-            merged.append(piece[:size])
-            current = piece[size:]
-            while len(current) > size:
-                merged.append(current[:size])
-                current = current[size - overlap :] if overlap else current[size:]
+            current = current[-overlap:] if overlap else ""
+        # A separator-delimited piece can fill the entire size budget. Carrying
+        # overlap must leave room for new source characters in every passage.
+        while len(current) + len(piece) > size:
+            available = size - len(current)
+            current += piece[:available]
+            piece = piece[available:]
+            merged.append(current)
+            current = current[-overlap:] if overlap else ""
+        current += piece
     if current:
         merged.append(current)
     return merged
@@ -150,12 +150,10 @@ def _chunk_text_recursive(
     for piece in pieces:
         if not piece:
             continue
-        start = text.find(piece, cursor)
-        if start < 0:
-            start = cursor
+        start = cursor
         end = start + len(piece)
         spans.append((start, end, piece))
-        cursor = max(0, end - overlap) if overlap else end
+        cursor = end - overlap if overlap else end
     return spans or [(0, len(text), text)]
 
 

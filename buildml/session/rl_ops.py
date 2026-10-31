@@ -56,6 +56,8 @@ def fit_imitation_op(
     action_column: str | None = None,
     env_id: str | None = None,
     n_epochs: int = 40,
+    total_timesteps: int = 8_000,
+    allow_variable_horizon: bool = False,
     random_state: int | None = 0,
     prefer_reduce_components: bool = True,
 ) -> Any:
@@ -86,6 +88,11 @@ def fit_imitation_op(
         Optional Gymnasium environment id for env-backed demos.
     n_epochs:
         Training epochs for torch BC backend.
+    total_timesteps:
+        Requested GAIL budget, rounded by PPO to rollout batches.
+    allow_variable_horizon:
+        Explicitly accept variable episode lengths and reward-leakage risk for
+        GAIL. Defaults to refusing such trajectories.
     random_state:
         Seed for stochastic training steps.
     prefer_reduce_components:
@@ -113,6 +120,8 @@ def fit_imitation_op(
         action_column=action_column,
         env_id=env_id,
         n_epochs=n_epochs,
+        total_timesteps=total_timesteps,
+        allow_variable_horizon=allow_variable_horizon,
         random_state=random_state,
         prefer_reduce_components=prefer_reduce_components,
         reduce_plan=getattr(session, "_reduce_plan", None),
@@ -132,6 +141,8 @@ def fit_imitation_op(
             "action_column": action_column,
             "env_id": env_id,
             "n_epochs": n_epochs,
+            "total_timesteps": total_timesteps,
+            "allow_variable_horizon": allow_variable_horizon,
             "random_state": random_state,
             "prefer_reduce_components": prefer_reduce_components,
         },
