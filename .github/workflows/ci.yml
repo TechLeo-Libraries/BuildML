@@ -456,7 +456,7 @@ jobs:
           python - <<'PY'
           import xml.etree.ElementTree as ET
           tests = list(ET.parse('artifacts/expanded-tests.xml').iter('testcase'))
-          for module in ('test_prophet_forecast_origin_consumers', 'test_nbeats_horizon_consumers', 'test_torch_regression_target_consumers', 'test_torch_numeric_input_consumers', 'test_nlp_resource_consumers', 'test_randomized_recipe_consumers', 'test_threshold_scalar_consumers', 'test_duckdb_sample_isolation_consumers', 'test_activelearning_request_consumers', 'test_ssl_generative_input_consumers', 'test_rag_chunk_span_consumers', 'test_blend_label_consumers'):
+          for module in ('test_prophet_forecast_origin_consumers', 'test_nbeats_horizon_consumers', 'test_torch_regression_target_consumers', 'test_torch_numeric_input_consumers', 'test_nlp_resource_consumers', 'test_randomized_recipe_consumers', 'test_threshold_scalar_consumers', 'test_duckdb_sample_isolation_consumers', 'test_activelearning_request_consumers', 'test_ssl_generative_input_consumers', 'test_rag_chunk_span_consumers', 'test_blend_label_consumers', 'test_nlp_attribution_consumers'):
               cases = [test for test in tests if module in test.get('classname', '')]
               assert cases and all(test.find('skipped') is None for test in cases), module
           PY

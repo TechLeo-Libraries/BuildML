@@ -14,6 +14,12 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Complement Naive Bayes token attributions retain the fitted model's score
+  direction. Linear text heads also support native sparse coefficient storage.
+  Attribution limits require integer counts, and global explanations export
+  undefined per-document values as JSON null. Independent score identities,
+  strict JSON consumers and saved classifiers check these behaviors.
+
 - Blending classifiers accept nonnumeric and nonfinite-text class labels when
   combining hard predictions, including automatic probability fallback. Codes
   come from train-fitted class vocabularies and stay consistent for single rows
