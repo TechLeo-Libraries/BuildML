@@ -122,7 +122,7 @@ monolith** (**70** active after corrected thread/process tracing measured at lea
 `pytest tests --cov=buildml`); do not lower it to silence a regression.
 The separate `expanded-coverage` CI job installs
 `requirements-expanded-coverage.txt` and runs the entire suite with an **88%**
-floor, supported by passing remote Linux 89.1965% evidence at `2a4ff11`.
+floor, supported by passing remote Linux 89.2173% evidence at `732aa6e`.
 The broadened profile includes DoWhy and ONNX Runtime, using a compatible
 NumPy 2.4.1/SciPy 1.15.3/mlxtend 0.23.4 stack. Same-source complete local suites
 passed 85.5192% for this profile and85.3947% for its original-profile control;
@@ -230,16 +230,16 @@ and pick the next target, and `--path buildml/<pkg>` to audit work in progress.
 - Write public documentation for library users. Keep implementation instructions,
   release actions, and work plans in clearly labeled contributor material.
 
-Current expanded coverage evidence (2026-10-31, source `2a4ff11`): remote Linux
-passed at **89.1965%** (56,415 / 63,248 lines), with 17,026 passed and 173 skipped.
-[CI41183019495](https://github.com/TechLeo-Libraries/BuildML/actions/runs/41183019495)
+Current expanded coverage evidence (accepted 2026-11-05, source `732aa6e`): remote
+Linux passed at **89.2173%** (56,438 / 63,259 lines), with 17,132 passed and
+173 skipped. [CI41187955042](https://github.com/TechLeo-Libraries/BuildML/actions/runs/41187955042)
 passed, as did backend evidence, release acceptance and CodeQL. Tested merge
-`c3ed043d` and source trees match. The same 800 files, 566 exclusions and
-coverage.py 7.16.2 were measured in 2514.740s, with 3,435 pytest warnings and no
-collection warnings. All 3,149 required consumers execute. The entire environment
-and skip messages match `fc61109`; existing NLP resource checks emit 52 fewer
-NMF convergence warnings. Complete totals add 29 covered lines and 21 statements.
-Core 70/expanded 88 remain. The next expanded floor of 89 requires passing
-complete coverage of at least 90%. Reaching 90% requires 509 further covered
-lines at this measured source. Subsequent outlier-plan subset reach stays
-separate from complete percentages.
+`18a10ce1` and source whole trees match. The same 800 files, 566 exclusions and
+coverage.py 7.16.2 were measured in 1404.790s, with 3,487 pytest warnings and no
+collection warnings. All 3,255 required consumers execute. The entire environment
+and skip messages match `2a4ff11`; existing NLP resource checks emit 52 additional
+NMF convergence warnings. Complete totals add 23 covered lines and 11 statements.
+Timing variation is not performance evidence. Core 70/expanded 88 remain. The next
+expanded floor of 89 requires passing complete coverage of at least 90%. Reaching
+90% requires 496 further covered lines at this measured source. Subsequent readiness
+subset reach stays separate from complete percentages.

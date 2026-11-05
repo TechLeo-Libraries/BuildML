@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-10-26, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed: 89.1965% (56,415/63,248); 17,026 passed, 173 skipped | [CI41183019495](https://github.com/TechLeo-Libraries/BuildML/actions/runs/41183019495), source `2a4ff11`, tested merge `c3ed043d`; equal whole trees and all four workflows pass. Same 800 files, 566 exclusions and coverage.py 7.16.2; all 3,149 required consumers execute. Entire environment and skip messages match `fc61109`; full +29 covered lines/+21 statements. Core 70/expanded 88 retained; exact 90% gap 509 at this source. 3,435 pytest warnings (52 fewer NMF convergence warnings in existing NLP resource checks), no collection warnings |
+| Current accepted remote expanded CPU whole-package gate | Passed: 89.2173% (56,438/63,259); 17,132 passed, 173 skipped | [CI41187955042](https://github.com/TechLeo-Libraries/BuildML/actions/runs/41187955042), source `732aa6e`, tested merge `18a10ce1`; equal whole trees and all four workflows pass. Same 800 files, 566 exclusions and coverage.py 7.16.2; all 3,255 required consumers execute. Entire environment and skip messages match `2a4ff11`; full +23 covered lines/+11 statements. Core 70/expanded 88 retained; exact 90% gap 496 at this source. 3,487 pytest warnings (52 additional NMF convergence warnings in existing NLP resource checks), no collection warnings |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -6710,3 +6710,72 @@ Complete totals add 29 covered lines and 21 statements. Core 70 and expanded 88
 remain. The next expanded floor of 89 requires passing complete coverage of at
 least 90%. Reaching 90% requires 509 further covered lines at this measured
 source; subsequent changes need their own complete assessment.
+
+### Accepted outlier-plan whole-package measurement (2026-11-05)
+
+The completed 2026-10-31 run at source `732aa6e` supersedes its pending outlier
+measurement: **89.2173%** (56,438/63,259), **17,132 passed/173 skipped**,
+zero failures/errors, 1404.790s log/1404.611s XML. All 106 outlier consumers execute
+with the prior 3,149 required consumers (3,255 total, 16 modules). CI41187955042,
+backend41187955036, acceptance41187955091 and CodeQL41187953579 passed. Source
+and tested merge `18a10ce1` have equal whole tree `cf31b741`. The entire environment
+and all 173 skips across 37 messages match `2a4ff11`. Pytest warnings increase by
+52 NMF convergence warnings in existing NLP resource checks (3,487 total).
+Timing variation is not performance evidence. Scope remains 800 files, 566 exclusions
+and coverage.py 7.16.2; no collection warnings. Complete totals add 23 covered lines
+and 11 statements. Core 70 and expanded 88 remain; the next expanded floor of 89
+requires passing complete coverage of at least 90%. The exact 496-line gap applies
+only to measured `732aa6e`; subsequent subsets need their own complete assessment.
+
+### Readiness quality evidence and public consumers (2026-11-05)
+
+Quality gates now distinguish an unavailable count or screen from a measured zero
+or empty flag list. Missing or null completeness, duplicate, constant, near-constant
+and cardinality evidence keeps the relevant gate open. Observed zeros retain their
+clear or not-applicable statuses. Exact duplicate evidence uses the full quality
+population and explicitly leaves key uniqueness unassessed. The quality producer
+also records full-frame cardinality counts; encoding-width estimates use those
+counts. Saved full reports can reuse their native `nunique` measurements (and older
+aliases); sampled reports without full counts disclose an unavailable width.
+Cardinality text refers to the actual quality screen, replacing the fixed 20-level
+claim. Missingness calculations use full-frame denominators even for observed zeros,
+and never invent a zero worst-column rate when only total missingness is available.
+
+The identical final **119-case** corpus against archived `732aa6e` gives **114
+failures/5 passes/zero skips** in both native numerical runtimes. The corrected
+six-file suites each pass **181 tests, zero skips/failures/errors/collection
+warnings**, including existing golden-report consumers. Independent scalar row
+comparisons, missing-cell counts and level sets check actual clean, flagged and
+sampled EDA reports, strict JSON replay, offline bundles and both real FastAPI gate
+endpoints. Repeated reads, write refusal, status aggregates and input immutability
+are checked. Saved-report variants are JSON replays of real reports with omitted
+fields; no broad historical artifact-compatibility claim.
+
+Both runs use Windows/Python 3.12.8/coverage.py 7.16.2. Numerical versions are
+Pandas 3.0.5/NumPy 2.4.6/sklearn 1.9.0 and compatible Pandas 2.3.3/NumPy 2.4.1/
+sklearn 1.9.1. Dashboard versions differ: FastAPI 0.141.1/Plotly 6.9/Starlette 1.3.1/
+Pydantic 2.13.4 versus isolated FastAPI 0.138.2/Plotly 7.1/Starlette 1.10/
+Pydantic 2.14.3; HTTPX 0.28.1 and Jinja2 3.1.6 are shared. Each run retains one
+unrelated warning: existing LangChain provider deprecation in the first runtime,
+Starlette HTTPX-client deprecation in the second. Neither warning is suppressed.
+Run times are 165.25s and 122.68s; these are not performance comparisons.
+A genuine core runtime passes **98/119** and skips **21** for absent dashboard
+libraries (9 Plotly/12 FastAPI), without collecting coverage. Expanded CI requires
+all new cases unskipped: **17 modules/3,374 required cases**. The guard accepts real
+prior full XML plus only the new module's cases, and refuses missing/skipped
+negative probes; this joins test records only, never coverage databases.
+
+`measure_coverage_reach.py` compares the exact frozen source with verified
+same-source `732aa6e` full JSON/Git evidence: **37/39 previously missing unchanged
+lines** across the two six-file subsets, plus **29 changed/new executed lines** in
+each. Their intersection contains **34 report/teaching lines and one headless
+Matplotlib line**; the remaining 2/4 lines are backend-availability differences.
+The subsets include adjacent regressions, so this is not attribution solely to the
+119 new cases. Scope stays 800 normalized files/566 exclusions; modified source has
+63,280 statements and needs its own complete measurement. No projected full gain
+or reuse of the baseline's 496-line gap. Core 70/expanded 88 remain unchanged.
+Paired typing checks on all three modified production modules remove four existing
+fallback-union diagnostics and pass cleanly on the corrected source. Frozen
+Python 3.10 syntax, CI-scoped Ruff, copy lint, docstring budget and release-claim
+references pass. The prior outlier-plan full result above remains the accepted
+whole-package measurement until this revision completes CI.

@@ -824,16 +824,35 @@ def _calculation_for(gate_id: str, ctx: dict[str, Any], status: str) -> dict[str
 
     if gate_id == "01.2":
         missing = ctx.get("missing") or []
+        if ctx.get("missingCells") is None:
+            return _calc(
+                label="Missing cell rate",
+                formula="missing_cells / (rows × columns)",
+                inputs={"missing_cells": None, "rows": ctx.get("rowsTotal"), "columns": ctx.get("colCount")},
+                result="Unavailable",
+                reading="Run the quality screen; this report contains no total missing-cell count.",
+            )
         cells = int(ctx.get("missingCells") or 0)
         if cells <= 0:
             return _calc(
                 label="Missing cell rate",
                 formula="missing_cells / (rows × columns)",
-                inputs={"missing_cells": 0, "rows": rows, "columns": ctx.get("colCount")},
+                inputs={"missing_cells": 0, "rows": ctx.get("rowsTotal"), "columns": ctx.get("colCount")},
                 result="0%",
                 reading="No imputation decision is forced by gaps in this extract.",
             )
-        worst = missing[0] if missing else {"name": "?", "missingRate": 0.0}
+        if not missing:
+            total_rows = int(ctx.get("rowsTotal") or 0)
+            columns = int(ctx.get("colCount") or 0)
+            denominator = total_rows * columns
+            return _calc(
+                label="Missing cell rate",
+                formula="missing_cells / (rows × columns)",
+                inputs={"missing_cells": cells, "rows": total_rows, "columns": columns},
+                result=_fmt_pct(cells / denominator) if denominator > 0 else "Unavailable",
+                reading="Quality counts cover the full frame; per-column rates are unavailable, so no worst column is identified.",
+            )
+        worst = missing[0]
         return _calc(
             label="Worst-column missing rate",
             formula="null_count(column) / rows",
@@ -853,7 +872,7 @@ def _calculation_for(gate_id: str, ctx: dict[str, Any], status: str) -> dict[str
 
     if gate_id == "01.6":
         high = ctx.get("highCard") or []
-        if not high:
+        if not high or any(x.get("distinct") is None for x in high):
             return None
         added = sum(int(x.get("distinct") or 0) for x in high)
         return _calc(

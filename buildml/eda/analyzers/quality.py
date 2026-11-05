@@ -177,6 +177,11 @@ def analyze_quality(full: pd.DataFrame, sample: pd.DataFrame) -> dict[str, Any]:
         "constant_columns": constant_columns,
         "quasi_constant_columns": quasi_constant,
         "high_cardinality_columns": high_cardinality,
+        "high_cardinality_counts": {
+            str(column): int(full[column].nunique(dropna=True))
+            for column in full.columns
+            if str(column) in high_cardinality
+        },
         "id_like_columns": id_like,
         "mixed_type_suspect_columns": mixed_type_suspects,
         "string_pattern_hints": pattern_hits,

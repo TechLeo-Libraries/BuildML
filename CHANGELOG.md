@@ -14,6 +14,13 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Readiness quality gates keep unavailable counts and screens open instead of
+  treating them as observed zeros. Duplicate evidence uses the full quality
+  population and no longer claims untested key uniqueness. Cardinality flags
+  carry full-frame level counts for encoding-width estimates; sampled saved
+  reports without those counts disclose the limit. Missingness calculations
+  preserve the full-frame denominator, including measured zeros.
+
 - Outlier plans refuse complex observations before fitting or replay can lose
   their imaginary values. Valid NumPy thresholds retain fence precision, while
   malformed controls raise validation errors. Fence summaries export plain
