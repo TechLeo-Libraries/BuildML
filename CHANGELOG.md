@@ -14,6 +14,13 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Native previews honor negative `head(n)` counts as all rows except the final
+  `abs(n)` rows across Pandas, Polars and DuckDB. Very large integer counts clamp
+  without native overflow. Counts require Python/NumPy integers; booleans and
+  `None` require an explicit integer instead. Negative/extreme native previews
+  may execute a row count. Independent prefixes, group arithmetic, Arrow/Parquet
+  consumers and saved Ridge predictions verify population and refusal behavior.
+
 - Row filtering refuses strings, numeric values and missing mask entries before
   they can silently change the selected population. Valid Python/NumPy boolean
   masks remain positional across Pandas, Polars and DuckDB, including duplicate

@@ -610,17 +610,25 @@ class Dataset:
         """Return the first few rows, for looking at the data.
 
         Pulled through the native handle when there is one, so peeking at a
-        large table does not materialise it.
+        large table does not promote the full Pandas cache. Negative or
+        extremely large native counts may first execute a row-count query.
 
         Parameters
         ----------
         n:
-            How many rows.
+            Python or NumPy integer count. Negative values return all rows
+            except the final ``abs(n)`` rows; counts beyond the table size clamp
+            to all rows (positive) or no rows (negative).
 
         Returns
         -------
         pandas.DataFrame
             The first ``n`` rows.
+
+        Raises
+        ------
+        ValidationError
+            If ``n`` is not an integer or is a boolean.
 
         Notes
         -----
@@ -632,6 +640,9 @@ class Dataset:
         --------
         sample : A random draw.
         """
+        if not pd.api.types.is_integer(n):
+            raise ValidationError("head n must be an integer, excluding booleans")
+        n = int(n)
         if self.has_native:
             from buildml.data.engines import get_engine
 

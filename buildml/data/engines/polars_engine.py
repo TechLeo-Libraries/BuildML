@@ -308,25 +308,41 @@ class PolarsEngine:
         """Return the first few rows as pandas.
 
         The limit is applied before collection, so a lazy scan stops early
-        rather than reading everything and slicing.
+        rather than reading everything and slicing. Negative or extremely large
+        counts first execute a row count to preserve positional semantics and
+        avoid the native index-width limit.
 
         Parameters
         ----------
         table:
             A ``DataFrame`` or ``LazyFrame``.
         n:
-            How many rows.
+            Python or NumPy integer count. Negative values return all rows
+            except the final ``abs(n)`` rows; counts beyond the table size clamp
+            to all rows (positive) or no rows (negative).
 
         Returns
         -------
         pandas.DataFrame
             The first ``n`` rows.
 
+        Raises
+        ------
+        ValueError
+            If ``n`` is not an integer or is a boolean.
+
         Notes
         -----
         **Row order is the file's order**, so on sorted or grouped data this
         shows one corner. Use :meth:`sample_rows` for something representative.
         """
+        if not pd.api.types.is_integer(n):
+            raise ValueError("head n must be an integer, excluding booleans")
+        n = int(n)
+        if n < 0:
+            n = max(0, self.n_rows(table) + n)
+        elif n > 2**31 - 1:
+            n = min(n, self.n_rows(table))
         if self._is_lazy(table):
             return table.head(n).collect().to_pandas()
         return table.head(n).to_pandas()

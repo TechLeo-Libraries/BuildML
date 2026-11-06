@@ -596,19 +596,28 @@ class DuckDBEngine:
         """Return the first few rows as pandas.
 
         Adds a ``LIMIT`` to the plan before executing, so the scan stops early
-        rather than reading the whole table and slicing.
+        rather than reading the whole table and slicing. Negative or extremely
+        large counts first execute a row count to preserve positional semantics
+        and avoid the native signed-integer limit.
 
         Parameters
         ----------
         table:
             The relation.
         n:
-            How many rows.
+            Python or NumPy integer count. Negative values return all rows
+            except the final ``abs(n)`` rows; counts beyond the table size clamp
+            to all rows (positive) or no rows (negative).
 
         Returns
         -------
         pandas.DataFrame
             The first ``n`` rows.
+
+        Raises
+        ------
+        ValueError
+            If ``n`` is not an integer or is a boolean.
 
         Notes
         -----
@@ -616,6 +625,13 @@ class DuckDBEngine:
         inherent order, so without an ``ORDER BY`` the same limit can return
         different rows across runs or after a change in the plan.
         """
+        if not pd.api.types.is_integer(n):
+            raise ValueError("head n must be an integer, excluding booleans")
+        n = int(n)
+        if n < 0:
+            n = max(0, self.n_rows(table) + n)
+        elif n > 2**63 - 1:
+            n = min(n, self.n_rows(table))
         rel = _as_relation(table)
         limited = rel.limit(n)
         try:

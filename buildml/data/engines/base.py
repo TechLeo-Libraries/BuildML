@@ -163,7 +163,9 @@ class Engine(Protocol):
         table:
             An engine-native table.
         n:
-            How many rows.
+            Python or NumPy integer count, excluding booleans. Negative values
+            return all except the final ``abs(n)`` rows. Oversized counts clamp
+            to all rows or no rows according to their sign.
 
         Returns
         -------
