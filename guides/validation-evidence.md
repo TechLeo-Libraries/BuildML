@@ -7659,3 +7659,63 @@ release references and whitespace checks pass. Production changes are confined
 to `cbr/adapters/industry_ann.py`, `cbr/features.py` and `cbr/retain.py`. This source
 needs its own complete result; accepted 89.5149% belongs to preceding `9ce78ca`.
 Floors, scope, exclusions and the one-point headroom policy remain unchanged.
+
+### Indexed case retention and numerical request controls (2026-11-06)
+
+A real loaded-plan consumer retained two new training cases despite
+`allow_overlap_with_train=False` when selecting them through `row_indices`.
+That route now forwards the overlap setting to retention. NumPy arrays, pandas
+indices and Series are materialized as label selections before checking whether
+they are empty; their truth values no longer determine which cases exist.
+A NumPy selection containing the single integer label zero is handled normally.
+Integer, string and tuple identities preserve their requested order. Validation
+and test identities remain forbidden, and repeated case identities are skipped.
+
+Neighbor counts previously coerced `True`, `1.9` and `"3"` into integers, while
+NaN/infinite counts leaked conversion errors. Fit, predict, retrieve and evaluate
+now require positive integral counts, including NumPy integers. An omitted query
+override still uses the saved plan's count; counts beyond memory size still
+return all available neighbors. A NaN/infinite distance weight floor previously
+produced NaN regression predictions. Fitting now requires a finite positive real
+number and reports invalid controls as typed validation errors before replacing
+the existing Session plan, results or history.
+
+The identical 89 new public cases against archived `fab19ee` produce **63 failed /
+26 passed**, zero skips/warnings, in both numerical profiles. These are failing
+checks, not 63 distinct defects. Corrected frozen selections pass **184 cases /
+one skip** with Pandas 3 and **159 cases / 26 skips** in compatible, including the
+75 preceding memory consumers and 21 existing CBR regressions. All 89 new cases
+execute unskipped in both selections. Genuine core independently passes all
+89 with zero warnings and without coverage collection. Raw standardized vector
+distances, inverse weights, weighted means/class votes and holdout metrics check
+real saved/trusted loaded plans, retained label order and repeated retention.
+Refusals preserve prior reports, matrices, dataset and history.
+
+Windows Python 3.12.8 and coverage.py 7.16.2 remain unchanged. Actual numerical
+versions/paths and optional provider origins match before/after within each
+profile. Pandas 3 uses Pandas 3.0.5/NumPy 2.4.6/sklearn 1.9.0, and existing
+regressions exercise isolated hnswlib 0.8.0. Its three warnings are existing
+deprecated aliases and its skip is the Windows Torch guard. Compatible/core use
+Pandas 2.3.3/NumPy 2.4.1/sklearn 1.9.1; compatible retains the 26 disclosed
+missing-provider/platform skips from the preceding selection. No dependencies
+were installed or copied. Native FAISS remains absent. Durations 209.71s/47.71s
+and core 6.90s are not performance evidence. Corrected runs have no failures,
+errors, collection, assertion-rewrite or coverage warnings.
+
+Official reach measurement uses verified same-source `9ce78ca` full JSON/Git,
+separate from the `fab19ee` correctness control: **22/23 previously missing
+unchanged lines**, with **38/37 changed/new executed lines**. Most reach was
+already exercised by the preceding memory/regression selection. Exactly **one
+additional baseline-missing line**, the empty indexed-selection refusal, is
+reached in each profile relative to that selection; no previously reached line
+is lost. This is neither a net full-suite gain nor a projected percentage.
+Current source has 63,419 statements, the same 800 files/566 exclusions. All
+1,364 frozen inputs and 828 archived production/resource members are checked.
+CI requires 30 modules/5,011 actual cases; accepted full XML plus only the 164
+actual new Pandas 3 cases from the two CBR batches validates positive and
+missing-module/skipped-case guard probes. This composes execution evidence,
+without combining coverage databases. Production changes in this follow-up are
+confined to CBR fit/predict/retrieve/retain and the Session retention dispatcher.
+The preliminary v1 test oracle compared default validation evaluation with test
+rows and imposed unnecessarily strict error text; it is superseded and excluded
+from product evidence. Complete coverage for these changes remains pending.

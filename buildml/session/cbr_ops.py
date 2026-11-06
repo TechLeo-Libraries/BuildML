@@ -391,6 +391,7 @@ def retain_cbr_op(
             session._split_plan,
             row_indices=row_indices,
             source_disclosure=source_disclosure,
+            allow_overlap_with_train=allow_overlap_with_train,
         )
     else:
         assert labeled_frame is not None

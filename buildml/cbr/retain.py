@@ -411,6 +411,7 @@ def retain_from_indices(
     *,
     row_indices: Sequence[Any],
     source_disclosure: str,
+    allow_overlap_with_train: bool = True,
 ) -> tuple[CbrPlan, CbrRetainResult]:
     """Retain rows that are already in the dataset, named by index.
 
@@ -431,6 +432,8 @@ def retain_from_indices(
         Which rows to retain. Must all exist in the dataset.
     source_disclosure:
         Mandatory, non-empty. Where the labels came from.
+    allow_overlap_with_train:
+        Whether to retain new cases whose indices belong to Session train.
 
     Returns
     -------
@@ -455,15 +458,16 @@ def retain_from_indices(
     --------
     retain_cbr : The general form, for cases from outside the dataset.
     """
-    if not row_indices:
+    indices = list(row_indices)
+    if not indices:
         raise ValidationError("row_indices must be non-empty.")
     frame = dataset._ensure_pandas()
-    missing = [i for i in row_indices if i not in frame.index]
+    missing = [i for i in indices if i not in frame.index]
     if missing:
         raise ValidationError(
             f"retain_cbr row_indices not in dataset: {missing[:5]!r}..."
         )
-    labeled = frame.loc[list(row_indices)]
+    labeled = frame.loc[indices]
     return retain_cbr(
         dataset,
         plan,
@@ -471,4 +475,5 @@ def retain_from_indices(
         labeled_frame=labeled,
         solution_column=plan.target_column,
         source_disclosure=source_disclosure,
+        allow_overlap_with_train=allow_overlap_with_train,
     )

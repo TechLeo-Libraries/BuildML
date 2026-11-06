@@ -44,6 +44,7 @@ from buildml.cbr.retrieve import (
     neighbor_pack_for_row,
 )
 from buildml.core.errors import ValidationError
+from buildml.core.validation import _positive_integer
 from buildml.data.dataset import Dataset
 from buildml.data.splits import PartitionName, SplitPlan
 
@@ -139,9 +140,7 @@ def predict_cbr(
     reuse_solutions : The combination step on its own.
     """
     frame, indices = _partition_frame(dataset, split_plan, partition)
-    kk = int(plan.k if k is None else k)
-    if kk < 1:
-        raise ValidationError("k must be >= 1.")
+    kk = _positive_integer(plan.k if k is None else k, name="k")
 
     q_num, q_cat = encode_query_features(frame, plan)
     memory = plan.case_base

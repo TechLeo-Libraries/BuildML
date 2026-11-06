@@ -14,6 +14,12 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Indexed case retention honors the training-overlap control and accepts NumPy
+  arrays, pandas indices and Series without ambiguous truth-value errors.
+  Neighbor counts require positive integers; distance weight floors require
+  finite positive numbers. Invalid requests preserve the existing Session
+  evidence. Saved-plan consumers check exact row identities and weighted results.
+
 - Case-based reasoning converts ANN squared L2 results to Euclidean distances
   before inverse-distance weighting. Euclidean industry predictions, including
   loaded bundles, may change. Retention requires a genuine provenance string,
