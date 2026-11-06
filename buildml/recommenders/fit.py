@@ -176,8 +176,8 @@ def fit_recommender(
         )
 
     mask = np.zeros(matrix.shape, dtype=bool)
-    mask[interactions[user_col].map(user_index).to_numpy(),
-         interactions[item_col].map(item_index).to_numpy()] = True
+    mask[interactions[user_col].map(user_index).to_numpy(dtype=np.intp),
+         interactions[item_col].map(item_index).to_numpy(dtype=np.intp)] = True
     global_mean = float(matrix[mask].mean()) if mask.any() else 0.0
     item_popularity = mask.sum(axis=0).astype(float)
 

@@ -122,7 +122,7 @@ monolith** (**70** active after corrected thread/process tracing measured at lea
 `pytest tests --cov=buildml`); do not lower it to silence a regression.
 The separate `expanded-coverage` CI job installs
 `requirements-expanded-coverage.txt` and runs the entire suite with an **88%**
-floor, supported by passing remote Linux 89.5568% evidence at `deec011`.
+floor, supported by passing remote Linux 89.5685% evidence at `966e3d9`.
 The broadened profile includes DoWhy and ONNX Runtime, using a compatible
 NumPy 2.4.1/SciPy 1.15.3/mlxtend 0.23.4 stack. Same-source complete local suites
 passed 85.5192% for this profile and85.3947% for its original-profile control;
@@ -230,18 +230,18 @@ and pick the next target, and `--path buildml/<pkg>` to audit work in progress.
 - Write public documentation for library users. Keep implementation instructions,
   release actions, and work plans in clearly labeled contributor material.
 
-Current expanded coverage evidence (2026-11-06): Remote Linux source `deec011` passed **89.5568%** (56,796/63,419 lines),
-with 18,922 passed and 173 skipped. CI42260931848, backend42260931875,
-acceptance42260931863 and CodeQL42260924796 all passed. Tested merge `a2ded2ff`
-and source whole trees match. Scope stays 800 files/566 exclusions/coverage.py
-7.16.2; all 5,045 required consumers execute. Python 3.12.16, every installed
-distribution, profile input bytes and all 173 skips/37 messages match `135b521`.
-Warnings 3,412 versus 3,435 reflect removal of 23 symbolic flat-alias
-deprecations; all other warning blocks/counts match after source-line
-normalization. No failures/errors/collection warnings in the accepted result.
-Complete net +5 covered/zero statements comprises executor +3 and rule parsing
-+2. The initial macOS 3.10 acceptance job never acquired a hosted runner and
-ran no steps; its single-job retry passed. Runtime 2864.480s is not performance
-evidence. Core 70/expanded 88 remain; next expanded 89 requires passing complete
-coverage of at least 90%, preserving one point of headroom. Exact 90% gap: 282
-only at measured `deec011`; subsequent changes need their own complete result.
+Current expanded coverage evidence (2026-11-06): Remote Linux source `966e3d9` passed **89.5685%** (56,816/63,433 lines),
+with 18,980 passed and 173 skipped. [CI42284502213](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42284502213),
+backend42284502177, acceptance42284502160 and CodeQL42284496311 all passed.
+Tested merge `8363df5a` and source whole trees match. Scope stays 800 files/566
+exclusions/coverage.py 7.16.2; all 5,103 required consumers execute unskipped.
+Python 3.12.16, profile input bytes and all 173 skips/37 messages match `deec011`.
+Click alone changed 8.5.0 to 8.5.1; other installed distributions match.
+Warnings 3,464 versus 3,412 reflect 52 recurring NMF convergence warnings in
+existing NLP consumers; all other normalized warning blocks/counts match.
+No failures/errors/collection warnings. Complete net +20 covered/+14 statements
+includes recommender +21/+14 and an unrelated plot path losing one covered
+line. Runtime 2559.070s is not performance evidence. Core 70/expanded 88 remain;
+next expanded 89 requires passing complete coverage of at least 90%, preserving
+one point of headroom. Exact 90% gap: 274 only at measured `966e3d9`; subsequent
+changes need their own complete result.

@@ -8,22 +8,22 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 89.5567574386225,
-      "covered_lines": 56796,
-      "num_statements": 63419,
+      "percent_covered": 89.56852111676888,
+      "covered_lines": 56816,
+      "num_statements": 63433,
       "excluded_lines": 566,
-      "source_revision": "deec011f4536d38df6b0010655ce1338d35afd55",
-      "tested_revision": "a2ded2ff237a32921a17ec0c15840cd2de62e92d",
+      "source_revision": "966e3d98a76c6ce960a56249ef67a9a2d982aabb",
+      "tested_revision": "8363df5a7a88ddd79b1f18eaea24bd669d33646b",
       "platform": "remote Linux, CPU expanded profile",
       "python": "3.12.16",
-      "run_id": 42260931848,
-      "result": "18922 passed,173 skipped,zero failures/errors",
+      "run_id": 42284502213,
+      "result": "18980 passed,173 skipped,zero failures/errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
       "coverage_version": "7.16.2",
-      "notes": "Declared agent rules accepted. All four workflows pass;source/tested whole treeae73d5cef04e5ab549e4f9260509fec99b9b2cf6 matches. All5045consumers31modules execute. Same800files566exclusions/coverage7.16.2/tracing. Python3.12.16,every distribution,profileinputs,all173skips37messages match135b. Warnings3412vs3435:23symbolic flat-alias deprecations removed;allother warningblocks/counts match after source-coordinate normalization. Fullnet+5covered/0statements,executor+3/rules+2. Initial macOS3.10 acceptance neveracquiredrunner,ran0steps;single-jobretry passed. Runtime2864.480s notperformanceevidence. Exact90gap282 onlyatdeec. Core70/expanded88/1ppheadroom retained;next89 needs complete>=90. New recommender subset separate."
+      "notes": "Accepted full Linux aggregate; all four exact-head workflows passed. Click alone changed8.5.0->8.5.1; all other distributions/Python/profile inputs matchdeec. All173skips37messages match. Exactly52NMF convergence warnings recurred in existing NLP consumers; all other normalized warning blocks/counts identical. Unrelated plot_boards.py709 lost one covered line. Recommender aggregate+21covered/+14statements; package net+20/+14. No collection/errors/assertion-rewrite/coverage warnings. Timings are not performance evidence. Subset reach stays separate. Scope800files566exclusions;all5103consumers32modules unskipped. Whole tree53015f593ec4aa68d7f1e09e7fddc68a8f4d144d. Exact90gap274 onlyat966. Core70/expanded88/1ppheadroom retained;next89 requires passing complete>=90."
     },
     "latest_local_measurement": {
       "percent_covered": 85.51916984547746,

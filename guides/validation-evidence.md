@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-11-06, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed: 89.5568% (56,796/63,419); 18,922 passed, 173 skipped | [CI42260931848](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42260931848), source `deec011`, tested merge `a2ded2ff`; equal whole trees and all four workflows pass. Same 800 files/566 exclusions/coverage.py 7.16.2; all 5,045 required consumers execute. Python 3.12.16, every distribution, profile inputs and all skips match `135b521`. Warnings 3,412 versus 3,435: 23 symbolic alias deprecations removed; other normalized blocks/counts match. Full net +5 covered/zero statements. macOS capacity failure ran zero steps; single-job retry passed. Core 70/expanded 88 retained; exact 90% gap 282 only at this source; no collection warnings |
+| Current accepted remote expanded CPU whole-package gate | Passed: 89.5685% (56,816/63,433); 18,980 passed, 173 skipped | [CI42284502213](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42284502213), source `966e3d9`, tested merge `8363df5a`; equal whole trees and all four workflows pass. Same 800 files/566 exclusions/coverage.py 7.16.2; all 5,103 required consumers execute. Python/profile inputs/skips match `deec011`; Click alone 8.5.0 to 8.5.1. Warnings 3,464 versus 3,412: 52 existing NLP NMF convergence warnings recur; other blocks/counts match. Full net +20 covered/+14 statements includes unrelated plot loss of one line. Core 70/expanded 88 retained; exact 90% gap 274 only here; no collection warnings |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -7882,5 +7882,66 @@ coverage. Production changes are confined to recommender features, fit and model
 The preliminary v1 oracle assumed sorted catalog order and counted raw rather
 than aggregated holdout pairs; it is superseded and excluded from product
 evidence. The development SVD failure was independently probed and reproduced
-as a real correction. This batch needs its own complete result; 89.5568% above
-belongs only to measured `deec011`.
+as a real correction. That subset was subsequently verified by the complete `966e3d9` result below.
+
+The recommender numerical-memory correction subsequently passed complete verification:
+Remote Linux source `966e3d9` passed **89.5685%** (56,816/63,433 lines),
+with 18,980 passed and 173 skipped. [CI42284502213](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42284502213),
+backend42284502177, acceptance42284502160 and CodeQL42284496311 all passed.
+Tested merge `8363df5a` and source whole trees match. Scope stays 800 files/566
+exclusions/coverage.py 7.16.2; all 5,103 required consumers execute unskipped.
+Python 3.12.16, profile input bytes and all 173 skips/37 messages match `deec011`.
+Click alone changed 8.5.0 to 8.5.1; other installed distributions match.
+Warnings 3,464 versus 3,412 reflect 52 recurring NMF convergence warnings in
+existing NLP consumers; all other normalized warning blocks/counts match.
+No failures/errors/collection warnings. Complete net +20 covered/+14 statements
+includes recommender +21/+14 and an unrelated plot path losing one covered
+line. Runtime 2559.070s is not performance evidence. Core 70/expanded 88 remain;
+next expanded 89 requires passing complete coverage of at least 90%, preserving
+one point of headroom. Exact 90% gap: 274 only at measured `966e3d9`; subsequent
+changes need their own complete result.
+
+
+### Categorical recommender catalogs and saved rankings
+
+Real Session fits with categorical user or item IDs failed on both local Pandas
+profiles. Pandas 2.3.3 aggregation also created unobserved user-item combinations.
+Explicit aggregation now uses only observed pairs; matrix and observed-history
+indices explicitly use integer arrays. Unused and holdout-only category levels
+cannot enter fitted catalogs. Only recommender features and fitting change.
+
+The 64 new cases cover 48 categorical numerical/bundle workflows across ordered
+and unordered user/item/both columns, explicit and implicit feedback, and native
+CPU item/user kNN, SVD and content methods; eight object-ID controls; six small
+train-population refusals; all-null train IDs; and rating-floor exhaustion.
+Raw train pair aggregation, observed-zero history, cosine products, weighted
+sums, singular-value reconstructions and side-feature statistics check actual
+scores. Saved/reloaded bundles retain catalogs, exclusions, cold-start behavior
+and known-item holdout metrics. Refused fits preserve prior loaded memory,
+cached reports, history and input data.
+
+Identical final tests on archived `966e3d9` yield 54 failures/10 passes on Pandas
+3.0.5 and 58 failures/6 passes on compatible Pandas 2.3.3, with 31 categorical
+FutureWarnings only in the latter. These are failing checks, not distinct defects.
+Corrected frozen selections pass 398 cases per profile, including 334 existing
+regressions; genuine core passes all 64 new cases without coverage collection.
+All new cases execute unskipped in all three environments. Corrected runs have
+zero warnings, failures, errors, skips or collection/assertion-rewrite/coverage
+warnings. Actual numerical module versions/paths and optional origins match
+before/after within each profile; no dependencies were installed or copied.
+The profiles use Windows Python 3.12.8, coverage.py 7.16.2, Pandas 3.0.5/NumPy
+2.4.6/sklearn 1.9.0 versus Pandas 2.3.3/NumPy 2.4.1/sklearn 1.9.1. This bounded
+CPU evidence does not verify industry backends or general ranking quality.
+
+Official reach against verified same-source `966e3d9` full JSON/Git finds five
+previously missing unchanged lines and three changed/new executed lines per
+profile: four missing workflow lines and one provider-availability line. Existing
+regressions are included; this is not a combined or projected full percentage.
+Current source retains 63,433 statements, 800 files and 566 exclusions. All 1,367
+frozen inputs and 828 archived production/resource members are verified. The CI
+execution guard requires 33 modules/5,167 actual cases; accepted full XML plus
+only the 64 actual new Pandas 3 cases checks positive, missing-module and skipped-
+case behavior without combining coverage databases. Python 3.10 syntax and the
+repository checks pass. V1 controls were superseded solely by final test import
+formatting; V2 is the authoritative identical-corpus comparison. Complete
+coverage for the categorical source is pending; 89.5685% belongs to `966e3d9`.

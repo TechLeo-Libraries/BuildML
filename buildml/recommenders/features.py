@@ -210,7 +210,8 @@ def build_interactions(
     construction. Implicit feedback deduplicates user-item pairs and assigns
     rating ``1.0``; explicit feedback aggregates duplicate pairs by mean
     rating. After documented null/nonnumeric drops, explicit ratings must
-    be finite real values.
+    be finite real values. Categorical entity columns contribute only observed
+    pairs; unused category levels never expand the train or holdout population.
 
     Parameters
     ----------
@@ -269,7 +270,7 @@ def build_interactions(
             )
         # Aggregate duplicate user-item pairs by mean rating
         out = (
-            out.groupby([user_column, item_column], as_index=False)["__rating__"]
+            out.groupby([user_column, item_column], as_index=False, observed=True)["__rating__"]
             .mean()
         )
         if not np.isfinite(out["__rating__"].to_numpy(dtype=float)).all():
@@ -315,8 +316,10 @@ def build_user_item_matrix(
     user_index = {u: i for i, u in enumerate(users)}
     item_index = {it: i for i, it in enumerate(items)}
     matrix = np.zeros((len(users), len(items)), dtype=float)
-    u_idx = interactions[user_column].map(user_index).to_numpy()
-    i_idx = interactions[item_column].map(item_index).to_numpy()
+    # Mapping categorical ids can retain unused levels and produce float values.
+    # Every observed id is in these catalogs; NumPy needs integer indices.
+    u_idx = interactions[user_column].map(user_index).to_numpy(dtype=np.intp)
+    i_idx = interactions[item_column].map(item_index).to_numpy(dtype=np.intp)
     ratings = interactions["__rating__"].to_numpy(dtype=float)
     # Last write wins for any residual duplicates (already aggregated above)
     matrix[u_idx, i_idx] = ratings
