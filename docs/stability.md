@@ -55,18 +55,16 @@ Measure the complete suite with `python scripts/run_full_coverage.py`; subset
 runs are not comparable to the project coverage threshold.
 The separate expanded Linux job runs the complete test directory with
 `requirements-expanded-coverage.txt` and an **88%** floor. Latest accepted remote
-CPU source `fef094e` passed **89.4447%** (56,682/63,371), with 18,457 passed and
-173 skipped. CI42201501546, backend42201501562, acceptance42201501718 and
-CodeQL42201495956 passed. Tested merge `362b78c4` and source whole trees match.
+CPU source `b15f89b` passed **89.4799%** (56,707/63,374), with 18,546 passed and
+173 skipped. CI42208548769, backend42208548754, acceptance42208548748 and
+CodeQL42208542018 passed. Tested merge `ae239992` and source whole trees match.
 Core 70/expanded 88 remain; next expanded 89 requires passing complete coverage
-of at least 90%, retaining one point of headroom. Exact 90% gap: 352 at this source.
-Scope stays 800 files/566 exclusions/coverage.py 7.16.2; all 4,580 required consumers
-execute. Python 3.12.16 and every distribution version match accepted `56f7a8f`.
-All 173 skips across 37 messages match. Warnings are 3,487 versus 3,435: 52 existing
-NMF convergence warnings recurred; other normalized warning text matches. This
-variation is not attributed to the copied-call repair. No failures/errors/collection
-warnings. Complete totals add nine covered lines and no statements. Runtime
-1654.000s is not performance evidence.
+of at least 90%, retaining one point of headroom. Exact 90% gap: 330 at this source.
+Scope stays 800 files/566 exclusions/coverage.py 7.16.2; all 4,669 required consumers
+execute. Python 3.12.16 and every distribution version match accepted `fef094e`.
+All 173 skips across 37 messages and 3,487 normalized pytest warning messages/counts
+match. No failures/errors/collection warnings. Complete totals add 25 covered
+lines and three statements. Runtime 2050.910s is not performance evidence.
 
 The subsequent `8594200` gate passed its tests, but coverage.py upgraded from
 7.16.2 to7.17.0 and reported607 excluded lines instead of566. Its raw86.5151%

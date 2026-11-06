@@ -24,10 +24,12 @@ buildml.model.supervised : The fit and evaluate underneath.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from math import isfinite
 from typing import Any, Literal
 
 import pandas as pd
 
+from buildml.core.errors import ValidationError
 from buildml.data.dataset import Dataset
 from buildml.data.splits import SplitPlan
 from buildml.model.supervised import EvaluateResult, FitResult, evaluate_estimator, fit_estimator
@@ -165,7 +167,8 @@ def compare_estimators(
         Which partition to score on. Defaults to test.
     ranking_metric:
         What to sort by. Defaults to F1-weighted or R². Loss-like metrics sort
-        ascending.
+        ascending. Missing or non-finite scores are listed last. At least one
+        candidate must have a finite score for the requested metric.
 
     Returns
     -------
@@ -178,8 +181,8 @@ def compare_estimators(
     ValueError
         If ``estimators`` is empty.
     ValidationError
-        If the split is missing, or if any estimator cannot be fitted on the
-        resolved features: for example one that rejects a weight column.
+        If the split is missing, any estimator cannot be fitted on the resolved
+        features, or no candidate has finite evidence for the ranking metric.
 
     Notes
     -----
@@ -239,12 +242,24 @@ def compare_estimators(
     assert resolved_task is not None
     metric = ranking_metric or ("r2" if resolved_task == "regression" else "f1_weighted")
     higher_is_better = metric not in {"mae", "mse", "rmse", "log_loss", "median_ae", "mape"}
-    rows.sort(key=lambda item: item.get(metric, float("-inf")), reverse=higher_is_better)
+
+    def ranking_key(row: dict[str, Any]) -> tuple[bool, float]:
+        value = row.get(metric)
+        if not isinstance(value, (int, float)) or not isfinite(value):
+            return True, 0.0
+        return False, -float(value) if higher_is_better else float(value)
+
+    if all(ranking_key(row)[0] for row in rows):
+        raise ValidationError(f"No finite values for ranking metric '{metric}' across candidates")
+    rows.sort(key=ranking_key)
 
     tips = [
         f"Ranked by '{metric}' on partition='{partition}'.",
         "Refit the chosen winner on the full training recipe before deployment.",
     ]
+    unavailable = [str(row["model"]) for row in rows if ranking_key(row)[0]]
+    if unavailable:
+        tips.append(f"No finite '{metric}' score for {', '.join(unavailable)}; listed last.")
     if len(rows) >= 2 and metric in rows[0] and metric in rows[1]:
         gap = abs(float(rows[0][metric]) - float(rows[1][metric]))
         tips.append(f"Top-2 gap on {metric}: {gap:.6f}")

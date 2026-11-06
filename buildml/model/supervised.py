@@ -171,6 +171,8 @@ class EvaluateResult:
     diagnostics:
         The detail behind the metrics: a confusion matrix, per-class scores and
         a full classification report, or a residual summary with quantiles.
+        Per-class support retains fractional sample-weight mass when weighted;
+        unweighted support remains an integer row count.
     n_rows:
         How many rows were scored. Small partitions produce noisy metrics, and
         per-class figures on a rare class can rest on a handful of rows.
@@ -1118,7 +1120,7 @@ def evaluate_estimator(
                 "precision": float(p),
                 "recall": float(r),
                 "f1": float(f),
-                "support": int(s),
+                "support": float(s) if sw is not None else int(s),
             }
             for label, p, r, f, s in zip(labels, precision, recall, f1, support, strict=True)
         }

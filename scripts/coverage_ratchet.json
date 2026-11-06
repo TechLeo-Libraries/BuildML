@@ -8,22 +8,22 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 89.44469867920658,
-      "covered_lines": 56682,
-      "num_statements": 63371,
+      "percent_covered": 89.47991289803389,
+      "covered_lines": 56707,
+      "num_statements": 63374,
       "excluded_lines": 566,
-      "source_revision": "fef094ea2da2523315a365ea53fb9134424e6be1",
-      "tested_revision": "362b78c4c581a0f8dc23f990b5bf907599679e0d",
+      "source_revision": "b15f89be31fce5897a0ea699cda83c017c037280",
+      "tested_revision": "ae2399920c56dec3257d4f305c75e61d5364a324",
       "platform": "remote Linux, CPU expanded profile",
       "python": "3.12.16",
-      "run_id": 42201501546,
-      "result": "18457 passed,173 skipped,zero failures/errors",
+      "run_id": 42208548769,
+      "result": "18546 passed,173 skipped,zero failures/errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
       "coverage_version": "7.16.2",
-      "notes": "EDA copied-call correction accepted. All four workflows pass; source/tested merge WHOLE tree d242e47e5c6ebacca64161369c06cba84023fe51 matches. All4580 required consumers in25modules execute.800files/566exclusions/coverage7.16.2 unchanged. Python3.12.16 and every installed distribution match56f; all173skips/37messages unchanged.3487warnings versus3435:52existing NMF convergence warnings recurred; other normalized text matches, not attributed to repair. Zero collection warnings. Complete+9covered/0statements.1654.000s log/1653.799XML not performance evidence. Exact90gap352 only at measuredfef. Core70/expanded88 retained; next89 requires passing complete>=90 with1ppheadroom. Subsequent EDA export-budget subset separate."
+      "notes": "EDA export-budget correction accepted. All four workflows pass; source and tested merge share whole tree 4e81632ca7bf463e4236d915adf3b22c3a196477. All 4,669 required consumers in 26 modules execute. Scope stays 800 files, 566 exclusions and coverage.py 7.16.2. Python 3.12.16 and every installed distribution match fef094e; all 173 skips across 37 messages and 3,487 normalized warning messages/counts match. Zero collection warnings. Complete totals add 25 covered lines and three statements. Runtime 2050.910s log/2050.684s XML is not performance evidence. Exact 90% gap: 330 only at measured b15f89b. Core 70/expanded 88 retained; next 89 requires passing complete coverage of at least 90% with one point of headroom. Subsequent weighted-comparison subset remains separate."
     },
     "latest_local_measurement": {
       "percent_covered": 85.51916984547746,

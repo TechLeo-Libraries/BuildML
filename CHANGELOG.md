@@ -14,6 +14,13 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Model comparisons rank candidates with a finite requested score before those
+  without one, including loss metrics where smaller is better. Comparisons with
+  no finite ranking evidence refuse before replacing a Session's fitted model.
+  Weighted classification diagnostics retain fractional class support;
+  unweighted support remains an integer count. Independent probability arithmetic,
+  comparison tables and saved winner predictions verify these behaviors.
+
 - Research EDA exports validate figure and byte limits before creating output.
   Limits require Python/NumPy integers and reject booleans, fractions and
   non-finite values. Windows exports write the exact UTF-8 bytes measured by

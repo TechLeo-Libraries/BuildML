@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-10-26, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed: 89.4447% (56,682/63,371); 18,457 passed, 173 skipped | [CI42201501546](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42201501546), source `fef094e`, tested merge `362b78c4`; equal whole trees and all four workflows pass. Same 800 files/566 exclusions/coverage.py 7.16.2; all 4,580 required consumers execute. Python 3.12.16 and every installed distribution match `56f7a8f`; all skip messages match. 3,487 warnings versus 3,435: 52 existing NMF convergence warnings recurred, other normalized text matches. Full +9 covered/0 statements. Core 70/expanded 88 retained; exact 90% gap 352 only at this measured source; no collection warnings |
+| Current accepted remote expanded CPU whole-package gate | Passed: 89.4799% (56,707/63,374); 18,546 passed, 173 skipped | [CI42208548769](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42208548769), source `b15f89b`, tested merge `ae239992`; equal whole trees and all four workflows pass. Same 800 files/566 exclusions/coverage.py 7.16.2; all 4,669 required consumers execute. Python 3.12.16 and every installed distribution match `fef094e`; all skip messages and 3,487 normalized warning messages/counts match. Full +25 covered/+3 statements. Core 70/expanded 88 retained; exact 90% gap 330 only at this measured source; no collection warnings |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -7433,5 +7433,71 @@ core cases validates the guard: positive passes; missing-module/skipped-case
 probes refuse. Frozen source/test/profile inputs and separate guard hash are
 verified. Python 3.10 syntax, full Ruff scope, new-test format, copy lint,
 docstring budget, release references and whitespace checks pass. Production
-changes are confined to `buildml/eda/html_report.py`. This new source needs its
-own complete CI result. Core 70/expanded 88 and one-point headroom policy remain.
+changes are confined to `buildml/eda/html_report.py`.
+
+Complete remote `b15f89b` evidence subsequently passed: **89.4799% (56,707/63,374)**,
+18,546 passed/173 skipped, no failures/errors/collection warnings. CI42208548769,
+backend42208548754, acceptance42208548748 and CodeQL42208542018 all pass. Tested
+merge `ae239992` and source whole trees match. All 4,669 required consumers execute.
+Python 3.12.16 and every installed distribution match accepted `fef094e`; all
+173 skips/37 messages and 3,487 normalized warning messages/counts match. Complete
+totals add 25 covered lines and three statements. Runtime 2050.910s log/2050.684s
+XML is not performance evidence. Core 70/expanded 88 and one-point headroom policy
+remain. Exact 90% gap: 330 only at measured `b15f89b`.
+
+### Weighted evaluation and comparison winner evidence (2026-11-06)
+
+Weighted classification diagnostics previously cast fractional class support to
+integers: a probe reported support zero for a class whose weighted confusion row
+totaled 0.875. Support now retains the measured floating-point mass when weights
+are supplied; unweighted support stays an integer row count.
+
+Sorting an ascending loss comparison previously placed a model with no loss
+score before models with measured losses. `Session.compare_models` also promotes
+the first candidate to its fitted model, so this changed the model subsequently
+saved and used for predictions. Comparisons now place finite requested scores
+first in the appropriate direction, retain missing scores as missing, and
+disclose candidates listed last. When no candidate has a finite requested score,
+comparison raises before replacing the Session's fit, comparison or history.
+
+The 86 new consumers cover binary/multiclass and string/numeric labels, weighted
+and unweighted evaluation on train/validation/test partitions, and reversed
+candidate insertion orders. An independent Gaussian calculation derives weighted
+means, variances, priors and probabilities from raw training rows. Manual clipped
+log loss, pairwise weighted ROC with ties, grouped-threshold average precision,
+confusion matrices, support, precision and recall check the returned evidence.
+Real GaussianNB, DummyClassifier and LinearSVC candidates exercise loss, AUC and
+accuracy ordering. Tables, strict JSON, console output, winner history and 16
+actual saved-pipeline probability predictions check consumers. Missing holdout
+classes retain valid log loss and disclose unavailable multiclass AUC. Empty,
+unknown, absent and undefined ranking evidence refuses without replacing prior
+state. Single-row R² cases explicitly assert the expected sklearn warnings.
+No fake estimator or substituted metric/helper result is used.
+
+The identical final 86-case corpus on archived `b15f89b` gives **54 failures/32
+passes/zero skips** in both Windows environments. Corrected frozen source passes
+**95 cases/zero skips in each**, including nine existing sample-weight and
+multiclass diagnostic regressions. Genuine core runs the new module: **86 passed,
+zero skipped**. All runs have zero unhandled pytest/collection/assertion-rewrite/
+coverage warnings. Windows Python 3.12.8 and coverage.py 7.16.2 are shared. Pandas 3
+uses Pandas 3.0.5/NumPy 2.4.6/sklearn 1.9.0; compatible uses Pandas 2.3.3/NumPy
+2.4.1/sklearn 1.9.1. Actual versions and loaded paths match before/after within
+each environment. No dependency installation or copying was needed. Subset
+durations 64.34s/50.12s and core 17.22s are not performance evidence.
+
+Official `measure_coverage_reach.py` compares each frozen subset against verified
+same-source `b15f89b` full JSON and Git: **14 previously missing unchanged lines**
+execute in both, eight in supervised evaluation and six in comparison consumers;
+**13 changed/new lines** also execute. The selection includes existing regressions,
+so reach is not attributed solely to new tests. No coverage databases are combined,
+and subset reach is neither a net full-suite gain nor a projected percentage.
+Current source contains 63,386 statements, with the same 800 files/566 exclusions.
+The 1,361 frozen source/test/profile inputs and separate CI guard hash are
+verified; archived baseline production/resources match all 828 Git members.
+CI requires 27 modules/4,755 actual consumers. Accepted full XML plus only the
+86 actual new core cases validates the guard: positive passes, missing-module
+and skipped-case probes refuse. Python 3.10 syntax, full Ruff scope, new-test
+format, copy lint, docstring budget, release references and whitespace checks
+pass. Production changes are confined to `model/compare.py` and
+`model/supervised.py`. This source needs its own complete CI result; accepted
+89.4799% remains specific to preceding `b15f89b`. Floors and scope are unchanged.
