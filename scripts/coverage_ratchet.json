@@ -8,22 +8,22 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 89.27623261694058,
-      "covered_lines": 56494,
-      "num_statements": 63280,
+      "percent_covered": 89.29615293467099,
+      "covered_lines": 56520,
+      "num_statements": 63295,
       "excluded_lines": 566,
-      "source_revision": "6d19740f7c516ca175aa56a4823791c7eb03c4e1",
-      "tested_revision": "7f151a326630fa1d17ff79eae38f00664eac1b85",
+      "source_revision": "19c4dfe1376ded4c10db1efaa07292e963396019",
+      "tested_revision": "3f957cb404f6f36812aba801eddbc301bf939bcc",
       "platform": "remote Linux, CPU expanded profile",
       "python": "3.12.16",
-      "run_id": 42126953395,
-      "result": "17251 passed,173 skipped,zero failures/errors",
+      "run_id": 42135240401,
+      "result": "17415 passed,173 skipped,zero failures/errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
       "coverage_version": "7.16.2",
-      "notes": "Readiness evidence corrections accepted; all four workflows pass and source/merge whole trees equal 986133a48bcfd0280febbc05b6a615f4b4a70c93. All3374 required consumers execute in17modules. Scope800/566 exclusions unchanged; complete+56covered/+21statements vs732. Python3.12.15->3.12.16 and18transitive versions changed; fixed numerical/backend pins unchanged. Skips173/37messages unchanged;3487pytest warnings identical after hostedPythonpath normalization;zero collection warnings. Full1903.590s log/1903.382s XML,not performance evidence. Full changes not attributed solely to119newcases because runtime drift exists. Exact90gap458 applies to this source only. Core70/expanded88 retained;next89 requires passing complete>=90 with1ppheadroom. Subsequent backbone subset reach separate."
+      "notes": "Native backbone correction accepted; all four workflows pass and source/merge whole trees equal 44a44388533ce20659ac6bbe80d69788141695ad. All3538 required consumers execute in18modules. Scope800/566 exclusions unchanged; complete+26covered/+15statements vs6d. Python3.12.16 and every installed distribution version unchanged;173skips/37messages and3487pytestwarnings identical after hostedPythonpath normalization;zero collection warnings. Full1469.160s log/1468.980s XML,not performance evidence. Exact90gap446 applies to measured19c only. Core70/expanded88 retained;next89 requires passing complete>=90 with1ppheadroom. Subsequent row-mask subset reach separate."
     },
     "latest_local_measurement": {
       "percent_covered": 85.51916984547746,

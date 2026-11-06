@@ -263,7 +263,8 @@ class PandasEngine:
         Raises
         ------
         ValueError
-            If the mask length does not match the row count.
+            If the mask length does not match the row count, or an element is
+            not a Python or NumPy boolean.
 
         Notes
         -----
@@ -275,6 +276,8 @@ class PandasEngine:
             raise ValueError(
                 f"filter mask length {len(mask)} does not match table rows {len(table)}"
             )
+        if any(not pd.api.types.is_bool(value) for value in mask):
+            raise ValueError("filter mask must contain only boolean values")
         return table.loc[list(mask)].copy()
 
     def aggregate(

@@ -14,6 +14,13 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Row filtering refuses strings, numeric values and missing mask entries before
+  they can silently change the selected population. Valid Python/NumPy boolean
+  masks remain positional across Pandas, Polars and DuckDB, including duplicate
+  indices and cached native tables. Numeric 0/1 masks require explicit boolean
+  conversion; missing values must be resolved first. Independent row selections,
+  Parquet exports and saved Ridge predictions verify valid behavior and refusal.
+
 - Direct backbone loaders and the dispatcher validate weight modes, boolean
   freeze flags and integer seeds before constructing models or replacing fitted
   state. NumPy integer seeds retain strict JSON provenance; fractional, boolean

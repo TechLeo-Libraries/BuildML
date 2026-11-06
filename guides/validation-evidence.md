@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-10-26, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed: 89.2762% (56,494/63,280); 17,251 passed, 173 skipped | [CI42126953395](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42126953395), source `6d19740`, tested merge `7f151a32`; equal whole trees and all four workflows pass. Same 800 files/566 exclusions/coverage.py 7.16.2; all 3,374 required consumers execute. Python patch and 18 transitive versions changed; fixed numerical/backend pins, all skip messages and 3,487 warnings (after hosted Python path normalization) unchanged. Full +56 covered/+21 statements is not attributed solely to 119 new cases. Core 70/expanded 88 retained; exact 90% gap 458 at this source; no collection warnings |
+| Current accepted remote expanded CPU whole-package gate | Passed: 89.2962% (56,520/63,295); 17,415 passed, 173 skipped | [CI42135240401](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42135240401), source `19c4dfe`, tested merge `3f957cb4`; equal whole trees and all four workflows pass. Same 800 files/566 exclusions/coverage.py 7.16.2; all 3,538 required consumers execute. Python 3.12.16 and all installed distribution versions unchanged; all skip messages and 3,487 warnings (after hosted Python path normalization) unchanged. Full +26 covered/+15 statements. Core 70/expanded 88 retained; exact 90% gap 446 at this source; no collection warnings |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -6861,3 +6861,73 @@ applies only to `6d19740`. Core 70/expanded 88 remain. Scoped old/current mypy r
 one existing `torch.nn.Module` name diagnostic with no new diagnostics; the gradual
 CI typing scope is unchanged. Python 3.10 syntax, CI-scoped Ruff, copy lint,
 docstring budget (586 findings), 49 release-claim groups and whitespace checks pass.
+
+### Accepted backbone whole-package measurement (2026-11-06)
+
+Source `19c4dfe` supersedes the pending backbone gate: **89.2962%**
+(56,520/63,295), **17,415 passed/173 skipped**, zero failures/errors/collection
+warnings. All 164 backbone cases execute with the prior consumers (3,538 total,
+18 modules). CI42135240401, backend42135240561, acceptance42135240375 and
+CodeQL42135238222 pass. Source and tested merge `3f957cb4` have equal whole tree
+`44a44388`. Scope stays 800 files/566 exclusions/coverage.py 7.16.2. Python
+3.12.16 and every installed distribution version match accepted `6d19740`; no
+packages are added or removed. All 173 skips across 37 messages and all 3,487
+pytest warning messages/counts match after hosted Python path normalization.
+Complete totals add 26 covered lines and 15 statements. Runtime 1469.160s log/
+1468.980s XML is not performance evidence. Core 70/expanded 88 remain; next
+expanded 89 requires passing complete coverage of at least 90%. Exact gap 446
+applies only to measured `19c4dfe`; the subsequent row-mask changes need their
+own complete assessment.
+
+### Native row-mask populations and saved regressors (2026-11-06)
+
+`Dataset.filter_rows` now requires Python or NumPy boolean values before cache
+promotion or native filtering. Strings, integers, floats and missing values raise
+`ValidationError` instead of selecting rows by truthiness or leaking Pandas errors.
+Direct Pandas and Polars adapters enforce the same value contract with `ValueError`;
+DuckDB already did so and retains its implementation. Correctly sized boolean
+masks remain positional, including nullable-boolean Series whose labels disagree
+with duplicate data indices. Callers with numeric 0/1 masks must explicitly convert
+those values to booleans; missing values must be resolved before filtering.
+
+The identical **216-case** corpus on archived `19c4dfe` gives **96 failures/120
+passes/zero skips or warnings** in each real runtime. Failures comprise 72 invalid
+Dataset masks, 12 invalid masks after fitted Ridge workflows and 12 direct Pandas/
+Polars adapter refusals. Existing valid masks, length refusals and strict DuckDB
+adapter behavior remain regression checks. The earlier public probe independently
+confirmed that a string `"False"` or NaN could keep a row across all three engines.
+
+Final frozen suites pass **238 tests each**, including 22 existing native dataset,
+engine persistence and DuckDB mask regressions. Both have zero skips, failures,
+errors, pytest warnings, collection warnings, assertion-rewrite warnings and coverage
+warnings. Actual Pandas memory/Parquet, cold/warm Polars and cold/warm DuckDB
+populations are checked with and without forced materialization. Independent row
+positions verify all/none/subset filtering, chained selections and Parquet round trips.
+Source roles, caches, input masks, files and borrowed DuckDB connection ownership
+survive refusal and remain usable. Twelve actual saved Ridge workflows compare
+predictions with independently solved centered normal equations, preserving duplicate
+query indices and saved model/file hashes after rejected masks. No fake engines,
+forced helper failures or model-quality claims are used.
+
+Local Windows/Python 3.12.8 profiles use Pandas 3.0.5/NumPy 2.4.6/sklearn 1.9.0/
+PyArrow 25.0.0 and compatible Pandas 2.3.3/NumPy 2.4.1/sklearn 1.9.1/PyArrow 26.0.0.
+Both use DuckDB 1.5.6 and Polars 2.0.0; actual provider paths/versions are recorded.
+Runtimes 55.28s/55.272s XML and 48.38s/48.393s XML are not performance comparisons.
+The genuine core environment passes 72 Pandas cases and skips 144 cases because
+Polars and DuckDB are absent (72 skips each), with zero warnings and no coverage
+collected. Expanded CI requires all 216 new cases unskipped: **19 modules/3,754
+cases**. Guard probes accept actual prior full XML plus only the new module and
+refuse missing/skipped negatives; no coverage databases are combined.
+
+Official `measure_coverage_reach.py` against verified same-source `19c4dfe` full
+JSON/Git and exact frozen inputs finds the same **4 previously missing unchanged
+production lines** in both profiles, plus **8 changed/new executed lines** each.
+These include length/refusal guards in Dataset and all three adapters. Reach includes
+adjacent regressions and is separate from whole-suite coverage or attribution solely
+to new cases. Scope remains 800 files/566 exclusions/coverage.py 7.16.2; corrected
+source has 63,302 statements and needs its own complete measurement. The old
+446-line gap is not projected onto this revision. Core 70/expanded 88 remain.
+Paired scoped mypy retains the same 38 existing diagnostics across the three modules
+(after source-line normalization), with no new diagnostics; gradual CI typing scope
+is unchanged. Python 3.10 syntax, CI-scoped Ruff, copy lint, docstring budget (586),
+49 release-claim groups and whitespace checks pass.

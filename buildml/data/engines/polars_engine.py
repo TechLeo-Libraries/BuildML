@@ -422,8 +422,9 @@ class PolarsEngine:
         Raises
         ------
         ValueError
-            If the mask length does not match the row count. A mismatch means
-            the mask was built against different data.
+            If a mask element is not a Python or NumPy boolean, or the mask
+            length does not match the row count. A mismatch means the mask was
+            built against different data.
 
         Notes
         -----
@@ -431,6 +432,8 @@ class PolarsEngine:
         :meth:`filter_expr`, where eligible predicates can be pushed into the scan to reduce
         materialisation and, where supported, file reads.
         """
+        if any(not pd.api.types.is_bool(value) for value in mask):
+            raise ValueError("filter mask must contain only boolean values")
         eager = self._collect(table)
         if len(mask) != int(eager.height):
             raise ValueError(

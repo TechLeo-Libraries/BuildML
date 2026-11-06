@@ -892,8 +892,9 @@ class Dataset:
         Parameters
         ----------
         mask:
-            One boolean per row, aligned to current order. Must be exactly as
-            long as the table.
+            One Python or NumPy boolean per row, aligned to current order.
+            Must be exactly as long as the table. Missing values and other
+            types are refused rather than converted by truthiness.
         materialize:
             Force a pandas result.
 
@@ -905,9 +906,9 @@ class Dataset:
         Raises
         ------
         ValidationError
-            If the mask length does not match the row count. A mismatch means
-            the mask was built against different data, so filtering by it would
-            silently keep the wrong rows.
+            If a mask value is not a boolean, or its length does not match the
+            row count. A mismatch means the mask was built against different
+            data, so filtering by it would silently keep the wrong rows.
 
         Notes
         -----
@@ -923,7 +924,10 @@ class Dataset:
         filter_expr : Pushing the predicate into the engine.
         project : Narrowing columns instead.
         """
-        mask_list = [bool(v) for v in mask]
+        mask_list = list(mask)
+        if any(not pd.api.types.is_bool(value) for value in mask_list):
+            raise ValidationError("filter mask must contain only boolean values")
+        mask_list = [bool(value) for value in mask_list]
         if len(mask_list) != self.n_rows:
             raise ValidationError(
                 f"filter mask length {len(mask_list)} does not match dataset rows {self.n_rows}"
