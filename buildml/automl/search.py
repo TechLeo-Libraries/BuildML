@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, replace
 from itertools import product
+from numbers import Integral
 from pathlib import Path
 from typing import Any, Literal
 
@@ -36,6 +37,7 @@ from buildml.automl.types import (
     EnsembleMode,
 )
 from buildml.core.errors import LeakageError, ValidationError
+from buildml.core.validation import _positive_integer
 from buildml.data.dataset import Dataset
 from buildml.data.splits import SplitPlan, assert_fit_partition
 from buildml.model.selection import (
@@ -69,6 +71,26 @@ class _Candidate:
     recipe: RecipeStrategy
     params: dict[str, Any]
     ensemble_bases: tuple[str, ...] = ()
+
+
+
+def _validated_budget_copy(budget: AutoMLBudget | None, *, n_trials: int) -> AutoMLBudget:
+    """Validate integral count caps on a detached per-run budget."""
+    if budget is None:
+        budget = AutoMLBudget(max_trials=n_trials)
+    elif not isinstance(budget, AutoMLBudget):
+        raise ValidationError("budget must be an AutoMLBudget.")
+    budget = replace(budget)
+    for name in ("max_trials", "max_families", "max_recipe_strategies"):
+        value = getattr(budget, name)
+        if value is None and name != "max_trials":
+            continue
+        setattr(budget, name, _positive_integer(value, name=f"budget.{name}"))
+    value = budget.max_ensemble_trials
+    if isinstance(value, (bool, np.bool_)) or not isinstance(value, Integral) or value < 0:
+        raise ValidationError("budget.max_ensemble_trials must be a non-negative integer.")
+    budget.max_ensemble_trials = int(value)
+    return budget
 
 
 def export_comparison_metrics(result: AutoMLResult, path: str | Path) -> Path:
@@ -237,6 +259,8 @@ def run_automl(
     budget:
         Optional :class:`~buildml.automl.types.AutoMLBudget` caps on trials,
         families, recipes, ensembles, and wall-clock time.
+        Count caps require integers (ensemble trials may be zero). The search
+        normalizes a copy, preserving the caller budget even with overrides.
         Multi-objective Optuna studies record both objectives and disable
         pruning, whose intermediate reports require a single objective.
         AutoML still ranks and refits the winner by the primary metric.
@@ -289,17 +313,15 @@ def run_automl(
             "selection='validation' requires a Session validation partition. "
             "Use split(..., validation_size=...) or selection='cv'/'nested'."
         )
-    if n_trials < 1:
-        raise ValidationError("n_trials must be >= 1")
+    n_trials = _positive_integer(n_trials, name="n_trials")
+    max_ensemble_bases = _positive_integer(max_ensemble_bases, name="max_ensemble_bases")
     if max_ensemble_bases < 2:
         raise ValidationError("max_ensemble_bases must be >= 2")
 
-    budget = budget or AutoMLBudget(max_trials=n_trials)
-    if budget.max_trials < 1:
-        raise ValidationError("budget.max_trials must be >= 1")
+    budget = _validated_budget_copy(budget, n_trials=n_trials)
     if time_budget is not None:
         budget.max_time_seconds = float(time_budget)
-    n_trials = min(int(n_trials), int(budget.max_trials))
+    n_trials = min(n_trials, budget.max_trials)
 
     # Industry adapters: train-only, disclosed internal preprocessing.
     if backend == "flaml":

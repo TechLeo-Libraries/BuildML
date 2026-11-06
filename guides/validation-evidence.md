@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-11-06, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed: 89.5685% (56,816/63,433); 18,980 passed, 173 skipped | [CI42284502213](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42284502213), source `966e3d9`, tested merge `8363df5a`; equal whole trees and all four workflows pass. Same 800 files/566 exclusions/coverage.py 7.16.2; all 5,103 required consumers execute. Python/profile inputs/skips match `deec011`; Click alone 8.5.0 to 8.5.1. Warnings 3,464 versus 3,412: 52 existing NLP NMF convergence warnings recur; other blocks/counts match. Full net +20 covered/+14 statements includes unrelated plot loss of one line. Core 70/expanded 88 retained; exact 90% gap 274 only here; no collection warnings |
+| Current accepted remote expanded CPU whole-package gate | Passed: 89.5748% (56,820/63,433); 19,044 passed, 173 skipped | [CI42294589227](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42294589227), source `ed3d953`, tested merge `e46d8b3d`; equal whole trees and all four workflows pass. Same 800 files/566 exclusions/coverage.py 7.16.2; all 5,167 consumers execute. Python/profile inputs/skips/all normalized warning blocks and counts match `966e3d9`; only boto3/botocore 1.43.125 to 1.43.126 change. Full net +4 covered/zero statements, recommender features +3/fit +1, no unrelated aggregate changes. Core 70/expanded 88 retained; exact 90% gap 270 only here; no collection warnings |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -7943,5 +7943,71 @@ execution guard requires 33 modules/5,167 actual cases; accepted full XML plus
 only the 64 actual new Pandas 3 cases checks positive, missing-module and skipped-
 case behavior without combining coverage databases. Python 3.10 syntax and the
 repository checks pass. V1 controls were superseded solely by final test import
-formatting; V2 is the authoritative identical-corpus comparison. Complete
-coverage for the categorical source is pending; 89.5685% belongs to `966e3d9`.
+formatting; V2 is the authoritative identical-corpus comparison. The categorical source subsequently passed complete verification below.
+
+The categorical catalog correction subsequently passed complete verification:
+Remote Linux source `ed3d953` passed **89.5748%** (56,820/63,433 lines),
+with 19,044 passed and 173 skipped. [CI42294589227](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42294589227),
+backend42294589055, acceptance42294589116 and CodeQL42294586193 all passed.
+Tested merge `e46d8b3d` and source whole trees match. Scope stays 800 files/566
+exclusions/coverage.py 7.16.2; all 5,167 required consumers execute unskipped.
+Python 3.12.16, profile input bytes, all 173 skips/37 messages and all normalized
+warning blocks/counts (3,464 warnings) match `966e3d9`. Only boto3/botocore
+updated 1.43.125 to 1.43.126; every other installed distribution matches.
+No failures/errors/collection warnings. Complete net +4 covered/zero statements:
+recommender features +3 and fitting +1, with no unrelated file aggregate changes.
+Runtime 1846.070s is not performance evidence. Core 70/expanded 88 remain;
+next expanded 89 requires passing complete coverage of at least 90%, preserving
+one point of headroom. Exact 90% gap: 270 only at measured `ed3d953`; subsequent
+changes need their own complete result.
+
+
+### AutoML count budgets and borrowed configuration
+
+Real Session searches accepted boolean/fractional resource counts and truncated
+trial caps. Valid NumPy integer budgets could not serialize as JSON. A valid
+per-call time override also changed the caller-owned budget, including when a
+later family lookup refused the search. The AutoML entry point now validates
+integral counts and normalizes a detached budget. Positive trial/family/recipe
+caps and a minimum of two ensemble bases remain; zero ensemble trials still
+means no ensemble exploration. Optional family/recipe caps may remain unset.
+
+The 67 new public cases include 48 invalid-count refusals, three budget-type
+refusals, three search-mode refusals, one refusal after a valid override, and
+12 weighted/unweighted Ridge workflows spanning CV, nested and validation
+selection with Python/NumPy integer counts. Independent weighted normal equations
+and raw fold residuals check trial scores, selected winners, test predictions
+and saved/reloaded bundle metrics. Refused calls preserve the loaded winner,
+plan/fit identity and hash, prior result, history, data and predictions. Borrowed
+budgets remain unchanged after valid overrides and refusals; later caller edits
+do not rewrite recorded budget metadata.
+
+The identical final corpus on archived `ed3d953` yields 50 failures and 17 passes
+per numerical profile, with zero skips or warnings. These are failing checks,
+not distinct defects. The corrected selection contains 211 cases per profile,
+including 144 existing native AutoML regressions; publication requires complete
+passing selections. Genuine core independently passes all 67 new cases without
+coverage collection, skips or warnings. Actual loaded numerical versions and
+paths are recorded within each profile. Windows Python 3.12.8/coverage.py 7.16.2
+uses Pandas 3.0.5/NumPy 2.4.6/sklearn 1.9.0 versus Pandas 2.3.3/NumPy 2.4.1/
+sklearn 1.9.1 in compatible/core; no dependency installation or copying.
+
+This batch verifies count validation, configuration ownership and bounded native
+CPU numerical consumers. The large time override checks recorded configuration
+and ownership; it does not establish timer enforcement, latency, throughput or
+industry backend behavior. Initial development assertions mistakenly recorded
+Session frame reads while checking history; final snapshots use read-only
+Dataset frame access and were corrected before freezing the paired corpus.
+The latest complete 89.5748% measurement belongs only to `ed3d953`; the budget
+correction needs its own complete result. Subset reach is recorded separately.
+
+
+The corrected Pandas 3 selection passes 209 cases with two existing Optuna
+nested-regression cases skipped because Optuna is absent locally; all 67 new
+cases execute unskipped. This local skip does not replace the required complete
+remote execution guard. Official reach against verified same-source `ed3d953`
+full JSON/Git finds 13 previously missing unchanged lines and 22 changed/new
+executed lines on Pandas 3: five missing search lines and eight catalog, space
+or provider lines. Existing regressions and optional-availability paths are
+included; this is not a combined, net or projected whole-package percentage.
+Current source has 63,449 statements, the same 800 files and 566 exclusions.

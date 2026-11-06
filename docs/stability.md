@@ -54,20 +54,19 @@ across Linux Python 3.10-3.13, run 38589015544, commit 2837fb3).
 Measure the complete suite with `python scripts/run_full_coverage.py`; subset
 runs are not comparable to the project coverage threshold.
 The separate expanded Linux job runs the complete test directory with
-`requirements-expanded-coverage.txt` and an **88%** floor. Remote Linux source `966e3d9` passed **89.5685%** (56,816/63,433 lines),
-with 18,980 passed and 173 skipped. [CI42284502213](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42284502213),
-backend42284502177, acceptance42284502160 and CodeQL42284496311 all passed.
-Tested merge `8363df5a` and source whole trees match. Scope stays 800 files/566
-exclusions/coverage.py 7.16.2; all 5,103 required consumers execute unskipped.
-Python 3.12.16, profile input bytes and all 173 skips/37 messages match `deec011`.
-Click alone changed 8.5.0 to 8.5.1; other installed distributions match.
-Warnings 3,464 versus 3,412 reflect 52 recurring NMF convergence warnings in
-existing NLP consumers; all other normalized warning blocks/counts match.
-No failures/errors/collection warnings. Complete net +20 covered/+14 statements
-includes recommender +21/+14 and an unrelated plot path losing one covered
-line. Runtime 2559.070s is not performance evidence. Core 70/expanded 88 remain;
+`requirements-expanded-coverage.txt` and an **88%** floor. Remote Linux source `ed3d953` passed **89.5748%** (56,820/63,433 lines),
+with 19,044 passed and 173 skipped. [CI42294589227](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42294589227),
+backend42294589055, acceptance42294589116 and CodeQL42294586193 all passed.
+Tested merge `e46d8b3d` and source whole trees match. Scope stays 800 files/566
+exclusions/coverage.py 7.16.2; all 5,167 required consumers execute unskipped.
+Python 3.12.16, profile input bytes, all 173 skips/37 messages and all normalized
+warning blocks/counts (3,464 warnings) match `966e3d9`. Only boto3/botocore
+updated 1.43.125 to 1.43.126; every other installed distribution matches.
+No failures/errors/collection warnings. Complete net +4 covered/zero statements:
+recommender features +3 and fitting +1, with no unrelated file aggregate changes.
+Runtime 1846.070s is not performance evidence. Core 70/expanded 88 remain;
 next expanded 89 requires passing complete coverage of at least 90%, preserving
-one point of headroom. Exact 90% gap: 274 only at measured `966e3d9`; subsequent
+one point of headroom. Exact 90% gap: 270 only at measured `ed3d953`; subsequent
 changes need their own complete result.
 
 The subsequent `8594200` gate passed its tests, but coverage.py upgraded from
