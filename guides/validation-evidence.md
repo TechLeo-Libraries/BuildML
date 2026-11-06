@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-10-26, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed: 89.4247% (56,672/63,374); 18,326 passed, 173 skipped | [CI42173171868](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42173171868), source `ca37ffe`, tested merge `a1954d9f`; equal whole trees and all four workflows pass. Same 800 files/566 exclusions/coverage.py 7.16.2; all 4,449 required consumers execute. Python 3.12.16 and every installed distribution match `ff4fd1d`; all skip messages match. 3,435 warnings versus 3,487: 52 existing NMF convergence warnings did not recur, other normalized text matches. Full +5 covered/+4 statements. Core 70/expanded 88 retained; exact 90% gap 365 only at this measured source; no collection warnings |
+| Current accepted remote expanded CPU whole-package gate | Passed: 89.4305% (56,673/63,371); 18,389 passed, 173 skipped | [CI42193454068](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42193454068), source `56f7a8f`, tested merge `b9ffa2f6`; equal whole trees and all four workflows pass. Same 800 files/566 exclusions/coverage.py 7.16.2; all 4,512 required consumers execute. Python 3.12.16 and every installed distribution match `ca37ffe`; all skip messages and 3,435 normalized warning messages/counts match. Full +1 covered/-3 statements after duplicate erroneous refit removal. Core 70/expanded 88 retained; exact 90% gap 361 only at this measured source; no collection warnings |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -7294,6 +7294,71 @@ actual XML positive/missing-module/skipped-case probes pass/refuse appropriately
 Python 3.10 syntax, Ruff, new-test formatting, copy lint, docstring/release checks
 and whitespace checks pass. Scoped mypy finds no issues in `automl_ops.py`, with
 one existing unused legacy configuration-section note. Frozen source/test/profile
-inputs and the CI guard hash are verified. The new source needs its own passing
-complete CI measurement. Latest accepted complete evidence remains **89.4247%**
-at `ca37ffe`; core 70/expanded 88 and one-point headroom policy remain unchanged.
+inputs and the CI guard hash are verified. The complete source `56f7a8f` measurement below supersedes its pending gate;
+core 70/expanded 88 and one-point headroom policy remain unchanged.
+
+### Accepted native AutoML complete measurement (2026-11-06)
+
+Source `56f7a8f` passed **89.4305% (56,673/63,371), 18,389 passed/173 skipped**,
+with no failures/errors/collection warnings. CI42193454068, backend42193453786,
+acceptance42193453811 and CodeQL42193448727 all pass. Tested merge `b9ffa2f6`
+and source have equal whole tree `013ea06b`. All 4,512 required consumers execute
+in 24 modules. Scope stays 800 files/566 exclusions/coverage.py 7.16.2. Python
+3.12.16 and every installed distribution match accepted `ca37ffe`; all 173 skips
+across 37 messages and all 3,435 normalized pytest warning messages/counts match.
+Complete totals add one covered line and remove three statements after the
+erroneous duplicate final refit was removed. The 2853.630s log/2853.372s XML
+runtime is not performance evidence. Core 70/expanded 88 remain; next expanded
+89 requires passing complete coverage of at least 90%, with one point of
+headroom. The exact 361-line gap applies only to measured `56f7a8f`.
+
+### Copied research EDA recommendation calls (2026-11-06)
+
+Research reports previously inserted raw column names into quoted Python code
+and used JSON values such as `false` and `null` in Session calls. Quotes, escaped
+characters and line breaks could break syntax, change the requested column or
+turn a review comment into another statement. The renderer now uses Python
+literals for these calls and keeps review comments on one line. Standard
+JSON-compatible action values are normalized before rendering, preserving
+existing NumPy floating-point values as plain Python numeric literals.
+
+The 68 new consumers read displayed call text from actual
+`EDAReport.save_html(..., html_format="research")` and `export_eda_html` files.
+They check the Python syntax and literal arguments, then execute the copied call
+against real Sessions. Generated constant/identifier recommendations use actual
+EDA findings. Explicit caller-created Action/Recommendation objects exercise
+Boolean/null/nested parameters, split membership, independent word-count matrices,
+train-only registered-transform arithmetic and numeric imputation compatibility.
+Column names retain quotes, backslashes, control characters and Unicode. Source
+data and roles outside the requested change remain intact. The calls remain
+examples for the reader to review; exporting a report does not run them.
+
+The identical final 68-case corpus on archived `56f7a8f` produces **52 failures/
+16 passes/zero skips** in both established environments. Frozen corrected source
+passes **95 cases/zero skips** in each: 68 new plus 27 existing EDA/reporting
+cases. Both have one existing provider warning: LangChain Community in Pandas 3,
+Starlette TestClient/HTTPX in compatible. There are zero failures/errors/collection,
+assertion-rewrite or coverage warnings. Genuine core runs just the new module:
+**68 passed/zero skipped/zero warnings**, with no coverage collected. Both expanded
+selections use Windows/Python 3.12.8/coverage.py 7.16.2. Numerical runtime versions
+and loaded module paths match before/after within each selection. Pandas 3 uses
+Pandas 3.0.5/NumPy 2.4.6/sklearn 1.9.0; compatible uses Pandas 2.3.3/NumPy 2.4.1/
+sklearn 1.9.1. No dependency was installed or copied. Durations 86.18s/41.88s
+and core 14.33s are not performance evidence. These are saved HTML text/code
+consumer checks; no visual, browser or Studio placeholder-call claim is made.
+
+Official `measure_coverage_reach.py` compares each current frozen subset against
+verified same-source accepted `56f7a8f` full JSON and Git source. Each reaches
+**11 previously missing unchanged lines**: nine common EDA export/recommendation
+lines and two environment-specific optional-provider discovery lines. Five
+changed/new lines execute. Baseline line coordinates and changed/current line
+coordinates are distinct. These are subset reach counts, not combined coverage
+or a projected/net full percentage. Current source retains 63,371 measured
+statements, 800 package files, 566 exclusions and unchanged coverage settings.
+CI requires 25 modules/4,580 actual consumers. Actual XML positive/missing-module/
+skipped-case guard probes pass/refuse appropriately, without combining coverage
+databases. Frozen source/test/profile inputs and the separate guard hash are
+verified. Python 3.10 syntax, Ruff, test formatting, copy lint, docstring budget,
+release references and whitespace checks pass. Production changes are confined
+to `buildml/eda/html_report.py`; analysis calculations are unchanged. This new
+source still needs its own complete CI measurement. Core 70/expanded 88 remain.

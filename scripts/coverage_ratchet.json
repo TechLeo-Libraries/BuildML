@@ -8,22 +8,22 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 89.42468520213336,
-      "covered_lines": 56672,
-      "num_statements": 63374,
+      "percent_covered": 89.43049659939089,
+      "covered_lines": 56673,
+      "num_statements": 63371,
       "excluded_lines": 566,
-      "source_revision": "ca37ffe902411d1ed521db45090629f5361c2526",
-      "tested_revision": "a1954d9f53aa90c1e839e197b24aef71d2efb43e",
+      "source_revision": "56f7a8f82b08f01b5fa7589587ba240ba1c268fa",
+      "tested_revision": "b9ffa2f6260de87d7b8bf173664928344d89e7ba",
       "platform": "remote Linux, CPU expanded profile",
       "python": "3.12.16",
-      "run_id": 42173171868,
-      "result": "18326 passed,173 skipped,zero failures/errors",
+      "run_id": 42193454068,
+      "result": "18389 passed,173 skipped,zero failures/errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
       "coverage_version": "7.16.2",
-      "notes": "Academy paragraph repair accepted. All four workflows pass; source/tested merge whole tree 453d713de57cd6bab6bbd15abe73bc98d630a1ea matches. All4449 required consumers execute in23modules.800files/566exclusions/coverage7.16.2 unchanged. Python3.12.16 and every installed distribution match ff4. All173skips/37messages unchanged.3435warnings versus3487:52existing NMF convergence warnings did not recur; all other normalized warning text matches, not attributed to the repair. Zero collection warnings. Complete+5covered/+4statements.2858.680s log/2858.425XML not performance evidence. Exact90gap365 only at ca37ffe. Core70/expanded88 retained; next89 requires passing complete>=90 with1ppheadroom. Subsequent native AutoML refit subset evidence separate."
+      "notes": "Native AutoML refit correction accepted. All four workflows pass; source/tested merge WHOLE tree 013ea06bfeed56bba0989db9d419e720c58cbc66 matches. All4512 required consumers in24modules execute.800files/566exclusions/coverage7.16.2 unchanged. Python3.12.16 and every installed distribution match ca37ffe; all173skips/37messages and3435normalized warning messages/counts match. Zero collection warnings. Complete+1covered/-3statements; duplicate erroneous final fit removed by correctness repair.2853.630s log/2853.372XML not performance evidence. Exact90gap361 only at measured56f7a8f. Core70/expanded88 retained; next89 requires passing complete>=90 with1ppheadroom. Subsequent EDA copied-call subset separate."
     },
     "latest_local_measurement": {
       "percent_covered": 85.51916984547746,

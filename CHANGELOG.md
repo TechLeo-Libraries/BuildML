@@ -14,6 +14,12 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Research EDA reports preserve column names and Python parameter literals in
+  copied Session calls. Quotes, backslashes and line breaks remain data;
+  Boolean/null parameters and nested action settings reach the requested
+  operation unchanged. Existing JSON-compatible numeric values remain plain
+  Python numbers. Actual saved reports and real Session consumers verify calls.
+
 - Native AutoML honors `refit=False`: selection still scores candidates and
   nested outer folds, while the final all-training-row refit is omitted and a
   previous Session model is preserved. AutoML evaluation requires the active

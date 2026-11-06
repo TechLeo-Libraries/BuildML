@@ -698,18 +698,18 @@ def _session_call(recommendation: Mapping[str, Any], report: Mapping[str, Any]) 
     if key == "next.drop_constants":
         cols = list(quality.get("constant_columns") or [])[:2]
         if cols:
-            mapping = ", ".join(f'"{col}": "ignore"' for col in cols)
-            return f"session.set_roles({{{mapping}}})"
+            mapping = {col: "ignore" for col in cols}
+            return f"session.set_roles({mapping!r})"
     if key == "next.exclude_ids":
         cols = list(quality.get("id_like_columns") or [])[:2]
         if cols:
-            mapping = ", ".join(f'"{col}": "id"' for col in cols)
-            return f"session.set_roles({{{mapping}}})"
+            mapping = {col: "id" for col in cols}
+            return f"session.set_roles({mapping!r})"
     if key == "next.high_cardinality":
         cols = list(quality.get("high_cardinality_columns") or [])[:1]
         if cols:
             return (
-                f'session.explain("encode", moment="before")  # review {cols[0]!s}'
+                f'session.explain("encode", moment="before")  # review {cols[0]!r}'
             )
     if key == "next.outliers":
         hot = [
@@ -718,15 +718,18 @@ def _session_call(recommendation: Mapping[str, Any], report: Mapping[str, Any]) 
             if float(stats.get("iqr_outlier_rate") or 0) >= 0.05
         ][:1]
         if hot:
-            return f'session.handle_outliers(action="detect", columns={json.dumps(hot)})'
+            return f'session.handle_outliers(action="detect", columns={hot!r})'
     if isinstance(action, Mapping) and action.get("operation"):
         op = action["operation"]
         params = action.get("parameters") or {}
         if params:
-            args = ", ".join(f"{name}={json.dumps(value)}" for name, value in params.items())
+            # Normalize JSON-compatible numbers, then render copied Python literals.
+            args = ", ".join(
+                f"{name}={json.loads(json.dumps(value))!r}" for name, value in params.items()
+            )
             return f"session.{op}({args})"
         return f"session.{op}()"
-    return _CALL_BY_REC_KEY.get(key, f"session.explain({json.dumps(key)})")
+    return _CALL_BY_REC_KEY.get(key, f"session.explain({key!r})")
 
 
 def _recommendations_table(

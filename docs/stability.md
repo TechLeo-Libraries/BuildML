@@ -55,18 +55,17 @@ Measure the complete suite with `python scripts/run_full_coverage.py`; subset
 runs are not comparable to the project coverage threshold.
 The separate expanded Linux job runs the complete test directory with
 `requirements-expanded-coverage.txt` and an **88%** floor. Latest accepted remote
-CPU source `ca37ffe` passed **89.4247%** (56,672/63,374), with 18,326 passed and
-173 skipped. CI42173171868, backend42173171748, acceptance42173172805 and
-CodeQL42173170213 passed. Tested merge `a1954d9f` and source whole trees match.
+CPU source `56f7a8f` passed **89.4305%** (56,673/63,371), with 18,389 passed and
+173 skipped. CI42193454068, backend42193453786, acceptance42193453811 and
+CodeQL42193448727 passed. Tested merge `b9ffa2f6` and source whole trees match.
 Core 70/expanded 88 remain; next expanded 89 requires passing complete coverage
-of at least 90%, retaining one point of headroom. Exact 90% gap: 365 at this source.
-Scope stays 800 files/566 exclusions/coverage.py 7.16.2; all 4,449 required consumers
-execute. Python 3.12.16 and every distribution version match accepted `ff4fd1d`.
-All 173 skips across 37 messages match. Warnings are 3,435 versus 3,487: 52 existing
-NMF convergence warnings did not recur; other normalized warning text matches.
-This variation is not attributed to the paragraph repair. No failures or collection
-warnings. Complete totals add five covered lines and four statements. The 2858.680s
-runtime is not performance evidence.
+of at least 90%, retaining one point of headroom. Exact 90% gap: 361 at this source.
+Scope stays 800 files/566 exclusions/coverage.py 7.16.2; all 4,512 required consumers
+execute. Python 3.12.16 and every distribution version match accepted `ca37ffe`.
+All 173 skips across 37 messages and 3,435 normalized pytest warning messages/counts
+match. No failures/errors/collection warnings. Complete totals add one covered line
+and remove three statements after the erroneous duplicate refit was removed.
+The 2853.630s runtime is not performance evidence.
 
 The subsequent `8594200` gate passed its tests, but coverage.py upgraded from
 7.16.2 to7.17.0 and reported607 excluded lines instead of566. Its raw86.5151%
