@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-10-26, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed: 89.4305% (56,673/63,371); 18,389 passed, 173 skipped | [CI42193454068](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42193454068), source `56f7a8f`, tested merge `b9ffa2f6`; equal whole trees and all four workflows pass. Same 800 files/566 exclusions/coverage.py 7.16.2; all 4,512 required consumers execute. Python 3.12.16 and every installed distribution match `ca37ffe`; all skip messages and 3,435 normalized warning messages/counts match. Full +1 covered/-3 statements after duplicate erroneous refit removal. Core 70/expanded 88 retained; exact 90% gap 361 only at this measured source; no collection warnings |
+| Current accepted remote expanded CPU whole-package gate | Passed: 89.4447% (56,682/63,371); 18,457 passed, 173 skipped | [CI42201501546](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42201501546), source `fef094e`, tested merge `362b78c4`; equal whole trees and all four workflows pass. Same 800 files/566 exclusions/coverage.py 7.16.2; all 4,580 required consumers execute. Python 3.12.16 and every installed distribution match `56f7a8f`; all skip messages match. 3,487 warnings versus 3,435: 52 existing NMF convergence warnings recurred, other normalized text matches. Full +9 covered/0 statements. Core 70/expanded 88 retained; exact 90% gap 352 only at this measured source; no collection warnings |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -7360,5 +7360,78 @@ skipped-case guard probes pass/refuse appropriately, without combining coverage
 databases. Frozen source/test/profile inputs and the separate guard hash are
 verified. Python 3.10 syntax, Ruff, test formatting, copy lint, docstring budget,
 release references and whitespace checks pass. Production changes are confined
-to `buildml/eda/html_report.py`; analysis calculations are unchanged. This new
-source still needs its own complete CI measurement. Core 70/expanded 88 remain.
+to `buildml/eda/html_report.py`; analysis calculations are unchanged. The accepted `fef094e` complete measurement below supersedes this pending gate.
+Core 70/expanded 88 remain.
+
+### Accepted copied-call complete measurement (2026-11-06)
+
+Source `fef094e` passed **89.4447% (56,682/63,371), 18,457 passed/173 skipped**,
+with no failures/errors/collection warnings. CI42201501546, backend42201501562,
+acceptance42201501718 and CodeQL42201495956 pass. Tested merge `362b78c4` and
+source have equal whole tree `d242e47e`. All 4,580 required consumers execute
+in 25 modules. Scope stays 800 files/566 exclusions/coverage.py 7.16.2. Python
+3.12.16 and every installed distribution match accepted `56f7a8f`; all 173 skips
+across 37 messages match. Warnings are 3,487 versus 3,435: 52 existing sklearn NMF
+convergence warnings recurred; other normalized warning text matches. This
+variation is not attributed to the copied-call repair. Complete totals add nine
+covered lines and no statements. Runtime 1654.000s log/1653.799s XML is not
+performance evidence. Core 70/expanded 88 and one-point headroom policy remain;
+exact 90% gap: 352 lines only at measured `fef094e`.
+
+### Research EDA export budgets and real assets (2026-11-06)
+
+Non-finite/fractional export limits previously bypassed checks or wrote reports
+before failing. Both limits now require genuine integer values: figure counts
+are non-negative, byte limits positive, and booleans are refused. Validation
+runs before output directories or files are created. Python and NumPy integers,
+including large unsigned values, retain their exact meaning.
+
+On Windows, text-mode newline conversion could also make an output exceed its
+byte limit: a probe requested 50,797 bytes but wrote 50,798; the same document
+measured 49,847 bytes before conversion. Research exports now persist exactly
+the UTF-8 bytes measured by the final limit check. Linux text output did not
+have that same newline overrun. The exact measured limit is inclusive; a smaller
+limit refuses without replacing an existing report. The raw appendix is omitted
+first when requested, preserving allowed figure assets and a visible disclosure.
+
+The 89 new public consumers use real valid PNG files and native Matplotlib
+figures, including a figure with an explicitly detached canvas. They verify
+inline image bytes, dimensions, duplicate-name precedence, retained-path fallback,
+native failure/missing-file disclosures, source-file removal, zero/count budgets,
+Unicode byte boundaries, appendix removal and preservation of existing files.
+Partial saved-report dictionaries are explicit supported inputs; unavailable
+measurements remain absent. New cases use no fake figure or replaced helper.
+HTML parsing, base64 validation, exact PNG bytes and real native rendering verify
+the artifacts; these checks do not claim visual layout or browser rendering.
+
+The identical final corpus on archived `fef094e` gives **50 failures/39 passes/
+zero skips** in both Windows environments. Corrected frozen source passes
+**170 cases/zero skips in each** (89 new plus 81 existing copied-call, final-quality
+and reporting-shell cases). Pandas 3 has one existing LangChain Community sunset
+warning; compatible has zero warnings. No failures/errors/collection/assertion-
+rewrite/coverage warnings. Genuine core runs just the new module: **89 passed,
+zero skipped/zero warnings**, without coverage collection. Both selections use
+Windows/Python 3.12.8/coverage.py 7.16.2/Matplotlib 3.11.2. Pandas 3 uses Pandas
+3.0.5/NumPy 2.4.6/sklearn 1.9.0; compatible uses Pandas 2.3.3/NumPy 2.4.1/sklearn
+1.9.1. Actual module versions/paths match before/after within each selection.
+No dependency was installed or copied. P3 has Seaborn 0.13.2; compatible genuinely
+lacks Seaborn, so some existing visualization consumers record degraded output.
+This is distinct from the three new native Matplotlib cases, which execute in
+both and in core. Durations 100.65s/44.87s and core 7.20s are not performance evidence.
+
+Official `measure_coverage_reach.py` uses verified same-source accepted `fef094e`
+full JSON and Git against each current frozen subset. Reach is **23 unchanged
+missing lines in P3 / 25 in compatible**, with 21 common: 20 HTML export lines
+and one Matplotlib Agg-selection path. Compatible adds two visualization import-
+refusal lines; each profile also has two distinct optional-provider discovery
+lines. Eight changed/new lines execute. The subset includes existing regressions;
+not all reach is attributed to the new tests. No coverage databases are combined
+and no projected/net complete percentage is claimed. Current source measures
+63,374 statements in the same 800 files with 566 exclusions. CI requires
+26 modules/4,669 actual consumers. Actual accepted full XML plus only the 89 new
+core cases validates the guard: positive passes; missing-module/skipped-case
+probes refuse. Frozen source/test/profile inputs and separate guard hash are
+verified. Python 3.10 syntax, full Ruff scope, new-test format, copy lint,
+docstring budget, release references and whitespace checks pass. Production
+changes are confined to `buildml/eda/html_report.py`. This new source needs its
+own complete CI result. Core 70/expanded 88 and one-point headroom policy remain.

@@ -22,6 +22,7 @@ import io
 import json
 from collections import defaultdict
 from collections.abc import Mapping, Sequence
+from numbers import Integral
 from pathlib import Path
 from typing import Any
 
@@ -101,10 +102,11 @@ def export_eda_html(
     include_raw_appendix:
         Append the full analyzer output as formatted JSON when size allows.
     max_figures:
-        Ceiling on embedded matplotlib / path figures.
+        Non-negative integer ceiling on embedded matplotlib / path figures.
     max_html_bytes:
-        Size budget, 12 MiB by default. The raw appendix is dropped first when
-        the budget is exceeded.
+        Positive integer byte budget, 12 MiB by default. The raw appendix is
+        dropped first when the budget is exceeded. Counts accept Python/NumPy
+        integers; booleans and floating-point values are refused.
 
     Returns
     -------
@@ -114,15 +116,17 @@ def export_eda_html(
     Raises
     ------
     ValueError
-        If ``max_figures`` is negative, ``max_html_bytes`` is not positive, or
-        the final document still exceeds the budget.
+        If a budget is not an integer, ``max_figures`` is negative,
+        ``max_html_bytes`` is not positive, or the document exceeds the budget.
     OSError
         If the file cannot be written.
     """
-    if max_figures < 0:
-        raise ValueError("max_figures must be non-negative")
-    if max_html_bytes < 1:
-        raise ValueError("max_html_bytes must be positive")
+    if isinstance(max_figures, bool) or not isinstance(max_figures, Integral) or max_figures < 0:
+        raise ValueError("max_figures must be a non-negative integer")
+    if isinstance(max_html_bytes, bool) or not isinstance(max_html_bytes, Integral) or max_html_bytes < 1:
+        raise ValueError("max_html_bytes must be a positive integer")
+    max_figures = int(max_figures)
+    max_html_bytes = int(max_html_bytes)
     destination = Path(path)
     destination.parent.mkdir(parents=True, exist_ok=True)
 
@@ -149,7 +153,7 @@ def export_eda_html(
             f"Report size {final_size:,} bytes exceeds max_html_bytes={max_html_bytes:,}; "
             "reduce sample_rows, max_columns, or max_figures."
         )
-    destination.write_text(document, encoding="utf-8")
+    destination.write_bytes(document.encode("utf-8"))
     return destination
 
 

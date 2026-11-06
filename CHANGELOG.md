@@ -14,6 +14,12 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Research EDA exports validate figure and byte limits before creating output.
+  Limits require Python/NumPy integers and reject booleans, fractions and
+  non-finite values. Windows exports write the exact UTF-8 bytes measured by
+  the limit check. Real image paths, native figures, degraded fallbacks and
+  inclusive byte boundaries verify portable exports and preserved prior files.
+
 - Research EDA reports preserve column names and Python parameter literals in
   copied Session calls. Quotes, backslashes and line breaks remain data;
   Boolean/null parameters and nested action settings reach the requested

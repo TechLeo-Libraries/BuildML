@@ -122,7 +122,7 @@ monolith** (**70** active after corrected thread/process tracing measured at lea
 `pytest tests --cov=buildml`); do not lower it to silence a regression.
 The separate `expanded-coverage` CI job installs
 `requirements-expanded-coverage.txt` and runs the entire suite with an **88%**
-floor, supported by passing remote Linux 89.4305% evidence at `56f7a8f`.
+floor, supported by passing remote Linux 89.4447% evidence at `fef094e`.
 The broadened profile includes DoWhy and ONNX Runtime, using a compatible
 NumPy 2.4.1/SciPy 1.15.3/mlxtend 0.23.4 stack. Same-source complete local suites
 passed 85.5192% for this profile and85.3947% for its original-profile control;
@@ -230,16 +230,17 @@ and pick the next target, and `--path buildml/<pkg>` to audit work in progress.
 - Write public documentation for library users. Keep implementation instructions,
   release actions, and work plans in clearly labeled contributor material.
 
-Current expanded coverage evidence (2026-11-06, source `56f7a8f`): remote Linux
-passed at **89.4305%** (56,673 / 63,371 lines), with 18,389 passed and 173 skipped.
-[CI42193454068](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42193454068)
+Current expanded coverage evidence (2026-11-06, source `fef094e`): remote Linux
+passed at **89.4447%** (56,682 / 63,371 lines), with 18,457 passed and 173 skipped.
+[CI42201501546](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42201501546)
 passed, as did backend evidence, release acceptance and CodeQL. Tested merge
-`b9ffa2f6` and source whole trees match. Scope stays 800 files, 566 exclusions and
-coverage.py 7.16.2. All 4,512 required consumers execute. Python 3.12.16 and every
-installed distribution version match accepted `ca37ffe`. All 173 skips across
-37 messages and 3,435 normalized pytest warning messages/counts match. No collection
-warnings. Complete totals add one covered line and remove three statements after
-the erroneous duplicate refit was removed. The 2853.630s runtime is not performance
-evidence. Core 70/expanded 88 remain; next expanded 89 requires passing complete
-coverage of at least 90%. Exact gap: 361 lines only at measured `56f7a8f`;
-subsequent EDA copied-call changes need their own complete measurement.
+`362b78c4` and source whole trees match. Scope stays 800 files, 566 exclusions and
+coverage.py 7.16.2. All 4,580 required consumers execute. Python 3.12.16 and every
+installed distribution version match accepted `56f7a8f`; all 173 skips across
+37 messages match. Warnings are 3,487 versus 3,435: 52 existing NMF convergence
+warnings recurred; other normalized warning text matches. This variation is not
+attributed to the copied-call repair. No collection warnings. Complete totals add
+nine covered lines and no statements. Runtime 1654.000s is not performance evidence.
+Core 70/expanded 88 remain; next expanded 89 requires passing complete coverage
+of at least 90%. Exact gap: 352 lines only at measured `fef094e`; subsequent EDA
+export-budget changes need their own complete measurement.
