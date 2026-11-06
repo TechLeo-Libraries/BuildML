@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-10-26, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed: 89.2173% (56,438/63,259); 17,132 passed, 173 skipped | [CI41187955042](https://github.com/TechLeo-Libraries/BuildML/actions/runs/41187955042), source `732aa6e`, tested merge `18a10ce1`; equal whole trees and all four workflows pass. Same 800 files, 566 exclusions and coverage.py 7.16.2; all 3,255 required consumers execute. Entire environment and skip messages match `2a4ff11`; full +23 covered lines/+11 statements. Core 70/expanded 88 retained; exact 90% gap 496 at this source. 3,487 pytest warnings (52 additional NMF convergence warnings in existing NLP resource checks), no collection warnings |
+| Current accepted remote expanded CPU whole-package gate | Passed: 89.2762% (56,494/63,280); 17,251 passed, 173 skipped | [CI42126953395](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42126953395), source `6d19740`, tested merge `7f151a32`; equal whole trees and all four workflows pass. Same 800 files/566 exclusions/coverage.py 7.16.2; all 3,374 required consumers execute. Python patch and 18 transitive versions changed; fixed numerical/backend pins, all skip messages and 3,487 warnings (after hosted Python path normalization) unchanged. Full +56 covered/+21 statements is not attributed solely to 119 new cases. Core 70/expanded 88 retained; exact 90% gap 458 at this source; no collection warnings |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -6779,3 +6779,85 @@ fallback-union diagnostics and pass cleanly on the corrected source. Frozen
 Python 3.10 syntax, CI-scoped Ruff, copy lint, docstring budget and release-claim
 references pass. The prior outlier-plan full result above remains the accepted
 whole-package measurement until this revision completes CI.
+
+### Accepted readiness whole-package measurement (2026-11-05)
+
+Source `6d19740` supersedes the pending readiness gate: **89.2762%**
+(56,494/63,280), **17,251 passed/173 skipped**, zero failures/errors/collection
+warnings. All 119 readiness cases execute with the prior consumers (3,374 total,
+17 modules). CI42126953395, backend42126953675, acceptance42126953358 and
+CodeQL42126949668 pass. Source and tested merge `7f151a32` have equal whole tree
+`986133a4`. Scope remains 800 files/566 exclusions/coverage.py 7.16.2. Complete
+results add 56 covered lines and 21 statements. Python changes from 3.12.15 to
+3.12.16, and 18 transitive versions change: AnyIO, boto3/botocore, cbcbox, Cython,
+jsonpatch/jsonpointer, langchain-protocol, LangSmith, mypy_extensions, platformdirs,
+Pydantic/pydantic_core, python-multipart, Ruff, SQLAlchemy, threadpoolctl and
+typing-inspection. Fixed numerical/backend pins and all 173 skips across 37 messages
+remain unchanged. All 3,487 warning messages/counts match after hosted Python path
+normalization. No new package/environment entries appear. This runtime drift prevents
+attribution of the complete increase solely to the 119 new cases. Runtime
+1903.590s log/1903.382s XML is not performance evidence. Core 70/expanded 88 remain;
+next expanded 89 requires passing complete coverage of at least 90%. Exact gap 458
+applies only to measured `6d19740`; subsequent backbone changes need their own
+complete assessment.
+
+### Native backbone controls and numerical consumers (2026-11-06)
+
+Direct vision, audio and speech loaders now share the dispatcher's weight-mode
+validation, require Python boolean freeze flags, and validate integer seeds in
+PyTorch's supported range `[-2**63, 2**64 - 1]` before model construction or state
+publication. NumPy integer seeds normalize to Python integers for strict JSON
+provenance. Booleans, lossy seeds and out-of-range integers raise validation errors.
+The public freeze helper refuses invalid flags before changing any parameter.
+Only `buildml/dl/zoo.py` changes production behavior in this batch.
+
+The identical **164-case** corpus on archived `6d19740` gives **124 failures/40
+passes/zero skips or warnings** in both native runtimes. Failure groups are 28
+NumPy-seed provenance cases, 20 invalid-mode cases, 24 invalid-freeze cases, 40 bad
+seed cases and 12 direct freeze-helper cases. Four invalid-mode Session requests
+were already refused by the old dispatcher and remain regression checks.
+
+Each final frozen suite passes **187 tests with zero skips, failures, errors,
+collection warnings, assertion-rewrite warnings or coverage warnings**. All 164 new
+cases run alongside 20 existing agent-head consumers and three selected loader
+regressions. The 35 warnings in each suite are existing deprecated flat Session
+calls in those adjacent tests; the new module emits none. Final runtimes are
+104.95s/104.954s XML and 103.44s/103.473s XML, not performance comparisons.
+
+Real ResNet-18, Wav2Vec2, HuBERT and Whisper architectures exercise public direct
+loaders and preferred Session facades. Independently computed pooling, linear logits,
+softmax/cross-entropy head gradients and SGD/freeze checks verify native outputs and
+parameter behavior. Native generated local checkpoint files and saved state dictionaries
+are loaded and compared without downloads; source files, prior backbones/heads,
+parameter flags and global RNG remain unchanged after refused requests. Native
+transformer tuple output exercises pooling without fake learners. All local checkpoints
+contain native random initialization, not published learned weights, and no prediction
+quality or broad cross-runtime artifact-compatibility claim is made. Vision's pretrained
+path is excluded from the offline matrix because that API has no local-checkpoint
+argument; there are no successful no-op cases.
+
+Both profiles use local Windows/Python 3.12.8 and coverage.py 7.16.2. Numerical pins
+are Pandas 3.0.5/NumPy 2.4.6/sklearn 1.9.0 and compatible Pandas 2.3.3/NumPy 2.4.1/
+sklearn 1.9.1. Actual CPU providers are Torch 2.13/Torchvision 0.28 and Torch 2.7.1/
+Torchvision 0.22.1; both use Transformers 5.19, Hub 1.33, tokenizers 0.23.3 and
+safetensors 0.8. Provider paths/versions are captured after pytest initialization.
+The compatible providers are isolated local installs; root requirements remain unchanged.
+Core skips all 164 native cases because Torch is genuinely absent, with no warnings
+or coverage collected. Two separate core public bad-mode probes refuse invalid modes
+without loading providers; they are not counted as native pytest passes. Expanded CI
+requires the new module unskipped: **18 modules/3,538 cases**. Guard probes accept
+actual prior full XML plus only the new cases, and refuse missing/skipped negatives;
+no coverage databases are combined.
+
+Official reach measurement against verified same-source `6d19740` full JSON/Git and
+exact frozen source finds the same **11 previously missing unchanged production
+lines** in `zoo.py` in both profiles, plus **17 changed/new executed lines** each.
+These are native pooling, loader/dispatcher and offline configuration paths, including
+adjacent default-configuration fallback checks. This subset includes adjacent
+regressions and is not a whole-suite percentage or attribution solely to new cases.
+Scope remains 800 normalized files/566 exclusions; modified source has 63,295
+statements and needs its own complete measurement. The baseline's 458-line gap
+applies only to `6d19740`. Core 70/expanded 88 remain. Scoped old/current mypy retains
+one existing `torch.nn.Module` name diagnostic with no new diagnostics; the gradual
+CI typing scope is unchanged. Python 3.10 syntax, CI-scoped Ruff, copy lint,
+docstring budget (586 findings), 49 release-claim groups and whitespace checks pass.

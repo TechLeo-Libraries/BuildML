@@ -8,21 +8,22 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 89.21734456757142,
-      "covered_lines": 56438,
-      "num_statements": 63259,
+      "percent_covered": 89.27623261694058,
+      "covered_lines": 56494,
+      "num_statements": 63280,
       "excluded_lines": 566,
-      "source_revision": "732aa6e607b86b3bc343bb4396868eb7c19b4902",
-      "tested_revision": "18a10ce13e3fe867730349e4b7bcf23582c5aea4",
+      "source_revision": "6d19740f7c516ca175aa56a4823791c7eb03c4e1",
+      "tested_revision": "7f151a326630fa1d17ff79eae38f00664eac1b85",
       "platform": "remote Linux, CPU expanded profile",
-      "run_id": 41187955042,
-      "result": "17132 passed,173 skipped,zero failures/errors",
+      "python": "3.12.16",
+      "run_id": 42126953395,
+      "result": "17251 passed,173 skipped,zero failures/errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
       "coverage_version": "7.16.2",
-      "notes": "Outlier-plan corrections accepted; all four workflows pass and source/merge whole trees equal cf31b7413d3b768a8ccb8de1733157820dd45300. All3255 required consumers execute in16 modules. Scope800/566 exclusions unchanged; full+23covered/+11statements vs2a. Entire environment and173skips/37message counters unchanged. 3487pytest warnings (52 additional NMF convergence warnings from existing NLP resource tests);zero collection warnings. Full1404.790s log/1404.611s XML; timing variation is not performance evidence. Exact90gap496 at this source. Core70/expanded88 retained;next89 requires passing complete>=90 with1ppheadroom. Subsequent readiness subset reach remains separate."
+      "notes": "Readiness evidence corrections accepted; all four workflows pass and source/merge whole trees equal 986133a48bcfd0280febbc05b6a615f4b4a70c93. All3374 required consumers execute in17modules. Scope800/566 exclusions unchanged; complete+56covered/+21statements vs732. Python3.12.15->3.12.16 and18transitive versions changed; fixed numerical/backend pins unchanged. Skips173/37messages unchanged;3487pytest warnings identical after hostedPythonpath normalization;zero collection warnings. Full1903.590s log/1903.382s XML,not performance evidence. Full changes not attributed solely to119newcases because runtime drift exists. Exact90gap458 applies to this source only. Core70/expanded88 retained;next89 requires passing complete>=90 with1ppheadroom. Subsequent backbone subset reach separate."
     },
     "latest_local_measurement": {
       "percent_covered": 85.51916984547746,

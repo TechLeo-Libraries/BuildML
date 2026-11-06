@@ -14,6 +14,12 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Direct backbone loaders and the dispatcher validate weight modes, boolean
+  freeze flags and integer seeds before constructing models or replacing fitted
+  state. NumPy integer seeds retain strict JSON provenance; fractional, boolean
+  and out-of-range seeds are refused. Native local encoders, independent head
+  gradients, freeze/optimizer checks and saved state consumers verify behavior.
+
 - Readiness quality gates keep unavailable counts and screens open instead of
   treating them as observed zeros. Duplicate evidence uses the full quality
   population and no longer claims untested key uniqueness. Cardinality flags
