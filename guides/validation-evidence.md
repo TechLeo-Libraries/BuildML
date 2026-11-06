@@ -7108,3 +7108,54 @@ or gradual CI typing-scope change. One final trailing-space cleanup compiles ide
 including bytecode, constants and line/column tables; original tested bytes and the
 equivalence receipt are preserved. Python 3.10 syntax, CI-scoped Ruff, new-test format,
 copy lint, docstring budget (586), 49 release-claim groups and whitespace checks pass.
+
+### Offline dashboard script-data boundary (2026-11-06)
+
+A real Session report with a column containing a script end tag produced extra
+script elements in its saved dashboard. The JSON payload now escapes HTML script
+tokens while retaining the decoded values. The six quoted application modules
+use the same encoding. This follows the [HTML script-content restrictions](https://html.spec.whatwg.org/multipage/scripting.html#restrictions-for-contents-of-script-elements).
+Module round trips compare decoded source with the packaged assets.
+
+Fifteen new consumers check six direct render inputs, four actual Session saved
+exports, four HTTP downloads and a round trip of all six packaged module sources.
+Closing tags, mixed case/space, newlines, HTML comments, Unicode, quotes and literal
+escape sequences are checked independently through HTML parsing and JSON decoding.
+Reports use their documented JSON normalization; HTML input line endings are
+normalized before parsing. On archived `ef0bdd0`, the identical final corpus gives
+**nine failures/six passes/zero skips** in both established local environments.
+Earlier test-oracle and invocation failures remain archived as superseded evidence.
+
+Windows/Python 3.12.8 current runs pass **24 tests** in Pandas 3 and **22 tests** in
+the compatible environment; all 15 new consumers pass in both, with zero skips,
+errors, collection warnings, assertion-rewrite warnings or coverage warnings.
+Each retains one existing provider deprecation: LangChain Community in Pandas 3,
+Starlette TestClient/HTTPX in compatible. The seven CSV regressions run in both;
+two additional dashboard smoke tests run in Pandas 3, whose ReportLab is installed.
+The compatible environment genuinely lacks ReportLab: explicitly selecting those
+two nodes initially stopped collection. That result is retained; the final
+compatible selection runs the new module and CSV regressions without adding a
+dependency. Actual module versions/paths and unchanged before/after provider versions
+are recorded. Both use existing Plotly 7.1.0. Timings 165.85s/91.11s are not
+performance evidence. Core genuinely skips all 15 optional Plotly consumers in
+8.06s with zero warnings; an actual export refuses before creating its directory.
+
+Independent Node 22.19.0 checks execute the controlled old injection excerpt in
+an isolated context, then evaluate bundle assignments from eight actual corrected
+exports and compile their eight application modules plus 48 decoded asset modules.
+Decoded report values match Python's parsed evidence. Node's VM-module experimental
+warning is retained. This is data/JavaScript verification, without a browser
+interaction or visual-QA claim and without adding a Node test dependency.
+
+Official subset reach against verified same-source accepted `f116295` full JSON/Git
+finds **26 previously missing unchanged lines per profile**, including adjacent
+regressions and optional-provider discovery. The 45/44 changed/new executed lines
+since that baseline include preceding Academy changes; **three** are in this
+batch's modified `offline.py`. These are separate from full-suite percentages,
+net gains and attribution solely to the 15 new cases. Scope remains 800 files/
+566 exclusions/coverage.py 7.16.2, with 63,370 current statements. CI requires
+22 consumer modules/4,372 actual cases; positive, missing-module and skipped-case
+guard probes use actual XML evidence, without combining coverage databases.
+Scoped old/current mypy passes for the changed production module. Frozen inputs,
+source archive and separate CI-guard hashes are preserved. Core 70/expanded 88,
+requirements, exclusions and the one-point ratchet headroom policy remain unchanged.

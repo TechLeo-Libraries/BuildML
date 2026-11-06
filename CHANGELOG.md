@@ -14,6 +14,11 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Offline dashboard exports keep report text inside the embedded data script.
+  Column labels, values, titles and metadata preserve their decoded text without
+  becoming HTML elements. Quoted application modules use the same encoding;
+  actual saved reports and HTTP downloads check the script boundary.
+
 - Academy quality lessons retain full-frame completeness when detailed analyzers
   use a sample. Missing evidence stays unavailable, measured zeros retain their
   values, and partial saved reports no longer imply that unmeasured screens
