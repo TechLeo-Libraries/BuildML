@@ -106,6 +106,20 @@ EvolutionarySpace = dict[str, Any]
 _LOWER_IS_BETTER = {"mae", "mse", "rmse", "log_loss", "median_ae", "mape"}
 
 
+def _metric_payload(metrics: dict[str, float]) -> dict[str, float | None]:
+    """Keep unavailable secondary metrics explicit in JSON-compatible reports."""
+    return {name: value if np.isfinite(value) else None for name, value in metrics.items()}
+
+
+def _require_finite_cv_metric(metrics: dict[str, float], metric: str, context: str) -> None:
+    """Refuse selection or evaluation without a defined headline score."""
+    if not np.isfinite(metrics[metric]):
+        raise ValidationError(
+            f"{context} has no finite '{metric}' score. Choose a defined scoring metric "
+            "or evaluation folds with enough observations."
+        )
+
+
 @dataclass(slots=True)
 class FoldScore:
     """What one fold scored, and how much data it had to work with.
@@ -148,13 +162,14 @@ class FoldScore:
         Returns
         -------
         dict
-            ``fold``, ``n_train``, ``n_eval``, and a copy of ``metrics``.
+            ``fold``, ``n_train``, ``n_eval``, and a copy of ``metrics``, with
+            non-finite secondary scores represented by ``None``.
         """
         return {
             "fold": self.fold,
             "n_train": self.n_train,
             "n_eval": self.n_eval,
-            "metrics": dict(self.metrics),
+            "metrics": _metric_payload(self.metrics),
         }
 
 
@@ -180,7 +195,8 @@ class CVScoreResult:
         The headline metric. Defaults to F1-weighted for classification and R²
         for regression. Classification supports ``accuracy``, ``balanced_accuracy``,
         ``f1_weighted``, and ``f1_macro``; regression supports ``mae``, ``mse``,
-        ``rmse``, and ``r2``. Other names raise ``ValidationError``.
+        ``rmse``, and ``r2``. Other names or undefined headline fold scores raise
+        ``ValidationError``. Unavailable secondary metrics serialize as ``None``.
     cv_strategy:
         Which folding scheme ran: k-fold, stratified, group, stratified-group,
         or time. Worth checking: an inappropriate strategy silently inflates
@@ -277,7 +293,8 @@ class CVScoreResult:
         Returns
         -------
         dict
-            Every field, with collections copied.
+            Every field, with collections copied and unavailable secondary metrics
+            represented by ``None``.
         """
         return {
             "task": self.task,
@@ -285,8 +302,8 @@ class CVScoreResult:
             "cv_strategy": self.cv_strategy,
             "n_splits": self.n_splits,
             "folds": [fold.to_dict() for fold in self.folds],
-            "mean_metrics": dict(self.mean_metrics),
-            "std_metrics": dict(self.std_metrics),
+            "mean_metrics": _metric_payload(self.mean_metrics),
+            "std_metrics": _metric_payload(self.std_metrics),
             "population": self.population,
             "held_out_partitions": list(self.held_out_partitions),
             "fold_preprocess": self.fold_preprocess,
@@ -395,8 +412,8 @@ class SearchTrial:
             "recipe_knobs": dict(self.recipe_knobs),
             "mean_score": self.mean_score,
             "std_score": self.std_score,
-            "mean_metrics": dict(self.mean_metrics),
-            "std_metrics": dict(self.std_metrics),
+            "mean_metrics": _metric_payload(self.mean_metrics),
+            "std_metrics": _metric_payload(self.std_metrics),
         }
 
 
@@ -629,7 +646,7 @@ class OuterFoldResult:
             "inner_best_score": self.inner_best_score,
             "inner_best_std": self.inner_best_std,
             "inner_n_trials": self.inner_n_trials,
-            "metrics": dict(self.metrics),
+            "metrics": _metric_payload(self.metrics),
         }
 
 
@@ -766,7 +783,8 @@ class NestedCVResult:
         Returns
         -------
         dict
-            Every field, with collections copied.
+            Every field, with collections copied and unavailable secondary metrics
+            represented by ``None``.
         """
         return {
             "task": self.task,
@@ -777,8 +795,8 @@ class NestedCVResult:
             "n_inner_splits": self.n_inner_splits,
             "search_method": self.search_method,
             "outer_folds": [fold.to_dict() for fold in self.outer_folds],
-            "mean_metrics": dict(self.mean_metrics),
-            "std_metrics": dict(self.std_metrics),
+            "mean_metrics": _metric_payload(self.mean_metrics),
+            "std_metrics": _metric_payload(self.std_metrics),
             "inner_selection_summary": dict(self.inner_selection_summary),
             "population": self.population,
             "held_out_partitions": list(self.held_out_partitions),
@@ -966,7 +984,9 @@ def cv_score(
     ------
     ValidationError
         If ``cv`` is under 2, if a recipe knob is not recognised, if knobs are
-        passed without a recipe, or if no folds were produced.
+        passed without a recipe, if no folds were produced, or if the selected
+        metric is non-finite in any fold or its aggregate. R² requires at least
+        two evaluation observations per fold; losses can score single rows.
     LeakageError
         If partitions overlap, if a fold's train and eval rows overlap, or if
         global preprocessing already ran without the override.
@@ -1119,6 +1139,7 @@ def cv_score(
         fold_metrics = _score_predictions(
             resolved_task, y_fold_eval, y_pred, sample_weight=w_fold_eval
         )
+        _require_finite_cv_metric(fold_metrics, metric, f"CV fold {fold_id}")
         folds.append(
             FoldScore(
                 fold=fold_id,
@@ -1133,6 +1154,7 @@ def cv_score(
         raise ValidationError("Cross-validation produced no folds")
 
     mean_metrics, std_metrics = _aggregate_metrics(metric_rows)
+    _require_finite_cv_metric(mean_metrics, metric, "Cross-validation aggregate")
     recorded_params = {**est_params, **{f"recipe__{k}": v for k, v in knob_params.items()}}
     session_global_override = bool(session_preprocess_applied and allow_session_global_preprocess)
     return CVScoreResult(
@@ -2184,6 +2206,7 @@ def nested_cv_score(
         Reported by the outer loop and ranked by the inner. Supports
         ``accuracy``, ``balanced_accuracy``, ``f1_weighted``, and ``f1_macro``
         for classification; ``mae``, ``mse``, ``rmse``, and ``r2`` for regression.
+        The selected metric must be finite in every inner and outer fold.
     groups:
         Explicit group labels, aligned to the train partition.
     preprocess:
@@ -2545,6 +2568,7 @@ def nested_cv_score(
         fold_metrics = _score_predictions(
             resolved_task, y_outer_eval, y_pred, sample_weight=w_outer_eval
         )
+        _require_finite_cv_metric(fold_metrics, metric, f"Nested CV outer fold {fold_id}")
         outer_folds.append(
             OuterFoldResult(
                 fold=fold_id,
@@ -2566,6 +2590,7 @@ def nested_cv_score(
         raise ValidationError("Nested cross-validation produced no outer folds")
 
     mean_metrics, std_metrics = _aggregate_metrics(metric_rows)
+    _require_finite_cv_metric(mean_metrics, metric, "Nested cross-validation aggregate")
     summary = _inner_selection_summary(
         selected_params, outer_folds, metric, selected_recipe_knobs=selected_recipe_knobs
     )

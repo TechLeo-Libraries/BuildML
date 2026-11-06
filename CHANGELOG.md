@@ -14,6 +14,12 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Cross-validation refuses an undefined selected metric in any inner or outer
+  fold before search can choose or refit a model. This prevents arbitrary
+  winners from leave-one-out R² scores. MAE/MSE/RMSE remain available for
+  single-row evaluation folds; unavailable secondary metrics serialize as
+  JSON null while raw diagnostic values remain explicit.
+
 - Model comparisons rank candidates with a finite requested score before those
   without one, including loss metrics where smaller is better. Comparisons with
   no finite ranking evidence refuse before replacing a Session's fitted model.

@@ -55,16 +55,21 @@ Measure the complete suite with `python scripts/run_full_coverage.py`; subset
 runs are not comparable to the project coverage threshold.
 The separate expanded Linux job runs the complete test directory with
 `requirements-expanded-coverage.txt` and an **88%** floor. Latest accepted remote
-CPU source `b15f89b` passed **89.4799%** (56,707/63,374), with 18,546 passed and
-173 skipped. CI42208548769, backend42208548754, acceptance42208548748 and
-CodeQL42208542018 passed. Tested merge `ae239992` and source whole trees match.
+CPU source `e718d98` passed **89.5056%** (56,734/63,386), with 18,632 passed and
+173 skipped. CI42216988576, backend42216988712, acceptance42216988578 and
+CodeQL42216984316 passed. Tested merge `93d45677` and source whole trees match.
 Core 70/expanded 88 remain; next expanded 89 requires passing complete coverage
-of at least 90%, retaining one point of headroom. Exact 90% gap: 330 at this source.
-Scope stays 800 files/566 exclusions/coverage.py 7.16.2; all 4,669 required consumers
-execute. Python 3.12.16 and every distribution version match accepted `fef094e`.
-All 173 skips across 37 messages and 3,487 normalized pytest warning messages/counts
-match. No failures/errors/collection warnings. Complete totals add 25 covered
-lines and three statements. Runtime 2050.910s is not performance evidence.
+of at least 90%, retaining one point of headroom. Exact 90% gap: 314 at this source.
+Scope stays 800 files/566 exclusions/coverage.py 7.16.2; all 4,755 required consumers
+execute. Python 3.12.16 and every installed distribution except jsonpatch
+1.43→1.44/jsonpointer 3.9→3.10 match accepted `b15f89b`. All 173 skips/37 messages
+match. Warnings are 3,435 versus 3,487: 52 existing NMF convergence warnings
+disappeared; other normalized text/counts match. No failures/errors/collection
+warnings. Complete totals add 27 covered lines and 12 statements: 26 covered
+lines in repaired modules and one existing regression diagnostic path. These
+aggregate changes are not wholly attributed to the correction. Runtime
+2853.840s is not performance evidence. Subsequent finite-CV changes require
+their own complete result.
 
 The subsequent `8594200` gate passed its tests, but coverage.py upgraded from
 7.16.2 to7.17.0 and reported607 excluded lines instead of566. Its raw86.5151%

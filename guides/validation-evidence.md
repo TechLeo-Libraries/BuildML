@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-10-26, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed: 89.4799% (56,707/63,374); 18,546 passed, 173 skipped | [CI42208548769](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42208548769), source `b15f89b`, tested merge `ae239992`; equal whole trees and all four workflows pass. Same 800 files/566 exclusions/coverage.py 7.16.2; all 4,669 required consumers execute. Python 3.12.16 and every installed distribution match `fef094e`; all skip messages and 3,487 normalized warning messages/counts match. Full +25 covered/+3 statements. Core 70/expanded 88 retained; exact 90% gap 330 only at this measured source; no collection warnings |
+| Current accepted remote expanded CPU whole-package gate | Passed: 89.5056% (56,734/63,386); 18,632 passed, 173 skipped | [CI42216988576](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42216988576), source `e718d98`, tested merge `93d45677`; equal whole trees and all four workflows pass. Same 800 files/566 exclusions/coverage.py 7.16.2; all 4,755 required consumers execute. Python 3.12.16 and all distributions except jsonpatch 1.43→1.44/jsonpointer 3.9→3.10 match `b15f89b`. All skip messages match. Warnings 3,435 versus 3,487: 52 existing NMF convergence warnings disappeared; other normalized text/counts match. Full +27 covered/+12 statements includes one existing regression diagnostic path and is not wholly attributed to the correction. Core 70/expanded 88 retained; exact 90% gap 314 only at this measured source; no collection warnings |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -7499,5 +7499,73 @@ CI requires 27 modules/4,755 actual consumers. Accepted full XML plus only the
 and skipped-case probes refuse. Python 3.10 syntax, full Ruff scope, new-test
 format, copy lint, docstring budget, release references and whitespace checks
 pass. Production changes are confined to `model/compare.py` and
-`model/supervised.py`. This source needs its own complete CI result; accepted
-89.4799% remains specific to preceding `b15f89b`. Floors and scope are unchanged.
+`model/supervised.py`.
+
+Complete remote `e718d98` evidence subsequently passed **89.5056% (56,734/63,386)**,
+18,632 passed/173 skipped, zero failures/errors/collection warnings. All four
+workflows pass: CI42216988576, backend42216988712, acceptance42216988578 and
+CodeQL42216984316. Tested merge `93d45677` and source whole trees match; all
+4,755 required consumers execute. Python 3.12.16 and all installed distributions
+except jsonpatch 1.43→1.44/jsonpointer 3.9→3.10 match `b15f89b`; profile inputs
+are unchanged. All 173 skips/37 messages match. Warnings are 3,435 versus 3,487:
+52 existing NMF convergence warnings disappeared; other normalized text/counts
+match. This variation is not attributed to the repair. Full totals add 27 covered
+lines and 12 statements: 18 covered/12 statements in comparison, eight covered in
+supervised evaluation, and one existing regression heteroscedasticity diagnostic
+path. The aggregate gain is not wholly attributed to the correction. Runtime
+2853.840s log/2853.584s XML is not performance evidence. Floors, scope, exclusions
+and one-point headroom remain. Exact 90% gap: 314 only at measured `e718d98`.
+
+### Finite cross-validation evidence and report consumers (2026-11-06)
+
+A real leave-one-out R² search previously selected an arbitrary first candidate
+with a NaN best score, refitted it on all eight training rows and replaced an
+existing Session model. Its report also failed strict JSON serialization.
+Cross-validation now requires a finite selected metric in every fold and its
+aggregate. Nested CV applies the same check to outer evaluation, before storing
+a result. Grid, randomized, evolutionary and real Optuna searches inherit the
+refusal before winner refitting or Session result/history replacement.
+
+Single-row folds still support MAE/MSE/RMSE. Undefined secondary metrics retain
+their raw NaN diagnostic values and serialize as JSON null, including fold,
+trial, outer-fold and aggregate metric maps. No undefined value becomes zero,
+and aggregation does not silently omit undefined folds. A different defined
+metric or evaluation folds with enough observations resolves the refusal.
+
+The 92 new consumers use real LeaveOneOut, PredefinedSplit and GroupKFold
+splitters, fractional weights and duplicate frame indices. Independent weighted
+normal equations check predictions, per-fold losses, means, sample standard
+deviations, inner selection scores and outer evaluation. Tables, console, strict
+JSON and 20 real saved-pipeline prediction consumers verify valid loss searches.
+Native and Optuna routes check refusal and preservation of prior fits, CV/search/
+nested results, history and data. Empty predefined evaluation populations and
+externally supplied overlapping split plans also refuse. Expected sklearn
+single-row R² warnings are explicitly asserted. Evolutionary checks score the
+actual selected candidates without claiming exhaustive search.
+
+The identical final corpus on archived `e718d98` gives **70 failed/22 passed/
+zero skipped** in both Windows profiles. Corrected frozen selections pass
+**156 cases/zero skips each**: 92 new plus 64 existing CV population, nested
+numerical and search-configuration regressions. Genuine core passes **86 cases
+and skips six** because Optuna is absent. The two expanded-style selections
+load existing Optuna 5.0.0 from its isolated runtime, with actual versions and
+paths checked before/after; no dependency was installed or copied. Both use
+Windows Python 3.12.8/coverage.py 7.16.2. Pandas 3 uses Pandas 3.0.5/NumPy 2.4.6/
+sklearn 1.9.0; compatible uses Pandas 2.3.3/NumPy 2.4.1/sklearn 1.9.1. All have
+zero unhandled pytest, collection, assertion-rewrite and coverage warnings.
+Durations 88.40s/65.68s and core 18.20s are not performance evidence.
+
+Official `measure_coverage_reach.py` compares each current frozen subset against
+verified same-source `e718d98` full JSON and Git: **six previously missing
+unchanged lines**, all selection leakage/empty-evidence refusals, and **nine
+changed/new executed lines** in each profile. Existing regressions are included;
+this is neither combined coverage nor a net/projected full-suite percentage.
+Current source has 63,395 statements, same 800 files/566 exclusions. All 1,362
+frozen inputs and 828 archived production/resource members are verified. CI now
+requires 28 modules/4,847 actual cases. Accepted full XML plus only 92 actual new
+Pandas 3 cases (including all six Optuna cases) validates the guard: positive
+passes, missing-module/skipped-case probes refuse. No coverage databases are
+combined. Python 3.10 syntax, full Ruff scope, test formatting, copy lint,
+docstring budget, release references, teaching/example checks and whitespace
+checks pass. Production changes are confined to `model/selection.py`. This source
+needs its own complete result; accepted 89.5056% belongs to preceding `e718d98`.
