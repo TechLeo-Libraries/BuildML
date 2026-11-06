@@ -8,22 +8,22 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 89.40790304254513,
-      "covered_lines": 56656,
-      "num_statements": 63368,
+      "percent_covered": 89.4224396402083,
+      "covered_lines": 56667,
+      "num_statements": 63370,
       "excluded_lines": 566,
-      "source_revision": "ef0bdd0bd93f42986d7cc881e81f4a6e99e58418",
-      "tested_revision": "71e25b1c9d3875a29d5e8f680b86272d78bffa2f",
+      "source_revision": "ff4fd1d242dd79dd13c5d1e802b288deb27a3ea8",
+      "tested_revision": "2bbb790fbaba5e3c5a9d011edae41bb99d9504ac",
       "platform": "remote Linux, CPU expanded profile",
       "python": "3.12.16",
-      "run_id": 42163313028,
-      "result": "18234 passed,173 skipped,zero failures/errors",
+      "run_id": 42168155152,
+      "result": "18249 passed,173 skipped,zero failures/errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
       "coverage_version": "7.16.2",
-      "notes": "Academy quality correction accepted. All four workflows pass; source and tested merge have equal WHOLE tree b48e152956a992591965e099348ab3978d56aeb0. All4357 required consumers execute in21modules.800files/566exclusions/coverage7.16.2 unchanged. Python3.12.16 and every installed distribution version match acceptedf116; all173skips/37messages and3487pytestwarning messages/counts match after hostedPythonpath normalization. Zero collection warnings. Complete+90covered/+46statements.2385.480s log/2385.268XML not performance evidence. Exact90gap376 only at measuredef0. Core70/expanded88 retained;next89 requires passing complete>=90 with1ppheadroom. Subsequent offline script-data subset evidence separate."
+      "notes": "Offline script-data correction accepted. All four workflows pass; source/tested merge have equal WHOLE tree d1bdd158a0b778ff3aa852d68d88e01e78c547e9. All4372 required consumers execute in22modules.800files/566exclusions/coverage7.16.2 unchanged. Python3.12.16 and every installed distribution version match acceptedef0; all173skips/37messages and3487pytestwarning messages/counts match after hostedPythonpath normalization. Zero collection warnings. Complete+11covered/+2statements.2090.210s log/2089.996XML not performance evidence. Exact90gap366 only at measuredff4. Core70/expanded88 retained;next89 requires passing complete>=90 with1ppheadroom. Subsequent Academy paragraph subset evidence separate."
     },
     "latest_local_measurement": {
       "percent_covered": 85.51916984547746,

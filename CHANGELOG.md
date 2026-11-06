@@ -14,6 +14,12 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Academy lessons keep declared paragraphs intact instead of displaying and
+  indexing one character at a time. This repairs 189 sections across 59 lessons,
+  including advice and pitfalls. Existing paragraph order and independent list
+  views are preserved. Public catalog, report, download and real-browser checks
+  verify displayed text and complete-phrase search.
+
 - Offline dashboard exports keep report text inside the embedded data script.
   Column labels, values, titles and metadata preserve their decoded text without
   becoming HTML elements. Quoted application modules use the same encoding;

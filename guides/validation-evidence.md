@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-10-26, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed: 89.4079% (56,656/63,368); 18,234 passed, 173 skipped | [CI42163313028](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42163313028), source `ef0bdd0`, tested merge `71e25b1c`; equal whole trees and all four workflows pass. Same 800 files/566 exclusions/coverage.py 7.16.2; all 4,357 required consumers execute. Python 3.12.16 and every installed distribution version match accepted `f116295`; all skip messages and 3,487 normalized warning messages/counts match. Full +90 covered/+46 statements. Core 70/expanded 88 retained; exact 90% gap 376 only at this measured source; no collection warnings |
+| Current accepted remote expanded CPU whole-package gate | Passed: 89.4224% (56,667/63,370); 18,249 passed, 173 skipped | [CI42168155152](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42168155152), source `ff4fd1d`, tested merge `2bbb790f`; equal whole trees and all four workflows pass. Same 800 files/566 exclusions/coverage.py 7.16.2; all 4,372 required consumers execute. Python 3.12.16 and every installed distribution version match accepted `ef0bdd0`; all skip messages and 3,487 normalized warning messages/counts match. Full +11 covered/+2 statements. Core 70/expanded 88 retained; exact 90% gap 366 only at this measured source; no collection warnings |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -7177,3 +7177,74 @@ not performance evidence. Core 70/expanded 88 remain; next expanded 89 requires
 passing complete coverage of at least 90%. The exact 376-line gap applies only
 to measured `ef0bdd0`; subsequent offline script-data changes have their own
 subset evidence and need a complete measurement.
+
+### Accepted offline dashboard whole-package measurement (2026-11-06)
+
+The offline script-data source `ff4fd1d` supersedes its pending full gate:
+**89.4224% (56,667/63,370), 18,249 passed/173 skipped**, zero failures/errors/
+collection warnings. All 15 new export consumers execute alongside earlier
+required consumers: 4,372 cases in 22 modules. CI42168155152, backend42168155111,
+acceptance42168155165 and CodeQL42168153407 pass. Source and tested merge
+`2bbb790f` have equal whole tree `d1bdd158`. Scope stays 800 files/566 exclusions/
+coverage.py 7.16.2. Python 3.12.16 and every installed distribution version match
+accepted `ef0bdd0`. All 173 skips across 37 messages and all 3,487 pytest warning
+messages/counts match after hosted Python path normalization. Complete totals
+add 11 covered lines and two statements. Runtime 2090.210s log/2089.996s XML is
+not performance evidence. Core 70/expanded 88 remain; next expanded 89 requires
+passing complete coverage of at least 90%. The exact 366-line gap applies only
+to measured `ff4fd1d`; subsequent Academy paragraph changes need their own
+complete measurement.
+
+### Academy paragraph and phrase-search consumers (2026-11-06)
+
+Scalar prose declarations became character sequences in 189 sections across
+59 lessons. Advice, pitfalls, technical paragraphs and reading steps could display
+one character per item; phrase indexing also separated the characters. The lesson
+factories now accept scalar prose explicitly and retain it as one paragraph.
+Sequence order, independent static list views and adaptive callables are preserved.
+
+The 77 new cases use 189 literal paragraph declarations independently extracted
+from archived `ff4fd1d` stage configuration, plus six sequence controls. Expected
+text is not reconstructed from the broken payload. Actual classification and
+regression Session reports exercise public LessonSpec objects, direct/strict-JSON
+payloads, offline bundles, HTTP responses, phrase indexing and standalone HTML.
+The identical final corpus on archived source gives **71 failures/six passes/zero
+skips** in both environments. An initial baseline was retained separately after
+removing an assertion about the separate top-level catalog-note summary; that
+production summary behavior was not changed.
+
+Both Windows/Python 3.12.8 expanded selections pass **99 cases**: 77 new, seven
+existing Academy and 15 offline export cases, with zero skips/failures/errors/
+collection/assertion-rewrite/coverage warnings. Each retains one existing provider
+deprecation: LangChain Community in Pandas 3, Starlette TestClient/HTTPX in the
+compatible profile. Both use existing Plotly 7.1.0 and their established dependency
+versions; actual module paths/versions match before/after provider metadata.
+Runtimes 146.30s/117.24s are not performance evidence. Genuine core passes 71 and
+skips six for absent extras (four Plotly/two FastAPI), in 9.32s with zero warnings
+and no coverage collected. No dependencies were installed or copied for this batch.
+
+Real isolated headless Chrome 156 on Windows clicks four lessons and checks
+16 displayed fields: old character fragments become the declared paragraphs.
+Searching a complete declared phrase changes from zero results to the expected
+lesson. Actual production assets and DOM click/input events are used; the test
+harness is added only to saved test artifacts. The earlier Edge invocation
+produced no DOM and is retained as an invocation failure. These checks establish
+the sampled DOM behavior, without a visual, cross-browser or performance claim.
+
+Scoped mypy across nine curriculum modules drops from 194 diagnostics to five,
+removing the 189 scalar-prose errors and adding none. The five existing diagnostics
+remain in three files; this is not a clean global typing claim, and the gradual CI
+scope is unchanged. Python 3.10 syntax, CI-scoped Ruff, new-test formatting, copy
+lint, docstring budget, release-claim and whitespace checks pass.
+
+Official subset reach against verified same-source accepted `ff4fd1d` full JSON/Git
+finds **two previously missing unchanged lines per profile**, all in optional-
+provider discovery, with no common lines. **Six changed/new executed lines** are
+in the paragraph factory. The existing paragraph implementation was already
+covered; these checks repair incorrect outcomes and do not establish new coverage
+of previously missing paragraph lines or a net whole-suite percentage gain.
+Scope stays 800 files/566 exclusions/coverage.py 7.16.2; current source has 63,374
+statements and needs its own complete measurement. CI requires 23 consumer modules/
+4,449 actual cases. Positive, missing-module and skipped-case guard probes use
+actual full/subset XML evidence, without combining coverage databases. Core70/
+expanded88, requirements, exclusions and the one-point headroom policy remain.
