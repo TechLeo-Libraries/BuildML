@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-10-26, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed: 89.3037% (56,531/63,302); 17,631 passed, 173 skipped | [CI42141458937](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42141458937), source `1b94b51`, tested merge `8bd3b092`; equal whole trees and all four workflows pass. Same 800 files/566 exclusions/coverage.py 7.16.2; all 3,754 required consumers execute. Python 3.12.16 and all installed distribution versions unchanged; all skip messages and 3,487 warnings (after hosted Python path normalization) unchanged. Full +11 covered/+7 statements. Core 70/expanded 88 retained; exact 90% gap 441 at this source; no collection warnings |
+| Current accepted remote expanded CPU whole-package gate | Passed: 89.3307% (56,566/63,322); 18,002 passed, 173 skipped | [CI42147606179](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42147606179), source `f116295`, tested merge `73b30c55`; equal whole trees and all four workflows pass. Same 800 files/566 exclusions/coverage.py 7.16.2; all 4,125 required consumers execute. Python 3.12.16 and all installed distribution versions unchanged; all skip messages and 3,487 warnings (after hosted Python path normalization) unchanged. Full +35 covered/+20 statements. Core 70/expanded 88 retained; exact 90% gap 424 at this source; no collection warnings |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -7014,4 +7014,97 @@ is not projected onto this revision. Core 70/expanded 88 remain. Paired scoped
 mypy retains the same 38 existing diagnostics in three files while checking all
 five changed modules, after source-line normalization; no new diagnostics and no
 gradual CI typing-scope change. Python 3.10 syntax, CI-scoped Ruff, new-test format,
+copy lint, docstring budget (586), 49 release-claim groups and whitespace checks pass.
+
+### Accepted native-preview whole-package measurement (2026-11-06)
+
+Source `f116295` supersedes the pending native-preview gate: **89.3307%**
+(56,566/63,322), **18,002 passed/173 skipped**, zero failures/errors/collection
+warnings. All 371 native-preview cases execute with the prior consumers (4,125
+total, 20 modules). CI42147606179, backend42147606206, acceptance42147606377 and
+CodeQL42147602415 pass. Source and tested merge `73b30c55` have equal whole tree
+`687ede61`. Scope stays 800 files/566 exclusions/coverage.py 7.16.2. Python
+3.12.16 and every installed distribution version match accepted `1b94b51`; no
+packages are added or removed. All 173 skips across 37 messages and all 3,487
+pytest warning messages/counts match after hosted Python path normalization.
+Complete totals add 35 covered lines and 20 statements. Runtime 1462.240s log/
+1462.052s XML is not performance evidence. Core 70/expanded 88 remain; next
+expanded 89 requires passing complete coverage of at least 90%. Exact gap 424
+applies only to measured `f116295`; the subsequent Academy quality changes need
+their own complete assessment.
+
+### Academy full-population quality evidence (2026-11-06)
+
+Academy no longer divides full-frame missing-cell counts by sampled analyzer
+rows. A real 80-row report with 16 analysis rows recorded 87.5% completeness,
+while Academy previously displayed 37.5%. Absent or unknown quality could display
+100% and recommend that nothing needed filling. Context now preserves the
+reported score, including zero; legacy derivation requires known full-frame row,
+column and missing-cell counts. Unavailable values remain unavailable. Full
+quality row/column scope travels with the Academy payload, separately from the
+analysis sample. Missingness, duplicate, constant and cardinality lessons disclose
+unmeasured screens and preserve measured zero results. Duplicate counts describe
+the full frame and do not establish key uniqueness. Explicit empty eligible-feature
+lists and zero feature counts remain empty/zero in context and catalog lessons.
+The quality producer and fitted-model behavior are unchanged.
+
+The identical **232-case** corpus on archived `f116295` gives **189 failures/43
+passes/zero skips** in each final matched-provider runtime. Counts include numeric
+errors, added scope/disclosure guarantees and unavailable-evidence contracts;
+not every failure means an incorrect old numeric value. The eight standalone HTML
+round trips also retain existing export regressions. All inputs are actual EDA
+reports or partial saved versions of those reports. Independent raw-frame missing
+and duplicate counts, full cell denominators, actual all-missing data and explicit
+ignore roles verify population scope, true zero completeness and zero eligibility.
+
+Both final frozen suites pass **358 tests** with zero skips/failures/errors/
+collection warnings/assertion-rewrite warnings/coverage warnings: 232 new cases,
+119 existing readiness consumers and seven Academy regressions. Public payloads,
+strict JSON round trips, offline bundles, HTTP TestClient responses, public catalog
+LessonSpec exports and eight saved standalone HTML files preserve the evidence
+and input reports. The HTML check parses the actual embedded application bundle;
+it establishes artifact data integrity, not browser interaction or visual QA.
+There are no fake analyzers, forced helper failures, suppressed warnings or
+model-quality claims.
+
+Local Windows/Python 3.12.8 profiles use Pandas 3.0.5/NumPy 2.4.6/sklearn 1.9.0
+and compatible Pandas 2.3.3/NumPy 2.4.1/sklearn 1.9.1. Both final profiles use
+Plotly 7.1.0, matching accepted full CI. P3 uses FastAPI 0.141.1/Starlette 1.3.1/
+Pydantic 2.13.4/AnyIO 4.14.2; compatible uses FastAPI 0.138.2/Starlette 1.10.0/
+Pydantic 2.14.3/AnyIO 4.16.0. Both use HTTPX 0.28.1/Jinja2 3.1.6, with imported
+provider paths recorded and old/current versions compared within each profile.
+P3 retains one existing LangChain Community sunset deprecation from RAG discovery;
+compatible retains one existing Starlette TestClient/HTTPX deprecation. Each warning
+also appears in its matched old-source run; no warning suppression. Timings
+375.62s/375.617s XML and 448.00s/448.011s XML are not performance comparisons.
+Core passes 130 cases and genuinely skips 102 (55 absent Plotly, 47 absent FastAPI),
+with zero warnings and no coverage collected. Expanded CI requires all new cases
+unskipped: **21 modules/4,357 cases**. Positive/missing/skipped guard probes use
+actual prior full XML plus only the new module, never combined coverage databases.
+
+An earlier P3 run with Plotly 6.9.0 exited with a Windows access violation inside
+Plotly/Python while constructing an all-missing offline chart. That run is retained
+as failed evidence. The exact 12-case workflow subsequently passed under the same
+original tracing settings; no deterministic cause was established. Final P3 old-source
+and corrected-source runs use a private copy of the existing CI-matched Plotly 7.1.0
+provider (1,545 immutable provider files verified; Python bytecode caches may regenerate).
+The root environment, requirements, coverage core, concurrency, scope and exclusions
+remain unchanged. Passing final results do not establish older Plotly 6.9 reliability
+or a fix to that native crash. Initial five new type diagnostics were fixed before
+final verification; the superseded snapshot is not counted as passing evidence.
+
+Official `measure_coverage_reach.py` against verified same-source `f116295` full
+JSON/Git and frozen source finds **51 previously missing unchanged production lines
+per profile**, with **49 common lines**. The two differing lines in each profile
+are optional-provider discovery paths. Both exercise **48 changed/new lines**.
+Reach includes adjacent regressions and provider differences and is separate from
+whole-suite percentages or attribution solely to new cases. Scope remains 800 files/
+566 exclusions/coverage.py 7.16.2; corrected source has 63,368 statements and needs
+its own complete measurement. The old 424-line gap is not projected onto this
+revision. Core 70/expanded 88 and the one-point headroom policy remain unchanged.
+Paired scoped mypy retains the same 19 existing diagnostics in two files while
+checking all four changed modules, after source-line normalization; no new diagnostics
+or gradual CI typing-scope change. One final trailing-space cleanup compiles identically,
+including bytecode, constants and line/column tables; original tested bytes and the
+equivalence receipt are preserved. Python 3.10 syntax, CI-scoped Ruff, new-test format,
 copy lint, docstring budget (586), 49 release-claim groups and whitespace checks pass.

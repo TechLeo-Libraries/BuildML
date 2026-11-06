@@ -342,6 +342,8 @@ def build_academy_payload(report: dict[str, Any]) -> dict[str, Any]:
             "target": target,
             "completeness": ctx.get("completeness"),
             "missingCells": ctx.get("missingCells"),
+            "qualityRows": ctx.get("qualityRows"),
+            "qualityColumns": ctx.get("qualityColumns"),
             "eligible": ctx.get("eligible"),
         },
     }

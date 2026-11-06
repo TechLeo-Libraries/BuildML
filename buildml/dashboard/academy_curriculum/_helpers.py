@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from collections.abc import Callable
 from typing import Any
 
@@ -13,13 +14,17 @@ from buildml.dashboard.gates import (
 
 
 def fmt_n(value: Any) -> str:
+    if value is None:
+        return "unavailable"
     try:
         return f"{int(value):,}"
     except (TypeError, ValueError):
         return str(value)
 
 
-def fmt_pct(rate: float, digits: int = 1) -> str:
+def fmt_pct(rate: float | None, digits: int = 1) -> str:
+    if rate is None:
+        return "n/a"
     try:
         return f"{float(rate) * 100:.{digits}f}%"
     except (TypeError, ValueError):
@@ -222,8 +227,11 @@ def build_academy_context(report: dict[str, Any]) -> dict[str, Any]:
     else:
         ctx["categorical"] = [str(c) for c in cats]
 
-    features = list(overview.get("eligible_feature_columns") or overview.get("feature_columns") or [])
-    if not features:
+    declared_features = overview.get("eligible_feature_columns")
+    if declared_features is None:
+        declared_features = overview.get("feature_columns")
+    features = list(declared_features or [])
+    if declared_features is None:
         target = target_name(ctx, "")
         id_like = set(ctx.get("idLike") or [])
         constants = set(ctx.get("constants") or [])
@@ -234,9 +242,28 @@ def build_academy_context(report: dict[str, Any]) -> dict[str, Any]:
         ]
     ctx["features"] = [str(f) for f in features if f]
 
-    cells = max(int(ctx.get("rows") or 0) * max(int(ctx.get("colCount") or 0), 1), 1)
-    missing_cells = int(ctx.get("missingCells") or 0)
-    ctx["completeness"] = max(0.0, min(1.0, 1.0 - (missing_cells / cells)))
+    # Quality counts describe the full frame, even when associations use a sample.
+    ctx["qualityRows"] = overview.get("n_rows")
+    quality_columns = overview.get("n_columns")
+    if quality_columns is None and overview.get("columns") is not None:
+        quality_columns = len(overview["columns"])
+    ctx["qualityColumns"] = quality_columns
+    quality_score = quality.get("completeness_score")
+    try:
+        completeness = float(quality_score) if quality_score is not None else None
+    except (TypeError, ValueError):
+        completeness = None
+    if completeness is not None and (
+        not math.isfinite(completeness) or not 0.0 <= completeness <= 1.0
+    ):
+        completeness = None
+    if completeness is None and ctx.get("missingCells") is not None:
+        rows, columns = ctx["qualityRows"], ctx["qualityColumns"]
+        if rows is not None and columns is not None and rows * columns > 0:
+            missing = ctx["missingCells"]
+            if 0 <= missing <= rows * columns:
+                completeness = 1.0 - missing / (rows * columns)
+    ctx["completeness"] = completeness
     ctx["memoryMB"] = overview.get("memory_mb") or overview.get("approx_memory_mb")
 
     # Finding citations keyed by readiness curriculum slug and catalog aliases.

@@ -194,27 +194,8 @@ def _core() -> list[LessonSpec]:
                 "Gap rates change which rows a complete-case analysis actually uses.",
             ),
             formula="completeness = 1 - missing_cells / (rows x columns)",
-            calculation=lambda ctx: (
-                f"missing_cells = {fmt_n(ctx.get('missingCells'))}, "
-                f"cells ~ {fmt_n(int(ctx.get('rows') or 0) * max(int(ctx.get('colCount') or 0), 1))}, "
-                f"completeness ~ {fmt_pct(ctx.get('completeness') or 0)}. "
-                + (
-                    f"Worst column: {first_missing(ctx)} at "
-                    f"{fmt_pct((ctx.get('missing') or [{}])[0].get('missingRate') or 0)}."
-                    if ctx.get("missing")
-                    else "No column-level gaps recorded."
-                )
-            ),
-            session_evidence=lambda ctx: (
-                f"No missing cells across {fmt_n(ctx.get('colCount'))} columns - still plan a strategy for future loads."
-                if int(ctx.get("missingCells") or 0) == 0
-                else (
-                    f"{fmt_n(ctx.get('missingCells'))} cells missing across "
-                    f"{fmt_n(len(ctx.get('missing') or []))} {plural(len(ctx.get('missing') or []), 'column')}; "
-                    f"completeness {fmt_pct(ctx.get('completeness') or 0)}. "
-                    f"Complete rows ~ {fmt_n(ctx.get('completeRows'))} of {fmt_n(ctx.get('rows'))}."
-                )
-            ),
+            calculation=_missing_calculation,
+            session_evidence=_missing_evidence,
             example_code=demo_example(lambda ctx: _missing_example(ctx), task='classification'),
             what_to_change=(
                 "Choose strategy per column (median / most_frequent / constant).",
@@ -232,13 +213,15 @@ def _core() -> list[LessonSpec]:
                 (
                     f"Silent complete-case drops: only {fmt_n(ctx.get('completeRows'))} of "
                     f"{fmt_n(ctx.get('rows'))} rows are complete."
-                    if int(ctx.get("completeRows") or 0) < int(ctx.get("rows") or 0)
+                    if ctx.get("completeRows") is not None and ctx["completeRows"] < int(ctx.get("rows") or 0)
                     else "Dropping incomplete rows without counting them first."
                 ),
             ],
             decide=lambda ctx: (
-                "Nothing to fill here - record the strategy you would use if the next extract is incomplete."
-                if int(ctx.get("missingCells") or 0) == 0
+                "Missing-cell count unavailable - measure missingness before deciding that nothing needs filling."
+                if ctx.get("missingCells") is None
+                else "Nothing to fill here - record the strategy you would use if the next extract is incomplete."
+                if ctx["missingCells"] == 0
                 else "Choose a strategy for each column with missing values, fit it within the training fold, and consider indicators when missingness may be informative."
             ),
             read_steps=lambda ctx: [
@@ -337,13 +320,16 @@ def _core() -> list[LessonSpec]:
             ),
             formula="exact_dupes = rows - distinct(full_row); key_dupes = rows - distinct(key)",
             calculation=lambda ctx: (
-                f"rows={fmt_n(ctx.get('rows'))}, exact duplicate rows="
-                f"{fmt_n((ctx.get('duplicates') or {}).get('rows') or 0)}. "
-                f"Id-like keys to test: {list_names(ctx.get('idLike') or [])}."
+                "Exact-duplicate screening unavailable; observation-grain and key checks remain open."
+                if ctx.get("duplicates") is None
+                else f"Full-frame rows={fmt_n(ctx.get('qualityRows'))}, exact duplicate rows="
+                f"{fmt_n(ctx['duplicates']['rows'])}. Define the observation grain before deduplicating."
             ),
             session_evidence=lambda ctx: (
-                f"Exact duplicate rows reported: {fmt_n((ctx.get('duplicates') or {}).get('rows') or 0)} "
-                f"of {fmt_n(ctx.get('rows'))}."
+                "Exact-duplicate screening unavailable; no zero-duplicate result has been established."
+                if ctx.get("duplicates") is None
+                else f"Exact duplicate rows reported: {fmt_n(ctx['duplicates']['rows'])} "
+                f"across {fmt_n(ctx.get('qualityRows'))} full-frame rows. This does not establish key uniqueness."
             ),
             example_code=demo_example(lambda ctx: code_block(
                 "from buildml import Session",
@@ -399,12 +385,12 @@ def _core() -> list[LessonSpec]:
             ),
             formula="mode_rate = count(mode) / n; near-constant if mode_rate >= 0.99",
             calculation=lambda ctx: (
-                f"Constants: {list_names(ctx.get('constants') or [])}. "
-                f"Near-constants: {list_names(ctx.get('nearConstant') or [])}."
+                _quality_flags(ctx, "constants", "Constant") + " "
+                + _quality_flags(ctx, "nearConstant", "Near-constant")
             ),
             session_evidence=lambda ctx: (
-                f"{fmt_n(len(ctx.get('constants') or []))} constant and "
-                f"{fmt_n(len(ctx.get('nearConstant') or []))} near-constant columns flagged."
+                _quality_flags(ctx, "constants", "Constant") + " "
+                + _quality_flags(ctx, "nearConstant", "Near-constant")
             ),
             example_code=demo_example(lambda ctx: code_block(
                 "from buildml import Session",
@@ -456,6 +442,9 @@ def _core() -> list[LessonSpec]:
             ),
             formula="onehot_width ~ sum(n_levels_c - 1) over one-hot columns",
             calculation=lambda ctx: (
+                "High-cardinality screening unavailable; encoding-width evidence has not been established."
+                if ctx.get("highCard") is None
+                else
                 "High-cardinality flags: "
                 + (
                     "; ".join(
@@ -466,11 +455,7 @@ def _core() -> list[LessonSpec]:
                 )
                 + f". Rows={fmt_n(ctx.get('rows'))}."
             ),
-            session_evidence=lambda ctx: (
-                f"{fmt_n(len(ctx.get('highCard') or []))} high-cardinality "
-                f"{plural(len(ctx.get('highCard') or []), 'column')}: "
-                f"{list_names(ctx.get('highCard') or [])}."
-            ),
+            session_evidence=lambda ctx: _quality_flags(ctx, "highCard", "High-cardinality"),
             example_code=demo_example(lambda ctx: code_block(
                 "from buildml import Session",
                 "import pandas as pd",
@@ -993,3 +978,43 @@ def _missing_example(ctx: dict) -> str:
         lines.append(")")
     lines.append("# fills are learned on train rows only")
     return code_block(*lines)
+
+
+def _missing_calculation(ctx: dict) -> str:
+    rows, columns = ctx.get("qualityRows"), ctx.get("qualityColumns")
+    cells = rows * columns if rows is not None and columns is not None else None
+    base = (
+        f"Full-frame missing_cells = {fmt_n(ctx.get('missingCells'))}, "
+        f"cells = {fmt_n(cells)}, completeness = {fmt_pct(ctx.get('completeness'))}. "
+    )
+    if cells == 0:
+        base += "The full frame has zero cells; any reported percentage is an empty-frame convention. "
+    if ctx.get("completeness") is None:
+        base += "Completeness unavailable; no measured percentage has been established. "
+    return base + (
+        f"Worst column: {first_missing(ctx)} at {fmt_pct(ctx['missing'][0].get('missingRate'))}."
+        if ctx.get("missing") else "Column-level missingness rates unavailable or no gaps recorded."
+    )
+
+
+def _missing_evidence(ctx: dict) -> str:
+    count = ctx.get("missingCells")
+    if count is None:
+        return "Missing-cell count unavailable; no zero-missingness result has been established."
+    if count == 0:
+        return (
+            f"No missing cells across {fmt_n(ctx.get('qualityRows'))} full-frame rows and "
+            f"{fmt_n(ctx.get('qualityColumns'))} columns - still plan for future loads."
+        )
+    return (
+        f"{fmt_n(count)} cells missing across the full frame; "
+        f"completeness {fmt_pct(ctx.get('completeness'))}. "
+        f"Complete-case analysis rows: {fmt_n(ctx.get('completeRows'))} of {fmt_n(ctx.get('rows'))}."
+    )
+
+
+def _quality_flags(ctx: dict, key: str, label: str) -> str:
+    values = ctx.get(key)
+    if values is None:
+        return f"{label} screening unavailable; no zero-flag result has been established."
+    return f"{label} columns flagged: {fmt_n(len(values))}. {list_names(values)}."

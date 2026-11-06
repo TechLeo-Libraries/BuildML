@@ -8,22 +8,22 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 89.30365549271745,
-      "covered_lines": 56531,
-      "num_statements": 63302,
+      "percent_covered": 89.33072233978712,
+      "covered_lines": 56566,
+      "num_statements": 63322,
       "excluded_lines": 566,
-      "source_revision": "1b94b5178444280d0b169f8444c7afb2d6715cd5",
-      "tested_revision": "8bd3b092796f4acf54571e738892d3fc53af0395",
+      "source_revision": "f116295b1dc08f89afa5a0eccf7279aada22366e",
+      "tested_revision": "73b30c5529f5cb72ddba1e70a41365c7d45ac0c6",
       "platform": "remote Linux, CPU expanded profile",
       "python": "3.12.16",
-      "run_id": 42141458937,
-      "result": "17631 passed,173 skipped,zero failures/errors",
+      "run_id": 42147606179,
+      "result": "18002 passed,173 skipped,zero failures/errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
       "coverage_version": "7.16.2",
-      "notes": "Native row-mask correction accepted; all four workflows pass and source/merge whole trees equal 0250ad3673504bbf10246fce8fc66a5b29954b9a. All3754 required consumers execute in19modules. Scope800/566 exclusions unchanged; complete+11covered/+7statements vs19c. Python3.12.16 and every installed distribution version unchanged;173skips/37messages and3487pytestwarnings identical after hostedPythonpath normalization;zero collection warnings. Full1404.600s log/1404.414s XML,not performance evidence. Exact90gap441 applies to measured1b94 only. Core70/expanded88 retained;next89 requires passing complete>=90 with1ppheadroom. Subsequent native-preview subset reach separate."
+      "notes": "Native preview correction accepted; all four workflows pass and source/merge whole trees equal 687ede6119224fe94b34da7c4bc7fbaab2d4a836. All4125 required consumers execute in20modules. Scope800/566 exclusions unchanged; complete+35covered/+20statements vs1b94. Python3.12.16 and every installed distribution version unchanged;173skips/37messages and3487pytestwarnings identical after hostedPythonpath normalization;zero collection warnings. Full1462.240s log/1462.052s XML,not performance evidence. Exact90gap424 applies to measuredf116 only. Core70/expanded88 retained;next89 requires passing complete>=90 with1ppheadroom. Subsequent Academy quality subset reach separate."
     },
     "latest_local_measurement": {
       "percent_covered": 85.51916984547746,

@@ -14,6 +14,13 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Academy quality lessons retain full-frame completeness when detailed analyzers
+  use a sample. Missing evidence stays unavailable, measured zeros retain their
+  values, and partial saved reports no longer imply that unmeasured screens
+  found no issues. Full quality scope is carried into live and offline payloads;
+  explicitly empty feature-role lists remain empty. Independent counts and
+  actual HTTP, catalog and standalone HTML consumers verify the evidence.
+
 - Native previews honor negative `head(n)` counts as all rows except the final
   `abs(n)` rows across Pandas, Polars and DuckDB. Very large integer counts clamp
   without native overflow. Counts require Python/NumPy integers; booleans and
