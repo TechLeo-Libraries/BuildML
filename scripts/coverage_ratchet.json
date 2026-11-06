@@ -8,22 +8,22 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 89.57482698280074,
-      "covered_lines": 56820,
-      "num_statements": 63433,
+      "percent_covered": 89.59164053018961,
+      "covered_lines": 56845,
+      "num_statements": 63449,
       "excluded_lines": 566,
-      "source_revision": "ed3d953868499858e84b8de08e807c4b828b304e",
-      "tested_revision": "e46d8b3dc1502da1a79891b7829f0b87596aa383",
+      "source_revision": "130d1ac6c31187f5adfa181a44893f9de51567c3",
+      "tested_revision": "dcad8cad51d8fbcbc309cd7aa12493820a18414c",
       "platform": "remote Linux, CPU expanded profile",
       "python": "3.12.16",
-      "run_id": 42294589227,
-      "result": "19044 passed,173 skipped,zero failures/errors",
+      "run_id": 42303148103,
+      "result": "19111 passed,173 skipped,zero failures/errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
       "coverage_version": "7.16.2",
-      "notes": "Accepted complete Linux result:allfour exact-head workflows success;source/tested whole tree matches prefetched merge. SamePython/profileinputs/173skips37messages/warningblocks3464 and coverage scope800files566exclusions/tracing. Onlyboto3/botocore versions1.43.125->1.43.126 change;every otherdistribution matches966. Fullnet+4covered/0statements:features+3,fit+1;no unrelated fileaggregatechanges. Runtime isnotperformance evidence. Localreach remainsseparate. All5167consumers33modules unskipped. Exact90gap270 onlyated3;floorscore70/expanded88/headroom1pp unchanged;next89 needs passingcomplete>=90."
+      "notes": "Allfour exact-head workflows success;source/testedprefetchedWHOLEtree equal. SamePython3.12.16/everydistribution/profileinputbytes/all173skips37messages/allnormalizedwarningblocks3464. Same800files566exclusions/coverage7.16.2/tracing. All5234consumers34modules unskipped. Fullnet+25covered/+16statements:search+23/+16,spaces+2/0;nootheraggregatechanges. Timings notperformanceevidence. Subsetreach separate. Exact90gap260 onlyat130;core70/expanded88/headroom1pp unchanged;next89 requires passingcomplete>=90."
     },
     "latest_local_measurement": {
       "percent_covered": 85.51916984547746,

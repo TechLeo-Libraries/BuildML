@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+import time
 from dataclasses import dataclass, replace
 from itertools import product
-from numbers import Integral
+from numbers import Integral, Real
 from pathlib import Path
 from typing import Any, Literal
 
@@ -72,6 +73,23 @@ class _Candidate:
     params: dict[str, Any]
     ensemble_bases: tuple[str, ...] = ()
 
+
+def _positive_seconds(value: Any, *, name: str) -> float:
+    """Normalize a finite positive duration without boolean or text coercions."""
+    if isinstance(value, (bool, np.bool_)) or not isinstance(value, Real):
+        raise ValidationError(f"{name} must be finite positive seconds.")
+    try:
+        seconds = float(value)
+    except (OverflowError, TypeError, ValueError) as exc:
+        raise ValidationError(f"{name} must be finite positive seconds.") from exc
+    if not np.isfinite(seconds) or seconds <= 0:
+        raise ValidationError(f"{name} must be finite positive seconds.")
+    return seconds
+
+
+def _deadline_expired(deadline: float | None) -> bool:
+    """Check an optional absolute native-search deadline."""
+    return deadline is not None and time.monotonic() >= deadline
 
 
 def _validated_budget_copy(budget: AutoMLBudget | None, *, n_trials: int) -> AutoMLBudget:
@@ -181,6 +199,7 @@ def run_automl(
     groups: pd.Series | None = None,
     budget: AutoMLBudget | None = None,
     time_budget: float | None = None,
+    _deadline: float | None = None,
 ) -> tuple[AutoMLPlan, AutoMLResult, FitResult | None]:
     """Search model families and fold-local preprocess strategies on train only.
 
@@ -266,7 +285,12 @@ def run_automl(
         AutoML still ranks and refits the winner by the primary metric.
     time_budget:
         Optional wall-clock cap (seconds). Industry backends use this directly;
-        native search stops after the current trial when exceeded.
+        native search stops starting trials after the current trial when exceeded.
+        The duration must be finite and positive. A shared deadline also limits
+        ensemble trials and nested outer folds. In-flight fits and winner refits
+        finish normally; an incomplete nested estimate is refused.
+    _deadline:
+        Internal shared deadline for recursive native nested searches.
 
     Returns
     -------
@@ -319,8 +343,12 @@ def run_automl(
         raise ValidationError("max_ensemble_bases must be >= 2")
 
     budget = _validated_budget_copy(budget, n_trials=n_trials)
-    if time_budget is not None:
-        budget.max_time_seconds = float(time_budget)
+    seconds = time_budget if time_budget is not None else budget.max_time_seconds
+    budget.max_time_seconds = (
+        None if seconds is None else _positive_seconds(
+            seconds, name="time_budget" if time_budget is not None else "budget.max_time_seconds"
+        )
+    )
     n_trials = min(n_trials, budget.max_trials)
 
     # Industry adapters: train-only, disclosed internal preprocessing.
@@ -352,6 +380,10 @@ def run_automl(
             random_state=random_state,
             refit=refit,
         )
+
+    deadline = _deadline
+    if deadline is None and budget.max_time_seconds is not None:
+        deadline = time.monotonic() + budget.max_time_seconds
 
     effective_method: AutoMLMethod = method
     if backend == "optuna":
@@ -419,9 +451,8 @@ def run_automl(
     if selection != "validation" and not isinstance(cv, int):
         cv = check_cv(cv, y=y_train, classifier=resolved_task == "classification")
 
-    import time as _time
-
-    started = _time.monotonic()
+    if _deadline_expired(deadline):
+        raise ValidationError("AutoML time budget exhausted before any scored trials completed.")
 
     candidates = _build_candidates(
         fams,
@@ -449,7 +480,7 @@ def run_automl(
             allow_session_global_preprocess=allow_session_global_preprocess,
             random_state=random_state,
             budget=budget,
-            started=started,
+            deadline=deadline,
         )
     elif effective_method == "evolutionary":
         trials = _run_evolutionary_trials(
@@ -467,7 +498,7 @@ def run_automl(
             session_preprocess_applied=session_preprocess_applied,
             allow_session_global_preprocess=allow_session_global_preprocess,
             random_state=random_state,
-            started=started,
+            deadline=deadline,
             budget=budget,
         )
     else:
@@ -485,9 +516,12 @@ def run_automl(
             allow_session_global_preprocess=allow_session_global_preprocess,
             random_state=random_state,
             fams=fams,
+            deadline=deadline,
         )
 
     if not trials:
+        if _deadline_expired(deadline):
+            raise ValidationError("AutoML time budget exhausted before any scored trials completed.")
         raise ValidationError("AutoML produced no scored trials.")
 
     trials.sort(key=lambda t: t.mean_score, reverse=higher_is_better)
@@ -512,6 +546,7 @@ def run_automl(
             random_state=random_state,
             max_bases=max_ensemble_bases,
             max_ensemble_trials=budget.max_ensemble_trials,
+            deadline=deadline,
             ensemble_mode=ensemble_mode,
         )
         if ens_trials:
@@ -545,6 +580,7 @@ def run_automl(
             max_ensemble_bases=max_ensemble_bases,
             preprocess=preprocess,
             budget=budget,
+            deadline=deadline,
         )
     else:
         nested_warnings = ()
@@ -566,6 +602,8 @@ def run_automl(
         ),
     )
     warnings = list(nested_warnings)
+    if _deadline_expired(deadline):
+        warnings.append("AutoML time budget exhausted; completed search trials retained.")
     limitations = _limitations(
         backend=backend,
         selection=selection,
@@ -721,10 +759,13 @@ def _score_candidates(
     allow_session_global_preprocess: bool,
     random_state: int | None,
     fams: list[ModelFamily],
+    deadline: float | None = None,
 ) -> list[AutoMLTrial]:
     fam_map = {f.name: f for f in fams}
     trials: list[AutoMLTrial] = []
     for idx, cand in enumerate(candidates):
+        if _deadline_expired(deadline):
+            break
         estimator = _build_estimator(cand, fam_map, task=task, random_state=random_state)
         score_pack = _score_one(
             dataset,
@@ -904,6 +945,7 @@ def _score_ensemble_candidates(
     max_bases: int,
     max_ensemble_trials: int,
     ensemble_mode: EnsembleMode = "voting",
+    deadline: float | None = None,
 ) -> list[AutoMLTrial]:
     """Build voting/stacking candidates from diverse top single-model families."""
     fam_map = {f.name: f for f in fams}
@@ -931,6 +973,8 @@ def _score_ensemble_candidates(
 
     for kind in kinds:
         for n_bases in range(2, min(max_bases, len(ordered)) + 1):
+            if _deadline_expired(deadline):
+                return ens_trials
             if len(ens_trials) >= max_ensemble_trials:
                 break
             bases = tuple(t.family for t in ordered[:n_bases])
@@ -995,12 +1039,11 @@ def _run_optuna_trials(
     allow_session_global_preprocess: bool,
     random_state: int | None,
     budget: AutoMLBudget,
-    started: float,
+    deadline: float | None = None,
 ) -> list[AutoMLTrial]:
     from buildml.automl.extras import require_optuna
 
     optuna = require_optuna(feature="Optuna AutoML backend")
-    import time as _time
 
     higher_is_better = metric not in _LOWER_IS_BETTER
     secondary = budget.secondary_metric
@@ -1038,11 +1081,6 @@ def _run_optuna_trials(
     trial_rows: list[AutoMLTrial] = []
 
     def _objective(trial: Any) -> float | tuple[float, float]:
-        if budget.max_time_seconds is not None:
-            elapsed = _time.monotonic() - started
-            if elapsed >= budget.max_time_seconds:
-                raise optuna.exceptions.OptunaError("AutoML time budget exceeded")
-
         fam_name = trial.suggest_categorical("family_name", [f.name for f in fams])
         fam = fam_map[fam_name]
         recipe_name = trial.suggest_categorical("recipe_strategy", [r.name for r in recipes])
@@ -1104,7 +1142,8 @@ def _run_optuna_trials(
             return mean_score, secondary_score
         return mean_score
 
-    study.optimize(_objective, n_trials=n_trials)
+    remaining = None if deadline is None else max(0.0, deadline - time.monotonic())
+    study.optimize(_objective, n_trials=n_trials, timeout=remaining)
     return trial_rows
 
 
@@ -1124,11 +1163,10 @@ def _run_evolutionary_trials(
     session_preprocess_applied: bool,
     allow_session_global_preprocess: bool,
     random_state: int | None,
-    started: float,
+    deadline: float | None = None,
     budget: AutoMLBudget,
 ) -> list[AutoMLTrial]:
     """Evolutionary search over family × recipe × param catalog (native GA)."""
-    import time as _time
 
     from buildml.model.selection import (
         _mutate_individual,
@@ -1175,6 +1213,7 @@ def _run_evolutionary_trials(
             allow_session_global_preprocess=allow_session_global_preprocess,
             random_state=random_state,
             fams=fams,
+            deadline=deadline,
         )
 
     rng = np.random.default_rng(random_state)
@@ -1196,15 +1235,14 @@ def _run_evolutionary_trials(
                 recipe_strategy="",
                 mean_score=float("-inf") if higher else float("inf"),
             )
-        if budget.max_time_seconds is not None:
-            if _time.monotonic() - started >= budget.max_time_seconds:
-                return AutoMLTrial(
-                    trial=-1,
-                    kind="single",
-                    family="time_budget_exhausted",
-                    recipe_strategy="",
-                    mean_score=float("-inf") if higher else float("inf"),
-                )
+        if _deadline_expired(deadline):
+            return AutoMLTrial(
+                trial=-1,
+                kind="single",
+                family="time_budget_exhausted",
+                recipe_strategy="",
+                mean_score=float("-inf") if higher else float("inf"),
+            )
 
         fam_name = str(individual.get("family_name", fams[0].name))
         recipe_name = str(individual.get("recipe_strategy", recipes[0].name))
@@ -1262,6 +1300,8 @@ def _run_evolutionary_trials(
     fitness = [_evaluate(ind) for ind in population]
 
     for _generation in range(n_generations):
+        if _deadline_expired(deadline):
+            break
         ranked_idx = sorted(
             range(len(population)),
             key=lambda i: fitness[i].mean_score,
@@ -1275,6 +1315,8 @@ def _run_evolutionary_trials(
             next_pop.append(dict(population[elite_rank]))
             next_fit.append(fitness[elite_rank])
         while len(next_pop) < population_size:
+            if _deadline_expired(deadline):
+                break
             if len(scored) >= eval_budget:
                 filler = ranked_idx[len(next_pop) % len(ranked_idx)]
                 next_pop.append(dict(population[filler]))
@@ -1322,6 +1364,7 @@ def _nested_outer_estimate(
     max_ensemble_bases: int,
     preprocess: PreprocessRecipe | None,
     budget: AutoMLBudget,
+    deadline: float | None = None,
 ) -> tuple[float | None, float | None, tuple[str, ...]]:
     """Repeat the configured search on each outer-training population."""
     from buildml.model.selection import _resolve_splitter, _validated_fold_positions
@@ -1360,6 +1403,8 @@ def _nested_outer_estimate(
         else splitter.split(x_reset, y_reset)
     )
     for fold_id, (train_pos, eval_pos) in enumerate(split_iter):
+        if _deadline_expired(deadline):
+            raise ValidationError("AutoML time budget exhausted before nested outer evaluation completed.")
         train_pos = _validated_fold_positions(train_pos, len(x_reset))
         eval_pos = _validated_fold_positions(eval_pos, len(x_reset))
         if set(train_pos) & set(eval_pos):
@@ -1387,6 +1432,7 @@ def _nested_outer_estimate(
             allow_session_global_preprocess=allow_session_global_preprocess,
             random_state=None if random_state is None else int(random_state)+fold_id,
             budget=replace(budget, study_storage=None), refit=True,
+            _deadline=deadline,
         )
         if fitted is None:
             raise ValidationError("Nested AutoML did not return a fitted outer-training model")
