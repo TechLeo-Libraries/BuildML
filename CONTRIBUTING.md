@@ -122,7 +122,7 @@ monolith** (**70** active after corrected thread/process tracing measured at lea
 `pytest tests --cov=buildml`); do not lower it to silence a regression.
 The separate `expanded-coverage` CI job installs
 `requirements-expanded-coverage.txt` and runs the entire suite with an **88%**
-floor, supported by passing remote Linux 89.3307% evidence at `f116295`.
+floor, supported by passing remote Linux 89.4079% evidence at `ef0bdd0`.
 The broadened profile includes DoWhy and ONNX Runtime, using a compatible
 NumPy 2.4.1/SciPy 1.15.3/mlxtend 0.23.4 stack. Same-source complete local suites
 passed 85.5192% for this profile and85.3947% for its original-profile control;
@@ -230,16 +230,16 @@ and pick the next target, and `--path buildml/<pkg>` to audit work in progress.
 - Write public documentation for library users. Keep implementation instructions,
   release actions, and work plans in clearly labeled contributor material.
 
-Current expanded coverage evidence (2026-11-06, source `f116295`): remote Linux
-passed at **89.3307%** (56,566 / 63,322 lines), with 18,002 passed and 173 skipped.
-[CI42147606179](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42147606179)
+Current expanded coverage evidence (2026-11-06, source `ef0bdd0`): remote Linux
+passed at **89.4079%** (56,656 / 63,368 lines), with 18,234 passed and 173 skipped.
+[CI42163313028](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42163313028)
 passed, as did backend evidence, release acceptance and CodeQL. Tested merge
-`73b30c55` and source whole trees match. Scope stays 800 files, 566 exclusions and
-coverage.py 7.16.2. All 4,125 required consumers execute. Python 3.12.16 and every
+`71e25b1c` and source whole trees match. Scope stays 800 files, 566 exclusions and
+coverage.py 7.16.2. All 4,357 required consumers execute. Python 3.12.16 and every
 installed distribution version match the preceding accepted run. All 173 skips
-across 37 messages and 3,487 pytest warnings are unchanged after hosted Python
-path normalization; there are no collection warnings. Complete totals add 35
-covered lines and 20 statements. The 1462.240s runtime is not performance evidence.
+across 37 messages and 3,487 pytest warnings match after hosted Python path
+normalization; there are no collection warnings. Complete totals add 90 covered
+lines and 46 statements. The 2385.480s runtime is not performance evidence.
 Core 70/expanded 88 remain. Next expanded 89 needs a passing complete result of
-at least 90%. The exact 424-line gap applies only to this measured source;
-subsequent Academy quality subsets need their own complete measurement.
+at least 90%. The exact 376-line gap applies only to this measured source;
+subsequent offline script-data changes need their own complete measurement.

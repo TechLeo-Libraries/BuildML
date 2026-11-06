@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-10-26, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed: 89.3307% (56,566/63,322); 18,002 passed, 173 skipped | [CI42147606179](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42147606179), source `f116295`, tested merge `73b30c55`; equal whole trees and all four workflows pass. Same 800 files/566 exclusions/coverage.py 7.16.2; all 4,125 required consumers execute. Python 3.12.16 and all installed distribution versions unchanged; all skip messages and 3,487 warnings (after hosted Python path normalization) unchanged. Full +35 covered/+20 statements. Core 70/expanded 88 retained; exact 90% gap 424 at this source; no collection warnings |
+| Current accepted remote expanded CPU whole-package gate | Passed: 89.4079% (56,656/63,368); 18,234 passed, 173 skipped | [CI42163313028](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42163313028), source `ef0bdd0`, tested merge `71e25b1c`; equal whole trees and all four workflows pass. Same 800 files/566 exclusions/coverage.py 7.16.2; all 4,357 required consumers execute. Python 3.12.16 and every installed distribution version match accepted `f116295`; all skip messages and 3,487 normalized warning messages/counts match. Full +90 covered/+46 statements. Core 70/expanded 88 retained; exact 90% gap 376 only at this measured source; no collection warnings |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -7147,15 +7147,33 @@ Decoded report values match Python's parsed evidence. Node's VM-module experimen
 warning is retained. This is data/JavaScript verification, without a browser
 interaction or visual-QA claim and without adding a Node test dependency.
 
-Official subset reach against verified same-source accepted `f116295` full JSON/Git
-finds **26 previously missing unchanged lines per profile**, including adjacent
-regressions and optional-provider discovery. The 45/44 changed/new executed lines
-since that baseline include preceding Academy changes; **three** are in this
-batch's modified `offline.py`. These are separate from full-suite percentages,
-net gains and attribution solely to the 15 new cases. Scope remains 800 files/
+Official subset reach against verified same-source accepted `ef0bdd0` full JSON/Git
+finds **11 previously missing unchanged lines per profile**, with **nine common**.
+The differing lines are actual optional-provider discovery paths. Reach includes
+adjacent regressions; **three changed/new executed lines** are in this batch's
+modified `offline.py`. These are separate from full-suite percentages, net gains
+and attribution solely to the 15 new cases. Earlier reach against `f116295` is
+retained separately and includes preceding Academy work. Scope remains 800 files/
 566 exclusions/coverage.py 7.16.2, with 63,370 current statements. CI requires
 22 consumer modules/4,372 actual cases; positive, missing-module and skipped-case
 guard probes use actual XML evidence, without combining coverage databases.
 Scoped old/current mypy passes for the changed production module. Frozen inputs,
 source archive and separate CI-guard hashes are preserved. Core 70/expanded 88,
 requirements, exclusions and the one-point ratchet headroom policy remain unchanged.
+
+### Accepted Academy whole-package measurement (2026-11-06)
+
+The Academy quality source `ef0bdd0` supersedes its pending complete gate:
+**89.4079% (56,656/63,368), 18,234 passed/173 skipped**, zero failures/errors/
+collection warnings. All 232 Academy consumers execute alongside prior required
+consumers: 4,357 cases in 21 modules. CI42163313028, backend42163313001,
+acceptance42163313004 and CodeQL42163309601 pass. Source and tested merge
+`71e25b1c` have equal whole tree `b48e1529`. Scope stays 800 files/566 exclusions/
+coverage.py 7.16.2. Python 3.12.16 and every installed distribution version match
+accepted `f116295`. All 173 skips across 37 messages and all 3,487 pytest warning
+messages/counts match after hosted Python path normalization. Complete totals
+add 90 covered lines and 46 statements. Runtime 2385.480s log/2385.268s XML is
+not performance evidence. Core 70/expanded 88 remain; next expanded 89 requires
+passing complete coverage of at least 90%. The exact 376-line gap applies only
+to measured `ef0bdd0`; subsequent offline script-data changes have their own
+subset evidence and need a complete measurement.
