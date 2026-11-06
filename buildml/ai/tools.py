@@ -3876,6 +3876,18 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
                         "type": "string",
                         "enum": ["classification", "regression"],
                     },
+                    "rules": {
+                        "type": "array",
+                        "items": {"type": "object"},
+                        "description": (
+                            "Ordered caller-declared rule mappings with if/then "
+                            "conditions, priority and optional hardness/strength."
+                        ),
+                    },
+                    "default_consequent": {
+                        "type": ["string", "number", "boolean", "null"],
+                        "description": "Fallback outcome when no declared rule fires.",
+                    },
                     "max_depth": {"type": "integer"},
                     "min_samples_leaf": {"type": "integer"},
                     "max_rules": {"type": "integer"},
@@ -3978,6 +3990,14 @@ def _build_m2_tools() -> tuple[ToolSpec, ...]:
                         "enum": ["declared", "decision_tree", "decision_list"],
                     },
                     "soft_strength": {"type": "number"},
+                    "rules": {
+                        "type": "array",
+                        "items": {"type": "object"},
+                        "description": (
+                            "Ordered caller-declared rule mappings with if/then "
+                            "conditions, priority and optional hardness/strength."
+                        ),
+                    },
                     "max_depth": {"type": "integer"},
                     "max_rules": {"type": "integer"},
                     "random_state": {"type": "integer"},

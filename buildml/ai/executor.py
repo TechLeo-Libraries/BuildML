@@ -1720,6 +1720,8 @@ def _dispatch_tool(
                 "method",
                 "verify_constraints",
                 "task",
+                "rules",
+                "default_consequent",
                 "max_depth",
                 "min_samples_leaf",
                 "max_rules",
@@ -1728,7 +1730,7 @@ def _dispatch_tool(
             )
             if key in call.arguments
         }
-        result = session.fit_symbolic(**kwargs)
+        result = _resolve_session_callable(session, "fit_symbolic")(**kwargs)
         return (
             f"Fitted symbolic source={result.source} task={result.task} "
             f"n_rules={result.n_rules} provenance={result.provenance}",
@@ -1741,7 +1743,7 @@ def _dispatch_tool(
             for key in ("partition",)
             if key in call.arguments
         }
-        result = session.evaluate_symbolic(**kwargs)
+        result = _resolve_session_callable(session, "evaluate_symbolic")(**kwargs)
         return result, ()
 
     elif call.tool_name == "predict_symbolic":
@@ -1750,7 +1752,7 @@ def _dispatch_tool(
             for key in ("partition", "return_traces")
             if key in call.arguments
         }
-        result = session.predict_symbolic(**kwargs)
+        result = _resolve_session_callable(session, "predict_symbolic")(**kwargs)
         return result, ()
 
     elif call.tool_name == "fit_neuro_symbolic":
@@ -1761,6 +1763,7 @@ def _dispatch_tool(
                 "mode",
                 "base_estimator",
                 "task",
+                "rules",
                 "rule_source",
                 "soft_strength",
                 "max_depth",
@@ -1772,7 +1775,7 @@ def _dispatch_tool(
             )
             if key in call.arguments
         }
-        result = session.fit_neuro_symbolic(**kwargs)
+        result = _resolve_session_callable(session, "fit_neuro_symbolic")(**kwargs)
         return (
             f"Fitted neuro-symbolic mode={result.mode} "
             f"base={result.base_estimator_name} n_rules={result.n_rules} "
@@ -1786,7 +1789,7 @@ def _dispatch_tool(
             for key in ("partition",)
             if key in call.arguments
         }
-        result = session.evaluate_neuro_symbolic(**kwargs)
+        result = _resolve_session_callable(session, "evaluate_neuro_symbolic")(**kwargs)
         return result, ()
 
     elif call.tool_name == "predict_neuro_symbolic":
@@ -1795,14 +1798,14 @@ def _dispatch_tool(
             for key in ("partition", "return_traces")
             if key in call.arguments
         }
-        result = session.predict_neuro_symbolic(**kwargs)
+        result = _resolve_session_callable(session, "predict_neuro_symbolic")(**kwargs)
         return result, ()
 
     elif call.tool_name == "save_symbolic_bundle":
         path = call.arguments.get("path")
         if not path:
             raise ValidationError("save_symbolic_bundle requires a path argument.")
-        result = session.save_symbolic_bundle(path)
+        result = _resolve_session_callable(session, "save_symbolic_bundle")(path)
         state_changes.append(f"Saved symbolic bundle to: {path}")
         return {"path": str(result)}, tuple(state_changes)
 
@@ -1810,7 +1813,7 @@ def _dispatch_tool(
         path = call.arguments.get("path")
         if not path:
             raise ValidationError("load_symbolic_bundle requires a path argument.")
-        session.load_symbolic_bundle(path, trusted=call.arguments.get("trusted", False))
+        _resolve_session_callable(session, "load_symbolic_bundle")(path, trusted=call.arguments.get("trusted", False))
         state_changes.append(f"Loaded symbolic bundle from: {path}")
         return {"loaded": True}, tuple(state_changes)
 

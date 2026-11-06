@@ -14,6 +14,12 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Agent symbolic fits preserve supplied rule mappings and symbolic fallback
+  outcomes. Declared fits and mixed declared/induced hybrids use the same rules
+  as direct Session calls. Symbolic agent workflows use the preferred Session
+  facades, retain confirmation and bundle-trust checks, and preserve prior
+  evidence when invalid rules are refused.
+
 - Indexed case retention honors the training-overlap control and accepts NumPy
   arrays, pandas indices and Series without ambiguous truth-value errors.
   Neighbor counts require positive integers; distance weight floors require

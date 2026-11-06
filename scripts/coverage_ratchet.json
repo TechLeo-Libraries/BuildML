@@ -8,22 +8,22 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 89.51494597365723,
-      "covered_lines": 56748,
-      "num_statements": 63395,
+      "percent_covered": 89.54887336602596,
+      "covered_lines": 56791,
+      "num_statements": 63419,
       "excluded_lines": 566,
-      "source_revision": "9ce78ca0366922adbd7a566e2d5b14c4b4c9bddd",
-      "tested_revision": "ab52131994482c6b200d3ed3a81c39414dc3f71b",
+      "source_revision": "135b521529d9ab25144be608ade70d99e4f70f44",
+      "tested_revision": "acb872c46f5b35511b7499995dea39fea7acf7ee",
       "platform": "remote Linux, CPU expanded profile",
       "python": "3.12.16",
-      "run_id": 42225080627,
-      "result": "18724 passed,173 skipped,zero failures/errors",
+      "run_id": 42251143384,
+      "result": "18888 passed,173 skipped,zero failures/errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
       "coverage_version": "7.16.2",
-      "notes": "Finite-CV correction accepted. All four workflows pass; source/tested merge whole tree e800de340a8a3a103fab6c14e9a3c71a7d0d316b matches. All 4,847 required consumers in 28 modules execute. Scope 800 files, 566 exclusions and coverage.py 7.16.2 unchanged. Python 3.12.16 and every installed distribution match e718d98; profile inputs unchanged. All 173 skips across 37 messages match. Warnings 3,487 versus 3,435: 52 existing NMF convergence warnings recurred; other normalized text/counts match, not attributed to correction. Full net +14 covered/+9 statements: selection +15/+9, one existing regression diagnostic path lost; not wholly attributed. Runtime 2575.570s log/2575.346s XML is not performance evidence. Exact 90% gap 308 only at measured 9ce78ca. Core 70/expanded 88 and one-point headroom retained; next89 requires passing complete>=90. Subsequent CBR memory/distance subset remains separate."
+      "notes": "Indexed CBR requests accepted. All four workflows pass; source/tested whole tree16bdf481e7ca7f2f5ad6bc431b2f7cfc191bcee7 matches. All5011consumers30modules execute. Same800files566exclusions/coverage7.16.2 and tracing. Python3.12.16/every distribution/profile inputs/all173skips37messages matchfab19ee. Warnings3435vs3487:only52existing NMF convergence warnings disappeared. Fullnet+10covered/+6statements includes an existing diagnostic path not attributed to correction. Initial macOS3.12 acceptance job never acquired runner,ran0steps; single-job retry passed. Runtime2816.930s not performance evidence. Exact90gap287 only at135b. Core70/expanded88/one-point headroom retained; next89 requires passing complete>=90. Subsequent executor subset separate."
     },
     "latest_local_measurement": {
       "percent_covered": 85.51916984547746,

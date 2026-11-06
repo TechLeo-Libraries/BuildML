@@ -104,14 +104,14 @@ Sources: [M4 official data](https://github.com/Mcompetitions/M4-methods),
 
 ## Backend/platform evidence table
 
-Maintained assessment, updated 2026-10-26, review branch `codex/coverage-cuda-ci-20261012`:
+Maintained assessment, updated 2026-11-06, review branch `codex/coverage-cuda-ci-20261012`:
 
 | Configuration | Outcome | Qualification |
 |---|---|---|
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed: 89.5149% (56,748/63,395); 18,724 passed, 173 skipped | [CI42225080627](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42225080627), source `9ce78ca`, tested merge `ab521319`; equal whole trees and all four workflows pass. Same 800 files/566 exclusions/coverage.py 7.16.2; all 4,847 required consumers execute. Python 3.12.16 and every installed distribution match `e718d98`; all skip messages match. Warnings 3,487 versus 3,435: 52 existing NMF convergence warnings recurred; other normalized text/counts match. Full net +14 covered/+9 statements includes loss of one existing diagnostic path and is not wholly attributed to the correction. Core 70/expanded 88 retained; exact 90% gap 308 only at this measured source; no collection warnings |
+| Current accepted remote expanded CPU whole-package gate | Passed: 89.5489% (56,791/63,419); 18,888 passed, 173 skipped | [CI42251143384](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42251143384), source `135b521`, tested merge `acb872c4`; equal whole trees and all four workflows pass. Same 800 files/566 exclusions/coverage.py 7.16.2; all 5,011 required consumers execute. Python 3.12.16, every installed distribution, profile inputs and all skips match `fab19ee`. Warnings 3,435 versus 3,487: only 52 existing NMF convergence warnings disappeared. Full net +10 covered/+6 statements includes an existing diagnostic path not attributed to correction. Initial macOS acceptance capacity failure ran zero steps; single-job retry passed. Core 70/expanded 88 retained; exact 90% gap 287 only at this measured source; no collection warnings |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -7719,3 +7719,85 @@ confined to CBR fit/predict/retrieve/retain and the Session retention dispatcher
 The preliminary v1 test oracle compared default validation evaluation with test
 rows and imposed unnecessarily strict error text; it is superseded and excluded
 from product evidence. Complete coverage for these changes remains pending.
+
+
+The preceding memory/ANN correction at `fab19ee` subsequently passed complete
+remote coverage **89.5416% (56,781/63,413)**, with 18,799 passed/173 skipped.
+All four workflows passed; tested merge `498cc3ea` matched the source whole tree.
+Python 3.12.16, every installed distribution, profile inputs, all skips and all
+3,487 normalized warnings matched `9ce78ca`. Full net +33 covered/+18 statements
+comprised ANN +2/+2, features +15/+10, retention +15/+6 and an existing shared
+nonnumeric-feature refusal +1/+0. No collection warnings; scope/floors unchanged.
+Runtime 2506.030s is not performance evidence. Its 291-line gap belonged only to
+that measured source.
+
+The indexed-request correction then passed complete verification:
+Remote Linux source `135b521` passed **89.5489%** (56,791/63,419 lines),
+with 18,888 passed and 173 skipped. CI42251143384, backend42251142979,
+acceptance42251143233 and CodeQL42251136849 all passed. Tested merge `acb872c4`
+and source whole trees match. Scope stays 800 files/566 exclusions/coverage.py
+7.16.2; all 5,011 required consumers execute. Python 3.12.16, every installed
+distribution, profile input bytes and all 173 skips/37 messages match `fab19ee`.
+Warnings 3,435 versus 3,487 differ only by disappearance of 52 existing NMF
+convergence warnings. No failures/errors/collection warnings in the accepted
+result. Complete net +10 covered/+6 statements includes one existing regression
+diagnostic path, whose variation is not attributed to the correction. The initial
+macOS 3.12 acceptance job never acquired a hosted runner and ran no steps; its
+single-job retry passed. Runtime 2816.930s is not performance evidence.
+Core 70/expanded 88 remain; next expanded 89 requires passing complete coverage
+of at least 90%, preserving one point of headroom. Exact 90% gap: 287 only at
+measured `135b521`; subsequent changes require their own complete result.
+
+### Declared rules through the agent executor (2026-11-06)
+
+Real direct Session calls accepted caller-declared rules, while the same
+confirmed agent requests failed because the dispatcher discarded their `rules`
+argument. Mixed declared/induced hybrids silently lost the supplied constraints.
+Both symbolic fit tool schemas now expose rule mappings; symbolic fits also
+expose the fallback outcome. Dispatch passes these arguments to the native
+Session methods. All eight symbolic agent operations use the existing resolver
+for preferred Session facades, retaining the registered confirmation and
+executable-bundle trust checks.
+
+The identical final 34-case corpus on archived `135b521` gives **24 failed / 10
+passed**, zero skips, in both dependency profiles. Its 34 warnings come from
+existing flat symbolic aliases. Corrected frozen selections give **509 passed /
+zero skipped** in each profile, including 475 existing executor, symbolic-input,
+overlay and bundle-trust regressions. All 34 new cases execute in both. Genuine
+core independently passes all 34 with no warnings or coverage collection.
+Pandas 3 emits one existing LangChain deprecation from an EDA dispatch regression;
+compatible emits none. No corrected failures/errors/collection/assertion-rewrite/
+coverage warnings occur.
+
+Eight pure-rule workflows independently check ordered rule outcomes, both
+fallback choices, class identity and holdout metrics. Twelve hybrid workflows
+check regression/string/integer/boolean targets across overlay, repair and
+rules-as-features modes. Regression uses a centered penalized linear solve;
+classification uses fitted coefficients and the logistic formula. Twenty real
+saved/trusted loaded bundles preserve predictions and traces, while untrusted
+loads refuse. Two further workflows combine real train induction with supplied
+constraints and independently check the highest-priority hard outcome. Ten
+invalid-rule workflows preserve the existing plan identity/hash, history and
+dataset; two provider-schema/confirmation checks refuse execution without approval.
+
+Windows Python 3.12.8/coverage.py 7.16.2 remain unchanged. Actual numerical
+versions/paths and optional origins match before/after per profile: Pandas
+3.0.5/NumPy 2.4.6/sklearn 1.9.0, versus Pandas 2.3.3/NumPy 2.4.1/sklearn 1.9.1 in
+compatible/core. No dependency installation or copying. These are native CPU
+sklearn rules, without Torch or symbolic-industry verification. Durations
+174.07s/139.09s and core 6.16s are not performance evidence.
+
+Official reach against verified same-source `135b521` full JSON/Git finds **6/11
+previously missing unchanged lines**, with **seven changed/new executed lines**
+in each profile. Four shared missing lines belong to the executor/rule workflow;
+the remainder are provider/platform availability paths. Existing regressions
+are included. This is neither combined coverage nor a net/projected full-suite
+gain. Scope stays 800 files/566 exclusions/63,419 statements. All 1,365 frozen
+inputs and 828 archived production/resource members are verified. The CI guard
+requires 31 modules/5,045 cases; accepted full XML plus only the 34 actual new
+Pandas 3 cases validates positive/missing-module/skipped-case behavior without
+combining coverage. Production changes are confined to `ai/executor.py` and
+`ai/tools.py`. The preliminary v1 refusal test recorded history before its own
+history-writing data-read call; it is superseded and excluded from product
+evidence. This batch needs its own complete result; the 89.5489% figure above
+belongs to preceding `135b521`.
