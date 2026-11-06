@@ -14,6 +14,12 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Native AutoML honors `refit=False`: selection still scores candidates and
+  nested outer folds, while the final all-training-row refit is omitted and a
+  previous Session model is preserved. AutoML evaluation requires the active
+  plan's fitted winner, preventing unrelated classical fits from receiving
+  winner metadata. Weighted numerical and saved-model consumers check both paths.
+
 - Academy lessons keep declared paragraphs intact instead of displaying and
   indexing one character at a time. This repairs 189 sections across 59 lessons,
   including advice and pitfalls. Existing paragraph order and independent list

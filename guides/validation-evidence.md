@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-10-26, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed: 89.4224% (56,667/63,370); 18,249 passed, 173 skipped | [CI42168155152](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42168155152), source `ff4fd1d`, tested merge `2bbb790f`; equal whole trees and all four workflows pass. Same 800 files/566 exclusions/coverage.py 7.16.2; all 4,372 required consumers execute. Python 3.12.16 and every installed distribution version match accepted `ef0bdd0`; all skip messages and 3,487 normalized warning messages/counts match. Full +11 covered/+2 statements. Core 70/expanded 88 retained; exact 90% gap 366 only at this measured source; no collection warnings |
+| Current accepted remote expanded CPU whole-package gate | Passed: 89.4247% (56,672/63,374); 18,326 passed, 173 skipped | [CI42173171868](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42173171868), source `ca37ffe`, tested merge `a1954d9f`; equal whole trees and all four workflows pass. Same 800 files/566 exclusions/coverage.py 7.16.2; all 4,449 required consumers execute. Python 3.12.16 and every installed distribution match `ff4fd1d`; all skip messages match. 3,435 warnings versus 3,487: 52 existing NMF convergence warnings did not recur, other normalized text matches. Full +5 covered/+4 statements. Core 70/expanded 88 retained; exact 90% gap 365 only at this measured source; no collection warnings |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -7248,3 +7248,52 @@ statements and needs its own complete measurement. CI requires 23 consumer modul
 4,449 actual cases. Positive, missing-module and skipped-case guard probes use
 actual full/subset XML evidence, without combining coverage databases. Core70/
 expanded88, requirements, exclusions and the one-point headroom policy remain.
+
+### Native AutoML search-only and winner ownership (2026-11-06)
+
+Native `refit=False` previously ran the same final refit as `True`, replacing a
+Session's previous model despite the documented option. It now returns ranked
+selection evidence without attaching a final winner. Candidate scoring and
+nested outer-fold fits still run. AutoML evaluation requires the active plan's
+estimator to be the Session's current fitted estimator; a later classical fit
+cannot receive stale winner metadata. Existing bundle validation refuses a
+selection-only plan before creating the destination or changing history.
+
+The 63 new public consumers independently solve weighted/unweighted Ridge and
+OLS equations, check MAE/MSE/R2 candidate ranking in CV, nested CV and validation,
+observe real sklearn fit populations, and verify refitted predictions, metrics
+and actual saved-bundle reloads. They also check fresh/prior Session models,
+unchanged data and refusal history. The identical final test corpus on archived
+`ca37ffe` produces **45 failures/18 passes/zero skips** in both established
+Windows environments. After correction, all 63 execute and pass in both and in
+core. The broader six-module selection gives **171 passed/four skipped** in
+Pandas 3 and **175 passed/zero skipped** in the compatible environment, with
+zero failures/errors/pytest/collection/assertion-rewrite/coverage warnings.
+The four genuine Pandas 3 skips are existing Optuna CV replay cases because
+Optuna is absent there; they execute in compatible. Core runs only the new
+module: 63 passed, zero skips/warnings, without coverage collection.
+
+Both environments use Windows/Python 3.12.8 and coverage.py 7.16.2. Pandas 3 uses
+Pandas 3.0.5/NumPy 2.4.6/sklearn 1.9.0; compatible uses Pandas 2.3.3/NumPy
+2.4.1/sklearn 1.9.1. Actual loaded module paths/versions match before and after
+within each environment. No dependency was installed or copied. Durations
+114.32s and 100.27s are not performance evidence. FLAML and AutoGluon adapters
+are unchanged; this batch does not establish their `refit=False` behavior.
+
+Official `measure_coverage_reach.py` compares each frozen subset with verified
+same-source accepted `ca37ffe` whole-package JSON and Git source. Each profile
+exercises **seven previously missing unchanged lines**, with five common: six
+optional-provider discovery lines per profile and one public result getter.
+It also executes eight changed/new evaluation lines. No previously missing
+unchanged numerical implementation lines are claimed. These are subset reach
+counts, not combined coverage or a projected/net complete percentage. The
+correctness fix removes an erroneous duplicate refit. Current source contains
+63,371 measured statements; package scope stays 800 files, 566 exclusions and
+unchanged coverage settings. CI requires 24 modules/4,512 actual consumers;
+actual XML positive/missing-module/skipped-case probes pass/refuse appropriately.
+Python 3.10 syntax, Ruff, new-test formatting, copy lint, docstring/release checks
+and whitespace checks pass. Scoped mypy finds no issues in `automl_ops.py`, with
+one existing unused legacy configuration-section note. Frozen source/test/profile
+inputs and the CI guard hash are verified. The new source needs its own passing
+complete CI measurement. Latest accepted complete evidence remains **89.4247%**
+at `ca37ffe`; core 70/expanded 88 and one-point headroom policy remain unchanged.

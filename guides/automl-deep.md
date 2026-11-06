@@ -42,6 +42,15 @@ and preprocess strategy are still open.
 
 ## Selection
 
+Native `refit=False` omits the final refit on all Session training rows and
+leaves `plan.estimator_` unavailable. The ranked result, CV scores and nested
+outer estimates remain available; the fits needed to compute them still run.
+An existing classical `fit_result` is preserved. AutoML evaluation and bundle
+export require a fitted winner belonging to the active plan. After a later
+classical `fit`, use classical evaluation or run AutoML again with `refit=True`.
+This contract is qualified for native search; FLAML and AutoGluon retain their
+backend-specific training and winner attachment behavior.
+
 Nested outer estimates repeat the configured grid, randomized, evolutionary or
 Optuna search, including recipe and ensemble options, within each outer-training
 subset. Trial and ensemble budgets apply inside each repeated search, so nesting

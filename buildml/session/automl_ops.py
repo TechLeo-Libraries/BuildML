@@ -102,6 +102,8 @@ def run_automl_op(
         Allow search when Session-global preprocess was already applied.
     refit:
         When True, refit the best candidate on all train rows after selection.
+        Native search with False preserves any previous Session fitted model;
+        the new selection-only plan cannot be evaluated or saved as a winner.
     random_state:
         Seed for randomized search and CV splitters.
     groups:
@@ -210,31 +212,35 @@ def evaluate_automl(
     ValidationError
         When no refitted AutoML winner exists on the Session.
     """
-    if session._fit_result is None:
-        raise ValidationError("No fitted AutoML winner. Call run_automl first.")
     plan = getattr(session, "_automl_plan", None)
+    if (
+        plan is None
+        or plan.estimator_ is None
+        or session._fit_result is None
+        or session._fit_result.estimator is not plan.estimator_
+    ):
+        raise ValidationError("No fitted AutoML winner. Call run_automl with refit=True first.")
     result = evaluate_estimator(
         session.dataset, session._split_plan, session._fit_result, partition=partition
     )
-    if plan is not None:
-        tips = list(result.recommendations)
-        tips.insert(
-            0,
-            (
-                f"AutoML winner family={plan.best_family}, "
-                f"recipe={plan.best_recipe_strategy}, kind={plan.best_kind}."
-            ),
-        )
-        for note in plan.disclosures[:3]:
-            tips.append(note)
-        result.recommendations = tips
-        result.diagnostics["automl"] = plan.to_dict()
+    tips = list(result.recommendations)
+    tips.insert(
+        0,
+        (
+            f"AutoML winner family={plan.best_family}, "
+            f"recipe={plan.best_recipe_strategy}, kind={plan.best_kind}."
+        ),
+    )
+    for note in plan.disclosures[:3]:
+        tips.append(note)
+    result.recommendations = tips
+    result.diagnostics["automl"] = plan.to_dict()
     session._record(
         "evaluate_automl",
         {
             "partition": partition,
-            "best_family": None if plan is None else plan.best_family,
-            "selection": None if plan is None else plan.selection,
+            "best_family": plan.best_family,
+            "selection": plan.selection,
         },
         result_summary=result.to_dict(),
     )

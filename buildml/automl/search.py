@@ -228,6 +228,8 @@ def run_automl(
         Session-global fitted preprocessing has already transformed the frame.
     refit:
         When True, refit the best candidate on all train rows after selection.
+        Native search with False returns evidence without a final fitted winner.
+        Candidate fits and nested outer-fold fits still run for scoring.
     random_state:
         Seed for randomized search and CV splitters.
     groups:
@@ -568,18 +570,6 @@ def run_automl(
             random_state=random_state,
         )
         estimator = fit_result.estimator
-    else:
-        # Still materialize an unfitted-then-fitted estimator for the plan.
-        fit_result = _refit_best(
-            dataset,
-            split_plan,
-            best=best,
-            fams=fams,
-            task=resolved_task,
-            random_state=random_state,
-        )
-        estimator = fit_result.estimator
-
     plan = AutoMLPlan(
         task=resolved_task,
         method=effective_method,

@@ -55,16 +55,17 @@ Measure the complete suite with `python scripts/run_full_coverage.py`; subset
 runs are not comparable to the project coverage threshold.
 The separate expanded Linux job runs the complete test directory with
 `requirements-expanded-coverage.txt` and an **88%** floor. Latest accepted remote
-CPU source `ff4fd1d` passed **89.4224%** (56,667/63,370), with 18,249 passed and
-173 skipped. CI42168155152, backend42168155111, acceptance42168155165 and
-CodeQL42168153407 passed. Tested merge `2bbb790f` and source whole trees match.
+CPU source `ca37ffe` passed **89.4247%** (56,672/63,374), with 18,326 passed and
+173 skipped. CI42173171868, backend42173171748, acceptance42173172805 and
+CodeQL42173170213 passed. Tested merge `a1954d9f` and source whole trees match.
 Core 70/expanded 88 remain; next expanded 89 requires passing complete coverage
-of at least 90%, retaining one point of headroom. Exact 90% gap: 366 at this source.
-Scope stays 800 files/566 exclusions/coverage.py 7.16.2; all 4,372 required consumers
-execute. Python 3.12.16 and every installed distribution version match the preceding
-accepted run. All 173 skips across 37 messages and 3,487 pytest warning messages/counts
-match after hosted Python path normalization; there are zero failures or collection
-warnings. Complete totals add 11 covered lines and two statements. The 2090.210s
+of at least 90%, retaining one point of headroom. Exact 90% gap: 365 at this source.
+Scope stays 800 files/566 exclusions/coverage.py 7.16.2; all 4,449 required consumers
+execute. Python 3.12.16 and every distribution version match accepted `ff4fd1d`.
+All 173 skips across 37 messages match. Warnings are 3,435 versus 3,487: 52 existing
+NMF convergence warnings did not recur; other normalized warning text matches.
+This variation is not attributed to the paragraph repair. No failures or collection
+warnings. Complete totals add five covered lines and four statements. The 2858.680s
 runtime is not performance evidence.
 
 The subsequent `8594200` gate passed its tests, but coverage.py upgraded from
