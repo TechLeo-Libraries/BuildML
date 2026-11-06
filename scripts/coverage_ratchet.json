@@ -8,22 +8,22 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 89.50556905310322,
-      "covered_lines": 56734,
-      "num_statements": 63386,
+      "percent_covered": 89.51494597365723,
+      "covered_lines": 56748,
+      "num_statements": 63395,
       "excluded_lines": 566,
-      "source_revision": "e718d984bc65989c075a0c1a088564f5e3e484a4",
-      "tested_revision": "93d45677af836876ead27e6a498f21cacf819bae",
+      "source_revision": "9ce78ca0366922adbd7a566e2d5b14c4b4c9bddd",
+      "tested_revision": "ab52131994482c6b200d3ed3a81c39414dc3f71b",
       "platform": "remote Linux, CPU expanded profile",
       "python": "3.12.16",
-      "run_id": 42216988576,
-      "result": "18632 passed,173 skipped,zero failures/errors",
+      "run_id": 42225080627,
+      "result": "18724 passed,173 skipped,zero failures/errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
       "coverage_version": "7.16.2",
-      "notes": "Weighted comparison/support correction accepted. All four workflows pass; source/tested merge whole tree ebcc0f8825d6dc5d54562c865ddd0b644a30762f matches. All 4,755 required consumers in 27 modules execute; scope 800 files, 566 exclusions and coverage.py 7.16.2 unchanged. Python 3.12.16 and all installed distributions except jsonpatch1.43->1.44/jsonpointer3.9->3.10 match b15f89b. All 173 skips across 37 messages match. 3,435 warnings versus 3,487: 52 existing NMF convergence warnings disappeared; other normalized text/counts match. Not attributed to repair. Full +27 covered/+12 statements: 26 covered in repaired modules plus one existing regression diagnostic path, not wholly attributed. Runtime 2853.840s log/2853.584s XML is not performance evidence. Exact 90% gap 314 only at measured e718d98. Core 70/expanded 88 and one-point headroom retained; next 89 needs passing complete coverage of at least 90%. Subsequent finite-CV subset separate."
+      "notes": "Finite-CV correction accepted. All four workflows pass; source/tested merge whole tree e800de340a8a3a103fab6c14e9a3c71a7d0d316b matches. All 4,847 required consumers in 28 modules execute. Scope 800 files, 566 exclusions and coverage.py 7.16.2 unchanged. Python 3.12.16 and every installed distribution match e718d98; profile inputs unchanged. All 173 skips across 37 messages match. Warnings 3,487 versus 3,435: 52 existing NMF convergence warnings recurred; other normalized text/counts match, not attributed to correction. Full net +14 covered/+9 statements: selection +15/+9, one existing regression diagnostic path lost; not wholly attributed. Runtime 2575.570s log/2575.346s XML is not performance evidence. Exact 90% gap 308 only at measured 9ce78ca. Core 70/expanded 88 and one-point headroom retained; next89 requires passing complete>=90. Subsequent CBR memory/distance subset remains separate."
     },
     "latest_local_measurement": {
       "percent_covered": 85.51916984547746,

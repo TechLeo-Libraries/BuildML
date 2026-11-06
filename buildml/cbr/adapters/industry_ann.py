@@ -219,8 +219,9 @@ def query_ann_index(
     neighbours. The plan carries the metric so this cannot happen through the
     normal path.
 
-    **Distances are not comparable across libraries.** hnswlib returns squared
-    L2 where faiss returns L2; the ranking is the same, the numbers are not.
+    **Euclidean distances are returned in Euclidean units.** Both native L2
+    indexes return squared distances. Taking their square root preserves the
+    ranking and gives inverse-distance reuse the same units as exact search.
     """
     q = _as_float32(queries)
     if not np.isfinite(q).all() or int(k) < 1:
@@ -236,6 +237,8 @@ def query_ann_index(
         if metric_key == "cosine":
             # hnswlib cosine distance is 1 - similarity
             dists_arr = np.clip(dists_arr, 0.0, 2.0)
+        else:
+            dists_arr = np.sqrt(np.maximum(dists_arr, 0.0))
         return dists_arr, np.asarray(labels, dtype=int)
     import faiss
 
@@ -246,6 +249,7 @@ def query_ann_index(
         dists_arr = 1.0 - np.clip(sims, -1.0, 1.0)
     else:
         dists_arr, labels = index.search(qf, kk)
+        dists_arr = np.sqrt(np.maximum(dists_arr, 0.0))
     return np.asarray(dists_arr, dtype=float), np.asarray(labels, dtype=int)
 
 

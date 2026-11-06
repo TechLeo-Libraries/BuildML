@@ -39,6 +39,7 @@ from buildml.cbr.adapters.text_embed import embed_text_cases
 from buildml.cbr.cases import Case, CaseBase, encode_categoricals
 from buildml.cbr.features import (
     matrix_from_frame,
+    regression_targets,
     standardize_apply,
 )
 from buildml.cbr.results import CbrPlan, CbrRetainResult
@@ -74,16 +75,18 @@ def retain_cbr(
         Partition membership, which is what makes the holdout check possible.
     labeled_frame:
         The new cases. Must carry the plan's feature columns and a solution
-        column, with no nulls in either.
+        column, with unique row identities and no nulls. Numeric features and
+        regression solutions must be finite real values.
     solution_column:
         Where the outcome lives, defaulting to the plan's target column.
     source_disclosure:
-        Mandatory, non-empty. Where these labels came from: human review, a
+        Mandatory, non-empty string. Where these labels came from: human review, a
         resolved support ticket, a settled transaction. Never a Session holdout
         partition.
     allow_overlap_with_train:
         Whether rows already represented in train may be retained again. Rows
-        already present by index are skipped either way.
+        already present by index are skipped either way. Requires a genuine
+        Python/NumPy boolean, rather than an ambiguous truth value.
 
     Returns
     -------
@@ -148,13 +151,17 @@ def retain_cbr(
     --------
     retain_from_indices : Retaining rows already in the dataset.
     """
-    if not str(source_disclosure).strip():
+    if not isinstance(source_disclosure, str) or not source_disclosure.strip():
         raise ValidationError(
             "retain_cbr requires a non-empty source_disclosure describing "
             "where the new labels came from (must not be Session holdout)."
         )
     if labeled_frame is None or len(labeled_frame) == 0:
         raise ValidationError("retain_cbr requires a non-empty labeled_frame.")
+    if not isinstance(allow_overlap_with_train, (bool, np.bool_)):
+        raise ValidationError("allow_overlap_with_train must be a boolean.")
+    if not labeled_frame.index.is_unique:
+        raise ValidationError("Retained row identities must be unique; duplicate indices are ambiguous.")
 
     sol_col = solution_column or plan.target_column
     if sol_col not in labeled_frame.columns:
@@ -163,6 +170,8 @@ def retain_cbr(
         )
     if labeled_frame[sol_col].isna().any():
         raise ValidationError("retain_cbr refuses null solutions.")
+    if plan.task == "regression":
+        regression_targets(labeled_frame[sol_col])
 
     forbidden = _holdout_label_index_set(dataset, split_plan)
     existing = {c.row_index for c in plan.case_base.cases}

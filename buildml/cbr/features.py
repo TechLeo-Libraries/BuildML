@@ -51,7 +51,7 @@ __all__ = [
 
 
 def matrix_from_frame(frame: pd.DataFrame, columns: list[str]) -> np.ndarray:
-    """Build the float matrix distances are computed over, rejecting nulls.
+    """Build the float matrix distances use, rejecting non-finite/complex values.
 
     Shares its implementation with the semi-supervised path and re-labels the
     error text, so a CBR user reading a failure sees CBR terminology rather than
@@ -72,7 +72,8 @@ def matrix_from_frame(frame: pd.DataFrame, columns: list[str]) -> np.ndarray:
     Raises
     ------
     ValidationError
-        If a column is missing, non-numeric, or contains nulls.
+        If a column is missing, cannot be converted to real numbers, or contains
+        nulls, complex values or non-finite values.
 
     Notes
     -----
@@ -80,8 +81,13 @@ def matrix_from_frame(frame: pd.DataFrame, columns: list[str]) -> np.ndarray:
     before fitting; imputation changes the distances used to retrieve cases.
     """
     try:
-        return _matrix_from_frame(frame, columns)
-    except ValidationError as exc:
+        if any(pd.api.types.is_complex_dtype(frame[c]) for c in columns if c in frame):
+            raise ValidationError("Case-based reasoning requires finite real numeric features.")
+        matrix = _matrix_from_frame(frame, columns)
+        if not np.isfinite(matrix).all():
+            raise ValidationError("Case-based reasoning requires finite real numeric features.")
+        return matrix
+    except (ValidationError, TypeError, ValueError, OverflowError) as exc:
         msg = str(exc).replace("Semi-supervised learning", "Case-based reasoning")
         raise ValidationError(msg) from exc
 
@@ -360,7 +366,7 @@ def regression_targets(y: pd.Series) -> np.ndarray:
     Raises
     ------
     ValidationError
-        If any target is null, or the column is not numeric.
+        If any target is null/non-finite, or the column is not real numeric data.
 
     Notes
     -----
@@ -376,7 +382,12 @@ def regression_targets(y: pd.Series) -> np.ndarray:
         raise ValidationError(
             "CBR regression requires a numeric target column."
         )
-    return y.to_numpy(dtype=float)
+    if pd.api.types.is_complex_dtype(y):
+        raise ValidationError("CBR regression requires finite real numeric targets.")
+    values = y.to_numpy(dtype=float)
+    if not np.isfinite(values).all():
+        raise ValidationError("CBR regression requires finite real numeric targets.")
+    return values
 
 
 def train_partition_frame(

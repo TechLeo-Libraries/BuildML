@@ -55,20 +55,19 @@ Measure the complete suite with `python scripts/run_full_coverage.py`; subset
 runs are not comparable to the project coverage threshold.
 The separate expanded Linux job runs the complete test directory with
 `requirements-expanded-coverage.txt` and an **88%** floor. Latest accepted remote
-CPU source `e718d98` passed **89.5056%** (56,734/63,386), with 18,632 passed and
-173 skipped. CI42216988576, backend42216988712, acceptance42216988578 and
-CodeQL42216984316 passed. Tested merge `93d45677` and source whole trees match.
+CPU source `9ce78ca` passed **89.5149%** (56,748/63,395), with 18,724 passed and
+173 skipped. CI42225080627, backend42225080727, acceptance42225080864 and
+CodeQL42225076413 passed. Tested merge `ab521319` and source whole trees match.
 Core 70/expanded 88 remain; next expanded 89 requires passing complete coverage
-of at least 90%, retaining one point of headroom. Exact 90% gap: 314 at this source.
-Scope stays 800 files/566 exclusions/coverage.py 7.16.2; all 4,755 required consumers
-execute. Python 3.12.16 and every installed distribution except jsonpatch
-1.43→1.44/jsonpointer 3.9→3.10 match accepted `b15f89b`. All 173 skips/37 messages
-match. Warnings are 3,435 versus 3,487: 52 existing NMF convergence warnings
-disappeared; other normalized text/counts match. No failures/errors/collection
-warnings. Complete totals add 27 covered lines and 12 statements: 26 covered
-lines in repaired modules and one existing regression diagnostic path. These
-aggregate changes are not wholly attributed to the correction. Runtime
-2853.840s is not performance evidence. Subsequent finite-CV changes require
+of at least 90%, retaining one point of headroom. Exact 90% gap: 308 at this source.
+Scope stays 800 files/566 exclusions/coverage.py 7.16.2; all 4,847 required consumers
+execute. Python 3.12.16 and every installed distribution match accepted `e718d98`.
+All 173 skips/37 messages match. Warnings are 3,487 versus 3,435: 52 existing NMF
+convergence warnings recurred; other normalized text/counts match. No failures/
+errors/collection warnings. Complete net +14 covered/+9 statements comprises
+15 covered/nine statements in selection and loss of one existing regression
+diagnostic path; the aggregate is not wholly attributed to the correction.
+Runtime 2575.570s is not performance evidence. Subsequent CBR changes require
 their own complete result.
 
 The subsequent `8594200` gate passed its tests, but coverage.py upgraded from

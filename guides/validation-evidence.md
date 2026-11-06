@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-10-26, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed: 89.5056% (56,734/63,386); 18,632 passed, 173 skipped | [CI42216988576](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42216988576), source `e718d98`, tested merge `93d45677`; equal whole trees and all four workflows pass. Same 800 files/566 exclusions/coverage.py 7.16.2; all 4,755 required consumers execute. Python 3.12.16 and all distributions except jsonpatch 1.43→1.44/jsonpointer 3.9→3.10 match `b15f89b`. All skip messages match. Warnings 3,435 versus 3,487: 52 existing NMF convergence warnings disappeared; other normalized text/counts match. Full +27 covered/+12 statements includes one existing regression diagnostic path and is not wholly attributed to the correction. Core 70/expanded 88 retained; exact 90% gap 314 only at this measured source; no collection warnings |
+| Current accepted remote expanded CPU whole-package gate | Passed: 89.5149% (56,748/63,395); 18,724 passed, 173 skipped | [CI42225080627](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42225080627), source `9ce78ca`, tested merge `ab521319`; equal whole trees and all four workflows pass. Same 800 files/566 exclusions/coverage.py 7.16.2; all 4,847 required consumers execute. Python 3.12.16 and every installed distribution match `e718d98`; all skip messages match. Warnings 3,487 versus 3,435: 52 existing NMF convergence warnings recurred; other normalized text/counts match. Full net +14 covered/+9 statements includes loss of one existing diagnostic path and is not wholly attributed to the correction. Core 70/expanded 88 retained; exact 90% gap 308 only at this measured source; no collection warnings |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -7567,5 +7567,95 @@ Pandas 3 cases (including all six Optuna cases) validates the guard: positive
 passes, missing-module/skipped-case probes refuse. No coverage databases are
 combined. Python 3.10 syntax, full Ruff scope, test formatting, copy lint,
 docstring budget, release references, teaching/example checks and whitespace
-checks pass. Production changes are confined to `model/selection.py`. This source
-needs its own complete result; accepted 89.5056% belongs to preceding `e718d98`.
+checks pass. Production changes are confined to `model/selection.py`.
+
+Complete remote `9ce78ca` subsequently passed **89.5149% (56,748/63,395)**:
+18,724 passed/173 skipped, zero failures/errors/collection warnings. All four
+workflows pass: CI42225080627, backend42225080727, acceptance42225080864 and
+CodeQL42225076413. Tested merge `ab521319` and source whole trees match. All
+4,847 required consumers execute. Python 3.12.16 and every installed distribution
+match `e718d98`; actual profile inputs are unchanged. All 173 skips/37 messages
+match. Warnings are 3,487 versus 3,435: 52 existing NMF convergence warnings
+recurred; other normalized text/counts match. This is not attributed to the
+correction. Full net +14 covered/+9 statements comprises selection +15/+9 and
+loss of one existing regression heteroscedasticity diagnostic path. The aggregate
+is not wholly attributed to the correction. Runtime 2575.570s log/2575.346s XML
+is not performance evidence. Floors, scope, exclusions and one-point headroom
+remain. Exact 90% gap: 308 only at measured `9ce78ca`.
+
+### Case memory integrity and ANN distance units (2026-11-06)
+
+An actual Euclidean CBR probe returned distances 2.236/3.162/7.280 and prediction
+8.58158 through exact search, but 5/10/53 and prediction 5.53846 through isolated
+HNSW. The native values were squared distances. Both
+[HNSW's L2 contract](https://github.com/nmslib/hnswlib#supported-distances) and
+[FAISS's metric documentation](https://github.com/facebookresearch/faiss/wiki/MetricType-and-distances)
+specify squared L2 results. The adapter now takes their square root before
+inverse-distance reuse. This preserves distance ordering and repairs the units
+used in predictions. Existing Euclidean ANN bundles use corrected query-time
+distances when loaded, so their predictions may change; the bundle format is
+unchanged. Approximate search can still return different neighbors from exact
+search, and these tests do not establish general ANN recall or performance.
+
+Retention also accepted infinite regression outcomes, two new cases with the
+same index, and `None` provenance stored as the string `"None"`. It now requires
+a genuine nonempty provenance string, unique identities within the supplied
+frame and a Python/NumPy boolean overlap control. Numeric features and regression
+outcomes must be finite and real, before fitting or retention can alter memory.
+Conversion failures produce a typed validation error; complex values are refused
+before an implicit cast can discard their imaginary components. Existing case
+identities remain skipped on repeated retention. Valid retention keeps the
+training transforms and original data; refusal preserves the live index, prior
+predictions/evaluation, memory and history.
+
+The 75 new public consumers compare raw vector norms, dot products, training
+means/scales, inverse distances, weighted means and class votes with exact and
+real HNSW predictions. Text/numeric class labels and regression, Euclidean/cosine
+metrics and both scaling choices are exercised. Thirty-two real saved and trusted
+loaded bundles verify retained predictions and overlap decisions on a new Session
+dataset. Windows worker working directories are observed against the frozen
+source. No fake index, replaced metric/helper result or imported native DLL in
+the parent substitutes for the isolated worker. A controlled nonzero retained
+cosine angle avoids magnifying ordinary float32 rounding in the test fixture.
+Native FAISS is absent locally: its L2 conversion follows the cited API contract,
+but its native execution path is not claimed as verified here.
+
+The identical final 75-case corpus on archived `9ce78ca` gives **36 failed/39
+passed/zero skipped** with ANN installed and **22 failed/30 passed/23 skipped**
+in the compatible environment. Both controls emit four complex-cast warnings.
+Corrected frozen verification passes **95 cases/one skip** in Pandas 3 and
+**70 cases/26 skips** in compatible, including 21 existing regressions. All 75
+new cases execute unskipped in Pandas 3, including 23 real isolated ANN cases.
+Its single skip is an existing Windows Torch guard; its three warnings are
+existing deprecated flat aliases in an industry regression. Compatible lacks
+both ANN providers, skipping the 23 new ANN cases and one existing HNSW case;
+one existing sentence-transformers case and the Windows Torch case also skip.
+Genuine core runs only the new module: **52 passed/23 ANN skips**, zero warnings,
+without coverage collection. No failures/errors/collection/assertion-rewrite/
+coverage warnings occur in corrected verification.
+
+Both selections use Windows Python 3.12.8/coverage.py 7.16.2. Pandas 3 uses Pandas
+3.0.5/NumPy 2.4.6/sklearn 1.9.0 and actual hnswlib 0.8.0 through an isolated native
+worker. Compatible uses Pandas 2.3.3/NumPy 2.4.1/sklearn 1.9.1. Actual loaded
+numerical versions/paths and ANN origins match before/after within each
+selection. Neither dependencies nor provider modules were installed or copied.
+Durations 195.84s/38.54s and core 5.77s are not performance evidence.
+
+Official `measure_coverage_reach.py` uses verified same-source `9ce78ca` full
+JSON and Git against each current frozen subset: **21 previously missing
+unchanged lines in Pandas 3 / 22 in compatible**, with 17 common. Thirteen common
+lines are in repaired feature/retention modules; others include existing shared
+feature and availability paths. Pandas 3 adds four ANN/availability paths;
+compatible adds five missing-provider paths. Changed/new executed lines: **21/20**.
+Existing regressions are included, so not all reach is attributed to new tests.
+This is neither combined coverage nor a net/projected full-suite percentage.
+Current source has 63,413 statements, same 800 files/566 exclusions. All 1,363
+frozen inputs, 828 archived production/resource members and separate guard hash
+are checked. CI requires 29 modules/4,922 actual cases. Accepted full XML plus
+only the 75 actual new Pandas 3 cases validates the guard: positive passes,
+missing-module/skipped-case probes refuse. No coverage databases are combined.
+Python 3.10 syntax, full Ruff scope, test format, copy lint, docstring budget,
+release references and whitespace checks pass. Production changes are confined
+to `cbr/adapters/industry_ann.py`, `cbr/features.py` and `cbr/retain.py`. This source
+needs its own complete result; accepted 89.5149% belongs to preceding `9ce78ca`.
+Floors, scope, exclusions and the one-point headroom policy remain unchanged.

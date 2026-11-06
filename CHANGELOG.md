@@ -14,6 +14,13 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Case-based reasoning converts ANN squared L2 results to Euclidean distances
+  before inverse-distance weighting. Euclidean industry predictions, including
+  loaded bundles, may change. Retention requires a genuine provenance string,
+  unique row identities and a boolean overlap control. Numeric case features and
+  regression outcomes must be finite real values; invalid inputs refuse before
+  changing memory or its index. Real neighbors and saved bundles check results.
+
 - Cross-validation refuses an undefined selected metric in any inner or outer
   fold before search can choose or refit a model. This prevents arbitrary
   winners from leave-one-out R² scores. MAE/MSE/RMSE remain available for
