@@ -54,21 +54,21 @@ across Linux Python 3.10-3.13, run 38589015544, commit 2837fb3).
 Measure the complete suite with `python scripts/run_full_coverage.py`; subset
 runs are not comparable to the project coverage threshold.
 The separate expanded Linux job runs the complete test directory with
-`requirements-expanded-coverage.txt` and an **88%** floor. Remote Linux source `135b521` passed **89.5489%** (56,791/63,419 lines),
-with 18,888 passed and 173 skipped. CI42251143384, backend42251142979,
-acceptance42251143233 and CodeQL42251136849 all passed. Tested merge `acb872c4`
+`requirements-expanded-coverage.txt` and an **88%** floor. Remote Linux source `deec011` passed **89.5568%** (56,796/63,419 lines),
+with 18,922 passed and 173 skipped. CI42260931848, backend42260931875,
+acceptance42260931863 and CodeQL42260924796 all passed. Tested merge `a2ded2ff`
 and source whole trees match. Scope stays 800 files/566 exclusions/coverage.py
-7.16.2; all 5,011 required consumers execute. Python 3.12.16, every installed
-distribution, profile input bytes and all 173 skips/37 messages match `fab19ee`.
-Warnings 3,435 versus 3,487 differ only by disappearance of 52 existing NMF
-convergence warnings. No failures/errors/collection warnings in the accepted
-result. Complete net +10 covered/+6 statements includes one existing regression
-diagnostic path, whose variation is not attributed to the correction. The initial
-macOS 3.12 acceptance job never acquired a hosted runner and ran no steps; its
-single-job retry passed. Runtime 2816.930s is not performance evidence.
-Core 70/expanded 88 remain; next expanded 89 requires passing complete coverage
-of at least 90%, preserving one point of headroom. Exact 90% gap: 287 only at
-measured `135b521`; subsequent changes require their own complete result.
+7.16.2; all 5,045 required consumers execute. Python 3.12.16, every installed
+distribution, profile input bytes and all 173 skips/37 messages match `135b521`.
+Warnings 3,412 versus 3,435 reflect removal of 23 symbolic flat-alias
+deprecations; all other warning blocks/counts match after source-line
+normalization. No failures/errors/collection warnings in the accepted result.
+Complete net +5 covered/zero statements comprises executor +3 and rule parsing
++2. The initial macOS 3.10 acceptance job never acquired a hosted runner and
+ran no steps; its single-job retry passed. Runtime 2864.480s is not performance
+evidence. Core 70/expanded 88 remain; next expanded 89 requires passing complete
+coverage of at least 90%, preserving one point of headroom. Exact 90% gap: 282
+only at measured `deec011`; subsequent changes need their own complete result.
 
 The subsequent `8594200` gate passed its tests, but coverage.py upgraded from
 7.16.2 to7.17.0 and reported607 excluded lines instead of566. Its raw86.5151%

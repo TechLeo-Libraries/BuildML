@@ -209,7 +209,8 @@ def build_interactions(
     Produces a canonical frame with ``__rating__`` for downstream matrix
     construction. Implicit feedback deduplicates user-item pairs and assigns
     rating ``1.0``; explicit feedback aggregates duplicate pairs by mean
-    rating.
+    rating. After documented null/nonnumeric drops, explicit ratings must
+    be finite real values.
 
     Parameters
     ----------
@@ -234,8 +235,8 @@ def build_interactions(
     Raises
     ------
     ValidationError
-        When required columns are missing or no interactions remain after
-        filtering.
+        When required columns are missing, no interactions remain after
+        filtering, or surviving explicit ratings are not finite real values.
     """
     needed = [user_column, item_column]
     if rating_column is not None:
@@ -255,7 +256,11 @@ def build_interactions(
     else:
         out = out.dropna(subset=[rating_column])
         out["__rating__"] = pd.to_numeric(out[rating_column], errors="coerce")
+        if pd.api.types.is_complex_dtype(out["__rating__"].dtype):
+            raise ValidationError("Recommender ratings must be real numeric values.")
         out = out.dropna(subset=["__rating__"])
+        if not np.isfinite(out["__rating__"].to_numpy(dtype=float)).all():
+            raise ValidationError("Recommender ratings must be finite real values.")
         if min_rating is not None:
             out = out[out["__rating__"] >= float(min_rating)]
         if out.empty:
@@ -267,6 +272,8 @@ def build_interactions(
             out.groupby([user_column, item_column], as_index=False)["__rating__"]
             .mean()
         )
+        if not np.isfinite(out["__rating__"].to_numpy(dtype=float)).all():
+            raise ValidationError("Aggregated recommender ratings must be finite real values.")
     return cast(pd.DataFrame, out.reset_index(drop=True))
 
 
@@ -352,7 +359,7 @@ def item_feature_matrix(
     Raises
     ------
     ValidationError
-        When feature columns are missing or non-numeric.
+        When feature columns are missing, non-numeric, complex or non-finite.
     """
     missing = [c for c in feature_columns if c not in frame.columns]
     if missing:
@@ -363,6 +370,11 @@ def item_feature_matrix(
                 f"Content recommender requires numeric item features; "
                 f"{col!r} is not numeric."
             )
+        if pd.api.types.is_complex_dtype(frame[col].dtype):
+            raise ValidationError("Content item features must be real numeric values.")
+    used = frame.loc[frame[item_column].isin(item_ids), feature_columns]
+    if not np.isfinite(used.to_numpy(dtype=float, na_value=np.nan)).all():
+        raise ValidationError("Content item features must be finite real values.")
     rows: list[np.ndarray] = []
     for item in item_ids:
         sub = frame.loc[frame[item_column] == item, feature_columns]
@@ -375,6 +387,8 @@ def item_feature_matrix(
     scale = np.std(feats, axis=0) if len(feats) else np.ones(len(feature_columns))
     scale = np.where(scale < 1e-12, 1.0, scale)
     standardized = (feats - mean) / scale
+    if not np.isfinite(standardized).all():
+        raise ValidationError("Standardized content item features must be finite real values.")
     return standardized, mean, scale
 
 

@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-11-06, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed: 89.5489% (56,791/63,419); 18,888 passed, 173 skipped | [CI42251143384](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42251143384), source `135b521`, tested merge `acb872c4`; equal whole trees and all four workflows pass. Same 800 files/566 exclusions/coverage.py 7.16.2; all 5,011 required consumers execute. Python 3.12.16, every installed distribution, profile inputs and all skips match `fab19ee`. Warnings 3,435 versus 3,487: only 52 existing NMF convergence warnings disappeared. Full net +10 covered/+6 statements includes an existing diagnostic path not attributed to correction. Initial macOS acceptance capacity failure ran zero steps; single-job retry passed. Core 70/expanded 88 retained; exact 90% gap 287 only at this measured source; no collection warnings |
+| Current accepted remote expanded CPU whole-package gate | Passed: 89.5568% (56,796/63,419); 18,922 passed, 173 skipped | [CI42260931848](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42260931848), source `deec011`, tested merge `a2ded2ff`; equal whole trees and all four workflows pass. Same 800 files/566 exclusions/coverage.py 7.16.2; all 5,045 required consumers execute. Python 3.12.16, every distribution, profile inputs and all skips match `135b521`. Warnings 3,412 versus 3,435: 23 symbolic alias deprecations removed; other normalized blocks/counts match. Full net +5 covered/zero statements. macOS capacity failure ran zero steps; single-job retry passed. Core 70/expanded 88 retained; exact 90% gap 282 only at this source; no collection warnings |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -7801,3 +7801,86 @@ combining coverage. Production changes are confined to `ai/executor.py` and
 history-writing data-read call; it is superseded and excluded from product
 evidence. This batch needs its own complete result; the 89.5489% figure above
 belongs to preceding `135b521`.
+
+
+The declared-rule correction subsequently passed complete verification:
+Remote Linux source `deec011` passed **89.5568%** (56,796/63,419 lines),
+with 18,922 passed and 173 skipped. CI42260931848, backend42260931875,
+acceptance42260931863 and CodeQL42260924796 all passed. Tested merge `a2ded2ff`
+and source whole trees match. Scope stays 800 files/566 exclusions/coverage.py
+7.16.2; all 5,045 required consumers execute. Python 3.12.16, every installed
+distribution, profile input bytes and all 173 skips/37 messages match `135b521`.
+Warnings 3,412 versus 3,435 reflect removal of 23 symbolic flat-alias
+deprecations; all other warning blocks/counts match after source-line
+normalization. No failures/errors/collection warnings in the accepted result.
+Complete net +5 covered/zero statements comprises executor +3 and rule parsing
++2. The initial macOS 3.10 acceptance job never acquired a hosted runner and
+ran no steps; its single-job retry passed. Runtime 2864.480s is not performance
+evidence. Core 70/expanded 88 remain; next expanded 89 requires passing complete
+coverage of at least 90%, preserving one point of headroom. Exact 90% gap: 282
+only at measured `deec011`; subsequent changes need their own complete result.
+
+### Finite recommender memory and implicit SVD (2026-11-06)
+
+A real content recommender accepted infinite ratings and non-finite side
+features, then substituted popularity scores for the poisoned model output.
+Complex values silently lost their imaginary components. Surviving explicit
+ratings and used content features now require finite real values before a fit
+can replace memory. Documented null/nonnumeric rating drops and duplicate-pair
+means remain supported. Implicit feedback still ignores rating values. Neighbor
+and factor counts require positive integers, including normalized NumPy integers;
+this also repairs bundle metadata serialization for valid NumPy counts.
+
+An independent binary-matrix probe found implicit SVD fitted zero-norm factors:
+centering each observed one by the observed mean one erased all interaction
+signal and returned uniform scores. New implicit SVD fits factor the uncentered
+presence matrix with zero score offset. Explicit SVD keeps observed-rating mean
+centering. Existing fitted bundles retain their stored factors and need a refit
+to use the implicit correction; the bundle format is unchanged.
+
+The identical final 58-case corpus on archived `deec011` yields **42 failed / 16
+passed**, zero skips, in both profiles, with 20 existing complex-cast/numerical
+warnings. These are failing checks, not 42 distinct defects. Corrected frozen
+selections pass **334 cases / zero skips / zero warnings** in each profile,
+including 276 existing recommender, observed-rating and bundle regressions.
+Genuine core independently passes all 58 with zero warnings and no coverage
+collection. All new cases execute unskipped in all three environments.
+
+Twelve positive workflows independently reconstruct duplicate means, explicit
+zero/negative ratings, implicit presence masks, user/item cosine similarities,
+neighbor-weighted scores, standardized absolute-rating content profiles and
+truncated singular-value reconstructions from raw train rows. Actual catalog
+identities and maps align the calculations without assuming sorted catalog
+order or a tie-breaking rule. Saved/trusted loaded bundles preserve scores,
+eligibility and cold-start behavior. Holdout metrics check known-item filtering;
+separate no-scoreable-population cases explicitly report zero scored users.
+Fifteen invalid-rating cases across five native methods, six invalid content
+feature cases and sixteen count refusals preserve prior plan identity/hash,
+cached reports, history and dataset. Cleaning-policy and holdout-isolation cases
+check that unused values cannot change train memory. These bounded numerical
+checks do not establish general recommendation quality or throughput.
+
+Windows Python 3.12.8/coverage.py 7.16.2 remain unchanged. Actual numerical
+versions/paths and optional origins match before/after within each profile:
+Pandas 3.0.5/NumPy 2.4.6/sklearn 1.9.0 versus Pandas 2.3.3/NumPy 2.4.1/sklearn
+1.9.1 in compatible/core. No dependencies were installed or copied. New numerical
+oracles use native sklearn item/user kNN, SVD and content scoring; industry
+backends are not claimed as verified. Durations 49.84s/46.14s and core 8.16s are
+not performance evidence. No corrected failures/errors/collection/assertion-
+rewrite/coverage warnings occur.
+
+Official reach against verified same-source `deec011` full JSON/Git finds **eight
+previously missing unchanged lines / 17 changed/new executed lines** in each
+profile. Seven missing lines belong to recommender workflows and one to provider
+availability; existing regressions are included. This is neither combined
+coverage nor a net/projected whole-suite gain. Current source has 63,433
+statements, the same 800 files/566 exclusions. All 1,366 frozen inputs and 828
+archived production/resource members are verified. CI requires 32 modules/5,103
+actual cases; accepted full XML plus only the 58 actual new Pandas 3 cases
+validates positive/missing-module/skipped-case guard behavior without combining
+coverage. Production changes are confined to recommender features, fit and models.
+The preliminary v1 oracle assumed sorted catalog order and counted raw rather
+than aggregated holdout pairs; it is superseded and excluded from product
+evidence. The development SVD failure was independently probed and reproduced
+as a real correction. This batch needs its own complete result; 89.5568% above
+belongs only to measured `deec011`.

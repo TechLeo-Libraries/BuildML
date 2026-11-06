@@ -14,6 +14,12 @@ from the current release; use the installation guide for current requirements.
 
 ### Validation
 
+- Recommender fits refuse surviving non-finite/complex explicit ratings and
+  invalid content features before replacing prior memory. Training dimensions
+  require positive integral counts and normalize NumPy integers for bundle
+  metadata. Implicit SVD fits retain the binary presence signal without a mean
+  offset; existing fitted bundles need a refit to use this correction.
+
 - Agent symbolic fits preserve supplied rule mappings and symbolic fallback
   outcomes. Declared fits and mixed declared/induced hybrids use the same rules
   as direct Session calls. Symbolic agent workflows use the preferred Session

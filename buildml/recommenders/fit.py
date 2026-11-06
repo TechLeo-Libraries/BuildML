@@ -7,6 +7,7 @@ from collections.abc import Sequence
 import numpy as np
 
 from buildml.core.errors import ValidationError
+from buildml.core.validation import _positive_integer
 from buildml.data.dataset import Dataset
 from buildml.data.splits import SplitPlan, assert_fit_partition
 from buildml.recommenders.adapters.implicit_lib import (
@@ -140,10 +141,8 @@ def fit_recommender(
         feedback=feedback,
     )
 
-    if int(n_neighbors) < 1:
-        raise ValidationError("n_neighbors must be >= 1.")
-    if int(n_factors) < 1:
-        raise ValidationError("n_factors must be >= 1.")
+    n_neighbors = _positive_integer(n_neighbors, name="n_neighbors")
+    n_factors = _positive_integer(n_factors, name="n_factors")
     if feedback not in {"explicit", "implicit"}:
         raise ValidationError("feedback must be 'explicit' or 'implicit'.")
     if cold_start not in {"skip", "popularity"}:
@@ -252,12 +251,19 @@ def fit_recommender(
         )
     elif resolved_method == "svd":
         user_factors, item_factors = fit_svd_factors(
-            matrix, n_factors=n_factors, random_state=random_state, observed_mask=mask
+            matrix, n_factors=n_factors, random_state=random_state, observed_mask=mask,
+            center=feedback == "explicit",
         )
+        if feedback == "implicit":
+            global_mean = 0.0
         disclosures.append(
             f"svd: TruncatedSVD factors "
             f"({user_factors.shape[1]} components) on train matrix; "
-            f"scores use train global mean centering."
+            + (
+                "scores use train global mean centering."
+                if feedback == "explicit"
+                else "scores use uncentered train presence values (no mean offset)."
+            )
         )
     elif resolved_method == "nmf":
         user_factors, item_factors = fit_nmf_factors(

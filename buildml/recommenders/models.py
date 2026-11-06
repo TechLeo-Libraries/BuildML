@@ -63,11 +63,13 @@ def fit_user_similarity(matrix: np.ndarray) -> np.ndarray:
 def fit_svd_factors(
     matrix: np.ndarray, *, n_factors: int, random_state: int | None,
     observed_mask: np.ndarray | None = None,
+    center: bool = True,
 ) -> tuple[np.ndarray, np.ndarray]:
     """Fit truncated SVD factors for matrix-factorization scoring.
 
-    Centers observed entries by the global train mean before decomposition,
-    then returns user and item latent factors for dot-product scoring.
+    Optionally centers observed explicit ratings before decomposition, then
+    returns user and item latent factors for dot-product scoring. Implicit
+    presence matrices remain uncentered.
 
     Parameters
     ----------
@@ -80,6 +82,9 @@ def fit_svd_factors(
     observed_mask:
         Optional boolean membership matrix, including observed zero ratings.
         Omitted for legacy callers that infer membership from nonzero values.
+    center:
+        Subtract the observed rating mean for explicit feedback. Set False for
+        implicit presence matrices, whose observed entries would all become zero.
 
     Returns
     -------
@@ -97,9 +102,9 @@ def fit_svd_factors(
     n_comp = int(min(n_factors, max(1, min(n_users, n_items) - 1)))
     if n_comp < 1:
         raise ValidationError("SVD requires at least 2 users and 2 items.")
-    # Center by global mean for stability on sparse explicit ratings
+    # Center explicit ratings; preserve the signal in implicit presence values.
     mask = _observed_entries(matrix, observed_mask)
-    if mask.any():
+    if center and mask.any():
         global_mean = float(matrix[mask].mean())
     else:
         global_mean = 0.0
