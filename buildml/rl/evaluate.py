@@ -231,7 +231,7 @@ def _eval_bandit(
     x = matrix_from_frame(frame, list(plan.columns))
     logged_arms, _, _ = encode_discrete_actions(
         frame[plan.action_column],
-        classes=plan.arms_,
+        label_encoder=plan.label_encoder_,
     )
     logged_rewards = frame[plan.reward_column].to_numpy(dtype=float)
     act = act_rl(
@@ -243,8 +243,8 @@ def _eval_bandit(
         random_state=random_state,
     )
     policy_arms, _, _ = encode_discrete_actions(
-        pd.Series(list(act.actions)),
-        classes=plan.arms_,
+        pd.Series(list(act.actions), dtype=object),
+        label_encoder=plan.label_encoder_,
     )
 
     predicted = None
@@ -278,9 +278,11 @@ def _eval_bandit(
     disclosures = [
         "OFFLINE metrics: direct_method / ips / action_match_rate are not online A/B results.",
         "IPS uses a train-fitted propensity model π_b(a|x); treat with caution under confounding.",
-        "Holdout rows never update the bandit policy.",
+        "Evaluation never updates the bandit policy; its bundle does not prove dataset independence.",
     ]
     warnings: list[str] = []
+    if partition in {"train", "all"}:
+        warnings.append("Train/all offline bandit metrics are diagnostic and include fitted demonstrations.")
     if propensity is None:
         warnings.append("Propensity model missing; ips metric is NaN.")
     return RlEvalResult(
@@ -311,8 +313,8 @@ def _eval_gym(
     metrics = evaluate_gym_policy(
         policy,
         env_id=plan.env_id,
-        n_episodes=int(n_episodes if n_episodes is not None else 20),
-        max_steps=int(max_steps if max_steps is not None else cfg.get("max_steps", 500)),
+        n_episodes=n_episodes if n_episodes is not None else 20,
+        max_steps=max_steps if max_steps is not None else int(cfg.get("max_steps", 500)),
         random_state=random_state,
         deterministic=deterministic,
     )
@@ -347,8 +349,8 @@ def _eval_tabular(
     metrics = evaluate_tabular_policy(
         policy,
         env_id=plan.env_id,
-        n_episodes=int(n_episodes if n_episodes is not None else 20),
-        max_steps=int(max_steps if max_steps is not None else cfg.get("max_steps", 200)),
+        n_episodes=n_episodes if n_episodes is not None else 20,
+        max_steps=max_steps if max_steps is not None else int(cfg.get("max_steps", 200)),
         random_state=random_state,
         deterministic=deterministic,
     )
@@ -394,8 +396,8 @@ def _eval_sb3(
     metrics = evaluate_sb3_policy(
         policy,
         env_id=plan.env_id,
-        n_episodes=int(n_episodes if n_episodes is not None else 20),
-        max_steps=int(max_steps if max_steps is not None else cfg.get("max_steps", 500)),
+        n_episodes=n_episodes if n_episodes is not None else 20,
+        max_steps=max_steps if max_steps is not None else int(cfg.get("max_steps", 500)),
         random_state=random_state,
         deterministic=deterministic,
     )

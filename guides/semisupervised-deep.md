@@ -73,6 +73,25 @@ A Session checkpoint does not embed the plan.
 
 Read `n_labeled_*` / `n_unlabeled_*` beside every metric.
 
+## Frozen prediction and data handoff
+
+`session.semisupervised.predict(partition="all", attach=True)` writes a new
+prediction feature column for the current rows. It preserves raw fitted class
+labels, row positions, targets and split membership; the fitted plan continues
+using its stored feature columns. The call requires `partition="all"` and a
+column name that does not already exist. A refused request preserves the
+working dataset and prior prediction result. Without attachment, train,
+validation, test and all-row predictions leave the dataset unchanged.
+
+A trusted bundle can predict all rows of a compatible receiver without a split.
+DuckDB and Polars receivers materialize their current filtered population for
+sklearn prediction; attachment is an in-memory operation. `session.to_parquet`
+exports the resulting values, including original missing targets, and omits the
+pandas index. Store row identity in a column before exporting. New prediction
+columns have the feature role, so a later fit may use them; assign the ignore
+role for an export-only column. All-row predictions include training rows and
+do not establish holdout performance.
+
 ## With a pretext
 
 Self-supervised pretext can run on all train rows (labels optional).

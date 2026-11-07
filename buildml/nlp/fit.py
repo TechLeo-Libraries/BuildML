@@ -31,6 +31,7 @@ from typing import Any
 import numpy as np
 
 from buildml.core.errors import ValidationError
+from buildml.core.validation import _positive_integer
 from buildml.data.dataset import Dataset
 from buildml.data.splits import SplitPlan, assert_fit_partition
 from buildml.nlp.catalog import resolve_backend_estimator
@@ -42,7 +43,7 @@ from buildml.nlp.features import (
     targets_for,
     token_stats,
 )
-from buildml.nlp.normalize import build_normalize_plan
+from buildml.nlp.normalize import _ngram_bounds, build_normalize_plan
 from buildml.nlp.results import NlpFitResult, NlpTextPlan
 from buildml.nlp.types import (
     DEFAULT_NORMALIZE_STEPS,
@@ -414,8 +415,8 @@ def fit_text_classifier(
         steps=tuple(normalize_steps) if normalize_steps else DEFAULT_NORMALIZE_STEPS,  # type: ignore[arg-type]
         stopwords=tuple(stopwords) if stopwords else None,
         stopword_language=stopword_language,
-        min_token_length=int(min_token_length),
-        max_token_length=int(max_token_length),
+        min_token_length=_positive_integer(min_token_length, name="min_token_length"),
+        max_token_length=_positive_integer(max_token_length, name="max_token_length"),
         stem=bool(stem),
         lemmatize=bool(lemmatize),
     )
@@ -423,13 +424,13 @@ def fit_text_classifier(
     vectorize_config = NlpVectorizeConfig(
         kind=vectorizer,  # type: ignore[arg-type]
         analyzer=analyzer,  # type: ignore[arg-type]
-        ngram_range=(int(ngram_range[0]), int(ngram_range[1])),
-        max_features=max_features,
+        ngram_range=_ngram_bounds(ngram_range),
+        max_features=None if max_features is None else _positive_integer(max_features, name="max_features"),
         min_df=min_df,
         max_df=max_df,
         sublinear_tf=bool(sublinear_tf),
         binary=bool(binary),
-        n_hash_features=int(n_hash_features),
+        n_hash_features=_positive_integer(n_hash_features, name="n_hash_features"),
     )
 
     documents, frame = documents_for(

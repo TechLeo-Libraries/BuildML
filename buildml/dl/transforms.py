@@ -26,6 +26,39 @@ import pandas as pd
 from buildml.core.errors import ValidationError
 
 
+def numeric_matrix_to_float32(x: np.ndarray) -> np.ndarray:
+    """Convert numeric features to the finite representation Torch consumes.
+
+    Apply this after optional standardization: a large finite source value
+    may become representable after scaling. Validate the converted matrix
+    before publishing a loader so overflow cannot silently enter a batch.
+
+    Parameters
+    ----------
+    x:
+        Numeric features after any fitted preprocessing.
+
+    Returns
+    -------
+    numpy.ndarray
+        Finite float32 features with the original shape.
+
+    Raises
+    ------
+    ValidationError
+        If conversion fails or any converted feature is NaN or infinity.
+    """
+    message = "Numeric features must be finite float32 values after preprocessing"
+    try:
+        with np.errstate(over="ignore", invalid="ignore"):
+            values = np.asarray(x, dtype=np.float32)
+    except (TypeError, ValueError, OverflowError) as exc:
+        raise ValidationError(message) from exc
+    if not np.isfinite(values).all():
+        raise ValidationError(message)
+    return values
+
+
 def fit_standardize(x_train: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
     """Learn each feature's centre and spread from the training rows.
 
@@ -141,7 +174,7 @@ def frame_to_numeric_matrix(frame: pd.DataFrame, columns: list[str]) -> np.ndarr
     ------
     ValidationError
         If a column is missing, if a column is non-numeric, or if any value is
-        ``NaN``.
+        NaN or infinity.
 
     Notes
     -----
@@ -169,8 +202,8 @@ def frame_to_numeric_matrix(frame: pd.DataFrame, columns: list[str]) -> np.ndarr
                 f"Column '{name}' is not numeric; encode or drop before make_torch_loaders"
             )
     values = subset.to_numpy(dtype=np.float64, copy=True)
-    if np.isnan(values).any():
+    if not np.isfinite(values).all():
         raise ValidationError(
-            "Feature matrix contains NaN; impute on train before make_torch_loaders"
+            "Feature matrix contains NaN or infinity; clean non-finite values before make_torch_loaders"
         )
     return values

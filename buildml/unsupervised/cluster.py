@@ -107,7 +107,8 @@ optics_min_samples:
 optics_xi:
     optics xi (float).
 optics_min_cluster_size:
-    optics min cluster size (float | None).
+    Minimum OPTICS cluster size: an integer row count, a fraction in (0, 1],
+    or None to use optics_min_samples. Fractions are passed to sklearn intact.
 bandwidth:
     bandwidth (float | None).
 latent_dim:

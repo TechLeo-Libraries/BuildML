@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+from numbers import Integral
 from typing import Any
 
+import numpy as np
 import pandas as pd
 
 from buildml.core.errors import ValidationError
@@ -37,11 +39,15 @@ Parameters
 plan:
     Fitted plan object carrying model state and feature contract.
 n:
-    n (int | None).
+    Positive integer row count, or None to use the fitted training row count.
+    Booleans, strings and fractional counts are refused.
 random_state:
     Seed for stochastic steps (sampling, initialization, bagging).
 condition:
-    condition (dict[str, Any] | None).
+    Column-to-value equality conditions for native Gaussian copula sampling.
+    Values retain their types; None selects missing values. A condition must
+    be a dictionary of finite numbers, strings, booleans or None. Unsupported or
+    unsatisfied conditions raise instead of returning unconditioned rows.
 
 Returns
 -------
@@ -55,9 +61,12 @@ ValidationError
     """
     if plan is None or plan.generator_ is None:
         raise ValidationError("No fitted synthesizer. Call fit_synthesizer(...) first.")
-    n_rows = int(plan.n_rows_fitted if n is None else n)
-    if n_rows < 1:
-        raise ValidationError("n must be >= 1.")
+    requested = plan.n_rows_fitted if n is None else n
+    if isinstance(requested, bool) or not isinstance(requested, Integral) or requested < 1:
+        raise ValidationError("n must be a positive integer (booleans are not row counts).")
+    n_rows = int(requested)
+    if condition is not None and not isinstance(condition, dict):
+        raise ValidationError("condition must be a column-to-value dictionary or None.")
     if condition and plan.method != "gaussian_copula":
         raise ValidationError(
             "condition= is currently supported for method='gaussian_copula' only."
@@ -88,6 +97,16 @@ ValidationError
         "(merge_mode='none'). Pass merge_mode='extend_train' to append.",
         "Synthetic rows are not real observations: provenance should be tracked.",
     ]
+    warnings = list(plan.warnings)
+    if isinstance(generator, GaussianCopulaGenerator) and any(
+        isinstance(category, str)
+        for transform in generator.cat_transforms.values()
+        for category in transform.categories
+    ):
+        warnings.append(
+            "Legacy copula categorical transforms use text keys; refit the "
+            "synthesizer to preserve distinct scalar category populations."
+        )
     return SyntheticSampleResult(
         method=plan.method,
         n_rows=int(len(frame)),
@@ -97,7 +116,7 @@ ValidationError
         merge_mode="none",
         provenance_column=None,
         disclosures=tuple(disclosures),
-        warnings=tuple(plan.warnings),
+        warnings=tuple(warnings),
     )
 
 
@@ -114,6 +133,10 @@ def merge_synthetic_into_train(
 The provenance column is assigned role ``ignore`` so it cannot silently
 become a modeling feature. Existing roles for real columns are preserved;
 no roles are invented for missing columns.
+
+    Generated nullable integer columns must be exactly representable in the
+    original dtype. Only generated rows are converted; holdout values and
+    dtypes remain unchanged. Incompatible samples refuse before merging.
 
 Parameters
 ----------
@@ -140,7 +163,7 @@ ValidationError
     """
     if sample_frame is None or sample_frame.empty:
         raise ValidationError("Cannot merge an empty synthetic frame.")
-    if provenance_column in dataset.frame.columns:
+    if provenance_column in dataset.columns:
         raise ValidationError(
             f"provenance_column {provenance_column!r} already exists on the dataset. "
             "Choose another name to avoid silently overwriting real data."
@@ -155,13 +178,28 @@ ValidationError
     syn = syn[ordered_cols]
     syn[provenance_column] = mark_value
 
-    train = dataset.frame.iloc[list(split_plan.train_indices)].reset_index(drop=True)
+    frame = dataset.to_pandas()
+    for col in ordered_cols:
+        dtype = frame[col].dtype
+        if pd.api.types.is_integer_dtype(dtype) and pd.api.types.is_extension_array_dtype(dtype):
+            try:
+                bounds = np.iinfo(getattr(dtype, "numpy_dtype", None))
+                for value in syn[col].dropna():
+                    integer = int(value)
+                    if value != integer or not bounds.min <= integer <= bounds.max:
+                        raise ValueError("Value would change during integer conversion")
+                syn[col] = syn[col].astype(dtype)
+            except (TypeError, ValueError, OverflowError) as exc:
+                raise ValidationError(
+                    f"Synthetic column {col!r} cannot be represented as nullable integer {dtype}."
+                ) from exc
+    train = frame.iloc[list(split_plan.train_indices)].reset_index(drop=True)
     valid = (
-        dataset.frame.iloc[list(split_plan.validation_indices)].reset_index(drop=True)
+        frame.iloc[list(split_plan.validation_indices)].reset_index(drop=True)
         if split_plan.validation_indices
         else None
     )
-    test = dataset.frame.iloc[list(split_plan.test_indices)].reset_index(drop=True)
+    test = frame.iloc[list(split_plan.test_indices)].reset_index(drop=True)
 
     train = train.copy()
     train[provenance_column] = False if mark_value is not False else 0

@@ -24,20 +24,20 @@ CORE_SKLEARN_METHODS: frozenset[str] = frozenset(
 
 # Industry-default density when hdbscan extra installed
 HDBSCAN_METHOD = "hdbscan"
+DEFAULT_DENSITY_METHOD: str
+DEFAULT_REDUCE_VIZ: str
 
 # Deep clustering behind buildml[torch]
 TORCH_METHODS: frozenset[str] = frozenset({"dec", "idec"})
 
 ALL_CLUSTER_METHODS: frozenset[str] = CORE_SKLEARN_METHODS | {HDBSCAN_METHOD} | TORCH_METHODS
 
-DEFAULT_DENSITY_METHOD = HDBSCAN_METHOD if hdbscan_available() else "dbscan"
 DEFAULT_TABULAR_DEEP_METHOD = "dec"
 
 REDUCE_METHODS_CORE: frozenset[str] = frozenset({"pca", "tsne"})
 REDUCE_METHODS_EXTRA: frozenset[str] = frozenset({"umap"})
 ALL_REDUCE_METHODS: frozenset[str] = REDUCE_METHODS_CORE | REDUCE_METHODS_EXTRA
 
-DEFAULT_REDUCE_VIZ = "umap" if umap_available() else "pca"
 
 
 def method_assign_strategy(method: str) -> AssignStrategy:
@@ -111,7 +111,9 @@ str
 def resolve_density_method(requested: str | None = None) -> str:
     """Resolve an explicit or default density-clustering method.
 
-An explicit request is returned unchanged. The default was selected at module import from HDBSCAN runtime availability, falling back to DBSCAN.
+An explicit request is returned unchanged. Resolve the default from runtime
+availability when requested, falling back to DBSCAN. Importing Session does
+not probe optional clustering backends.
 
 Parameters
 ----------
@@ -125,7 +127,7 @@ str
     """
     if requested is not None:
         return requested
-    return DEFAULT_DENSITY_METHOD
+    return HDBSCAN_METHOD if hdbscan_available() else "dbscan"
 
 
 def list_cluster_methods(*, include_torch: bool = True) -> tuple[dict[str, Any], ...]:
@@ -209,10 +211,10 @@ dict[str, Any]
         },
         "reduction": {
             "methods": list(list_reduce_methods()),
-            "default_viz": DEFAULT_REDUCE_VIZ,
+            "default_viz": "umap" if umap_available() else "pca",
             "umap_present": umap_available(),
         },
-        "default_density_method": DEFAULT_DENSITY_METHOD,
+        "default_density_method": resolve_density_method(),
         "default_tabular_deep_method": DEFAULT_TABULAR_DEEP_METHOD,
         "cluster_methods": list(list_cluster_methods()),
         "torch_spec_present": torch_spec_available(),
@@ -257,3 +259,23 @@ tuple[dict[str, Any], ...]
         }
     )
     return tuple(rows)
+
+
+def __getattr__(name: str) -> str:
+    """Preserve default constant access without probing at module import."""
+    if name == "DEFAULT_DENSITY_METHOD":
+        return resolve_density_method()
+    if name == "DEFAULT_REDUCE_VIZ":
+        return "umap" if umap_available() else "pca"
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+
+def __dir__() -> list[str]:
+    """Include lazily resolved defaults in interactive discovery."""
+    return sorted(set(globals()) | {"DEFAULT_DENSITY_METHOD", "DEFAULT_REDUCE_VIZ"})
+
+
+# Preserve the previous wildcard surface, including the two lazy defaults.
+__all__ = [name for name in globals() if not name.startswith("_")] + [
+    "DEFAULT_DENSITY_METHOD", "DEFAULT_REDUCE_VIZ",
+]

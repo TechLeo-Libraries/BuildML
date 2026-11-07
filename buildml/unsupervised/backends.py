@@ -353,8 +353,6 @@ ValidationError
         min_cluster_size = config.optics_min_cluster_size
         if min_cluster_size is None:
             min_cluster_size = int(config.optics_min_samples)
-        else:
-            min_cluster_size = int(min_cluster_size)
         estimator = OPTICS(
             min_samples=int(config.optics_min_samples),
             xi=float(config.optics_xi),

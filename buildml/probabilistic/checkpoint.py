@@ -80,7 +80,9 @@ def save_probabilistic_bundle(
         "fit": None if fit_result is None else fit_result.to_dict(),
         "eval": None if eval_result is None else eval_result.to_dict(),
     }
-    (destination / "meta.json").write_text(json.dumps(meta, indent=2), encoding="utf-8")
+    # JSON carries display values for non-JSON labels (for example timestamps);
+    # the trusted joblib plan retains the exact original scalar identities.
+    (destination / "meta.json").write_text(json.dumps(meta, indent=2, default=str), encoding="utf-8")
     return destination
 
 

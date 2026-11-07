@@ -32,10 +32,12 @@ model which scores beautifully and then fails.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from numbers import Integral, Real
 from typing import Any, Literal
 
 import numpy as np
 import pandas as pd
+from sklearn.base import clone
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.feature_selection import (
     SelectFromModel,
@@ -188,6 +190,7 @@ def fit_feature_selector(
         forest for regression. Supply your own when you want the selection to
         reflect the model you actually intend to deploy: a linear model and a
         gradient booster disagree substantially about which features matter.
+        Selection fits a clone, preserving any fitted state on your estimator.
 
     Returns
     -------
@@ -240,8 +243,21 @@ def fit_feature_selector(
     if strategy not in {"variance", "univariate", "model"}:
         raise ValidationError(f"Unsupported feature selection strategy '{strategy}'")
 
+    if strategy == "variance" and (
+        isinstance(threshold, bool) or not isinstance(threshold, Real)
+        or not np.isfinite(float(threshold)) or float(threshold) < 0
+    ):
+        raise ValidationError("threshold must be a finite nonnegative number")
+    if strategy == "univariate":
+        if isinstance(k, bool) or not isinstance(k, Integral) or k < 1:
+            raise ValidationError("k must be a positive integer")
+        if score_func not in {"f_classif", "f_regression", "mutual_info"}:
+            raise ValidationError(f"Unsupported feature selection score_func '{score_func}'")
+
     train = frame_for_partition(dataset, split_plan, "train")
     feature_cols = _resolve_feature_columns(dataset, train, columns)
+    if not feature_cols:
+        raise ValidationError("No feature candidates remain after protected-role exclusions")
     protected = _protected_columns(dataset)
     x = train[feature_cols]
     if x.isna().any().any():
@@ -291,7 +307,7 @@ def fit_feature_selector(
         target = dataset.require_target()
         y = train[target]
         task = _infer_task(y)
-        model = estimator
+        model = clone(estimator) if estimator is not None else None
         if model is None:
             model = (
                 LogisticRegression(max_iter=500)
@@ -323,7 +339,7 @@ def fit_feature_selector(
         if not selected:
             # Keep at least the top-scoring feature to avoid empty matrices.
             if scores:
-                top = max(scores, key=scores.get)
+                top = max(scores, key=lambda column: scores[column])
                 selected = [top]
             else:
                 selected = feature_cols[:1]

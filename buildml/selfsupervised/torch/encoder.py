@@ -8,7 +8,26 @@ import numpy as np
 
 from buildml.core.errors import ValidationError
 from buildml.dl.extras import require_torch
-from buildml.selfsupervised.torch.trainer import SSLTrainConfig, SSLTrainResult, train_tabular_ssl
+from buildml.selfsupervised.torch.trainer import (
+    SSLTrainConfig,
+    SSLTrainResult,
+    _validate_training_settings,
+    train_tabular_ssl,
+)
+
+
+def _float32_features(values: Any) -> np.ndarray:
+    try:
+        array = np.asarray(values)
+        if np.iscomplexobj(array):
+            raise ValidationError("Torch SSL features must be real numeric values.")
+        with np.errstate(over="ignore", invalid="ignore"):
+            array = np.asarray(array, dtype=np.float32)
+    except (TypeError, ValueError, OverflowError):
+        raise ValidationError("Torch SSL features must be numeric float32 values.") from None
+    if not np.isfinite(array).all():
+        raise ValidationError("Torch SSL features must be finite in float32.")
+    return array
 
 
 class TorchTabularSSLEncoder:
@@ -49,10 +68,13 @@ class TorchTabularSSLEncoder:
         epochs, batch_size, learning_rate, temperature, mask_ratio:
             Training hyperparameters forwarded to the Torch trainer.
         random_state:
-            Seed for augmentations and minibatch shuffling.
+            Seed for Torch initialization, augmentations and minibatch shuffling.
+            A specified seed resets the process Torch RNG before training.
         device:
             Torch device string (for example ``cpu`` or ``cuda``).
         """
+        _validate_training_settings(epochs=epochs, batch_size=batch_size, latent_dim=latent_dim,
+                                    learning_rate=learning_rate, temperature=temperature)
         self.method = method
         self.latent_dim = int(latent_dim)
         self.hidden = tuple(int(h) for h in hidden)
@@ -109,10 +131,11 @@ class TorchTabularSSLEncoder:
         Raises
         ------
         ValidationError
-            When ``X`` shape does not meet minimum training requirements.
+            When ``X`` shape does not meet minimum training requirements or
+            values are not real, numeric and finite after float32 conversion.
         """
         del y
-        x = np.asarray(X, dtype=np.float32)
+        x = _float32_features(X)
         if x.ndim != 2 or x.shape[0] < 4:
             raise ValidationError(
                 "TorchTabularSSLEncoder.fit requires >=4 rows and >=1 feature."
@@ -159,11 +182,12 @@ class TorchTabularSSLEncoder:
         Raises
         ------
         ValidationError
-            When the encoder is not fitted or column count mismatches.
+            When the encoder is not fitted, shape mismatches, or features are
+            not real, numeric and finite after float32 conversion.
         """
         self._check_fitted()
         torch = require_torch(feature="SSL transform")
-        x = np.asarray(X, dtype=np.float32)
+        x = _float32_features(X)
         if x.ndim != 2 or x.shape[1] != self.n_features_in_:
             raise ValidationError(
                 f"Expected shape (n, {self.n_features_in_}), got {x.shape}."
@@ -195,7 +219,8 @@ class TorchTabularSSLEncoder:
         Raises
         ------
         ValidationError
-            When the encoder is unfitted or the method is not generative.
+            When the encoder is unfitted, the method is not generative, shape
+            mismatches, or features are not real, numeric and finite in float32.
         """
         self._check_fitted()
         if self.method not in {"mae_tabular", "vae_tabular"}:
@@ -203,7 +228,11 @@ class TorchTabularSSLEncoder:
                 f"reconstruct() is only defined for mae_tabular/vae_tabular (got {self.method})."
             )
         torch = require_torch(feature="SSL reconstruct")
-        x = np.asarray(X, dtype=np.float32)
+        x = _float32_features(X)
+        if x.ndim != 2 or x.shape[1] != self.n_features_in_:
+            raise ValidationError(
+                f"Expected shape (n, {self.n_features_in_}), got {x.shape}."
+            )
         module = self._train_result.module  # type: ignore[union-attr]
         module.eval()
         device = next(module.parameters()).device

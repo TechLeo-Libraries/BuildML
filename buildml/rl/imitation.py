@@ -104,6 +104,8 @@ def fit_imitation(
     action_column: str | None = None,
     env_id: str | None = None,
     n_epochs: int = 40,
+    total_timesteps: int = 8_000,
+    allow_variable_horizon: bool = False,
     random_state: int | None = 0,
     prefer_reduce_components: bool = True,
     reduce_plan: Any | None = None,
@@ -149,6 +151,11 @@ def fit_imitation(
         The Gymnasium environment, required by ``'gail_lite'``.
     n_epochs:
         Neural training passes. Ignored on the scikit-learn path.
+    total_timesteps:
+        Requested GAIL budget; PPO rounds to complete rollout batches.
+    allow_variable_horizon:
+        Explicitly accept reward-leakage risk from variable GAIL episode lengths.
+        Defaults to refusal; unused for supervised behavioral cloning.
     random_state:
         Seed for reproducibility.
     prefer_reduce_components:
@@ -240,6 +247,8 @@ def fit_imitation(
             columns=columns,
             env_id=env_id,
             n_epochs=n_epochs,
+            total_timesteps=total_timesteps,
+            allow_variable_horizon=allow_variable_horizon,
             random_state=random_state,
             prefer_reduce_components=prefer_reduce_components,
             reduce_plan=reduce_plan,
@@ -348,6 +357,8 @@ def _fit_imitation_industry(
     columns: list[str] | None,
     env_id: str | None,
     n_epochs: int,
+    total_timesteps: int,
+    allow_variable_horizon: bool,
     random_state: int | None,
     prefer_reduce_components: bool,
     reduce_plan: Any | None,
@@ -390,6 +401,8 @@ def _fit_imitation_industry(
             y_codes,
             env_id=env_id,
             n_actions=n_actions,
+            total_timesteps=total_timesteps,
+            allow_variable_horizon=allow_variable_horizon,
             random_state=random_state,
         )
     else:
@@ -406,6 +419,8 @@ def _fit_imitation_industry(
         action_column=action_col,
         env_id=env_id,
         n_epochs=n_epochs,
+        total_timesteps=total_timesteps,
+        allow_variable_horizon=allow_variable_horizon,
         random_state=random_state,
         prefer_reduce_components=prefer_reduce_components,
     )
@@ -598,15 +613,19 @@ def evaluate_imitation(
             disclosures=("Empty partition; no imitation metrics.",),
             warnings=("Empty evaluation partition.",),
         )
+    y_true = frame[plan.action_column]
+    if plan.task == "classification":
+        encode_discrete_actions(y_true, label_encoder=plan.label_encoder_)
     pred = predict_imitation_action(
         dataset, plan, split_plan, partition=partition
     )
-    y_true = frame[plan.action_column]
     disclosures = [
-        "Imitation metrics compare policy actions to held-out demonstration actions.",
-        "Holdout rows are never used to fit the cloning policy.",
+        "Imitation metrics compare policy actions to the selected demonstration rows.",
+        "Evaluation never refits the cloning policy; its bundle does not prove dataset independence.",
     ]
     warnings: list[str] = []
+    if partition in {"train", "all"}:
+        warnings.append("Train/all imitation metrics are diagnostic and include fitted demonstrations.")
     if plan.task == "classification":
         if y_true.isna().any():
             raise ValidationError(

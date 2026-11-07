@@ -66,7 +66,7 @@ session = (
 full = session.to_pandas().copy()
 train_idx = list(session.split_plan.train_indices)
 blank = rng.choice(train_idx, size=int(0.85 * len(train_idx)), replace=False)
-full.loc[blank, "label"] = np.nan
+full.iloc[blank, full.columns.get_loc("label")] = np.nan
 # Re-ingest the masked table while preserving the original row assignments.
 session = (Session.ingest(full)
     .set_roles(dict(session.dataset.roles))
@@ -86,7 +86,7 @@ for round_i in range(3):
     q = session.active_learning.suggest_query(batch_size=8)
     if not q.indices:
         break
-    human_labels = [int(truth.loc[i]) for i in q.indices]
+    human_labels = [int(truth.iloc[i]) for i in q.indices]
     labeled = session.active_learning.label_rows(
         indices=q.indices, labels=human_labels
     )
@@ -101,6 +101,11 @@ Fit requires a split. The unlabeled pool is train-target missingness
 (NaN unless you set `unlabeled_marker`). `suggest_query` never returns
 labels. `label_rows` refuses validation/test indices, length mismatches,
 and a spent budget.
+Query and annotation indices are dataset row positions, independent of pandas
+index labels. An annotation batch must use distinct integer positions and
+concrete scalar labels; missing values and the configured unlabeled marker
+are refused. Budget and history changes are published only after any requested
+refit succeeds. A failed batch leaves the Session dataset and plan unchanged.
 
 ## Pool convention
 

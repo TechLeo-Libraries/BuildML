@@ -15,10 +15,14 @@ from buildml.ingest.detect import schema_from_dataframe
 from buildml.preprocess.binning import BinningPlan, transform_binning
 from buildml.preprocess.custom import CustomTransformPlan, transform_custom
 from buildml.preprocess.dates import DateFeaturePlan, extract_date_features
-from buildml.preprocess.encode import EncodePlan, transform_encoder
+from buildml.preprocess.encode import EncodePlan, _validate_encoded_names, transform_encoder
 from buildml.preprocess.imbalance import ResamplePlan
 from buildml.preprocess.impute import SimpleImputePlan, transform_simple_imputer
-from buildml.preprocess.outliers import OutlierPlan, apply_outlier_plan
+from buildml.preprocess.outliers import (
+    OutlierPlan,
+    _numeric_outlier_values,
+    apply_outlier_plan,
+)
 from buildml.preprocess.reduce import ReducePlan, transform_reducer
 from buildml.preprocess.scale import ScalePlan, transform_scaler
 from buildml.preprocess.select import FeatureSelectPlan, transform_feature_selector
@@ -438,7 +442,7 @@ def _apply_outliers(
             return dataset, None, warnings
         frame = dataset._ensure_pandas().copy()
         for column in working.columns:
-            values = pd.to_numeric(frame[column], errors="coerce")
+            values = _numeric_outlier_values(frame[column], column)
             frame[column] = values.clip(
                 lower=working.lower_[column],
                 upper=working.upper_[column],
@@ -466,14 +470,16 @@ def _apply_encode(
         dataset, _ = transform_encoder(dataset, plan, split_plan=split_plan)
         return dataset, []
     # Score-only path: apply frozen full-train maps to every row.
+    _validate_encoded_names(dataset.columns, plan.columns, plan.feature_names_)
     frame = dataset._ensure_pandas().copy()
     prior = float(plan.target_prior_ if plan.target_prior_ is not None else 0.0)
     roles = {k: v for k, v in dataset.roles.items() if k not in plan.columns}
+    encoded = pd.DataFrame(index=frame.index)
     for column, out_name in zip(plan.columns, plan.feature_names_, strict=True):
         mapping = plan.target_maps_.get(column, {})
-        frame[out_name] = frame[column].astype(str).map(mapping).fillna(prior).astype(float)
+        encoded[out_name] = frame[column].astype(str).map(mapping).fillna(prior).astype(float)
         roles[out_name] = ColumnRole.FEATURE
-    frame = frame.drop(columns=list(plan.columns))
+    frame = pd.concat([frame.drop(columns=list(plan.columns)), encoded], axis=1)
     out = Dataset.from_transformed(
         dataset,
         frame,

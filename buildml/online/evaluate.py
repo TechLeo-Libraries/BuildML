@@ -35,8 +35,8 @@ def evaluate_online(
 
     Holdout rows are never used for ``partial_fit``. Prefer validation/test
     after streaming train chunks. When ``drift_check=True``, River ADWIN /
-    Page-Hinkley detectors (industry backend) or native mean-shift notes are
-    surfaced without updating the model.
+    Page-Hinkley detector copies (industry backend) or native mean-shift notes
+    are surfaced without changing the learner or its training drift state.
 
     Parameters
     ----------
@@ -88,13 +88,16 @@ def evaluate_online(
     cfg = plan.config or {}
     drift_on = bool(cfg.get("drift_disclose", True)) and drift_check
     disclosures = [
-        "Online evaluation scores a holdout partition; rows were never used "
-        "for partial_fit updates.",
+        "Online evaluation scores the requested partition without partial_fit updates.",
         f"Incremental state: n_seen_rows={plan.n_seen_rows}, "
         f"n_updates={plan.n_updates}, backend={plan.backend}, "
         f"estimator={plan.estimator_name}.",
     ]
     warnings: list[str] = []
+    if part_name in {"train", "all"}:
+        warnings.append(
+            "Evaluation includes training rows; these metrics are not independent holdout evidence."
+        )
     metrics: dict[str, float] = {}
     drift_notes: list[str] = []
     drift_detected = False
@@ -149,9 +152,17 @@ def evaluate_online(
         drift_detected, drift_notes = _drift_on_evaluate(plan, x, y_eval)
 
     if plan.task == "classification":
-        preds = decode_predictions(raw, plan.label_encoder_)
-        y_true_s = y_true.astype(str).to_numpy()
-        y_pred_s = np.asarray([str(v) for v in preds])
+        if getattr(plan.label_encoder_, "_buildml_raw_class_labels_", False):
+            y_true_s = y_eval
+            y_pred_s = np.asarray(raw)
+        else:
+            preds = decode_predictions(raw, plan.label_encoder_)
+            y_true_s = y_true.astype(str).to_numpy()
+            y_pred_s = np.asarray([str(v) for v in preds])
+            warnings.append(
+                "Legacy online class encoding may lose label identities; refit "
+                "the classifier to preserve raw class labels."
+            )
         metrics["accuracy"] = float(accuracy_score(y_true_s, y_pred_s))
         metrics["f1_macro"] = float(
             f1_score(y_true_s, y_pred_s, average="macro", zero_division=0)

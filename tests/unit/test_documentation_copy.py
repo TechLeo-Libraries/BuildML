@@ -171,6 +171,7 @@ def test_domain_quickstart_contracts_match_resolvers() -> None:
     from buildml.ranking.extras import ranking_industry_available
     from buildml.recommenders.catalog import default_method_for_feedback
     from buildml.recommenders.extras import implicit_available
+    from buildml.rl.catalog import resolve_rl_backend_mode_algorithm
     from buildml.session.mixins.cbr import CbrSessionMixin
     from buildml.session.mixins.classical import ClassicalSessionMixin
     from buildml.session.mixins.decision import DecisionSessionMixin
@@ -218,7 +219,13 @@ def test_domain_quickstart_contracts_match_resolvers() -> None:
     assert tune.parameters["partition"].default == "validation"
 
     rl = inspect.signature(RlSessionMixin.fit_rl)
-    assert rl.parameters["algorithm"].default == "linucb"
+    algorithm = rl.parameters["algorithm"].default
+    assert algorithm is None
+    assert resolve_rl_backend_mode_algorithm(backend=None, mode=None, algorithm=algorithm) == (
+        "sklearn",
+        "contextual_bandit",
+        "linucb",
+    )
 
     tda = inspect.signature(TdaSessionMixin.fit_tda)
     assert tda.parameters["vectorization"].default == "persistence_image"

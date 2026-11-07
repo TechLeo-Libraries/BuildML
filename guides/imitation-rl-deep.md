@@ -15,8 +15,8 @@ The cliff-walking teaching examples select `CliffWalking-v1` when it is
 registered, otherwise `CliffWalking-v0`, to support both newer and older
 Gymnasium releases.
 
-`session.rl.fit()` with default parameters uses `algorithm="linucb"`, which
-resolves to the **sklearn contextual bandit** even when
+`session.rl.fit()` with default parameters selects the **sklearn contextual
+bandit** with LinUCB even when
 `buildml[rl-industry]` is installed. Gymnasium and Stable-Baselines3 are
 opt-in via `mode=` / `algorithm=` / `backend=`. `fit_imitation()` with
 `backend=None` and `method=None` stays **sklearn** behavioral cloning.
@@ -28,6 +28,26 @@ Decision Transformer are outside these adapters.
 
 Quickstart: [imitation + RL quickstart](quickstart-imitation-rl.md).
 Proof: [imitation-cartpole-control](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/imitation-cartpole-control).
+
+## Discrete action identities and evaluation scope
+
+New cloning and bandit policies retain the original scalar actions alongside
+internal string encoding keys. An action named `"001"` stays a string with its
+padding; booleans, integers and noninteger numeric actions retain their types.
+NumPy scalar wrappers are normalized to equivalent Python scalars. Distinct
+typed values sharing a key, such as `1` and `"1"`, are refused before fitting.
+Evaluation checks actions against the saved training vocabulary and refuses
+unknown actions or type aliases rather than assigning them new meanings.
+
+Trusted bundles preserve this identity mapping with the fitted policy. Older
+encoders without the mapping return their recorded string keys exactly;
+refit an older policy to recover original action types. A bundle carries no
+proof that a newly attached table is independent of the training data.
+
+Validation/test evaluation never updates a policy. Train/all evaluation includes
+fitted demonstrations and carries a diagnostic warning. Cloning accuracy and F1
+measure agreement with the demonstrator; bandit direct-method and IPS estimates
+remain offline estimates. These checks do not establish online policy quality.
 
 ## Behavioral cloning
 
@@ -143,10 +163,10 @@ print(ev.offline, ev.metrics)
 
 `backend="native"`, `mode="gym_reinforce"`. Linear softmax REINFORCE on
 small discrete envs. Default `env_id` is `"CartPole-v1"`, `n_episodes=200`,
-`max_steps=500`, `learning_rate=0.01`, `gamma=0.99`. Passing
-`mode="gym_reinforce"` (or a native policy-gradient algorithm) is what
-selects this path: the mixin `algorithm="linucb"` default would otherwise
-keep you on the bandit.
+`max_steps=500`, `learning_rate=0.01`, `gamma=0.99`. Select
+`mode="gym_reinforce"` to use the default `reinforce_linear_softmax`
+algorithm. An incompatible explicit algorithm raises `ValidationError`.
+Training and evaluation require positive integer episode and step counts.
 
 `evaluate` rolls out episodes (`offline=False`) and reports mean/std
 return.
@@ -173,10 +193,19 @@ print(ev.offline, ev.metrics["mean_return"])
 
 ## Tabular TD control (`buildml[rl]`)
 
-`mode="tabular_q"`: an explicit `Q[s, a]` table, no network. Passing
-only `algorithm="sarsa"` (no `mode=`) routes here. If you pass
-`mode="tabular_q"` and leave the mixin `algorithm="linucb"` alone, the
-resolver treats linucb as unset and uses `q_learning`.
+`mode="tabular_q"` uses an explicit `Q[s, a]` table. Passing only
+`algorithm="sarsa"` also selects this mode. Omit `algorithm` to use
+`q_learning`. The former shared `linucb` default still selects the native
+default when passed to either native Gymnasium mode.
+
+Tabular training and evaluation require positive integer `n_episodes` and
+`max_steps`. Boolean, fractional, string, zero and non-finite budgets raise
+`ValidationError` before backend or environment allocation. NumPy integer counts
+are accepted. Epsilon-greedy probabilities require finite real action values and
+a finite exploration rate; finite rates outside `[0, 1]` are clipped as documented.
+Evaluation rolls out fresh episodes without updating the learned Q-tables or
+training visit counts. A truncation ends the rollout but retains bootstrapping;
+a true terminal transition has no future-value term.
 
 | Algorithm | Target | Family |
 | --- | --- | --- |
@@ -230,7 +259,18 @@ print(ev.metrics["mean_return"], ev.metrics["unseen_state_rate"])
 print(session.rl.act(observations=[0, 1, 2]).scores)
 ```
 
-`Discrete` observation spaces index directly. `Box` spaces are binned
+`Discrete(n, start)` observation IDs map to table rows by subtracting `start`.
+Pass the environment's physical IDs to `q_values`, policy `act` and
+`session.rl.act(observations=...)`, including nonzero or negative starts.
+Table inspections such as `q_values_for_state` use zero-based row indices.
+Discrete observations must be exact integer-valued real scalars; fractional,
+non-finite, complex and string values raise `ValidationError`. Integer-valued
+floats remain accepted. Batch actions preserve integer precision above `2**53`.
+Saved plan configuration records the discrete `start`; older zero-based bundles
+without that field retain their zero-based mapping. This supports observation
+offsets; action indices still follow the lite backend's zero-based contract.
+
+`Box` spaces are binned
 uniformly into `n_bins` (default 8) per dimension. Bounds come from the
 declared space where finite, else from a seeded random-policy probe.
 `session.rl.plan.config["discretizer"]` records `n_states`, per-dimension
@@ -247,6 +287,11 @@ how much of the table was actually visited.
 `backend="industry"`, `mode="gym_sb3"`. Algorithms: `ppo` (default when
 this mode is selected), `dqn`, `a2c`. Default `total_timesteps` is
 20_000. The examples use small discrete environments such as CartPole.
+For a Box observation with more than one axis, pass a flattened vector per
+row to `session.rl.act`. The policy restores the environment's original shape
+for prediction and evaluation.
+SB3 policy bundles store the backend's native model archive and restore the
+policy on CPU when loaded.
 
 ```python
 # Requires: pip install "buildml[rl-industry]" (Gymnasium and Stable-Baselines3).

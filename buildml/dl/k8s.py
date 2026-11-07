@@ -27,6 +27,7 @@ buildml.dl.packaging : Serving artifacts for the Deployment to load.
 
 from __future__ import annotations
 
+import shlex
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -282,6 +283,7 @@ def render_torchrun_ddp_job(
         "      labels:\n"
         "        app.kubernetes.io/name: buildml-torchrun-ddp\n"
         "    spec:\n"
+        f"      subdomain: {job_name}\n"
         f"{sa_line}"
         "      restartPolicy: Never\n"
         "      containers:\n"
@@ -315,7 +317,7 @@ def render_torchrun_ddp_job(
         '                --node_rank="$NODE_RANK" \\\n'
         '                --master_addr="$MASTER_ADDR" \\\n'
         '                --master_port="$MASTER_PORT" \\\n'
-        f"                {script_path}\n"
+        f"                {shlex.quote(script_path)}\n"
         "---\n"
         "apiVersion: v1\n"
         "kind: Service\n"

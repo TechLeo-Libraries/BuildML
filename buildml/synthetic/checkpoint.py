@@ -151,6 +151,11 @@ def load_synthetic_bundle(path: str | Path, *, trusted: bool = False) -> Synthes
             )
             for s in plan.column_specs  # type: ignore[assignment]
         )
+    # Older slotted schemas do not initialize newly introduced fitted state.
+    # Normalize its legacy default so public comparisons and resaving work.
+    for spec in plan.column_specs:
+        if not hasattr(spec, "raw_categories_"):
+            spec.raw_categories_ = None
     if plan.generator_ is None:
         raise ValidationError(
             "Loaded SynthesizerPlan is missing generator_ state; "

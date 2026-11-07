@@ -43,7 +43,9 @@ def normalize_edges(
     """Normalize an edge list to columns ``source_col`` / ``target_col``.
 
     Accepts a DataFrame or pair array, drops nulls and self-loops, and
-    canonicalises undirected edges so duplicate pairs collapse.
+    canonicalises undirected edges so duplicate pairs collapse. Distinct
+    identifiers remain distinct even when their string representations match;
+    reversed pairs still identify the same undirected edge.
 
     Parameters
     ----------
@@ -92,8 +94,15 @@ def normalize_edges(
     if not directed:
         a = frame[source_col].astype(str)
         b = frame[target_col].astype(str)
-        src = np.where(a <= b, frame[source_col], frame[target_col])
-        dst = np.where(a <= b, frame[target_col], frame[source_col])
+        left_first = np.array(a <= b, copy=True)
+        same_display = np.asarray(a == b)
+        if same_display.any():
+            codes, _ = pd.factorize(
+                pd.concat([frame[source_col], frame[target_col]], ignore_index=True), sort=False
+            )
+            left_first[same_display] = (codes[:len(frame)] <= codes[len(frame):])[same_display]
+        src = np.where(left_first, frame[source_col], frame[target_col])
+        dst = np.where(left_first, frame[target_col], frame[source_col])
         frame = pd.DataFrame({source_col: src, target_col: dst})
         frame = frame.drop_duplicates()
     else:

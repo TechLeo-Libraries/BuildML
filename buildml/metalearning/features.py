@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import Any
+from typing import Any, cast
 
 import numpy as np
 import pandas as pd
@@ -227,7 +227,8 @@ def encode_labels(
     """Label-encode classification targets for episodic meta-learning.
 
     Refuses null labels and single-class sets; reuses a fitted encoder when
-    provided for consistent class codes across support/query splits.
+    provided for consistent class codes across support/query splits. New encoders
+    retain raw label types; unmarked legacy encoders retain string transforms.
 
     Parameters
     ----------
@@ -252,30 +253,37 @@ def encode_labels(
         raise ValidationError(
             "Meta-learning target contains nulls. Drop or impute labels before fit."
         )
-    values = series.astype(str)
     if label_encoder is None:
         enc = LabelEncoder()
-        codes = enc.fit_transform(values)
+        values = series.to_numpy()
+        try:
+            enc.fit(values)
+        except (TypeError, ValueError) as exc:
+            raise ValidationError("Meta-learning class labels must use consistent compatible types.") from exc
+        enc._buildml_raw_class_labels_ = True
     else:
         enc = label_encoder
-        known = {str(c) for c in enc.classes_}
-        unknown = sorted(set(values) - known)
-        if unknown:
-            raise ValidationError(
-                f"Meta-learning target saw unseen class label(s): {unknown}."
-            )
+        values = series.to_numpy() if getattr(enc, "_buildml_raw_class_labels_", False) else series.astype(str)
+    if getattr(enc, "_buildml_raw_class_labels_", False) and not pd.Series(values).isin(enc.classes_).all():
+        raise ValidationError("Meta-learning target saw unseen or incompatible class labels.")
+    try:
         codes = enc.transform(values)
+    except (TypeError, ValueError) as exc:
+        raise ValidationError("Meta-learning target saw unseen or incompatible class labels.") from exc
     if len(enc.classes_) < 2:
         raise ValidationError(
             f"Meta-learning needs >= 2 classes (found {tuple(enc.classes_)!r})."
         )
-    return np.asarray(codes), enc, tuple(enc.classes_)
+    classes = tuple(v.item() if isinstance(v, np.generic) else v for v in enc.classes_)
+    return np.asarray(codes), enc, classes
 
 
 def decode_labels(codes: np.ndarray, label_encoder: Any) -> tuple[Any, ...]:
     """Inverse-transform integer class codes to original label values.
 
     Used when reporting sampled episode classes and decoding prototype keys.
+    New encoders preserve raw types; unmarked legacy encoders retain historical
+    numeric-string guessing for persisted-plan compatibility.
 
     Parameters
     ----------
@@ -290,6 +298,8 @@ def decode_labels(codes: np.ndarray, label_encoder: Any) -> tuple[Any, ...]:
         Original label values in code order.
     """
     decoded = label_encoder.inverse_transform(np.asarray(codes).astype(int))
+    if getattr(label_encoder, "_buildml_raw_class_labels_", False):
+        return tuple(v.item() if isinstance(v, np.generic) else v for v in decoded)
     return tuple(_coerce_label(v) for v in decoded)
 
 
@@ -350,7 +360,7 @@ def frame_for_task(frame: pd.DataFrame, task_column: str, task_id: Any) -> pd.Da
     pandas.DataFrame
         Copy of rows where ``task_column == task_id``.
     """
-    return frame.loc[frame[task_column] == task_id].copy()
+    return cast(pd.DataFrame, frame.loc[frame[task_column] == task_id].copy())
 
 
 def sample_support_query(
@@ -395,8 +405,6 @@ def sample_support_query(
         infeasible.
     """
     y_codes, _, classes = encode_labels(frame[target_column], label_encoder=label_encoder)
-    work = frame.copy()
-    work["__y_code__"] = y_codes
     present = sorted(int(c) for c in np.unique(y_codes))
     if n_way is not None:
         if len(present) < n_way:
@@ -410,7 +418,7 @@ def sample_support_query(
     support_parts: list[pd.DataFrame] = []
     query_parts: list[pd.DataFrame] = []
     for code in chosen:
-        subset = work.loc[work["__y_code__"] == code]
+        subset = frame.iloc[np.flatnonzero(y_codes == code)]
         need = int(k_shot) + max(1, int(n_query) // max(len(chosen), 1))
         if len(subset) < need:
             # Relax query size if the class has at least k_shot + 1 rows.
@@ -422,8 +430,8 @@ def sample_support_query(
         support_parts.append(picked.iloc[: int(k_shot)])
         query_parts.append(picked.iloc[int(k_shot) :])
 
-    support = pd.concat(support_parts, axis=0).drop(columns=["__y_code__"])
-    query = pd.concat(query_parts, axis=0).drop(columns=["__y_code__"])
+    support = pd.concat(support_parts, axis=0)
+    query = pd.concat(query_parts, axis=0)
     if len(query) < 1:
         return None
     # Ensure feature columns exist / non-null via matrix build later.

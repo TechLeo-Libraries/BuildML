@@ -16,6 +16,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
+from numbers import Integral
 from typing import Any
 
 from buildml.ai.executor import execute_tool, propose_tool_execution
@@ -464,14 +465,23 @@ def run_autonomous(
     AutonomyConfig : The bounds.
     """
     cfg = config or AutonomyConfig()
+    for name, value in (
+        ("confirm_autonomy", confirm_autonomy),
+        ("provider_plan", provider_plan),
+        ("allow_destructive", cfg.allow_destructive),
+        ("require_explicit", cfg.require_explicit),
+        ("stop_on_error", cfg.stop_on_error),
+    ):
+        if not isinstance(value, bool):
+            raise ValidationError(f"{name} must be a boolean")
+    if isinstance(cfg.max_steps, bool) or not isinstance(cfg.max_steps, Integral) or cfg.max_steps < 1:
+        raise ValidationError("max_steps must be a positive integer")
     if cfg.require_explicit and not confirm_autonomy:
         raise ValidationError(
             "ai_run_autonomous requires confirm_autonomy=True. "
             "Default Session AI stays propose→confirm→execute; autonomy is an "
             "explicit operator automation mode with residual risk."
         )
-    if cfg.max_steps < 1:
-        raise ValidationError("max_steps must be >= 1")
 
     egress_block = _blocked_egress(session, cfg)
     if egress_block:

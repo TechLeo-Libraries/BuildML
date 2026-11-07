@@ -59,8 +59,15 @@ test = session.automl.evaluate(partition="test")
 print(validation.metrics, test.metrics)
 ```
 
-`session.automl.run` sets classical `fit_result`, so `evaluate` / `predict` /
+With default `refit=True`, `session.automl.run` sets classical `fit_result`, so `evaluate` / `predict` /
 `save_pipeline` also work.
+
+For native search, `refit=False` returns selection evidence without a final
+fitted winner. Candidate fits and nested outer-fold fits still run for scoring.
+Any previous classical model stays available through `session.predict`; the new
+AutoML plan cannot be evaluated or saved as a winner. Run with `refit=True` to
+attach one. AutoML evaluation also refuses a winner replaced by a later
+classical `fit`.
 
 ---
 

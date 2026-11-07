@@ -131,8 +131,8 @@ def save_rag_bundle(
     **Nothing is pickled**, so bundles are safe to load and portable across
     Python versions.
 
-    **A custom callable embedder cannot be saved.** Its identity is recorded but
-    the function is not, and loading falls back to hashing. See
+    **A custom callable embedder cannot be restored.** Its identity is recorded but
+    the function is not, and loading refuses to substitute another embedding space. See
     :func:`load_rag_bundle`.
 
     Examples
@@ -222,10 +222,9 @@ def load_rag_bundle(path: str | Path) -> RagIndex:
 
     Notes
     -----
-    **A bundle saved with a custom callable embedder loads with hashing
-    substituted.** Stored vectors came from your function; queries would be
-    embedded by a different one, and the two spaces are unrelated, so retrieval
-    returns semantically invalid retrieval results. Rebuild the index with the callable re-supplied.
+    **Callable and unknown embedding backends are refused.** Rebuild the index
+    with the original embedder; substituting hashing would make query vectors
+    incompatible with the stored passages, even when dimensions match.
 
     **Sentence-transformer bundles need the model available.** First load may
     download it, and needs ``buildml[rag]`` installed.
@@ -278,15 +277,27 @@ def load_rag_bundle(path: str | Path) -> RagIndex:
     chunk_rows = _read_jsonl(chunks_path)
     chunks = tuple(Chunk.from_dict(row) for row in chunk_rows)
     embeddings = np.load(emb_path).astype(np.float32)
+    recorded_embed = meta.get("embed_config") or {}
+    if recorded_embed.get("backend") not in {"hashing", "sentence-transformers"}:
+        raise ValidationError(
+            "Bundle embedder backend cannot be reconstructed faithfully; "
+            "rebuild the index with its original embedder."
+        )
+    embed_cfg = EmbedConfig.from_dict(recorded_embed)
+    if embeddings.ndim != 2 or embeddings.shape[1] != embed_cfg.dim:
+        raise ValidationError("Bundle embeddings do not match the recorded embedder dimension.")
+    if not np.isfinite(embeddings).all():
+        raise ValidationError("Bundle embeddings must contain only finite values.")
     store = NumpyCosineStore.build(chunks, embeddings)
-    embed_cfg = EmbedConfig.from_dict(meta.get("embed_config") or {})
     chunk_cfg = ChunkConfig.from_dict(meta.get("chunk_config") or {})
     index_cfg = IndexConfig.from_dict(meta.get("index_config") or {})
 
     backend = embed_cfg.backend
     load_warnings = list(meta.get("warnings") or ())
     load_disclosures = list(meta.get("disclosures") or ())
-    if backend == "sentence-transformers" and embed_cfg.model_name:
+    if backend == "sentence-transformers":
+        if not embed_cfg.model_name:
+            raise ValidationError("Sentence-transformer bundle is missing its embedder model name.")
         embedder, resolved_cfg = resolve_embedder(embed_cfg.model_name)
         # Prefer recorded id/dim from disk when dims match.
         if resolved_cfg.dim != embed_cfg.dim:
@@ -301,22 +312,6 @@ def load_rag_bundle(path: str | Path) -> RagIndex:
         )
     else:
         embedder, _ = resolve_embedder("hashing", dim=embed_cfg.dim)
-        # Keep recorded embedder_id for disclosure honesty even if we rebound hashing.
-        if embed_cfg.backend == "callable":
-            note = (
-                "Callable embedder cannot be reconstituted from the bundle; "
-                "queries are rebound to hashing and will not match stored vectors. "
-                "Rebuild the index with the callable re-supplied."
-            )
-            load_warnings.append(note)
-            load_disclosures.append(note)
-        elif embed_cfg.backend not in {"hashing", "sentence-transformers", None, ""}:
-            note = (
-                f"Embedder backend {embed_cfg.backend!r} rebounded to hashing on load; "
-                "confirm query embedding space matches stored vectors."
-            )
-            load_warnings.append(note)
-            load_disclosures.append(note)
 
     return RagIndex(
         store=store,

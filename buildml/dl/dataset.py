@@ -34,8 +34,13 @@ from buildml.core.types import ColumnRole
 from buildml.data.dataset import Dataset
 from buildml.data.splits import SplitPlan
 from buildml.dl.extras import require_torch
-from buildml.dl.labels import encode_class_targets, fit_class_labels
-from buildml.dl.transforms import apply_standardize, fit_standardize, frame_to_numeric_matrix
+from buildml.dl.labels import encode_class_targets, fit_class_labels, regression_targets_to_float32
+from buildml.dl.transforms import (
+    apply_standardize,
+    fit_standardize,
+    frame_to_numeric_matrix,
+    numeric_matrix_to_float32,
+)
 from buildml.dl.types import FeatureContract, TaskSpec
 
 
@@ -327,6 +332,9 @@ def arrays_to_tensor_dataset(x: np.ndarray, y: np.ndarray, *, task: str) -> Any:
     ------
     MissingExtraError
         If PyTorch is not installed.
+    ValidationError
+        If numeric features or regression labels are non-finite or overflow
+        float32.
 
     Notes
     -----
@@ -340,9 +348,9 @@ def arrays_to_tensor_dataset(x: np.ndarray, y: np.ndarray, *, task: str) -> Any:
     Features are always ``float32``, which is what Torch layers default to.
     """
     torch = require_torch(feature="Tabular Torch datasets")
-    x_t = torch.as_tensor(x, dtype=torch.float32)
+    x_t = torch.as_tensor(numeric_matrix_to_float32(x), dtype=torch.float32)
     if task == "classification":
         y_t = torch.as_tensor(y, dtype=torch.long)
     else:
-        y_t = torch.as_tensor(y, dtype=torch.float32).view(-1, 1)
+        y_t = torch.as_tensor(regression_targets_to_float32(y), dtype=torch.float32).view(-1, 1)
     return torch.utils.data.TensorDataset(x_t, y_t)

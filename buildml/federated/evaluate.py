@@ -42,9 +42,9 @@ def evaluate_federated(
     partition: PartitionOrAll = "validation",
     per_client: bool = True,
 ) -> FederatedEvalResult:
-    """Score the global federated model on a holdout partition.
+    """Score the frozen global federated model on the requested partition.
 
-    Holdout rows are never used for local client updates. Optional
+    Evaluation never performs local client updates. Optional
     ``per_client=True`` reports metrics sliced by the client column on the
     evaluation partition (still evaluation-only).
 
@@ -109,8 +109,9 @@ def evaluate_federated(
         )
 
     disclosures = [
-        "Federated evaluation scores a holdout partition; rows were never "
-        "used for local client updates during fit_federated.",
+        f"Federated evaluation scores partition={part_name!r} without updating "
+        "the global model. Evaluation does not verify exclusion of these rows "
+        "from the model's original training population.",
         f"Global model: backend={getattr(plan, 'backend', 'native')}, "
         f"method={plan.method}, estimator={plan.estimator_name}, "
         f"n_rounds_completed={len(plan.round_history)}, "
@@ -118,6 +119,11 @@ def evaluate_federated(
         "Honesty: local FL simulation metrics: not a networked FL benchmark.",
     ]
     warnings: list[str] = []
+    if part_name in {"train", "all"}:
+        warnings.append(
+            f"partition={part_name!r} may include training rows; these metrics "
+            "do not establish held-out generalization."
+        )
     metrics: dict[str, float] = {}
     per_client_metrics: dict[str, dict[str, float]] = {}
 
@@ -182,6 +188,11 @@ def evaluate_federated(
     n_clients_evaluated = 0
     if per_client and plan.client_column in frame.columns:
         client_ids = client_ids_in_frame(frame, plan.client_column)
+        if len({str(cid) for cid in client_ids}) != len(client_ids):
+            raise ValidationError(
+                "Distinct client ids have the same string representation; "
+                "use unambiguous client ids before reporting per-client metrics."
+            )
         for cid in client_ids:
             cframe = frame_for_client(frame, plan.client_column, cid)
             if len(cframe) < 1:

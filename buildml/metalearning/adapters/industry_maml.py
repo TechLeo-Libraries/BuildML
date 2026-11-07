@@ -351,7 +351,14 @@ def meta_train_maml(
                     opt.step()
                 query_loss = torch.nn.functional.cross_entropy(model(x_q), y_q)
                 meta_opt.zero_grad()
-                query_loss.backward()
+                # The adapted module is a deepcopy: its graph cannot reach
+                # base parameters. First-order MAML transfers query gradients
+                # at the adapted weights to the initialization, ignoring the
+                # inner-update Jacobian. autograd.grad also avoids accumulating
+                # the final support gradients left on the adapted module.
+                query_gradients = torch.autograd.grad(query_loss, tuple(model.parameters()))
+                for parameter, gradient in zip(base.parameters(), query_gradients):
+                    parameter.grad = gradient.detach().clone()
                 meta_opt.step()
                 pred = model(x_q).argmax(dim=1).detach().cpu().numpy()
 

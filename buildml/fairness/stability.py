@@ -3,12 +3,15 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field
+from numbers import Integral, Real
 from typing import Any, Literal
 
 import numpy as np
 
 from buildml.core.errors import ValidationError
+from buildml.fairness.groups import compose_group_keys
 from buildml.fairness.metrics import (
+    _label_vector,
     demographic_parity_difference,
     disparate_impact_ratio,
     equalized_odds_gaps,
@@ -16,6 +19,32 @@ from buildml.fairness.metrics import (
 )
 
 StabilityMethod = Literal["bootstrap", "stratified_subsample"]
+
+
+def _validate_stability_options(
+    count: Any, confidence_level: Any, method: str, subsample_fraction: Any,
+    *, allow_zero: bool = False,
+) -> int:
+    """Validate resampling options before running predictions or audit metrics."""
+    if isinstance(count, (bool, np.bool_)) or not isinstance(count, Integral):
+        raise ValidationError("Resampling count must be an integer >= 2 (or 0 to disable).")
+    if count == 0 and allow_zero:
+        return 0
+    if count < 2:
+        raise ValidationError("Resampling count must be an integer >= 2 (or 0 to disable).")
+    if (isinstance(confidence_level, (bool, np.bool_)) or not isinstance(confidence_level, Real)
+            or not 0 < float(confidence_level) < 1):
+        raise ValidationError("confidence_level must be a real number in (0, 1).")
+    if method not in ("bootstrap", "stratified_subsample"):
+        raise ValidationError(
+            f"Unknown stability method {method!r}; use 'bootstrap' or 'stratified_subsample'."
+        )
+    if method == "stratified_subsample" and (
+        isinstance(subsample_fraction, (bool, np.bool_)) or not isinstance(subsample_fraction, Real)
+        or not 0 < float(subsample_fraction) <= 1
+    ):
+        raise ValidationError("subsample_fraction must be a real number in (0, 1].")
+    return int(count)
 
 
 @dataclass(slots=True)
@@ -60,7 +89,7 @@ def estimate_gap_stability(
     positive_label:
         Positive class encoding.
     n_resamples:
-        Number of bootstrap or subsample draws (must be ≥ 2).
+        Integer number of bootstrap or subsample draws (must be ≥ 2).
     confidence_level:
         Central percentile interval width in ``(0, 1)``.
     method:
@@ -81,23 +110,15 @@ def estimate_gap_stability(
     ValidationError
         On invalid resampling configuration or empty inputs.
     """
-    yt = np.asarray(y_true)
-    yp = np.asarray(y_pred)
-    sens = np.asarray(sensitive)
+    n_resamples = _validate_stability_options(n_resamples, confidence_level, method, subsample_fraction)
+    yt = _label_vector(y_true, "y_true")
+    yp = _label_vector(y_pred, "y_pred")
+    sens = compose_group_keys(sensitive)
     n = len(yt)
+    if len(yp) != n or len(sens) != n:
+        raise ValidationError("y_true, y_pred, and sensitive must have equal length.")
     if n == 0:
         raise ValidationError("Stability estimation requires at least one row.")
-    if n_resamples < 2:
-        raise ValidationError("n_resamples must be >= 2.")
-    if not (0.0 < confidence_level < 1.0):
-        raise ValidationError("confidence_level must be in (0, 1).")
-    if method not in ("bootstrap", "stratified_subsample"):
-        raise ValidationError(
-            f"Unknown stability method {method!r}; "
-            "use 'bootstrap' or 'stratified_subsample'."
-        )
-    if method == "stratified_subsample" and not (0.0 < subsample_fraction <= 1.0):
-        raise ValidationError("subsample_fraction must be in (0, 1].")
 
     rng = np.random.default_rng(random_state)
     point = _gap_vector(yt, yp, sens, positive_label=positive_label)

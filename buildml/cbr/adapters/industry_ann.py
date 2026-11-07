@@ -33,7 +33,6 @@ from typing import Any
 import numpy as np
 
 from buildml.cbr.extras import (
-    WINDOWS_INDUSTRY_ANN_ENV,
     require_ann_library,
     windows_industry_ann_refused,
 )
@@ -136,17 +135,16 @@ def build_ann_index(
     query_ann_index : Searching what this builds.
     add_vectors_to_ann_index : Extending it during retention.
     """
-    if windows_industry_ann_refused():
-        raise ValidationError(
-            "Industry ANN is refused on Windows because hnswlib and faiss can "
-            "hard-crash the process. Set "
-            f"{WINDOWS_INDUSTRY_ANN_ENV}=1 if you accept that risk, or use "
-            "backend='sklearn'."
-        )
     data = _as_float32(vectors)
     dim = int(data.shape[1])
     if dim == 0:
         raise ValidationError("ANN index requires non-empty feature dimension.")
+    if not np.isfinite(data).all():
+        raise ValidationError("ANN vectors must contain finite values.")
+    if windows_industry_ann_refused():
+        from buildml.cbr.adapters.isolated_ann import IsolatedAnnIndex
+
+        return IsolatedAnnIndex(data, metric=metric, ef_construction=ef_construction, m=m), "isolated"
     lib = require_ann_library()
     metric_key = str(metric).lower().replace("-", "_")
     space = "l2" if metric_key == "euclidean" else "cosine"
@@ -221,11 +219,17 @@ def query_ann_index(
     neighbours. The plan carries the metric so this cannot happen through the
     normal path.
 
-    **Distances are not comparable across libraries.** hnswlib returns squared
-    L2 where faiss returns L2; the ranking is the same, the numbers are not.
+    **Euclidean distances are returned in Euclidean units.** Both native L2
+    indexes return squared distances. Taking their square root preserves the
+    ranking and gives inverse-distance reuse the same units as exact search.
     """
     q = _as_float32(queries)
-    kk = min(int(k), max(1, getattr(index, "ntotal", q.shape[0])))
+    if not np.isfinite(q).all() or int(k) < 1:
+        raise ValidationError("ANN queries must be finite and k must be positive.")
+    total = index.get_current_count() if library == "hnswlib" else getattr(index, "ntotal", q.shape[0])
+    kk = min(int(k), max(1, total))
+    if library == "isolated":
+        return index.query(q, kk)
     metric_key = str(metric).lower().replace("-", "_")
     if library == "hnswlib":
         labels, dists = index.knn_query(q, k=kk)
@@ -233,6 +237,8 @@ def query_ann_index(
         if metric_key == "cosine":
             # hnswlib cosine distance is 1 - similarity
             dists_arr = np.clip(dists_arr, 0.0, 2.0)
+        else:
+            dists_arr = np.sqrt(np.maximum(dists_arr, 0.0))
         return dists_arr, np.asarray(labels, dtype=int)
     import faiss
 
@@ -243,6 +249,7 @@ def query_ann_index(
         dists_arr = 1.0 - np.clip(sims, -1.0, 1.0)
     else:
         dists_arr, labels = index.search(qf, kk)
+        dists_arr = np.sqrt(np.maximum(dists_arr, 0.0))
     return np.asarray(dists_arr, dtype=float), np.asarray(labels, dtype=int)
 
 
@@ -293,7 +300,12 @@ def add_vectors_to_ann_index(
     data = _as_float32(vectors)
     if data.shape[0] == 0:
         return index
+    if library == "isolated":
+        index.add(data, start_id)
+        return index
     if library == "hnswlib":
+        if start_id + len(data) > index.get_max_elements():
+            index.resize_index(start_id + len(data))
         ids = np.arange(start_id, start_id + data.shape[0], dtype=np.int64)
         index.add_items(data, ids)
         return index

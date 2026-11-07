@@ -291,6 +291,8 @@ def resolve_workflow(session: Any) -> tuple[WorkflowStep, ...]:
 
     Availability is a statement about preconditions, not about judgement: an
     operation can be available and still be the wrong thing to run.
+    Current missing requirements block even previously completed operations;
+    a history record does not restore a fitted model after checkpoint loading.
 
     Parameters
     ----------
@@ -349,8 +351,21 @@ def resolve_workflow(session: Any) -> tuple[WorkflowStep, ...]:
                     alternate = provider
                     break
 
-        if operation in completed_set:
+        if failed:
+            status = WorkflowStepStatus.BLOCKED
+            reasons.extend(failed)
+        elif operation in completed_set:
             status = WorkflowStepStatus.DONE
+        elif alternate:
+            status = WorkflowStepStatus.SKIPPED
+            reasons.append(
+                f"Skipped because alternative operation '{alternate}' established this state."
+            )
+        else:
+            status = WorkflowStepStatus.AVAILABLE
+            reasons.append("All required prerequisites are satisfied.")
+
+        if operation in completed_set:
             operation_records = (
                 record
                 for record in _history(session)
@@ -360,17 +375,6 @@ def resolve_workflow(session: Any) -> tuple[WorkflowStep, ...]:
             reasons.append(f"Completed at sequence {latest_sequence}.")
             if operation in _REPEATABLE:
                 reasons.append("The operation is repeatable when its prerequisites still hold.")
-        elif alternate:
-            status = WorkflowStepStatus.SKIPPED
-            reasons.append(
-                f"Skipped because alternative operation '{alternate}' established this state."
-            )
-        elif failed:
-            status = WorkflowStepStatus.BLOCKED
-            reasons.extend(failed)
-        else:
-            status = WorkflowStepStatus.AVAILABLE
-            reasons.append("All required prerequisites are satisfied.")
         reasons.extend(optional_notes)
 
         origin = DecisionOrigin.EXPLICIT

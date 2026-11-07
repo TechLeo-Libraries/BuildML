@@ -21,6 +21,9 @@ mode most worth avoiding.
 This API is experimental. Configure process-group connectivity and use a
 picklable module factory when spawning workers. The CPU Gloo path supports
 functional checks; GPU training uses NCCL when available.
+Single-node Linux Gloo workers use ``forkserver`` to avoid native Gloo cleanup
+racing CPython finalization. Every worker is joined before the parent reads
+the serialized result; worker exceptions remain failures.
 
 See Also
 --------
@@ -30,10 +33,12 @@ buildml.dl.k8s : Manifests for running this under Kubernetes.
 
 from __future__ import annotations
 
+import gc
 import os
 import pickle
+import sys
 from collections.abc import Callable, Mapping
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import Any, Literal
@@ -408,7 +413,10 @@ def _shard_loader(loader: Any, *, rank: int, world_size: int, seed: int) -> Any:
         dataset,
         num_replicas=world_size,
         rank=rank,
-        shuffle=getattr(loader, "shuffle", True) or True,
+        shuffle=getattr(
+            loader, "_buildml_ddp_shuffle",
+            isinstance(loader.sampler, torch.utils.data.RandomSampler),
+        ),
         seed=seed,
     )
     return torch.utils.data.DataLoader(
@@ -501,6 +509,12 @@ def _worker(
     torch = require_torch(feature="DDP worker")
     import torch.distributed as dist
 
+    def phase(name: str) -> None:
+        if os.environ.get("BUILDML_DDP_TRACE") == "1":
+            # One short write keeps records from concurrent ranks intact.
+            os.write(2, f"BuildML DDP rank={rank} phase={name}\n".encode("ascii"))
+
+    phase("initializing")
     os.environ["MASTER_ADDR"] = master_addr
     os.environ["MASTER_PORT"] = master_port
     use_cuda = backend == "nccl" and torch.cuda.is_available()
@@ -509,7 +523,10 @@ def _worker(
     else:
         dist.init_process_group(backend=backend, rank=rank, world_size=world_size)
 
+    phase("initialized")
+    train_result = None
     try:
+        phase("training")
         train_result = _run_rank_training(
             rank=rank,
             local_rank=rank,
@@ -521,15 +538,28 @@ def _worker(
             find_unused_parameters=find_unused_parameters,
             use_cuda=use_cuda,
         )
+        phase("trained")
         if rank == 0:
             # A multiprocessing queue can transfer tensor storage handles that
             # expire when this worker exits. Persist the result by value before
             # the parent joins the workers instead.
             with open(result_path, "wb") as stream:
                 pickle.dump(train_result, stream, protocol=pickle.HIGHEST_PROTOCOL)
+            phase("result_saved")
     finally:
+        # The parent receives an independent serialized result. Drop this
+        # worker's module and collect DDP/reducer cycles while Python is alive,
+        # before the process group joins its native Gloo worker threads.
+        phase("releasing_training_state")
+        train_result = None
+        gc.collect()
+        phase("training_state_released")
         if dist.is_initialized():
+            phase("destroying_process_group")
             dist.destroy_process_group()
+            gc.collect()
+            phase("process_group_destroyed")
+    phase("returning")
 
 
 def _train_single_node(
@@ -560,6 +590,13 @@ def _train_single_node(
             f"Requested world_size={world_size} exceeds CUDA device count={n_cuda}"
         )
     backend = resolve_ddp_backend(dcfg.backend, use_cuda=use_cuda)
+    # Gloo in newer Torch releases can retain native workers past
+    # destroy_process_group(). Forkserver's standard worker exit avoids racing
+    # those threads against CPython finalization; training failures still
+    # propagate through start_processes and the parent joins every rank.
+    start_method = "forkserver" if backend == "gloo" and sys.platform.startswith("linux") else "spawn"
+    if start_method not in torch.multiprocessing.get_all_start_methods():
+        raise ValidationError(f"DDP requires multiprocessing start method {start_method!r} on this platform.")
     warnings: list[str] = []
     if not use_cuda:
         warnings.append(
@@ -567,9 +604,28 @@ def _train_single_node(
             "(not a throughput optimization)."
         )
 
+    train_loader = loader_bundle.loaders.get("train")
+    if train_loader is None:
+        raise ValidationError("DDP requires a train loader")
+    # Each rank builds its own DistributedSampler from config.seed. Sending
+    # the unused RandomSampler generator can fail during Torch IPC unpickling.
+    # Rebuild only the launch payload; preserve the caller's loader and RNG.
+    spawn_train_loader = torch.utils.data.DataLoader(
+        train_loader.dataset,
+        batch_size=train_loader.batch_size,
+        num_workers=getattr(train_loader, "num_workers", 0),
+        pin_memory=getattr(train_loader, "pin_memory", False),
+        drop_last=getattr(train_loader, "drop_last", False),
+    )
+    spawn_train_loader._buildml_ddp_shuffle = isinstance(
+        train_loader.sampler, torch.utils.data.RandomSampler
+    )
+    spawn_bundle = replace(
+        loader_bundle, loaders={**loader_bundle.loaders, "train": spawn_train_loader}
+    )
     with TemporaryDirectory(prefix="buildml-ddp-result-") as directory:
         result_path = Path(directory) / "rank-zero.pkl"
-        torch.multiprocessing.spawn(
+        torch.multiprocessing.start_processes(
             _worker,
             args=(
                 world_size,
@@ -577,13 +633,14 @@ def _train_single_node(
                 dcfg.master_addr,
                 dcfg.master_port,
                 module_factory,
-                loader_bundle,
+                spawn_bundle,
                 config,
                 dcfg.find_unused_parameters,
                 str(result_path),
             ),
             nprocs=world_size,
             join=True,
+            start_method=start_method,
         )
         if not result_path.is_file():
             raise ValidationError("DDP training produced no rank-0 result")
@@ -607,7 +664,7 @@ def _train_single_node(
             "Alpha quality: prefer single-process fit_torch unless you need multi-GPU scale.",
         ),
         warnings=tuple(warnings),
-        meta={"use_cuda": use_cuda, "n_cuda": n_cuda, "mode": "single_node"},
+        meta={"use_cuda": use_cuda, "n_cuda": n_cuda, "mode": "single_node", "start_method": start_method},
     )
 
 

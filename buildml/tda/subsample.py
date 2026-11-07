@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
+from numbers import Integral
 from typing import Literal
 
 import numpy as np
@@ -53,12 +54,21 @@ def apply_train_subsample(
     ------
     ValidationError
         When ``strategy='error'`` and train exceeds ``max_points``, or strategy
-        is unknown.
+        is unknown, the cap is not a positive integer, or frame rows do not
+        align with train membership.
     """
     disclosures: list[str] = []
     warnings: list[str] = []
     train_idx = list(split_plan.train_indices)
     n_train = len(train_idx)
+    if isinstance(max_points, bool) or not isinstance(max_points, Integral) or max_points < 1:
+        raise ValidationError("max_points must be a positive integer.")
+    if strategy not in ("error", "random", "stratified"):
+        raise ValidationError(
+            f"Unknown subsample_strategy {strategy!r}; expected error, random, stratified."
+        )
+    if len(frame) != n_train:
+        raise ValidationError("Subsample frame must contain exactly the train rows in split order.")
     cap = int(max_points)
     if n_train <= cap:
         return split_plan, frame, disclosures, warnings
@@ -86,17 +96,12 @@ def apply_train_subsample(
             f"Stratified train subsample: {n_train} → {len(chosen)} rows "
             f"(max_points_guard={cap})."
         )
-    elif strategy == "random":
+    else:
         chosen = _random_subsample(train_idx, cap, rng)
         disclosures.append(
             f"Random train subsample: {n_train} → {len(chosen)} rows "
             f"(max_points_guard={cap})."
         )
-    else:
-        raise ValidationError(
-            f"Unknown subsample_strategy {strategy!r}; expected error, random, stratified."
-        )
-
     new_plan = SplitPlan(
         kind=split_plan.kind,
         test_size=split_plan.test_size,
@@ -107,7 +112,8 @@ def apply_train_subsample(
         validation_indices=split_plan.validation_indices,
         test_indices=split_plan.test_indices,
     )
-    sub_frame = frame.loc[chosen].reset_index(drop=True)
+    positions = {row_id: position for position, row_id in enumerate(train_idx)}
+    sub_frame = frame.iloc[[positions[row_id] for row_id in chosen]].reset_index(drop=True)
     return new_plan, sub_frame, disclosures, warnings
 
 
@@ -130,7 +136,9 @@ def _stratified_subsample(
     idx = list(train_idx)
     if len(idx) <= cap:
         return idx
-    labels = y.iloc[idx]
+    # y already contains train rows in the same order as idx; idx contains
+    # global dataset positions, not positions within this smaller Series.
+    labels = y
     groups: dict[str, list[int]] = {}
     for i, lab in zip(idx, labels, strict=True):
         key = str(lab)
@@ -147,7 +155,8 @@ def _stratified_subsample(
             pick = rng.choice(len(class_idx), size=take, replace=False)
             chosen.extend(class_idx[int(j)] for j in pick)
     if len(chosen) < cap:
-        remaining = [i for i in idx if i not in set(chosen)]
+        selected = set(chosen)
+        remaining = [i for i in idx if i not in selected]
         need = cap - len(chosen)
         if remaining and need > 0:
             pick = rng.choice(len(remaining), size=min(need, len(remaining)), replace=False)

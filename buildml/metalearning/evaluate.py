@@ -9,6 +9,7 @@ import numpy as np
 from sklearn.metrics import accuracy_score, f1_score
 
 from buildml.core.errors import ValidationError
+from buildml.core.validation import _positive_integer
 from buildml.data.dataset import Dataset
 from buildml.data.splits import PartitionName, SplitPlan, frame_for_partition
 from buildml.metalearning.features import (
@@ -56,13 +57,15 @@ def evaluate_metalearning(
     partition:
         Holdout partition to score (``validation``, ``test``, ``train``, or ``all``).
     k_shot:
-        Override plan ``k_shot`` for episodic support size.
+        Positive integral override for episodic support size.
     n_query:
-        Override plan ``n_query`` for episodic query size.
+        Positive integral override for episodic query size.
     n_way:
-        Override plan ``n_way`` for classes per episode.
+        Integral classes per episode, between two and the fitted class count.
+        Boolean, fractional and string episode counts are refused.
     prefer_novel_tasks:
-        When ``True``, score task ids absent from meta-train first.
+        When ``True``, prefer task ids absent from meta-train, including internal
+        held-out tasks on train. When ``False``, score all observed task ids.
     random_state:
         Seed for episodic support/query sampling.
 
@@ -78,6 +81,11 @@ def evaluate_metalearning(
     """
     if plan is None:
         raise ValidationError("No MetaLearningPlan. Call fit_metalearning first.")
+    k = _positive_integer(plan.k_shot if k_shot is None else k_shot, name="k_shot")
+    nq = _positive_integer(plan.n_query if n_query is None else n_query, name="n_query")
+    nw = _positive_integer(plan.n_way if n_way is None else n_way, name="n_way")
+    if nw < 2 or nw > len(plan.classes_):
+        raise ValidationError(f"n_way must be between 2 and {len(plan.classes_)} fitted classes.")
 
     if partition == "all":
         frame = dataset._ensure_pandas()
@@ -98,9 +106,6 @@ def evaluate_metalearning(
         if col not in frame.columns:
             raise ValidationError(f"Column {col!r} missing from evaluation frame.")
 
-    k = int(plan.k_shot if k_shot is None else k_shot)
-    nq = int(plan.n_query if n_query is None else n_query)
-    nw = int(plan.n_way if n_way is None else n_way)
     rng = np.random.default_rng(random_state)
 
     eval_task_ids = task_ids_in_frame(frame, plan.task_column)
@@ -109,11 +114,13 @@ def evaluate_metalearning(
     overlapping = [t for t in eval_task_ids if t in train_set]
 
     disclosures = [
-        "Meta-learning evaluation uses episodic support/query splits on a "
-        "holdout partition; rows were never used for meta-training.",
+        "Meta-learning evaluation forms disjoint support/query episodes "
+        "within the requested partition.",
         f"method={plan.method}, partition={part_name}, k_shot={k}, "
         f"n_query={nq}, n_way={nw}.",
     ]
+    if part_name in {"validation", "test"}:
+        disclosures.append("Holdout rows were never used for meta-training.")
     warnings: list[str] = []
 
     if prefer_novel_tasks and novel:
@@ -127,17 +134,13 @@ def evaluate_metalearning(
                 f"Overlapping task ids present but skipped "
                 f"(prefer_novel_tasks=True): {overlapping}."
             )
-    elif novel:
-        selected = novel
-        disclosures.append(f"Evaluating novel task ids: {selected}.")
+    elif not prefer_novel_tasks and eval_task_ids:
+        selected = eval_task_ids
+        disclosures.append(
+            f"Evaluating all observed task ids (prefer_novel_tasks=False): {selected}."
+        )
     elif overlapping:
         selected = overlapping
-        warnings.append(
-            "No novel task ids in the evaluation partition; scoring "
-            "overlapping tasks with within-partition support/query splits. "
-            "This is not true out-of-task few-shot generalization. Prefer a "
-            "task-disjoint split or rely on held_out_task_ids from fit."
-        )
         disclosures.append(
             f"Evaluating overlapping task ids: {selected}."
         )
@@ -157,7 +160,7 @@ def evaluate_metalearning(
         )
 
     # Prefer internal held-out train tasks when evaluating train partition.
-    if part_name == "train" and plan.held_out_task_ids:
+    if prefer_novel_tasks and part_name == "train" and plan.held_out_task_ids:
         held = [t for t in plan.held_out_task_ids if t in set(eval_task_ids)]
         if held:
             selected = held
@@ -165,6 +168,22 @@ def evaluate_metalearning(
                 f"Using fit-time held_out_task_ids for train-partition "
                 f"episodic eval: {held}."
             )
+
+    if len({str(task) for task in selected}) != len(selected):
+        raise ValidationError(
+            "Task report key collision: distinct task ids share a display key. "
+            "Recode task identifiers to unique text before evaluation."
+        )
+    selected_overlap = [task for task in selected if task in train_set]
+    if selected_overlap:
+        prefix = "Including" if novel else "No novel task ids; scoring"
+        warnings.append(
+            f"{prefix} overlapping tasks with within-partition support/query splits. "
+            "This is not true out-of-task few-shot generalization. Prefer a "
+            "task-disjoint split or rely on held_out_task_ids from fit."
+        )
+        if part_name in {"train", "all"}:
+            warnings.append("Selected overlapping tasks include meta-training rows.")
 
     per_task: dict[str, dict[str, float]] = {}
     accs: list[float] = []

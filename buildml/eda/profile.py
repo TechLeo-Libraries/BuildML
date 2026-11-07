@@ -259,6 +259,18 @@ def explore_dataset(
     bivariate = analyze_bivariate(analysis_frame, target=target, feature_columns=feature_columns)
     multivariate = analyze_multivariate(analysis_frame, bivariate, feature_columns=feature_columns)
     target_info = analyze_target(dataset, analysis_frame, feature_columns=feature_columns)
+    overview["interpretation"] = {
+        "purpose": "exploratory",
+        "target_type": "heuristic; confirm against the modelling objective",
+        "mutual_information": "categorical/boolean features use a discrete-feature mask",
+        "drift": "univariate aggregate screen; absence of flags is not population equivalence",
+        "associations": "raw p-values and BH-adjusted q-values within each tested family",
+    }
+    warnings.append(
+        "EDA is exploratory. Verify inferred target type; use BH-adjusted q-values "
+        "alongside effect sizes and sampling assumptions. Associations are not "
+        "causal evidence, and univariate drift cannot exclude multivariate shift."
+    )
     if target is not None and target_info and target in numeric_columns:
         invalid_target_rows = int(frame[target].isin([float("inf"), float("-inf")]).sum())
         target_info["nonfinite_target_rows"] = invalid_target_rows

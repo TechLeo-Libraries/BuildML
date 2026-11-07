@@ -64,6 +64,15 @@ print(ev.n_labeled_eval, ev.metrics)
 bundle = session.semisupervised.save_bundle("artifacts/semisupervised_bundle")
 ```
 
+To export predictions for every row, call
+`session.semisupervised.predict(partition="all", attach=True, prediction_column="label_prediction")`,
+then `session.to_parquet("artifacts/labeled_predictions.parquet")`. Attachment
+adds a feature column and preserves the target, including missing labels.
+The fitted plan keeps its original feature list. An attached prediction column
+can be selected by a later fit; give it an ignore role if it is only for export.
+Parquet omits the pandas index, so keep meaningful row identifiers in a column.
+Use validation or test prediction without attachment for holdout assessment.
+
 Industry pseudo-label (when XGBoost installed):
 
 ```python

@@ -21,6 +21,7 @@ vectorizers are summarised rather than serialised in those dictionaries; use
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -415,12 +416,13 @@ class TokenAttribution:
         -------
         dict
             The token, its model weight, its value in this document, and their
-            product.
+            product. Global summaries have no per-document value; that value
+            is serialized as null.
         """
         return {
             "token": self.token,
             "weight": self.weight,
-            "value": self.value,
+            "value": self.value if math.isfinite(self.value) else None,
             "contribution": self.contribution,
         }
 

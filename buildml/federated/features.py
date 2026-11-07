@@ -488,8 +488,10 @@ def clone_estimator_with_params(
         set_linear_params(est, params)
     else:
         set_linear_params(est, params)
-    if classes is not None and hasattr(est, "classes_"):
-        est.classes_ = np.asarray(classes)
+    if classes is not None:
+        est.classes_ = np.asarray(classes).copy()
+    elif hasattr(template, "classes_"):
+        est.classes_ = np.asarray(template.classes_).copy()
     # Copy sklearn bookkeeping when present so predict works after set.
     for attr in ("n_features_in_", "feature_names_in_", "n_iter_", "t_"):
         if hasattr(template, attr):

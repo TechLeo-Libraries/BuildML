@@ -76,7 +76,7 @@ def act_rl(
         Observation vectors for the environment modes: a 2-D array of rows, or
         a single 1-D vector, which is treated as one observation. For a
         ``Discrete`` observation space under ``'tabular_q'``, pass the state
-        indices themselves.
+        physical IDs themselves, including any ``Discrete.start`` offset.
     deterministic:
         ``True`` (default) always takes the best-scoring action. ``False``
         samples, which keeps exploring: use it when the resulting log will
@@ -274,15 +274,17 @@ def _act_tabular(
     if observations is None:
         raise ValidationError(
             "tabular_q act_rl requires observations=... "
-            "(state indices for Discrete envs, or observation vectors for Box envs)."
+            "(physical state IDs for Discrete envs, or observation vectors for Box envs)."
         )
     policy = plan.policy_
     if not isinstance(policy, TabularValuePolicy):
         raise ValidationError("tabular_q plan is missing a TabularValuePolicy.")
-    arr = np.asarray(observations, dtype=float)
     if policy.discretizer.kind == "discrete":
-        rows: list[Any] = [float(v) for v in arr.reshape(-1).tolist()]
+        # Keep physical state IDs exact, including integers above float64's
+        # precision, and let the discretizer validate the original values.
+        rows: list[Any] = list(np.asarray(observations, dtype=object).reshape(-1))
     else:
+        arr = np.asarray(observations, dtype=float)
         if arr.ndim == 1:
             arr = arr.reshape(1, -1)
         rows = list(arr)

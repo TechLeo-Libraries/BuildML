@@ -10,6 +10,18 @@ project, and aggregate before that materialization. Engine choice does not
 make sklearn train out of core. Lazy Polars collects at the sklearn
 boundary.
 
+All-row recommendation, ranking, KG scoring, allocation and TDA transforms
+also materialize the current native table. A loaded model bundle can consume
+lazy data directly: calling `to_pandas()` first is unnecessary. Native filters
+and projections define the population that is materialized; the original
+unfiltered source is not substituted. Explicit query-id ranking uses that same
+current population.
+
+Synthetic `merge_mode="extend_train"` materializes real rows before appending
+generated rows to train. Validation and test membership and values are retained.
+These operations require memory for the materialized population. Narrow data
+before invoking them when that population is large.
+
 `with session:` closes an owned DuckDB connection. After Session
 preprocess, native handles rebuild so later `project` /
 `prepare_design_matrix` can still use the engine where that path exists.
@@ -24,6 +36,22 @@ Related: [classical end-to-end](classical-end-to-end.md),
 Real tables are often larger than a notebook demo. Ingest with DuckDB or
 Polars for typed IO, narrow rows and columns with engine-native ops, then
 materialize a design matrix for sklearn only when needed.
+
+`Dataset.aggregate` reports the current population. Column `count` and
+`n_unique` exclude missing observations; `{"*": "count"}` counts all rows.
+An all-missing or empty sum is missing, rather than zero, and `std` is the
+sample standard deviation (`ddof=1`). Null group keys form their own group.
+Unused categorical levels do not create rows. Physical output dtypes can vary
+between engines; numeric values and missingness follow these same rules.
+These rules concern null values. Native floating NaN and infinity retain
+backend-specific behavior; they are not normalized by this reporting helper.
+
+Lazy summaries keep their own input population when you create sibling or
+nested summaries. Derived DuckDB datasets still share their owner's connection:
+consume or export them before closing the owner. Existing report files are
+unchanged by a library update; regenerate affected summaries when correcting
+older results. Aggregations are reporting helpers, not train-fitted transforms;
+whole-table group statistics must not become model inputs across a holdout.
 
 BuildML records engine and mode in ingest metadata. After Session
 preprocess it rebuilds native handles so `Dataset.project` /

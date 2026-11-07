@@ -39,6 +39,22 @@ separate APIs and purposes.
 Quickstart: [recommenders quickstart](quickstart-recommenders.md).
 Proof: [movie-recs-collaborative](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/movie-recs-collaborative).
 
+## Observed ratings and saved history
+
+An explicit rating of zero is still an interaction. New plans record observed
+user-item pairs independently of rating values, including duplicate ratings
+whose mean is zero. `exclude_train_items=True` excludes these items; popularity
+counts observed pairs, the global mean includes their zero ratings, and SVD
+centers every observed entry. Neighbour denominators also count observed zero
+ratings. Implicit feedback continues to record presence as a value of one.
+
+Bundles retain observation membership alongside the interaction matrix and
+check its shape, boolean type and consistency with the catalog and interaction
+count. Legacy bundles without that membership preserve their existing scores
+and infer history from nonzero entries, with a warning to refit before relying
+on exclusion of zero-rated history. Reloading a legacy matrix cannot determine
+which zero entries represented observed ratings.
+
 ## Fit, recommend, evaluate
 
 Fit is train-only. For explicit feedback, `rating_column` defaults to

@@ -8,7 +8,7 @@ from typing import Any
 
 @dataclass(slots=True)
 class AnomalyThresholdTuneResult:
-    """Outcome of validation-only threshold tuning for a frozen AnomalyPlan."""
+    """Outcome of explicit partition threshold tuning for a frozen AnomalyPlan."""
 
     partition: str
     metric: str

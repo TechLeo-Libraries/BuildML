@@ -90,6 +90,13 @@ session.federated.export_round_history("artifacts/federated_rounds.json")
 
 `evaluate` defaults to validation with `per_client=True`. `predict`
 defaults to test. Neither runs local training.
+Evaluation names the requested partition but cannot verify whether those rows
+were excluded from the loaded model's original training population. Scoring
+`train` or `all` warns that training rows may be included. Null targets are
+excluded from both global and per-client metrics; a missing client column
+leaves global scoring available with a warning. Per-client reports refuse
+distinct ids with identical string representations, such as `1` and `"1"`,
+because report keys would otherwise overwrite one another.
 
 Round history records `client_weights`, `total_weight`, and
 `weighting: sample_size` so you can audit the average.

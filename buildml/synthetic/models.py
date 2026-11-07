@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+from collections import Counter
 from dataclasses import dataclass, field
+from numbers import Real
 from typing import Any
 
 import numpy as np
@@ -11,6 +13,13 @@ from scipy import stats
 
 from buildml.core.errors import MissingExtraError, ValidationError
 from buildml.synthetic.types import ColumnKind, ColumnSchemaSpec
+
+
+def _category_key(value: Any) -> tuple[type[Any], Any]:
+    """Normalize scalar wrappers while retaining categorical type identity."""
+    if isinstance(value, np.generic):
+        value = value.item()
+    return type(value), value
 
 
 def infer_column_kind(series: pd.Series) -> ColumnKind:
@@ -61,15 +70,19 @@ tuple[ColumnSchemaSpec, ...]
         series = frame[name]
         kind = infer_column_kind(series)
         cats: tuple[str, ...] = ()
+        raw_categories: tuple[Any, ...] | None = None
         if kind == "categorical":
             cats = tuple(str(v) for v in series.dropna().astype(str).unique().tolist())
+            raw_categories = tuple({_category_key(v): v for v in series.dropna()}.values())
         specs.append(
             ColumnSchemaSpec(
                 name=str(name),
                 kind=kind,
-                n_unique=int(series.nunique(dropna=True)),
+                n_unique=(len(raw_categories) if raw_categories is not None
+                          else int(series.nunique(dropna=True))),
                 n_null=int(series.isna().sum()),
                 categories=cats,
+                raw_categories_=raw_categories,
             )
         )
     return tuple(specs)
@@ -97,7 +110,7 @@ def _nearest_ppf(sorted_vals: np.ndarray, u: np.ndarray) -> np.ndarray:
 
 @dataclass
 class BootstrapGenerator:
-    """Row bootstrap with optional Gaussian smoothing on continuous columns."""
+    """Row bootstrap with optional Gaussian smoothing on numeric columns."""
 
     frame: pd.DataFrame
     continuous_cols: tuple[str, ...]
@@ -164,6 +177,8 @@ ValidationError
         """Resample stored training rows with replacement.
 
 Positive smoothing adds Gaussian noise scaled by each numeric column standard deviation; integer columns are rounded afterward.
+Missing numeric values stay missing. Nullable integer columns retain their dtype
+after rounding, so missing entries are not cast into integer sentinel values.
 
 Parameters
 ----------
@@ -204,13 +219,17 @@ ValidationError
                         pd.to_numeric(out[col], errors="coerce").to_numpy(dtype=float)
                         + rng.normal(0.0, sigma, size=len(out))
                     )
-                    out[col] = np.rint(noisy).astype(np.int64)
+                    rounded = np.rint(noisy)
+                    if pd.api.types.is_extension_array_dtype(out[col].dtype):
+                        out[col] = pd.array(rounded, dtype=out[col].dtype)
+                    else:
+                        out[col] = rounded.astype(np.int64)
         return out
 
 
 @dataclass
 class _CatTransform:
-    categories: tuple[str, ...]
+    categories: tuple[Any, ...]
     thresholds: np.ndarray  # cumulative probs length = n_cats
     values: tuple[Any, ...] | None = None
     dtype: Any = None
@@ -303,21 +322,20 @@ ValidationError
                 u = np.clip(u, 1e-6, 1.0 - 1e-6)
                 z_cols.append(stats.norm.ppf(u))
             else:
-                as_str = series.astype("string")
-                observed = as_str.dropna()
+                observed = series.dropna()
                 if observed.empty:
                     raise ValidationError(
                         f"Categorical column {col!r} has no observed train values."
                     )
-                counts = observed.value_counts(normalize=True)
-                categories = tuple(str(c) for c in counts.index.tolist())
-                probs = counts.to_numpy(dtype=float)
+                keys = [_category_key(value) for value in observed]
+                counts = Counter(keys)
+                categories = tuple(key for key, _ in counts.most_common())
+                probs = np.array([counts[key] / len(observed) for key in categories])
                 thresholds = np.cumsum(probs)
                 thresholds[-1] = 1.0
-                # String labels are useful for probability lookup, but samples
-                # must retain the original labels and dtype (for example 0/1
-                # targets, booleans, or pandas categorical/string columns).
-                native_values = dict(zip(as_str.dropna(), series[series.notna()], strict=True))
+                # Typed lookup keys keep equal display text and bool/int values
+                # distinct. Inverse transforms retain the original values/dtype.
+                native_values = dict(zip(keys, observed, strict=True))
                 cat_transforms[col] = _CatTransform(
                     categories=categories, thresholds=thresholds,
                     values=tuple(native_values[category] for category in categories),
@@ -332,11 +350,11 @@ ValidationError
                     prev = float(thr)
                 mode_cat = categories[0]
                 u_rows = []
-                for val in as_str.tolist():
-                    if val is pd.NA or val is None or (isinstance(val, float) and np.isnan(val)):
+                for val in series.tolist():
+                    if pd.isna(val):
                         u_rows.append(cat_to_u[mode_cat])
                     else:
-                        u_rows.append(cat_to_u.get(str(val), cat_to_u[mode_cat]))
+                        u_rows.append(cat_to_u[_category_key(val)])
                 u_arr = np.clip(np.asarray(u_rows, dtype=float), 1e-6, 1.0 - 1e-6)
                 z_cols.append(stats.norm.ppf(u_arr))
 
@@ -405,6 +423,17 @@ ValidationError
         rng = np.random.default_rng(
             self.random_state if random_state is None else int(random_state)
         )
+        if condition is not None and not isinstance(condition, dict):
+            raise ValidationError("condition must be a column-to-value dictionary or None.")
+        for key, value in (condition or {}).items():
+            if not isinstance(key, str) or key not in self.columns:
+                raise ValidationError(f"condition key {key!r} is not a synthesizer column.")
+            if value is not None and not isinstance(value, (str, Real, np.bool_)):
+                raise ValidationError(
+                    f"condition value for {key!r} must be a finite number, string, boolean or None."
+                )
+            if isinstance(value, (float, np.floating)) and not np.isfinite(value):
+                raise ValidationError(f"condition value for {key!r} must be finite; use None for missing values.")
         dim = len(self.columns)
         mean = np.zeros(dim)
         # Oversample when conditioning via rejection
@@ -423,11 +452,16 @@ ValidationError
             if condition:
                 mask = np.ones(len(frame), dtype=bool)
                 for key, value in condition.items():
-                    if key not in frame.columns:
-                        raise ValidationError(
-                            f"condition key {key!r} is not a synthesizer column."
-                        )
-                    mask &= frame[key].astype(str).to_numpy() == str(value)
+                    series = frame[key]
+                    if value is None:
+                        matches = series.isna()
+                    elif self.kinds[key] == "categorical":
+                        requested = _category_key(value)
+                        matches = series.map(lambda item, requested=requested:
+                                             not pd.isna(item) and _category_key(item) == requested)
+                    else:
+                        matches = series.astype(object).eq(value).fillna(False)
+                    mask &= matches.to_numpy(dtype=bool)
                 frame = frame.loc[mask].reset_index(drop=True)
             if len(frame) > remaining:
                 frame = frame.iloc[:remaining].reset_index(drop=True)
@@ -437,8 +471,8 @@ ValidationError
             batch = max(remaining * 8, remaining + 16)
         if remaining > 0:
             raise ValidationError(
-                "Could not satisfy categorical condition with rejection sampling; "
-                "relax condition or increase n / train diversity."
+                "Could not satisfy condition within 20 rejection-sampling attempts; "
+                "relax condition or fit on training data with sufficient support."
             )
         out = pd.concat(collected, ignore_index=True) if collected else pd.DataFrame(
             columns=list(self.columns)

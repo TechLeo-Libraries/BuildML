@@ -1078,23 +1078,27 @@ def reattach(
     Notes
     -----
     Everything the session currently holds is discarded. Save first if the
-    current state matters.
+    current state matters. Only checkpoint data, split, history and fitted
+    preprocessing plans are restored. Load a trusted model/domain bundle
+    explicitly to recover its fitted model; old models, retrieval indexes and
+    AI configuration do not carry over from the replaced dataset.
 
     See Also
     --------
     Session.checkpoint_load : The classmethod form, returning a new session.
     """
     loaded = load_checkpoint(path, data_only=data_only, trusted=trusted)
+    replacement = type(session)(
+        dataset=loaded.dataset,
+        split_plan=loaded.split_plan,
+        history=loaded.history,
+        reattach_result=loaded.reattach,
+    )
+    if not data_only:
+        replacement._restore_plans(loaded.plans)
     session.close_native()
-    session._dataset = loaded.dataset
-    session._split_plan = loaded.split_plan
-    session._history = list(loaded.history)
-    session._reattach_result = loaded.reattach
-    session._ingest_report = None
-    if data_only:
-        session._clear_plans()
-    else:
-        session._restore_plans(loaded.plans)
+    session.__dict__.clear()
+    session.__dict__.update(replacement.__dict__)
     session._record(
         "reattach",
         {

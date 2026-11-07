@@ -89,7 +89,8 @@ def compose_group_keys(
     Raises
     ------
     ValidationError
-        When no parts are given or lengths disagree.
+        When no parts are given, lengths disagree, or distinct attribute levels
+        would collapse to the same displayed group key.
     """
     if not parts:
         raise ValidationError("compose_group_keys requires at least one sensitive array.")
@@ -98,11 +99,19 @@ def compose_group_keys(
     for arr in arrays[1:]:
         if len(arr) != n:
             raise ValidationError("All sensitive arrays must have equal length.")
-    if len(arrays) == 1:
-        return np.asarray([_cell_token(v) for v in arrays[0]], dtype=object)
     keys = []
+    observed: dict[str, tuple[Any, ...]] = {}
     for i in range(n):
-        keys.append(sep.join(_cell_token(arr[i]) for arr in arrays))
+        levels = tuple(arr[i] for arr in arrays)
+        key = sep.join(_cell_token(value) for value in levels)
+        previous = observed.get(key)
+        if previous is not None and not all(_same_level(a, b) for a, b in zip(previous, levels, strict=True)):
+            raise ValidationError(
+                f"Ambiguous sensitive group key collision for {key!r}; "
+                "use distinct category labels or a collision-free separator."
+            )
+        observed[key] = levels
+        keys.append(key)
     return np.asarray(keys, dtype=object)
 
 
@@ -132,7 +141,7 @@ def extract_sensitive_keys(
 def _to_1d(values: Any) -> np.ndarray:
     if isinstance(values, pd.Series):
         return values.to_numpy()
-    arr = np.asarray(values)
+    arr = np.asarray(values, dtype=object)
     if arr.ndim != 1:
         raise ValidationError("Sensitive arrays must be 1-dimensional.")
     return arr
@@ -147,3 +156,15 @@ def _cell_token(value: Any) -> str:
     except (TypeError, ValueError):
         pass
     return str(value)
+
+
+def _same_level(left: Any, right: Any) -> bool:
+    """Treat missing values alike while keeping strings distinct from numbers."""
+    try:
+        if pd.isna(left) and pd.isna(right):
+            return True
+        if isinstance(left, str) != isinstance(right, str):
+            return False
+        return bool(left == right)
+    except (TypeError, ValueError):
+        return False

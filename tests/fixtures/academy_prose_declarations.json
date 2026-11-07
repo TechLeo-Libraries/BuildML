@@ -1,0 +1,1584 @@
+{
+  "source_revision": "ff4fd1d242dd79dd13c5d1e802b288deb27a3ea8",
+  "provenance": "Literal paragraph declarations from the archived stage configuration; no values taken from produced Academy payloads.",
+  "declarations": [
+    {
+      "slug": "baselines",
+      "field": "pitfalls",
+      "section": "pitfalls",
+      "paragraph": "Reporting model scores without the majority/mean baseline beside them.",
+      "source": "buildml/dashboard/academy_curriculum/stage_04.py",
+      "line": 200
+    },
+    {
+      "slug": "baselines",
+      "field": "technical",
+      "section": "technical_depth",
+      "paragraph": "Compare every candidate to an explicit baseline under the same split and metric.",
+      "source": "buildml/dashboard/academy_curriculum/stage_04.py",
+      "line": 173
+    },
+    {
+      "slug": "baselines",
+      "field": "what_to_change",
+      "section": "worked_example/what_to_change",
+      "paragraph": "Keep the baseline in every comparison table.",
+      "source": "buildml/dashboard/academy_curriculum/stage_04.py",
+      "line": 199
+    },
+    {
+      "slug": "baselines",
+      "field": "why",
+      "section": "why_it_matters",
+      "paragraph": "Complex models often lose to sane defaults once leakage is removed.",
+      "source": "buildml/dashboard/academy_curriculum/stage_04.py",
+      "line": 174
+    },
+    {
+      "slug": "batch-leakage",
+      "field": "pitfalls",
+      "section": "pitfalls",
+      "paragraph": "Random splits on heavily batched extracts.",
+      "source": "buildml/dashboard/academy_curriculum/stage_gaps.py",
+      "line": 49
+    },
+    {
+      "slug": "batch-leakage",
+      "field": "what_to_change",
+      "section": "worked_example/what_to_change",
+      "paragraph": "Identify batch/day/file keys; forbid cross-split sharing.",
+      "source": "buildml/dashboard/academy_curriculum/stage_gaps.py",
+      "line": 48
+    },
+    {
+      "slug": "batch-leakage",
+      "field": "why",
+      "section": "why_it_matters",
+      "paragraph": "Same-batch twins in train and test inflate scores.",
+      "source": "buildml/dashboard/academy_curriculum/stage_gaps.py",
+      "line": 33
+    },
+    {
+      "slug": "calibration",
+      "field": "technical",
+      "section": "technical_depth",
+      "paragraph": "session.calibration(...) reports calibration diagnostics on held-out data; it does not recalibrate the model.",
+      "source": "buildml/dashboard/academy_curriculum/stage_04.py",
+      "line": 214
+    },
+    {
+      "slug": "calibration",
+      "field": "what_to_change",
+      "section": "worked_example/what_to_change",
+      "paragraph": "Calibrate on validation; re-check after major retrains.",
+      "source": "buildml/dashboard/academy_curriculum/stage_04.py",
+      "line": 233
+    },
+    {
+      "slug": "calibration",
+      "field": "why",
+      "section": "why_it_matters",
+      "paragraph": "Bad calibration breaks threshold policies and capacity planning.",
+      "source": "buildml/dashboard/academy_curriculum/stage_04.py",
+      "line": 215
+    },
+    {
+      "slug": "categorical-association",
+      "field": "pitfalls",
+      "section": "pitfalls",
+      "paragraph": "Pearson on arbitrary category codes.",
+      "source": "buildml/dashboard/academy_curriculum/stage_02.py",
+      "line": 377
+    },
+    {
+      "slug": "categorical-association",
+      "field": "plain",
+      "section": "what_it_means",
+      "paragraph": "Categorical-target links need association measures (MI, chi-square), not Pearson on codes.",
+      "source": "buildml/dashboard/academy_curriculum/stage_02.py",
+      "line": 361
+    },
+    {
+      "slug": "categorical-association",
+      "field": "technical",
+      "section": "technical_depth",
+      "paragraph": "Integer codes are not quantities; association ≠ ordered correlation.",
+      "source": "buildml/dashboard/academy_curriculum/stage_02.py",
+      "line": 362
+    },
+    {
+      "slug": "categorical-association",
+      "field": "what_to_change",
+      "section": "worked_example/what_to_change",
+      "paragraph": "Encode categoricals properly before linear models.",
+      "source": "buildml/dashboard/academy_curriculum/stage_02.py",
+      "line": 376
+    },
+    {
+      "slug": "categorical-association",
+      "field": "why",
+      "section": "why_it_matters",
+      "paragraph": "Treating label codes as numeric invents fake linear structure.",
+      "source": "buildml/dashboard/academy_curriculum/stage_02.py",
+      "line": 363
+    },
+    {
+      "slug": "causal-caution",
+      "field": "pitfalls",
+      "section": "pitfalls",
+      "paragraph": "Shipping feature importances as 'drivers' to executives without causal language.",
+      "source": "buildml/dashboard/academy_curriculum/stage_05.py",
+      "line": 175
+    },
+    {
+      "slug": "causal-caution",
+      "field": "what_to_change",
+      "section": "worked_example/what_to_change",
+      "paragraph": "Separate prediction KPIs from intervention KPIs in the project brief.",
+      "source": "buildml/dashboard/academy_curriculum/stage_05.py",
+      "line": 174
+    },
+    {
+      "slug": "causal-caution",
+      "field": "why",
+      "section": "why_it_matters",
+      "paragraph": "Acting on correlations as causes is how ML creates policy mistakes.",
+      "source": "buildml/dashboard/academy_curriculum/stage_05.py",
+      "line": 158
+    },
+    {
+      "slug": "class-imbalance",
+      "field": "why",
+      "section": "why_it_matters",
+      "paragraph": "Majority baselines beat careless models on accuracy.",
+      "source": "buildml/dashboard/academy_curriculum/stage_04.py",
+      "line": 38
+    },
+    {
+      "slug": "confounding-and-subgroups",
+      "field": "pitfalls",
+      "section": "pitfalls",
+      "paragraph": "Reading feature importance as causal effect.",
+      "source": "buildml/dashboard/academy_curriculum/stage_02.py",
+      "line": 427
+    },
+    {
+      "slug": "confounding-and-subgroups",
+      "field": "plain",
+      "section": "what_it_means",
+      "paragraph": "A strong association can be a confounder story, not a lever you can push.",
+      "source": "buildml/dashboard/academy_curriculum/stage_02.py",
+      "line": 411
+    },
+    {
+      "slug": "confounding-and-subgroups",
+      "field": "technical",
+      "section": "technical_depth",
+      "paragraph": "EDA association ≠ causal effect. Subgroup checks reveal Simpson-like reversals.",
+      "source": "buildml/dashboard/academy_curriculum/stage_02.py",
+      "line": 412
+    },
+    {
+      "slug": "confounding-and-subgroups",
+      "field": "what_to_change",
+      "section": "worked_example/what_to_change",
+      "paragraph": "Name confounders; separate prediction from intervention questions.",
+      "source": "buildml/dashboard/academy_curriculum/stage_02.py",
+      "line": 426
+    },
+    {
+      "slug": "confounding-and-subgroups",
+      "field": "why",
+      "section": "why_it_matters",
+      "paragraph": "Shipping a correlated proxy as if it were a cause harms decisions.",
+      "source": "buildml/dashboard/academy_curriculum/stage_02.py",
+      "line": 413
+    },
+    {
+      "slug": "confusion-matrix",
+      "field": "pitfalls",
+      "section": "pitfalls",
+      "paragraph": "Reading a confusion matrix at 0.5 when you will deploy another cut.",
+      "source": "buildml/dashboard/academy_curriculum/stage_04.py",
+      "line": 267
+    },
+    {
+      "slug": "confusion-matrix",
+      "field": "plain",
+      "section": "what_it_means",
+      "paragraph": "The confusion matrix counts TP/FP/FN/TN at a chosen threshold - the anatomy of errors.",
+      "source": "buildml/dashboard/academy_curriculum/stage_04.py",
+      "line": 249
+    },
+    {
+      "slug": "confusion-matrix",
+      "field": "technical",
+      "section": "technical_depth",
+      "paragraph": "session.evaluate(...) exposes confusion diagnostics for classifiers.",
+      "source": "buildml/dashboard/academy_curriculum/stage_04.py",
+      "line": 250
+    },
+    {
+      "slug": "confusion-matrix",
+      "field": "what_to_change",
+      "section": "worked_example/what_to_change",
+      "paragraph": "Inspect errors at the operating threshold you will ship.",
+      "source": "buildml/dashboard/academy_curriculum/stage_04.py",
+      "line": 266
+    },
+    {
+      "slug": "confusion-matrix",
+      "field": "why",
+      "section": "why_it_matters",
+      "paragraph": "Single scalar metrics hide which mistakes you make.",
+      "source": "buildml/dashboard/academy_curriculum/stage_04.py",
+      "line": 251
+    },
+    {
+      "slug": "correlation",
+      "field": "what_to_change",
+      "section": "worked_example/what_to_change",
+      "paragraph": "Use a correlation threshold to identify pairs for review, then compare feature choices on validation data.",
+      "source": "buildml/dashboard/academy_curriculum/stage_02.py",
+      "line": 150
+    },
+    {
+      "slug": "correlation",
+      "field": "why",
+      "section": "why_it_matters",
+      "paragraph": "Near-duplicate columns destabilise linear coefficients.",
+      "source": "buildml/dashboard/academy_curriculum/stage_02.py",
+      "line": 138
+    },
+    {
+      "slug": "cross-field-consistency",
+      "field": "pitfalls",
+      "section": "pitfalls",
+      "paragraph": "Fixing inconsistencies using test labels.",
+      "source": "buildml/dashboard/academy_curriculum/stage_01.py",
+      "line": 755
+    },
+    {
+      "slug": "cross-field-consistency",
+      "field": "what_to_change",
+      "section": "worked_example/what_to_change",
+      "paragraph": "Encode your real multi-column rules; quarantine or fix violators.",
+      "source": "buildml/dashboard/academy_curriculum/stage_01.py",
+      "line": 754
+    },
+    {
+      "slug": "cross-field-consistency",
+      "field": "why",
+      "section": "why_it_matters",
+      "paragraph": "Inconsistent rows can distort both training and metrics.",
+      "source": "buildml/dashboard/academy_curriculum/stage_01.py",
+      "line": 734
+    },
+    {
+      "slug": "cross-validation",
+      "field": "what_to_change",
+      "section": "worked_example/what_to_change",
+      "paragraph": "Set cv folds; use nested_cv_score when selecting models/hyperparameters.",
+      "source": "buildml/dashboard/academy_curriculum/stage_03.py",
+      "line": 149
+    },
+    {
+      "slug": "cross-validation",
+      "field": "why",
+      "section": "why_it_matters",
+      "paragraph": "Single holdouts are noisy; nested CV separates model selection from evaluation.",
+      "source": "buildml/dashboard/academy_curriculum/stage_03.py",
+      "line": 130
+    },
+    {
+      "slug": "data-splitting",
+      "field": "why",
+      "section": "why_it_matters",
+      "paragraph": "Keeping test data out of model selection reduces optimism in the final performance estimate.",
+      "source": "buildml/dashboard/academy_curriculum/stage_03.py",
+      "line": 40
+    },
+    {
+      "slug": "dataset-drift",
+      "field": "pitfalls",
+      "section": "pitfalls",
+      "paragraph": "Assuming IID forever because training CV looked fine.",
+      "source": "buildml/dashboard/academy_curriculum/stage_03.py",
+      "line": 184
+    },
+    {
+      "slug": "dataset-drift",
+      "field": "what_to_change",
+      "section": "worked_example/what_to_change",
+      "paragraph": "Define reference vs analysis windows; set monitoring alerts on key features.",
+      "source": "buildml/dashboard/academy_curriculum/stage_03.py",
+      "line": 183
+    },
+    {
+      "slug": "dataset-drift",
+      "field": "why",
+      "section": "why_it_matters",
+      "paragraph": "Silent drift makes yesterday's metrics lie about tomorrow.",
+      "source": "buildml/dashboard/academy_curriculum/stage_03.py",
+      "line": 167
+    },
+    {
+      "slug": "datetime-parsing",
+      "field": "pitfalls",
+      "section": "pitfalls",
+      "paragraph": "Parsing with dayfirst ambiguity; mixing naive and aware timestamps.",
+      "source": "buildml/dashboard/academy_curriculum/stage_01.py",
+      "line": 799
+    },
+    {
+      "slug": "datetime-parsing",
+      "field": "what_to_change",
+      "section": "worked_example/what_to_change",
+      "paragraph": "Set timestamp column and timezone policy; assign role 'time'.",
+      "source": "buildml/dashboard/academy_curriculum/stage_01.py",
+      "line": 798
+    },
+    {
+      "slug": "datetime-parsing",
+      "field": "why",
+      "section": "why_it_matters",
+      "paragraph": "Lexical 'dates' make leakage checks and rolling features wrong.",
+      "source": "buildml/dashboard/academy_curriculum/stage_01.py",
+      "line": 775
+    },
+    {
+      "slug": "derived-and-redundant-columns",
+      "field": "pitfalls",
+      "section": "pitfalls",
+      "paragraph": "Keeping both raw and fully determined derived totals.",
+      "source": "buildml/dashboard/academy_curriculum/stage_02.py",
+      "line": 450
+    },
+    {
+      "slug": "derived-and-redundant-columns",
+      "field": "plain",
+      "section": "what_it_means",
+      "paragraph": "Derived columns that restate others add width without new information - and inflate VIF.",
+      "source": "buildml/dashboard/academy_curriculum/stage_02.py",
+      "line": 437
+    },
+    {
+      "slug": "derived-and-redundant-columns",
+      "field": "technical",
+      "section": "technical_depth",
+      "paragraph": "Use correlation pairs + VIF + domain lineage to spot re-expressions.",
+      "source": "buildml/dashboard/academy_curriculum/stage_02.py",
+      "line": 438
+    },
+    {
+      "slug": "derived-and-redundant-columns",
+      "field": "what_to_change",
+      "section": "worked_example/what_to_change",
+      "paragraph": "Ignore or drop redundant re-expressions; keep the best-measured version.",
+      "source": "buildml/dashboard/academy_curriculum/stage_02.py",
+      "line": 449
+    },
+    {
+      "slug": "derived-and-redundant-columns",
+      "field": "why",
+      "section": "why_it_matters",
+      "paragraph": "Redundant features waste regularisation budget and confuse importance.",
+      "source": "buildml/dashboard/academy_curriculum/stage_02.py",
+      "line": 439
+    },
+    {
+      "slug": "diagnostic-uncertainty",
+      "field": "pitfalls",
+      "section": "pitfalls",
+      "paragraph": "Equating 'no finding' with 'no risk'.",
+      "source": "buildml/dashboard/academy_curriculum/stage_03.py",
+      "line": 363
+    },
+    {
+      "slug": "diagnostic-uncertainty",
+      "field": "what_to_change",
+      "section": "worked_example/what_to_change",
+      "paragraph": "Record which findings you accept/reject and why.",
+      "source": "buildml/dashboard/academy_curriculum/stage_03.py",
+      "line": 362
+    },
+    {
+      "slug": "diagnostic-uncertainty",
+      "field": "why",
+      "section": "why_it_matters",
+      "paragraph": "Over-trusting screens creates false confidence.",
+      "source": "buildml/dashboard/academy_curriculum/stage_03.py",
+      "line": 346
+    },
+    {
+      "slug": "dimensionality-reduction",
+      "field": "what_to_change",
+      "section": "worked_example/what_to_change",
+      "paragraph": "Tune n_components / method; decide whether to drop input columns.",
+      "source": "buildml/dashboard/academy_curriculum/stage_02.py",
+      "line": 312
+    },
+    {
+      "slug": "dimensionality-reduction",
+      "field": "why",
+      "section": "why_it_matters",
+      "paragraph": "Wide, collinear matrices hurt linear models; PCA is one remedy among selection/regularisation.",
+      "source": "buildml/dashboard/academy_curriculum/stage_02.py",
+      "line": 297
+    },
+    {
+      "slug": "early-stopping-partition",
+      "field": "pitfalls",
+      "section": "pitfalls",
+      "paragraph": "Reuse of test for patience checks.",
+      "source": "buildml/dashboard/academy_curriculum/stage_gaps.py",
+      "line": 121
+    },
+    {
+      "slug": "early-stopping-partition",
+      "field": "what_to_change",
+      "section": "worked_example/what_to_change",
+      "paragraph": "Always point early stopping at validation, never test.",
+      "source": "buildml/dashboard/academy_curriculum/stage_gaps.py",
+      "line": 120
+    },
+    {
+      "slug": "early-stopping-partition",
+      "field": "why",
+      "section": "why_it_matters",
+      "paragraph": "Stopped-on-test models overstate generalisation.",
+      "source": "buildml/dashboard/academy_curriculum/stage_gaps.py",
+      "line": 107
+    },
+    {
+      "slug": "effect-shapes",
+      "field": "pitfalls",
+      "section": "pitfalls",
+      "paragraph": "Reading average effect shapes under strong interactions as universal laws.",
+      "source": "buildml/dashboard/academy_curriculum/stage_05.py",
+      "line": 108
+    },
+    {
+      "slug": "effect-shapes",
+      "field": "what_to_change",
+      "section": "worked_example/what_to_change",
+      "paragraph": "Plot shapes for top features stakeholders will challenge.",
+      "source": "buildml/dashboard/academy_curriculum/stage_05.py",
+      "line": 107
+    },
+    {
+      "slug": "effect-shapes",
+      "field": "why",
+      "section": "why_it_matters",
+      "paragraph": "Direction and non-linearity matter for trust and debugging.",
+      "source": "buildml/dashboard/academy_curriculum/stage_05.py",
+      "line": 80
+    },
+    {
+      "slug": "evaluation-partitions",
+      "field": "what_to_change",
+      "section": "worked_example/what_to_change",
+      "paragraph": "Set sizes; keep test frozen until the final card.",
+      "source": "buildml/dashboard/academy_curriculum/stage_gaps.py",
+      "line": 88
+    },
+    {
+      "slug": "evaluation-partitions",
+      "field": "why",
+      "section": "why_it_matters",
+      "paragraph": "Once test results influence model choices, that test set no longer provides an independent final evaluation.",
+      "source": "buildml/dashboard/academy_curriculum/stage_gaps.py",
+      "line": 68
+    },
+    {
+      "slug": "feature-importance-methods",
+      "field": "what_to_change",
+      "section": "worked_example/what_to_change",
+      "paragraph": "Choose partition; do not treat importance as causality.",
+      "source": "buildml/dashboard/academy_curriculum/stage_05.py",
+      "line": 54
+    },
+    {
+      "slug": "feature-importance-methods",
+      "field": "why",
+      "section": "why_it_matters",
+      "paragraph": "Stakeholders will ask 'why'; answer with model attributions + caveats.",
+      "source": "buildml/dashboard/academy_curriculum/stage_05.py",
+      "line": 32
+    },
+    {
+      "slug": "feature-scaling",
+      "field": "what_to_change",
+      "section": "worked_example/what_to_change",
+      "paragraph": "Choose standard vs minmax; exclude one-hots if you do not want them scaled.",
+      "source": "buildml/dashboard/academy_curriculum/stage_02.py",
+      "line": 345
+    },
+    {
+      "slug": "feature-scaling",
+      "field": "why",
+      "section": "why_it_matters",
+      "paragraph": "Unscaled ranges let large-unit features dominate penalties and distances.",
+      "source": "buildml/dashboard/academy_curriculum/stage_02.py",
+      "line": 334
+    },
+    {
+      "slug": "feature-selection",
+      "field": "what_to_change",
+      "section": "worked_example/what_to_change",
+      "paragraph": "Set k/threshold; prefer model-based selection inside nested CV when high stakes.",
+      "source": "buildml/dashboard/academy_curriculum/stage_gaps.py",
+      "line": 197
+    },
+    {
+      "slug": "feature-selection",
+      "field": "why",
+      "section": "why_it_matters",
+      "paragraph": "Full-frame selection leaks test structure into the feature set.",
+      "source": "buildml/dashboard/academy_curriculum/stage_gaps.py",
+      "line": 181
+    },
+    {
+      "slug": "group-structure",
+      "field": "pitfalls",
+      "section": "pitfalls",
+      "paragraph": "Stratifying labels while still leaking groups across folds.",
+      "source": "buildml/dashboard/academy_curriculum/stage_03.py",
+      "line": 328
+    },
+    {
+      "slug": "group-structure",
+      "field": "what_to_change",
+      "section": "worked_example/what_to_change",
+      "paragraph": "Set the group key; ensure no entity appears in both train and test.",
+      "source": "buildml/dashboard/academy_curriculum/stage_03.py",
+      "line": 327
+    },
+    {
+      "slug": "group-structure",
+      "field": "why",
+      "section": "why_it_matters",
+      "paragraph": "Entity leakage inflates scores and fails on new entities.",
+      "source": "buildml/dashboard/academy_curriculum/stage_03.py",
+      "line": 300
+    },
+    {
+      "slug": "handoff-and-monitoring",
+      "field": "why",
+      "section": "why_it_matters",
+      "paragraph": "Unmonitored models decay silently.",
+      "source": "buildml/dashboard/academy_curriculum/stage_05.py",
+      "line": 193
+    },
+    {
+      "slug": "interaction-effects",
+      "field": "what_to_change",
+      "section": "worked_example/what_to_change",
+      "paragraph": "Choose candidate pairs from domain knowledge; validate in CV.",
+      "source": "buildml/dashboard/academy_curriculum/stage_02.py",
+      "line": 278
+    },
+    {
+      "slug": "interaction-effects",
+      "field": "why",
+      "section": "why_it_matters",
+      "paragraph": "Dropping low-MI features can delete the partner of an interaction.",
+      "source": "buildml/dashboard/academy_curriculum/stage_02.py",
+      "line": 254
+    },
+    {
+      "slug": "join-integrity",
+      "field": "why",
+      "section": "why_it_matters",
+      "paragraph": "Fan-out duplicates overweight entities; failed matches create MNAR-looking gaps.",
+      "source": "buildml/dashboard/academy_curriculum/stage_01.py",
+      "line": 681
+    },
+    {
+      "slug": "leakage",
+      "field": "what_to_change",
+      "section": "worked_example/what_to_change",
+      "paragraph": "Remove post-outcome features; keep transform fit order after split.",
+      "source": "buildml/dashboard/academy_curriculum/stage_03.py",
+      "line": 234
+    },
+    {
+      "slug": "leakage",
+      "field": "why",
+      "section": "why_it_matters",
+      "paragraph": "Leakage is the most common way to fool yourself with tabular ML.",
+      "source": "buildml/dashboard/academy_curriculum/stage_03.py",
+      "line": 202
+    },
+    {
+      "slug": "learning-curves-and-capacity",
+      "field": "pitfalls",
+      "section": "pitfalls",
+      "paragraph": "Reading a single end-point score as capacity diagnosis.",
+      "source": "buildml/dashboard/academy_curriculum/stage_05.py",
+      "line": 140
+    },
+    {
+      "slug": "learning-curves-and-capacity",
+      "field": "technical",
+      "section": "technical_depth",
+      "paragraph": "session.learning_curve(estimator) varies training size under CV.",
+      "source": "buildml/dashboard/academy_curriculum/stage_05.py",
+      "line": 121
+    },
+    {
+      "slug": "learning-curves-and-capacity",
+      "field": "what_to_change",
+      "section": "worked_example/what_to_change",
+      "paragraph": "Compare a weak and a strong model family's curves.",
+      "source": "buildml/dashboard/academy_curriculum/stage_05.py",
+      "line": 139
+    },
+    {
+      "slug": "learning-curves-and-capacity",
+      "field": "why",
+      "section": "why_it_matters",
+      "paragraph": "Collecting more data is expensive - curves tell you if it pays.",
+      "source": "buildml/dashboard/academy_curriculum/stage_05.py",
+      "line": 122
+    },
+    {
+      "slug": "metric-selection",
+      "field": "what_to_change",
+      "section": "worked_example/what_to_change",
+      "paragraph": "Set the primary metric to match business cost; ignore vanity metrics.",
+      "source": "buildml/dashboard/academy_curriculum/stage_04.py",
+      "line": 122
+    },
+    {
+      "slug": "metric-selection",
+      "field": "why",
+      "section": "why_it_matters",
+      "paragraph": "Leaderboards without a decision metric produce pretty but useless winners.",
+      "source": "buildml/dashboard/academy_curriculum/stage_04.py",
+      "line": 97
+    },
+    {
+      "slug": "mi-vs-correlation",
+      "field": "what_to_change",
+      "section": "worked_example/what_to_change",
+      "paragraph": "Do not discard features solely because Pearson is near zero.",
+      "source": "buildml/dashboard/academy_curriculum/stage_gaps.py",
+      "line": 274
+    },
+    {
+      "slug": "mi-vs-correlation",
+      "field": "why",
+      "section": "why_it_matters",
+      "paragraph": "Choosing only Pearson misses curved signal; choosing only MI misses signed linear redundancy.",
+      "source": "buildml/dashboard/academy_curriculum/stage_gaps.py",
+      "line": 256
+    },
+    {
+      "slug": "model-selection",
+      "field": "technical",
+      "section": "technical_depth",
+      "paragraph": "Use session.compare_models on validation data, or grid_search and nested_cv_score with an appropriate cross-validation strategy.",
+      "source": "buildml/dashboard/academy_curriculum/stage_gaps.py",
+      "line": 213
+    },
+    {
+      "slug": "model-selection",
+      "field": "what_to_change",
+      "section": "worked_example/what_to_change",
+      "paragraph": "Fix primary metric; prefer validation/nested designs for selection.",
+      "source": "buildml/dashboard/academy_curriculum/stage_gaps.py",
+      "line": 236
+    },
+    {
+      "slug": "model-selection",
+      "field": "why",
+      "section": "why_it_matters",
+      "paragraph": "Unprincipled search overfits the selection procedure itself.",
+      "source": "buildml/dashboard/academy_curriculum/stage_gaps.py",
+      "line": 214
+    },
+    {
+      "slug": "multiclass-and-averaging",
+      "field": "pitfalls",
+      "section": "pitfalls",
+      "paragraph": "Reporting only overall accuracy for multiclass.",
+      "source": "buildml/dashboard/academy_curriculum/stage_04.py",
+      "line": 318
+    },
+    {
+      "slug": "multiclass-and-averaging",
+      "field": "plain",
+      "section": "what_it_means",
+      "paragraph": "With more than two classes, 'average' metrics hide per-class failures unless you specify micro/macro/weighted.",
+      "source": "buildml/dashboard/academy_curriculum/stage_04.py",
+      "line": 304
+    },
+    {
+      "slug": "multiclass-and-averaging",
+      "field": "technical",
+      "section": "technical_depth",
+      "paragraph": "Declare averaging and inspect per-class recalls before shipping.",
+      "source": "buildml/dashboard/academy_curriculum/stage_04.py",
+      "line": 305
+    },
+    {
+      "slug": "multiclass-and-averaging",
+      "field": "what_to_change",
+      "section": "worked_example/what_to_change",
+      "paragraph": "Pick micro/macro/weighted deliberately; monitor worst class.",
+      "source": "buildml/dashboard/academy_curriculum/stage_04.py",
+      "line": 317
+    },
+    {
+      "slug": "multiclass-and-averaging",
+      "field": "why",
+      "section": "why_it_matters",
+      "paragraph": "Macro-averages punish ignoring rare classes; micro can hide them.",
+      "source": "buildml/dashboard/academy_curriculum/stage_04.py",
+      "line": 306
+    },
+    {
+      "slug": "multiple-comparisons",
+      "field": "pitfalls",
+      "section": "pitfalls",
+      "paragraph": "Mining all slices then reporting the best as confirmatory.",
+      "source": "buildml/dashboard/academy_curriculum/stage_03.py",
+      "line": 515
+    },
+    {
+      "slug": "multiple-comparisons",
+      "field": "plain",
+      "section": "what_it_means",
+      "paragraph": "Look at enough slices and something will look significant by chance.",
+      "source": "buildml/dashboard/academy_curriculum/stage_03.py",
+      "line": 499
+    },
+    {
+      "slug": "multiple-comparisons",
+      "field": "technical",
+      "section": "technical_depth",
+      "paragraph": "Pre-register primary metrics; treat other slices as exploratory.",
+      "source": "buildml/dashboard/academy_curriculum/stage_03.py",
+      "line": 500
+    },
+    {
+      "slug": "multiple-comparisons",
+      "field": "what_to_change",
+      "section": "worked_example/what_to_change",
+      "paragraph": "Pre-declare primary metric and primary segment.",
+      "source": "buildml/dashboard/academy_curriculum/stage_03.py",
+      "line": 514
+    },
+    {
+      "slug": "multiple-comparisons",
+      "field": "why",
+      "section": "why_it_matters",
+      "paragraph": "P-hacking via dashboard clicking invents false readiness.",
+      "source": "buildml/dashboard/academy_curriculum/stage_03.py",
+      "line": 501
+    },
+    {
+      "slug": "mutual-information",
+      "field": "what_to_change",
+      "section": "worked_example/what_to_change",
+      "paragraph": "Tune k / method; always select inside training folds.",
+      "source": "buildml/dashboard/academy_curriculum/stage_02.py",
+      "line": 190
+    },
+    {
+      "slug": "mutual-information",
+      "field": "why",
+      "section": "why_it_matters",
+      "paragraph": "Catches non-linear dependence that correlation misses.",
+      "source": "buildml/dashboard/academy_curriculum/stage_02.py",
+      "line": 172
+    },
+    {
+      "slug": "nested-and-multivalued",
+      "field": "pitfalls",
+      "section": "pitfalls",
+      "paragraph": "Exploding lists without re-aggregating to the modeling grain.",
+      "source": "buildml/dashboard/academy_curriculum/stage_01.py",
+      "line": 885
+    },
+    {
+      "slug": "nested-and-multivalued",
+      "field": "what_to_change",
+      "section": "worked_example/what_to_change",
+      "paragraph": "Flatten nested fields with a documented aggregation grain.",
+      "source": "buildml/dashboard/academy_curriculum/stage_01.py",
+      "line": 884
+    },
+    {
+      "slug": "nested-and-multivalued",
+      "field": "why",
+      "section": "why_it_matters",
+      "paragraph": "Feeding raw JSON strings teaches token noise, not structure.",
+      "source": "buildml/dashboard/academy_curriculum/stage_01.py",
+      "line": 862
+    },
+    {
+      "slug": "nested-validation",
+      "field": "pitfalls",
+      "section": "pitfalls",
+      "paragraph": "Reporting inner-CV best scores as final performance.",
+      "source": "buildml/dashboard/academy_curriculum/stage_03.py",
+      "line": 467
+    },
+    {
+      "slug": "nested-validation",
+      "field": "plain",
+      "section": "what_it_means",
+      "paragraph": "When you tune, you need an outer score that never saw the tuning choices.",
+      "source": "buildml/dashboard/academy_curriculum/stage_03.py",
+      "line": 446
+    },
+    {
+      "slug": "nested-validation",
+      "field": "technical",
+      "section": "technical_depth",
+      "paragraph": "session.nested_cv_score separates inner selection from outer evaluation.",
+      "source": "buildml/dashboard/academy_curriculum/stage_03.py",
+      "line": 447
+    },
+    {
+      "slug": "nested-validation",
+      "field": "what_to_change",
+      "section": "worked_example/what_to_change",
+      "paragraph": "Set param grids narrowly; escalate compute only when needed.",
+      "source": "buildml/dashboard/academy_curriculum/stage_03.py",
+      "line": 466
+    },
+    {
+      "slug": "nested-validation",
+      "field": "why",
+      "section": "why_it_matters",
+      "paragraph": "Tuning on the same CV you report optimistically biases the metric.",
+      "source": "buildml/dashboard/academy_curriculum/stage_03.py",
+      "line": 448
+    },
+    {
+      "slug": "non-linearity-and-binning",
+      "field": "pitfalls",
+      "section": "pitfalls",
+      "paragraph": "Binning using target-aware edges on the full frame.",
+      "source": "buildml/dashboard/academy_curriculum/stage_02.py",
+      "line": 401
+    },
+    {
+      "slug": "non-linearity-and-binning",
+      "field": "plain",
+      "section": "what_it_means",
+      "paragraph": "When effect shapes bend, binning or non-linear models beat forcing a straight line.",
+      "source": "buildml/dashboard/academy_curriculum/stage_02.py",
+      "line": 387
+    },
+    {
+      "slug": "non-linearity-and-binning",
+      "field": "technical",
+      "section": "technical_depth",
+      "paragraph": "session.bin(...) is train-fitted. Edges chosen on test are leakage.",
+      "source": "buildml/dashboard/academy_curriculum/stage_02.py",
+      "line": 388
+    },
+    {
+      "slug": "non-linearity-and-binning",
+      "field": "what_to_change",
+      "section": "worked_example/what_to_change",
+      "paragraph": "Tune n_bins / strategy; prefer model non-linearity when possible.",
+      "source": "buildml/dashboard/academy_curriculum/stage_02.py",
+      "line": 400
+    },
+    {
+      "slug": "non-linearity-and-binning",
+      "field": "why",
+      "section": "why_it_matters",
+      "paragraph": "Linear coefficients hide thresholds and U-shapes.",
+      "source": "buildml/dashboard/academy_curriculum/stage_02.py",
+      "line": 389
+    },
+    {
+      "slug": "outlier-screens",
+      "field": "what_to_change",
+      "section": "worked_example/what_to_change",
+      "paragraph": "Choose detect vs cap vs drop per column with domain owners.",
+      "source": "buildml/dashboard/academy_curriculum/stage_03.py",
+      "line": 395
+    },
+    {
+      "slug": "outlier-screens",
+      "field": "why",
+      "section": "why_it_matters",
+      "paragraph": "Blind dropping can erase the minority class you want to detect.",
+      "source": "buildml/dashboard/academy_curriculum/stage_03.py",
+      "line": 381
+    },
+    {
+      "slug": "overfitting",
+      "field": "pitfalls",
+      "section": "pitfalls",
+      "paragraph": "Growing model complexity to chase a single holdout.",
+      "source": "buildml/dashboard/academy_curriculum/stage_gaps.py",
+      "line": 162
+    },
+    {
+      "slug": "overfitting",
+      "field": "what_to_change",
+      "section": "worked_example/what_to_change",
+      "paragraph": "Constrain capacity; use nested CV when searching.",
+      "source": "buildml/dashboard/academy_curriculum/stage_gaps.py",
+      "line": 161
+    },
+    {
+      "slug": "overfitting",
+      "field": "why",
+      "section": "why_it_matters",
+      "paragraph": "The demo metric that only works on train is a liability.",
+      "source": "buildml/dashboard/academy_curriculum/stage_gaps.py",
+      "line": 140
+    },
+    {
+      "slug": "pipeline-order",
+      "field": "plain",
+      "section": "what_it_means",
+      "paragraph": "Order matters: split -> impute -> encode -> scale -> select -> model.",
+      "source": "buildml/dashboard/academy_curriculum/stage_03.py",
+      "line": 411
+    },
+    {
+      "slug": "pipeline-order",
+      "field": "what_to_change",
+      "section": "worked_example/what_to_change",
+      "paragraph": "Insert select_features / handle_outliers where your recipe needs them - still after split.",
+      "source": "buildml/dashboard/academy_curriculum/stage_03.py",
+      "line": 435
+    },
+    {
+      "slug": "pipeline-order",
+      "field": "why",
+      "section": "why_it_matters",
+      "paragraph": "Wrong order leaks or invents impossible states.",
+      "source": "buildml/dashboard/academy_curriculum/stage_03.py",
+      "line": 416
+    },
+    {
+      "slug": "precision-and-heaping",
+      "field": "what_to_change",
+      "section": "worked_example/what_to_change",
+      "paragraph": "Choose keep / deliberate binning; never silent jitter without documenting.",
+      "source": "buildml/dashboard/academy_curriculum/stage_01.py",
+      "line": 841
+    },
+    {
+      "slug": "precision-and-heaping",
+      "field": "why",
+      "section": "why_it_matters",
+      "paragraph": "Models can learn rounding artifacts as if they were causal thresholds.",
+      "source": "buildml/dashboard/academy_curriculum/stage_01.py",
+      "line": 819
+    },
+    {
+      "slug": "ranking-curves",
+      "field": "pitfalls",
+      "section": "pitfalls",
+      "paragraph": "Boasting ROC-AUC at 0.5% prevalence without PR.",
+      "source": "buildml/dashboard/academy_curriculum/stage_04.py",
+      "line": 294
+    },
+    {
+      "slug": "ranking-curves",
+      "field": "plain",
+      "section": "what_it_means",
+      "paragraph": "ROC and PR curves show ranking quality across thresholds; PR is often kinder to reality under imbalance.",
+      "source": "buildml/dashboard/academy_curriculum/stage_04.py",
+      "line": 277
+    },
+    {
+      "slug": "ranking-curves",
+      "field": "technical",
+      "section": "technical_depth",
+      "paragraph": "Prefer PR when positives are rare; ROC can look optimistic.",
+      "source": "buildml/dashboard/academy_curriculum/stage_04.py",
+      "line": 278
+    },
+    {
+      "slug": "ranking-curves",
+      "field": "what_to_change",
+      "section": "worked_example/what_to_change",
+      "paragraph": "Choose ROC vs PR from prevalence and costs.",
+      "source": "buildml/dashboard/academy_curriculum/stage_04.py",
+      "line": 293
+    },
+    {
+      "slug": "ranking-curves",
+      "field": "why",
+      "section": "why_it_matters",
+      "paragraph": "Threshold-free ranking metrics still must match the decision.",
+      "source": "buildml/dashboard/academy_curriculum/stage_04.py",
+      "line": 279
+    },
+    {
+      "slug": "reproducibility",
+      "field": "pitfalls",
+      "section": "pitfalls",
+      "paragraph": "Resetting seeds until the metric looks good.",
+      "source": "buildml/dashboard/academy_curriculum/stage_03.py",
+      "line": 545
+    },
+    {
+      "slug": "reproducibility",
+      "field": "plain",
+      "section": "what_it_means",
+      "paragraph": "If you cannot rerun it, you cannot trust it. Seeds, package versions, and data pins matter.",
+      "source": "buildml/dashboard/academy_curriculum/stage_03.py",
+      "line": 525
+    },
+    {
+      "slug": "reproducibility",
+      "field": "technical",
+      "section": "technical_depth",
+      "paragraph": "Pass random_state through split/encode/search; checkpoint sessions; record BuildML/engine versions from the sheet kicker.",
+      "source": "buildml/dashboard/academy_curriculum/stage_03.py",
+      "line": 527
+    },
+    {
+      "slug": "reproducibility",
+      "field": "what_to_change",
+      "section": "worked_example/what_to_change",
+      "paragraph": "Fix seeds; pin data snapshot ids; log package versions.",
+      "source": "buildml/dashboard/academy_curriculum/stage_03.py",
+      "line": 544
+    },
+    {
+      "slug": "reproducibility",
+      "field": "why",
+      "section": "why_it_matters",
+      "paragraph": "Irreproducible wins are not wins.",
+      "source": "buildml/dashboard/academy_curriculum/stage_03.py",
+      "line": 530
+    },
+    {
+      "slug": "residual-diagnostics",
+      "field": "plain",
+      "section": "what_it_means",
+      "paragraph": "Residuals show where the model systematically fails - not just how wrong on average.",
+      "source": "buildml/dashboard/academy_curriculum/stage_04.py",
+      "line": 328
+    },
+    {
+      "slug": "residual-diagnostics",
+      "field": "technical",
+      "section": "technical_depth",
+      "paragraph": "For regression, plot residual vs predicted and vs key features; check heteroscedasticity.",
+      "source": "buildml/dashboard/academy_curriculum/stage_04.py",
+      "line": 329
+    },
+    {
+      "slug": "residual-diagnostics",
+      "field": "what_to_change",
+      "section": "worked_example/what_to_change",
+      "paragraph": "Investigate structured residual patterns before adding complexity.",
+      "source": "buildml/dashboard/academy_curriculum/stage_04.py",
+      "line": 345
+    },
+    {
+      "slug": "residual-diagnostics",
+      "field": "why",
+      "section": "why_it_matters",
+      "paragraph": "Good RMSE can hide large structured mistakes in a segment.",
+      "source": "buildml/dashboard/academy_curriculum/stage_04.py",
+      "line": 330
+    },
+    {
+      "slug": "sample-size-and-power",
+      "field": "pitfalls",
+      "section": "pitfalls",
+      "paragraph": "Claiming 0.01 AUC gains on 40 positives.",
+      "source": "buildml/dashboard/academy_curriculum/stage_03.py",
+      "line": 489
+    },
+    {
+      "slug": "sample-size-and-power",
+      "field": "plain",
+      "section": "what_it_means",
+      "paragraph": "Small n makes every metric noisy. Fancy models do not create information.",
+      "source": "buildml/dashboard/academy_curriculum/stage_03.py",
+      "line": 477
+    },
+    {
+      "slug": "sample-size-and-power",
+      "field": "technical",
+      "section": "technical_depth",
+      "paragraph": "With rare positives, effective sample size is the minority count, not n.",
+      "source": "buildml/dashboard/academy_curriculum/stage_03.py",
+      "line": 478
+    },
+    {
+      "slug": "sample-size-and-power",
+      "field": "what_to_change",
+      "section": "worked_example/what_to_change",
+      "paragraph": "Compute minority class counts; set minimums before complex search.",
+      "source": "buildml/dashboard/academy_curriculum/stage_03.py",
+      "line": 488
+    },
+    {
+      "slug": "sample-size-and-power",
+      "field": "why",
+      "section": "why_it_matters",
+      "paragraph": "Underpowered comparisons crown lucky winners.",
+      "source": "buildml/dashboard/academy_curriculum/stage_03.py",
+      "line": 479
+    },
+    {
+      "slug": "shift-taxonomy",
+      "field": "pitfalls",
+      "section": "pitfalls",
+      "paragraph": "Calling every change 'drift' without a type.",
+      "source": "buildml/dashboard/academy_curriculum/stage_03.py",
+      "line": 576
+    },
+    {
+      "slug": "shift-taxonomy",
+      "field": "read_steps",
+      "section": "how_to_read",
+      "paragraph": "Compare feature dists vs label rates vs calibration.",
+      "source": "buildml/dashboard/academy_curriculum/stage_03.py",
+      "line": 578
+    },
+    {
+      "slug": "shift-taxonomy",
+      "field": "what_to_change",
+      "section": "worked_example/what_to_change",
+      "paragraph": "Map monitoring signals to shift type and playbooks.",
+      "source": "buildml/dashboard/academy_curriculum/stage_03.py",
+      "line": 575
+    },
+    {
+      "slug": "shift-taxonomy",
+      "field": "why",
+      "section": "why_it_matters",
+      "paragraph": "Retraining on more data does not fix concept drift if the world rewrote the rules.",
+      "source": "buildml/dashboard/academy_curriculum/stage_03.py",
+      "line": 563
+    },
+    {
+      "slug": "skew-and-transforms",
+      "field": "what_to_change",
+      "section": "worked_example/what_to_change",
+      "paragraph": "Pick skewed columns; prefer monotone transforms; validate on train folds.",
+      "source": "buildml/dashboard/academy_curriculum/stage_02.py",
+      "line": 114
+    },
+    {
+      "slug": "skew-and-transforms",
+      "field": "why",
+      "section": "why_it_matters",
+      "paragraph": "Tail leverage warps linear models and some scalers.",
+      "source": "buildml/dashboard/academy_curriculum/stage_02.py",
+      "line": 81
+    },
+    {
+      "slug": "slice-evaluation",
+      "field": "pitfalls",
+      "section": "pitfalls",
+      "paragraph": "Only reporting the global mean metric.",
+      "source": "buildml/dashboard/academy_curriculum/stage_04.py",
+      "line": 400
+    },
+    {
+      "slug": "slice-evaluation",
+      "field": "plain",
+      "section": "what_it_means",
+      "paragraph": "Overall metrics can look fine while one segment fails. Slice evaluation is mandatory for trust.",
+      "source": "buildml/dashboard/academy_curriculum/stage_04.py",
+      "line": 381
+    },
+    {
+      "slug": "slice-evaluation",
+      "field": "technical",
+      "section": "technical_depth",
+      "paragraph": "session.error_slices(...) and fairness evaluations quantify segment gaps.",
+      "source": "buildml/dashboard/academy_curriculum/stage_04.py",
+      "line": 382
+    },
+    {
+      "slug": "slice-evaluation",
+      "field": "what_to_change",
+      "section": "worked_example/what_to_change",
+      "paragraph": "Pre-declare critical slices (region, channel, cohort).",
+      "source": "buildml/dashboard/academy_curriculum/stage_04.py",
+      "line": 399
+    },
+    {
+      "slug": "slice-evaluation",
+      "field": "why",
+      "section": "why_it_matters",
+      "paragraph": "Hidden segment failure is how models harm people and businesses.",
+      "source": "buildml/dashboard/academy_curriculum/stage_04.py",
+      "line": 383
+    },
+    {
+      "slug": "sparsity-and-dimensionality",
+      "field": "pitfalls",
+      "section": "pitfalls",
+      "paragraph": "One-hotting high-card columns on small n.",
+      "source": "buildml/dashboard/academy_curriculum/stage_02.py",
+      "line": 513
+    },
+    {
+      "slug": "sparsity-and-dimensionality",
+      "field": "plain",
+      "section": "what_it_means",
+      "paragraph": "When features approach or exceed rows, models memorise noise unless constrained.",
+      "source": "buildml/dashboard/academy_curriculum/stage_02.py",
+      "line": 493
+    },
+    {
+      "slug": "sparsity-and-dimensionality",
+      "field": "technical",
+      "section": "technical_depth",
+      "paragraph": "Watch rows-per-feature, one-hot width, and regularisation / selection.",
+      "source": "buildml/dashboard/academy_curriculum/stage_02.py",
+      "line": 494
+    },
+    {
+      "slug": "sparsity-and-dimensionality",
+      "field": "what_to_change",
+      "section": "worked_example/what_to_change",
+      "paragraph": "Cap one-hot width; select/regularise; prefer simpler models when n is small.",
+      "source": "buildml/dashboard/academy_curriculum/stage_02.py",
+      "line": 512
+    },
+    {
+      "slug": "sparsity-and-dimensionality",
+      "field": "why",
+      "section": "why_it_matters",
+      "paragraph": "Over-wide matrices overfit and make holdout scores fragile.",
+      "source": "buildml/dashboard/academy_curriculum/stage_02.py",
+      "line": 495
+    },
+    {
+      "slug": "stratification",
+      "field": "pitfalls",
+      "section": "pitfalls",
+      "paragraph": "Stratifying on a rare category until the split becomes infeasible.",
+      "source": "buildml/dashboard/academy_curriculum/stage_03.py",
+      "line": 112
+    },
+    {
+      "slug": "stratification",
+      "field": "technical",
+      "section": "technical_depth",
+      "paragraph": "session.split(stratify=True) stratifies on the target when classification.",
+      "source": "buildml/dashboard/academy_curriculum/stage_03.py",
+      "line": 99
+    },
+    {
+      "slug": "stratification",
+      "field": "what_to_change",
+      "section": "worked_example/what_to_change",
+      "paragraph": "Stratify on target; only add secondary strata if levels are thick enough.",
+      "source": "buildml/dashboard/academy_curriculum/stage_03.py",
+      "line": 111
+    },
+    {
+      "slug": "stratification",
+      "field": "why",
+      "section": "why_it_matters",
+      "paragraph": "Unstratified tiny positives make metrics lottery tickets.",
+      "source": "buildml/dashboard/academy_curriculum/stage_03.py",
+      "line": 100
+    },
+    {
+      "slug": "target-distribution",
+      "field": "pitfalls",
+      "section": "pitfalls",
+      "paragraph": "Transforming y without inverting for reporting.",
+      "source": "buildml/dashboard/academy_curriculum/stage_04.py",
+      "line": 79
+    },
+    {
+      "slug": "target-distribution",
+      "field": "plain",
+      "section": "what_it_means",
+      "paragraph": "Know the shape of y: class mix for classification, centre/spread/tails for regression.",
+      "source": "buildml/dashboard/academy_curriculum/stage_04.py",
+      "line": 67
+    },
+    {
+      "slug": "target-distribution",
+      "field": "technical",
+      "section": "technical_depth",
+      "paragraph": "Target screens in EDA summarise y; modeling choices should cite them.",
+      "source": "buildml/dashboard/academy_curriculum/stage_04.py",
+      "line": 68
+    },
+    {
+      "slug": "target-distribution",
+      "field": "what_to_change",
+      "section": "worked_example/what_to_change",
+      "paragraph": "For regression, consider log-target only with domain justification.",
+      "source": "buildml/dashboard/academy_curriculum/stage_04.py",
+      "line": 78
+    },
+    {
+      "slug": "target-distribution",
+      "field": "why",
+      "section": "why_it_matters",
+      "paragraph": "Metrics and transforms depend on y's shape.",
+      "source": "buildml/dashboard/academy_curriculum/stage_04.py",
+      "line": 69
+    },
+    {
+      "slug": "temporal-structure",
+      "field": "plain",
+      "section": "what_it_means",
+      "paragraph": "When rows are ordered in time, random splits let the future train the past.",
+      "source": "buildml/dashboard/academy_curriculum/stage_03.py",
+      "line": 251
+    },
+    {
+      "slug": "temporal-structure",
+      "field": "what_to_change",
+      "section": "worked_example/what_to_change",
+      "paragraph": "Set the time column and cutpoints; consider gap between train and test.",
+      "source": "buildml/dashboard/academy_curriculum/stage_03.py",
+      "line": 281
+    },
+    {
+      "slug": "temporal-structure",
+      "field": "why",
+      "section": "why_it_matters",
+      "paragraph": "Random splits can place later observations in training and earlier observations in evaluation, which may not represent the intended forecasting task.",
+      "source": "buildml/dashboard/academy_curriculum/stage_03.py",
+      "line": 256
+    },
+    {
+      "slug": "thresholds-and-costs",
+      "field": "technical",
+      "section": "technical_depth",
+      "paragraph": "session.tune_threshold(...) searches operating points on a validation partition.",
+      "source": "buildml/dashboard/academy_curriculum/stage_04.py",
+      "line": 137
+    },
+    {
+      "slug": "thresholds-and-costs",
+      "field": "what_to_change",
+      "section": "worked_example/what_to_change",
+      "paragraph": "Set costs / capacity constraints; tune on validation, freeze for test.",
+      "source": "buildml/dashboard/academy_curriculum/stage_04.py",
+      "line": 158
+    },
+    {
+      "slug": "thresholds-and-costs",
+      "field": "why",
+      "section": "why_it_matters",
+      "paragraph": "0.5 is rarely the right cut.",
+      "source": "buildml/dashboard/academy_curriculum/stage_04.py",
+      "line": 138
+    },
+    {
+      "slug": "time-feature-engineering",
+      "field": "pitfalls",
+      "section": "pitfalls",
+      "paragraph": "Using label-time calendar fields as predictors.",
+      "source": "buildml/dashboard/academy_curriculum/stage_02.py",
+      "line": 483
+    },
+    {
+      "slug": "time-feature-engineering",
+      "field": "plain",
+      "section": "what_it_means",
+      "paragraph": "Calendar parts and lags are features only if they would be known at prediction time.",
+      "source": "buildml/dashboard/academy_curriculum/stage_02.py",
+      "line": 460
+    },
+    {
+      "slug": "time-feature-engineering",
+      "field": "technical",
+      "section": "technical_depth",
+      "paragraph": "session.extract_dates builds calendar fields; lags need careful as-of joins.",
+      "source": "buildml/dashboard/academy_curriculum/stage_02.py",
+      "line": 461
+    },
+    {
+      "slug": "time-feature-engineering",
+      "field": "what_to_change",
+      "section": "worked_example/what_to_change",
+      "paragraph": "Only extract parts known at score time; build lags with as-of discipline.",
+      "source": "buildml/dashboard/academy_curriculum/stage_02.py",
+      "line": 482
+    },
+    {
+      "slug": "time-feature-engineering",
+      "field": "why",
+      "section": "why_it_matters",
+      "paragraph": "Future-looking time features are classic leakage.",
+      "source": "buildml/dashboard/academy_curriculum/stage_02.py",
+      "line": 462
+    },
+    {
+      "slug": "train-serve-parity",
+      "field": "pitfalls",
+      "section": "pitfalls",
+      "paragraph": "Re-implementing preprocessing by hand in the serve path.",
+      "source": "buildml/dashboard/academy_curriculum/stage_gaps.py",
+      "line": 318
+    },
+    {
+      "slug": "train-serve-parity",
+      "field": "what_to_change",
+      "section": "worked_example/what_to_change",
+      "paragraph": "Point artifacts at your registry; pin versions; test parity on a golden batch.",
+      "source": "buildml/dashboard/academy_curriculum/stage_gaps.py",
+      "line": 317
+    },
+    {
+      "slug": "train-serve-parity",
+      "field": "why",
+      "section": "why_it_matters",
+      "paragraph": "Train-serve skew is a top cause of 'it worked in the notebook' failures.",
+      "source": "buildml/dashboard/academy_curriculum/stage_gaps.py",
+      "line": 297
+    },
+    {
+      "slug": "uncertainty-intervals",
+      "field": "pitfalls",
+      "section": "pitfalls",
+      "paragraph": "Showing +/-sigma from training residuals as if it were predictive uncertainty.",
+      "source": "buildml/dashboard/academy_curriculum/stage_04.py",
+      "line": 371
+    },
+    {
+      "slug": "uncertainty-intervals",
+      "field": "plain",
+      "section": "what_it_means",
+      "paragraph": "A point prediction without uncertainty invites overconfident decisions.",
+      "source": "buildml/dashboard/academy_curriculum/stage_04.py",
+      "line": 356
+    },
+    {
+      "slug": "uncertainty-intervals",
+      "field": "technical",
+      "section": "technical_depth",
+      "paragraph": "Use probabilistic models / calibration / quantile approaches when stakes require intervals. session.learn('probabilistic-uncertainty') introduces the vocabulary.",
+      "source": "buildml/dashboard/academy_curriculum/stage_04.py",
+      "line": 358
+    },
+    {
+      "slug": "uncertainty-intervals",
+      "field": "what_to_change",
+      "section": "worked_example/what_to_change",
+      "paragraph": "Choose interval method matching stake level.",
+      "source": "buildml/dashboard/academy_curriculum/stage_04.py",
+      "line": 370
+    },
+    {
+      "slug": "uncertainty-intervals",
+      "field": "why",
+      "section": "why_it_matters",
+      "paragraph": "Capacity planning needs ranges, not bravado.",
+      "source": "buildml/dashboard/academy_curriculum/stage_04.py",
+      "line": 361
+    },
+    {
+      "slug": "univariate-distributions",
+      "field": "what_to_change",
+      "section": "worked_example/what_to_change",
+      "paragraph": "Swap the column you inspect; compare several features before modeling.",
+      "source": "buildml/dashboard/academy_curriculum/stage_02.py",
+      "line": 56
+    },
+    {
+      "slug": "univariate-distributions",
+      "field": "why",
+      "section": "why_it_matters",
+      "paragraph": "Shape drives transforms, outlier policy, and model family choice.",
+      "source": "buildml/dashboard/academy_curriculum/stage_02.py",
+      "line": 45
+    },
+    {
+      "slug": "variance-inflation",
+      "field": "what_to_change",
+      "section": "worked_example/what_to_change",
+      "paragraph": "Pick threshold; drop/ignore one column at a time; recompute VIF.",
+      "source": "buildml/dashboard/academy_curriculum/stage_02.py",
+      "line": 230
+    },
+    {
+      "slug": "variance-inflation",
+      "field": "why",
+      "section": "why_it_matters",
+      "paragraph": "Interpretation collapses under collinearity; trees care less.",
+      "source": "buildml/dashboard/academy_curriculum/stage_02.py",
+      "line": 215
+    }
+  ],
+  "sequence_controls": [
+    {
+      "slug": "problem-framing",
+      "field": "plain",
+      "paragraphs": [
+        "Before you open a notebook, write the decision the model is supposed to support. A prediction without a decision is a report, not a product.",
+        "Plain version: say who will use the score, when they see it, and what they will do differently if the score is high versus low."
+      ],
+      "source": "buildml/dashboard/academy_curriculum/stage_00.py",
+      "line": 27
+    },
+    {
+      "slug": "problem-framing",
+      "field": "technical",
+      "paragraphs": [
+        "Problem framing fixes the prediction target, the decision horizon, the action space, and the cost of errors. EDA numbers only become evidence after those choices are explicit.",
+        "BuildML treats framing as a teaching and readiness concern: diagnostics can describe the frame, but they cannot invent the business decision."
+      ],
+      "source": "buildml/dashboard/academy_curriculum/stage_00.py",
+      "line": 32
+    },
+    {
+      "slug": "problem-framing",
+      "field": "why",
+      "paragraphs": [
+        "The same CSV supports many incompatible tasks; framing picks one.",
+        "Metrics, splits, and leakage rules all depend on when the outcome is known.",
+        "Without framing, 'good accuracy' is meaningless."
+      ],
+      "source": "buildml/dashboard/academy_curriculum/stage_00.py",
+      "line": 38
+    },
+    {
+      "slug": "problem-framing",
+      "field": "what_to_change",
+      "paragraphs": [
+        "After running the demonstration, replace the synthetic frame with your dataset and update the roles.",
+        "Rewrite the decision comment: user, action, horizon, and cost of mistakes.",
+        "If unsupervised, omit target and use session.learn('cluster-validity-not-truth') instead."
+      ],
+      "source": "buildml/dashboard/academy_curriculum/stage_00.py",
+      "line": 84
+    },
+    {
+      "slug": "problem-framing",
+      "field": "pitfalls",
+      "paragraphs": [
+        "Starting EDA before writing the decision the score will change.",
+        "Treating 'predict churn' as framing when the real question is 'whom to call this week'.",
+        "Changing the target definition after model selection without restarting validation."
+      ],
+      "source": "buildml/dashboard/academy_curriculum/stage_00.py",
+      "line": 89
+    },
+    {
+      "slug": "problem-framing",
+      "field": "read_steps",
+      "paragraphs": [
+        "Write the decision, horizon, and action space in plain language.",
+        "Name the label column and when it becomes known relative to prediction time.",
+        "List which error is worse (false positive vs false negative, or over- vs under-prediction)."
+      ],
+      "source": "buildml/dashboard/academy_curriculum/stage_00.py",
+      "line": 98
+    }
+  ]
+}

@@ -56,6 +56,8 @@ def fit_imitation_op(
     action_column: str | None = None,
     env_id: str | None = None,
     n_epochs: int = 40,
+    total_timesteps: int = 8_000,
+    allow_variable_horizon: bool = False,
     random_state: int | None = 0,
     prefer_reduce_components: bool = True,
 ) -> Any:
@@ -86,6 +88,11 @@ def fit_imitation_op(
         Optional Gymnasium environment id for env-backed demos.
     n_epochs:
         Training epochs for torch BC backend.
+    total_timesteps:
+        Requested GAIL budget, rounded by PPO to rollout batches.
+    allow_variable_horizon:
+        Explicitly accept variable episode lengths and reward-leakage risk for
+        GAIL. Defaults to refusing such trajectories.
     random_state:
         Seed for stochastic training steps.
     prefer_reduce_components:
@@ -113,6 +120,8 @@ def fit_imitation_op(
         action_column=action_column,
         env_id=env_id,
         n_epochs=n_epochs,
+        total_timesteps=total_timesteps,
+        allow_variable_horizon=allow_variable_horizon,
         random_state=random_state,
         prefer_reduce_components=prefer_reduce_components,
         reduce_plan=getattr(session, "_reduce_plan", None),
@@ -132,6 +141,8 @@ def fit_imitation_op(
             "action_column": action_column,
             "env_id": env_id,
             "n_epochs": n_epochs,
+            "total_timesteps": total_timesteps,
+            "allow_variable_horizon": allow_variable_horizon,
             "random_state": random_state,
             "prefer_reduce_components": prefer_reduce_components,
         },
@@ -323,7 +334,7 @@ def fit_rl_op(
     *,
     backend: str | None = None,
     mode: RlMode | None = None,
-    algorithm: BanditAlgorithm | str = "linucb",
+    algorithm: BanditAlgorithm | str | None = None,
     columns: list[str] | None = None,
     action_column: str | None = None,
     reward_column: str | None = None,
@@ -357,7 +368,7 @@ def fit_rl_op(
     mode:
         RL mode (``contextual_bandit`` or gym-style modes).
     algorithm:
-        Bandit or policy algorithm identifier.
+        Bandit or policy algorithm identifier. Omit it to use the mode's default.
     columns:
         Optional state feature columns for bandit mode.
     action_column:
@@ -409,7 +420,7 @@ def fit_rl_op(
     _backend, resolved_mode, _algo = resolve_rl_backend_mode_algorithm(
         backend=backend,  # type: ignore[arg-type]
         mode=mode,
-        algorithm=str(algorithm),
+        algorithm=algorithm,
     )
     if resolved_mode == "contextual_bandit":
         session.assert_can_fit("train")

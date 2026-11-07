@@ -1,0 +1,11 @@
+# AutoGluon 1.6 uses PyArrow <25; isolate it from the expanded PyArrow 26 profile.
+-e .[optuna]
+autogluon.tabular[lightgbm]==1.6.0
+pandas==2.3.3
+numpy==2.5.4
+scipy==1.18.1
+scikit-learn==1.9.1
+pyarrow==24.0.0
+lightgbm==4.7.0
+pytest>=7.4
+pytest-cov>=7.0

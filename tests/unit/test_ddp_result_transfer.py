@@ -1,6 +1,7 @@
 """The parent can use trained tensors after spawned DDP workers exit."""
 
 import dataclasses
+import sys
 
 import pytest
 
@@ -24,8 +25,9 @@ def test_spawned_ddp_returns_usable_model_and_history():
         "    assert output.shape == (3, 2)",
         "    assert torch.isfinite(output).all()",
     ])
-    result = execute(dataclasses.replace(example, source=source), timeout=180)
-    assert result["status"] == "passed", result
+    result = execute(dataclasses.replace(example, source=source), timeout=600, max_output_chars=64000)
+    if result["status"] != "passed":
+        pytest.fail(str(result), pytrace=False)
 
 
 @pytest.mark.parametrize("settings", [
@@ -49,7 +51,8 @@ def test_adaptive_ddp_rejected_before_launch(monkeypatch, settings):
                 ddp_config=ddp.DDPConfig(multi_node=multi_node),
             )
 
-def test_validation_with_buffers_completes_on_all_ranks():
+def test_validation_with_buffers_completes_on_all_ranks(monkeypatch):
+    monkeypatch.setenv("BUILDML_DDP_TRACE", "1")
     torch = pytest.importorskip("torch")
     if not torch.distributed.is_available() or not torch.distributed.is_gloo_available():
         pytest.skip("This Torch build has no Gloo backend")
@@ -59,8 +62,100 @@ def test_validation_with_buffers_completes_on_all_ranks():
     )
     source = example.source.replace(
         "return torch.nn.Linear(4, 2)",
-        "return torch.nn.Sequential(torch.nn.BatchNorm1d(4), torch.nn.Linear(4, 2))",
+        "atexit.register(_report_gloo_threads)\n    return torch.nn.Sequential(torch.nn.BatchNorm1d(4), torch.nn.Linear(4, 2))",
     ).replace("test_size=0.2, stratify=True", "test_size=0.2, validation_size=0.2, stratify=True")
+    source = '''import atexit
+import sys
+from pathlib import Path
+def _report_gloo_threads():
+    if not sys.platform.startswith('linux'):
+        return
+    names = []
+    for path in Path('/proc/self/task').glob('*/comm'):
+        try:
+            names.append(path.read_text().strip())
+        except OSError:
+            pass
+    print('BuildML Gloo exit threads='+str(sum(name.startswith('pt_gloo') for name in names)),
+          file=sys.stderr, flush=True)
+''' + source
     source += "\nif __name__ == '__main__':\n    assert result.train_result.history[0]['val_loss'] >= 0\n"
-    result = execute(dataclasses.replace(example, source=source), timeout=180)
-    assert result["status"] == "passed", result
+    source += "    assert result.meta['start_method'] == ('forkserver' if sys.platform.startswith('linux') else 'spawn')\n"
+    source += "    assert not torch.multiprocessing.active_children()\n"
+    result = execute(dataclasses.replace(example, source=source), timeout=600, max_output_chars=64000)
+    if result["status"] != "passed":
+        pytest.fail(str(result), pytrace=False)
+    for rank in (0, 1):
+        phases = [line.rsplit("phase=", 1)[1] for line in result["stderr"].splitlines()
+                  if line.startswith(f"BuildML DDP rank={rank} phase=")]
+        expected = ["initializing", "initialized", "training", "trained"]
+        if rank == 0:
+            expected.append("result_saved")
+        expected.extend(["releasing_training_state", "training_state_released",
+                         "destroying_process_group", "process_group_destroyed", "returning"])
+        assert phases == expected
+    if sys.platform.startswith('linux'):
+        exits = [line for line in result['stderr'].splitlines()
+                 if line.startswith('BuildML Gloo exit threads=')]
+        # Forkserver workers use multiprocessing's normal exit path, without
+        # CPython atexit finalization. The main-script assertions above verify
+        # the launcher choice and that every worker was joined.
+        assert exits == [], result['stderr']
+    print(result["stderr"])
+
+
+def test_spawn_payload_does_not_consume_or_replace_caller_generator(monkeypatch):
+    torch = pytest.importorskip("torch")
+    import pandas as pd
+
+    from buildml import Session
+    from buildml.dl import ddp
+    from buildml.dl.loaders import make_loaders
+    from buildml.dl.types import TrainConfig
+
+    session = Session.ingest(pd.DataFrame({"x": range(40), "y": [0, 1] * 20})).set_roles({"y": "target"})
+    session.split(test_size=.2, random_state=3)
+    bundle = make_loaders(session.dataset, session.split_plan, task="classification")
+    original_loader = bundle.loaders["train"]
+    original_generator = original_loader.generator
+    original_state = original_generator.get_state().clone()
+
+    class CapturedLaunch(Exception):
+        pass
+
+    def capture(function, *, args, nprocs, join, start_method):
+        payload = args[5]
+        assert payload is not bundle
+        assert payload.loaders["train"] is not original_loader
+        assert payload.loaders["train"].dataset is original_loader.dataset
+        assert payload.loaders["train"].batch_size == original_loader.batch_size
+        assert payload.loaders["train"].generator is None
+        assert payload.loaders["test"] is bundle.loaders["test"]
+        assert nprocs == 2 and join
+        assert start_method == ('forkserver' if sys.platform.startswith('linux') else 'spawn')
+        raise CapturedLaunch
+
+    monkeypatch.setattr(ddp, "ddp_cuda_device_count", lambda: 0)
+    monkeypatch.setattr(torch.multiprocessing, "start_processes", capture)
+    with pytest.raises(CapturedLaunch):
+        ddp.train_supervised_module_ddp(
+            lambda: torch.nn.Linear(1, 2), bundle,
+            config=TrainConfig(epochs=1, device="cpu"),
+            ddp_config=ddp.DDPConfig(world_size=2, allow_cpu_ddp=True),
+        )
+    assert bundle.loaders["train"] is original_loader
+    assert original_loader.generator is original_generator
+    assert torch.equal(original_generator.get_state(), original_state)
+
+
+def test_worker_factory_failure_is_not_reported_as_success():
+    torch = pytest.importorskip('torch')
+    if not torch.distributed.is_available() or not torch.distributed.is_gloo_available():
+        pytest.skip('This Torch build has no Gloo backend')
+    example = next(example for example in inventory([ROOT/'buildml/dl/ddp.py'])
+                   if 'result = train_supervised_module_ddp(' in example.source)
+    source = example.source.replace('return torch.nn.Linear(4, 2)',
+        "raise RuntimeError('deliberate rank factory failure')")
+    result = execute(dataclasses.replace(example, source=source), timeout=600, max_output_chars=64000)
+    assert result['status'] == 'failed' and result['exit_code'] != 0
+    assert 'deliberate rank factory failure' in result['stderr']

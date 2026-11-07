@@ -54,10 +54,6 @@ def test_resolve_backend_metric_defaults() -> None:
 
 
 def test_resolve_industry_requires_ann_when_missing() -> None:
-    if windows_industry_ann_refused():
-        with pytest.raises(ValidationError, match="Windows"):
-            resolve_backend_metric(backend="industry", metric="euclidean")
-        return
     if cbr_industry_available():
         backend, metric = resolve_backend_metric(backend="industry", metric="euclidean")
         assert backend == "industry"
@@ -72,22 +68,25 @@ def test_windows_default_backend_stays_sklearn(monkeypatch: pytest.MonkeyPatch) 
         "buildml.cbr.catalog.windows_industry_ann_refused", lambda: True
     )
     monkeypatch.setattr("buildml.cbr.catalog.cbr_industry_available", lambda: True)
+    monkeypatch.setattr("buildml.cbr.extras.cbr_industry_available", lambda: True)
     assert _default_backend_when_installed() == "sklearn"
     backend, metric = resolve_backend_metric(backend=None, metric="euclidean")
     assert backend == "sklearn"
     assert metric == "euclidean"
-    with pytest.raises(ValidationError, match="Windows"):
-        resolve_backend_metric(backend="industry", metric="euclidean")
+    assert resolve_backend_metric(backend="industry", metric="euclidean")[0] == "industry"
 
 
-@pytest.mark.skipif(sys.platform != "win32", reason="Windows-only refuse")
-def test_windows_explicit_industry_refused_without_opt_in(
+@pytest.mark.skipif(sys.platform != "win32", reason="Windows-only isolation routing contract")
+def test_windows_explicit_industry_uses_isolation_without_opt_in(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.delenv(WINDOWS_INDUSTRY_ANN_ENV, raising=False)
     assert windows_industry_ann_refused() is True
-    with pytest.raises(ValidationError, match="Windows"):
-        resolve_backend_metric(backend="industry", metric="euclidean")
+    if cbr_industry_available():
+        assert resolve_backend_metric(backend="industry", metric="euclidean")[0] == "industry"
+    else:
+        with pytest.raises(MissingExtraError):
+            resolve_backend_metric(backend="industry", metric="euclidean")
 
 
 def test_windows_explicit_torch_refused(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -103,10 +102,6 @@ def test_embedding_requires_text_columns() -> None:
         resolve_backend_metric(backend="embedding", metric="cosine", text_columns=None)
 
 
-@pytest.mark.skipif(
-    windows_industry_ann_refused(),
-    reason="industry ANN refused on Windows unless BUILDML_ALLOW_CBR_INDUSTRY_WINDOWS=1",
-)
 @pytest.mark.skipif(not hnswlib_available(), reason="hnswlib not installed")
 def test_industry_session_path() -> None:
     session = (

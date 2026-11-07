@@ -242,6 +242,9 @@ def resolve_backend_estimator(
     """
     from buildml.core.errors import MissingExtraError, ValidationError
 
+    if backend is not None and backend not in ('sklearn', 'industry', 'torch'):
+        raise ValidationError(f"Unknown backend {backend!r}; choose from ('sklearn', 'industry', 'torch').")
+
     est_key = str(estimator).lower().replace("-", "_")
     resolved_backend: OnlineBackendName
     if backend is None:

@@ -165,17 +165,18 @@ def static_check(source: str) -> dict:
     return {"status": "undefined-names" if missing else "static-pass", "undefined_names": sorted(missing)}
 
 
-def execute(example: Example, timeout: int) -> dict:
+def execute(example: Example, timeout: int, *, max_output_chars: int = 8000) -> dict:
     """Run exactly the authored source in its own process and working directory."""
     with tempfile.TemporaryDirectory(prefix="buildml-doc-example-") as directory:
         script = Path(directory) / "example.py"
         script.write_text(python_source(example), encoding="utf-8")
-        env = {**os.environ, "PYTHONPATH": str(ROOT), "MPLBACKEND": "Agg", "LOKY_MAX_CPU_COUNT": "2", "PYTHONIOENCODING": "utf-8"}
+        python_path = os.pathsep.join(filter(None, (str(ROOT), os.environ.get("PYTHONPATH"))))
+        env = {**os.environ, "PYTHONPATH": python_path, "MPLBACKEND": "Agg", "LOKY_MAX_CPU_COUNT": "2", "PYTHONIOENCODING": "utf-8"}
         try:
             result = subprocess.run([sys.executable, str(script)], cwd=directory, env=env, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=timeout)
         except subprocess.TimeoutExpired:
             return {"status": "timeout", "seconds": timeout}
-        return {"status": "passed" if result.returncode == 0 else "failed", "exit_code": result.returncode, "stdout": result.stdout[-8000:], "stderr": result.stderr[-8000:]}
+        return {"status": "passed" if result.returncode == 0 else "failed", "exit_code": result.returncode, "stdout": result.stdout[-max_output_chars:], "stderr": result.stderr[-max_output_chars:]}
 
 
 def main() -> int:

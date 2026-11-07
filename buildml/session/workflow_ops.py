@@ -47,7 +47,8 @@ def dry_run(
     operation:
         One operation name, several names to preview as a sequence, or
         ``None`` for an overview of what is currently available and what is
-        blocked, with the reason for each block.
+        blocked, with the reason for each block. Flat and facade paths such as
+        ``classical.evaluate`` resolve to canonical operation names in the report.
     parameters:
         The arguments you intend to pass, so the preview reflects your
         specific call rather than the defaults. Applies to a
@@ -60,15 +61,13 @@ def dry_run(
         are met, what it would change, and any warnings. Also stored on
         :attr:`last_dry_run`.
 
-    Raises
-    ------
-    ~buildml.core.errors.ValidationError
-        A named operation is not one BuildML knows.
-
     Notes
     -----
     Dry-run does not fit, transform, or append history. Availability means
     API prerequisites pass, not that the operation is appropriate.
+    Unknown operation names appear as blocked steps with ``status='unknown'``.
+    Previously completed steps are blocked when current requirements are absent,
+    including a model that was not restored by checkpoint loading.
 
     That distinction matters. A dry run confirms that :meth:`split` *can*
     run; it cannot tell you that :meth:`group_split` is the one your data

@@ -139,21 +139,29 @@ def encode_classification_targets(
         raise ValidationError(
             "Symbolic classification requires non-null train targets."
         )
-    values = y.astype(str)
+    values = y.to_numpy()
     encoder = LabelEncoder()
-    if classes is not None:
-        encoder.fit([str(c) for c in classes])
+    try:
+        encoder.fit(pd.Series(classes).to_numpy() if classes is not None else values)
+    except (TypeError, ValueError) as exc:
+        raise ValidationError("Symbolic class labels must use a consistent supported label type.") from exc
+    if not pd.Series(values).isin(encoder.classes_).all():
+        raise ValidationError("Symbolic class labels do not match the declared vocabulary.")
+    try:
         codes = encoder.transform(values)
-    else:
-        codes = encoder.fit_transform(values)
-    return np.asarray(codes), encoder, tuple(encoder.classes_)
+    except (TypeError, ValueError) as exc:
+        raise ValidationError("Symbolic class labels do not match the declared vocabulary.") from exc
+    encoder._buildml_raw_class_labels_ = True
+    classes_out = tuple(value.item() if isinstance(value, np.generic) else value for value in encoder.classes_)
+    return np.asarray(codes), encoder, classes_out
 
 
 def decode_predictions(pred_codes: np.ndarray, label_encoder: Any) -> list[Any]:
-    """Map integer class codes back toward original label dtypes.
+    """Map integer class codes back to raw labels for new encoders.
 
     Reverses the train-fitted encoder so Session predict results use familiar
-    label values rather than internal codes.
+    label values rather than internal codes. Unmarked legacy encoders retain
+    their original numeric-guessing behavior for persisted-model compatibility.
 
     Parameters
     ----------
@@ -169,6 +177,8 @@ def decode_predictions(pred_codes: np.ndarray, label_encoder: Any) -> list[Any]:
     """
     codes = np.asarray(pred_codes).astype(int)
     decoded = label_encoder.inverse_transform(codes)
+    if getattr(label_encoder, "_buildml_raw_class_labels_", False):
+        return [value.item() if isinstance(value, np.generic) else value for value in decoded]
     out: list[Any] = []
     for value in decoded:
         text = str(value)
@@ -235,16 +245,21 @@ def train_partition_frame(
     return frame_for_partition(dataset, split_plan, "train")
 
 
-def classification_accuracy(y_true: Sequence[Any], y_pred: Sequence[Any]) -> float:
-    """Compute holdout accuracy with string-normalized label comparison.
+def classification_accuracy(
+    y_true: Sequence[Any], y_pred: Sequence[Any], *, legacy_labels: bool = False
+) -> float:
+    """Compute accuracy without conflating strings with numeric labels.
 
     Shared by evaluate and fit reporting so classification scores stay
-    consistent when labels mix strings and numeric encodings.
+    consistent. Legacy plans may explicitly retain string normalization.
 
     Parameters
     ----------
     y_true, y_pred:
         Parallel label sequences.
+    legacy_labels:
+        Preserve string-normalized comparisons for plans fitted before raw
+        class identity was recorded. New fits use raw label comparisons.
 
     Returns
     -------
@@ -253,7 +268,12 @@ def classification_accuracy(y_true: Sequence[Any], y_pred: Sequence[Any]) -> flo
     """
     if len(y_true) == 0:
         return float("nan")
-    match = sum(str(a) == str(b) for a, b in zip(y_true, y_pred, strict=True))
+    match = sum(
+        str(a) == str(b) if legacy_labels else (
+            isinstance(a, str) == isinstance(b, str) and a == b
+        )
+        for a, b in zip(y_true, y_pred, strict=True)
+    )
     return float(match) / float(len(y_true))
 
 

@@ -96,7 +96,8 @@ def fit_online(
     n_init:
         Init chunk size; defaults to ``chunk_size`` when ``None``.
     indices:
-        Optional explicit train-partition indices for the init chunk.
+        Optional explicit dataset row positions from the train partition for
+        the init chunk. Pandas index labels do not define split membership.
     classes:
         Full label vocabulary for classifiers (discovered from train if omitted).
     prefer_reduce_components:
@@ -192,7 +193,7 @@ def fit_online(
                     "discover classes= (or pass classes= explicitly). "
                     "NaN targets belong to active/semi-supervised pools."
                 )
-            class_vocab = tuple(sorted(train_y.astype(str).unique().tolist()))
+            class_vocab = tuple(train_y.unique().tolist())
             disclosures.append(
                 "Classifier classes_ discovered from the full train target "
                 "vocabulary before streaming chunks (labels only; features from "

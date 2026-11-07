@@ -45,9 +45,9 @@ def evaluate_causal(
 
     Notes
     -----
-    Holdout rows are **never** used to refit nuisances. Metrics describe
-    predictive calibration of outcome / propensity models and the estimator
-    applied out-of-sample; they do **not** prove identification. Causal
+    Native and EconML holdout scores reuse train-fitted nuisances. DoWhy is a
+    fresh backdoor estimate fitted on the requested partition. These describe
+    different evaluation procedures; they do **not** prove identification. Causal
     claims still rest entirely on the declared :class:`CausalAssumptions`.
 
     Parameters
@@ -157,15 +157,8 @@ def evaluate_causal(
             clip_propensity=plan.clip_propensity,
         )
     elif backend == "dowhy":
-        from buildml.causal.adapters.dowhy import estimate_dowhy_partition
-
-        ate, extras = estimate_dowhy_partition(
-            plan,
-            dataset,
-            split_plan,
-            partition=resolved,
-            random_state=getattr(plan, "config", {}).get("random_state"),
-        )
+        # The shared estimate call below performs the partition fit once.
+        extras = {}
         disclosures.append(
             "DoWhy holdout ATE is a fresh backdoor estimate on the partition: "
             "not the train ATE copied forward."

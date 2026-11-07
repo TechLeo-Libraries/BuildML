@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from numbers import Integral, Real
 from typing import Any, Literal
 
 import numpy as np
@@ -62,9 +63,10 @@ random_state:
 compute_stability:
     compute stability (bool).
 stability_runs:
-    stability runs (int).
+    Number of train subsamples, at least two when stability is requested.
 stability_sample_fraction:
-    stability sample fraction (float).
+    Finite fraction in (0, 1]; sampling is without replacement. Labels are
+    compared on shared row positions against the first subsample.
 compute_elbow:
     compute elbow (bool).
 elbow_k_min:
@@ -82,6 +84,16 @@ Raises
 ValidationError
     When preconditions for this operation are not met.
     """
+    if compute_stability:
+        if isinstance(stability_runs, (bool, np.bool_)) or not isinstance(stability_runs, Integral) or stability_runs < 2:
+            raise ValidationError("stability_runs must be an integer >= 2.")
+        if (
+            isinstance(stability_sample_fraction, (bool, np.bool_))
+            or not isinstance(stability_sample_fraction, Real)
+            or not np.isfinite(stability_sample_fraction)
+            or not 0 < stability_sample_fraction <= 1
+        ):
+            raise ValidationError("stability_sample_fraction must be finite and in (0, 1].")
     _, assign = assign_clusters(
         dataset, plan, split_plan, partition=partition, attach=False
     )
@@ -192,12 +204,16 @@ ValidationError
                 sample_fraction=float(stability_sample_fraction),
                 random_state=random_state,
             )
-            metrics["stability_ari_mean"] = float(stab["mean"])
-            metrics["stability_ari_std"] = float(stab["std"])
+            diagnostics["stability_comparisons"] = int(stab["comparisons"])
+            if stab["comparisons"]:
+                metrics["stability_ari_mean"] = float(stab["mean"])
+                metrics["stability_ari_std"] = float(stab["std"])
+            else:
+                warnings.append("Stability unavailable: subsamples share fewer than 2 training rows.")
             diagnostics["stability_runs"] = int(stability_runs)
             disclosures.append(
-                "Bootstrap stability uses repeated k-means on train subsamples; "
-                "ARI measures label agreement: not ground truth."
+                "Subsample stability uses repeated k-means on train subsamples; "
+                "ARI compares labels on shared training rows against the first subsample: not ground truth."
             )
         else:
             warnings.append("Stability skipped: insufficient train rows or k for bootstrap.")
@@ -224,8 +240,8 @@ ValidationError
             raise ValidationError(
                 "external_label_column contains nulls; drop or impute before external metrics"
             )
-        ref_codes = pd.Series(ref).astype("object")
-        _, ref_ids = np.unique(ref_codes.to_numpy(), return_inverse=True)
+        # Factorization needs equality/hashability, not ordering between scalars.
+        ref_ids, _ = pd.factorize(ref, sort=False)
         if n_usable < len(labels):
             y_pred = labels[usable_mask]
             y_true = ref_ids[usable_mask]
@@ -235,10 +251,13 @@ ValidationError
         else:
             y_pred = labels
             y_true = ref_ids
-        external["adjusted_rand_index"] = float(adjusted_rand_score(y_true, y_pred))
-        external["normalized_mutual_info"] = float(
-            normalized_mutual_info_score(y_true, y_pred)
-        )
+        if n_usable:
+            external["adjusted_rand_index"] = float(adjusted_rand_score(y_true, y_pred))
+            external["normalized_mutual_info"] = float(
+                normalized_mutual_info_score(y_true, y_pred)
+            )
+        else:
+            warnings.append("External agreement unavailable: no non-noise rows.")
         disclosures.append(
             "External labels were supplied by the caller. Agreement metrics do not "
             "make the fit supervised and do not imply causal structure."
@@ -310,6 +329,7 @@ def _bootstrap_stability(
     size = max(n_clusters + 1, int(n * sample_fraction))
     aris: list[float] = []
     ref_labels: np.ndarray | None = None
+    ref_indices: np.ndarray | None = None
     for _ in range(runs):
         idx = rng.choice(n, size=size, replace=False)
         sub = x[idx]
@@ -317,9 +337,12 @@ def _bootstrap_stability(
         lab = km.fit_predict(sub)
         if ref_labels is None:
             ref_labels = lab
+            ref_indices = idx
             continue
-        # Compare on intersection indices mapped via subsample positions
-        aris.append(float(adjusted_rand_score(ref_labels, lab)))
+        assert ref_indices is not None
+        _, ref_positions, positions = np.intersect1d(ref_indices, idx, return_indices=True)
+        if len(positions) >= 2:
+            aris.append(float(adjusted_rand_score(ref_labels[ref_positions], lab[positions])))
     if not aris:
-        return {"mean": 0.0, "std": 0.0}
-    return {"mean": float(np.mean(aris)), "std": float(np.std(aris))}
+        return {"mean": float("nan"), "std": float("nan"), "comparisons": 0}
+    return {"mean": float(np.mean(aris)), "std": float(np.std(aris)), "comparisons": len(aris)}

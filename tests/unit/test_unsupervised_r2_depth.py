@@ -113,22 +113,24 @@ def test_hdbscan_missing_extra_raises() -> None:
         session.unsupervised.fit(method="hdbscan", n_clusters=None)
 
 
-@pytest.mark.skip(reason="DEC requires working torch runtime; isolated in CI")
-def test_dec_when_torch_installed() -> None:
+@pytest.mark.parametrize("method", ["dec", "idec"])
+def test_dec_when_torch_installed(method: str) -> None:
+    pytest.importorskip("torch")
     session = _ready_session()
-    try:
-        fit = session.fit_clusters(
-            method="dec",
-            n_clusters=3,
-            pretrain_epochs=5,
-            finetune_epochs=5,
-            batch_size=32,
-        )
-    except Exception as exc:
-        pytest.skip(f"torch DEC unavailable: {exc}")
+    holdout = session.partition("test").copy(deep=True)
+    fit = session.fit_clusters(
+        method=method,
+        n_clusters=3,
+        pretrain_epochs=5,
+        finetune_epochs=5,
+        batch_size=32,
+    )
     assert fit.assign_strategy == "native"
     assigned = session.assign_clusters(partition="test")
-    assert assigned.n_rows > 0
+    assert assigned.n_rows == len(holdout)
+    assert len(assigned.labels) == len(holdout)
+    assert set(assigned.labels).issubset({0, 1, 2})
+    pd.testing.assert_frame_equal(session.partition("test"), holdout)
 
 
 @pytest.mark.skipif(importlib.util.find_spec("umap") is None, reason="umap extra")

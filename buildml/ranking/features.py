@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import Any
+from typing import Any, cast
 
 import numpy as np
 import pandas as pd
@@ -79,7 +79,7 @@ def partition_frame(
         When a named partition is requested but ``split_plan`` is ``None``.
     """
     if partition == "all":
-        return dataset.frame.copy()
+        return dataset.to_pandas()
     if split_plan is None:
         raise ValidationError(
             "A SplitPlan is required for partitioned ranker evaluation."
@@ -130,7 +130,7 @@ def resolve_ranking_columns(
     queries across partitions. This path is tabular learning-to-rank, not RAG
     retrieve/generate and not Session recommenders (user–item CF).
     """
-    frame = dataset.frame
+    frame = dataset._ensure_pandas()
     disclosures: list[str] = []
 
     if query_column is None or item_column is None:
@@ -260,7 +260,7 @@ def feature_matrix(frame: pd.DataFrame, feature_columns: Sequence[str]) -> np.nd
     """
     if frame.empty:
         return np.zeros((0, len(feature_columns)), dtype=float)
-    return frame.loc[:, list(feature_columns)].to_numpy(dtype=float)
+    return cast(pd.DataFrame, frame.loc[:, list(feature_columns)]).to_numpy(dtype=float)
 
 
 def standardize_fit(X: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
@@ -379,7 +379,7 @@ def disclose_query_split(
     """
     disclosures: list[str] = []
     warnings: list[str] = []
-    frame = dataset.frame
+    frame = dataset._ensure_pandas()
     train_q = set(frame.iloc[list(split_plan.train_indices)][query_column].tolist())
     test_q = set(frame.iloc[list(split_plan.test_indices)][query_column].tolist())
     valid_q: set[Any] = set()

@@ -214,7 +214,7 @@ def rank_op(
         {
             "partition": partition,
             "query_ids": None if query_ids is None else list(query_ids),
-            "k": k,
+            "k": result.k,
             "backend": backend,
         },
         warnings=tuple(result.warnings),
@@ -265,7 +265,7 @@ def evaluate_ranker_op(
     session._ranker_eval_result = result
     session._record(
         "evaluate_ranker",
-        {"partition": partition, "k": k, "backend": backend},
+        {"partition": partition, "k": result.k, "backend": backend},
         warnings=tuple(result.warnings),
         result_summary=eval_result_summary(result),
     )

@@ -308,25 +308,41 @@ class PolarsEngine:
         """Return the first few rows as pandas.
 
         The limit is applied before collection, so a lazy scan stops early
-        rather than reading everything and slicing.
+        rather than reading everything and slicing. Negative or extremely large
+        counts first execute a row count to preserve positional semantics and
+        avoid the native index-width limit.
 
         Parameters
         ----------
         table:
             A ``DataFrame`` or ``LazyFrame``.
         n:
-            How many rows.
+            Python or NumPy integer count. Negative values return all rows
+            except the final ``abs(n)`` rows; counts beyond the table size clamp
+            to all rows (positive) or no rows (negative).
 
         Returns
         -------
         pandas.DataFrame
             The first ``n`` rows.
 
+        Raises
+        ------
+        ValueError
+            If ``n`` is not an integer or is a boolean.
+
         Notes
         -----
         **Row order is the file's order**, so on sorted or grouped data this
         shows one corner. Use :meth:`sample_rows` for something representative.
         """
+        if not pd.api.types.is_integer(n):
+            raise ValueError("head n must be an integer, excluding booleans")
+        n = int(n)
+        if n < 0:
+            n = max(0, self.n_rows(table) + n)
+        elif n > 2**31 - 1:
+            n = min(n, self.n_rows(table))
         if self._is_lazy(table):
             return table.head(n).collect().to_pandas()
         return table.head(n).to_pandas()
@@ -422,8 +438,9 @@ class PolarsEngine:
         Raises
         ------
         ValueError
-            If the mask length does not match the row count. A mismatch means
-            the mask was built against different data.
+            If a mask element is not a Python or NumPy boolean, or the mask
+            length does not match the row count. A mismatch means the mask was
+            built against different data.
 
         Notes
         -----
@@ -431,12 +448,14 @@ class PolarsEngine:
         :meth:`filter_expr`, where eligible predicates can be pushed into the scan to reduce
         materialisation and, where supported, file reads.
         """
+        if any(not pd.api.types.is_bool(value) for value in mask):
+            raise ValueError("filter mask must contain only boolean values")
         eager = self._collect(table)
         if len(mask) != int(eager.height):
             raise ValueError(
                 f"filter mask length {len(mask)} does not match table rows {eager.height}"
             )
-        return eager.filter(self._pl.Series("_buildml_mask", list(mask)))
+        return eager.filter(self._pl.Series("_buildml_mask", list(mask), dtype=self._pl.Boolean))
 
     def filter_expr(self, table: Any, expression: str) -> Any:
         """Filter with a predicate the optimiser can push into the scan.
@@ -574,7 +593,7 @@ class PolarsEngine:
                 continue
             col = pl.col(column)
             if func == "sum":
-                exprs.append(col.sum().alias(alias))
+                exprs.append(pl.when(col.count() > 0).then(col.sum()).otherwise(None).alias(alias))
             elif func == "mean":
                 exprs.append(col.mean().alias(alias))
             elif func == "min":
@@ -584,7 +603,7 @@ class PolarsEngine:
             elif func == "count":
                 exprs.append(col.count().alias(alias))
             elif func == "n_unique":
-                exprs.append(col.n_unique().alias(alias))
+                exprs.append(col.drop_nulls().n_unique().alias(alias))
             elif func == "std":
                 exprs.append(col.std().alias(alias))
             else:

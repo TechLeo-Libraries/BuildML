@@ -43,7 +43,7 @@ def fit_econml(
     bootstrap_samples: int = 200,
     random_state: int | None = 0,
 ) -> tuple[CausalPlan, CausalFitResult]:
-    """Fit EconML DML / CausalForest / PolicyTree on Session train only.
+    """Fit EconML DML / CausalForest / DRPolicyTree on Session train only.
 
     Fits a declared-backdoor EconML estimator on the train partition, stores
     the fitted object on the plan artifact, and optionally bootstrap-refits for
@@ -78,7 +78,7 @@ def fit_econml(
     """
     require_econml(feature="EconML causal backend")
     from econml.dml import CausalForestDML, LinearDML
-    from econml.policy import PolicyTree
+    from econml.policy import DRPolicyTree
 
     assert_fit_partition(split_plan, "train")
     assert split_plan is not None
@@ -126,18 +126,24 @@ def fit_econml(
             n_estimators=100,
         )
     else:
-        estimator = PolicyTree(
+        # PolicyTree.fit expects per-treatment rewards, not observed Y/T.
+        # DRPolicyTree estimates those rewards using cross-fitted nuisance
+        # models and accepts the observed-outcome API used below.
+        from sklearn.ensemble import GradientBoostingRegressor
+
+        estimator = DRPolicyTree(
+            model_regression=GradientBoostingRegressor(random_state=random_state, n_estimators=100),
+            model_propensity=model_t,
+            max_depth=3,
+            min_samples_leaf=20,
             random_state=random_state,
         )
 
     if method_key == "policy_tree":
         estimator.fit(y, t_codes, X=x)
-        # PolicyTree reports value; approximate ATE via implied treatment effects.
-        policy = estimator.predict(x)
-        treated_effect = float(np.mean(y[t_codes == 1])) if n_treated else 0.0
-        control_effect = float(np.mean(y[t_codes == 0])) if n_control else 0.0
-        ate = treated_effect - control_effect
-        cate_std = None
+        effects = np.asarray(estimator.predict_value(x), dtype=float).reshape(-1)
+        ate = float(np.mean(effects))
+        cate_std = float(np.std(effects, ddof=1)) if len(effects) > 1 else None
     else:
         estimator.fit(y, t_codes, X=x)
         ate = float(np.asarray(estimator.ate(x)).reshape(-1)[0])
@@ -179,6 +185,11 @@ def fit_econml(
         ]
     )
     warnings: list[str] = []
+    effective_bootstrap_samples = int(bootstrap_samples)
+    if method_key == "policy_tree":
+        effective_bootstrap_samples = 0
+        if bootstrap_samples > 0:
+            warnings.append("Policy-tree bootstrap intervals are not implemented; no bootstrap refits were performed.")
     if not assumptions.confounders:
         warnings.append(
             "Empty confounders with allow_empty_confounders=True: "
@@ -192,13 +203,18 @@ def fit_econml(
         )
     elif method_key == "policy_tree":
         disclosures.append(
-            "policy_tree reports a learned assignment rule; ATE shown is a "
-            "simple treated-minus-control mean difference for disclosure."
+            "Policy-tree ATE averages cross-fitted doubly robust treatment-effect "
+            "estimates over the requested population; CATE dispersion describes "
+            "the estimated neighborhood effects. No bootstrap interval is reported."
+        )
+        disclosures.append(
+            "The doubly robust policy tree uses max_depth=3 and min_samples_leaf=20 "
+            "to limit unstable rules from small, noisy leaves."
         )
 
     config = CausalConfig(
         method=method_key,  # type: ignore[arg-type]
-        bootstrap_samples=int(bootstrap_samples),
+        bootstrap_samples=effective_bootstrap_samples,
         random_state=random_state,
     )
     artifact = {
@@ -224,7 +240,7 @@ def fit_econml(
         ate_std=ate_std,
         ate_ci_low=ate_ci_low,
         ate_ci_high=ate_ci_high,
-        bootstrap_samples=int(bootstrap_samples),
+        bootstrap_samples=effective_bootstrap_samples,
         clip_propensity=(0.01, 0.99),
         outcome_model_name="econml",
         propensity_model_name="econml",
@@ -232,7 +248,8 @@ def fit_econml(
         cate_std=cate_std,
         disclosures=tuple(disclosures),
         warnings=tuple(warnings),
-        config={**config.to_dict(), "backend": "econml", "econml_method": method_key},
+        config={**config.to_dict(), "backend": "econml", "econml_method": method_key,
+                "requested_bootstrap_samples": int(bootstrap_samples)},
     )
     result = CausalFitResult(
         method=method_key,
@@ -249,7 +266,7 @@ def fit_econml(
         ate_std=ate_std,
         ate_ci_low=ate_ci_low,
         ate_ci_high=ate_ci_high,
-        bootstrap_samples=int(bootstrap_samples),
+        bootstrap_samples=effective_bootstrap_samples,
         outcome_kind=outcome_kind,
         cate_std=cate_std,
         disclosures=tuple(disclosures),
@@ -350,9 +367,10 @@ def score_econml_partition(
     method = artifact.get("method", plan.method)
     extras: dict[str, float] = {}
     if method == "policy_tree":
-        treated = float(np.mean(y[t == 1])) if int(t.sum()) else 0.0
-        control = float(np.mean(y[t == 0])) if int((1 - t).sum()) else 0.0
-        ate = treated - control
+        effects = np.asarray(estimator.predict_value(x), dtype=float).reshape(-1)
+        ate = float(np.mean(effects))
+        if len(effects) > 1:
+            extras["cate_std"] = float(np.std(effects, ddof=1))
     else:
         ate = float(np.asarray(estimator.ate(x)).reshape(-1)[0])
         if hasattr(estimator, "effect"):

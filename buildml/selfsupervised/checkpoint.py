@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import replace
+from numbers import Integral
 from pathlib import Path
 from typing import Any
 
@@ -212,7 +213,29 @@ def _maybe_restore_torch_state(
     )
 
     state = torch.load(pt_path, map_location="cpu", weights_only=False)
-    method = str(state.get("method", plan.method))
+    if not isinstance(state, dict):
+        raise ValidationError("SSL Torch encoder payload must be a state mapping.")
+    method = state.get("method", plan.method)
+    if method != plan.method:
+        raise ValidationError("SSL Torch encoder method disagrees with the saved plan.")
+    if method in _STATE_RESTORED_METHODS:
+        latent = state.get("latent_dim")
+        names = plan.representation_columns
+        if (isinstance(latent, bool) or not isinstance(latent, Integral) or latent < 1
+                or isinstance(plan.latent_dim, bool) or not isinstance(plan.latent_dim, Integral)
+                or latent != plan.latent_dim
+                or not isinstance(names, (tuple, list)) or len(names) != latent
+                or any(not isinstance(name, str) or not name.strip() for name in names)
+                or len(set(names)) != len(names)):
+            raise ValidationError("SSL Torch latent dimensions and representation columns must agree.")
+    if method in _STATE_RESTORED_METHODS - {"vision_ssl"}:
+        width = state.get("n_features_in_")
+        columns = plan.columns
+        if (isinstance(width, bool) or not isinstance(width, Integral) or width < 1
+                or not isinstance(columns, (tuple, list)) or len(columns) != width
+                or any(not isinstance(name, str) or not name.strip() for name in columns)
+                or len(set(columns)) != len(columns)):
+            raise ValidationError("SSL Torch input dimensions and plan columns must agree.")
     if method in {
         "simclr_tabular",
         "byol_tabular",
@@ -222,7 +245,10 @@ def _maybe_restore_torch_state(
     }:
         from buildml.selfsupervised.torch.encoder import TorchTabularSSLEncoder
 
-        plan.encoder_ = TorchTabularSSLEncoder.from_state_dict(state)
+        try:
+            plan.encoder_ = TorchTabularSSLEncoder.from_state_dict(state)
+        except (KeyError, TypeError, ValueError, RuntimeError) as exc:
+            raise ValidationError("Invalid SSL Torch encoder state or weights.") from exc
     elif method == "vision_ssl":
         from buildml.selfsupervised.torch.vision import VisionSSLEncoder
 

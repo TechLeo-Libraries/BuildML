@@ -119,7 +119,7 @@ class TabularConceptBottleneck:
         torch = require_torch_symbolic()
         self.module_.eval()
         with torch.no_grad():
-            x_t = torch.as_tensor(np.asarray(x, dtype=np.float32), device=self.module_[0].weight.device if hasattr(self.module_[0], "weight") else "cpu")
+            x_t = torch.as_tensor(np.asarray(x, dtype=np.float32), device=next(self.module_.parameters()).device)
             out = self.module_(x_t)
             if self.task == "classification":
                 preds = out.argmax(dim=1).cpu().numpy()

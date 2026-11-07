@@ -32,7 +32,7 @@ buildml.dl.audio : Audio handling and statistics.
 
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass, field, replace
 from pathlib import Path
 from typing import Any, Literal
 
@@ -44,6 +44,7 @@ from buildml.core.types import ColumnRole
 from buildml.data.dataset import Dataset
 from buildml.data.splits import SplitPlan, assert_fit_partition
 from buildml.dl.audio import (
+    _validate_audio_parameters,
     apply_audio_waveform_stats,
     fit_audio_waveform_stats,
     stack_audio_column,
@@ -55,10 +56,15 @@ from buildml.dl.image import (
     fit_image_channel_stats,
     stack_image_column,
 )
-from buildml.dl.labels import encode_class_targets, fit_class_labels
+from buildml.dl.labels import encode_class_targets, fit_class_labels, regression_targets_to_float32
 from buildml.dl.results import LoaderReport, TorchLoaderBundle
 from buildml.dl.text import fit_vocab, texts_to_ids
-from buildml.dl.transforms import apply_standardize, fit_standardize, frame_to_numeric_matrix
+from buildml.dl.transforms import (
+    apply_standardize,
+    fit_standardize,
+    frame_to_numeric_matrix,
+    numeric_matrix_to_float32,
+)
 from buildml.dl.types import FeatureContract
 
 ModalityName = Literal["numeric", "tokens", "image", "audio"]
@@ -943,7 +949,9 @@ def make_multimodal_loaders(
     ValidationError
         If fewer than two modalities are present, if a named column is absent,
         if the image and audio columns are the same, if text inference is
-        ambiguous, if the target is non-numeric or contains ``NaN``, if the
+        ambiguous, if the target is non-numeric or contains ``NaN``, if regression
+        labels are non-finite or overflow float32, if numeric features are
+        non-finite or overflow float32 after preprocessing, if the
         train partition is empty, or if a config value is out of range.
 
     Notes
@@ -998,8 +1006,15 @@ def make_multimodal_loaders(
         raise ValidationError("batch_size must be >= 1")
     if cfg.image_channels not in {1, 3}:
         raise ValidationError("image_channels must be 1 or 3")
-    if cfg.audio_sample_rate < 1 or cfg.audio_max_samples < 1:
-        raise ValidationError("audio_sample_rate and audio_max_samples must be positive")
+    sample_rate, max_samples, source_sample_rate = _validate_audio_parameters(
+        cfg.audio_sample_rate, cfg.audio_max_samples, cfg.audio_source_sample_rate
+    )
+    cfg = replace(
+        cfg,
+        audio_sample_rate=sample_rate,
+        audio_max_samples=max_samples,
+        audio_source_sample_rate=source_sample_rate,
+    )
 
     frozen: MultimodalContract | None = None
     if preprocess is not None:
@@ -1007,6 +1022,21 @@ def make_multimodal_loaders(
             preprocess
             if isinstance(preprocess, MultimodalContract)
             else MultimodalContract.from_dict(preprocess)
+        )
+
+    if frozen is not None:
+        # A saved transform owns its preprocessing choices; runtime settings
+        # control batching without refitting statistics or changing geometry.
+        cfg = replace(
+            cfg,
+            normalize=frozen.normalize_mean is not None,
+            normalize_images=frozen.image_mean is not None,
+            normalize_audio=frozen.audio_mean is not None,
+            image_size=frozen.image_size,
+            image_channels=frozen.image_channels,
+            audio_sample_rate=frozen.audio_sample_rate,
+            audio_max_samples=frozen.audio_max_samples,
+            audio_source_sample_rate=frozen.audio_source_sample_rate,
         )
 
     numeric_cols, text_col, image_col, audio_col, target = _resolve_multimodal_columns(
@@ -1064,6 +1094,8 @@ def make_multimodal_loaders(
     vocab = None
     if has_text:
         assert text_col is not None
+        if frozen is not None and not frozen.vocab:
+            raise ValidationError("Frozen multimodal_preprocess is missing its fitted text vocab.")
         if frozen is not None and frozen.vocab:
             from buildml.dl.text import TextVocab
 
@@ -1176,7 +1208,7 @@ def make_multimodal_loaders(
             x = frame_to_numeric_matrix(part, numeric_cols)
             if cfg.normalize and mean is not None and std is not None:
                 x = apply_standardize(x, mean, std)
-            tensors.append(torch.as_tensor(x, dtype=torch.float32))
+            tensors.append(torch.as_tensor(numeric_matrix_to_float32(x), dtype=torch.float32))
         if has_text:
             assert text_col is not None and vocab is not None
             tokens = texts_to_ids(part[text_col].astype(str).tolist(), vocab)
@@ -1206,11 +1238,7 @@ def make_multimodal_loaders(
             y = encode_class_targets(part[target], class_labels)
             y_t = torch.as_tensor(y, dtype=torch.long)
         else:
-            y = part[target].to_numpy(dtype=np.float64, copy=True)
-            if np.isnan(y).any():
-                raise ValidationError(
-                    "Target contains NaN; clean labels before multimodal loaders"
-                )
+            y = regression_targets_to_float32(part[target])
             y_t = torch.as_tensor(y, dtype=torch.float32).unsqueeze(-1)
         dataset_t = torch.utils.data.TensorDataset(*tensors, y_t)
         shuffle = bool(cfg.shuffle_train and name == "train")

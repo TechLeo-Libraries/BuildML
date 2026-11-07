@@ -43,14 +43,18 @@ def _build_graph(
     treatment: str,
     outcome: str,
     confounders: tuple[str, ...],
-) -> str:
-    lines = ["digraph {"]
+) -> Any:
+    import networkx as nx
+
+    # Native node IDs preserve spaces, quotes and Unicode in column names;
+    # interpolating those names into DOT changes the declared graph.
+    graph = nx.DiGraph()
+    graph.add_nodes_from([treatment, outcome, *confounders])
     for conf in confounders:
-        lines.append(f'  {conf} -> {treatment};')
-        lines.append(f'  {conf} -> {outcome};')
-    lines.append(f'  {treatment} -> {outcome};')
-    lines.append("}")
-    return "\n".join(lines)
+        graph.add_edge(conf, treatment)
+        graph.add_edge(conf, outcome)
+    graph.add_edge(treatment, outcome)
+    return graph
 
 
 def fit_dowhy(

@@ -10,7 +10,11 @@ from buildml.rl.adapters.stable_baselines3 import SB3PolicyWrapper, evaluate_sb3
 
 @pytest.mark.parametrize("action", [np.int64(1), np.array([1]), np.array([[1]])])
 def test_single_action_prediction_and_rollout(action, monkeypatch):
-    model = SimpleNamespace(predict=lambda observation, deterministic: (action, None))
+    def predict(observation, deterministic):
+        assert observation.shape == (1, 4)
+        return action, None
+
+    model = SimpleNamespace(predict=predict)
     policy = SB3PolicyWrapper(model, "example", "ppo", obs_dim=4, n_actions=2)
     assert policy.predict(np.zeros(4)) == (1, None)
     received = []

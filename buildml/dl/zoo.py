@@ -33,6 +33,7 @@ buildml.dl.speech : Transcription, rather than feature extraction.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from numbers import Integral
 from typing import Any, Literal
 
 from buildml.core.errors import MissingExtraError, ValidationError
@@ -246,6 +247,11 @@ def freeze_module(module: Any, *, freeze: bool = True) -> Any:
     torch.nn.Module
         The same module, for chaining.
 
+    Raises
+    ------
+    ValidationError
+        If ``freeze`` is not a Python boolean. Parameters remain unchanged.
+
     Notes
     -----
     **Frozen makes training much faster and much less flexible.** No gradients
@@ -261,6 +267,8 @@ def freeze_module(module: Any, *, freeze: bool = True) -> Any:
     --------
     attach_backbone_head : Where the frozen flag is usually set.
     """
+    if not isinstance(freeze, bool):
+        raise ValidationError("freeze must be a boolean.")
     for param in module.parameters():
         param.requires_grad = not freeze
     return module
@@ -331,7 +339,8 @@ def attach_backbone_head(
     MissingExtraError
         If PyTorch is not installed.
     ValidationError
-        If ``n_classes`` is below 2.
+        If ``n_classes`` is not an integer of at least two, or the freeze
+        override is not a boolean or None.
 
     Notes
     -----
@@ -365,9 +374,11 @@ def attach_backbone_head(
     buildml.dl.train.train_supervised_module : Training the result.
     """
     torch = require_torch(feature="attach backbone head")
-    if n_classes < 2:
-        raise ValidationError("n_classes must be >= 2")
-    should_freeze = backbone.frozen if freeze_backbone is None else bool(freeze_backbone)
+    if isinstance(n_classes, bool) or not isinstance(n_classes, Integral) or n_classes < 2:
+        raise ValidationError("n_classes must be an integer >= 2; booleans and lossy counts are refused.")
+    if freeze_backbone is not None and not isinstance(freeze_backbone, bool):
+        raise ValidationError("freeze_backbone must be a boolean or None.")
+    should_freeze = backbone.frozen if freeze_backbone is None else freeze_backbone
     freeze_module(backbone.module, freeze=should_freeze)
     feature_dim = int(backbone.feature_dim)
     head = torch.nn.Linear(feature_dim, int(n_classes))
@@ -465,7 +476,9 @@ def load_vision_backbone(
     MissingExtraError
         If PyTorch or torchvision is not installed.
     ValidationError
-        If the architecture is not one of the supported names.
+        If the architecture or weight mode is unsupported, ``freeze`` is not
+        a Python boolean, or ``seed`` is not an integer in PyTorch's supported
+        range ``[-2**63, 2**64 - 1]``. Controls are checked before loading.
 
     Notes
     -----
@@ -496,6 +509,7 @@ def load_vision_backbone(
     attach_backbone_head : Making it a classifier.
     buildml.dl.image : Preparing the image tensors.
     """
+    weights, seed = _validate_backbone_controls(weights=weights, freeze=freeze, seed=seed)
     torch = require_torch(feature="vision backbone")
     tv = _require_torchvision()
     warnings: list[str] = []
@@ -594,7 +608,9 @@ def load_audio_backbone(
         If PyTorch or transformers is not installed. Install with
         ``pip install buildml[speech]``.
     ValidationError
-        If the architecture is not one of the supported names.
+        If the architecture or weight mode is unsupported, ``freeze`` is not
+        a Python boolean, or ``seed`` is not an integer in PyTorch's supported
+        range ``[-2**63, 2**64 - 1]``. Controls are checked before loading.
 
     Notes
     -----
@@ -625,6 +641,7 @@ def load_audio_backbone(
     buildml.dl.audio : Preparing waveforms at the right rate.
     load_speech_backbone : Whisper, for transcription-oriented features.
     """
+    weights, seed = _validate_backbone_controls(weights=weights, freeze=freeze, seed=seed)
     require_torch(feature="audio backbone")
     transformers = _require_transformers()
     warnings: list[str] = []
@@ -712,7 +729,9 @@ def load_speech_backbone(
         If PyTorch or transformers is not installed. Install with
         ``pip install buildml[speech]``.
     ValidationError
-        If the architecture is not one of the supported names.
+        If the architecture or weight mode is unsupported, ``freeze`` is not
+        a Python boolean, or ``seed`` is not an integer in PyTorch's supported
+        range ``[-2**63, 2**64 - 1]``. Controls are checked before loading.
 
     Notes
     -----
@@ -742,6 +761,7 @@ def load_speech_backbone(
     buildml.dl.speech : Transcription with the full model.
     load_audio_backbone : Waveform-input alternatives.
     """
+    weights, seed = _validate_backbone_controls(weights=weights, freeze=freeze, seed=seed)
     require_torch(feature="speech backbone")
     transformers = _require_transformers()
     warnings: list[str] = []
@@ -790,11 +810,25 @@ def load_speech_backbone(
 
 
 def _validate_weight_mode(weights: str) -> WeightMode:
-    if weights not in {"none", "mock", "pretrained"}:
+    if not isinstance(weights, str) or weights not in {"none", "mock", "pretrained"}:
         raise ValidationError(
             f"Unsupported weights mode {weights!r}; expected 'none', 'mock', or 'pretrained'."
         )
     return weights  # type: ignore[return-value]
+
+
+def _validate_backbone_controls(
+    *, weights: WeightMode, freeze: bool, seed: int
+) -> tuple[WeightMode, int]:
+    mode = _validate_weight_mode(weights)
+    if not isinstance(freeze, bool):
+        raise ValidationError("freeze must be a boolean.")
+    if isinstance(seed, bool) or not isinstance(seed, Integral):
+        raise ValidationError("seed must be an integer; booleans and lossy values are refused.")
+    normalized_seed = int(seed)
+    if not -(2**63) <= normalized_seed < 2**64:
+        raise ValidationError("seed must be in the PyTorch range [-2**63, 2**64 - 1].")
+    return mode, normalized_seed
 
 
 def load_pretrained_backbone(
@@ -839,7 +873,11 @@ def load_pretrained_backbone(
     MissingExtraError
         If a required provider is not installed.
     ValidationError
-        If the modality, architecture, or weight mode is unrecognised.
+        If the modality, architecture, or weight mode is unrecognised,
+        ``freeze`` is not a Python boolean, or ``seed`` is not an integer in
+        PyTorch's supported range ``[-2**63, 2**64 - 1]``. NumPy integer seeds
+        are accepted and recorded as Python integers; lossy counts and booleans
+        are refused before loading a provider or changing Session state.
 
     Notes
     -----
@@ -863,7 +901,7 @@ def load_pretrained_backbone(
     load_audio_backbone : The audio path, with its caveats.
     load_speech_backbone : The speech path, with its caveats.
     """
-    weights = _validate_weight_mode(weights)
+    weights, seed = _validate_backbone_controls(weights=weights, freeze=freeze, seed=seed)
     if modality == "vision":
         arch = architecture or "resnet18"
         if arch not in _VISION_ARCHS:

@@ -22,9 +22,10 @@ buildml.rag.rerank : The cross-encoder pass.
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, cast
 
 from buildml.core.errors import ValidationError
+from buildml.core.validation import _positive_integer
 from buildml.rag.hybrid import BM25Index, filter_chunks, rrf_fuse, weighted_fuse
 from buildml.rag.index import RagIndex
 from buildml.rag.results import Hit, RetrieveResult
@@ -60,7 +61,15 @@ def _bm25_hits(
     chunks = filter_chunks(index.chunks, filters)
     if not chunks:
         return []
-    bm25 = BM25Index.build(chunks, k1=cfg.bm25_k1, b=cfg.bm25_b)
+    # Older persisted indexes predate this transient cache field.
+    cached = getattr(index, "_bm25_cache", None)
+    if not filters and cached is not None and cached[0] is index.store and cached[1:3] == (cfg.bm25_k1, cfg.bm25_b):
+        bm25 = cast(BM25Index, cached[3])
+    else:
+        bm25 = BM25Index.build(chunks, k1=cfg.bm25_k1, b=cfg.bm25_b)
+        if not filters:
+            # Mutations replace the store; identity invalidates the cached corpus.
+            index._bm25_cache = (index.store, cfg.bm25_k1, cfg.bm25_b, bm25)
     return bm25.query(query, k=k)
 
 
@@ -210,9 +219,10 @@ def retrieve(
     from buildml.rag.defaults import default_retrieve_config
 
     base = config or default_retrieve_config()
+    top_k = _positive_integer(base.k if k is None else k, name="k")
     resolved_mode = mode if mode is not None else base.mode
     cfg = RetrieveConfig(
-        k=base.k if k is None else int(k),
+        k=top_k,
         mode=resolved_mode,
         fusion=fusion or base.fusion,  # type: ignore[arg-type]
         rrf_k=base.rrf_k,
@@ -224,9 +234,6 @@ def retrieve(
         rerank_model=base.rerank_model,
         rerank_candidates=base.rerank_candidates,
     )
-    top_k = int(cfg.k)
-    if top_k <= 0:
-        raise ValidationError(f"k must be positive; got {top_k}")
     if cfg.mode not in {"dense", "bm25", "hybrid"}:
         raise ValidationError(
             f"Unknown retrieve mode {cfg.mode!r}; expected dense, bm25, or hybrid."

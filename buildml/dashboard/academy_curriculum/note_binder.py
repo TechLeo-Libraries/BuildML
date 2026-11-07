@@ -198,7 +198,7 @@ def _session_evidence(key: str, note: Any, ctx: Ctx) -> str:
     # Note-specific live numbers when analyzers speak.
     if key == "missing-data":
         return (
-            f"{base} Completeness≈{fmt_pct(ctx.get('completeness') or 0)} · "
+            f"{base} Completeness≈{fmt_pct(ctx.get('completeness'))} · "
             f"missing cells={fmt_n(ctx.get('missingCells'))} · "
             f"example column={first_missing(ctx)}."
         )
@@ -224,13 +224,14 @@ def _calculation(key: str, note: Any, ctx: Ctx) -> str:
     lines: list[str] = []
 
     if key == "missing-data":
-        cells = max(rows * max(cols, 1), 1)
-        missing = int(ctx.get("missingCells") or 0)
-        comp = ctx.get("completeness")
+        full_rows, full_columns = ctx.get("qualityRows"), ctx.get("qualityColumns")
+        cells = full_rows * full_columns if full_rows is not None and full_columns is not None else None
         lines.append(
-            f"completeness = 1 − missing_cells/(rows×cols) = 1 − {fmt_n(missing)}/{fmt_n(cells)} "
-            f"≈ {fmt_pct(comp if comp is not None else 1 - missing / cells)}"
+            f"Full-frame missing_cells={fmt_n(ctx.get('missingCells'))}, cells={fmt_n(cells)}, "
+            f"completeness={fmt_pct(ctx.get('completeness'))}."
         )
+        if ctx.get("completeness") is None:
+            lines.append("Completeness unavailable; measure full-frame missingness before interpreting it.")
         lines.append(f"Inspect column '{first_missing(ctx)}' before choosing an impute strategy.")
     elif key == "class-imbalance":
         if is_classification(ctx):
@@ -280,7 +281,7 @@ def _calculation(key: str, note: Any, ctx: Ctx) -> str:
         if note.formal_idea:
             lines.append(note.formal_idea)
         lines.append(
-            f"On this session: n={fmt_n(rows)}, p≈{fmt_n(ctx.get('eligible') or cols)}, "
+            f"On this session: n={fmt_n(rows)}, p≈{fmt_n(ctx.get('eligible') if ctx.get('eligible') is not None else cols)}, "
             f"task={ctx.get('task') or 'undeclared'}."
         )
         if apply:

@@ -15,7 +15,11 @@ from buildml.rl.catalog import (
     resolve_rl_backend_mode_algorithm,
     rl_capability_matrix,
 )
-from buildml.rl.extras import gymnasium_available, rl_industry_available
+from buildml.rl.extras import (
+    gymnasium_available,
+    rl_industry_available,
+    stable_baselines3_available,
+)
 
 
 def test_capability_matrix_shape() -> None:
@@ -52,7 +56,9 @@ def test_resolve_sklearn_defaults() -> None:
     assert rb == "sklearn" and mode == "contextual_bandit" and algo == "linucb"
 
 
-@pytest.mark.skipif(not rl_industry_available(), reason="buildml[rl-industry] not installed")
+@pytest.mark.skipif(
+    not (gymnasium_available() and stable_baselines3_available()), reason="Gymnasium/SB3 not installed"
+)
 def test_sb3_cartpole_smoke() -> None:
     session = (
         Session.ingest(pd.DataFrame({"a": [0.0, 1.0], "y": [0, 1]}))
@@ -110,8 +116,8 @@ def test_industry_bc_mlp_smoke() -> None:
 
 
 def test_industry_missing_extra() -> None:
-    if rl_industry_available():
-        pytest.skip("rl-industry installed")
+    if gymnasium_available() and stable_baselines3_available():
+        pytest.skip("Gymnasium/SB3 runtime installed; imitation is not required for gym_sb3")
     session = (
         Session.ingest(pd.DataFrame({"a": [0.0, 1.0], "y": [0, 1]}))
         .set_roles({"a": "feature", "y": "target"})

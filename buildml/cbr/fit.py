@@ -21,6 +21,7 @@ buildml.cbr.evaluate.evaluate_cbr : Evaluating on held-out rows.
 
 from __future__ import annotations
 
+from numbers import Real
 from typing import Any
 
 import numpy as np
@@ -44,6 +45,7 @@ from buildml.cbr.results import CbrFitResult, CbrPlan
 from buildml.cbr.retrieval_build import build_search_artifacts
 from buildml.cbr.types import CbrAdaptMode, CbrBackend, CbrMetric, CbrReuseMode, CbrTask
 from buildml.core.errors import ValidationError
+from buildml.core.validation import _positive_integer
 from buildml.data.dataset import Dataset
 from buildml.data.splits import SplitPlan, assert_fit_partition
 
@@ -202,10 +204,15 @@ def fit_cbr(
     assert_fit_partition(split_plan, "train")
     assert split_plan is not None
 
-    if int(k) < 1:
-        raise ValidationError("k must be >= 1.")
-    if float(distance_eps) <= 0:
-        raise ValidationError("distance_eps must be > 0.")
+    k = _positive_integer(k, name="k")
+    if isinstance(distance_eps, bool) or not isinstance(distance_eps, Real):
+        raise ValidationError("distance_eps must be a finite, positive number.")
+    try:
+        distance_eps = float(distance_eps)
+    except (OverflowError, TypeError, ValueError) as exc:
+        raise ValidationError("distance_eps must be a finite, positive number.") from exc
+    if not np.isfinite(distance_eps) or distance_eps <= 0:
+        raise ValidationError("distance_eps must be a finite, positive number.")
 
     metric_key = str(metric).lower().replace("-", "_")
     text_cols_tuple = tuple(text_columns or ())

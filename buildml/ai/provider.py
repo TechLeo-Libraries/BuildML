@@ -633,8 +633,8 @@ class OpenAIProvider:
         ------
         ValidationError
             If the request fails: network, authentication, rate limit, or
-            malformed request. The original is chained, with any occurrence of
-            the API key masked.
+            malformed request. The API key is masked and the original exception
+            is suppressed from the public traceback.
 
         Notes
         -----
@@ -693,7 +693,7 @@ class OpenAIProvider:
             error_msg = str(exc)
             if self.config.api_key and self.config.api_key in error_msg:
                 error_msg = error_msg.replace(self.config.api_key, _KEY_MASK)
-            raise ValidationError(f"Provider request failed: {error_msg}") from exc
+            raise ValidationError(f"Provider request failed: {error_msg}") from None
 
         choice = response.choices[0]
         content = choice.message.content or ""

@@ -108,6 +108,13 @@ runs.
 Heads: `logistic_regression`, `random_forest`, `ridge`,
 `hist_gradient_boosting`, or `none`. Task is inferred when `task=None`.
 
+Classification retains the original scalar labels through prediction and bundle
+replay: `"001"` remains text, and boolean labels remain booleans. Labels of
+different types that share an encoding key, such as `1` and `"1"`, are refused.
+Both backends validate neighborhood size, non-negative homology dimensions and
+vectorizer settings before fitting. Giotto pads diagrams at the minimum birth
+for each dimension so padding cannot extend the fitted filtration grid to zero.
+
 `evaluate(..., compare_diagram_distances=True)` can add Wasserstein or
 bottleneck distances (`diagram_distance_metric`, default
 `"wasserstein"`, `diagram_distance_dim=1`). That compares diagrams. It
@@ -120,6 +127,15 @@ does not replace holdout classification or regression metrics.
 checkpoint boundary only; the fitted plan stays in joblib. v1 bundles
 still load. Session checkpoints do not embed `TdaPlan`. `trusted=True`
 only for a file you created or whose source and contents you trust.
+
+Older encoders lack the original scalar identities. Their previous decoding is
+preserved with a warning; refit to recover exact label types. Existing Giotto
+bundles retain their fitted grids and heads. Refitting uses the corrected
+padding convention, which can change fitted features and predictions.
+
+Giotto 0.6.2 requires scikit-learn 1.3.2. The separately tested topology profile
+is recorded in `requirements-topology-verification.txt`; its results are
+separate from the modern expanded whole-package measurement.
 
 Runnable example: [`examples/tda_loop.py`](../examples/tda_loop.py).
 Benchmark: `python benchmarks/tda/persistence_pipeline.py`.

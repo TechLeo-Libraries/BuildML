@@ -225,12 +225,17 @@ def build_ensemble_eval_report(
     bases = _named_fitted_bases(fit_result.estimator)
     task = plan.task
 
+    label_encoder = getattr(fit_result.estimator, "le_", None)
+    if label_encoder is None:
+        label_encoder = getattr(fit_result.estimator, "_label_encoder", None)
     pred_by_name: dict[str, np.ndarray] = {}
     contributions: list[BaseLearnerContribution] = []
     warnings: list[str] = []
     for name, est in bases:
         try:
             pred = np.asarray(est.predict(x))
+            if task == "classification" and label_encoder is not None:
+                pred = label_encoder.inverse_transform(pred.astype(int))
         except Exception as exc:  # noqa: BLE001
             warnings.append(f"Base {name!r} predict failed during contribution: {exc}")
             continue

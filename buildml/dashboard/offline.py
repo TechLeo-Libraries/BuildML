@@ -392,7 +392,7 @@ def render_offline_html(bundle: dict[str, Any]) -> str:
     app_js = app_js.replace('from "./academy_view.js"', 'from "#buildml-academy-view"')
     app_js = app_js.replace('from "./cockpit_view.js"', 'from "#buildml-cockpit-view"')
     plotly_js = _read_plotly_min()
-    payload = json.dumps(bundle, ensure_ascii=False)
+    payload = _script_json(bundle)
     title = bundle.get("title") or "BuildML EDA App"
     return f"""<!DOCTYPE html>
 <html lang="en" data-theme="light">
@@ -404,12 +404,12 @@ def render_offline_html(bundle: dict[str, Any]) -> str:
   <script>{plotly_js}</script>
   <!-- Inline modules via blob URLs: no network or local server required. -->
   <script type="module">
-    const iconsSource = {json.dumps(icons_js)};
-    const learnUiSource = {json.dumps(learn_ui_js)};
-    const gatesViewSource = {json.dumps(gates_view_js)};
-    const academyViewSource = {json.dumps(academy_view_js)};
-    const cockpitViewSource = {json.dumps(cockpit_view_js)};
-    const appSource = {json.dumps(app_js)};
+    const iconsSource = {_script_json(icons_js)};
+    const learnUiSource = {_script_json(learn_ui_js)};
+    const gatesViewSource = {_script_json(gates_view_js)};
+    const academyViewSource = {_script_json(academy_view_js)};
+    const cockpitViewSource = {_script_json(cockpit_view_js)};
+    const appSource = {_script_json(app_js)};
     const iconsUrl = URL.createObjectURL(new Blob([iconsSource], {{ type: "text/javascript" }}));
     const learnUiUrl = URL.createObjectURL(new Blob([learnUiSource], {{ type: "text/javascript" }}));
     const gatesViewRewritten = gatesViewSource.replaceAll("#buildml-learn-ui", learnUiUrl);
@@ -469,6 +469,19 @@ def render_offline_html(bundle: dict[str, Any]) -> str:
 </body>
 </html>
 """
+
+
+def _script_json(value: Any) -> str:
+    # HTML parses script end tags even inside JavaScript string literals.
+    # JSON escapes preserve the data without introducing HTML parser tokens.
+    return (
+        json.dumps(value, ensure_ascii=False)
+        .replace("&", "\\u0026")
+        .replace("<", "\\u003c")
+        .replace(">", "\\u003e")
+        .replace("\u2028", "\\u2028")
+        .replace("\u2029", "\\u2029")
+    )
 
 
 def _read_plotly_min() -> str:

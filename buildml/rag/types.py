@@ -56,7 +56,7 @@ class ChunkConfig:
     Attributes
     ----------
     size:
-        Target chunk length in **characters, not tokens**. Roughly four
+        Maximum chunk length in **characters, not tokens**. Roughly four
         characters per English token, so the default is on the order of 128
         tokens.
     overlap:

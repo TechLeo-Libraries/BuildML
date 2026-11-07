@@ -67,7 +67,8 @@ def load_native_path(
     nrows:
         Cap the rows, for inspecting a large file. **Setting this disables lazy
         scanning**: a row cap needs a concrete frame: so leave it out when the
-        point is to avoid materializing.
+        point is to avoid materializing. Polars Parquet/IPC previews pass the
+        cap to the reader rather than trimming a fully loaded table.
     lazy:
         Keep a lazy handle where the engine supports one. Polars uses ``scan_*``
         and returns a ``LazyFrame``; DuckDB relations are lazy regardless.
@@ -144,7 +145,7 @@ def _load_polars(
                 table = pl.read_csv(path, separator=sep, n_rows=nrows)
         elif format_name == "parquet":
             if nrows is not None:
-                table = pl.read_parquet(path).head(nrows)
+                table = pl.read_parquet(path, n_rows=nrows)
             elif lazy:
                 details["lazy_scan"] = True
                 details["lazy_handle"] = True
@@ -157,9 +158,7 @@ def _load_polars(
                 details["lazy_handle"] = True
                 table = pl.scan_ipc(path)
             else:
-                table = pl.read_ipc(path)
-                if nrows is not None:
-                    table = table.head(nrows)
+                table = pl.read_ipc(path, n_rows=nrows)
         else:
             raise IngestError(
                 f"Unsupported format '{format_name}' for Polars native ingest. "
@@ -248,6 +247,7 @@ def _load_duckdb(
     details: dict[str, Any] = {
         "native_loader": "duckdb",
         "lazy_scan": True,
+        "lazy_handle": True,
         "pandas_first": False,
     }
     path_sql = str(path).replace("'", "''")
@@ -273,8 +273,10 @@ def _load_duckdb(
         if nrows is not None and format_name != "arrow":
             rel = rel.limit(int(nrows))
     except IngestError:
+        con.close()
         raise
     except Exception as exc:  # noqa: BLE001
+        con.close()
         raise IngestError(f"DuckDB native load failed for '{path}': {exc}") from exc
 
     # Wrap so the connection stays alive (relations no longer accept ad-hoc attrs).
