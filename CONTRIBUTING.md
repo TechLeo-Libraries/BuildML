@@ -122,7 +122,7 @@ monolith** (**70** active after corrected thread/process tracing measured at lea
 `pytest tests --cov=buildml`); do not lower it to silence a regression.
 The separate `expanded-coverage` CI job installs
 `requirements-expanded-coverage.txt` and runs the entire suite with an **88%**
-floor, supported by passing remote Linux 89.6254% evidence at `344687d`.
+floor, supported by passing remote Linux 89.6435% evidence at `108e752`.
 The broadened profile includes DoWhy and ONNX Runtime, using a compatible
 NumPy 2.4.1/SciPy 1.15.3/mlxtend 0.23.4 stack. Same-source complete local suites
 passed 85.5192% for this profile and85.3947% for its original-profile control;
@@ -230,17 +230,16 @@ and pick the next target, and `--path buildml/<pkg>` to audit work in progress.
 - Write public documentation for library users. Keep implementation instructions,
   release actions, and work plans in clearly labeled contributor material.
 
-Current expanded coverage evidence (2026-11-07): Remote Linux source `344687d` passed **89.6254%** (56,896/63,482 lines),
-with 19,222 passed and 173 skipped. [CI42324522494](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42324522494),
-backend42324522446, acceptance42324522543 and CodeQL42324519010 all passed.
-Tested merge `1e38e60e` and source whole trees match. Scope stays 800 files/566
-exclusions/coverage.py 7.16.2; all 5,345 required consumers execute unskipped.
+Current expanded coverage evidence (2026-11-07): Remote Linux source `108e752` passed **89.6435%** (56,912/63,487 lines),
+with 19,266 passed and 173 skipped. [CI42329828283](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42329828283),
+backend42329828269, acceptance42329828207 and CodeQL42329827368 all passed.
+Tested merge `ec2cce4c` and source whole trees match. Scope stays 800 files/566
+exclusions/coverage.py 7.16.2; all 5,389 required consumers execute unskipped.
 Python 3.12.16, every installed distribution, profile input bytes, all 173 skips/
-37 messages and all normalized warning blocks/counts (3,412) match `5f1325a`.
-No failures/errors/collection warnings. Complete aggregate +21 covered/+2
-statements is confined to four DL workflow files: export +1, speech +3, Session
-DL +16/+2 and its facade mixin +1; no other file aggregate changes. Runtime
-2895.630s is not performance evidence. Core 70/expanded 88 remain; next expanded
-89 requires passing complete coverage of at least 90%, preserving one point of
-headroom. Exact 90% gap: 238 only at measured `344687d`; subsequent changes need
-their own complete result.
+37 messages and all normalized warning blocks/counts (3,412) match `344687d`.
+No failures/errors/collection warnings. Complete aggregate +16 covered/+5
+statements is confined to model diagnostics (+14/+3) and plot boards (+2/+2).
+No other file aggregate changes. Runtime 3003.050s is not performance evidence.
+Core 70/expanded 88 remain; next expanded 89 requires passing complete coverage
+of at least 90%, preserving one point of headroom. Exact 90% gap: 227 only at
+measured `108e752`; subsequent changes need their own complete result.

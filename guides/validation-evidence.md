@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-11-06, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed: 89.6254% (56,896/63,482); 19,222 passed, 173 skipped | [CI42324522494](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42324522494), source `344687d`, tested merge `1e38e60e`; equal whole trees and all four workflows pass. Same 800 files/566 exclusions/coverage.py 7.16.2; all 5,345 consumers execute. Python/every distribution/profile inputs/skips/all normalized warning blocks and counts match `5f1325a`. Full aggregate +21 covered/+2 statements confined to four DL workflow files. Core 70/expanded 88 retained; exact 90% gap 238 only here; no collection warnings |
+| Current accepted remote expanded CPU whole-package gate | Passed: 89.6435% (56,912/63,487); 19,266 passed, 173 skipped | [CI42329828283](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42329828283), source `108e752`, tested merge `ec2cce4c`; equal whole trees and all four workflows pass. Same 800 files/566 exclusions/coverage.py 7.16.2; all 5,389 consumers execute. Python/every distribution/profile inputs/skips/all normalized warning blocks and counts match `344687d`. Full aggregate +16 covered/+5 statements confined to diagnostics and plot boards. Core 70/expanded 88 retained; exact 90% gap 227 only here; no collection warnings |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -8294,3 +8294,73 @@ DL +16/+2 and its facade mixin +1; no other file aggregate changes. Runtime
 89 requires passing complete coverage of at least 90%, preserving one point of
 headroom. Exact 90% gap: 238 only at measured `344687d`; subsequent changes need
 their own complete result.
+
+
+### Checkpoint portability without native engines
+
+A checkpoint can restore its canonical Pandas frame on a machine without the
+recorded DuckDB or Polars engine. Previously the next transform tried to rebuild
+the missing engine, and estimator preparation tried to open it again. Transforms
+now preserve the Pandas backing and recorded engine choice when the engine is
+absent. Design preparation uses and reports the actual Pandas path. Installed
+engines still handle native or narrow one-shot preparation as before. Explicit
+native synchronization continues to report a missing dependency.
+
+Twenty-seven cases exercise both engine hints, canonical-only and real single/
+partitioned snapshots, two scaling methods, detached transforms, bare Parquet
+fresh ingests and invalid checkpoint inputs. Four snapshots were written by the
+public API with actual DuckDB/Polars providers; their original manifests verify
+and the fixture archive contains only JSON and Parquet. The reader verifies row
+and split identity, independent train-only statistics, ordered projection and
+sampling, NumPy OLS predictions, MAE/R2 and a second checkpoint save/reload with
+its actual scale plan. No engines, models or helpers are replaced in the new cases.
+
+Archived controls pass 19 and fail eight on Pandas 3 with DuckDB only, pass all
+27 with both native engines, and pass 11/fail 16 with neither engine. Failures
+are genuine missing-engine continuation cases; there are no skipped controls.
+Final subsets pass 113 cases with 67 existing Polars skips in the DuckDB-only
+profile, 180 cases without skips with both engines, and all 27 new cases without
+skips in genuine core. All 27 new cases execute in each profile. The two native
+selections include 153 existing regressions; core measures only the new 27.
+No corrected failures, Python warnings, collection, assertion-rewrite or coverage
+warnings occur. Twelve real resumption prediction records agree across profiles
+at rtol=atol=1e-10, in addition to independent calculations. Existing successful
+prediction records also agree before/after within each profile. This comparison
+applies to these held-out OLS results, not arbitrary models or dtype parity.
+
+Local Windows Python 3.12.8 and coverage.py 7.16.2 are common. DuckDB-only uses
+Pandas3.0.5/NumPy2.4.6/sklearn1.9.0/PyArrow25.0.0. Compatible-native and genuine
+core use Pandas2.3.3/NumPy2.4.1/sklearn1.9.1/PyArrow26.0.0. Available native
+providers are DuckDB1.5.6 and Polars2.0.0. Compatible-native reuses existing
+Polars runtime, prophet-core/rl-compatible packages and the base DuckDB fallback;
+no packages are installed or copied. Core uses an empty PYTHONPATH and actually
+has neither engine. All loaded provider versions/paths match before/after
+within each profile. Core verifies fallback, not native execution.
+
+Official reach against verified same-source `108e752` full JSON/Git finds 13/6/15
+previously missing unchanged lines in DuckDB-only/compatible-native/genuine-core
+subsets, plus 8/6/8 changed/new executed lines. The absence paths differ from the
+full Linux expanded profile with both engines; these are neither combined nor
+projected full gains. Current source has 63,492 statements, with the same 800
+files and 566 exclusions. All 1,375 frozen inputs and 828 archived production/
+resource members are verified, including exact fixture bytes. The expanded guard
+requires 39 modules/5,416 actual unskipped cases; accepted full XML plus only the
+27 actual new compatible-native cases verifies positive/missing-module/skipped-case
+behavior without combining coverage databases. Only Dataset transform handling
+and design preparation change in production; the checkpoint format is unchanged.
+This correction needs its own complete CI result.
+
+The preceding learning-curve source has now passed complete verification:
+Remote Linux source `108e752` passed **89.6435%** (56,912/63,487 lines),
+with 19,266 passed and 173 skipped. [CI42329828283](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42329828283),
+backend42329828269, acceptance42329828207 and CodeQL42329827368 all passed.
+Tested merge `ec2cce4c` and source whole trees match. Scope stays 800 files/566
+exclusions/coverage.py 7.16.2; all 5,389 required consumers execute unskipped.
+Python 3.12.16, every installed distribution, profile input bytes, all 173 skips/
+37 messages and all normalized warning blocks/counts (3,412) match `344687d`.
+No failures/errors/collection warnings. Complete aggregate +16 covered/+5
+statements is confined to model diagnostics (+14/+3) and plot boards (+2/+2).
+No other file aggregate changes. Runtime 3003.050s is not performance evidence.
+Core 70/expanded 88 remain; next expanded 89 requires passing complete coverage
+of at least 90%, preserving one point of headroom. Exact 90% gap: 227 only at
+measured `108e752`; subsequent changes need their own complete result.

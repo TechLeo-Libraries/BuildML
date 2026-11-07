@@ -37,7 +37,7 @@ import pandas as pd
 from buildml.core.errors import ValidationError
 from buildml.core.types import ColumnRole, DataMode, EngineName, SchemaField, TableSchema
 from buildml.core.validation import validate_column_names, validate_role_name
-from buildml.ingest.detect import schema_from_dataframe
+from buildml.ingest.detect import available_engines, schema_from_dataframe
 
 
 @dataclass
@@ -339,6 +339,10 @@ class Dataset:
         the transformed frame into a fresh native table; it does not express
         the transform as engine operations, and it costs a full pass.
 
+        A Pandas-backed source whose recorded engine is not installed stays
+        Pandas-backed after the transform. The engine choice is retained so
+        :meth:`sync_native` can rebuild the handle once that engine is installed.
+
         See Also
         --------
         sync_native : Rebuilding on an existing Dataset.
@@ -346,6 +350,8 @@ class Dataset:
         resolved_roles = dict(source.roles) if roles is None else dict(roles)
         resolved_schema = schema or schema_from_dataframe(frame)
         attach = bool(sync_native and source.engine != EngineName.PANDAS)
+        if attach and not source.has_native:
+            attach = source.engine in available_engines()
         return cls.from_pandas(
             frame,
             schema=resolved_schema,

@@ -27,7 +27,7 @@ import pandas as pd
 from buildml.core.errors import ValidationError
 from buildml.core.types import EngineName
 from buildml.data.dataset import Dataset
-from buildml.ingest.detect import check_materialization
+from buildml.ingest.detect import available_engines, check_materialization
 
 
 @dataclass(slots=True)
@@ -132,12 +132,11 @@ def prepare_design_frame(
     hundreds of columns is never widened into pandas just to fit on twelve of
     them.
 
-    Three paths exist, and which one runs determines how much is avoided. With
-    pandas, projection is a slice of an already-loaded frame. With an attached
-    native handle, projection and sampling both run in the engine. With an
-    engine selected but no handle, only the projected columns are converted :
-    better than nothing, and a sign that ``with_engine`` should be called to
-    attach one.
+    With Pandas, projection is a slice of an already-loaded frame. With an
+    attached native handle, projection and sampling run in that engine. If an
+    installed engine is selected but no handle is attached, only the projected
+    columns are converted. If the recorded engine is missing, as can happen
+    after checkpoint restore, preparation uses Pandas and reports that fallback.
 
     Parameters
     ----------
@@ -214,9 +213,16 @@ def prepare_design_frame(
     from buildml.data.engines import get_engine
 
     engine_name = EngineName(dataset.engine)
+    disclosures: list[str] = []
+    if (
+        engine_name != EngineName.PANDAS
+        and not dataset.has_native
+        and engine_name not in available_engines()
+    ):
+        disclosures.append(f"{engine_name.value} is unavailable; used the existing Pandas frame.")
+        engine_name = EngineName.PANDAS
     engine = get_engine(engine_name)
     n_source = int(dataset.n_rows)
-    disclosures: list[str] = []
     limitations: list[str] = [
         "Sklearn fit still consumes an in-memory Pandas/NumPy design matrix; "
         "engine prep does not enable out-of-core training.",
