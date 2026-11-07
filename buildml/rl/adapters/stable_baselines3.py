@@ -63,7 +63,8 @@ class SB3PolicyWrapper:
         What the training run did and what its scope is.
     observation_shape:
         The original Gymnasium observation shape. Older bundles can use the
-        model's observation space when this field is absent.
+        model's observation space when this field is absent. Predictors
+        without an observation space receive a batch with one flattened row.
 
     See Also
     --------
@@ -106,7 +107,10 @@ class SB3PolicyWrapper:
             The recurrent state, for policies that keep one. ``None`` for the
             feed-forward policies used here.
         """
-        shape = self.observation_shape or self.model.observation_space.shape
+        shape = self.observation_shape
+        if shape is None:
+            space = getattr(self.model, "observation_space", None)
+            shape = getattr(space, "shape", None) or (1, -1)
         obs = np.asarray(observation, dtype=float).reshape(shape)
         action, state = self.model.predict(obs, deterministic=deterministic)
         return int(np.asarray(action).item()), state
