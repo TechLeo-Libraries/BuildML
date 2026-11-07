@@ -8,22 +8,22 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 89.64354907303857,
-      "covered_lines": 56912,
-      "num_statements": 63487,
+      "percent_covered": 89.64908964908965,
+      "covered_lines": 56920,
+      "num_statements": 63492,
       "excluded_lines": 566,
-      "source_revision": "108e752ce5efbe5dac3f46287c204d875b3ad9bc",
-      "tested_revision": "ec2cce4c355e5393e81038ba5f8b24f33ae5974d",
+      "source_revision": "1b29e880b335fbd346c2e0f617a73452185724ed",
+      "tested_revision": "f3dbaf625ad5f7cc23f827b3d89ef444ae1baba5",
       "platform": "remote Linux, CPU expanded profile",
       "python": "3.12.16",
-      "run_id": 42329828283,
-      "result": "19266 passed,173 skipped,zero failures/errors",
+      "run_id": 42334984938,
+      "result": "19293 passed, 173 skipped, zero failures or errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
       "coverage_version": "7.16.2",
-      "notes": "ALL4exact-head workflows/jobs success;actualtestedmergeec2cce4/source WHOLEtreeequal,prefetchedbeforenextpush. SamePython3.12.16/EVERYinstalleddistribution/profileinputbytes/all173skips37messages/ALLnormalizedwarningblocks3412 as344. Same800files566exclusions/coverage7.16.2/tracing;all5389requiredconsumers38modulesunskipped. Fullaggregate+16covered/+5statements onlymodeldiagnostics+14/+3 andplot_boards+2/+2;nootheraggregatechanges.89.64354907303857%,19266PASS173SKIP,noerrors/failures/collectionwarnings. Runtime3003.050snotperformanceevidence. Exact90gap227ONLY108;floors70/88/headroom1ppunchanged,localreachseparate."
+      "notes": "All four exact-source workflows passed. Tested merge and source have equal whole trees. Same Python, installed distributions, profile inputs, scope, tracing and skips as 108e752. All 5,416 required cases across 39 modules executed. Coverage gained eight lines with five more statements. Existing NMF convergence warnings returned (52). All other normalized warning blocks match. No collection warnings. Exact 90% gap is 223 lines at 1b29e88. Floors and headroom unchanged."
     },
     "latest_local_measurement": {
       "percent_covered": 85.51916984547746,

@@ -271,8 +271,8 @@ def load_serving_bundle(
                 root / "model.pt",
                 root / "model.ts",
             ]
-            ts_path = next((c for c in candidates if c.exists()), root)
-        if not ts_path.exists() or not ts_path.is_file():
+            ts_path = next((c for c in candidates if c.is_file()), root)
+        if not ts_path.is_file():
             raise ValidationError(
                 f"TorchScript file not found at {ts_path}. Pass a .pt/.ts file "
                 "or a directory containing model.ts.pt."
@@ -525,11 +525,18 @@ def create_serving_app(
             raise ValidationError("Serving app state has been cleared")
         return loaded
 
-    def _run_predict(payload: dict[str, Any]) -> dict[str, Any]:
+    def _run_predict(payload: dict[str, Any], *, batch: bool = False) -> Any:
         st = _app_state()
         if st.kind == "pipeline":
-            return _predict_pipeline(st, payload)
-        return _predict_torchscript(st, payload)
+            result = _predict_pipeline(st, payload)
+        else:
+            result = _predict_torchscript(st, payload)
+        if batch:
+            result["batch"] = True
+        if st.kind == "torchscript":
+            # Render here so invalid model outputs use the prediction error handler.
+            return JSONResponse(result)
+        return result
 
     @app.get("/health")
     def health() -> dict[str, Any]:
@@ -582,8 +589,8 @@ def create_serving_app(
                     body["model_card_warning"] = (
                         "model_card.json exists but could not be parsed"
                     )
-            contract = getattr(st.pipeline_bundle, "contract", None)
-            if contract is not None and hasattr(contract, "to_dict"):
+            contract = st.pipeline_bundle.schema_contract
+            if contract is not None:
                 body["schema_contract"] = contract.to_dict()
         return body
 
@@ -602,9 +609,7 @@ def create_serving_app(
     @app.post("/predict/batch")
     def predict_batch(payload: dict[str, Any]) -> Any:
         try:
-            result = _run_predict(payload)
-            result["batch"] = True
-            return result
+            return _run_predict(payload, batch=True)
         except ValidationError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
         except Exception as exc:  # noqa: BLE001
@@ -626,7 +631,7 @@ def _predict_pipeline(state: ServingState, payload: dict[str, Any]) -> dict[str,
     rows = payload.get("rows")
     if rows is None and "instances" in payload:
         rows = payload["instances"]
-    if not isinstance(rows, list) or not rows:
+    if not isinstance(rows, list) or not rows or not all(isinstance(row, dict) for row in rows):
         raise ValidationError(
             "POST /predict for pipeline bundles expects JSON "
             '{"rows": [ {"col": value, ...}, ... ]}'
@@ -679,15 +684,21 @@ def _predict_torchscript(state: ServingState, payload: dict[str, Any]) -> dict[s
         raise ValidationError("inputs must contain finite numeric values")
     with torch.no_grad():
         out = module(tensor)
-    if hasattr(out, "detach"):
-        if not bool(torch.isfinite(out).all()):
-            raise RuntimeError("TorchScript produced non-finite outputs")
-        values = out.detach().cpu().tolist()
-    else:
-        values = out
     return {
         "ok": True,
         "kind": "torchscript",
-        "n_rows": int(tensor.shape[0]) if hasattr(tensor, "shape") else None,
-        "outputs": values,
+        "n_rows": int(tensor.shape[0]),
+        "outputs": _torchscript_json_output(out, torch),
     }
+
+
+def _torchscript_json_output(value: Any, torch: Any) -> Any:
+    if isinstance(value, torch.Tensor):
+        if not bool(torch.isfinite(value).all()):
+            raise RuntimeError("TorchScript produced non-finite outputs")
+        return value.detach().cpu().tolist()
+    if isinstance(value, (list, tuple)):
+        return [_torchscript_json_output(item, torch) for item in value]
+    if isinstance(value, dict):
+        return {key: _torchscript_json_output(item, torch) for key, item in value.items()}
+    return value

@@ -122,6 +122,10 @@ Managed serve exposes (OpenAPI at `/docs` / `/openapi.json`):
 | `POST /predict` | Single-row (or tensor) score |
 | `POST /predict/batch` | Batch rows / inputs |
 
+Pipeline requests accept a non-empty array of row objects under `rows` or
+`instances`. The `/metadata` response includes the schema contract when the
+bundle carries one.
+
 Example against a running pipeline server:
 
 ```bash
@@ -142,6 +146,10 @@ Use the server lifecycle shown above to inspect and stop the service.
 
 Scoring contracts differ by `kind`: do not assume pipeline JSON equals
 TorchScript tensor payloads. Inspect `/metadata` and OpenAPI locally.
+Both prediction routes return TorchScript tensor outputs as JSON values and
+preserve their dimensions. Tuples and lists become JSON arrays, and dictionary
+outputs retain their named fields. An output that cannot be encoded as finite
+JSON returns HTTP 500 with a generic prediction error.
 
 ---
 

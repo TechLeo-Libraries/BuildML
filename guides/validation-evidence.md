@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-11-06, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed: 89.6435% (56,912/63,487); 19,266 passed, 173 skipped | [CI42329828283](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42329828283), source `108e752`, tested merge `ec2cce4c`; equal whole trees and all four workflows pass. Same 800 files/566 exclusions/coverage.py 7.16.2; all 5,389 consumers execute. Python/every distribution/profile inputs/skips/all normalized warning blocks and counts match `344687d`. Full aggregate +16 covered/+5 statements confined to diagnostics and plot boards. Core 70/expanded 88 retained; exact 90% gap 227 only here; no collection warnings |
+| Current accepted remote expanded CPU whole-package gate | Passed at 89.6491% (56,920/63,492) with 19,293 passed and 173 skipped | [CI42334984938](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42334984938), source `1b29e88`, tested merge `f3dbaf62`. Whole trees match and all four workflows passed. Same 800 files, 566 exclusions and coverage.py 7.16.2. All 5,416 required consumer cases executed. Full coverage rose by eight lines and five statements. No failures, errors or collection warnings. Exact 90% gap at this revision is 223 lines. |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -8348,19 +8348,41 @@ requires 39 modules/5,416 actual unskipped cases; accepted full XML plus only th
 27 actual new compatible-native cases verifies positive/missing-module/skipped-case
 behavior without combining coverage databases. Only Dataset transform handling
 and design preparation change in production; the checkpoint format is unchanged.
-This correction needs its own complete CI result.
+Remote Linux source `1b29e88` passed **89.6491%** (56,920/63,492 lines),
+with 19,293 passed and 173 skipped. [CI42334984938](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42334984938),
+backend42334984957, acceptance42334985080 and CodeQL42334983938 all passed.
+Tested merge `f3dbaf62` and source whole trees match. The run uses coverage.py
+7.16.2 across 800 files and 566 exclusions. All 5,416 required consumer cases
+executed. Python 3.12.16, every installed distribution, profile inputs and all
+173 skips across 37 messages match `108e752`. The warning count rose by 52 to
+3,464 as existing NMF convergence warnings reappeared. All other normalized
+warning blocks match. There were no failures, errors or collection warnings.
+Full coverage rose by eight lines with five more statements. Checkpoint and
+engine preparation paths gained nine covered lines, and one unchanged line
+in the plot board went unexercised. Core 70 and expanded 88 remain in force.
+The next expanded floor of 89 requires at least 90% complete coverage to
+preserve one percentage point of headroom. At `1b29e88`, 223 more covered
+lines would reach 90% at the measured statement count.
 
-The preceding learning-curve source has now passed complete verification:
-Remote Linux source `108e752` passed **89.6435%** (56,912/63,487 lines),
-with 19,266 passed and 173 skipped. [CI42329828283](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42329828283),
-backend42329828269, acceptance42329828207 and CodeQL42329827368 all passed.
-Tested merge `ec2cce4c` and source whole trees match. Scope stays 800 files/566
-exclusions/coverage.py 7.16.2; all 5,389 required consumers execute unskipped.
-Python 3.12.16, every installed distribution, profile input bytes, all 173 skips/
-37 messages and all normalized warning blocks/counts (3,412) match `344687d`.
-No failures/errors/collection warnings. Complete aggregate +16 covered/+5
-statements is confined to model diagnostics (+14/+3) and plot boards (+2/+2).
-No other file aggregate changes. Runtime 3003.050s is not performance evidence.
-Core 70/expanded 88 remain; next expanded 89 requires passing complete coverage
-of at least 90%, preserving one point of headroom. Exact 90% gap: 227 only at
-measured `108e752`; subsequent changes need their own complete result.
+## Serving HTTP contracts (2026-11-07)
+
+Saved TorchScript modules with nested tensor outputs now return JSON on both
+prediction routes. Unsupported or non-finite outputs use the existing generic
+HTTP 500 response. Bundle discovery selects the first model file in the
+existing search order. The classical service exposes the persisted schema
+contract and returns HTTP 400 for requests containing non-object rows.
+
+The 36 new HTTP cases load real artifacts. Independent NumPy calculations
+check affine TorchScript outputs and pipeline probabilities after replaying
+train-fitted scaling. The frozen `1b29e88` controls give 9 passes and 27
+failures per Torch runtime. Corrected Windows CPU selections each give 109
+passes, including all 36 new cases, and 8 existing CUDA skips. The genuine
+core environment skips the 18 TorchScript cases without Torch and the 18
+pipeline cases without FastAPI. Torch 2.13 reports 86 upstream TorchScript
+deprecations in the corrected selection. Torch 2.7.1 reports one Starlette
+and AnyIO deprecation. Neither selection reports collection warnings.
+
+Against the verified full `1b29e88` source, each corrected CPU selection
+exercises 12 previously missing unchanged lines and 24 changed or added
+lines. Eleven of the 12 are in the serving app. These figures describe the
+selected tests. The expanded job measures the complete suite separately.
