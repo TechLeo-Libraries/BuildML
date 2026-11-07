@@ -8,22 +8,22 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 89.6864023689143,
-      "covered_lines": 56941,
-      "num_statements": 63489,
+      "percent_covered": 89.76340768492138,
+      "covered_lines": 57024,
+      "num_statements": 63527,
       "excluded_lines": 566,
-      "source_revision": "7864085f472f2294e89b95450e443ca7423229c5",
-      "tested_revision": "94e9e52ce64a045eb3aba1554f8281f9d487ffec",
+      "source_revision": "15b9b3137f1f2e6c364bb61f2f22b9ee27245327",
+      "tested_revision": "f29bdad05b4ef1db8addf940bd65e6d9b199b111",
       "platform": "remote Linux, CPU expanded profile",
       "python": "3.12.16",
-      "run_id": 42351446008,
-      "result": "19353 passed, 173 skipped, zero failures or errors",
+      "run_id": 42391142368,
+      "result": "19454 passed, 173 skipped, zero failures or errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
       "coverage_version": "7.16.2",
-      "notes": "All four exact-source workflows passed. Tested merge and source have equal whole trees. Same Python, installed distributions, profile inputs, scope, tracing and skips as eab0f3e. All 5,476 required cases across 42 modules executed. The fold reset removed 11 statements overall and covered-line count fell by one. The 3,412 warnings match in content, with an existing Pandas warning at a new source line. No collection warnings. Exact 90% gap is 200 lines at 7864085. Floors and headroom unchanged."
+      "notes": "All four exact-source workflows passed. Tested merge and source have equal trees. Same installed distributions, profile inputs, scope, tracing and skips as 7864085. All 5,577 required consumers in 45 modules executed. Net change is 83 covered lines and 38 statements. The 3,464 warnings include 52 additional scikit-learn NMF convergence warnings in existing NLP resource tests. No collection warnings. Exact 90% gap is 151 lines. Floors and headroom unchanged."
     },
     "latest_local_measurement": {
       "percent_covered": 85.51916984547746,

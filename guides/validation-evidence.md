@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-11-06, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed at 89.6864% (56,941/63,489) with 19,353 passed and 173 skipped | [CI42351446008](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42351446008), source `7864085`, tested merge `94e9e52c`. Whole trees match and all four workflows passed. Same 800 files, 566 exclusions and coverage.py 7.16.2. All 5,476 required consumer cases executed. The fold reset removed 11 statements overall and the covered count fell by one. No failures, errors or collection warnings. Exact 90% gap at this revision is 200 lines. |
+| Current accepted remote expanded CPU whole-package gate | Passed at 89.7634% (57,024/63,527) with 19,454 passed and 173 skipped | Source `15b9b31`, tested merge `f29bdad`. Trees match and all four workflows passed. Same 800 files, 566 exclusions and coverage.py 7.16.2. All 5,577 required cases executed. No failures, errors or collection warnings. Exact 90% gap is 151 covered lines. [CI42391142368](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42391142368) |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -8486,8 +8486,8 @@ figures are separate from whole-package coverage.
 
 The full `80584b4` CI run failed on a documentation test that still expected
 the former public signature default. The corrected test checks the omitted
-algorithm and resolves it to LinUCB in contextual bandit mode. The accepted
-full result remains `7864085` pending fresh expanded verification.
+algorithm and resolves it to LinUCB in contextual bandit mode. The later
+passing expanded result is recorded below.
 
 ## Legacy SB3 predictors and Torch search populations (2026-11-07)
 
@@ -8514,5 +8514,35 @@ They each skip two CUDA cases, one ONNX Runtime case and one opposite-runtime
 check. Genuine core skips all 35 cases because Torch is absent. Against
 verified `7864085` coverage, each corrected selection exercises four
 previously missing unchanged lines and 29 changed Torch lines. This selected
-reach is separate from whole-package coverage. The last accepted complete
-measurement remains 89.6864% at `7864085`.
+reach is separate from whole-package coverage.
+
+Remote Linux source `15b9b31` passed **89.7634%** (57,024/63,527 lines),
+with 19,454 passes and 173 skips. All four workflows passed and the tested
+merge tree equals the source tree. The 5,577 required cases executed. The
+scope, exclusions, tracing, profile inputs, installed distributions and
+skip messages match `7864085`. The covered count increased by 83 across
+38 additional statements. RL gained 74 covered lines, Torch gained ten,
+and one line in the unchanged regression plot recommendation did not
+execute in this run. The 3,464 warnings include 52 additional scikit-learn
+NMF convergence warnings in the existing NLP resource tests. There were
+no collection warnings. [CI42391142368](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42391142368)
+
+## RAG history and index mutation (2026-11-07)
+
+Session history uses compact records for retrieval, evaluation and generation.
+Checkpoint history retains IDs, metrics and answer length, and the full live
+results retain the underlying content. Index rebuild, load, upsert and actual
+deletion clear prior retrieval, evaluation and generation results. Deleting
+an unknown ID preserves the valid results already attached to the Session.
+
+On frozen `15b9b31`, both Windows profiles have one pass and eight failures
+in the new cases. All nine cases pass on the corrected source. The full
+RAG selections pass 311 tests with three opposite-runtime skips on standard
+and 312 with two optional-stack skips on genuine core. Standard emits one
+existing LangChain Community deprecation. There are no collection warnings.
+Tests use offline hashing and dense, BM25 and hybrid retrieval, checkpoint
+history, and fresh citations after an index change.
+
+Against verified full `15b9b31` coverage, the selected runs exercise 18
+and 21 previously missing unchanged lines, respectively, and 14 changed
+lines each. This reach is separate from whole-package coverage.
