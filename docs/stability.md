@@ -55,20 +55,21 @@ Measure the complete suite with `python scripts/run_full_coverage.py`; subset
 runs are not comparable to the project coverage threshold.
 The separate expanded Linux job runs the complete test directory with
 `requirements-expanded-coverage.txt` and an **88%** floor. Remote Linux source
-`f13c119` passed at **89.8197%** (57,084/63,554 lines), with 19,482 passed
-and 173 skipped. All four workflows passed. The tested merge `6654a4c` has
-the same tree as the source. [CI42406580345](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42406580345)
+`33ddd48` passed at **89.8205%** (57,089/63,559 lines), with 19,492 passed
+and 173 skipped. All four workflows passed. The tested merge `30f6eb6` has
+the same tree as the source. [CI42416090575](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42416090575)
 
 The run used coverage.py 7.16.2 across 800 files and 566 exclusions. All
-5,605 required consumer cases executed. Python 3.12.16, the installed
-distributions, profile inputs, all 173 skips across 37 messages, and all
-3,464 warnings match `c5e8cb4`. There were no failures, errors or
-collection warnings.
+5,615 required consumer cases executed. Python 3.12.16, the installed
+distributions, profile inputs and all 173 skips across 37 messages match
+`f13c119`. The run emitted two new singleton-fold R² warnings and the 52
+NLP NMF convergence warnings from the prior run were absent. There were
+no failures, errors or collection warnings.
 
-The dashboard chart changes added 13 covered lines and seven statements. Core 70
+The nested AutoML changes added five covered lines and five statements. Core 70
 and expanded 88 remain in force. The next expanded floor of 89 requires
 at least 90% complete coverage to preserve one percentage point of
-headroom. At `f13c119`, 115 more covered lines would reach 90% at the
+headroom. At `33ddd48`, 115 more covered lines would reach 90% at the
 measured statement count.
 
 The subsequent `8594200` gate passed its tests, but coverage.py upgraded from

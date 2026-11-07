@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-11-06, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed at 89.8197% (57,084/63,554) with 19,482 passed and 173 skipped | Source `f13c119`, tested merge `6654a4c`. Trees match and all four workflows passed. Same 800 files, 566 exclusions and coverage.py 7.16.2. All 5,605 required cases executed. No failures, errors or collection warnings. The gap to 90% is 115 covered lines at this denominator. [CI42406580345](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42406580345) |
+| Current accepted remote expanded CPU whole-package gate | Passed at 89.8205% (57,089/63,559) with 19,492 passed and 173 skipped | Source `33ddd48`, tested merge `30f6eb6`. Trees match and all four workflows passed. Same 800 files, 566 exclusions and coverage.py 7.16.2. All 5,615 required cases executed. No failures, errors or collection warnings. The gap to 90% is 115 covered lines at this denominator. [CI42416090575](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42416090575) |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -8635,3 +8635,32 @@ evaluation folds. There are no collection or coverage warnings. Against
 verified full `f13c119`, standard and core exercise one and two previously
 missing unchanged lines, respectively, and 13 changed lines each. These
 are selected-run counts.
+
+Remote Linux source `33ddd48` passed at **89.8205%** (57,089/63,559 lines),
+with 19,492 passes and 173 skips. All four workflows passed and the tested
+merge tree matches the source. All 5,615 required cases executed. Scope,
+exclusions, tracing, profile inputs, distributions and skips match
+`f13c119`. Two new singleton-fold R² warnings and the absence of 52
+previously observed NLP NMF convergence warnings account for the difference
+in warning counts. There were no collection warnings. The covered count
+rose by five across five additional AutoML and model selection statements.
+[CI42416090575](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42416090575)
+
+## Dashboard launch lifecycle (2026-11-07)
+
+A dashboard handle can stop its own server without clearing a replacement
+dashboard's report. Completed blocking handles report that they have stopped.
+Bind diagnostics distinguish an occupied port from an invalid address.
+
+The frozen `33ddd48` control fails all four new tests. The corrected
+standard Windows selection passes all 27 cases, including live HTTP
+requests to real Uvicorn servers and the existing chart and export tests.
+Genuine core passes seven and skips ten because dashboard extras are absent,
+including one module skipped during collection. Standard emits one existing
+LangChain Community deprecation. There are no collection or coverage
+warnings.
+
+Against verified full `33ddd48`, the standard selection reaches 11
+previously missing unchanged lines and 23 changed lines. Nine of the
+unchanged lines are in dashboard launch and state. Core reaches three
+changed lines. These are selected-run counts.
