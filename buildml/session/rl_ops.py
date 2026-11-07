@@ -334,7 +334,7 @@ def fit_rl_op(
     *,
     backend: str | None = None,
     mode: RlMode | None = None,
-    algorithm: BanditAlgorithm | str = "linucb",
+    algorithm: BanditAlgorithm | str | None = None,
     columns: list[str] | None = None,
     action_column: str | None = None,
     reward_column: str | None = None,
@@ -368,7 +368,7 @@ def fit_rl_op(
     mode:
         RL mode (``contextual_bandit`` or gym-style modes).
     algorithm:
-        Bandit or policy algorithm identifier.
+        Bandit or policy algorithm identifier. Omit it to use the mode's default.
     columns:
         Optional state feature columns for bandit mode.
     action_column:
@@ -420,7 +420,7 @@ def fit_rl_op(
     _backend, resolved_mode, _algo = resolve_rl_backend_mode_algorithm(
         backend=backend,  # type: ignore[arg-type]
         mode=mode,
-        algorithm=str(algorithm),
+        algorithm=algorithm,
     )
     if resolved_mode == "contextual_bandit":
         session.assert_can_fit("train")

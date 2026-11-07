@@ -122,7 +122,7 @@ monolith** (**70** active after corrected thread/process tracing measured at lea
 `pytest tests --cov=buildml`); do not lower it to silence a regression.
 The separate `expanded-coverage` CI job installs
 `requirements-expanded-coverage.txt` and runs the entire suite with an **88%**
-floor, supported by passing remote Linux 89.6724% evidence at `eab0f3e`.
+floor, supported by passing remote Linux 89.6864% evidence at `7864085`.
 The broadened profile includes DoWhy and ONNX Runtime, using a compatible
 NumPy 2.4.1/SciPy 1.15.3/mlxtend 0.23.4 stack. Same-source complete local suites
 passed 85.5192% for this profile and85.3947% for its original-profile control;
@@ -230,19 +230,18 @@ and pick the next target, and `--path buildml/<pkg>` to audit work in progress.
 - Write public documentation for library users. Keep implementation instructions,
   release actions, and work plans in clearly labeled contributor material.
 
-Current expanded coverage evidence (2026-11-07): Remote Linux source `eab0f3e` passed **89.6724%** (56,942/63,500 lines),
-with 19,329 passed and 173 skipped. [CI42346610505](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42346610505),
-backend42346610507, acceptance42346610519 and CodeQL42346609353 all passed.
-Tested merge `4697de85` and source whole trees match. The run uses coverage.py
-7.16.2 across 800 files and 566 exclusions. All 5,452 required consumer cases
+Current expanded coverage evidence (2026-11-07): Remote Linux source `7864085` passed **89.6864%** (56,941/63,489 lines),
+with 19,353 passed and 173 skipped. [CI42351446008](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42351446008),
+backend42351446033, acceptance42351446047 and CodeQL42351444277 all passed.
+Tested merge `94e9e52c` and source whole trees match. The run uses coverage.py
+7.16.2 across 800 files and 566 exclusions. All 5,476 required consumer cases
 executed. Python 3.12.16, every installed distribution, profile inputs and all
-173 skips across 37 messages match `1b29e88`. The warning count fell by 52 to
-3,412 as existing NMF convergence warnings disappeared. The same Starlette
-and AnyIO deprecation moved to the first new TestClient import. There were
-no failures, errors or collection warnings.
-Full coverage rose by 22 covered lines with eight more statements. The
-serving app gained 21 covered lines, and one unchanged plot board line
-was exercised again. Core 70 and expanded 88 remain in force. The next
-expanded floor of 89 requires at least 90% complete coverage to preserve
-one percentage point of headroom. At `eab0f3e`, 208 more covered lines
-would reach 90% at the measured statement count.
+173 skips across 37 messages match `eab0f3e`. The 3,412 warnings also match in
+content, with an existing Pandas warning at a new line number. There were no
+failures, errors or collection warnings.
+The shared fold reset removed 11 statements overall. Covered-line count fell
+by one, and the coverage percentage rose at the smaller denominator. Core 70
+and expanded 88 remain in force. The next expanded floor of 89 requires at
+least 90% complete coverage to preserve one percentage point of headroom.
+At `7864085`, 200 more covered lines would reach 90% at the measured statement
+count.

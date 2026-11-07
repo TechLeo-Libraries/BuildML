@@ -582,10 +582,8 @@ def resolve_rl_backend_mode_algorithm(
 
     Notes
     -----
-    **``'linucb'`` under ``'tabular_q'`` is treated as unset**, not as an error.
-    It is ``fit_rl``'s shared default, so a caller who passed only
-    ``mode='tabular_q'`` never chose it: rejecting them for a default they did
-    not set would be unhelpful. They get ``'q_learning'``.
+    The former shared ``'linucb'`` default remains an alias for the default
+    algorithm in the native ``'tabular_q'`` and ``'gym_reinforce'`` modes.
 
     See Also
     --------
@@ -597,20 +595,20 @@ def resolve_rl_backend_mode_algorithm(
         raise ValidationError(f"Unknown backend {backend!r}; choose from ('sklearn', 'native', 'industry').")
 
     resolved_backend: RlBackendName
-    algo_key = str(algorithm or "linucb").lower().replace("-", "_")
+    algo_key = None if algorithm is None else str(algorithm).lower().replace("-", "_")
     if backend is None:
         if mode in NATIVE_RL_MODES:
             resolved_backend = "native"
         elif mode == "gym_sb3":
             resolved_backend = "industry"
-        elif mode == "contextual_bandit" or algo_key in BANDIT_ALGORITHMS:
+        elif mode == "contextual_bandit" or algo_key is None or algo_key in BANDIT_ALGORITHMS:
             resolved_backend = "sklearn"
         elif algo_key in NATIVE_RL_ALGORITHMS:
             resolved_backend = "native"
         elif algo_key in SB3_ALGORITHMS:
             resolved_backend = "industry"
         else:
-            resolved_backend = _default_rl_backend()  # type: ignore[assignment]
+            raise ValidationError(f"Unknown RL algorithm {algorithm!r}.")
     else:
         resolved_backend = backend
 
@@ -647,8 +645,8 @@ def resolve_rl_backend_mode_algorithm(
         raise MissingExtraError(str(extra or "rl-industry"), f"backend='{resolved_backend}'")
 
     if resolved_mode == "contextual_bandit":
-        algo = algorithm or "linucb"
-        algo_key = str(algo).lower().replace("-", "_")
+        if algo_key is None:
+            algo_key = "linucb"
         if algo_key not in BANDIT_ALGORITHMS:
             raise ValidationError(
                 f"algorithm='{algo_key}' invalid for contextual_bandit. "
@@ -662,12 +660,15 @@ def resolve_rl_backend_mode_algorithm(
                 f"algorithm='{algo_key}' is tabular TD control; "
                 "use mode='tabular_q' (or drop mode=) instead of 'gym_reinforce'."
             )
+        if algo_key not in (None, "linucb", *POLICY_GRADIENT_ALGORITHMS):
+            raise ValidationError(
+                f"algorithm='{algo_key}' invalid for gym_reinforce. "
+                f"Choose from {list(POLICY_GRADIENT_ALGORITHMS)}."
+            )
         return resolved_backend, resolved_mode, "reinforce_linear_softmax"
 
     if resolved_mode == "tabular_q":
-        # 'linucb' is the shared fit_rl default, so treat it as "unset" here
-        # rather than rejecting a caller who only passed mode='tabular_q'.
-        if algorithm is None or algo_key == "linucb":
+        if algo_key in (None, "linucb"):
             return resolved_backend, resolved_mode, "q_learning"
         if algo_key not in TABULAR_ALGORITHMS:
             raise ValidationError(
@@ -676,8 +677,8 @@ def resolve_rl_backend_mode_algorithm(
             )
         return resolved_backend, resolved_mode, algo_key
 
-    algo = algorithm or "ppo"
-    algo_key = str(algo).lower().replace("-", "_")
+    if algo_key is None:
+        algo_key = "ppo"
     if algo_key not in SB3_ALGORITHMS:
         raise ValidationError(
             f"algorithm='{algo_key}' invalid for gym_sb3. "

@@ -205,7 +205,7 @@ class RlSessionMixin:
         *,
         backend: str | None = None,
         mode: RlMode | None = None,
-        algorithm: BanditAlgorithm | str = "linucb",
+        algorithm: BanditAlgorithm | str | None = None,
         columns: list[str] | None = None,
         action_column: str | None = None,
         reward_column: str | None = None,

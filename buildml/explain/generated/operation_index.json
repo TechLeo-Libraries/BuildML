@@ -5817,8 +5817,8 @@
           "required": false
         },
         {
-          "annotation": "BanditAlgorithm | str",
-          "default": "'linucb'",
+          "annotation": "BanditAlgorithm | str | None",
+          "default": "None",
           "kind": "KEYWORD_ONLY",
           "name": "algorithm",
           "required": false

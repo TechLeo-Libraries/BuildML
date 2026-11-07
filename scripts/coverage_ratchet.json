@@ -8,22 +8,22 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 89.67244094488188,
-      "covered_lines": 56942,
-      "num_statements": 63500,
+      "percent_covered": 89.6864023689143,
+      "covered_lines": 56941,
+      "num_statements": 63489,
       "excluded_lines": 566,
-      "source_revision": "eab0f3e186bcbd58c7d9b532cae6fd63b80d9348",
-      "tested_revision": "4697de85efaafb452b4536aece073a65297aaa52",
+      "source_revision": "7864085f472f2294e89b95450e443ca7423229c5",
+      "tested_revision": "94e9e52ce64a045eb3aba1554f8281f9d487ffec",
       "platform": "remote Linux, CPU expanded profile",
       "python": "3.12.16",
-      "run_id": 42346610505,
-      "result": "19329 passed, 173 skipped, zero failures or errors",
+      "run_id": 42351446008,
+      "result": "19353 passed, 173 skipped, zero failures or errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
       "coverage_version": "7.16.2",
-      "notes": "All four exact-source workflows passed. Tested merge and source have equal whole trees. Same Python, installed distributions, profile inputs, scope, tracing and skips as 1b29e88. All 5,452 required cases across 41 modules executed. Coverage gained 22 lines with eight more statements. Existing NMF warnings disappeared (52). The Starlette and AnyIO alias warning moved to the first new TestClient import. No collection warnings. Exact 90% gap is 208 lines at eab0f3e. Floors and headroom unchanged."
+      "notes": "All four exact-source workflows passed. Tested merge and source have equal whole trees. Same Python, installed distributions, profile inputs, scope, tracing and skips as eab0f3e. All 5,476 required cases across 42 modules executed. The fold reset removed 11 statements overall and covered-line count fell by one. The 3,412 warnings match in content, with an existing Pandas warning at a new source line. No collection warnings. Exact 90% gap is 200 lines at 7864085. Floors and headroom unchanged."
     },
     "latest_local_measurement": {
       "percent_covered": 85.51916984547746,

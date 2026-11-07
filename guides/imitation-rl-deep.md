@@ -15,8 +15,8 @@ The cliff-walking teaching examples select `CliffWalking-v1` when it is
 registered, otherwise `CliffWalking-v0`, to support both newer and older
 Gymnasium releases.
 
-`session.rl.fit()` with default parameters uses `algorithm="linucb"`, which
-resolves to the **sklearn contextual bandit** even when
+`session.rl.fit()` with default parameters selects the **sklearn contextual
+bandit** with LinUCB even when
 `buildml[rl-industry]` is installed. Gymnasium and Stable-Baselines3 are
 opt-in via `mode=` / `algorithm=` / `backend=`. `fit_imitation()` with
 `backend=None` and `method=None` stays **sklearn** behavioral cloning.
@@ -163,10 +163,9 @@ print(ev.offline, ev.metrics)
 
 `backend="native"`, `mode="gym_reinforce"`. Linear softmax REINFORCE on
 small discrete envs. Default `env_id` is `"CartPole-v1"`, `n_episodes=200`,
-`max_steps=500`, `learning_rate=0.01`, `gamma=0.99`. Passing
-`mode="gym_reinforce"` (or a native policy-gradient algorithm) is what
-selects this path: the mixin `algorithm="linucb"` default would otherwise
-keep you on the bandit.
+`max_steps=500`, `learning_rate=0.01`, `gamma=0.99`. Select
+`mode="gym_reinforce"` to use the default `reinforce_linear_softmax`
+algorithm. An incompatible explicit algorithm raises `ValidationError`.
 
 `evaluate` rolls out episodes (`offline=False`) and reports mean/std
 return.
@@ -193,10 +192,10 @@ print(ev.offline, ev.metrics["mean_return"])
 
 ## Tabular TD control (`buildml[rl]`)
 
-`mode="tabular_q"`: an explicit `Q[s, a]` table, no network. Passing
-only `algorithm="sarsa"` (no `mode=`) routes here. If you pass
-`mode="tabular_q"` and leave the mixin `algorithm="linucb"` alone, the
-resolver treats linucb as unset and uses `q_learning`.
+`mode="tabular_q"` uses an explicit `Q[s, a]` table. Passing only
+`algorithm="sarsa"` also selects this mode. Omit `algorithm` to use
+`q_learning`. The former shared `linucb` default still selects the native
+default when passed to either native Gymnasium mode.
 
 Tabular training and evaluation require positive integer `n_episodes` and
 `max_steps`. Boolean, fractional, string, zero and non-finite budgets raise

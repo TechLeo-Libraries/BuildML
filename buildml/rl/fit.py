@@ -68,7 +68,7 @@ def fit_rl(
     *,
     backend: RlBackend | None = None,
     mode: RlMode | None = None,
-    algorithm: BanditAlgorithm | TabularAlgorithm | Sb3Algorithm | str = "linucb",
+    algorithm: BanditAlgorithm | TabularAlgorithm | Sb3Algorithm | str | None = None,
     columns: list[str] | None = None,
     action_column: str | None = None,
     reward_column: str | None = None,
@@ -112,6 +112,7 @@ def fit_rl(
         Which problem you are solving. Inferred from the algorithm when not
         given, so ``algorithm='q_learning'`` selects ``'tabular_q'`` on its own.
     algorithm:
+        Omit to select the mode's default algorithm.
         Within bandits: ``'linucb'`` (default) keeps an uncertainty estimate per
         arm and explores the ones it is least sure about, which is the
         principled choice when contexts are informative;
@@ -225,7 +226,7 @@ def fit_rl(
     resolved_backend, resolved_mode, resolved_algo = resolve_rl_backend_mode_algorithm(
         backend=backend,
         mode=mode,
-        algorithm=str(algorithm),
+        algorithm=algorithm,
     )
     if resolved_mode == "tabular_q":
         return _fit_tabular_q(
