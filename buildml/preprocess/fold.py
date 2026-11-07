@@ -432,9 +432,7 @@ class FoldLocalPreprocessor(TransformerMixin, BaseEstimator):
     def __init__(self, recipe: PreprocessRecipe) -> None:
         """Prepare an unfitted preprocessor for the given recipe.
 
-        Nothing is learned here; every fitted attribute stays empty until
-        :meth:`fit` runs. Construct one of these per fold rather than reusing a
-        fitted instance, which would carry another fold's statistics.
+        Every fitted attribute stays empty until :meth:`fit` runs.
 
         Parameters
         ----------
@@ -442,6 +440,9 @@ class FoldLocalPreprocessor(TransformerMixin, BaseEstimator):
             The steps and settings to apply.
         """
         self.recipe = recipe
+        self._reset_fitted_state()
+
+    def _reset_fitted_state(self) -> None:
         self._imputer: Any | None = None
         self._scaler: Any | None = None
         self._impute_columns: list[str] = []
@@ -508,11 +509,15 @@ class FoldLocalPreprocessor(TransformerMixin, BaseEstimator):
 
         Notes
         -----
+        Each fit starts with empty learned state. A failed fit requires a new
+        successful fit before transforming rows.
+
         Fitting is per fold, so its cost multiplies by the fold count. A recipe
         with text vectorisation and model-based selection can dominate the
         runtime of a search: worth knowing before setting fifty candidates
         against ten folds.
         """
+        self._reset_fitted_state()
         recipe = self.recipe
         for name, allowed in (
             ("outliers", {"iqr", "zscore"}),
@@ -566,11 +571,6 @@ class FoldLocalPreprocessor(TransformerMixin, BaseEstimator):
         if recipe.text is not None:
             self._fit_text(work)
             work = self._apply_text(work)
-        else:
-            self._text_columns = []
-            self._text_vectorizers = {}
-            self._text_feature_names = []
-            self._text_n_features = {}
         if recipe.outliers is not None:
             self._fit_outliers(work)
             work = self._apply_outliers(work)
@@ -586,8 +586,6 @@ class FoldLocalPreprocessor(TransformerMixin, BaseEstimator):
             self._imputer = SimpleImputer(strategy=recipe.impute, fill_value=recipe.fill_value)
             self._imputer.fit(work[self._impute_columns])
             work = self._apply_impute(work)
-        else:
-            self._imputer = None
         # Resolve scale targets before encode so one-hot dummies are not auto-scaled.
         pending_scale = (
             _resolve_numeric(work, recipe.scale_columns) if recipe.scale is not None else []
@@ -595,30 +593,18 @@ class FoldLocalPreprocessor(TransformerMixin, BaseEstimator):
         if categorical and recipe.encode is not None:
             self._fit_encoder(work, y_train)
             work = self._apply_encode_inplace(work)
-        else:
-            self._encoder = None
         if recipe.binning is not None:
             self._fit_binning(work)
             work = self._apply_binning(work)
-        else:
-            self._binning_columns = []
         self._scale_columns = _remap_scaled_columns(pending_scale, work, self._binning_columns)
         if self._scale_columns and recipe.scale is not None:
             self._scaler = _make_scaler(recipe.scale)
             self._scaler.fit(work[self._scale_columns])
             work = self._apply_scale(work)
-        else:
-            self._scaler = None
         if recipe.reduce is not None:
             self._fit_reduce(work)
             work = self._apply_reduce(work)
-        else:
-            self._reduce_columns = []
-            self._reduce_feature_names = []
-            self._reducer = None
-        self._passthrough_columns = []
         transformed = self._transform_pipeline(x_train)
-        self._feature_names_ = list(transformed.columns)
         if recipe.select is not None:
             if y_train is None and recipe.select in {"univariate", "model"}:
                 raise ValidationError(f"{recipe.select} selection requires fold-train labels")
@@ -653,8 +639,8 @@ class FoldLocalPreprocessor(TransformerMixin, BaseEstimator):
                 top = int(np.argmax(variances)) if len(variances) else 0
                 self._selected_features_ = [str(select_frame.columns[top])]
         else:
-            self._selector = None
-            self._selected_features_ = list(self._feature_names_)
+            self._selected_features_ = list(transformed.columns)
+        self._feature_names_ = list(transformed.columns)
         return self
 
     def transform(self, x: pd.DataFrame) -> pd.DataFrame:
@@ -680,21 +666,19 @@ class FoldLocalPreprocessor(TransformerMixin, BaseEstimator):
         Raises
         ------
         ~buildml.core.errors.ValidationError
-            :meth:`fit` has not run, or selection retained no column that
-            exists in this frame: which means the frame does not match what
-            was fitted. Encoding, calendar, text and binning outputs also
-            refuse names colliding with retained replay inputs, including
-            extra columns absent during fitting.
+            No fit has completed or a fitted feature is missing. Encoding,
+            calendar, text and binning outputs also refuse names colliding
+            with retained replay inputs, including extra columns absent
+            during fitting.
         """
-        if not self._feature_names_ and self._selector is None:
+        if not self._feature_names_:
             raise ValidationError("FoldLocalPreprocessor must be fitted before transform")
         base = self._transform_pipeline(x)
-        if self._selector is None:
-            return base
-        keep = [c for c in self._selected_features_ if c in base.columns]
-        if not keep:
-            raise ValidationError("Fold-local selector retained no overlapping columns")
-        return base[keep].copy()
+        expected = self._feature_names_ if self._selector is None else self._selected_features_
+        missing = [column for column in expected if column not in base.columns]
+        if missing:
+            raise ValidationError(f"Fold-local fitted features missing: {missing}")
+        return base.reindex(columns=expected)
 
     def _transform_pipeline(self, x: pd.DataFrame) -> pd.DataFrame:
         work = x.copy()

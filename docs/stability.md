@@ -54,21 +54,22 @@ across Linux Python 3.10-3.13, run 38589015544, commit 2837fb3).
 Measure the complete suite with `python scripts/run_full_coverage.py`; subset
 runs are not comparable to the project coverage threshold.
 The separate expanded Linux job runs the complete test directory with
-`requirements-expanded-coverage.txt` and an **88%** floor. Remote Linux source `1b29e88` passed **89.6491%** (56,920/63,492 lines),
-with 19,293 passed and 173 skipped. [CI42334984938](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42334984938),
-backend42334984957, acceptance42334985080 and CodeQL42334983938 all passed.
-Tested merge `f3dbaf62` and source whole trees match. The run uses coverage.py
-7.16.2 across 800 files and 566 exclusions. All 5,416 required consumer cases
+`requirements-expanded-coverage.txt` and an **88%** floor. Remote Linux source `eab0f3e` passed **89.6724%** (56,942/63,500 lines),
+with 19,329 passed and 173 skipped. [CI42346610505](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42346610505),
+backend42346610507, acceptance42346610519 and CodeQL42346609353 all passed.
+Tested merge `4697de85` and source whole trees match. The run uses coverage.py
+7.16.2 across 800 files and 566 exclusions. All 5,452 required consumer cases
 executed. Python 3.12.16, every installed distribution, profile inputs and all
-173 skips across 37 messages match `108e752`. The warning count rose by 52 to
-3,464 as existing NMF convergence warnings reappeared. All other normalized
-warning blocks match. There were no failures, errors or collection warnings.
-Full coverage rose by eight lines with five more statements. Checkpoint and
-engine preparation paths gained nine covered lines, and one unchanged line
-in the plot board went unexercised. Core 70 and expanded 88 remain in force.
-The next expanded floor of 89 requires at least 90% complete coverage to
-preserve one percentage point of headroom. At `1b29e88`, 223 more covered
-lines would reach 90% at the measured statement count.
+173 skips across 37 messages match `1b29e88`. The warning count fell by 52 to
+3,412 as existing NMF convergence warnings disappeared. The same Starlette
+and AnyIO deprecation moved to the first new TestClient import. There were
+no failures, errors or collection warnings.
+Full coverage rose by 22 covered lines with eight more statements. The
+serving app gained 21 covered lines, and one unchanged plot board line
+was exercised again. Core 70 and expanded 88 remain in force. The next
+expanded floor of 89 requires at least 90% complete coverage to preserve
+one percentage point of headroom. At `eab0f3e`, 208 more covered lines
+would reach 90% at the measured statement count.
 
 The subsequent `8594200` gate passed its tests, but coverage.py upgraded from
 7.16.2 to7.17.0 and reported607 excluded lines instead of566. Its raw86.5151%

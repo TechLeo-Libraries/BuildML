@@ -113,6 +113,9 @@ are fixed.
 
 Folds stay inside train. Pass the recipe so impute, encode, and scale
 refit per fold. Keep the Session data unprocessed so each fold fits its own imputer.
+When you refit a `FoldLocalPreprocessor` directly, it learns from the new
+training rows and recipe. On replay it returns the fitted features in their
+training order. A missing fitted feature raises a validation error.
 
 ```python
 import pandas as pd

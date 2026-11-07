@@ -8,22 +8,22 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 89.64908964908965,
-      "covered_lines": 56920,
-      "num_statements": 63492,
+      "percent_covered": 89.67244094488188,
+      "covered_lines": 56942,
+      "num_statements": 63500,
       "excluded_lines": 566,
-      "source_revision": "1b29e880b335fbd346c2e0f617a73452185724ed",
-      "tested_revision": "f3dbaf625ad5f7cc23f827b3d89ef444ae1baba5",
+      "source_revision": "eab0f3e186bcbd58c7d9b532cae6fd63b80d9348",
+      "tested_revision": "4697de85efaafb452b4536aece073a65297aaa52",
       "platform": "remote Linux, CPU expanded profile",
       "python": "3.12.16",
-      "run_id": 42334984938,
-      "result": "19293 passed, 173 skipped, zero failures or errors",
+      "run_id": 42346610505,
+      "result": "19329 passed, 173 skipped, zero failures or errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
       "coverage_version": "7.16.2",
-      "notes": "All four exact-source workflows passed. Tested merge and source have equal whole trees. Same Python, installed distributions, profile inputs, scope, tracing and skips as 108e752. All 5,416 required cases across 39 modules executed. Coverage gained eight lines with five more statements. Existing NMF convergence warnings returned (52). All other normalized warning blocks match. No collection warnings. Exact 90% gap is 223 lines at 1b29e88. Floors and headroom unchanged."
+      "notes": "All four exact-source workflows passed. Tested merge and source have equal whole trees. Same Python, installed distributions, profile inputs, scope, tracing and skips as 1b29e88. All 5,452 required cases across 41 modules executed. Coverage gained 22 lines with eight more statements. Existing NMF warnings disappeared (52). The Starlette and AnyIO alias warning moved to the first new TestClient import. No collection warnings. Exact 90% gap is 208 lines at eab0f3e. Floors and headroom unchanged."
     },
     "latest_local_measurement": {
       "percent_covered": 85.51916984547746,

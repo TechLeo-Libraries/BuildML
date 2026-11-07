@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-11-06, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed at 89.6491% (56,920/63,492) with 19,293 passed and 173 skipped | [CI42334984938](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42334984938), source `1b29e88`, tested merge `f3dbaf62`. Whole trees match and all four workflows passed. Same 800 files, 566 exclusions and coverage.py 7.16.2. All 5,416 required consumer cases executed. Full coverage rose by eight lines and five statements. No failures, errors or collection warnings. Exact 90% gap at this revision is 223 lines. |
+| Current accepted remote expanded CPU whole-package gate | Passed at 89.6724% (56,942/63,500) with 19,329 passed and 173 skipped | [CI42346610505](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42346610505), source `eab0f3e`, tested merge `4697de85`. Whole trees match and all four workflows passed. Same 800 files, 566 exclusions and coverage.py 7.16.2. All 5,452 required consumer cases executed. Full coverage rose by 22 lines and eight statements. No failures, errors or collection warnings. Exact 90% gap at this revision is 208 lines. |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -8386,3 +8386,43 @@ Against the verified full `1b29e88` source, each corrected CPU selection
 exercises 12 previously missing unchanged lines and 24 changed or added
 lines. Eleven of the 12 are in the serving app. These figures describe the
 selected tests. The expanded job measures the complete suite separately.
+
+Remote Linux source `eab0f3e` passed **89.6724%** (56,942/63,500 lines),
+with 19,329 passed and 173 skipped. [CI42346610505](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42346610505),
+backend42346610507, acceptance42346610519 and CodeQL42346609353 all passed.
+Tested merge `4697de85` and source whole trees match. The run uses coverage.py
+7.16.2 across 800 files and 566 exclusions. All 5,452 required consumer cases
+executed. Python 3.12.16, every installed distribution, profile inputs and all
+173 skips across 37 messages match `1b29e88`. The warning count fell by 52 to
+3,412 as existing NMF convergence warnings disappeared. The same Starlette
+and AnyIO deprecation moved to the first new TestClient import. There were
+no failures, errors or collection warnings.
+Full coverage rose by 22 covered lines with eight more statements. The
+serving app gained 21 covered lines, and one unchanged plot board line
+was exercised again. Core 70 and expanded 88 remain in force. The next
+expanded floor of 89 requires at least 90% complete coverage to preserve
+one percentage point of headroom. At `eab0f3e`, 208 more covered lines
+would reach 90% at the measured statement count.
+
+## Fold-local refit and replay contracts (2026-11-07)
+
+Each fit starts with empty learned state and publishes a fitted layout only
+on success. Replay retains the training feature order, ignores unrelated
+extra numeric columns after checking for generated-name collisions, and
+reports missing fitted features before downstream prediction.
+
+The 24 new cases run through real sklearn pipelines and transformers. The
+frozen `eab0f3e` control has 10 passes and 14 failures in each Windows
+profile. Corrected selections give 466 passes and 34 existing Polars skips
+in the DuckDB-only profile, 500 passes with DuckDB and Polars, and 24 passes
+in the core profile without either engine. All 24 new cases execute in each
+profile. No corrected runs report errors or warnings. Independent NumPy
+calculations verify scaling, row order and OLS predictions. Four pipelines
+saved by the old source reload on the corrected source and reproduce their
+predictions with reordered columns and extra numeric inputs.
+
+Against the verified full `eab0f3e` source, all three selections exercise
+nine previously missing unchanged lines in the fold transformer and 11
+changed or added lines. Each native selection also reaches one previously
+missing AutoML availability line. These figures describe the selected runs.
+The expanded job measures the complete suite separately.
