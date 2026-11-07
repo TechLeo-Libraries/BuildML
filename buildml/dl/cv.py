@@ -26,6 +26,7 @@ buildml.dl.train : The per-fold training loop.
 
 from __future__ import annotations
 
+import math
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from typing import Any, Literal
@@ -251,8 +252,11 @@ def _eval_accuracy_or_mse(module: Any, loader: Any, *, task: str, device: str) -
                 correct += int((pred == yb).sum().item())
             else:
                 loss = criterion(logits, yb)
+            batch_loss = float(loss.item())
+            if not math.isfinite(batch_loss):
+                raise ValidationError("Torch CV produced a non-finite validation loss")
             batch_n = int(xb.shape[0])
-            total_loss += float(loss.item()) * batch_n
+            total_loss += batch_loss * batch_n
             n += batch_n
     metrics = {"loss": total_loss / max(n, 1)}
     if task == "classification":
@@ -333,8 +337,9 @@ def cross_validate_torch(
     ValidationError
         If ``n_folds`` is below 2, if there are fewer rows than folds, if the
         target is non-numeric or contains ``NaN``, if regression labels are
-        non-finite or overflow float32, or if numeric features are non-finite
-        or overflow float32 after fold preprocessing.
+        non-finite or overflow float32, if numeric features are non-finite
+        or overflow float32 after fold preprocessing, or if a fold loss is
+        non-finite.
 
     Notes
     -----

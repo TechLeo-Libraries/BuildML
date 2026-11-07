@@ -33,6 +33,7 @@ import math
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
 from inspect import signature
+from numbers import Integral
 from typing import Any, Literal
 
 import numpy as np
@@ -491,28 +492,34 @@ def _is_better(value: float, best: float | None, *, maximize: bool) -> bool:
 
 
 def _train_universe_indices(
-    dataset: Dataset,
+    n_rows: int,
     split_plan: SplitPlan | None,
 ) -> tuple[np.ndarray, tuple[str, ...]]:
     """Return row indices eligible for CV / search and held-out partition names."""
-    frame = dataset._ensure_pandas()
-    n = len(frame)
     if split_plan is None:
-        return np.arange(n), ()
-    train_idx = np.asarray(list(split_plan.indices_for("train")), dtype=np.int64)
-    if train_idx.size == 0:
+        return np.arange(n_rows), ()
+    partitions = {
+        "train": split_plan.train_indices,
+        "validation": split_plan.validation_indices,
+        "test": split_plan.test_indices,
+    }
+    train = partitions["train"]
+    if not train:
         raise ValidationError("Train partition is empty; cannot run Torch search")
-    held: list[str] = []
-    for name in ("validation", "test"):
-        idx = list(split_plan.indices_for(name))  # type: ignore[arg-type]
-        if idx:
-            held.append(name)
-            overlap = set(train_idx.tolist()) & set(idx)
-            if overlap:
-                raise LeakageError(
-                    f"Train and {name} partitions overlap; refusing Torch nested search"
-                )
-    return train_idx, tuple(held)
+    for name, positions in partitions.items():
+        if any(
+            isinstance(pos, bool) or not isinstance(pos, Integral) or not 0 <= pos < n_rows
+            for pos in positions
+        ):
+            raise ValidationError(f"{name} positions must be integers in [0, {n_rows})")
+        if len(set(positions)) != len(positions):
+            raise ValidationError(f"{name} positions must be unique")
+    held = tuple(name for name in ("validation", "test") if partitions[name])
+    train_positions = set(train)
+    for name in held:
+        if train_positions.intersection(partitions[name]):
+            raise LeakageError(f"Train and {name} partitions overlap; refusing Torch nested search")
+    return np.asarray(train, dtype=np.int64), held
 
 
 def _fit_score_params(
@@ -782,8 +789,10 @@ def search_torch(
         If PyTorch is not installed.
     ValidationError
         If neither or both search spaces are given, if a key is outside the
-        searchable set, if a space is empty, if the target is non-numeric, or
-        if the scoring metric is not among the computed fold metrics.
+        searchable set, if a space is empty, if the training target is
+        non-numeric, if split positions are invalid or repeated, if a fold
+        loss is non-finite, or if the scoring metric is not among the computed
+        fold metrics.
     LeakageError
         If the training partition overlaps validation or test.
 
@@ -842,14 +851,14 @@ def search_torch(
     require_torch(feature="Torch hyperparameter search")
     feature_cols, target = resolve_feature_target(dataset)
     frame = dataset._ensure_pandas().copy()
-    y_all = frame[target]
-    if not pd.api.types.is_numeric_dtype(y_all):
+    universe, held_out = _train_universe_indices(len(frame), split_plan)
+    y_train = frame[target].iloc[universe]
+    if not pd.api.types.is_numeric_dtype(y_train):
         raise ValidationError(
             f"Target '{target}' must be numeric for Torch search "
             "(encode class labels to integers first)."
         )
-    resolved_task = infer_task(y_all, task)
-    universe, held_out = _train_universe_indices(dataset, split_plan)
+    resolved_task = infer_task(y_train, task)
     metric = _rank_metric_for_task(resolved_task, scoring_metric)
     if method == "grid":
         assert param_grid is not None
@@ -996,7 +1005,8 @@ def nested_cv_torch(
         If PyTorch is not installed.
     ValidationError
         If the search space is missing, doubled, empty, or uses unsupported
-        keys; or if the target is non-numeric.
+        keys, if the training target is non-numeric, if split positions are
+        invalid or repeated, or if a fold loss is non-finite.
     LeakageError
         If the training partition overlaps validation or test, or if outer
         training and evaluation indices overlap.
@@ -1060,14 +1070,14 @@ def nested_cv_torch(
     require_torch(feature="Torch nested CV")
     feature_cols, target = resolve_feature_target(dataset)
     frame = dataset._ensure_pandas().copy()
-    y_all = frame[target]
-    if not pd.api.types.is_numeric_dtype(y_all):
+    universe, held_out = _train_universe_indices(len(frame), split_plan)
+    y_train = frame[target].iloc[universe]
+    if not pd.api.types.is_numeric_dtype(y_train):
         raise ValidationError(
             f"Target '{target}' must be numeric for nested Torch CV "
             "(encode class labels to integers first)."
         )
-    resolved_task = infer_task(y_all, task)
-    universe, held_out = _train_universe_indices(dataset, split_plan)
+    resolved_task = infer_task(y_train, task)
     metric = _rank_metric_for_task(resolved_task, scoring_metric)
     maximize = metric in {"accuracy", "f1", "roc_auc", "r2"}
     factory = module_factory or _default_factory
@@ -1079,12 +1089,11 @@ def nested_cv_torch(
         assert param_distributions is not None
         catalog = _sample_distributions(param_distributions, n_iter=n_iter, seed=seed)
 
-    y_universe = frame.iloc[list(universe)][target].to_numpy()
     outer_pairs = _make_fold_indices(
         len(universe),
         n_folds=outer_cv,
         seed=seed,
-        y=y_universe if resolved_task == "classification" else None,
+        y=y_train.to_numpy() if resolved_task == "classification" else None,
         stratify=stratify and resolved_task == "classification",
     )
 

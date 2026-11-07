@@ -8488,3 +8488,31 @@ The full `80584b4` CI run failed on a documentation test that still expected
 the former public signature default. The corrected test checks the omitted
 algorithm and resolves it to LinUCB in contextual bandit mode. The accepted
 full result remains `7864085` pending fresh expanded verification.
+
+## Legacy SB3 predictors and Torch search populations (2026-11-07)
+
+The four core jobs and expanded Linux job at `ca4d968` failed the same
+three SB3 predictor tests. Those predictors expose `predict` without an
+observation space. The adapter again passes them a single flattened row
+while preserving the recorded shape for fitted policies. The real legacy
+vector bundle replays the same actions and scores. The corrected Windows
+selections pass 381, 433 and 267 tests on standard, compatible and core
+profiles respectively. The profiles skip 54, two and 131 cases for runtime
+availability and opposite-runtime checks. The installed profiles execute
+all 48 rollout cases and report existing Session alias deprecations. No
+collection warnings were observed. The failed full run is diagnostic.
+
+Torch search and nested CV infer task from eligible training rows. Both
+reject restored split positions that are invalid or repeated before fitting.
+Search, nested CV and plain CV reject non-finite validation loss before
+publishing fold scores. Independent NumPy calculations use fitted model
+weights to verify accuracy and cross-entropy on the actual folds.
+
+The frozen `ca4d968` Torch control has 12 passes and 23 failures. Both
+corrected Windows profiles have 67 passes, with all 35 new cases executed.
+They each skip two CUDA cases, one ONNX Runtime case and one opposite-runtime
+check. Genuine core skips all 35 cases because Torch is absent. Against
+verified `7864085` coverage, each corrected selection exercises four
+previously missing unchanged lines and 29 changed Torch lines. This selected
+reach is separate from whole-package coverage. The last accepted complete
+measurement remains 89.6864% at `7864085`.
