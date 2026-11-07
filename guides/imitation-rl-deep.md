@@ -166,6 +166,7 @@ small discrete envs. Default `env_id` is `"CartPole-v1"`, `n_episodes=200`,
 `max_steps=500`, `learning_rate=0.01`, `gamma=0.99`. Select
 `mode="gym_reinforce"` to use the default `reinforce_linear_softmax`
 algorithm. An incompatible explicit algorithm raises `ValidationError`.
+Training and evaluation require positive integer episode and step counts.
 
 `evaluate` rolls out episodes (`offline=False`) and reports mean/std
 return.
@@ -286,6 +287,11 @@ how much of the table was actually visited.
 `backend="industry"`, `mode="gym_sb3"`. Algorithms: `ppo` (default when
 this mode is selected), `dqn`, `a2c`. Default `total_timesteps` is
 20_000. The examples use small discrete environments such as CartPole.
+For a Box observation with more than one axis, pass a flattened vector per
+row to `session.rl.act`. The policy restores the environment's original shape
+for prediction and evaluation.
+SB3 policy bundles store the backend's native model archive and restore the
+policy on CPU when loaded.
 
 ```python
 # Requires: pip install "buildml[rl-industry]" (Gymnasium and Stable-Baselines3).

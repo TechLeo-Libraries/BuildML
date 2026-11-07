@@ -313,8 +313,8 @@ def _eval_gym(
     metrics = evaluate_gym_policy(
         policy,
         env_id=plan.env_id,
-        n_episodes=int(n_episodes if n_episodes is not None else 20),
-        max_steps=int(max_steps if max_steps is not None else cfg.get("max_steps", 500)),
+        n_episodes=n_episodes if n_episodes is not None else 20,
+        max_steps=max_steps if max_steps is not None else int(cfg.get("max_steps", 500)),
         random_state=random_state,
         deterministic=deterministic,
     )
@@ -349,8 +349,8 @@ def _eval_tabular(
     metrics = evaluate_tabular_policy(
         policy,
         env_id=plan.env_id,
-        n_episodes=int(n_episodes if n_episodes is not None else 20),
-        max_steps=int(max_steps if max_steps is not None else cfg.get("max_steps", 200)),
+        n_episodes=n_episodes if n_episodes is not None else 20,
+        max_steps=max_steps if max_steps is not None else int(cfg.get("max_steps", 200)),
         random_state=random_state,
         deterministic=deterministic,
     )
@@ -396,8 +396,8 @@ def _eval_sb3(
     metrics = evaluate_sb3_policy(
         policy,
         env_id=plan.env_id,
-        n_episodes=int(n_episodes if n_episodes is not None else 20),
-        max_steps=int(max_steps if max_steps is not None else cfg.get("max_steps", 500)),
+        n_episodes=n_episodes if n_episodes is not None else 20,
+        max_steps=max_steps if max_steps is not None else int(cfg.get("max_steps", 500)),
         random_state=random_state,
         deterministic=deterministic,
     )

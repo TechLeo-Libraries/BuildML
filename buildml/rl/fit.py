@@ -474,8 +474,8 @@ def _fit_gym_reinforce(
         backend=backend,
         algorithm="linucb" if algorithm == "linucb" else algorithm,  # unused
         env_id=env_id,
-        n_episodes=n_episodes,
-        max_steps=max_steps,
+        n_episodes=int(n_episodes),
+        max_steps=int(max_steps),
         learning_rate=learning_rate,
         gamma=gamma,
         random_state=random_state,

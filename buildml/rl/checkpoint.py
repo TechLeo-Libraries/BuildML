@@ -13,8 +13,8 @@ both is normal.
 
 Each bundle is a directory of two files. ``meta.json`` is human-readable and
 holds the configuration, the fit report, and any evaluation, so you can tell
-what a bundle contains without loading it. The ``.joblib`` file holds the live
-model objects.
+what a bundle contains without loading it. The ``.joblib`` file holds the plan
+and model state, including a native model archive for Stable-Baselines3.
 
 Loading validates the format string before unpickling, which catches a wrong
 directory early. It is not a security boundary: joblib executes code on load, so
@@ -28,6 +28,8 @@ buildml.rl.results : The plans these bundles carry.
 from __future__ import annotations
 
 import json
+from dataclasses import replace
+from io import BytesIO
 from pathlib import Path
 from typing import Any
 
@@ -36,6 +38,8 @@ import joblib
 from buildml._version import __version__
 from buildml.core.errors import ValidationError
 from buildml.core.serialization import joblib_load_trusted
+from buildml.rl.adapters.stable_baselines3 import SB3PolicyWrapper
+from buildml.rl.extras import require_stable_baselines3
 from buildml.rl.results import (
     ImitationEvalResult,
     ImitationFitResult,
@@ -246,9 +250,16 @@ def save_rl_bundle(
     """
     if plan is None:
         raise ValidationError("No RlPlan to save.")
+    payload: dict[str, Any] = {"plan": plan}
+    if isinstance(plan.policy_, SB3PolicyWrapper):
+        policy = plan.policy_
+        with BytesIO() as stream:
+            policy.model.save(stream)
+            payload["sb3_model_zip"] = stream.getvalue()
+        payload["plan"] = replace(plan, policy_=replace(policy, model=None))
     destination = Path(path)
     destination.mkdir(parents=True, exist_ok=True)
-    joblib.dump({"plan": plan}, destination / "rl_plan.joblib")
+    joblib.dump(payload, destination / "rl_plan.joblib")
     meta: dict[str, Any] = {
         "format": BUNDLE_FORMAT_RL,
         "buildml_version": __version__,
@@ -324,4 +335,15 @@ def load_rl_bundle(path: str | Path, *, trusted: bool = False) -> RlPlan:
     plan = loaded["plan"]
     if not isinstance(plan, RlPlan):
         raise ValidationError("Loaded plan object is not an RlPlan")
+    if "sb3_model_zip" in loaded:
+        policy = plan.policy_
+        archive = loaded["sb3_model_zip"]
+        if not isinstance(policy, SB3PolicyWrapper) or not isinstance(archive, bytes):
+            raise ValidationError("RL bundle contains an invalid Stable-Baselines3 archive")
+        sb3 = require_stable_baselines3(feature="Trusted RL bundle loading")
+        model_class = {"ppo": sb3.PPO, "dqn": sb3.DQN, "a2c": sb3.A2C}.get(policy.algorithm)
+        if model_class is None:
+            raise ValidationError(f"Unsupported Stable-Baselines3 bundle algorithm {policy.algorithm!r}")
+        with BytesIO(archive) as stream:
+            policy.model = model_class.load(stream, device="cpu")
     return plan

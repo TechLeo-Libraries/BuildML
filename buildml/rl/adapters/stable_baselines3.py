@@ -61,6 +61,9 @@ class SB3PolicyWrapper:
         The interaction budget it was trained with.
     disclosures:
         What the training run did and what its scope is.
+    observation_shape:
+        The original Gymnasium observation shape. Older bundles can use the
+        model's observation space when this field is absent.
 
     See Also
     --------
@@ -74,6 +77,7 @@ class SB3PolicyWrapper:
     n_actions: int
     total_timesteps: int = 0
     disclosures: tuple[str, ...] = ()
+    observation_shape: tuple[int, ...] | None = None
 
     def predict(
         self,
@@ -83,7 +87,7 @@ class SB3PolicyWrapper:
     ) -> tuple[int, np.ndarray | None]:
         """Ask the underlying model what to do in one state.
 
-        Reshapes the observation into the batch form Stable-Baselines3 expects
+        Restores the environment's observation shape for Stable-Baselines3
         and narrows the action to a plain ``int``.
 
         Parameters
@@ -102,7 +106,8 @@ class SB3PolicyWrapper:
             The recurrent state, for policies that keep one. ``None`` for the
             feed-forward policies used here.
         """
-        obs = np.asarray(observation, dtype=float).reshape(1, -1)
+        shape = self.observation_shape or self.model.observation_space.shape
+        obs = np.asarray(observation, dtype=float).reshape(shape)
         action, state = self.model.predict(obs, deterministic=deterministic)
         return int(np.asarray(action).item()), state
 
@@ -273,6 +278,7 @@ def train_sb3_policy(
                 obs_dim=obs_dim,
                 n_actions=n_actions,
                 total_timesteps=actual_timesteps,
+                observation_shape=tuple(obs_shape),
             ),
             n_episodes=10,
             max_steps=max_steps,
@@ -290,6 +296,7 @@ def train_sb3_policy(
         n_actions=n_actions,
         total_timesteps=actual_timesteps,
         disclosures=tuple(disclosures),
+        observation_shape=tuple(obs_shape),
     )
     metrics = {
         "total_timesteps": float(actual_timesteps),
@@ -378,12 +385,8 @@ def evaluate_sb3_policy(
             obs = reset_out[0] if isinstance(reset_out, tuple) else reset_out
             total = 0.0
             for _ in range(int(max_steps)):
-                flat = np.asarray(obs, dtype=float).reshape(-1)
-                action, _state = policy.model.predict(
-                    flat.reshape(1, -1),
-                    deterministic=deterministic,
-                )
-                step_out = env.step(int(np.asarray(action).item()))
+                action, _state = policy.predict(obs, deterministic=deterministic)
+                step_out = env.step(action)
                 if len(step_out) == 5:
                     obs, reward, terminated, truncated, _info = step_out
                     done = bool(terminated or truncated)

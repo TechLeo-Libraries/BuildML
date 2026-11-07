@@ -40,6 +40,7 @@ from typing import Any
 import numpy as np
 
 from buildml.core.errors import ValidationError
+from buildml.core.validation import _positive_integer
 from buildml.rl.extras import require_gymnasium
 from buildml.rl.features import softmax
 
@@ -282,8 +283,9 @@ def train_gym_reinforce(
     MissingExtraError
         If ``buildml[rl]`` is not installed.
     ValidationError
-        If the environment cannot be created, its action space is not discrete,
-        or its observation space has no shape.
+        If the episode or step budget is invalid, the environment cannot be
+        created, its action space is not discrete, or its observation space
+        has no shape.
 
     Notes
     -----
@@ -299,6 +301,8 @@ def train_gym_reinforce(
     --------
     evaluate_gym_policy : Roll out the trained policy without learning.
     """
+    n_episodes = _positive_integer(n_episodes, name="n_episodes")
+    max_steps = _positive_integer(max_steps, name="max_steps")
     gymnasium = require_gymnasium(feature="fit_rl(mode='gym_reinforce')")
     disclosures = [
         "Gymnasium REINFORCE-lite trains a linear softmax policy in an env loop.",
@@ -341,13 +345,13 @@ def train_gym_reinforce(
         ).astype(float)
 
         returns: list[float] = []
-        for ep in range(int(n_episodes)):
+        for ep in range(n_episodes):
             reset_out = env.reset(seed=None if random_state is None else int(random_state) + ep)
             obs = reset_out[0] if isinstance(reset_out, tuple) else reset_out
             observations: list[np.ndarray] = []
             actions: list[int] = []
             rewards: list[float] = []
-            for _ in range(int(max_steps)):
+            for _ in range(max_steps):
                 flat = np.asarray(obs, dtype=float).reshape(-1)
                 action = policy.act(flat, rng=rng, deterministic=False)
                 step_out = env.step(action)
@@ -425,6 +429,8 @@ def evaluate_gym_policy(
     ------
     MissingExtraError
         If ``buildml[rl]`` is not installed.
+    ValidationError
+        If the episode or step budget is invalid.
 
     Notes
     -----
@@ -437,18 +443,20 @@ def evaluate_gym_policy(
     --------
     train_gym_reinforce : Produce the policy.
     """
+    n_episodes = _positive_integer(n_episodes, name="n_episodes")
+    max_steps = _positive_integer(max_steps, name="max_steps")
     gymnasium = require_gymnasium(feature="evaluate_rl(mode='gym_reinforce')")
     env = gymnasium.make(env_id)
     rng = np.random.default_rng(random_state)
     returns: list[float] = []
     try:
-        for ep in range(int(n_episodes)):
+        for ep in range(n_episodes):
             reset_out = env.reset(
                 seed=None if random_state is None else int(random_state) + 10_000 + ep
             )
             obs = reset_out[0] if isinstance(reset_out, tuple) else reset_out
             total = 0.0
-            for _ in range(int(max_steps)):
+            for _ in range(max_steps):
                 flat = np.asarray(obs, dtype=float).reshape(-1)
                 action = policy.act(flat, rng=rng, deterministic=deterministic)
                 step_out = env.step(action)

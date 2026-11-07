@@ -8462,3 +8462,29 @@ Against verified full `7864085` coverage, the selected runs exercise 34,
 exercise ten, ten and five changed or added lines. The imitation profile
 covers extra paths that depend on a backend absent from expanded Linux CI.
 These are selected-run figures. Full coverage is measured separately.
+
+## RL rollout budgets, observation shape and bundle replay (2026-11-07)
+
+Environment rollouts validate episode and step budgets before conversion.
+Stable-Baselines3 restores the environment's observation shape for prediction
+and uses its native model archive in saved bundles. Direct Gymnasium rollouts
+and fitted A2C and DQN predictions verify returns, actions and saved-policy
+replay. A vector policy saved at `80584b4` also replays on the corrected source.
+
+All 48 new cases ran on both Windows Gymnasium and SB3 profiles. The frozen
+`80584b4` controls gave seven passes and 41 failures on each. The corrected
+regression selections have 331 passes and three existing skips without
+imitation and 332 passes and two existing skips with imitation. The 48 core
+cases skip because Gymnasium is absent. The installed profiles have two and
+four existing Session alias deprecations and no collection warnings.
+
+Against verified full `7864085` coverage, the selected runs exercise 42,
+111 and zero previously missing unchanged lines, respectively. They also
+exercise 45, 45 and six changed or added lines. The compatible Windows run
+includes imitation paths unavailable to expanded Linux CI. These selected-run
+figures are separate from whole-package coverage.
+
+The full `80584b4` CI run failed on a documentation test that still expected
+the former public signature default. The corrected test checks the omitted
+algorithm and resolves it to LinUCB in contextual bandit mode. The accepted
+full result remains `7864085` pending fresh expanded verification.
