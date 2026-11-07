@@ -54,20 +54,21 @@ across Linux Python 3.10-3.13, run 38589015544, commit 2837fb3).
 Measure the complete suite with `python scripts/run_full_coverage.py`; subset
 runs are not comparable to the project coverage threshold.
 The separate expanded Linux job runs the complete test directory with
-`requirements-expanded-coverage.txt` and an **88%** floor. Remote Linux source `c5e8cb4` passed **89.8091%** (57,071/63,547 lines),
-with 19,477 passed and 173 skipped. All four workflows passed and tested
-merge `d6137e8` has the same tree as the source. [CI42401314881](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42401314881)
+`requirements-expanded-coverage.txt` and an **88%** floor. Remote Linux source
+`f13c119` passed at **89.8197%** (57,084/63,554 lines), with 19,482 passed
+and 173 skipped. All four workflows passed. The tested merge `6654a4c` has
+the same tree as the source. [CI42406580345](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42406580345)
 
 The run used coverage.py 7.16.2 across 800 files and 566 exclusions. All
-5,600 required consumer cases executed. Python 3.12.16, the installed
+5,605 required consumer cases executed. Python 3.12.16, the installed
 distributions, profile inputs, all 173 skips across 37 messages, and all
-3,464 warnings match `ec58d6b`. There were no failures, errors or
+3,464 warnings match `c5e8cb4`. There were no failures, errors or
 collection warnings.
 
-The covered count rose by 22 and the statement count rose by nine. Core 70
+The dashboard chart changes added 13 covered lines and seven statements. Core 70
 and expanded 88 remain in force. The next expanded floor of 89 requires
 at least 90% complete coverage to preserve one percentage point of
-headroom. At `c5e8cb4`, 122 more covered lines would reach 90% at the
+headroom. At `f13c119`, 115 more covered lines would reach 90% at the
 measured statement count.
 
 The subsequent `8594200` gate passed its tests, but coverage.py upgraded from

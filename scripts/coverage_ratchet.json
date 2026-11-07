@@ -8,22 +8,22 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 89.80911766094387,
-      "covered_lines": 57071,
-      "num_statements": 63547,
+      "percent_covered": 89.8196809012808,
+      "covered_lines": 57084,
+      "num_statements": 63554,
       "excluded_lines": 566,
-      "source_revision": "c5e8cb48e86175a83f1a56fca0dd8baf9cacee7e",
-      "tested_revision": "d6137e85fef37eb57ff3c998d46f337abf06027b",
+      "source_revision": "f13c119033528590b98dcdc34ebe11947d051f59",
+      "tested_revision": "6654a4ca7fa27190c11563ac380524d67c39cb32",
       "platform": "remote Linux, CPU expanded profile",
       "python": "3.12.16",
-      "run_id": 42401314881,
-      "result": "19477 passed, 173 skipped, zero failures or errors",
+      "run_id": 42406580345,
+      "result": "19482 passed, 173 skipped, zero failures or errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
       "coverage_version": "7.16.2",
-      "notes": "All four exact-source workflows passed. Tested merge and source have equal trees. Same installed distributions, profile inputs, scope, tracing, skips and all 3,464 warnings as ec58d6b. All 5,600 required consumers in 47 modules executed. Net change is 22 covered lines and nine statements in plot boards and model evidence. No collection warnings. Exact 90% gap is 122 lines. Floors and headroom unchanged."
+      "notes": "All four exact-source workflows passed. Tested merge and source have equal trees. Same installed distributions, profile inputs, scope, tracing, skips and all 3,464 warnings as c5e8cb4. All 5,605 required consumers in 48 modules executed. Net change is 13 covered lines and seven statements in dashboard charts. No collection warnings. Exact 90% gap is 115 covered lines at this denominator."
     },
     "latest_local_measurement": {
       "percent_covered": 85.51916984547746,

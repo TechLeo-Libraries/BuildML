@@ -66,7 +66,10 @@ from sklearn.metrics import (
 )
 from sklearn.model_selection import (
     GroupKFold,
+    GroupShuffleSplit,
     KFold,
+    LeaveOneGroupOut,
+    LeavePGroupsOut,
     ParameterSampler,
     StratifiedGroupKFold,
     StratifiedKFold,
@@ -3365,6 +3368,17 @@ def _validated_fold_positions(positions: Any, n_rows: int) -> np.ndarray:
     return values
 
 
+def _role_group_labels(dataset: Dataset, split_plan: SplitPlan) -> pd.Series:
+    group_cols = dataset.role_columns(ColumnRole.GROUP)
+    if not group_cols:
+        raise ValidationError(
+            "Group CV requires a column with role 'group' or an explicit groups series"
+        )
+    if len(group_cols) != 1:
+        raise ValidationError("Group CV expects exactly one group-role column")
+    return frame_for_partition(dataset, split_plan, "train")[group_cols[0]]
+
+
 def _resolve_splitter(
     *,
     dataset: Dataset,
@@ -3385,6 +3399,10 @@ def _resolve_splitter(
             splitter = check_cv(cv, y=y_train, classifier=task == "classification")
         except (TypeError, ValueError) as exc:
             raise ValidationError("cv must be an integer >= 2 or a CV splitter") from exc
+        if groups is None and isinstance(
+            splitter, (GroupKFold, GroupShuffleSplit, LeaveOneGroupOut, LeavePGroupsOut, StratifiedGroupKFold)
+        ):
+            groups = _role_group_labels(dataset, split_plan)
         return groups, type(splitter).__name__, splitter, None
 
     cv = _positive_integer(cv, name="cv")
@@ -3405,15 +3423,7 @@ def _resolve_splitter(
     group_values = groups
     if strategy in {"group", "stratified_group"}:
         if group_values is None:
-            group_cols = dataset.role_columns(ColumnRole.GROUP)
-            if not group_cols:
-                raise ValidationError(
-                    "Group CV requires a column with role 'group' or an explicit groups series"
-                )
-            if len(group_cols) != 1:
-                raise ValidationError("Group CV expects exactly one group-role column")
-            train_frame = frame_for_partition(dataset, split_plan, "train")
-            group_values = train_frame[group_cols[0]]
+            group_values = _role_group_labels(dataset, split_plan)
         n_groups = int(pd.Series(group_values).nunique(dropna=False))
         if n_groups < cv:
             raise ValidationError(

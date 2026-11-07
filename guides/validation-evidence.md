@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-11-06, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed at 89.8091% (57,071/63,547) with 19,477 passed and 173 skipped | Source `c5e8cb4`, tested merge `d6137e8`. Trees match and all four workflows passed. Same 800 files, 566 exclusions and coverage.py 7.16.2. All 5,600 required cases executed. No failures, errors or collection warnings. Exact 90% gap is 122 covered lines. [CI42401314881](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42401314881) |
+| Current accepted remote expanded CPU whole-package gate | Passed at 89.8197% (57,084/63,554) with 19,482 passed and 173 skipped | Source `f13c119`, tested merge `6654a4c`. Trees match and all four workflows passed. Same 800 files, 566 exclusions and coverage.py 7.16.2. All 5,605 required cases executed. No failures, errors or collection warnings. The gap to 90% is 115 covered lines at this denominator. [CI42406580345](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42406580345) |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -8604,3 +8604,34 @@ Against verified full `c5e8cb4` coverage, the selected runs exercise six
 and two previously missing unchanged lines and 22 and three changed lines
 on standard and core, respectively. The changed lines include mechanical
 palette lookups. This reach is separate from whole-package coverage.
+
+Remote Linux source `f13c119` passed at **89.8197%** (57,084/63,554 lines),
+with 19,482 passes and 173 skips. All four workflows passed and the tested
+merge tree matches the source. All 5,605 required cases executed. Scope,
+exclusions, tracing, profile inputs, distributions, skips and all 3,464
+warnings match `c5e8cb4`. The covered count rose by 13 across seven additional
+statements in the dashboard chart module. There were no collection warnings.
+[CI42406580345](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42406580345)
+
+## Grouped nested AutoML evidence (2026-11-07)
+
+Explicit scikit-learn group splitters use the Session's group-role column
+when the caller omits group labels. Nested native AutoML requires at least
+one outer fold and a finite ranking metric for every outer fold. A rejected
+estimate leaves the Session's previous search result and fitted model intact.
+
+Ten new consumers exercise these contracts using duplicate frame labels,
+shuffled training rows, an independent weighted Ridge fit and a weighted
+classification calculation. The nested Ridge check ranks all three grid
+candidates independently inside each outer training fold, then compares
+the mean and sample standard deviation of the outer losses. A one-row
+outer fold can still supply a defined weighted MSE.
+
+On frozen `f13c119`, both Windows profiles have two passes and eight
+failures. The corrected standard and genuine-core selections each have
+271 passes and 42 skips because Optuna is absent, with all ten new cases
+executed. Both emit two scikit-learn warnings for undefined R² on singleton
+evaluation folds. There are no collection or coverage warnings. Against
+verified full `f13c119`, standard and core exercise one and two previously
+missing unchanged lines, respectively, and 13 changed lines each. These
+are selected-run counts.

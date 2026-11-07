@@ -1377,9 +1377,14 @@ def _nested_outer_estimate(
     preprocess: PreprocessRecipe | None,
     budget: AutoMLBudget,
     deadline: float | None = None,
-) -> tuple[float | None, float | None, tuple[str, ...]]:
+) -> tuple[float, float, tuple[str, ...]]:
     """Repeat the configured search on each outer-training population."""
-    from buildml.model.selection import _resolve_splitter, _validated_fold_positions
+    from buildml.model.selection import (
+        _require_finite_cv_metric,
+        _resolve_splitter,
+        _score_predictions,
+        _validated_fold_positions,
+    )
 
     x_train, y_train, _fc, _tg, sample_weight = _feature_target_frames(
         dataset, split_plan, "train"
@@ -1449,18 +1454,19 @@ def _nested_outer_estimate(
         if fitted is None:
             raise ValidationError("Nested AutoML did not return a fitted outer-training model")
         y_pred = fitted.estimator.predict(x_reset.iloc[list(eval_pos)])
-        from buildml.model.selection import _score_predictions
-
         w_eval = None if w_reset is None else w_reset.iloc[list(eval_pos)]
         fold_metrics = _score_predictions(task, y_reset.iloc[list(eval_pos)], y_pred,
                                           sample_weight=w_eval)
+        _require_finite_cv_metric(fold_metrics, metric, f"Nested AutoML outer fold {fold_id}")
         outer_scores.append(float(fold_metrics[metric]))
         warnings.extend(f"Outer fold {fold_id}: {item}" for item in inner_result.warnings)
 
     if not outer_scores:
-        return None, None, tuple(warnings + ["Nested outer estimate produced no folds."])
+        raise ValidationError("Nested AutoML outer CV produced no folds")
     mean = float(np.mean(outer_scores))
     std = float(np.std(outer_scores, ddof=1)) if len(outer_scores) > 1 else 0.0
+    if not np.isfinite((mean, std)).all():
+        raise ValidationError("Nested AutoML outer scores could not be summarized as finite values")
     return mean, std, tuple(warnings)
 
 

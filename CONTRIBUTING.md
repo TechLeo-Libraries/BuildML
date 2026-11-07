@@ -122,7 +122,7 @@ monolith** (**70** active after corrected thread/process tracing measured at lea
 `pytest tests --cov=buildml`); do not lower it to silence a regression.
 The separate `expanded-coverage` CI job installs
 `requirements-expanded-coverage.txt` and runs the entire suite with an **88%**
-floor, supported by passing remote Linux 89.8091% evidence at `c5e8cb4`.
+floor, supported by passing remote Linux 89.8197% evidence at `f13c119`.
 The broadened profile includes DoWhy and ONNX Runtime, using a compatible
 NumPy 2.4.1/SciPy 1.15.3/mlxtend 0.23.4 stack. Same-source complete local suites
 passed 85.5192% for this profile and85.3947% for its original-profile control;
@@ -230,18 +230,19 @@ and pick the next target, and `--path buildml/<pkg>` to audit work in progress.
 - Write public documentation for library users. Keep implementation instructions,
   release actions, and work plans in clearly labeled contributor material.
 
-Current expanded coverage evidence (2026-11-07): Remote Linux source `c5e8cb4` passed **89.8091%** (57,071/63,547 lines),
-with 19,477 passed and 173 skipped. All four workflows passed and tested
-merge `d6137e8` has the same tree as the source. [CI42401314881](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42401314881)
+Remote Linux source `f13c119` passed the expanded coverage gate on November 7,
+2026 at **89.8197%** (57,084/63,554 lines), with 19,482 passed and 173 skipped.
+All four workflows passed. The tested merge `6654a4c` has the same tree as
+the source. [CI42406580345](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42406580345)
 
 The run used coverage.py 7.16.2 across 800 files and 566 exclusions. All
-5,600 required consumer cases executed. Python 3.12.16, the installed
+5,605 required consumer cases executed. Python 3.12.16, the installed
 distributions, profile inputs, all 173 skips across 37 messages, and all
-3,464 warnings match `ec58d6b`. There were no failures, errors or
+3,464 warnings match `c5e8cb4`. There were no failures, errors or
 collection warnings.
 
-The covered count rose by 22 and the statement count rose by nine. Core 70
+The dashboard chart changes added 13 covered lines and seven statements. Core 70
 and expanded 88 remain in force. The next expanded floor of 89 requires
 at least 90% complete coverage to preserve one percentage point of
-headroom. At `c5e8cb4`, 122 more covered lines would reach 90% at the
+headroom. At `f13c119`, 115 more covered lines would reach 90% at the
 measured statement count.
