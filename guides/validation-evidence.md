@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-11-06, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed at 89.7872% (57,049/63,538) with 19,463 passed and 173 skipped | Source `ec58d6b`, tested merge `495f831`. Trees match and all four workflows passed. Same 800 files, 566 exclusions and coverage.py 7.16.2. All 5,586 required cases executed. No failures, errors or collection warnings. Exact 90% gap is 136 covered lines. [CI42396064099](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42396064099) |
+| Current accepted remote expanded CPU whole-package gate | Passed at 89.8091% (57,071/63,547) with 19,477 passed and 173 skipped | Source `c5e8cb4`, tested merge `d6137e8`. Trees match and all four workflows passed. Same 800 files, 566 exclusions and coverage.py 7.16.2. All 5,600 required cases executed. No failures, errors or collection warnings. Exact 90% gap is 122 covered lines. [CI42401314881](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42401314881) |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -8576,3 +8576,31 @@ Against verified full `ec58d6b` coverage, the standard and core selections
 exercise 12 and three previously missing unchanged lines and 17 and six
 changed lines, respectively. These are selected-run counts. Full package
 coverage is measured separately.
+
+Remote Linux source `c5e8cb4` passed **89.8091%** (57,071/63,547 lines),
+with 19,477 passes and 173 skips. All four workflows passed and the tested
+merge tree matches the source. All 5,600 required cases executed. Scope,
+exclusions, tracing, profile inputs, distributions, skips and all 3,464
+warnings match `ec58d6b`. The covered count rose by 22 across nine additional
+statements, with the change confined to the two plot and evidence modules.
+There were no collection warnings. [CI42401314881](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42401314881)
+
+## Dashboard chart rendering contracts (2026-11-07)
+
+Each chart request keeps its own light or dark palette during rendering.
+Correlation heatmaps preserve feature names that overlap the legacy matrix
+field names. An outlier rate of zero remains visible under the legacy alias.
+
+The frozen `c5e8cb4` control has one pass and four failures. The corrected
+standard Windows selection passes all 58 cases, including all five new
+cases. They exercise concurrent FastAPI requests, independent Pearson and
+rank correlations on a real wide EDA report, and a measured zero from an
+actual outlier report. The separate offline HTML and PDF consumers both
+pass. Genuine core has 35 passes and 23 skips for missing Plotly or FastAPI.
+Standard has one existing LangChain Community deprecation per selection.
+There are no collection or coverage warnings.
+
+Against verified full `c5e8cb4` coverage, the selected runs exercise six
+and two previously missing unchanged lines and 22 and three changed lines
+on standard and core, respectively. The changed lines include mechanical
+palette lookups. This reach is separate from whole-package coverage.

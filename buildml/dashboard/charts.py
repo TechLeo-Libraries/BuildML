@@ -5,6 +5,7 @@ from __future__ import annotations
 import io
 from collections.abc import Iterator
 from contextlib import contextmanager
+from contextvars import ContextVar
 from typing import Any, Literal
 
 from buildml.core.errors import MissingExtraError
@@ -18,7 +19,7 @@ _PALETTE_LIGHT: dict[str, Any] = dict(INDUSTRY_CHART_LIGHT)
 _PALETTE_DARK: dict[str, Any] = dict(INDUSTRY_CHART_DARK)
 
 _PALETTES: dict[str, dict[str, Any]] = {"light": _PALETTE_LIGHT, "dark": _PALETTE_DARK}
-PALETTE: dict[str, Any] = _PALETTE_LIGHT
+_ACTIVE_PALETTE: ContextVar[dict[str, Any]] = ContextVar("dashboard_chart_palette", default=_PALETTE_LIGHT)
 
 # Full EDA figure spine for the Command Cockpit readiness sheet. Order follows
 # analyzer families (quality → univariate → relationships → multivariate →
@@ -191,7 +192,7 @@ def charts_for_cockpit_report(report: dict[str, Any]) -> list[str]:
 
 @contextmanager
 def theme_palette(theme: ThemeName | str = "light") -> Iterator[dict[str, Any]]:
-    """Swap the chart palette for the duration of a block, then put it back.
+    """Set the chart palette for the current rendering context.
 
     Plotly figures bake their colours in at construction, so the palette has to
     be active while the figures are built rather than when they are displayed.
@@ -212,9 +213,8 @@ def theme_palette(theme: ThemeName | str = "light") -> Iterator[dict[str, Any]]:
 
     Notes
     -----
-    **The palette is module-global, so this is not thread-safe.** Two threads
-    building charts in different themes at once will interfere. The dashboard
-    builds charts on one thread; if you parallelise, do not mix themes.
+    Concurrent renders keep separate palettes. A nested rendering context
+    restores the outer palette when it exits.
 
     Examples
     --------
@@ -228,11 +228,10 @@ def theme_palette(theme: ThemeName | str = "light") -> Iterator[dict[str, Any]]:
                               'approved': [0, 1] * 20})
         session = Session.ingest(frame).set_roles({'age': 'feature', 'income': 'feature', 'approved': 'target'})
         session.split(test_size=0.2, stratify=True, random_state=0)
-        from buildml.dashboard.charts import theme_palette, build_chart_figures
+        from buildml.dashboard.charts import build_chart_figures
 
         report = session.eda()
-        with theme_palette('dark'):
-            figures = build_chart_figures(report.to_dict())
+        figures = build_chart_figures(report.to_dict(), theme='dark')
         print(len(figures))
 
 
@@ -242,13 +241,16 @@ def theme_palette(theme: ThemeName | str = "light") -> Iterator[dict[str, Any]]:
     --------
     build_chart_figures : The usual caller, which handles this for you.
     """
-    global PALETTE
-    previous = PALETTE
-    PALETTE = _PALETTES.get(str(theme), _PALETTE_LIGHT)
+    palette = _PALETTES.get(str(theme), _PALETTE_LIGHT)
+    previous = _ACTIVE_PALETTE.set(palette)
     try:
-        yield PALETTE
+        yield palette
     finally:
-        PALETTE = previous
+        _ACTIVE_PALETTE.reset(previous)
+
+
+def _color(name: str) -> Any:
+    return _ACTIVE_PALETTE.get()[name]
 
 
 def _require_plotly():
@@ -266,42 +268,42 @@ def _layout(fig: Any, *, title: str, height: int = 420) -> Any:
             "text": title,
             "x": 0.01,
             "xanchor": "left",
-            "font": {"size": 16, "color": PALETTE["ink"]},
+            "font": {"size": 16, "color": _color("ink")},
         },
         paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="rgba(0,0,0,0)",
-        font={"family": "Barlow, Segoe UI, Helvetica Neue, sans-serif", "color": PALETTE["ink"]},
+        font={"family": "Barlow, Segoe UI, Helvetica Neue, sans-serif", "color": _color("ink")},
         # Generous margins + automargin keep tick/bar labels from clipping
         # into neighboring lanes on narrow studio cards.
         margin={"l": 72, "r": 48, "t": 64, "b": 72},
         height=height,
         legend={"orientation": "h", "yanchor": "bottom", "y": 1.02, "x": 0},
-        colorway=PALETTE["series"],
+        colorway=_color("series"),
         hoverlabel={
-            "bgcolor": PALETTE["hover_bg"],
-            "font": {"size": 12, "color": PALETTE["hover_ink"]},
-            "bordercolor": PALETTE["grid"],
+            "bgcolor": _color("hover_bg"),
+            "font": {"size": 12, "color": _color("hover_ink")},
+            "bordercolor": _color("grid"),
         },
-        meta={"buildml_theme": "dark" if PALETTE is _PALETTE_DARK else "light"},
+        meta={"buildml_theme": "dark" if _ACTIVE_PALETTE.get() is _PALETTE_DARK else "light"},
         uniformtext={"minsize": 10, "mode": "hide"},
     )
     fig.update_xaxes(
         showgrid=True,
-        gridcolor=PALETTE["grid"],
+        gridcolor=_color("grid"),
         zeroline=False,
         automargin=True,
-        tickfont={"color": PALETTE["ink"], "size": 11},
-        title_font={"color": PALETTE["ink"]},
-        linecolor=PALETTE["grid"],
+        tickfont={"color": _color("ink"), "size": 11},
+        title_font={"color": _color("ink")},
+        linecolor=_color("grid"),
     )
     fig.update_yaxes(
         showgrid=True,
-        gridcolor=PALETTE["grid"],
+        gridcolor=_color("grid"),
         zeroline=False,
         automargin=True,
-        tickfont={"color": PALETTE["ink"], "size": 11},
-        title_font={"color": PALETTE["ink"]},
-        linecolor=PALETTE["grid"],
+        tickfont={"color": _color("ink"), "size": 11},
+        title_font={"color": _color("ink")},
+        linecolor=_color("grid"),
     )
     return fig
 
@@ -354,7 +356,7 @@ def _footnote(fig: Any, text: str, *, y: float = -0.22) -> None:
         x=0,
         y=y,
         showarrow=False,
-        font={"size": 11, "color": PALETTE["annotation"]},
+        font={"size": 11, "color": _color("annotation")},
         align="left",
     )
 
@@ -584,11 +586,11 @@ def _fig_severity(go: Any, report: dict[str, Any]) -> dict[str, Any]:
         severity = str(item.get("severity", "info")).lower()
         counts[severity] = counts.get(severity, 0) + 1
     colors = {
-        "info": PALETTE["info"],
-        "low": PALETTE["accent_soft"],
-        "medium": PALETTE["warn"],
+        "info": _color("info"),
+        "low": _color("accent_soft"),
+        "medium": _color("warn"),
         "high": "#C2410C",
-        "critical": PALETTE["critical"],
+        "critical": _color("critical"),
     }
     ys = [counts[key] for key in order]
     ymax = max(ys) if ys else 0
@@ -600,7 +602,7 @@ def _fig_severity(go: Any, report: dict[str, Any]) -> dict[str, Any]:
                 marker_color=[colors[key] for key in order],
                 text=ys,
                 textposition="outside",
-                textfont={"size": 11, "color": PALETTE["ink"]},
+                textfont={"size": 11, "color": _color("ink")},
                 cliponaxis=False,
                 constraintext="none",
                 hovertemplate="Severity=%{x}<br>Findings=%{y}<extra></extra>",
@@ -635,10 +637,10 @@ def _fig_missing(go: Any, report: dict[str, Any]) -> dict[str, Any]:
             x=list(values),
             y=list(labels),
             orientation="h",
-            marker_color=PALETTE["warn"],
+            marker_color=_color("warn"),
             text=[f"{v:.1%}" for v in values],
             textposition="outside",
-            textfont={"size": 10, "color": PALETTE["ink"]},
+            textfont={"size": 10, "color": _color("ink")},
             cliponaxis=False,
             hovertemplate="%{y}: %{x:.1%}<extra></extra>",
         )
@@ -675,10 +677,10 @@ def _fig_mi(go: Any, report: dict[str, Any]) -> dict[str, Any]:
             x=list(values),
             y=list(labels),
             orientation="h",
-            marker_color=PALETTE["accent"],
+            marker_color=_color("accent"),
             text=[f"{v:.3g}" for v in values],
             textposition="outside",
-            textfont={"size": 10, "color": PALETTE["ink"]},
+            textfont={"size": 10, "color": _color("ink")},
             cliponaxis=False,
             hovertemplate="%{y}<br>MI=%{x:.4f}<extra></extra>",
         )
@@ -707,7 +709,7 @@ def _fig_vif(go: Any, report: dict[str, Any]) -> dict[str, Any]:
     if not cleaned:
         return _empty_fig(go, "Variance inflation factors", "VIF was not available.")
     labels, values = zip(*cleaned, strict=True)
-    colors = [PALETTE["critical"] if v >= 5 else PALETTE["info"] for v in values]
+    colors = [_color("critical") if v >= 5 else _color("info") for v in values]
     fig = go.Figure(
         go.Bar(
             x=list(values),
@@ -716,7 +718,7 @@ def _fig_vif(go: Any, report: dict[str, Any]) -> dict[str, Any]:
             marker_color=colors,
             text=[f"{v:.2f}" for v in values],
             textposition="outside",
-            textfont={"size": 10, "color": PALETTE["ink"]},
+            textfont={"size": 10, "color": _color("ink")},
             cliponaxis=False,
             hovertemplate="%{y}<br>VIF=%{x:.2f}<extra></extra>",
         )
@@ -724,7 +726,7 @@ def _fig_vif(go: Any, report: dict[str, Any]) -> dict[str, Any]:
     fig.add_vline(
         x=5,
         line_dash="dot",
-        line_color=PALETTE["warn"],
+        line_color=_color("warn"),
         annotation_text="review flag (VIF=5)",
         annotation_position="top",
     )
@@ -757,10 +759,10 @@ def _fig_pca(go: Any, report: dict[str, Any]) -> dict[str, Any]:
         x=xs,
         y=share,
         name="Component share",
-        marker_color=PALETTE["info"],
+        marker_color=_color("info"),
         text=[f"{v:.1%}" for v in share],
         textposition="outside",
-        textfont={"size": 10, "color": PALETTE["ink"]},
+        textfont={"size": 10, "color": _color("ink")},
         cliponaxis=False,
         hovertemplate="%{x}: %{y:.1%}<extra></extra>",
     )
@@ -769,7 +771,7 @@ def _fig_pca(go: Any, report: dict[str, Any]) -> dict[str, Any]:
         y=cumulative,
         name="Cumulative",
         mode="lines+markers",
-        line={"color": PALETTE["accent"], "width": 2.5},
+        line={"color": _color("accent"), "width": 2.5},
         hovertemplate="Cumulative %{y:.1%}<extra></extra>",
     )
     ymax = max(max(share, default=0.0), max(cumulative, default=0.0), 0.05)
@@ -813,10 +815,10 @@ def _fig_target(go: Any, report: dict[str, Any]) -> dict[str, Any]:
         go.Bar(
             x=labels,
             y=values,
-            marker_color=PALETTE["series"][: len(labels)],
+            marker_color=_color("series")[: len(labels)],
             text=texts,
             textposition="outside",
-            textfont={"size": 11, "color": PALETTE["ink"]},
+            textfont={"size": 11, "color": _color("ink")},
             cliponaxis=False,
             constraintext="none",
             hovertemplate="Class=%{x}<br>Count=%{y}<br>Share=%{text}<extra></extra>",
@@ -876,10 +878,10 @@ def _fig_drift(go: Any, report: dict[str, Any]) -> dict[str, Any]:
             x=list(values),
             y=list(labels),
             orientation="h",
-            marker_color=PALETTE["critical"],
+            marker_color=_color("critical"),
             text=[f"{v:.3g}" for v in values],
             textposition="outside",
-            textfont={"size": 10, "color": PALETTE["ink"]},
+            textfont={"size": 10, "color": _color("ink")},
             cliponaxis=False,
             hovertemplate="%{y}<br>score=%{x:.4f}<extra></extra>",
         )
@@ -900,7 +902,9 @@ def _fig_outliers(go: Any, report: dict[str, Any]) -> dict[str, Any]:
     for name, stats in _outlier_per_column(report):
         rate = stats.get("iqr_outlier_rate")
         if rate is None:
-            rate = stats.get("rate") or stats.get("outlier_rate")
+            rate = stats.get("rate")
+        if rate is None:
+            rate = stats.get("outlier_rate")
         if rate is None:
             continue
         count = int(stats.get("iqr_outlier_count") or stats.get("count") or 0)
@@ -913,7 +917,7 @@ def _fig_outliers(go: Any, report: dict[str, Any]) -> dict[str, Any]:
     values = [item[1] for item in items]
     counts = [item[2] for item in items]
     colors = [
-        PALETTE["critical"] if rate >= 0.05 else PALETTE["warn"] if rate > 0 else PALETTE["accent"]
+        _color("critical") if rate >= 0.05 else _color("warn") if rate > 0 else _color("accent")
         for rate in values
     ]
     fig = go.Figure(
@@ -925,7 +929,7 @@ def _fig_outliers(go: Any, report: dict[str, Any]) -> dict[str, Any]:
             customdata=counts,
             text=[f"{rate:.1%}" for rate in values],
             textposition="outside",
-            textfont={"size": 10, "color": PALETTE["ink"]},
+            textfont={"size": 10, "color": _color("ink")},
             cliponaxis=False,
             hovertemplate="%{y}<br>IQR outlier rate=%{x:.1%}<br>count=%{customdata}<extra></extra>",
         )
@@ -933,7 +937,7 @@ def _fig_outliers(go: Any, report: dict[str, Any]) -> dict[str, Any]:
     fig.add_vline(
         x=0.05,
         line_dash="dot",
-        line_color=PALETTE["critical"],
+        line_color=_color("critical"),
         annotation_text="5% review flag",
         annotation_position="top",
     )
@@ -977,13 +981,13 @@ def _fig_outlier_bounds(go: Any, report: dict[str, Any]) -> dict[str, Any]:
         x=mids,
         y=labels,
         mode="markers",
-        marker={"size": 9, "color": PALETTE["accent"]},
+        marker={"size": 9, "color": _color("accent")},
         error_x={
             "type": "data",
             "symmetric": False,
             "array": [u - m for u, m in zip(uppers, mids, strict=True)],
             "arrayminus": [m - lo for m, lo in zip(mids, lowers, strict=True)],
-            "color": PALETTE["info"],
+            "color": _color("info"),
             "thickness": 2.2,
             "width": 6,
         },
@@ -1026,11 +1030,11 @@ def _fig_zscore_outliers(go: Any, report: dict[str, Any]) -> dict[str, Any]:
             x=values,
             y=labels,
             orientation="h",
-            marker_color=PALETTE["info"],
+            marker_color=_color("info"),
             customdata=counts,
             text=[f"{rate:.1%}" for rate in values],
             textposition="outside",
-            textfont={"size": 10, "color": PALETTE["ink"]},
+            textfont={"size": 10, "color": _color("ink")},
             cliponaxis=False,
             hovertemplate="%{y}<br>|z|>3 rate=%{x:.1%}<br>count=%{customdata}<extra></extra>",
         )
@@ -1066,30 +1070,30 @@ def _fig_multivariate_anomaly(go: Any, report: dict[str, Any]) -> dict[str, Any]
             value=rate * 100.0,
             number={
                 "suffix": "%",
-                "font": {"size": 36, "color": PALETTE["ink"]},
+                "font": {"size": 36, "color": _color("ink")},
             },
             title={
                 "text": f"{method.replace('_', ' ').title()} anomaly rate",
-                "font": {"size": 14, "color": PALETTE["ink"]},
+                "font": {"size": 14, "color": _color("ink")},
             },
-            delta={"font": {"color": PALETTE["muted"]}},
+            delta={"font": {"color": _color("muted")}},
             gauge={
                 "axis": {
                     "range": [0, max(15.0, rate * 100.0 * 1.4)],
-                    "tickfont": {"color": PALETTE["ink"]},
-                    "tickcolor": PALETTE["grid"],
+                    "tickfont": {"color": _color("ink")},
+                    "tickcolor": _color("grid"),
                 },
-                "bar": {"color": PALETTE["accent"]},
-                "bordercolor": PALETTE["grid"],
+                "bar": {"color": _color("accent")},
+                "bordercolor": _color("grid"),
                 "steps": [
-                    *PALETTE["gauge_steps"],
+                    *_color("gauge_steps"),
                     {
                         "range": [10, max(15.0, rate * 100.0 * 1.4)],
-                        "color": PALETTE["gauge_hot"],
+                        "color": _color("gauge_hot"),
                     },
                 ],
                 "threshold": {
-                    "line": {"color": PALETTE["critical"], "width": 2},
+                    "line": {"color": _color("critical"), "width": 2},
                     "thickness": 0.75,
                     "value": 5,
                 },
@@ -1119,11 +1123,11 @@ def _fig_skew(go: Any, report: dict[str, Any]) -> dict[str, Any]:
     labels = [item[0] for item in items]
     values = [item[1] for item in items]
     colors = [
-        PALETTE["critical"]
+        _color("critical")
         if abs(v) >= 1.5
-        else PALETTE["warn"]
+        else _color("warn")
         if abs(v) >= 0.75
-        else PALETTE["accent"]
+        else _color("accent")
         for v in values
     ]
     fig = go.Figure(
@@ -1134,14 +1138,14 @@ def _fig_skew(go: Any, report: dict[str, Any]) -> dict[str, Any]:
             marker_color=colors,
             text=[f"{v:.2f}" for v in values],
             textposition="outside",
-            textfont={"size": 10, "color": PALETTE["ink"]},
+            textfont={"size": 10, "color": _color("ink")},
             cliponaxis=False,
             hovertemplate="%{y}<br>skew=%{x:.3f}<extra></extra>",
         )
     )
-    fig.add_vline(x=0, line_color=PALETTE["muted"], line_width=1)
-    fig.add_vline(x=0.75, line_dash="dot", line_color=PALETTE["warn"])
-    fig.add_vline(x=-0.75, line_dash="dot", line_color=PALETTE["warn"])
+    fig.add_vline(x=0, line_color=_color("muted"), line_width=1)
+    fig.add_vline(x=0.75, line_dash="dot", line_color=_color("warn"))
+    fig.add_vline(x=-0.75, line_dash="dot", line_color=_color("warn"))
     fig.update_xaxes(title_text="Sample skewness (analysis frame)")
     span = max(abs(v) for v in values) if values else 1.0
     _finish_hbar(
@@ -1185,11 +1189,11 @@ def _fig_cardinality(go: Any, report: dict[str, Any]) -> dict[str, Any]:
         y=labels,
         orientation="h",
         name="nunique",
-        marker_color=PALETTE["info"],
+        marker_color=_color("info"),
         customdata=entropies,
         text=[str(n) for n in nuniques],
         textposition="outside",
-        textfont={"size": 10, "color": PALETTE["ink"]},
+        textfont={"size": 10, "color": _color("ink")},
         cliponaxis=False,
         hovertemplate="%{y}<br>nunique=%{x}<br>entropy=%{customdata:.3f} bits<extra></extra>",
     )
@@ -1222,7 +1226,7 @@ def _fig_normality(go: Any, report: dict[str, Any]) -> dict[str, Any]:
     pvalues = [item[1] for item in items]
     methods = [item[2] for item in items]
     colors = [
-        PALETTE["critical"] if (flag is True or p < 0.05) else PALETTE["accent"]
+        _color("critical") if (flag is True or p < 0.05) else _color("accent")
         for p, flag in ((item[1], item[3]) for item in items)
     ]
     fig = go.Figure(
@@ -1234,7 +1238,7 @@ def _fig_normality(go: Any, report: dict[str, Any]) -> dict[str, Any]:
             customdata=methods,
             text=[f"{p:.2g}" for p in pvalues],
             textposition="outside",
-            textfont={"size": 10, "color": PALETTE["ink"]},
+            textfont={"size": 10, "color": _color("ink")},
             cliponaxis=False,
             hovertemplate="%{y}<br>p=%{x:.4g}<br>%{customdata}<extra></extra>",
         )
@@ -1242,7 +1246,7 @@ def _fig_normality(go: Any, report: dict[str, Any]) -> dict[str, Any]:
     fig.add_vline(
         x=0.05,
         line_dash="dot",
-        line_color=PALETTE["warn"],
+        line_color=_color("warn"),
         annotation_text="α=0.05",
         annotation_position="top",
     )
@@ -1286,7 +1290,7 @@ def _fig_quartile_spread(go: Any, report: dict[str, Any]) -> dict[str, Any]:
             q3=[qs["q75"]],
             lowerfence=[qs["q05"]],
             upperfence=[qs["q95"]],
-            marker_color=PALETTE["series"][index % len(PALETTE["series"])],
+            marker_color=_color("series")[index % len(_color("series"))],
             hovertemplate=(
                 f"{name}<br>q05=%{{lowerfence}}<br>q25=%{{q1}}<br>"
                 "median=%{median}<br>q75=%{q3}<br>q95=%{upperfence}<extra></extra>"
@@ -1329,10 +1333,12 @@ def _fig_corr(
         coeff = "r"
     if not isinstance(matrix, dict) or not matrix:
         return _empty_fig(go, title, empty)
-    # Accept either nested dict or {columns,matrix}
-    if "columns" in matrix and "matrix" in matrix:
-        columns = [str(c) for c in matrix["columns"]]
-        z = matrix["matrix"]
+    # A column can itself be named "columns" or "matrix" in a nested report.
+    legacy_columns = matrix.get("columns")
+    legacy_values = matrix.get("matrix")
+    if isinstance(legacy_columns, (list, tuple)) and isinstance(legacy_values, (list, tuple)):
+        columns = [str(c) for c in legacy_columns]
+        z = legacy_values
     else:
         columns = [str(c) for c in matrix]
         z = []
@@ -1347,13 +1353,13 @@ def _fig_corr(
             z=z,
             x=columns,
             y=columns,
-            colorscale=PALETTE["heatmap"],
+            colorscale=_color("heatmap"),
             zmin=-1,
             zmax=1,
             colorbar={
-                "title": {"text": coeff, "font": {"color": PALETTE["ink"]}},
-                "tickfont": {"color": PALETTE["ink"]},
-                "outlinecolor": PALETTE["grid"],
+                "title": {"text": coeff, "font": {"color": _color("ink")}},
+                "tickfont": {"color": _color("ink")},
+                "outlinecolor": _color("grid"),
             },
             hovertemplate=f"%{{y}} vs %{{x}}<br>{coeff}=%{{z:.3f}}<extra></extra>",
         )
@@ -1371,10 +1377,10 @@ def _fig_corr(
     )
     fig.update_xaxes(
         tickangle=tickangle,
-        tickfont={"color": PALETTE["ink"], "size": 10},
+        tickfont={"color": _color("ink"), "size": 10},
         automargin=True,
     )
-    fig.update_yaxes(tickfont={"color": PALETTE["ink"], "size": 10}, automargin=True)
+    fig.update_yaxes(tickfont={"color": _color("ink"), "size": 10}, automargin=True)
     _footnote(
         fig,
         (
@@ -1409,7 +1415,7 @@ def _fig_cramers(go: Any, report: dict[str, Any]) -> dict[str, Any]:
     labels = [item[0] for item in scored]
     values = [item[1] for item in scored]
     colors = [
-        PALETTE["critical"] if v >= 0.5 else PALETTE["warn"] if v >= 0.25 else PALETTE["accent"]
+        _color("critical") if v >= 0.5 else _color("warn") if v >= 0.25 else _color("accent")
         for v in values
     ]
     fig = go.Figure(
@@ -1420,13 +1426,13 @@ def _fig_cramers(go: Any, report: dict[str, Any]) -> dict[str, Any]:
             marker_color=colors,
             text=[f"{v:.2f}" for v in values],
             textposition="outside",
-            textfont={"size": 10, "color": PALETTE["ink"]},
+            textfont={"size": 10, "color": _color("ink")},
             cliponaxis=False,
             hovertemplate="%{y}<br>Cramér's V=%{x:.3f}<extra></extra>",
         )
     )
-    fig.add_vline(x=0.25, line_dash="dot", line_color=PALETTE["warn"])
-    fig.add_vline(x=0.5, line_dash="dot", line_color=PALETTE["critical"])
+    fig.add_vline(x=0.25, line_dash="dot", line_color=_color("warn"))
+    fig.add_vline(x=0.5, line_dash="dot", line_color=_color("critical"))
     fig.update_xaxes(title_text="Cramér's V (0–1)")
     _finish_hbar(
         fig,
@@ -1477,11 +1483,11 @@ def _fig_roles(go: Any, report: dict[str, Any]) -> dict[str, Any]:
             labels=labels,
             values=values,
             hole=0.55,
-            marker={"colors": PALETTE["series"]},
+            marker={"colors": _color("series")},
             hovertemplate="%{label}<br>n=%{value}<br>%{percent}<extra></extra>",
             textinfo="percent",
             textposition="outside",
-            textfont={"size": 11, "color": PALETTE["ink"]},
+            textfont={"size": 11, "color": _color("ink")},
             insidetextorientation="horizontal",
             sort=False,
         )
@@ -1494,7 +1500,7 @@ def _fig_roles(go: Any, report: dict[str, Any]) -> dict[str, Any]:
             "yanchor": "top",
             "y": -0.08,
             "x": 0,
-            "font": {"size": 11, "color": PALETTE["ink"]},
+            "font": {"size": 11, "color": _color("ink")},
         },
         uniformtext={"minsize": 10, "mode": "hide"},
     )
@@ -1510,7 +1516,7 @@ def _empty_fig(go: Any, title: str, message: str) -> dict[str, Any]:
         x=0.5,
         y=0.5,
         showarrow=False,
-        font={"size": 14, "color": PALETTE["muted"]},
+        font={"size": 14, "color": _color("muted")},
     )
     fig.update_xaxes(visible=False)
     fig.update_yaxes(visible=False)

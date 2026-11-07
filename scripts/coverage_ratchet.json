@@ -8,22 +8,22 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 89.78721395070666,
-      "covered_lines": 57049,
-      "num_statements": 63538,
+      "percent_covered": 89.80911766094387,
+      "covered_lines": 57071,
+      "num_statements": 63547,
       "excluded_lines": 566,
-      "source_revision": "ec58d6b1fd7738f3f2584361ccf3ed3788f069dd",
-      "tested_revision": "495f8310b0ece729a9d47d4119cde32f476c2498",
+      "source_revision": "c5e8cb48e86175a83f1a56fca0dd8baf9cacee7e",
+      "tested_revision": "d6137e85fef37eb57ff3c998d46f337abf06027b",
       "platform": "remote Linux, CPU expanded profile",
       "python": "3.12.16",
-      "run_id": 42396064099,
-      "result": "19463 passed, 173 skipped, zero failures or errors",
+      "run_id": 42401314881,
+      "result": "19477 passed, 173 skipped, zero failures or errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
       "coverage_version": "7.16.2",
-      "notes": "All four exact-source workflows passed. Tested merge and source have equal trees. Same installed distributions, profile inputs, scope, tracing, skips and all 3,464 warnings as 15b9b31. All 5,586 required consumers in 46 modules executed. Net change is 25 covered RAG lines and 11 statements. No collection warnings. Exact 90% gap is 136 lines. Floors and headroom unchanged."
+      "notes": "All four exact-source workflows passed. Tested merge and source have equal trees. Same installed distributions, profile inputs, scope, tracing, skips and all 3,464 warnings as ec58d6b. All 5,600 required consumers in 47 modules executed. Net change is 22 covered lines and nine statements in plot boards and model evidence. No collection warnings. Exact 90% gap is 122 lines. Floors and headroom unchanged."
     },
     "latest_local_measurement": {
       "percent_covered": 85.51916984547746,
