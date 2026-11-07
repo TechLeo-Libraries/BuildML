@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-11-06, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed: 89.5956% (56,869/63,473); 19,170 passed, 173 skipped | [CI42312024792](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42312024792), source `8359757`, tested merge `cf75892f`; equal whole trees and all four workflows pass. Same 800 files/566 exclusions/coverage.py 7.16.2; all 5,293 consumers execute. Python/every distribution/profile inputs/skips/all normalized warning blocks and counts match `130d1ac`. Full aggregate +24 covered/+24 statements confined to search. Core 70/expanded 88 retained; exact 90% gap 257 only here; no collection warnings |
+| Current accepted remote expanded CPU whole-package gate | Passed: 89.5951% (56,875/63,480); 19,206 passed, 173 skipped | [CI42318705029](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42318705029), source `5f1325a`, tested merge `6dfaeff3`; equal whole trees and all four workflows pass. Same 800 files/566 exclusions/coverage.py 7.16.2; all 5,329 consumers execute. Python/every distribution/profile inputs/skips match `8359757`; 52 NMF warnings disappeared, all other normalized warning blocks/counts match. Full aggregate +6 covered/+7 statements: search +5/+7, unchanged plot709 +1. No percentage gain. Core 70/expanded 88 retained; exact 90% gap 257 only here; no collection warnings |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -8159,3 +8159,67 @@ are verified. CI requires 36 modules/5,329 actual cases; accepted full XML plus
 only the 36 actual new compatible cases verifies positive/missing-module/skipped-
 case behavior without combining coverage databases. Python 3.10 syntax and the
 repository checks pass. Only AutoML search changes in production.
+
+
+### Speech trainer and exported waveform consumers
+
+After loading a speech trainer without active loaders, export now requires speech
+loaders or an explicit waveform example. Previously it tried tabular inputs:
+waveform columns produced misleading encoding instructions, while an unrelated
+numeric dataset could produce a trace that failed on real waveform batches.
+The active-loader and explicit-example paths remain usable. Trainer bundles still
+require callers to construct a matching module and rebuild their loaders.
+
+Sixteen real CPU cases exercise generic and specialized speech training, frozen
+encoders/default domain adaptation, raw/train-normalized clips and contiguous/
+original numeric class IDs. Independent NumPy cross-correlations validate the
+three convolution layers, pooling and classifier head. Train-only real-sample
+statistics, repeat padding, label codes, confusion matrices, saved trainer state,
+live versus serialized optimizer continuation and reloaded TorchScript predictions
+at different batch sizes are checked. This is synthetic audio classification with
+a tiny encoder; it is not ASR, pretrained encoder adaptation or foundation pretraining.
+
+Both archived controls fail all 16 export guards after passing their numerical,
+bundle, resume and exported-consumer checks. Corrected selections pass 319 cases/
+nine existing skips on Pandas 3/Torch 2.13 CPU, and 266 cases/62 existing skips on
+compatible Pandas 2/Torch 2.7 CPU. All 16 new cases execute in both profiles. The
+312 existing regressions include optional backend/absence probes: Pandas 3 skips
+six Polars cases and three installed-backend absence probes; compatible skips
+60 soundfile cases, one installed-Torch absence probe and one missing-FastAPI case.
+The genuine core environment has no Torch and explicitly skips all 16 new cases;
+those skips are not positive Torch evidence. Newer Torch emits upstream trace/load
+deprecations: corrected selections have 171/43 warnings respectively. No corrected
+failures, errors or collection/assertion-rewrite/coverage warnings occur. Actual
+loaded provider paths/versions match before/after within each profile; no
+cross-version prediction equivalence is claimed. Sixteen public numerical records
+match per profile at rtol=atol=1e-10, in addition to the independent assertions.
+
+Official reach against verified same-source `5f1325a` full JSON/Git finds 20/23
+previously missing unchanged production lines on Pandas 3/compatible, plus two
+changed/new executed lines each. Both profiles reach 14 previously missing Session
+DL workflow lines. Counts include the 312 existing regressions and backend absence
+paths; they are not solely the 16 new cases, net gains or projected full percentages.
+The current source has 63,482 statements, the same 800 files and 566 exclusions.
+All 1,371 frozen inputs and 828 archived production/resource members are verified.
+The CI guard requires 37 modules/5,345 actual unskipped cases; accepted full XML plus
+only the 16 actual new compatible cases verifies positive/missing-module/skipped-
+case behavior without combining coverage databases. Only Session DL export changes
+in production. The speech correction requires its own complete CI measurement.
+
+The preceding candidate-stream source has now passed complete verification:
+Remote Linux source `5f1325a` passed **89.5951%** (56,875/63,480 lines),
+with 19,206 passed and 173 skipped. [CI42318705029](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42318705029),
+backend42318705083, acceptance42318705326 and CodeQL42318703780 all passed.
+Tested merge `6dfaeff3` and source whole trees match. Scope stays 800 files/566
+exclusions/coverage.py 7.16.2; all 5,329 required consumers execute unskipped.
+Python 3.12.16, every installed distribution, profile input bytes and all 173
+skips/37 messages match `8359757`. The 52 existing NMF convergence warnings
+disappeared; all other normalized warning blocks/counts match (3,412 total).
+No failures/errors/collection warnings. Complete aggregate +6 covered/+7
+statements comprises search +5/+7 and the recurring unchanged plot-board line
+709 (+1), which is not attributed to the new consumers. The percentage is
+slightly below the preceding 89.5956%; this is not a percentage gain. Runtime
+2913.950s is not performance evidence. Core 70/expanded 88 remain; next expanded
+89 requires passing complete coverage of at least 90%, preserving one point of
+headroom. Exact 90% gap: 257 only at measured `5f1325a`; subsequent changes need
+their own complete result.

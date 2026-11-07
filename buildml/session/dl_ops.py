@@ -1470,6 +1470,12 @@ def export_torch(
                 "after text fit. Call make_text_torch_loaders(...) again or pass "
                 "example_input=. Refusing silent tabular loader rebuild."
             )
+        if kind == "speech":
+            raise ValidationError(
+                "export_torch needs active speech loaders or an explicit example_input "
+                "after speech fit. Call make_speech_torch_loaders(...) again or pass "
+                "example_input=. Refusing silent tabular loader rebuild."
+            )
         session.make_torch_loaders(
             normalize=session._dl_train_result.contract.normalize_mean is not None,
             task=session._dl_train_result.task,
