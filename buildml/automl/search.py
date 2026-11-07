@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import time
+from collections.abc import Iterable, Iterator
 from dataclasses import dataclass, replace
 from itertools import product
 from numbers import Integral, Real
@@ -312,6 +313,9 @@ def run_automl(
     on fold-train only. This is **not** NAS, not causal discovery, and not a
     fully automated AI scientist: the search space is a disclosed finite
     catalog under a trial budget.
+    Randomized search prepares each candidate as it is consumed rather than
+    storing a pending queue. Method-specific optimizers do not prepare unused
+    randomized candidates. Explicit seeds retain reproducible candidate choices.
 
     Nested selection carries built-in group/time constraints into inner folds
     and honors custom inner splitters. Declared sample weights apply to both
@@ -454,15 +458,6 @@ def run_automl(
     if _deadline_expired(deadline):
         raise ValidationError("AutoML time budget exhausted before any scored trials completed.")
 
-    candidates = _build_candidates(
-        fams,
-        recipes,
-        method=effective_method,
-        n_trials=n_trials,
-        random_state=random_state,
-        include_ensembles=False,  # ensemble trials added after single ranking
-    )
-
     if effective_method == "optuna":
         trials = _run_optuna_trials(
             dataset,
@@ -502,6 +497,15 @@ def run_automl(
             budget=budget,
         )
     else:
+        candidates = _build_candidates(
+            fams,
+            recipes,
+            method=effective_method,
+            n_trials=n_trials,
+            random_state=random_state,
+            include_ensembles=False,  # ensembles follow single-model ranking
+            deadline=deadline,
+        )
         trials = _score_candidates(
             dataset,
             split_plan,
@@ -707,28 +711,36 @@ def _build_candidates(
     n_trials: int,
     random_state: int | None,
     include_ensembles: bool,
-) -> list[_Candidate]:
+    deadline: float | None = None,
+) -> Iterator[_Candidate]:
     del include_ensembles  # reserved for future joint generation
     out: list[_Candidate] = []
     if method == "grid":
         for fam, recipe in product(fams, recipes):
+            if _deadline_expired(deadline):
+                return
             keys = list(fam.param_grid)
             if not keys:
                 out.append(_Candidate("single", fam.name, recipe, {}))
                 continue
             value_lists = [fam.param_grid[k] for k in keys]
             for values in product(*value_lists):
+                if _deadline_expired(deadline):
+                    return
                 params = dict(zip(keys, values, strict=True))
                 out.append(_Candidate("single", fam.name, recipe, params))
         if len(out) > n_trials:
             rng = np.random.default_rng(random_state)
             idx = rng.choice(len(out), size=n_trials, replace=False)
             out = [out[int(i)] for i in sorted(idx)]
-        return out
+        yield from out
+        return
 
     # randomized: sample family × recipe × params
     rng = np.random.default_rng(random_state)
     for trial_i in range(n_trials):
+        if _deadline_expired(deadline):
+            return
         fam = fams[int(rng.integers(0, len(fams)))]
         recipe = recipes[int(rng.integers(0, len(recipes)))]
         if fam.param_distributions:
@@ -740,14 +752,13 @@ def _build_candidates(
             params = dict(next(iter(sampler)))
         else:
             params = {}
-        out.append(_Candidate("single", fam.name, recipe, params))
-    return out
+        yield _Candidate("single", fam.name, recipe, params)
 
 
 def _score_candidates(
     dataset: Dataset,
     split_plan: SplitPlan,
-    candidates: list[_Candidate],
+    candidates: Iterable[_Candidate],
     *,
     task: Literal["classification", "regression"],
     metric: str,
@@ -1202,6 +1213,7 @@ def _run_evolutionary_trials(
                 n_trials=n_trials,
                 random_state=random_state,
                 include_ensembles=False,
+                deadline=deadline,
             ),
             task=task,
             metric=metric,

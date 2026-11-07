@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-11-06, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed: 89.5916% (56,845/63,449); 19,111 passed, 173 skipped | [CI42303148103](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42303148103), source `130d1ac`, tested merge `dcad8cad`; equal whole trees and all four workflows pass. Same 800 files/566 exclusions/coverage.py 7.16.2; all 5,234 consumers execute. Python/every distribution/profile inputs/skips/all normalized warning blocks and counts match `ed3d953`. Full net +25 covered/+16 statements, search +23/+16 and spaces +2/zero. Core 70/expanded 88 retained; exact 90% gap 260 only here; no collection warnings |
+| Current accepted remote expanded CPU whole-package gate | Passed: 89.5956% (56,869/63,473); 19,170 passed, 173 skipped | [CI42312024792](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42312024792), source `8359757`, tested merge `cf75892f`; equal whole trees and all four workflows pass. Same 800 files/566 exclusions/coverage.py 7.16.2; all 5,293 consumers execute. Python/every distribution/profile inputs/skips/all normalized warning blocks and counts match `130d1ac`. Full aggregate +24 covered/+24 statements confined to search. Core 70/expanded 88 retained; exact 90% gap 257 only here; no collection warnings |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -8089,3 +8089,73 @@ The CI guard requires 35 modules/5,293 actual cases; accepted full XML plus only
 59 actual new compatible cases verifies positive/missing-module/skipped-case
 behavior without combining coverage databases. Production changes are confined
 to AutoML search. Python 3.10 syntax and repository checks pass.
+
+
+### AutoML candidate preparation and seeded consumer records
+
+Real public searches constructed unused randomized candidate queues for
+Optuna/evolutionary methods, including before a missing Optuna dependency
+refused execution. Randomized search also prepared the entire queue before
+fitting its first candidate. Method-specific optimizers now avoid unused native
+preparation; randomized candidates are sampled as they are consumed. Candidate
+preparation checks the cooperative deadline. Grid sampling and explicit seed
+semantics remain intact. Completed trial history still grows with the number of
+completed trials; this change concerns pending candidates, not total search memory.
+
+The 36 new consumers cover 32 method/selection/weight/scaling combinations, two
+Optuna backend aliases and two real-clock expiry cases. A read-only profiler
+observes real ParameterSampler constructors and real Ridge fits without replacing
+models, clocks or production helpers. Independent weighted normal equations,
+train-only feature means/scales, raw fold residuals and saved/reloaded bundles
+check numerical results. Public per-case choice/score/prediction records are
+emitted before resource assertions for paired archived/corrected comparison.
+Absent Optuna profiles execute actual missing-dependency refusal assertions,
+including prior-memory preservation; they do not skip or claim backend fitting.
+Compatible executes its real installed Optuna backend.
+
+Both development profiles pass all 36 cases without skips or warnings. The final
+frozen archived-source controls reproduce 28 failures/eight passes per profile,
+with no skips or Python warnings. All 36 unique public records were captured
+per profile, after independent numerical/bundle checks and before resource guards.
+Corrected selections also include 270 existing AutoML regressions. Publication
+requires the final paired verification, explicit optional-backend qualifications
+and a verified complete baseline before interpreting subset reach. Pending work
+observations and controlled CV waits are not throughput or hard real-time bounds.
+
+The preceding deadline correction subsequently passed complete verification. Candidate preparation remains a separate source:
+Remote Linux source `8359757` passed **89.5956%** (56,869/63,473 lines),
+with 19,170 passed and 173 skipped. [CI42312024792](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42312024792),
+backend42312024702, acceptance42312024746 and CodeQL42312022965 all passed.
+Tested merge `cf75892f` and source whole trees match. Scope stays 800 files/566
+exclusions/coverage.py 7.16.2; all 5,293 required consumers execute unskipped.
+Python 3.12.16, every installed distribution, profile input bytes, all 173 skips/
+37 messages and all normalized warning blocks/counts (3,464) match `130d1ac`.
+No failures/errors/collection warnings. Complete aggregate +24 covered/+24
+statements is confined to AutoML search; no other file aggregate changes.
+Runtime 2572.420s is not performance evidence. Core 70/expanded 88 remain;
+next expanded 89 requires passing complete coverage of at least 90%, preserving
+one point of headroom. Exact 90% gap: 257 only at measured `8359757`; subsequent
+changes need their own complete result.
+
+
+Corrected frozen selections pass 303 cases/three existing Optuna skips on Pandas
+3 and 306 cases/zero skips in compatible; genuine core passes all 36 new cases
+without coverage collection. Every new case executes unskipped. Pandas 3/core
+verify 26 numerical/bundle consumers and ten actual missing-Optuna refusal
+consumers; compatible fits all 36, including real Optuna 5.0.0. No corrected
+failures, errors, Python warnings, collection/assertion-rewrite/coverage warnings
+occur. All 36 paired public records match within each profile: exact candidate
+parameters and score/prediction agreement at rtol=atol=1e-10. Independent numerical
+and bundle assertions precede resource guards in both archived and corrected runs.
+
+Official reach against verified same-source `8359757` full JSON/Git finds eight/
+six previously missing unchanged catalog/provider lines on Pandas 3/compatible,
+and nine changed/new executed search lines in each. Zero previously missing
+unchanged search lines are reached. Optional path identities differ and the
+270 existing regressions are included; this is not a net or projected full-suite
+percentage. Current source has 63,480 statements, the same 800 files and 566
+exclusions. All 1,370 frozen inputs and 828 archived production/resource members
+are verified. CI requires 36 modules/5,329 actual cases; accepted full XML plus
+only the 36 actual new compatible cases verifies positive/missing-module/skipped-
+case behavior without combining coverage databases. Python 3.10 syntax and the
+repository checks pass. Only AutoML search changes in production.

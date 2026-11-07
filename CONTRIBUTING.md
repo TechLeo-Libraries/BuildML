@@ -122,7 +122,7 @@ monolith** (**70** active after corrected thread/process tracing measured at lea
 `pytest tests --cov=buildml`); do not lower it to silence a regression.
 The separate `expanded-coverage` CI job installs
 `requirements-expanded-coverage.txt` and runs the entire suite with an **88%**
-floor, supported by passing remote Linux 89.5916% evidence at `130d1ac`.
+floor, supported by passing remote Linux 89.5956% evidence at `8359757`.
 The broadened profile includes DoWhy and ONNX Runtime, using a compatible
 NumPy 2.4.1/SciPy 1.15.3/mlxtend 0.23.4 stack. Same-source complete local suites
 passed 85.5192% for this profile and85.3947% for its original-profile control;
@@ -230,16 +230,16 @@ and pick the next target, and `--path buildml/<pkg>` to audit work in progress.
 - Write public documentation for library users. Keep implementation instructions,
   release actions, and work plans in clearly labeled contributor material.
 
-Current expanded coverage evidence (2026-11-06): Remote Linux source `130d1ac` passed **89.5916%** (56,845/63,449 lines),
-with 19,111 passed and 173 skipped. [CI42303148103](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42303148103),
-backend42303147787, acceptance42303148140 and CodeQL42303144692 all passed.
-Tested merge `dcad8cad` and source whole trees match. Scope stays 800 files/566
-exclusions/coverage.py 7.16.2; all 5,234 required consumers execute unskipped.
+Current expanded coverage evidence (2026-11-07): Remote Linux source `8359757` passed **89.5956%** (56,869/63,473 lines),
+with 19,170 passed and 173 skipped. [CI42312024792](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42312024792),
+backend42312024702, acceptance42312024746 and CodeQL42312022965 all passed.
+Tested merge `cf75892f` and source whole trees match. Scope stays 800 files/566
+exclusions/coverage.py 7.16.2; all 5,293 required consumers execute unskipped.
 Python 3.12.16, every installed distribution, profile input bytes, all 173 skips/
-37 messages and all normalized warning blocks/counts (3,464) match `ed3d953`.
-No failures/errors/collection warnings. Complete net +25 covered/+16 statements:
-AutoML search +23/+16 and spaces +2/zero, with no other file aggregate changes.
-Runtime 2425.470s is not performance evidence. Core 70/expanded 88 remain;
+37 messages and all normalized warning blocks/counts (3,464) match `130d1ac`.
+No failures/errors/collection warnings. Complete aggregate +24 covered/+24
+statements is confined to AutoML search; no other file aggregate changes.
+Runtime 2572.420s is not performance evidence. Core 70/expanded 88 remain;
 next expanded 89 requires passing complete coverage of at least 90%, preserving
-one point of headroom. Exact 90% gap: 260 only at measured `130d1ac`; subsequent
+one point of headroom. Exact 90% gap: 257 only at measured `8359757`; subsequent
 changes need their own complete result.
