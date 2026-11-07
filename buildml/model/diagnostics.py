@@ -224,8 +224,8 @@ class DiagnosticReport:
 
         Notes
         -----
-        **Any figures are referenced, not embedded.** Move the HTML without its
-        figure directory and the images break.
+        **Available figure files are embedded.** The exported HTML carries its
+        images and can be moved independently of the original figure directory.
 
         See Also
         --------
@@ -855,7 +855,8 @@ def learning_curve_report(
         ``'classification'``, ``'regression'``, or ``'auto'``, choosing the
         scoring metric.
     cv:
-        Folds at each size. Reduced automatically when the data is small.
+        Integer fold count of at least two. Reduced automatically when the data
+        is small. Booleans, fractional counts, and nonfinite values are refused.
     export_figures:
         Directory for the curve plot.
     export_html:
@@ -866,6 +867,11 @@ def learning_curve_report(
     DiagnosticReport
         Training sizes with mean and standard deviation of train and validation
         scores at each, plus the gap that indicates over- or underfitting.
+
+    Raises
+    ------
+    ValidationError
+        If ``cv`` is not an integer of at least two, or no train split exists.
 
     Notes
     -----
@@ -889,6 +895,9 @@ def learning_curve_report(
     --------
     buildml.model.selection.cv_score : Scoring at the full training size.
     """
+    cv = _positive_integer(cv, name="cv")
+    if cv < 2:
+        raise ValidationError("cv must be an integer >= 2.")
     assert_fit_partition(split_plan, "train")
     assert split_plan is not None
     x, y, _, _, _ = _feature_target_frames(dataset, split_plan, "train")
@@ -975,7 +984,12 @@ def learning_curve_report(
             )
             # Ensure estimator can be cloned/fit: learning curve uses the provided estimator.
             fig, _tips = _plot_learning_curve(
-                dataset, split_plan, fit_shim, plt=plt, cv=n_splits
+                dataset,
+                split_plan,
+                fit_shim,
+                plt=plt,
+                cv=n_splits,
+                precomputed=(train_sizes, train_scores, valid_scores),
             )
             root = save_figures({"learning_curve": fig}, export_figures)
             report.figure_dir = str(root)

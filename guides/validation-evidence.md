@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-11-06, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed: 89.5951% (56,875/63,480); 19,206 passed, 173 skipped | [CI42318705029](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42318705029), source `5f1325a`, tested merge `6dfaeff3`; equal whole trees and all four workflows pass. Same 800 files/566 exclusions/coverage.py 7.16.2; all 5,329 consumers execute. Python/every distribution/profile inputs/skips match `8359757`; 52 NMF warnings disappeared, all other normalized warning blocks/counts match. Full aggregate +6 covered/+7 statements: search +5/+7, unchanged plot709 +1. No percentage gain. Core 70/expanded 88 retained; exact 90% gap 257 only here; no collection warnings |
+| Current accepted remote expanded CPU whole-package gate | Passed: 89.6254% (56,896/63,482); 19,222 passed, 173 skipped | [CI42324522494](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42324522494), source `344687d`, tested merge `1e38e60e`; equal whole trees and all four workflows pass. Same 800 files/566 exclusions/coverage.py 7.16.2; all 5,345 consumers execute. Python/every distribution/profile inputs/skips/all normalized warning blocks and counts match `5f1325a`. Full aggregate +21 covered/+2 statements confined to four DL workflow files. Core 70/expanded 88 retained; exact 90% gap 238 only here; no collection warnings |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -8222,4 +8222,75 @@ slightly below the preceding 89.5956%; this is not a percentage gain. Runtime
 2913.950s is not performance evidence. Core 70/expanded 88 remain; next expanded
 89 requires passing complete coverage of at least 90%, preserving one point of
 headroom. Exact 90% gap: 257 only at measured `5f1325a`; subsequent changes need
+their own complete result.
+
+
+### Measured learning curves and exported consumers
+
+Learning-curve figure export now reuses the same measured CV scores as the numeric
+report. Previously it fitted every fold and training size a second time to draw
+the figure. A real stochastic tree probe recorded 30 fits instead of 15 and plot
+values differing from the report by up to 0.2654. This is a consistency and fit-count
+check, not a runtime benchmark. Ordinary evaluation plot boards continue to compute
+their own curves. A requested fold budget must be an integer of at least two;
+booleans, fractional counts and nonfinite values refuse before fitting or export,
+including large invalid values previously hidden by the small-data fold cap.
+
+Forty-four new cases exercise both direct and Session APIs: 20 invalid requests
+and 24 stochastic classification/regression exports across three fold counts and
+two seeds. Read-only observations of real estimator fit returns verify train-only
+membership and independently compute R2/weighted F1, means, population standard
+deviations, final gaps and score gains. Saved Matplotlib line coordinates and
+uncertainty bands must match those measured results without further fits. Actual
+PNG bytes must also be embedded unchanged in the HTML; CLI summaries name both
+export paths. The caller's estimator remains unfitted and its data unchanged.
+
+The final archived control fails all 44 cases on both profiles: 24 inconsistent
+plots and 20 missing fold-budget refusals. Numerical and real exported-consumer
+checks precede plot/budget assertions. Corrected frozen selections pass 46 cases
+without skips or Python warnings in each profile: all 44 new cases plus existing
+linear-curve and ordinary plot-board export consumers. Separate broader regression
+checks pass 83 cases with one installed-viz absence-probe skip on production code
+whose executable AST matches the final source; their coverage is not combined
+with the final selection. Twenty-four measured public payloads match before/after
+within each profile at rtol=atol=1e-10, alongside the independent assertions.
+
+Windows Python 3.12.8/coverage.py 7.16.2 is used locally. Pandas 3 uses Pandas3.0.5/
+NumPy2.4.6/sklearn1.9.0; compatible-viz uses Pandas2.3.3/NumPy2.4.1/sklearn1.9.1.
+Both use Matplotlib3.11.2/Seaborn0.13.2. The latter profile reuses existing
+prophet-core numerical packages and rl-compatible packages, with the existing base
+site-packages as a fallback for Seaborn. No dependencies are installed or copied;
+actual loaded versions/paths and optional module origins match before/after within
+each profile. This is a different local profile from the earlier minimal compatible
+environment without Seaborn. No cross-profile prediction equivalence is claimed.
+The genuine core environment uses an empty PYTHONPATH: 20 refusal cases pass and
+24 figure cases explicitly skip because Seaborn is absent. Those skips provide no
+positive figure evidence. No corrected collection/assertion-rewrite/coverage warnings
+occur, and no models, clocks or production helpers are replaced.
+
+Official reach against verified same-source `344687d` full JSON/Git finds 11
+previously missing unchanged diagnostic lines and 11 changed/new executed lines
+in each final selection. Counts include the two existing consumers; they are not
+net gains or projected whole-suite percentages. The current source has 63,487
+statements, the same 800 files and 566 exclusions. All 1,372 frozen inputs and
+828 archived production/resource members are verified. The expanded execution
+guard requires 38 modules/5,389 actual unskipped cases; accepted full XML plus only
+the 44 actual new compatible-viz cases verifies positive/missing-module/skipped-case
+behavior without combining coverage databases. Only model diagnostics and plot-board
+rendering change in production. This correction needs its own complete CI result.
+
+The preceding speech source has now passed complete verification:
+Remote Linux source `344687d` passed **89.6254%** (56,896/63,482 lines),
+with 19,222 passed and 173 skipped. [CI42324522494](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42324522494),
+backend42324522446, acceptance42324522543 and CodeQL42324519010 all passed.
+Tested merge `1e38e60e` and source whole trees match. Scope stays 800 files/566
+exclusions/coverage.py 7.16.2; all 5,345 required consumers execute unskipped.
+Python 3.12.16, every installed distribution, profile input bytes, all 173 skips/
+37 messages and all normalized warning blocks/counts (3,412) match `5f1325a`.
+No failures/errors/collection warnings. Complete aggregate +21 covered/+2
+statements is confined to four DL workflow files: export +1, speech +3, Session
+DL +16/+2 and its facade mixin +1; no other file aggregate changes. Runtime
+2895.630s is not performance evidence. Core 70/expanded 88 remain; next expanded
+89 requires passing complete coverage of at least 90%, preserving one point of
+headroom. Exact 90% gap: 238 only at measured `344687d`; subsequent changes need
 their own complete result.

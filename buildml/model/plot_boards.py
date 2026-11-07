@@ -831,23 +831,27 @@ def _plot_learning_curve(
     *,
     plt: Any,
     cv: int,
+    precomputed: tuple[Any, Any, Any] | None = None,
 ) -> tuple[Any, list[str]]:
-    from sklearn.base import clone
-
-    x_train, y_train, _, _, _ = _feature_target_frames(dataset, split_plan, "train")
-    x_train = x_train[list(fit_result.feature_columns)]
     scoring = "f1_weighted" if fit_result.task == "classification" else "r2"
-    n_splits = min(cv, max(2, len(x_train) // 5))
-    train_sizes, train_scores, valid_scores = learning_curve(
-        clone(fit_result.estimator),
-        x_train,
-        y_train,
-        cv=n_splits,
-        scoring=scoring,
-        train_sizes=np.linspace(0.2, 1.0, 5),
-        shuffle=True,
-        random_state=0,
-    )
+    if precomputed is None:
+        from sklearn.base import clone
+
+        x_train, y_train, _, _, _ = _feature_target_frames(dataset, split_plan, "train")
+        x_train = x_train[list(fit_result.feature_columns)]
+        n_splits = min(cv, max(2, len(x_train) // 5))
+        train_sizes, train_scores, valid_scores = learning_curve(
+            clone(fit_result.estimator),
+            x_train,
+            y_train,
+            cv=n_splits,
+            scoring=scoring,
+            train_sizes=np.linspace(0.2, 1.0, 5),
+            shuffle=True,
+            random_state=0,
+        )
+    else:
+        train_sizes, train_scores, valid_scores = precomputed
     tr_mean = train_scores.mean(axis=1)
     va_mean = valid_scores.mean(axis=1)
     tr_std = train_scores.std(axis=1)

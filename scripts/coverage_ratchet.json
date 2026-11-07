@@ -8,22 +8,22 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 89.59514807813484,
-      "covered_lines": 56875,
-      "num_statements": 63480,
+      "percent_covered": 89.62540562679185,
+      "covered_lines": 56896,
+      "num_statements": 63482,
       "excluded_lines": 566,
-      "source_revision": "5f1325a7893bee1bdd30992183ce39ba9635f0e9",
-      "tested_revision": "6dfaeff37255e5e94c98c7dd23b1b5ac06deb0f1",
+      "source_revision": "344687dbd4ffe4cf97cd85fdaf8ed953e10fc70f",
+      "tested_revision": "1e38e60e6114f31e9c31f6178698412a17616702",
       "platform": "remote Linux, CPU expanded profile",
       "python": "3.12.16",
-      "run_id": 42318705029,
-      "result": "19206 passed,173 skipped,zero failures/errors",
+      "run_id": 42324522494,
+      "result": "19222 passed,173 skipped,zero failures/errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
       "coverage_version": "7.16.2",
-      "notes": "All4exact-head workflows success,alljobs success/skipped;actualtestedmerge6dfaeff/source WHOLEtreeequal andprefetched. SamePython3.12.16/EVERYdistribution/profilebytes/all173skips37messages/800files566exclusions/coverage7.16.2/tracing;all5329consumers36modulesunskipped. Fullaggregate+6covered/+7statements:search+5/+7,unchangedplot_boards709recurred+1.52existingNMFconvergencewarningsdisappeared;allothernormalizedwarningblocks/countsidentical.3412warnings,noerrors/failures/collectionwarnings.89.59514807813484%slightlybelowprevious89.595576%;NOTacoveragepercentagegain. Runtime2913.950snotperformanceevidence. Exact90gap257ONLY5f;floors70/88/headroom1pp unchanged;localreachseparate."
+      "notes": "ALL4exact-head workflows/jobs success;actualtestedmerge1e38/source WHOLEtreeequal,prefetchedbeforenextpush. SamePython3.12.16/EVERYinstalleddistribution/profileinputbytes/all173skips37messages/ALLnormalizedwarningblocks3412. Same800files566exclusions/coverage7.16.2/tracing;all5345requiredconsumers37modulesunskipped. Fullaggregate+21covered/+2statements confined4DLworkflowfiles:export+1,speech+3,SessionDL+16/+2,facademixin+1;nootheraggregatechanges.89.62540562679185%,19222PASS173SKIP,noerrors/failures/collectionwarnings. Runtime2895.630snotperformanceevidence. Exact90gap238ONLY344;floors70/88/headroom1ppunchanged,localreachseparate."
     },
     "latest_local_measurement": {
       "percent_covered": 85.51916984547746,
