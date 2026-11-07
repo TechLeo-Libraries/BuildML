@@ -353,7 +353,6 @@ def build_eval_plot_board(
             figures=figures,
             skipped=skipped,
             interpretation=interpretation,
-            recommendations=recommendations,
             plt=plt,
             sns=sns,
             y_true=y_true,
@@ -534,7 +533,14 @@ def _classification_board(
         return
 
     try:
-        proba = estimator.predict_proba(x)
+        proba = np.asarray(estimator.predict_proba(x), dtype=float)
+        expected_shape = (len(x), len(classes))
+        if proba.shape != expected_shape:
+            raise ValidationError(
+                f"Expected probability matrix shape {expected_shape}, received {proba.shape}."
+            )
+        if not np.isfinite(proba).all() or ((proba < 0) | (proba > 1)).any():
+            raise ValidationError("Probabilities must contain finite values in [0, 1].")
     except Exception as exc:  # noqa: BLE001
         for panel in ("roc_curve", "pr_curve", "calibration", "threshold_tradeoff"):
             skipped.append({"panel": panel, "reason": f"predict_proba failed: {exc}"})
@@ -669,7 +675,6 @@ def _regression_board(
     figures: dict[str, Any],
     skipped: list[dict[str, str]],
     interpretation: list[str],
-    recommendations: list[str],
     plt: Any,
     sns: Any,
     y_true: pd.Series,
@@ -697,19 +702,9 @@ def _regression_board(
             "residual_q95": float(np.quantile(residuals, 0.95)),
         }
     )
-    if abs(bias) > 0.25 * (rmse + 1e-12):
-        recommendations.append(
-            "Non-trivial residual bias: check target transforms or missing intercept structure."
-        )
-    # Heteroscedasticity heuristic: correlate |residual| with prediction
-    if len(y_p) >= 8:
-        corr = float(np.corrcoef(np.abs(residuals), y_p)[0, 1]) if np.std(y_p) > 0 else 0.0
-        metrics["heteroscedasticity_correlation"] = corr
-        if abs(corr) > 0.35:
-            recommendations.append(
-                f"|residual| correlates with prediction (r≈{corr:.2f}): "
-                "consider variance-stabilizing transforms or heteroscedastic models."
-            )
+    absolute_residuals = np.abs(residuals)
+    if len(y_p) >= 8 and np.std(y_p) > 0 and np.std(absolute_residuals) > 0:
+        metrics["heteroscedasticity_correlation"] = float(np.corrcoef(absolute_residuals, y_p)[0, 1])
     for panel in ("roc_curve", "pr_curve", "calibration", "threshold_tradeoff", "confusion_matrix"):
         skipped.append({"panel": panel, "reason": "not applicable to regression"})
 

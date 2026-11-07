@@ -8,22 +8,22 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 89.76340768492138,
-      "covered_lines": 57024,
-      "num_statements": 63527,
+      "percent_covered": 89.78721395070666,
+      "covered_lines": 57049,
+      "num_statements": 63538,
       "excluded_lines": 566,
-      "source_revision": "15b9b3137f1f2e6c364bb61f2f22b9ee27245327",
-      "tested_revision": "f29bdad05b4ef1db8addf940bd65e6d9b199b111",
+      "source_revision": "ec58d6b1fd7738f3f2584361ccf3ed3788f069dd",
+      "tested_revision": "495f8310b0ece729a9d47d4119cde32f476c2498",
       "platform": "remote Linux, CPU expanded profile",
       "python": "3.12.16",
-      "run_id": 42391142368,
-      "result": "19454 passed, 173 skipped, zero failures or errors",
+      "run_id": 42396064099,
+      "result": "19463 passed, 173 skipped, zero failures or errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
       "coverage_version": "7.16.2",
-      "notes": "All four exact-source workflows passed. Tested merge and source have equal trees. Same installed distributions, profile inputs, scope, tracing and skips as 7864085. All 5,577 required consumers in 45 modules executed. Net change is 83 covered lines and 38 statements. The 3,464 warnings include 52 additional scikit-learn NMF convergence warnings in existing NLP resource tests. No collection warnings. Exact 90% gap is 151 lines. Floors and headroom unchanged."
+      "notes": "All four exact-source workflows passed. Tested merge and source have equal trees. Same installed distributions, profile inputs, scope, tracing, skips and all 3,464 warnings as 15b9b31. All 5,586 required consumers in 46 modules executed. Net change is 25 covered RAG lines and 11 statements. No collection warnings. Exact 90% gap is 136 lines. Floors and headroom unchanged."
     },
     "latest_local_measurement": {
       "percent_covered": 85.51916984547746,

@@ -122,7 +122,7 @@ monolith** (**70** active after corrected thread/process tracing measured at lea
 `pytest tests --cov=buildml`); do not lower it to silence a regression.
 The separate `expanded-coverage` CI job installs
 `requirements-expanded-coverage.txt` and runs the entire suite with an **88%**
-floor, supported by passing remote Linux 89.7634% evidence at `15b9b31`.
+floor, supported by passing remote Linux 89.7872% evidence at `ec58d6b`.
 The broadened profile includes DoWhy and ONNX Runtime, using a compatible
 NumPy 2.4.1/SciPy 1.15.3/mlxtend 0.23.4 stack. Same-source complete local suites
 passed 85.5192% for this profile and85.3947% for its original-profile control;
@@ -230,19 +230,18 @@ and pick the next target, and `--path buildml/<pkg>` to audit work in progress.
 - Write public documentation for library users. Keep implementation instructions,
   release actions, and work plans in clearly labeled contributor material.
 
-Current expanded coverage evidence (2026-11-07): Remote Linux source `15b9b31` passed **89.7634%** (57,024/63,527 lines),
-with 19,454 passed and 173 skipped. All four workflows passed and tested
-merge `f29bdad` has the same tree as the source. [CI42391142368](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42391142368)
+Current expanded coverage evidence (2026-11-07): Remote Linux source `ec58d6b` passed **89.7872%** (57,049/63,538 lines),
+with 19,463 passed and 173 skipped. All four workflows passed and tested
+merge `495f831` has the same tree as the source. [CI42396064099](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42396064099)
 
 The run used coverage.py 7.16.2 across 800 files and 566 exclusions. All
-5,577 required consumer cases executed. Python 3.12.16, the installed
-distributions, profile inputs and all 173 skips across 37 messages match
-`7864085`. The 3,464 warnings include 52 additional scikit-learn NMF
-convergence warnings in the existing NLP resource tests. There were no
-failures, errors or collection warnings.
+5,586 required consumer cases executed. Python 3.12.16, the installed
+distributions, profile inputs, all 173 skips across 37 messages, and all
+3,464 warnings match `15b9b31`. There were no failures, errors or
+collection warnings.
 
-The covered count rose by 83 and the statement count rose by 38. Core 70
+The covered count rose by 25 and the statement count rose by 11. Core 70
 and expanded 88 remain in force. The next expanded floor of 89 requires
 at least 90% complete coverage to preserve one percentage point of
-headroom. At `15b9b31`, 151 more covered lines would reach 90% at the
+headroom. At `ec58d6b`, 136 more covered lines would reach 90% at the
 measured statement count.
