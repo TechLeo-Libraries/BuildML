@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-11-06, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed at 89.9242% (57,199/63,608) with 19,544 passed and 173 skipped | Source `be80231f`, tested merge `13dd2d6`. Trees match and all four workflows passed. Same 800 files, 566 exclusions and coverage.py 7.16.2. All 5,667 required cases executed. No failures, errors or collection warnings. The gap to 90% is 49 covered lines at this denominator. [CI42467659841](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42467659841) |
+| Current accepted remote expanded CPU whole-package gate | Passed at 89.9415% (57,210/63,608) with 19,564 passed and 173 skipped | Source `078a64b1`, tested merge `9b759e3`. Trees match and all four workflows passed. Same 800 files, 566 exclusions and coverage.py 7.16.2. All 5,687 required cases executed. No failures, errors or collection warnings. The gap to 90% is 38 covered lines at this denominator. [CI42473973964](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42473973964) |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -8868,4 +8868,34 @@ Against accepted `be80231f`, Windows provider/core selections reach
 7/7 previously missing unchanged and
 11/11 edited lines. The Ubuntu selection reaches
 7 previously missing unchanged and 11
+edited lines. These counts describe the selections.
+
+Remote Linux source `078a64b1` passed at **89.9415%** (57,210/63,608 lines)
+with 19,564 passes and 173 skips. All four workflows passed. The
+tested merge tree matches the source, and all 5,687 required cases
+executed. Scope, exclusions, tracing, profile inputs, distributions
+and skips match `be80231f`. All 3,483 normalized warnings match the PNG run.
+The federated revision changed covered lines by +11 and statements by +0. There were no collection or coverage warnings.
+[CI42473973964](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42473973964)
+
+## Targeted SMOTE synthesis (2026-11-08)
+
+SMOTE validates neighbors for the classes selected for oversampling.
+A no-op fit raises a validation error and preserves the previous
+Session plan and sample. The tests verify train-only interpolation
+on a known line, the requested labels and categories, and reproducible
+sampling beyond the initial synthetic pool.
+
+Windows and Ubuntu controls pass one and fail the same three
+regressions. Corrected Windows provider passes 120 with 77 existing
+facade deprecations. Genuine core passes 115 with 75 existing facade
+deprecations and skips twice without imbalanced-learn, including the
+new module. Ubuntu Python 3.12.3 with imbalanced-learn 0.14.2 and
+scikit-learn 1.9.1 passes all four without warnings. There were no
+collection or coverage warnings.
+
+Against accepted `078a64b1`, Windows provider/core selections reach
+11/6 previously missing unchanged and
+6/0 edited lines. The Ubuntu selection reaches
+12 previously missing unchanged and 6
 edited lines. These counts describe the selections.

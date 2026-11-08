@@ -615,13 +615,7 @@ ValidationError
         y = frame[target_column]
         if y.nunique(dropna=True) < 2:
             raise ValidationError("SMOTE synthesizer requires ≥2 classes in train.")
-        minority = int(y.astype(str).value_counts().min())
         k = int(k_neighbors)
-        if minority <= k:
-            raise ValidationError(
-                f"SMOTE needs minority_count > k_neighbors ({k}); "
-                f"found minority_count={minority}."
-            )
         x = frame[feat_list].to_numpy(dtype=float)
         # Preserve non-feature columns via train-mode fill when sampling
         template: dict[str, Any] = {}
@@ -631,13 +625,17 @@ ValidationError
             mode = frame[col].mode(dropna=True)
             template[col] = mode.iloc[0] if len(mode) else pd.NA
 
-        # Smoke-fit to validate imblearn accepts the data
         smote = SMOTE(
             random_state=int(random_state),
             k_neighbors=k,
             sampling_strategy=sampling_strategy,
         )
-        smote.fit_resample(x, y)
+        try:
+            resampled, _ = smote.fit_resample(x, y)
+        except ValueError as exc:
+            raise ValidationError(f"SMOTE could not fit with k_neighbors={k}: {exc}") from exc
+        if len(resampled) <= len(x):
+            raise ValidationError("SMOTE produced no synthetic rows; check class balance / strategy.")
 
         return cls(
             feature_columns=feature_columns,
