@@ -4,10 +4,13 @@ from __future__ import annotations
 
 from typing import Any, Sequence
 
+import numpy as np
+
 from buildml.core.errors import ValidationError
 from buildml.fairness.catalog import fairness_capability_matrix as _fairness_capability_matrix
 from buildml.fairness.evaluate import evaluate_fairness as _evaluate_fairness
 from buildml.fairness.groups import extract_sensitive_keys, normalize_sensitive_columns
+from buildml.fairness.metrics import _label_vector
 from buildml.fairness.mitigation import (
     GroupThresholdSuggestion,
     ReweighingSuggestion,
@@ -19,7 +22,7 @@ from buildml.fairness.mitigation import (
     suggest_reweighing_weights as _suggest_reweighing_weights,
 )
 from buildml.fairness.results import FairnessReport
-from buildml.fairness.stability import StabilityMethod
+from buildml.fairness.stability import StabilityMethod, _validate_stability_options
 
 
 def fairness_capability_matrix() -> dict[str, Any]:
@@ -79,8 +82,39 @@ def _resolve_last_eval_partition(session: Any, default: str = "test") -> str:
     return default
 
 
+def _classifier_positive_label(session: Any, positive_label: Any, operation: str) -> Any:
+    """Resolve numeric-equivalent labels against the fitted classifier's classes."""
+    fit = getattr(session, "_fit_result", None)
+    if fit is None or fit.task != "classification":
+        raise ValidationError(
+            f"{operation} requires a fitted classifier; call Session.fit "
+            "with task='classification' first."
+        )
+    classes = getattr(fit.estimator, "classes_", None)
+    if classes is None:
+        raise ValidationError(
+            f"{operation} requires fitted classifier classes_ to identify positive_label."
+        )
+    if np.ndim(positive_label) == 0:
+        for label in classes:
+            try:
+                if bool(label == positive_label):
+                    return label
+            except (TypeError, ValueError):
+                continue
+    raise ValidationError(
+        f"positive_label={positive_label!r} is not a fitted class. "
+        f"Pass an actual positive class value from {list(classes)!r}."
+    )
+
+
 def _positive_scores(session: Any, partition: str, positive_label: Any) -> Any | None:
-    """Best-effort positive-class scores via ``predict(..., return_proba=True)``."""
+    """Best-effort scores for an already resolved fitted class."""
+    fit = session._fit_result
+    if not callable(getattr(fit.estimator, "predict_proba", None)):
+        # Classical predict falls back to labels when probabilities are absent.
+        # Those labels cannot serve as probability scores for AUC or thresholds.
+        return None
     try:
         proba = session.predict(partition=partition, return_proba=True)  # type: ignore[misc]
     except Exception:  # noqa: BLE001 - scores are optional for AUC bridge
@@ -89,25 +123,11 @@ def _positive_scores(session: Any, partition: str, positive_label: Any) -> Any |
         return None
     if hasattr(proba, "columns"):
         cols = list(proba.columns)
-        if positive_label in cols:
-            return proba[positive_label].to_numpy()
-        # Common binary layout: columns [0, 1] or class labels
-        if len(cols) == 2:
-            # Prefer column matching positive_label string form, else last/col 1
-            for c in cols:
-                if str(c) == str(positive_label):
-                    return proba[c].to_numpy()
-            return proba[cols[-1]].to_numpy()
-        if len(cols) == 1:
-            return proba[cols[0]].to_numpy()
-        return None
-    import numpy as np
-
-    arr = np.asarray(proba)
-    if arr.ndim == 1:
-        return arr
-    if arr.ndim == 2 and arr.shape[1] >= 2:
-        return arr[:, -1]
+        score_column = f"proba_{positive_label}"
+        if score_column in cols:
+            return proba[score_column].to_numpy()
+    # Classical prediction names every probability column from classes_. A
+    # missing class column is unusable; another column can reverse the outcome.
     return None
 
 
@@ -159,13 +179,11 @@ def evaluate_fairness_op(
     Raises
     ------
     ValidationError
-        When the Session lacks a fit/split/dataset, sensitive columns are
-        missing, the partition is empty/unknown, or prediction length mismatches.
+        When the Session lacks a classification fit with fitted classes, a
+        split/dataset, or sensitive columns; when the positive label is unknown,
+        the partition is empty/unknown, or prediction length mismatches.
     """
-    if getattr(session, "_fit_result", None) is None:
-        raise ValidationError(
-            "evaluate_fairness requires a fitted classifier; call Session.fit first."
-        )
+    fitted_positive = _classifier_positive_label(session, positive_label, "evaluate_fairness")
     dataset = session.dataset
     if dataset is None:
         raise ValidationError("Session has no dataset.")
@@ -178,16 +196,19 @@ def evaluate_fairness_op(
         )
 
     idx = _partition_indices(session, partition)
+    bootstrap_samples = _validate_stability_options(
+        bootstrap_samples, confidence_level, stability_method, subsample_fraction, allow_zero=True
+    )
+    frame = dataset._ensure_pandas().iloc[idx]
+    target = dataset.require_target()
+    y_true = _label_vector(frame[target].to_numpy(), "y_true")
+    sensitive = extract_sensitive_keys(frame, cols)
     y_hat = session.predict(partition=partition)  # type: ignore[misc]
     if hasattr(y_hat, "to_numpy"):
         y_hat_arr = y_hat.to_numpy()
     else:
         y_hat_arr = list(y_hat)
 
-    frame = dataset.frame.iloc[idx]
-    target = dataset.require_target()
-    y_true = frame[target].to_numpy()
-    sensitive = extract_sensitive_keys(frame, cols)
     if len(y_hat_arr) != len(y_true):
         raise ValidationError(
             "Prediction length does not match fairness partition rows."
@@ -195,7 +216,7 @@ def evaluate_fairness_op(
 
     y_score = None
     if include_scores:
-        y_score = _positive_scores(session, partition, positive_label)
+        y_score = _positive_scores(session, partition, fitted_positive)
 
     report = _evaluate_fairness(
         y_true,
@@ -213,19 +234,19 @@ def evaluate_fairness_op(
         random_state=random_state,
     )
     session._fairness_report = report
-    history = getattr(session, "history", None)
-    if isinstance(history, list):
-        history.append(
-            {
-                "operation": "evaluate_fairness",
-                "partition": partition,
-                "sensitive_column": list(cols),
-                "intersectional": report.intersectional,
-                "n_rows": report.n_rows,
-                "demographic_parity_difference": report.demographic_parity_difference,
-                "stability_enabled": report.stability is not None,
-            }
-        )
+    session._record(
+        "evaluate_fairness",
+        {"partition": partition, "sensitive_column": list(cols), "positive_label": positive_label,
+         "bootstrap_samples": bootstrap_samples, "stability_method": stability_method,
+         "confidence_level": confidence_level, "subsample_fraction": subsample_fraction,
+         "random_state": random_state, "include_scores": include_scores,
+         "include_classical_metrics": include_classical_metrics},
+        warnings=report.warnings,
+        result_summary={"n_rows": report.n_rows, "n_groups": len(report.groups),
+                        "intersectional": report.intersectional,
+                        "demographic_parity_difference": report.demographic_parity_difference,
+                        "stability_enabled": report.stability is not None},
+    )
     return report
 
 
@@ -282,11 +303,10 @@ def suggest_fairness_thresholds_op(
 
     Prefer ``session.fairness.suggest_thresholds(...)``. Default partition is
     ``validation`` to discourage test-set threshold fishing.
+    Requires a classification fit and a positive label matching its fitted
+    classes. Numeric-equivalent labels select the same probability column.
     """
-    if getattr(session, "_fit_result", None) is None:
-        raise ValidationError(
-            "suggest_thresholds requires a fitted classifier; call Session.fit first."
-        )
+    fitted_positive = _classifier_positive_label(session, positive_label, "suggest_thresholds")
     dataset = session.dataset
     if dataset is None:
         raise ValidationError("Session has no dataset.")
@@ -297,11 +317,11 @@ def suggest_fairness_thresholds_op(
             f"sensitive_column(s) not in the Session dataset: {missing!r}."
         )
     idx = _partition_indices(session, partition)
-    frame = dataset.frame.iloc[idx]
+    frame = dataset._ensure_pandas().iloc[idx]
     target_col = dataset.require_target()
     y_true = frame[target_col].to_numpy()
     sensitive = extract_sensitive_keys(frame, cols)
-    y_score = _positive_scores(session, partition, positive_label)
+    y_score = _positive_scores(session, partition, fitted_positive)
     if y_score is None:
         raise ValidationError(
             "suggest_thresholds requires predict_proba scores; the fitted "
@@ -316,17 +336,14 @@ def suggest_fairness_thresholds_op(
         grid_size=grid_size,
     )
     session._fairness_mitigation_suggestion = suggestion
-    history = getattr(session, "history", None)
-    if isinstance(history, list):
-        history.append(
-            {
-                "operation": "suggest_fairness_thresholds",
-                "partition": partition,
-                "sensitive_column": list(cols),
-                "target": target,
-                "n_rows": suggestion.n_rows,
-            }
-        )
+    session._record(
+        "suggest_fairness_thresholds",
+        {"partition": partition, "sensitive_column": list(cols), "positive_label": positive_label,
+         "target": target, "grid_size": grid_size},
+        warnings=suggestion.warnings,
+        result_summary={"n_rows": suggestion.n_rows, "target": suggestion.target,
+                        "thresholds_by_group": suggestion.thresholds_by_group},
+    )
     return suggestion
 
 
@@ -352,7 +369,7 @@ def suggest_fairness_reweighing_op(
             f"sensitive_column(s) not in the Session dataset: {missing!r}."
         )
     idx = _partition_indices(session, partition)
-    frame = dataset.frame.iloc[idx]
+    frame = dataset._ensure_pandas().iloc[idx]
     target_col = dataset.require_target()
     y_true = frame[target_col].to_numpy()
     sensitive = extract_sensitive_keys(frame, cols)
@@ -360,14 +377,10 @@ def suggest_fairness_reweighing_op(
         y_true, sensitive, positive_label=positive_label
     )
     session._fairness_mitigation_suggestion = suggestion
-    history = getattr(session, "history", None)
-    if isinstance(history, list):
-        history.append(
-            {
-                "operation": "suggest_fairness_reweighing",
-                "partition": partition,
-                "sensitive_column": list(cols),
-                "n_rows": suggestion.n_rows,
-            }
-        )
+    session._record(
+        "suggest_fairness_reweighing",
+        {"partition": partition, "sensitive_column": list(cols), "positive_label": positive_label},
+        warnings=suggestion.warnings,
+        result_summary={"n_rows": suggestion.n_rows, "weight_table": suggestion.weight_table},
+    )
     return suggestion

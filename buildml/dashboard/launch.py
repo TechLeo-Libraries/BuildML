@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import errno
 import socket
 import threading
 import time
@@ -27,16 +28,17 @@ class EDAAppHandle:
     url: str
     title: str
     _server: Any
-    _thread: threading.Thread
+    _thread: threading.Thread | None
 
     def stop(self) -> None:
-        """Stop the background uvicorn server and clear app state."""
-        server = self._server
-        if server is not None:
-            server.should_exit = True
-        if self._thread.is_alive():
-            self._thread.join(timeout=5)
-        clear_state()
+        """Request shutdown and wait for the background server to exit."""
+        thread = self._thread
+        if thread is None:
+            return
+        if self._server is not None:
+            self._server.should_exit = True
+        if thread.is_alive() and thread is not threading.current_thread():
+            thread.join(timeout=5)
 
     @property
     def is_running(self) -> bool:
@@ -58,7 +60,7 @@ class EDAAppHandle:
         startup where the thread exists and the port is not yet accepting; a
         handle returned from a non-blocking launch is past that window.
         """
-        return self._thread.is_alive()
+        return self._thread is not None and self._thread.is_alive()
 
 
 def launch_eda_app(
@@ -170,19 +172,13 @@ def launch_eda_app(
 
     from buildml.dashboard.app import create_app
 
-    set_state(
-        DashboardState(
-            report=report,
-            report_dict=report.to_dict(),
-            title=title,
-            session_meta=session_meta or {},
-        )
+    state = DashboardState(
+        report=report,
+        report_dict=report.to_dict(),
+        title=title,
+        session_meta=session_meta or {},
     )
-    try:
-        app = create_app()
-    except MissingExtraError:
-        clear_state()
-        raise
+    app = create_app()
     config = uvicorn.Config(
         app,
         host=host,
@@ -192,25 +188,26 @@ def launch_eda_app(
     )
     server = uvicorn.Server(config)
     url = f"http://{host}:{port}/"
+    set_state(state)
 
     if blocking:
-        if open_browser:
-            threading.Thread(
-                target=_open_when_ready,
-                args=(server, url),
-                daemon=True,
-            ).start()
         try:
+            if open_browser:
+                threading.Thread(
+                    target=_open_when_ready,
+                    args=(server, url),
+                    daemon=True,
+                ).start()
             server.run()
         finally:
-            clear_state()
+            clear_state(expected=state)
         return EDAAppHandle(
             host=host,
             port=port,
             url=url,
             title=title,
             _server=server,
-            _thread=threading.current_thread(),
+            _thread=None,
         )
 
     error_box: list[BaseException] = []
@@ -220,16 +217,18 @@ def launch_eda_app(
             server.run()
         except BaseException as exc:  # noqa: BLE001 - surface bind failures to waiter
             error_box.append(exc)
+        finally:
+            clear_state(expected=state)
 
     thread = threading.Thread(target=_run, name="buildml-eda-app", daemon=True)
-    thread.start()
     try:
+        thread.start()
         _wait_until_started(server, thread, error_box, host=host, port=port, timeout=15.0)
     except Exception:
         server.should_exit = True
         if thread.is_alive():
             thread.join(timeout=2)
-        clear_state()
+        clear_state(expected=state)
         raise
     if open_browser:
         webbrowser.open(url)
@@ -296,13 +295,7 @@ def _ensure_port_available(host: str, port: int) -> None:
             # Do not set SO_REUSEADDR here: on Windows it can mask an occupied port.
             sock.bind((host, port))
     except OSError as exc:
-        alternate = port + 1 if port < 65535 else 8766
-        raise DashboardLaunchError(
-            f"Cannot start Industry EDA App: port {port} on {host} is already in use "
-            f"({exc}). Next actions: stop the other process, or launch on another port, "
-            f"e.g. session.eda_app(port={alternate}). "
-            "If dependencies are missing, install with: pip install 'buildml[dashboard]'."
-        ) from exc
+        raise _launch_failure(host, port, exc) from exc
 
 
 def _wait_until_started(
@@ -341,7 +334,8 @@ def _launch_failure(host: str, port: int, exc: BaseException | None) -> Dashboar
     alternate = port + 1 if port < 65535 else 8766
     detail = f" Underlying error: {exc}." if exc is not None else ""
     message = str(exc).lower() if exc is not None else ""
-    if "address already in use" in message or "10048" in message or "eaddrinuse" in message:
+    occupied = isinstance(exc, OSError) and exc.errno in {errno.EADDRINUSE, 10048}
+    if occupied or "address already in use" in message or "10048" in message or "eaddrinuse" in message:
         return DashboardLaunchError(
             f"Cannot start Industry EDA App: port {port} on {host} is already in use."
             f"{detail} Next actions: stop the other process, or launch on another port, "
@@ -350,7 +344,7 @@ def _launch_failure(host: str, port: int, exc: BaseException | None) -> Dashboar
         )
     return DashboardLaunchError(
         f"Industry EDA App failed to start on http://{host}:{port}/.{detail} "
-        f"Try session.eda_app(port={alternate}) or reinstall with "
+        f"Check the local bind address, try session.eda_app(port={alternate}), or reinstall with "
         "pip install 'buildml[dashboard]'."
     )
 

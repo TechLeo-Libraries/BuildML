@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import inspect
 import logging
 import re
 from typing import Any
@@ -80,22 +81,27 @@ def induce_skope_rules(
 
     rules_out: list[Rule] = []
     est = None
+    aliases = [f"c{i}" for i in range(len(columns))]
     # Multi-class: one-vs-rest rule mining per class (honest disclosure).
     for cls_idx, cls_val in enumerate(unique):
         binary_y = (y_arr == cls_val).astype(int)
+        constructor_names = {"feature_names": aliases} if "feature_names" in inspect.signature(SkopeRules).parameters else {}
         est = SkopeRules(
-            feature_names=columns,
+            **constructor_names,
             precision_min=float(precision_min),
             recall_min=float(recall_min),
             n_estimators=int(n_estimators),
             random_state=random_state,
         )
-        est.fit(x, binary_y)
+        fit_names = {"feature_names": aliases} if "feature_names" in inspect.signature(est.fit).parameters else {}
+        est.fit(x, binary_y, **fit_names)
         consequent = _class_label(cls_val, class_names)
         for rank, entry in enumerate(getattr(est, "rules_", [])[: max_rules // len(unique) + 1]):
             rule_str = entry[0] if isinstance(entry, (list, tuple)) else str(entry)
-            precision = float(entry[1]) if isinstance(entry, (list, tuple)) and len(entry) > 1 else None
-            recall = float(entry[2]) if isinstance(entry, (list, tuple)) and len(entry) > 2 else None
+            statistics = getattr(entry, "args", None)
+            if statistics is None and isinstance(entry, (list, tuple)) and len(entry) > 1:
+                statistics = entry[1] if isinstance(entry[1], (list, tuple)) else entry[1:]
+            precision = float(statistics[0]) if statistics else None
             antecedents = _parse_skope_rule_string(rule_str, columns)
             if not antecedents:
                 continue
@@ -127,8 +133,9 @@ def induce_skope_rules(
         default_consequent=default,
         columns_used=tuple(columns),
         disclosures=(
-            "Rule provenance=induced_skope: skope-rules SkopeRules fitted on "
+            "Rule provenance=induced_skope: SkopeRules fitted on "
             "Session train only, exported as if-then rules. Not expert-declared.",
+            f"Implementation={SkopeRules.__module__}.{SkopeRules.__name__}.",
             f"SkopeRules precision_min={precision_min}, recall_min={recall_min}, "
             f"n_estimators={n_estimators}.",
             "Multi-class uses one-vs-rest rule mining per class.",
@@ -142,15 +149,16 @@ def _parse_skope_rule_string(rule_str: str, columns: list[str]) -> tuple[Predica
     """Parse skope-rules string like 'a <= 1.0 and b > 0.5' into predicates."""
     parts = re.split(r"\s+and\s+", str(rule_str).strip(), flags=re.IGNORECASE)
     preds: list[Predicate] = []
-    col_map = {f"c{i}": col for i, col in enumerate(columns)}
-    col_map.update({col: col for col in columns})
+    col_map = {col: col for col in columns}
+    col_map.update({f"{prefix}{i}": col for i, col in enumerate(columns)
+                    for prefix in ("c", "X", "X_", "feature_")})
     pattern = re.compile(
         r"^(?P<col>[a-zA-Z_][\w]*)\s*(?P<op><=|>=|<|>|==|!=)\s*(?P<val>-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)$"
     )
     for part in parts:
         m = pattern.match(part.strip())
-        if not m:
-            continue
+        if not m or m.group("col") not in col_map:
+            raise ValidationError(f"Cannot faithfully parse SkopeRules rule predicate {part!r}.")
         raw_col = m.group("col")
         col = col_map.get(raw_col, raw_col)
         op = m.group("op")

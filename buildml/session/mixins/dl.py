@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Literal, cast
 
+from buildml.core._defaults import _INHERIT_PERMISSION
 from buildml.session import dl_ops
 from buildml.session.mixins._shared import *  # noqa: F403
 
@@ -703,10 +704,10 @@ class DlSessionMixin:
         self,
         path: str | Path | None = None,
         *,
-        kind: Literal["pipeline", "torchscript"] = "pipeline",
-        host: str = "127.0.0.1",
-        port: int = 8080,
-        title: str = "BuildML Serve",
+        kind: Literal["pipeline", "torchscript"] | None = None,
+        host: str | None = None,
+        port: int | None = None,
+        title: str | None = None,
         blocking: bool = False,
         api_keys: str | list[str] | tuple[str, ...] | None = None,
         basic_auth: str
@@ -715,10 +716,10 @@ class DlSessionMixin:
         | dict[str, str]
         | None = None,
         docs_enabled: bool | None = None,
-        allow_insecure_public_bind: bool = False,
+        allow_insecure_public_bind: bool = _INHERIT_PERMISSION,
         ssl_certfile: str | Path | None = None,
         ssl_keyfile: str | Path | None = None,
-        trusted: bool = False,
+        trusted: bool = _INHERIT_PERMISSION,
         config: Any | None = None,
     ) -> Any:
         """Launch BuildML managed serving for a pipeline or TorchScript artifact.

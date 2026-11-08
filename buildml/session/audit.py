@@ -10,6 +10,7 @@ from buildml.explain.catalog import OPERATION_CATALOG, get_operation
 from buildml.explain.history import normalize_history
 from buildml.explain.resolver import prerequisite_status, resolve_workflow
 from buildml.explain.schemas import WorkflowStepStatus
+from buildml.session.facade_registry import resolve_operation_name
 
 RiskSeverity = Literal["high", "medium", "low", "info"]
 
@@ -271,7 +272,8 @@ def dry_run_session(
         plans, and history inform availability checks.
     operation:
         One operation name, a sequence of names, or ``None`` to auto-select
-        prep, split, and fit-adjacent steps that matter next.
+        prep, split, and fit-adjacent steps that matter next. Facade paths are
+        resolved to the same canonical operation names as the workflow graph.
     parameters:
         Optional parameter mapping applied when ``operation`` is a single
         string; ignored for multi-operation previews.
@@ -305,6 +307,7 @@ def dry_run_session(
     else:
         ordered = [str(item) for item in operation]
 
+    ordered = [resolve_operation_name(name) for name in ordered]
     params = dict(parameters or {})
     steps: list[DryRunStep] = []
     step_params = params if len(ordered) == 1 else {}
@@ -722,11 +725,12 @@ def build_prerequisite_graph_summary(
     seen_nodes: set[str] = set()
     seen_edges: set[tuple[str, str]] = set()
 
-    for operation in operations:
+    for requested_operation in operations:
         try:
-            spec = get_operation(operation)
+            spec = get_operation(requested_operation)
         except Exception:
             continue
+        operation = spec.name
         step = workflow.get(operation)
         status = (
             step.status.value

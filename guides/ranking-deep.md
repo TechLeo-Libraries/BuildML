@@ -42,6 +42,17 @@ Fit is train only. Features are standardized on train means and scales.
 well. Relevance labels at eval time score frozen rankings. They do not
 refit.
 
+Explicit `query_ids` selects queries from the full dataset when `partition` is
+omitted. When both are supplied, the queries must exist in that partition.
+Requested query order is retained, including an explicitly empty selection.
+The AI ranking tool applies the same scope rules. `k` must be a positive integer;
+booleans, fractional values and text counts refuse, while NumPy integers are
+accepted and recorded as ordinary integers. Equal scores retain candidate row
+order. Ranking and evaluation keep query IDs, item IDs and relevance labels
+separate from predicted scores, including columns named `__score__` and data
+with duplicate row indexes. Existing ranker bundles use this corrected ordering
+when loaded into the updated runtime; the fitted model does not need refitting.
+
 ```python
 import numpy as np
 import pandas as pd

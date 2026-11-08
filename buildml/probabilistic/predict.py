@@ -11,6 +11,8 @@ from buildml.data.dataset import Dataset
 from buildml.data.splits import PartitionName, SplitPlan, frame_for_partition
 from buildml.probabilistic.adapters.mapie import (
     mapie_predict_interval,
+    mapie_predict_point,
+    mapie_predict_proba,
     mapie_predict_sets,
     validate_mapie_alpha,
 )
@@ -111,29 +113,14 @@ def predict_probabilistic(
     proba_out: tuple[tuple[float, ...], ...] | None = None
 
     if plan.backend == "mapie":
+        point = mapie_predict_point(plan.estimator_, x)
         if plan.task == "regression":
-            point, _, _, _ = mapie_predict_interval(
-                plan.estimator_, x, task="regression", alpha=plan.alpha
-            )
-            preds = point
+            preds = tuple(float(value) for value in point)
         else:
-            point, _ = mapie_predict_sets(
-                plan.estimator_, x, alpha=plan.alpha, task="classification"
-            )
-            preds = tuple(decode_predictions(np.asarray(point), plan.label_encoder_))
+            preds = tuple(decode_predictions(point, plan.label_encoder_))
         if return_proba and plan.supports_predict_proba:
-            from buildml.probabilistic.adapters.mapie import MapieWrapper
-
-            handle = (
-                plan.estimator_
-                if isinstance(plan.estimator_, MapieWrapper)
-                else plan.estimator_
-            )
-            est = getattr(handle, "estimator", handle)
-            base = getattr(est, "estimator", est)
-            if hasattr(base, "predict_proba"):
-                proba = np.asarray(base.predict_proba(x), dtype=float)
-                proba_out = tuple(tuple(float(v) for v in row) for row in proba)
+            proba = mapie_predict_proba(plan.estimator_, x)
+            proba_out = tuple(tuple(float(v) for v in row) for row in proba)
     elif plan.task == "regression":
         if plan.backend == "ngboost" and return_std:
             mean, std = ngboost_predict_std(plan.estimator_, x)
@@ -249,14 +236,17 @@ def predict_interval(
     warnings: list[str] = []
 
     if plan.backend == "mapie":
-        return _mapie_intervals(
-            plan,
-            x,
-            part_name=part_name,
-            alpha=resolved_alpha,
-            disclosures=disclosures,
-            warnings=warnings,
-        )
+        try:
+            return _mapie_intervals(
+                plan,
+                x,
+                part_name=part_name,
+                alpha=resolved_alpha,
+                disclosures=disclosures,
+                warnings=warnings,
+            )
+        except ValueError as exc:
+            raise ValidationError(f"MAPIE could not produce uncertainty at alpha={resolved_alpha}: {exc}") from exc
 
     if plan.task == "regression":
         return _regression_intervals(
@@ -314,6 +304,10 @@ def _mapie_intervals(
         plan.estimator_, x, alpha=alpha, task="classification"
     )
     point = tuple(decode_predictions(np.asarray(point_raw), plan.label_encoder_))
+    decoded_sets = tuple(
+        tuple(decode_predictions(np.asarray(members), plan.label_encoder_))
+        for members in sets
+    )
     disclosures.append(f"MAPIE classification prediction sets method={plan.estimator_name}.")
     return ProbabilisticIntervalResult(
         partition=part_name,
@@ -326,7 +320,7 @@ def _mapie_intervals(
         upper=None,
         point=point,
         std=None,
-        prediction_sets=sets,
+        prediction_sets=decoded_sets,
         disclosures=tuple(disclosures),
         warnings=tuple(warnings),
     )
@@ -455,7 +449,7 @@ def _classification_sets(
     proba = np.asarray(plan.estimator_.predict_proba(x), dtype=float)
     raw = plan.estimator_.predict(x)
     point = tuple(decode_predictions(raw, plan.label_encoder_))
-    classes = plan.classes_ or ()
+    classes = tuple(decode_predictions(np.arange(len(plan.classes_ or ())), plan.label_encoder_))
     sets = classification_prediction_sets(proba, plan.conformal_quantile_, classes)
     disclosures.append(
         f"Split-conformal prediction sets use q̂={plan.conformal_quantile_:.6g}."

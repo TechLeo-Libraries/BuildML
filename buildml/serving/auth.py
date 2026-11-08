@@ -210,7 +210,7 @@ def key_is_authorized(presented: str | None, allowed: Iterable[str]) -> bool:
         return False
     allowed_list = list(allowed)
     for candidate in allowed_list:
-        if secrets.compare_digest(presented, candidate):
+        if secrets.compare_digest(presented.encode("utf-8"), candidate.encode("utf-8")):
             return True
     return False
 
@@ -224,8 +224,8 @@ def basic_is_authorized(
         return False
     user, password = presented
     for cand_user, cand_password in allowed:
-        user_ok = secrets.compare_digest(user, cand_user)
-        pass_ok = secrets.compare_digest(password, cand_password)
+        user_ok = secrets.compare_digest(user.encode("utf-8"), cand_user.encode("utf-8"))
+        pass_ok = secrets.compare_digest(password.encode("utf-8"), cand_password.encode("utf-8"))
         if user_ok and pass_ok:
             return True
     return False

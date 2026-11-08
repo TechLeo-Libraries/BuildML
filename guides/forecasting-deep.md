@@ -43,10 +43,17 @@ session = (Session.ingest(frame)
 row *t* uses only `y[t-lag]`. Early rows that lack a full lag history
 are dropped from fit.
 
+Horizon, lags and an explicit seasonal period require positive integer values.
+Boolean, fractional and string counts are refused. Target history and exogenous
+values must be finite; future exogenous data must have one row per forecast step
+and the columns named by the plan. DataFrame columns are selected in plan order.
+
 ## Data requirements
 
 - `split` / `group_split` / stratified: `LeakageError`.
-- Fit when train does not end before holdout on the time column.
+- Injected splits must keep train, validation and test in chronological order.
+  Validation observations cannot occur after the test origin because test
+  forecasting conditions on the preceding validation history.
 - Missing future exogenous values. If you fit with `exog_columns`,
   `generate` needs `future_exog`. Offline `evaluate` may use holdout
   exog at each scored timestamp and discloses that.
@@ -81,10 +88,10 @@ except LeakageError as exc:
 | Method | Role | Extra |
 | --- | --- | --- |
 | `auto` | ETS if statsmodels else `lag_ridge` | timeseries |
-| `naive` | Last train value | core |
+| `naive` | Last observation at the selected origin | core |
 | `mean` | Train mean | core |
-| `drift` | Line from first to last train point | core |
-| `seasonal_naive` | Repeat last `seasonal_period` | core |
+| `drift` | Train-fitted slope projected from the selected origin | core |
+| `seasonal_naive` | Repeat the last `seasonal_period` observations at the origin | core |
 | `lag_ridge` | Ridge on lag (+ optional exog) | core |
 | `lag_hgb` | HistGradientBoosting on lag/exog | core |
 | `ets` | Holt-Winters | timeseries |
@@ -130,6 +137,36 @@ Rolling eval appends holdout **actuals** after each one-step
 prediction. Origin eval is recursive multi-step from the prior
 partition end. Metrics: MAE, RMSE, MAPE. MAPE may be NaN near zero
 actuals; lead with MAE/RMSE.
+
+`origin="validation_end"` and `origin="test_end"` condition generation on
+observations available through that partition. Naive and seasonal-naive use the
+latest observation or season. Drift keeps its train-fitted slope and starts from
+the latest observation; mean keeps the train mean. ARIMA/SARIMAX keep fitted
+parameters and receive the matching historical exogenous rows. Saved forecast
+bundles retain these rules when loaded into a Session with the matching data
+and chronological split.
+
+N-BEATS returns the first requested positions of each native forecast block.
+When a request exceeds `nbeats_horizon`, subsequent blocks use the preceding
+predictions as context. Rolling evaluation appends observed holdout values
+after scoring each window; it keeps fitted network weights fixed. The default
+one-step native horizon uses an identity stack because the native trend and
+seasonal bases require more than one output position. Input size, native horizon
+and training steps must be positive integers, and supplied history must contain
+at least `nbeats_input_size` observations. Native predictions use a synthetic
+daily clock. These checks establish alignment and replay, without establishing
+forecast quality from a short training run.
+
+Prophet advances its synthetic daily forecast clock with the selected origin.
+`validation_end`, `test_end` and rolling evaluation therefore predict the dates
+after the supplied history, rather than repeatedly forecasting from train end.
+Its fitted trend and seasonal parameters stay fixed: later target values do
+not refit Prophet. The synthetic daily alignment remains a limitation for
+irregular clocks; this does not map forecasts to the original calendar.
+Saved Prophet bundles use the same origin rule when replayed.
+Use compatible dependency versions for replay: validation uses matching
+Pandas producer/reader versions. A Prophet artifact written with Pandas 3
+failed to unpickle under Pandas 2 because of its stored datetime array format.
 
 ## Exogenous
 
@@ -197,3 +234,9 @@ print(restored.forecast.generate(horizon=7).predictions)
 
 [Time-series analysis](timeseries-analysis-deep.md) ·
 [Leakage](leakage-cv-recipes.md)
+
+Agent `generate_forecast` accepts `future_exog` as numeric rows in the fitted
+`exog_columns` order, with one row for each forecast step. Supply values known
+at the forecast origin or an explicitly assumed scenario; this API does not
+establish that future covariates are available in deployment. Offline holdout
+backtests can use contemporaneous holdout covariates, as disclosed in results.

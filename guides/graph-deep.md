@@ -73,8 +73,33 @@ session.graph.save_bundle("artifacts/graph_bundle")
 later drop or add rows, call `set_spec` again: the spec snapshots ids at
 attach time.
 
+Undirected reverse pairs and repeated edges collapse to one edge, including
+distinct identifiers with the same printed value, such as integer `1` and
+string `"1"`. Their original identities remain distinct. Directed reverse pairs
+remain separate edges. Null endpoints and self-loops are dropped. Adding a
+duplicate undirected pair therefore does not add a message-passing weight.
+Existing bundles retain their stored topology and fitted weights. If an older
+plan was fitted with duplicated edges caused by colliding printed identifiers,
+rebuild its graph specification and refit to remove that multiplicity.
+
 `evaluate` and `predict` default to **validation**. Look at test once you
 are done choosing.
+
+Only training nodes need labels for fitting. Other nodes may have missing labels
+or classes absent from training; neither changes the supervised loss or learned
+class vocabulary. Inductive fitting still uses only train-to-train edges, while
+transductive fitting uses the declared full topology and node features. Prediction
+does not require holdout labels. Evaluation requires labels only on the selected
+nodes. Accuracy and macro-F1 count novel evaluation classes as errors; binary
+ROC-AUC is omitted with a warning when the selected population lacks either
+trained class or contains unknown classes. Unrelated unlabeled partitions do not
+block evaluation of a labeled partition.
+
+Neural graph bundles save the architecture and weights and reconstruct the Torch
+or PyG module on load. Bundle trust requirements still apply. This supports
+prediction replay; it does not restore an optimizer for training continuation.
+Confirmed AI plans retain exact registered graph operation names, so `fit_graph`
+reaches the graph fitter rather than a generic fit alias.
 
 ## Methods
 

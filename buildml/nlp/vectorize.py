@@ -21,7 +21,8 @@ from sklearn.feature_extraction.text import (
 )
 
 from buildml.core.errors import ValidationError
-from buildml.nlp.normalize import TextNormalizePlan, build_analyzer
+from buildml.core.validation import _positive_integer
+from buildml.nlp.normalize import TextNormalizePlan, _ngram_bounds, build_analyzer
 from buildml.nlp.types import NlpBackend, NlpVectorizeConfig
 
 VALID_BACKENDS: tuple[str, ...] = ("sklearn", "embedding", "transformer")
@@ -63,6 +64,10 @@ def validate_vectorize_config(config: NlpVectorizeConfig) -> NlpVectorizeConfig:
     empties the vocabulary. Only the float range can be checked here, which is
     why the confusion is worth naming.
 
+    N-gram bounds, vocabulary caps and hashing widths are discrete counts.
+    Boolean, fractional, non-finite and string values are refused before
+    conversion; NumPy integer scalars retain their integer meaning.
+
     See Also
     --------
     build_sklearn_vectorizer : Calls this before building.
@@ -76,14 +81,10 @@ def validate_vectorize_config(config: NlpVectorizeConfig) -> NlpVectorizeConfig:
             f"analyzer='{config.analyzer}' is not supported. "
             f"Choose from {list(VALID_ANALYZERS)}."
         )
-    low, high = config.ngram_range
-    if int(low) < 1 or int(high) < int(low):
-        raise ValidationError(
-            "ngram_range must be a (min_n, max_n) pair with 1 <= min_n <= max_n."
-        )
-    if config.max_features is not None and int(config.max_features) < 1:
-        raise ValidationError("max_features must be >= 1 when provided.")
-    if config.n_hash_features < 16:
+    _ngram_bounds(config.ngram_range)
+    if config.max_features is not None:
+        _positive_integer(config.max_features, name="max_features")
+    if _positive_integer(config.n_hash_features, name="n_hash_features") < 16:
         raise ValidationError("n_hash_features must be >= 16.")
     if isinstance(config.min_df, float) and not 0.0 <= config.min_df <= 1.0:
         raise ValidationError("min_df as a float must be within [0.0, 1.0].")
@@ -141,7 +142,7 @@ def build_sklearn_vectorizer(
     build_document_vectorizer : Chooses between this and the neural backends.
     """
     validate_vectorize_config(config)
-    ngram_range = (int(config.ngram_range[0]), int(config.ngram_range[1]))
+    ngram_range = _ngram_bounds(config.ngram_range)
 
     if config.analyzer == "word":
         shared: dict[str, Any] = {

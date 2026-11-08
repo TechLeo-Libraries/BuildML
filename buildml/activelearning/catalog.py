@@ -218,10 +218,11 @@ def resolve_backend_strategy(
     backend: ActiveLearningBackendName | None,
     strategy: str,
 ) -> tuple[ActiveLearningBackendName, str]:
-    """Validate backend/strategy pairing and apply documented defaults.
+    """Validate an explicit strategy and infer its backend when omitted.
 
     Infers the backend from the strategy when ``backend`` is ``None``, then
-    verifies the strategy is allowed and the backend is installed.
+    verifies the strategy is allowed and the backend is installed. Unknown
+    requests raise instead of selecting a different strategy or backend.
 
     Parameters
     ----------
@@ -244,22 +245,26 @@ def resolve_backend_strategy(
     """
     from buildml.core.errors import MissingExtraError, ValidationError
 
+    supported = SKLEARN_STRATEGIES + INDUSTRY_STRATEGIES + TORCH_STRATEGIES
+    if not isinstance(strategy, str) or strategy not in supported:
+        raise ValidationError(
+            f"Unknown active-learning strategy {strategy!r}. Choose from {supported}."
+        )
+    if backend is not None and (
+        not isinstance(backend, str) or backend not in {"sklearn", "industry", "torch"}
+    ):
+        raise ValidationError(
+            f"Unknown active-learning backend {backend!r}; choose sklearn, industry, or torch."
+        )
+
     resolved_backend: ActiveLearningBackendName
     if backend is None:
         if strategy in SKLEARN_STRATEGIES:
             resolved_backend = "sklearn"
         elif strategy in INDUSTRY_STRATEGIES:
             resolved_backend = "industry"
-        elif strategy in TORCH_STRATEGIES:
-            resolved_backend = "torch"
         else:
-            resolved_backend = _default_backend_when_installed()  # type: ignore[assignment]
-            allowed_default = list_activelearning_strategies(backend=resolved_backend)
-            if allowed_default:
-                strategy = allowed_default[0]
-            else:
-                resolved_backend = "sklearn"
-                strategy = "margin"
+            resolved_backend = "torch"
     else:
         resolved_backend = backend
 

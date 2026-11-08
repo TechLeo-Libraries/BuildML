@@ -87,7 +87,7 @@ def score_industry_pool(
             )
             disclosures.append(_SKACTIVEML_SUCCESS_DISCLOSURE)
             return scores, disclosures
-        except Exception as exc:  # noqa: BLE001: residual API mismatches fall back
+        except Exception as exc:  # noqa: BLE001 - residual API mismatches fall back
             disclosures.append(
                 f"{_FALLBACK_DISCLOSURE} Reason: {type(exc).__name__}: {exc}"
             )
@@ -123,6 +123,7 @@ def _score_with_skactiveml(
     del estimator  # reserved for future hybrid strategies
     # Import private modules to avoid skactiveml.pool package __init__ side imports
     # when possible; still may pull skorch via skactiveml.base.
+    from skactiveml.classifier import SklearnClassifier
     from skactiveml.pool._greedy_sampling import GreedySamplingX
     from skactiveml.pool._query_by_committee import QueryByCommittee
     from skactiveml.utils import MISSING_LABEL
@@ -138,12 +139,12 @@ def _score_with_skactiveml(
     if n_labeled > 0:
         x_all = np.vstack([x_labeled, x_pool])
         y_all = np.concatenate(
-            [y_labeled.astype(object), np.full(n_pool, MISSING_LABEL, dtype=object)]
+            [y_labeled.astype(float), np.full(n_pool, MISSING_LABEL, dtype=float)]
         )
         candidates = np.arange(n_labeled, n_labeled + n_pool)
     else:
         x_all = x_pool
-        y_all = np.full(n_pool, MISSING_LABEL, dtype=object)
+        y_all = np.full(n_pool, MISSING_LABEL, dtype=float)
         candidates = np.arange(n_pool)
 
     if strategy == "core_set":
@@ -152,26 +153,30 @@ def _score_with_skactiveml(
             x_all,
             y_all,
             candidates=candidates,
-            batch_size=n_pool,
+            batch_size=1,
             return_utilities=True,
         )
-        return _utilities_to_scores(result, n_pool)
+        return _utilities_to_scores(result, n_pool, candidates=candidates)
 
     if strategy in {"qbc_kl", "qbc_variation_ratios"}:
         if committee is None:
             raise ValueError("QBC strategies require a fitted committee.")
         method = "KL_divergence" if strategy == "qbc_kl" else "variation_ratios"
         qbc = QueryByCommittee(method=method, random_state=0)
+        # Host queries require SkactivemlClassifier objects, rather than raw
+        # sklearn bagging members. The wrapper adopts fitted state without
+        # refitting on the pool or changing the caller's committee.
+        members = [SklearnClassifier(member) for member in committee.estimators_]
         result = qbc.query(
             x_all,
             y_all,
-            ensemble=committee,
+            ensemble=members,
             fit_ensemble=False,
             candidates=candidates,
-            batch_size=n_pool,
+            batch_size=1,
             return_utilities=True,
         )
-        return _utilities_to_scores(result, n_pool)
+        return _utilities_to_scores(result, n_pool, candidates=candidates)
 
     raise ValueError(
         f"Unsupported skactiveml industry strategy {strategy!r}. "
@@ -179,7 +184,9 @@ def _score_with_skactiveml(
     )
 
 
-def _utilities_to_scores(result: Any, n_pool: int) -> np.ndarray:
+def _utilities_to_scores(
+    result: Any, n_pool: int, *, candidates: np.ndarray | None = None
+) -> np.ndarray:
     """Extract per-candidate utilities from a skactiveml ``query`` return value."""
     if not (isinstance(result, tuple) and len(result) == 2):
         raise TypeError(
@@ -192,6 +199,10 @@ def _utilities_to_scores(result: Any, n_pool: int) -> np.ndarray:
         # Typically (batch_size, n_candidates); first row ranks the full pool.
         arr = arr[0]
     arr = np.asarray(arr, dtype=float).reshape(-1)
+    if candidates is not None:
+        # Integer candidates make the host return utilities indexed by all X
+        # rows, including labeled rows. Return only the requested pool order.
+        arr = arr[candidates]
     if arr.shape[0] != n_pool:
         raise ValueError(
             f"scikit-activeml utilities length {arr.shape[0]} != pool size {n_pool}."

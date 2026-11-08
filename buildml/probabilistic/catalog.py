@@ -241,6 +241,9 @@ def resolve_backend_estimator(
     """
     from buildml.core.errors import MissingExtraError, ValidationError
 
+    if backend is not None and backend not in ('native', 'mapie', 'ngboost'):
+        raise ValidationError(f"Unknown backend {backend!r}; choose from ('native', 'mapie', 'ngboost').")
+
     est_key = str(estimator).lower().replace("-", "_")
 
     resolved_backend: ProbabilisticBackendName

@@ -14,6 +14,7 @@ from buildml.automl.catalog import automl_capability_matrix, backend_available, 
 from buildml.automl.extras import (
     autogluon_available,
     flaml_available,
+    flaml_spec_present,
     gradient_boosting_extras_available,
     optuna_available,
 )
@@ -134,7 +135,7 @@ def test_industry_families_in_native_catalog() -> None:
     assert searched.intersection({"lightgbm", "xgboost", "catboost"})
 
 
-@pytest.mark.skipif(not flaml_available(), reason="buildml[automl-industry] FLAML missing")
+@pytest.mark.skipif(not flaml_spec_present(), reason="buildml[automl-industry] FLAML missing")
 def test_flaml_backend_train_only() -> None:
     session = _ready()
     result = session.run_automl(

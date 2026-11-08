@@ -20,7 +20,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 from typing import Any
 from urllib.parse import urlparse
 
@@ -72,15 +72,16 @@ def require_trusted_deserialize(
     Raises
     ------
     ValidationError
-        When ``trusted`` is false. Nothing is read from disk in that case.
+        When ``trusted`` is not the literal boolean ``True``. Nothing is
+        read from disk in that case.
     """
-    if trusted:
+    if trusted is True:
         return
     resolved = Path(path)
     raise ValidationError(
-        f"Refusing to deserialize {artifact} at '{resolved}'. "
+        f"Refusing to deserialize {artifact}. "
         "Pass trusted=True only for artifacts you created or fully trust "
-        "(pickle/joblib/torch can execute code on load)."
+        f"(pickle/joblib/torch can execute code on load). Path: '{resolved}'."
     )
 
 
@@ -204,6 +205,24 @@ def verify_sha256(path: str | Path, expected: str | None, *, artifact: str = "pa
         )
 
 
+def _resolve_artifact_member(root: Path, name: str) -> Path:
+    """Resolve a bundle-relative member without following paths outside its root."""
+    relative = Path(name)
+    windows_path = PureWindowsPath(name)
+    if not relative.parts or relative.is_absolute() or windows_path.anchor or (
+        ".." in relative.parts or ".." in windows_path.parts
+    ):
+        raise ValidationError(f"Artifact member {name!r} must be relative to its bundle.")
+    try:
+        base = root.resolve()
+        member = (base / relative).resolve()
+    except (OSError, RuntimeError, ValueError) as exc:
+        raise ValidationError(f"Artifact member {name!r} could not be resolved.") from exc
+    if member == base or not member.is_relative_to(base):
+        raise ValidationError(f"Artifact member {name!r} resolves outside its bundle.")
+    return member
+
+
 def verify_manifest_hashes(
     root: str | Path,
     hashes: dict[str, Any] | None,
@@ -228,7 +247,7 @@ def verify_manifest_hashes(
     Raises
     ------
     ValidationError
-        On mismatch, missing required member, or non-file member path.
+        On mismatch, missing required member, or unsafe member path.
     """
     if not hashes:
         return
@@ -240,7 +259,7 @@ def verify_manifest_hashes(
                     f"MANIFEST hashes missing required member {member!r} under {base}."
                 )
     for rel, expected in hashes.items():
-        member_path = base / str(rel)
+        member_path = _resolve_artifact_member(base, str(rel))
         verify_sha256(member_path, str(expected), artifact=f"manifest member '{rel}'")
 
 

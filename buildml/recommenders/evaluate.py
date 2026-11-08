@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from buildml.core.errors import ValidationError
+from buildml.core.validation import _positive_integer
 from buildml.data.dataset import Dataset
 from buildml.data.splits import SplitPlan
 from buildml.recommenders.features import (
@@ -41,7 +41,7 @@ def evaluate_recommender(
       train items, excluding that user's **train** history, then score
       Precision@K, Recall@K, nDCG@K, MAP@K.
 
-    Metrics are micro-averaged over scored users.
+    Metrics are macro-averaged over scored users.
 
     Parameters
     ----------
@@ -60,16 +60,15 @@ def evaluate_recommender(
     Returns
     -------
     RecommenderEvalResult
-        Micro-averaged ranking metrics, cold-start counts, and protocol
+        Macro-averaged ranking metrics, cold-start counts, and protocol
         disclosures.
 
     Raises
     ------
     ValidationError
-        When ``k`` is less than 1.
+        When ``k`` is not a positive integer.
     """
-    if int(k) < 1:
-        raise ValidationError("k must be >= 1.")
+    k = _positive_integer(k, name="k")
 
     holdout = partition_frame(dataset, split_plan, partition)
     interactions = build_interactions(
@@ -104,6 +103,7 @@ def evaluate_recommender(
     warm_users = [u for u, items in relevant.items() if items]
     disclosures = [
         "Holdout scored with frozen train recommender (no refit).",
+        "Metrics are macro averages over scored warm users; each user has equal weight.",
         "Known-item protocol: relevant set = holdout items ∩ train catalog.",
         f"Cold-start users excluded from metric averages: {len(cold_users)}.",
     ]

@@ -40,10 +40,8 @@ def z3_spec_present() -> bool:
 
 
 def skope_rules_available() -> bool:
-    """Return whether skope-rules (``skrules``) imports cleanly (subprocess)."""
-    if not skope_rules_spec_present():
-        return False
-    return _runtime_ok("skrules")
+    """Return whether maintained imodels or legacy skrules is usable."""
+    return imodels_available() or (skope_rules_spec_present() and _runtime_ok("skrules"))
 
 
 def imodels_available() -> bool:
@@ -96,6 +94,12 @@ def require_skope_rules(*, feature: str = "SkopeRules rule induction") -> Any:
         When skope-rules is not installed. Install with
         ``pip install 'buildml[symbolic-industry]'``.
     """
+    try:
+        from imodels import SkopeRulesClassifier
+
+        return SkopeRulesClassifier
+    except ImportError:
+        pass
     try:
         from skrules import SkopeRules
     except ImportError as exc:

@@ -70,13 +70,19 @@ class CausalAssumptions:
 
         Enforces treatment/outcome presence, backdoor ATE scope, non-empty
         confounders (unless waived), and explicit unconfoundedness/positivity
-        acknowledgements before any fit or estimate call proceeds.
+        acknowledgements before any fit or estimate call proceeds. Flags must be
+        actual booleans; strings and numbers cannot acknowledge assumptions.
 
         Raises
         ------
         ValidationError
             When any required field is missing or inconsistent.
         """
+        for flag_name in (
+            "acknowledge_unconfoundedness", "acknowledge_positivity", "allow_empty_confounders"
+        ):
+            if not isinstance(getattr(self, flag_name), bool):
+                raise ValidationError(f"CausalAssumptions.{flag_name} must be a boolean.")
         if not str(self.treatment).strip():
             raise ValidationError(
                 "CausalAssumptions.treatment is required. "
@@ -206,11 +212,9 @@ class CausalAssumptions:
             estimand=payload.get("estimand", "ATE"),  # type: ignore[arg-type]
             identification=payload.get("identification", "backdoor"),  # type: ignore[arg-type]
             instruments=tuple(str(c) for c in instruments),
-            acknowledge_unconfoundedness=bool(
-                payload.get("acknowledge_unconfoundedness", False)
-            ),
-            acknowledge_positivity=bool(payload.get("acknowledge_positivity", False)),
-            allow_empty_confounders=bool(payload.get("allow_empty_confounders", False)),
+            acknowledge_unconfoundedness=payload.get("acknowledge_unconfoundedness", False),
+            acknowledge_positivity=payload.get("acknowledge_positivity", False),
+            allow_empty_confounders=payload.get("allow_empty_confounders", False),
         )
 
 

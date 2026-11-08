@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from collections import Counter
+from numbers import Integral
 from typing import Any
 
 import numpy as np
@@ -44,13 +46,17 @@ Modes
 -----
 fidelity
     Column-wise KS (continuous/integer) and total-variation (categorical),
-    plus continuous pairwise correlation L1. When ``eval_backend='sdmetrics'``
+    plus continuous pairwise correlation L1. Categorical comparisons preserve
+    scalar types and count missing values separately from literal strings.
+    When ``eval_backend='sdmetrics'``
     or ``eval_backend='auto'`` with SDMetrics installed, also reports
     SDMetrics QualityReport scores.
 tstr
     Train-on-Synthetic, Test-on-Real: fit a simple sklearn estimator on
     synthetic samples, score on the real holdout partition. Discloses that
     this is a utility proxy, not a generative quality certificate.
+    Classification retains scalar label identities, counts unseen holdout
+    classes as errors and refuses missing targets.
 Never refits the generator on the evaluation partition.
 
 Parameters
@@ -62,17 +68,18 @@ split_plan:
 plan:
     Fitted plan object carrying model state and feature contract.
 mode:
-    Anomaly detection mode (``unsupervised`` or ``supervised``).
+    ``fidelity`` compares distributions; ``tstr`` measures held-out utility.
 eval_backend:
     eval backend (EvalBackend).
 partition:
     Holdout partition name or ``all`` for the full frame.
 n_synthetic:
-    n synthetic (int | None).
+    Positive integer sample budget, or None for the automatic row count.
 random_state:
     Seed for stochastic steps (sampling, initialization, bagging).
 estimator:
-    Fitted model object used for scoring or prediction.
+    Classification probe: ``auto`` selects logistic or ridge classification;
+    ``ridge`` forces ridge classification. Regression uses ridge regression.
 
 Returns
 -------
@@ -99,7 +106,13 @@ ValidationError
     if not cols:
         raise ValidationError("No overlapping columns between plan and evaluation frame.")
     real_sub = real[cols].copy()
-    n_syn = int(n_synthetic or max(len(real_sub), plan.n_rows_fitted))
+    if n_synthetic is not None and (
+        isinstance(n_synthetic, (bool, np.bool_))
+        or not isinstance(n_synthetic, Integral)
+        or n_synthetic < 1
+    ):
+        raise ValidationError("n_synthetic must be a positive integer or None.")
+    n_syn = int(max(len(real_sub), plan.n_rows_fitted) if n_synthetic is None else n_synthetic)
     sample = sample_synthetic(plan, n=n_syn, random_state=random_state)
     assert sample.frame is not None
     syn_sub = sample.frame[[c for c in cols if c in sample.frame.columns]].copy()
@@ -174,8 +187,12 @@ ValidationError
     if not feature_cols:
         raise ValidationError("mode='tstr' needs ≥1 feature column.")
 
-    y_real = real_sub[target]
-    task = _infer_task(y_real)
+    task = _infer_task(plan, target)
+    disclosures.append(
+        f"TSTR task={task!r} inferred from frozen train target schema: numeric "
+        "with more than20 distinct training values means regression. "
+        "This is a heuristic; review numeric class codes and target semantics."
+    )
     metrics, warn = _tstr_metrics(
         syn_sub,
         real_sub,
@@ -207,6 +224,8 @@ ValidationError
                 metrics[f"trtr_{key}"] = value
             if "score" in trtr and "score" in metrics:
                 metrics["tstr_gap_vs_trtr"] = float(trtr["score"] - metrics["score"])
+    except ValidationError:
+        raise
     except Exception:
         warnings.append("TRTR baseline unavailable; reporting TSTR only.")
 
@@ -279,10 +298,31 @@ def _fidelity_metrics(
 
 
 def _total_variation(real: pd.Series, syn: pd.Series) -> float:
-    r = real.astype("string").fillna("__NA__").value_counts(normalize=True)
-    s = syn.astype("string").fillna("__NA__").value_counts(normalize=True)
-    keys = sorted(set(r.index) | set(s.index))
-    return 0.5 * float(sum(abs(r.get(k, 0.0) - s.get(k, 0.0)) for k in keys))
+    r, s = Counter(_category_keys(real)), Counter(_category_keys(syn))
+    keys = r.keys() | s.keys()
+    return 0.5 * sum(abs(r[key] / len(real) - s[key] / len(syn)) for key in keys)
+
+
+def _category_keys(series: pd.Series) -> list[tuple[type[Any], Any]]:
+    """Keep scalar identity, normalizing numpy wrappers and missing values."""
+    keys = []
+    for value in series:
+        if isinstance(value, np.generic):
+            value = value.item()
+        keys.append((type(None), None) if pd.isna(value) else (type(value), value))
+    return keys
+
+
+def _classification_codes(train: pd.Series, test: pd.Series) -> tuple[np.ndarray, np.ndarray]:
+    """Encode train labels first; unseen test classes receive distinct codes."""
+    if train.isna().any() or test.isna().any():
+        raise ValidationError("TSTR classification target contains null or missing labels.")
+    mapping: dict[tuple[type[Any], Any], int] = {}
+    encoded = []
+    for labels in (train, test):
+        encoded.append(np.array([mapping.setdefault(key, len(mapping))
+                                 for key in _category_keys(labels)], dtype=int))
+    return encoded[0], encoded[1]
 
 
 def _resolve_eval_backend(eval_backend: EvalBackend) -> str:
@@ -307,8 +347,11 @@ def _plan_sdv_metadata(plan: SynthesizerPlan) -> Any | None:
     return None
 
 
-def _infer_task(y: pd.Series) -> str:
-    if pd.api.types.is_numeric_dtype(y) and y.nunique(dropna=True) > 20:
+def _infer_task(plan: SynthesizerPlan, target: str) -> str:
+    spec = next((column for column in plan.column_specs if column.name == target), None)
+    if spec is None:
+        raise ValidationError("TSTR target missing from frozen training schema; refit the synthesizer.")
+    if spec.kind in {"continuous", "integer"} and spec.n_unique > 20:
         return "regression"
     return "classification"
 
@@ -379,15 +422,15 @@ def _tstr_metrics(
         return {"score": score, "r2": score, "task_is_classification": 0.0}, warnings
 
     # classification
-    n_classes = int(pd.Series(y_train).nunique(dropna=True))
+    train_codes, y_true = _classification_codes(y_train, y_test)
+    n_classes = len(np.unique(train_codes))
     if estimator == "ridge" or (estimator == "auto" and n_classes > 10):
         clf: Any = RidgeClassifier(random_state=random_state)
     else:
         clf = LogisticRegression(max_iter=400, random_state=random_state)
     pipe = Pipeline([("pre", pre), ("model", clf)])
-    pipe.fit(x_train, y_train.astype(str))
+    pipe.fit(x_train, train_codes)
     pred = pipe.predict(x_test)
-    y_true = y_test.astype(str).to_numpy()
     acc = float(accuracy_score(y_true, pred))
     try:
         f1 = float(f1_score(y_true, pred, average="macro"))

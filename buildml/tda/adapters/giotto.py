@@ -21,7 +21,7 @@ from buildml.tda.features import (
     standardize_fit,
     train_partition_frame,
 )
-from buildml.tda.fit import _make_classifier, _make_regressor
+from buildml.tda.fit import _make_classifier, _make_regressor, _validate_topology_config
 from buildml.tda.homology import local_point_cloud
 from buildml.tda.results import TdaFitResult, TdaPlan
 from buildml.tda.types import TdaHead, TdaTask, Vectorization
@@ -241,8 +241,8 @@ def _diagrams_to_giotto_batch(
     giotto-tda requires every sample to carry the same number of
     birth-death triples **in each homology dimension**. Pad short
     dimensions with trivial bars (``birth == death``) so H0/H1 counts
-    line up across the batch. Zero-persistence points are ignored by
-    giotto vectorizers.
+    line up across the batch. Padding uses the dimension's minimum observed
+    birth, matching Giotto without extending a positive filtration grid to zero.
     """
     dim_ids = [int(d) for d in dims]
     if not train_diagrams:
@@ -265,6 +265,12 @@ def _diagrams_to_giotto_batch(
     if n_pts == 0:
         return np.zeros((len(per_sample), 1, 3), dtype=float)
 
+    # Match Giotto's diagram-batch convention. Zero bars do not contribute
+    # persistence, but their coordinates still influence the fitted grid.
+    padding_births = {
+        d: min((float(np.min(sample[d][:, 0])) for sample in per_sample if len(sample[d])), default=0.)
+        for d in dim_ids
+    }
     padded = np.zeros((len(per_sample), n_pts, 3), dtype=float)
     for i, by_dim in enumerate(per_sample):
         offset = 0
@@ -272,6 +278,7 @@ def _diagrams_to_giotto_batch(
             pairs = by_dim[d]
             n = int(pairs.shape[0])
             target = max_per_dim[d]
+            padded[i, offset : offset + target, :2] = padding_births[d]
             if n:
                 padded[i, offset : offset + n, 0] = pairs[:, 0]
                 padded[i, offset : offset + n, 1] = pairs[:, 1]
@@ -316,8 +323,9 @@ def _optional_mapper_summary(
         clusterer=DBSCAN(eps=0.8, min_samples=3),
     )
     graph = pipeline.fit_transform(sample)
-    n_nodes = len(getattr(graph, "nodes", lambda: {})())
-    n_edges = len(getattr(graph, "edges", lambda: {})())
+    # Giotto returns an igraph.Graph, whose count API differs from NetworkX.
+    n_nodes = graph.vcount()
+    n_edges = graph.ecount()
     summary: dict[str, Any] = {
         "n_train_mapper_points": int(len(sample)),
         "n_mapper_nodes": int(n_nodes),
@@ -409,6 +417,7 @@ def fit_giotto(
     require_giotto(feature="fit_tda backend='giotto'")
     assert_fit_partition(split_plan, "train")
     assert split_plan is not None
+    dims = _validate_topology_config(knn, maxdim, homology_dims, n_bins, n_layers)
 
     target = dataset.require_target()
     if train_frame is None:
@@ -428,7 +437,6 @@ def fit_giotto(
     else:
         train = train_frame
 
-    dims = tuple(sorted({int(d) for d in homology_dims}))
     cols, used_reduce, disclosures = resolve_tda_columns(
         dataset,
         train,

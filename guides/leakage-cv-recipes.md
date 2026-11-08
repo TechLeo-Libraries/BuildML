@@ -31,14 +31,101 @@ Related: [concepts](../docs/concepts.rst),
 [diagnostics and search](classical-diagnostics-search.md).
 Runnable example: [`examples/leakage_cv_recipe.py`](../examples/leakage_cv_recipe.py).
 
+Integer fold counts, including NumPy integer scalars, use the requested
+`cv_strategy` and role-based `auto` resolution. The same rule applies to both
+loops of nested CV. Check the result's strategy fields when interpreting scores:
+group folds keep subjects apart, while time folds score later observations.
+Booleans, float counts and malformed splitter controls raise `ValidationError`.
+Explicit sklearn splitters retain their own folding behavior; `cv=None` retains
+sklearn's default splitter behavior.
+
+Randomized search requires a positive integer `n_iter`; Optuna requires a positive
+integer `n_trials`. NumPy integers are accepted, and booleans, floats and text are
+refused before optimization. Nested search validates the budget used by its
+selected method. Budget validation happens before creating or advancing an
+Optuna study. User-supplied callable search spaces can still fail during an
+otherwise valid trial. Audit records retain integer counts and the used budget.
+
+For `encode='infrequent'`, `min_frequency` accepts a positive integer count or
+a finite real proportion strictly between zero and one. NumPy scalars follow
+the same rule; booleans and text are refused. Counts exactly at the threshold
+keep their own indicator. Session encoding and fold-local recipes both learn
+rarity and vocabulary from their training rows. Replay pools those fitted rare
+labels; ordinary unseen labels produce all-zero indicators.
+
+The internal bucket name is `__infrequent__`. If a real category with that name
+would keep its own indicator while other labels are pooled, fitting refuses the
+ambiguous merge. Replay also refuses an unseen literal of that name when the
+column has a bucket. Rename that raw value before fitting or replay, including
+with an older saved pipeline. A literal already fitted as rare still pools
+normally, and a column without pooling keeps the literal as an ordinary category.
+
+Encoding output names must be unique and cannot replace retained columns in any
+role. For example, one-hot encoding `city='London'` creates `city_London`; an
+existing `city_London` column makes that request ambiguous. Target encoding
+similarly creates `city_target`. Underscores in different column/category pairs
+can also produce the same output name. Rename the conflicting input columns or
+category labels, then refit the encoder and model together. Session encoding,
+fold-local recipes and frozen replay raise `ValidationError` for these cases,
+including extra score-time columns and duplicate names in an older plan.
+Removed source names can be reused when the final outputs remain distinct;
+ordinal encoding continues to replace its own source columns.
+
+Session target encoding computes each training fold's category means, smoothing
+prior and unseen-category fallback from that fold's fitting labels only. With
+fold membership fixed, the labels of rows held out by that fold cannot influence
+those rows' encoded features. Holdout and frozen score-time maps use the full training population.
+The earlier Session implementation used a full-training smoothing prior inside
+OOF folds, allowing held-out labels to affect their own features. Refit the
+encoder and estimator together to adopt the corrected training values.
+
+Target encoding requires an integer `n_folds >= 2` and at least two training
+rows; NumPy integer counts are accepted. Both Session `smoothing` and recipe
+`target_smoothing` require finite non-negative real values, including NumPy
+reals. Booleans, text and non-finite weights raise `ValidationError`. These
+controls are ignored by other encoding methods. Continue to use fold-local
+recipes for model selection and independent data for calibration.
+
 ## What a recipe can and cannot do
 
 Fold-local order, when those steps are set, is:
 
 dates → text → outliers → impute → encode → binning → scale → reduce → select
 
+For `reduce='pca'`, `reduce_n_components` accepts a positive integer count
+(capped by training rows and feature count), a variance fraction in `(0, 1]`,
+or `None` for all available components. A fraction of `1.0` also retains all
+components. NumPy integer and real scalar controls are supported; booleans and
+string controls are refused. PCA requires finite real values at fit and replay;
+impute missing values first. Component names from `reduce_prefix` must not collide
+with retained columns. Names of source columns removed by `reduce_drop_input=True`
+may be reused for the components that replace them.
+
+The `buildml.preprocess.fold.transform_fold_features` helper also accepts fitted
+sklearn transformers. Sparse outputs remain sparse in the returned Pandas frame;
+feature names come from `get_feature_names_out` when available and otherwise use
+positional labels. Output rows must preserve the input index and order, and
+feature names must be unique. Incompatible shapes, row changes and ambiguous
+names raise `ValidationError` before downstream model fitting.
+
 Outliers inside a recipe may `detect` or `cap`. **Drop** is refused:
 dropping rows would rewrite fold membership.
+
+Calendar, text and binning output names must be unique and cannot replace
+retained input columns, including extra replay columns. For example,
+`when_year`, `review__red` and `x_bin` may already belong to the incoming data.
+Ambiguous requests raise `ValidationError` during fitting or frozen replay.
+Rename conflicting columns and refit the preprocessor and estimator together;
+older saved pipelines follow the same replay checks. Date expansion also
+protects source columns needed to compute other calendar parts.
+
+Fold-local binning requires an integer `n_bins >= 2`; NumPy integers are
+accepted, while booleans, fractions, strings and non-finite counts are refused.
+All source values are read before bin outputs are assembled, so binning both
+`x` and `x_bin` can safely produce `x_bin` and `x_bin_bin`. Ordinal scaling
+follows each original source. Missing observations remain missing in ordinal
+codes and every one-hot indicator. Use recipe imputation, which runs before
+binning, when the downstream estimator requires complete numeric inputs.
 
 These stay Session-global and are never fold-local:
 

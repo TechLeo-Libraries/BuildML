@@ -7,6 +7,7 @@ train triple store materialized at fit time.
 from __future__ import annotations
 
 from collections import deque
+from numbers import Integral
 from typing import Any, Literal
 
 from buildml.core.errors import ValidationError
@@ -56,7 +57,8 @@ def query_kg(
     Raises
     ------
     ValidationError
-        When mode/direction is invalid, required entities are missing, or hops < 1.
+        When mode/direction is invalid, required entities are missing, or the
+        hop limit is not a positive integer.
 
     Notes
     -----
@@ -72,8 +74,8 @@ def query_kg(
         raise ValidationError("mode must be 'neighbors', 'path', or 'typed'.")
     if direction not in {"out", "in", "both"}:
         raise ValidationError("direction must be 'out', 'in', or 'both'.")
-    if int(max_hops) < 1:
-        raise ValidationError("max_hops must be >= 1.")
+    if isinstance(max_hops, bool) or not isinstance(max_hops, Integral) or max_hops < 1:
+        raise ValidationError("max_hops must be a positive integer.")
 
     disclosures = [
         "Symbolic query over train adjacency only (fit-time triples).",

@@ -85,13 +85,19 @@ def get_state() -> DashboardState:
         return _STATE
 
 
-def clear_state() -> None:
+def clear_state(*, expected: DashboardState | None = None) -> None:
     """Drop the installed report, releasing its memory.
 
     Called when a dashboard shuts down. An EDA report holds analyzer output and
     possibly rendered figures, so leaving it installed after the server stops
     keeps all of that alive for the life of the process: which matters in a
     notebook, where the process lives a long time.
+
+    Parameters
+    ----------
+    expected:
+        Clear only if this exact state is still installed. Omit to clear the
+        current state unconditionally.
 
     Returns
     -------
@@ -109,4 +115,5 @@ def clear_state() -> None:
     """
     global _STATE
     with _LOCK:
-        _STATE = None
+        if expected is None or _STATE is expected:
+            _STATE = None

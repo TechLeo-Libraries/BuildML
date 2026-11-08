@@ -25,7 +25,7 @@ def test_cbc_uses_modern_discovery_before_legacy_path(bundled):
     if bundled:
         pulp.PULP_CBC_CMD = SimpleNamespace(pulp_cbc_path="legacy-cbc")
     _cbc_solver(pulp)
-    assert calls == [{"msg": False}]
+    assert calls == [{"msg": False, "gapRel": 0.0, "gapAbs": 0.0}]
 
 
 def test_cbc_uses_old_bundled_executable_without_deprecated_constructor():
@@ -39,7 +39,7 @@ def test_cbc_uses_old_bundled_executable_without_deprecated_constructor():
         COIN_CMD=coin_cmd, PULP_CBC_CMD=SimpleNamespace(pulp_cbc_path="legacy-cbc")
     )
     _cbc_solver(pulp)
-    assert calls == [{"msg": False}, {"path": "legacy-cbc", "msg": False}]
+    assert calls == [{"msg": False, "gapRel": 0.0, "gapAbs": 0.0}, {"path": "legacy-cbc", "msg": False, "gapRel": 0.0, "gapAbs": 0.0}]
 
 
 def test_cbc_missing_executable_has_actionable_error():

@@ -240,21 +240,7 @@ def _fit_native(
     sp = split_plan_eff or split_plan
     assert sp is not None
 
-    if int(knn) < 2:
-        raise ValidationError("knn must be >= 2 for non-trivial local point clouds.")
-    if int(maxdim) < 0:
-        raise ValidationError("maxdim must be >= 0.")
-    dims = tuple(sorted({int(d) for d in homology_dims}))
-    if not dims:
-        raise ValidationError("homology_dims must be non-empty.")
-    if max(dims) > int(maxdim):
-        raise ValidationError(
-            f"homology_dims max {max(dims)} exceeds maxdim={maxdim}."
-        )
-    if int(n_bins) < 2:
-        raise ValidationError("n_bins must be >= 2.")
-    if int(n_layers) < 1:
-        raise ValidationError("n_layers must be >= 1.")
+    dims = _validate_topology_config(knn, maxdim, homology_dims, n_bins, n_layers)
 
     target = dataset.require_target()
     if train_frame is None:
@@ -420,6 +406,30 @@ def _fit_native(
         warnings=tuple(warnings),
     )
     return plan, result
+
+
+def _validate_topology_config(
+    knn: int, maxdim: int, homology_dims: Sequence[int], n_bins: int, n_layers: int,
+) -> tuple[int, ...]:
+    """Apply the same topology constraints before either backend fits a model."""
+    if int(knn) < 2:
+        raise ValidationError("knn must be >= 2 for non-trivial local point clouds.")
+    if int(maxdim) < 0:
+        raise ValidationError("maxdim must be >= 0.")
+    dims = tuple(sorted({int(d) for d in homology_dims}))
+    if not dims:
+        raise ValidationError("homology_dims must be non-empty.")
+    if min(dims) < 0:
+        raise ValidationError("homology_dims must be non-negative.")
+    if max(dims) > int(maxdim):
+        raise ValidationError(
+            f"homology_dims max {max(dims)} exceeds maxdim={maxdim}."
+        )
+    if int(n_bins) < 2:
+        raise ValidationError("n_bins must be >= 2.")
+    if int(n_layers) < 1:
+        raise ValidationError("n_layers must be >= 1.")
+    return dims
 
 
 def _make_classifier(name: str, *, random_state: int | None) -> Any:

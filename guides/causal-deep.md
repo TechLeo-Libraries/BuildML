@@ -203,3 +203,9 @@ quantifies predictive uncertainty. Classical fit/evaluate optimize
 predictive risk. Neither identifies a counterfactual effect.
 
 [Causal quickstart](quickstart-causal.md)
+
+Assumption acknowledgement and waiver flags must be actual booleans on every
+entry point. For example, `acknowledge_unconfoundedness="false"` is refused,
+including when supplied in a mapping or through the Python Session facade.
+Use literal `True` to declare an assumption; a declaration remains a caller
+assumption, not evidence that identification or overlap holds in the population.

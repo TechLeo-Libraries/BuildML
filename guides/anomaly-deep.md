@@ -71,6 +71,11 @@ print(matrix["backends"]["pyod"]["available"])
 | `novelty` | Normal-only train subset | Selects the fit subset |
 | `supervised` | All labeled train rows | Binary target required |
 
+Novelty fitting requires nonmissing training labels before selecting normal
+rows, across numeric, string, categorical and nullable label dtypes. Unsupervised
+fitting ignores labels it does not use. Missing validation/test labels do not
+enter novelty fitting or scoring; labeled evaluation has its own requirements.
+
 ## Thresholds
 
 | Policy | Meaning |
@@ -80,6 +85,16 @@ print(matrix["backends"]["pyod"]["available"])
 | `score_threshold` | Absolute cut |
 | `decision_zero` | One-Class SVM convenience (cut at 0) |
 | `validation_tuned` | Set by `tune_threshold` after fit |
+
+NaN is an undefined decision bound and is refused during fitting, scoring and
+evaluation, including thresholds restored from older bundles. Numeric strings
+retain their float-conversion behavior. Signed infinities remain valid: `+inf`
+selects no finite scores and `-inf` selects all of them. These bounds also support
+the all-negative candidate used by Youden tuning. An override is disclosed and
+leaves the stored threshold unchanged. An older NaN threshold can be replaced
+by tuning or bypassed with a valid explicit override; it is not repaired on load.
+Models fitted with incomplete novelty labels require corrected original labels
+and refitting.
 
 ```python
 import numpy as np

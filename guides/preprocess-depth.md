@@ -109,6 +109,21 @@ print(session.evaluate(partition="test").metrics)
 | `infrequent` | Pool rare train levels then one-hot | Long-tail categoricals |
 | `target` | Smoothed target means on train (OOF-style on train) | High-cardinality with care |
 
+Target encoding requires nonmissing training outcomes. Numeric target dtypes
+must contain only real, finite values; complex dtypes are refused before
+casting, including complex arrays whose imaginary parts are all zero. Label
+targets retain the existing sorted string-label mapping. Literal strings such
+as `"None"`, `"nan"` and `"<NA>"` are valid labels, distinct from missing values.
+Only training outcomes enter these checks and the learned category maps.
+Unused validation/test outcomes do not affect the encoded features, and the
+other encoding methods ignore an unused target. Categorical feature values
+still follow the existing string-conversion policy.
+
+The same real/finite requirement applies to numeric supervised targets in
+`PreprocessRecipe`. If an older target-encoded workflow learned from missing,
+infinite or complex training outcomes, rebuild it from corrected original
+training rows. Loading its saved plan cannot repair those maps or model weights.
+
 ```python
 import pandas as pd
 from buildml import Session
@@ -191,6 +206,15 @@ print(Session.list_transforms())
 Custom transforms are never fold-local inside `cv_score`. For preprocessing that must fit separately in each cross-validation fold,
 use a supported recipe step or implement the transform inside an
 sklearn-compatible estimator pipeline.
+
+Custom outputs must have unique names. They may replace explicitly selected
+inputs, but cannot overwrite other retained columns, including targets, IDs,
+weights, timestamps or fields added by a caller at inference. Declared
+`output_columns` must appear in the training-row probe; declaring names does
+not skip that validation. The same boundary is checked when replaying a plan.
+Use `apply_plans=False` when a pipeline receives correctly prepared features.
+If an older transform overwrote retained values, rebuild the affected workflow
+from the original rows; loading a plan cannot reconstruct those values.
 
 ---
 

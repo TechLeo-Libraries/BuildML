@@ -157,18 +157,28 @@ class PandasEngine:
         table:
             The data.
         n:
-            How many rows.
+            Python or NumPy integer count. Negative values return all rows
+            except the final ``abs(n)`` rows; counts beyond the table size clamp
+            to all rows (positive) or no rows (negative).
 
         Returns
         -------
         pandas.DataFrame
             The first ``n`` rows.
 
+        Raises
+        ------
+        ValueError
+            If ``n`` is not an integer or is a boolean.
+
         Notes
         -----
         **The index comes along.** Positions are not reset, so the result's
         index reflects where the rows sat in the original.
         """
+        if not pd.api.types.is_integer(n):
+            raise ValueError("head n must be an integer, excluding booleans")
+        n = int(n)
         return table.head(n).copy()
 
     def select_columns(self, table: pd.DataFrame, columns: list[str]) -> pd.DataFrame:
@@ -263,7 +273,8 @@ class PandasEngine:
         Raises
         ------
         ValueError
-            If the mask length does not match the row count.
+            If the mask length does not match the row count, or an element is
+            not a Python or NumPy boolean.
 
         Notes
         -----
@@ -275,6 +286,8 @@ class PandasEngine:
             raise ValueError(
                 f"filter mask length {len(mask)} does not match table rows {len(table)}"
             )
+        if any(not pd.api.types.is_bool(value) for value in mask):
+            raise ValueError("filter mask must contain only boolean values")
         return table.loc[list(mask)].copy()
 
     def aggregate(

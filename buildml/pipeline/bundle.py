@@ -532,6 +532,8 @@ def save_pipeline_bundle(
         feature_columns=fit_result.feature_columns,
         target_column=fit_result.target_column,
         input_columns=resolved_inputs,
+        encoded_numeric_columns=None if encode_plan is None else encode_plan.feature_names_,
+        input_dtypes=None if encode_plan is None else getattr(encode_plan, "input_dtypes_", {}),
     )
     card = model_card or build_model_card(
         fit_result=fit_result,

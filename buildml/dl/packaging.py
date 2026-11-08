@@ -25,6 +25,7 @@ buildml.dl.k8s : Kubernetes manifests, the same philosophy.
 from __future__ import annotations
 
 import json
+import shlex
 import textwrap
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -133,24 +134,48 @@ class BuildMLTorchScriptHandler(BaseHandler):
         self.initialized = True
 
     def preprocess(self, data: list[Any]) -> torch.Tensor:
-        body = data[0].get("body") or data[0].get("data")
-        if isinstance(body, (bytes, bytearray)):
-            body = body.decode("utf-8")
-        if isinstance(body, str):
-            payload = json.loads(body)
-        else:
-            payload = body
-        rows = payload.get("instances") or payload.get("inputs")
-        if rows is None:
-            raise ValueError('JSON body must include "instances" or "inputs"')
-        return torch.tensor(rows, dtype=torch.float32, device=self.device)
+        batches = []
+        sizes = []
+        for request in data:
+            body = request.get("body")
+            if body is None:
+                body = request.get("data")
+            if isinstance(body, (bytes, bytearray)):
+                body = body.decode("utf-8")
+            payload = json.loads(body) if isinstance(body, str) else body
+            if not isinstance(payload, dict):
+                raise ValueError('JSON body must be an object with "instances" or "inputs"')
+            rows = payload.get("instances")
+            if rows is None:
+                rows = payload.get("inputs")
+            if rows is None:
+                raise ValueError('JSON body must include "instances" or "inputs"')
+            tensor = torch.tensor(rows, dtype=torch.float32, device=self.device)
+            if tensor.ndim != 2 or tensor.shape[0] == 0:
+                raise ValueError("Each request must contain a nonempty matrix of rows")
+            if batches and tensor.shape[1] != batches[0].shape[1]:
+                raise ValueError("Requests in a batch must have the same feature width")
+            batches.append(tensor)
+            sizes.append(len(tensor))
+        if not batches:
+            raise ValueError("Request batch is empty")
+        self._request_sizes = sizes
+        return torch.cat(batches, dim=0)
 
     def inference(self, data: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tensor:
         with torch.no_grad():
             return self.model(data)
 
     def postprocess(self, data: torch.Tensor) -> list[Any]:
-        return data.detach().cpu().tolist()
+        rows = data.detach().cpu().tolist()
+        if len(rows) != sum(self._request_sizes):
+            raise ValueError("Model output rows do not match the request batch")
+        replies = []
+        offset = 0
+        for size in self._request_sizes:
+            replies.append(rows[offset:offset + size])
+            offset += size
+        return replies
 '''
 
 
@@ -245,7 +270,7 @@ def pack_torchserve_model(
             inference_address=http://127.0.0.1:8080
             management_address=http://127.0.0.1:8081
             metrics_address=http://127.0.0.1:8082
-            model_store={root.resolve().as_posix()}
+            model_store=.
             load_models={model_name}.mar
             """
         ),
@@ -274,10 +299,10 @@ def pack_torchserve_model(
         textwrap.dedent(
             f"""\
             # Optional: create a .mar with the TorchServe archiver (separate install)
-            torch-model-archiver --model-name {model_name} --version 1.0 \\
-              --serialized-file {model_pt.name} --handler {handler_name} \\
+            torch-model-archiver --model-name {shlex.quote(model_name)} --version 1.0 \\
+              --serialized-file {shlex.quote(model_pt.name)} --handler {shlex.quote(handler_name)} \\
               --export-path . --force
-            torchserve --start --model-store . --models {model_name}.mar \\
+            torchserve --start --model-store . --models {shlex.quote(model_name + '.mar')} \\
               --ts-config config.properties
             """
         ),
@@ -415,12 +440,13 @@ def prepare_tensorrt_export_plan(
     root.mkdir(parents=True, exist_ok=True)
     plan = {
         "format": "tensorrt_export_plan",
-        "onnx_path": str(onnx_file.resolve()),
+        "onnx_path": onnx_file.name,
+        "source_onnx_path": str(onnx_file.resolve()),
         "engine_name": engine_name,
         "fp16": bool(fp16),
         "workspace_mib": int(workspace_mib),
         "trtexec_example": (
-            f"trtexec --onnx={onnx_file.name} --saveEngine={engine_name}"
+            f"trtexec --onnx={shlex.quote(onnx_file.name)} --saveEngine={shlex.quote(engine_name)}"
             + (" --fp16" if fp16 else "")
             + f" --memPoolSize=workspace:{int(workspace_mib)}MiB"
         ),

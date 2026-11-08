@@ -197,7 +197,15 @@ lexical overlap. High overlap does not prove the answer is true. It
 is not NLI and not LLM-as-judge. A production chat provider is
 `session.ai.configure(...)` then `session.rag.generate` without an
 echo provider. Pass `use_last_retrieve=True` to generate from the
-last retrieve instead of retrieving again.
+last retrieve instead of retrieving again. Retrieve again after rebuilding or
+loading the index, upserting content, or deleting indexed chunks. These
+changes clear the previous retrieval, evaluation and generation results.
+
+New Session history records keep retrieval IDs, headline evaluation metrics
+and answer length. Retrieved passages and generated answers are available in
+the live results. Session checkpoints store those history summaries. History
+also records operation inputs such as queries, and older checkpoints can
+contain full result payloads.
 
 ## Evaluate with qrels
 

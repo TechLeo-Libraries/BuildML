@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, cast
 
 import numpy as np
 import pandas as pd
@@ -11,6 +11,7 @@ from buildml.core.errors import ValidationError
 from buildml.core.types import ColumnRole
 from buildml.data.dataset import Dataset
 from buildml.data.splits import SplitPlan, frame_for_partition
+from buildml.recommenders.models import _observed_entries
 
 __all__ = [
     "resolve_interaction_columns",
@@ -76,7 +77,7 @@ def partition_frame(
         When ``partition`` is not ``"all"`` and ``split_plan`` is ``None``.
     """
     if partition == "all":
-        return dataset.frame.copy()
+        return dataset.to_pandas()
     if split_plan is None:
         raise ValidationError(
             "A SplitPlan is required for partitioned recommender evaluation."
@@ -208,7 +209,9 @@ def build_interactions(
     Produces a canonical frame with ``__rating__`` for downstream matrix
     construction. Implicit feedback deduplicates user-item pairs and assigns
     rating ``1.0``; explicit feedback aggregates duplicate pairs by mean
-    rating.
+    rating. After documented null/nonnumeric drops, explicit ratings must
+    be finite real values. Categorical entity columns contribute only observed
+    pairs; unused category levels never expand the train or holdout population.
 
     Parameters
     ----------
@@ -233,8 +236,8 @@ def build_interactions(
     Raises
     ------
     ValidationError
-        When required columns are missing or no interactions remain after
-        filtering.
+        When required columns are missing, no interactions remain after
+        filtering, or surviving explicit ratings are not finite real values.
     """
     needed = [user_column, item_column]
     if rating_column is not None:
@@ -243,7 +246,7 @@ def build_interactions(
     if missing:
         raise ValidationError(f"Interaction frame missing columns: {missing}")
 
-    out = frame[needed].copy()
+    out = cast(pd.DataFrame, frame[needed].copy())
     out = out.dropna(subset=[user_column, item_column])
     if out.empty:
         raise ValidationError("No interactions remain after dropping null user/item ids.")
@@ -254,7 +257,11 @@ def build_interactions(
     else:
         out = out.dropna(subset=[rating_column])
         out["__rating__"] = pd.to_numeric(out[rating_column], errors="coerce")
+        if pd.api.types.is_complex_dtype(out["__rating__"].dtype):
+            raise ValidationError("Recommender ratings must be real numeric values.")
         out = out.dropna(subset=["__rating__"])
+        if not np.isfinite(out["__rating__"].to_numpy(dtype=float)).all():
+            raise ValidationError("Recommender ratings must be finite real values.")
         if min_rating is not None:
             out = out[out["__rating__"] >= float(min_rating)]
         if out.empty:
@@ -263,10 +270,12 @@ def build_interactions(
             )
         # Aggregate duplicate user-item pairs by mean rating
         out = (
-            out.groupby([user_column, item_column], as_index=False)["__rating__"]
+            out.groupby([user_column, item_column], as_index=False, observed=True)["__rating__"]
             .mean()
         )
-    return out.reset_index(drop=True)
+        if not np.isfinite(out["__rating__"].to_numpy(dtype=float)).all():
+            raise ValidationError("Aggregated recommender ratings must be finite real values.")
+    return cast(pd.DataFrame, out.reset_index(drop=True))
 
 
 def build_user_item_matrix(
@@ -307,8 +316,10 @@ def build_user_item_matrix(
     user_index = {u: i for i, u in enumerate(users)}
     item_index = {it: i for i, it in enumerate(items)}
     matrix = np.zeros((len(users), len(items)), dtype=float)
-    u_idx = interactions[user_column].map(user_index).to_numpy()
-    i_idx = interactions[item_column].map(item_index).to_numpy()
+    # Mapping categorical ids can retain unused levels and produce float values.
+    # Every observed id is in these catalogs; NumPy needs integer indices.
+    u_idx = interactions[user_column].map(user_index).to_numpy(dtype=np.intp)
+    i_idx = interactions[item_column].map(item_index).to_numpy(dtype=np.intp)
     ratings = interactions["__rating__"].to_numpy(dtype=float)
     # Last write wins for any residual duplicates (already aggregated above)
     matrix[u_idx, i_idx] = ratings
@@ -351,7 +362,7 @@ def item_feature_matrix(
     Raises
     ------
     ValidationError
-        When feature columns are missing or non-numeric.
+        When feature columns are missing, non-numeric, complex or non-finite.
     """
     missing = [c for c in feature_columns if c not in frame.columns]
     if missing:
@@ -362,6 +373,11 @@ def item_feature_matrix(
                 f"Content recommender requires numeric item features; "
                 f"{col!r} is not numeric."
             )
+        if pd.api.types.is_complex_dtype(frame[col].dtype):
+            raise ValidationError("Content item features must be real numeric values.")
+    used = frame.loc[frame[item_column].isin(item_ids), feature_columns]
+    if not np.isfinite(used.to_numpy(dtype=float, na_value=np.nan)).all():
+        raise ValidationError("Content item features must be finite real values.")
     rows: list[np.ndarray] = []
     for item in item_ids:
         sub = frame.loc[frame[item_column] == item, feature_columns]
@@ -374,6 +390,8 @@ def item_feature_matrix(
     scale = np.std(feats, axis=0) if len(feats) else np.ones(len(feature_columns))
     scale = np.where(scale < 1e-12, 1.0, scale)
     standardized = (feats - mean) / scale
+    if not np.isfinite(standardized).all():
+        raise ValidationError("Standardized content item features must be finite real values.")
     return standardized, mean, scale
 
 
@@ -382,7 +400,7 @@ def precision_at_k(recommended: list[Any], relevant: set[Any], k: int) -> float:
 
     Measures what fraction of the top-``k`` recommended items appear in the
     user's relevant holdout set. Used by :func:`evaluate_recommender` for
-    micro-averaged ranking metrics.
+    macro-averaged ranking metrics.
 
     Parameters
     ----------
@@ -411,7 +429,7 @@ def recall_at_k(recommended: list[Any], relevant: set[Any], k: int) -> float:
     """Compute Recall@K for one user's recommendation list.
 
     Measures what fraction of the user's relevant items appear in the top-``k``
-    recommendations. Used by :func:`evaluate_recommender` for micro-averaged
+    recommendations. Used by :func:`evaluate_recommender` for macro-averaged
     ranking metrics.
 
     Parameters
@@ -539,3 +557,14 @@ def mean_average_precision(
     if not scores:
         return 0.0
     return float(np.mean(scores))
+
+
+def _observed_interactions(plan: Any) -> np.ndarray:
+    """Recover validated train membership, preserving legacy nonzero semantics."""
+    stored = getattr(plan, "observed_mask_", None)
+    mask = _observed_entries(plan.matrix_, stored)
+    if mask.shape != (plan.n_users, plan.n_items):
+        raise ValidationError("Recommender observation matrix disagrees with catalog shape.")
+    if stored is not None and int(mask.sum()) != plan.n_train_interactions:
+        raise ValidationError("Recommender observation count disagrees with train interactions.")
+    return mask

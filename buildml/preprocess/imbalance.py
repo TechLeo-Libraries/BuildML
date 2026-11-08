@@ -335,6 +335,11 @@ def resample_train(
     genuinely multi-modal, the midpoint between two clusters may be a
     combination that could never occur.
 
+    **Auxiliary columns follow donor rows.** Random over/undersampling preserves
+    each selected row's IDs, groups, timestamps, weights and ignored columns.
+    Synthetic samplers require a feature/target-only dataset, since interpolated
+    feature vectors do not determine honest values for auxiliary metadata.
+
     **Order matters.** Resample after encoding and imputing, since synthetic
     samplers need complete numeric input, and after splitting, always.
 
@@ -374,9 +379,14 @@ def resample_train(
     target = dataset.require_target()
     feature_cols = dataset.role_columns(ColumnRole.FEATURE)
     if not feature_cols:
-        feature_cols = [c for c in dataset.columns if c != target]
-    if not feature_cols:
         raise ValidationError("No feature columns available for resampling")
+    auxiliary_cols = [c for c in dataset.columns if c not in [*feature_cols, target]]
+    if strategy.family == "synthetic" and auxiliary_cols:
+        raise ValidationError(
+            f"Sampler '{strategy.name}' cannot synthesize auxiliary metadata columns "
+            f"{auxiliary_cols!r}. Provide a feature/target-only dataset, or use "
+            "random_oversample / random_undersample to retain donor metadata."
+        )
 
     train = frame_for_partition(dataset, split_plan, "train")
     valid = (
@@ -432,16 +442,15 @@ def resample_train(
             "Check class counts, k_neighbors, and that features are finite."
         ) from exc
 
-    train_res = pd.DataFrame(x_res, columns=feature_cols)
-    train_res[target] = y_res
-    for col in train.columns:
-        if col not in train_res.columns:
-            # Preserve non-feature/target columns with a train-mode fill.
-            if col not in feature_cols + [target]:
-                mode = train[col].mode(dropna=True)
-                train_res[col] = mode.iloc[0] if len(mode) else pd.NA
-            else:
-                train_res[col] = pd.NA
+    if strategy.family in {"over", "under"}:
+        # Random samplers expose positions into the original train population.
+        # Gather entire donor rows: IDs, groups, timestamps and weights must
+        # remain aligned, including duplicate/non-range pandas index labels.
+        train_res = train.iloc[sampler_obj.sample_indices_].reset_index(drop=True).copy()
+        notes.append("Random resampling preserved complete donor rows and auxiliary metadata.")
+    else:
+        train_res = pd.DataFrame(x_res, columns=feature_cols)
+        train_res[target] = y_res
 
     # Column order aligned to original dataset.
     ordered_cols = list(dataset.columns)

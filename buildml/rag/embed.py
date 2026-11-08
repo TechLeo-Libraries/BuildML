@@ -464,6 +464,7 @@ def resolve_embedder(
     buildml.rag.types.EmbedConfig : What comes back alongside.
     buildml.rag.extras.rag_available : The check ``'auto'`` performs.
     """
+    resolved: Any
     if embedder is None:
         embedder = "auto"
     if embedder == "auto":
@@ -499,6 +500,13 @@ def resolve_embedder(
             device=device,
         )
         return resolved, cfg
+    if isinstance(embedder, HashingEmbedder):
+        return embedder, EmbedConfig(
+            embedder_id=embedder.embedder_id,
+            dim=embedder.dim,
+            backend="hashing",
+            device=None,
+        )
     if callable(embedder) and not hasattr(embedder, "encode"):
         resolved = CallableEmbedder(embedder, dim=dim, embedder_id="callable")
         cfg = EmbedConfig(

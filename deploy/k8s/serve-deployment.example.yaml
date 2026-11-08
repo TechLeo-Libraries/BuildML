@@ -28,10 +28,12 @@ spec:
   selector:
     matchLabels:
       app.kubernetes.io/name: buildml-serve
+      app.kubernetes.io/instance: buildml-serve
   template:
     metadata:
       labels:
         app.kubernetes.io/name: buildml-serve
+        app.kubernetes.io/instance: buildml-serve
     spec:
       securityContext:
         runAsNonRoot: true
@@ -115,6 +117,7 @@ spec:
   type: ClusterIP
   selector:
     app.kubernetes.io/name: buildml-serve
+    app.kubernetes.io/instance: buildml-serve
   ports:
     - name: http
       port: 8080

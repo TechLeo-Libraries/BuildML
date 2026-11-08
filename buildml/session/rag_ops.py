@@ -13,6 +13,12 @@ from buildml.session._imports import (
 )
 
 
+def _clear_rag_results(session: Session) -> None:
+    session._rag_retrieve_result = None
+    session._rag_eval_result = None
+    session._rag_generate_result = None
+
+
 def rag_ingest_corpus(
     session,
     source: str | Path | Sequence[Any] | None = None,
@@ -85,9 +91,7 @@ def rag_ingest_corpus(
     session._rag_chunks = None
     session._rag_index = None
     session._rag_index_result = None
-    session._rag_retrieve_result = None
-    session._rag_eval_result = None
-    session._rag_generate_result = None
+    _clear_rag_results(session)
     session._record(
         "rag_ingest_corpus",
         {"source": corpus.source, "role": role, "text_column": text_column, "id_column": id_column},
@@ -219,6 +223,7 @@ def rag_embed_and_index(
     session._rag_chunks = ChunkResult(
         chunks=index.chunks, config=index.chunk_config.to_dict(), n_documents=index.n_documents
     )
+    _clear_rag_results(session)
     session._record(
         "rag_embed_and_index",
         {
@@ -278,6 +283,7 @@ def rag_retrieve(
         When no RAG index exists on the Session.
     """
     from buildml.rag.defaults import default_retrieve_config
+    from buildml.rag.explain_hooks import retrieve_result_summary
     from buildml.rag.extras import require_rag_stack
     from buildml.rag.retrieve import retrieve
     from buildml.rag.types import RetrieveConfig
@@ -321,7 +327,7 @@ def rag_retrieve(
             "rerank": result.rerank,
             "filters": result.filters,
         },
-        result_summary=result.to_dict(),
+        result_summary=retrieve_result_summary(result),
     )
     return result
 
@@ -384,6 +390,7 @@ def rag_generate(
         When no RAG index or provider is available, or reuse is requested
         without a prior retrieve result.
     """
+    from buildml.rag.explain_hooks import generate_result_summary
     from buildml.rag.extras import require_rag_stack
     from buildml.rag.generate import generate_grounded
     from buildml.rag.types import GenerateConfig
@@ -432,7 +439,7 @@ def rag_generate(
             "provider_model": result.provider_model,
             "use_last_retrieve": use_last_retrieve,
         },
-        result_summary=result.to_dict(),
+        result_summary=generate_result_summary(result),
         warnings=(),
     )
     return result
@@ -479,6 +486,7 @@ def rag_evaluate(
         When no RAG index exists on the Session.
     """
     from buildml.rag.evaluate import evaluate_retrieval
+    from buildml.rag.explain_hooks import eval_result_summary
     from buildml.rag.extras import require_rag_stack
 
     require_rag_stack(feature="RAG evaluate")
@@ -501,7 +509,7 @@ def rag_evaluate(
             "relevance_mode": result.relevance_mode,
             "retrieve_mode": result.retrieve_mode,
         },
-        result_summary=result.to_dict(),
+        result_summary=eval_result_summary(result),
         warnings=tuple(result.warnings),
     )
     return result
@@ -561,6 +569,7 @@ def rag_upsert(
         config=session._rag_index.chunk_config.to_dict(),
         n_documents=session._rag_index.n_documents,
     )
+    _clear_rag_results(session)
     session._record(
         "rag_upsert",
         {"n_chunks": result.n_chunks, "n_documents": result.n_documents, "chunk": chunk},
@@ -601,6 +610,7 @@ def rag_delete(
     require_rag_stack(feature="RAG delete")
     if session._rag_index is None:
         raise ValidationError("No RAG index. Call rag_embed_and_index(...) first.")
+    previous_count = len(session._rag_index.chunks)
     result = session._rag_index.delete(chunk_ids=chunk_ids, doc_ids=doc_ids)
     session._rag_index_result = result
     session._rag_chunks = ChunkResult(
@@ -608,6 +618,8 @@ def rag_delete(
         config=session._rag_index.chunk_config.to_dict(),
         n_documents=session._rag_index.n_documents,
     )
+    if result.n_chunks != previous_count:
+        _clear_rag_results(session)
     session._record(
         "rag_delete",
         {
@@ -683,6 +695,7 @@ def load_rag_bundle(session, path: str | Path) -> "Session":
     session._rag_chunks = ChunkResult(
         chunks=index.chunks, config=index.chunk_config.to_dict(), n_documents=index.n_documents
     )
+    _clear_rag_results(session)
     session._record(
         "load_rag_bundle", {"path": str(path)}, result_summary=session._rag_index_result.to_dict()
     )

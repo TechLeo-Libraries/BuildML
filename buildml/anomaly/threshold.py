@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from numbers import Real
 from typing import Any
 
 import numpy as np
@@ -52,9 +53,9 @@ label_column:
 positive_label:
     positive label (Any | None).
 metric:
-    Distance or evaluation metric name.
+    ``f1``, ``fbeta``, ``youden``, or ``precision_at_contamination``.
 fbeta:
-    fbeta (float).
+    Finite nonnegative beta for ``metric='fbeta'``; zero reduces to precision.
 allow_test_tuning:
     allow test tuning (bool).
 
@@ -78,6 +79,17 @@ ValidationError
             "Use partition='validation' or partition='train', or pass "
             "allow_test_tuning=True for exploratory analysis only."
         )
+    if metric not in {"f1", "fbeta", "youden", "precision_at_contamination"}:
+        raise ValidationError(f"Unknown anomaly threshold metric: {metric!r}.")
+    if metric == "fbeta":
+        if isinstance(fbeta, (bool, np.bool_)) or not isinstance(fbeta, Real):
+            raise ValidationError("fbeta must be a finite nonnegative number.")
+        try:
+            fbeta = float(fbeta)
+        except OverflowError as exc:
+            raise ValidationError("fbeta must be a finite nonnegative number.") from exc
+        if not np.isfinite(fbeta) or fbeta < 0:
+            raise ValidationError("fbeta must be a finite nonnegative number.")
     frame = frame_for_partition(dataset, split_plan, partition)
     resolved_label = _resolve_label_column(dataset, frame, label_column)
     if resolved_label is None:
@@ -103,7 +115,13 @@ ValidationError
     )
     disclosures.extend(
         [
-            f"Threshold tuned on partition='{partition}' only; test was not used.",
+            f"Threshold tuned on partition='{partition}' only.",
+            (
+                "DANGEROUS OPT-IN: test partition used for threshold selection; "
+                "these metrics are optimistic, not untouched test performance."
+                if partition == "test"
+                else "Test was not used for threshold tuning."
+            ),
             "Score calibration: higher anomaly_score = more anomalous.",
             "Tuned threshold replaces plan threshold for subsequent score/eval calls "
             "when applied via session.tune_anomaly_threshold(update_plan=True).",
@@ -142,7 +160,7 @@ tuned:
     tuned (AnomalyThresholdTuneResult).
     """
     plan.threshold_ = float(tuned.threshold)
-    plan.threshold_policy = "validation_tuned"
+    plan.threshold_policy = f"{tuned.partition}_tuned"
     extra = list(plan.disclosures) + list(tuned.disclosures)
     plan.disclosures = tuple(dict.fromkeys(extra))
 

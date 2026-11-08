@@ -8,10 +8,18 @@ import numpy as np
 import pandas as pd
 
 from buildml.core.errors import ValidationError
+from buildml.core.validation import _positive_integer
 from buildml.data.dataset import Dataset
 from buildml.data.splits import SplitPlan
 from buildml.forecasting.backends import industry_one_step, industry_predict
-from buildml.forecasting.features import lag_feature_row, ordered_frame, target_series
+from buildml.forecasting.features import (
+    _exog_matrix,
+    assert_partition_time_order,
+    assert_temporal_split,
+    lag_feature_row,
+    ordered_frame,
+    target_series,
+)
 from buildml.forecasting.results import ForecastGenerateResult, ForecastPlan
 
 
@@ -42,18 +50,18 @@ def _predict_next(
         )
         return float(preds[0])
     if method == "naive":
-        assert plan.baseline_value_ is not None
-        return float(plan.baseline_value_)
+        return float(history[-1])
     if method == "mean":
         assert plan.baseline_value_ is not None
         return float(plan.baseline_value_)
     if method == "drift":
-        assert plan.baseline_value_ is not None and plan.drift_slope_ is not None
-        return float(plan.baseline_value_ + plan.drift_slope_ * step)
+        assert plan.drift_slope_ is not None
+        return float(history[-1] + plan.drift_slope_ * step)
     if method == "seasonal_naive":
-        hist = plan.seasonal_history_
-        if not hist:
-            raise ValidationError("seasonal_naive plan is missing seasonal_history_")
+        period = plan.seasonal_period or len(plan.seasonal_history_)
+        if not period or len(history) < period:
+            raise ValidationError("seasonal_naive requires a full season of origin history")
+        hist = history[-period:]
         # step is 1-indexed from origin
         return float(hist[(step - 1) % len(hist)])
     if method in {"lag_ridge", "lag_hgb"}:
@@ -79,13 +87,16 @@ def generate_forecast(
     *,
     horizon: int | None = None,
     history: list[float] | tuple[float, ...] | np.ndarray | None = None,
-    future_exog: np.ndarray | pd.DataFrame | None = None,
+    future_exog: np.ndarray | pd.DataFrame | list[list[float]] | None = None,
     origin: str = "train_end",
+    history_exog: np.ndarray | None = None,
 ) -> ForecastGenerateResult:
     """Generate an H-step forecast from a frozen plan without refit.
 
     Supports baseline, lag-tabular, and industry backends with optional future
     exogenous rows and recursive multi-step composition for lag models.
+    Baselines use the selected origin's observations; the fitted mean and drift
+    slope remain fixed. Generation never estimates new model parameters.
 
     Parameters
     ----------
@@ -100,6 +111,8 @@ def generate_forecast(
         Required when the plan has exogenous columns: shape ``(horizon, n_exog)``.
     origin:
         Label recorded in the result (e.g. ``train_end``, ``validation_end``).
+    history_exog:
+        Prior exogenous rows for conditioning an industry model at a new origin.
 
     Returns
     -------
@@ -112,49 +125,48 @@ def generate_forecast(
         When horizon or history is invalid, exogenous inputs are missing or
         malformed, or the plan method is unsupported.
     """
-    h = int(plan.horizon if horizon is None else horizon)
-    if h < 1:
-        raise ValidationError("horizon must be >= 1")
-    hist = list(
-        float(v)
-        for v in (
-            plan.last_train_values_
-            if history is None
-            else np.asarray(history, dtype=float).reshape(-1).tolist()
-        )
-    )
+    h = _positive_integer(plan.horizon if horizon is None else horizon, name="horizon")
+    try:
+        values = np.asarray(plan.last_train_values_ if history is None else history, dtype=float)
+    except (TypeError, ValueError, OverflowError) as exc:
+        raise ValidationError("Forecast history must contain finite numeric values") from exc
+    if values.ndim != 1 or not np.isfinite(values).all():
+        raise ValidationError("Forecast history must be a one-dimensional sequence of finite values")
+    hist = values.tolist()
     if not hist:
         raise ValidationError("Forecast history is empty")
 
     warnings: list[str] = []
 
+    exog_mat = None
+    if plan.exog_columns:
+        if future_exog is None:
+            raise ValidationError("Plan uses exogenous columns; pass future_exog for horizon generation.")
+        exog_mat = _exog_matrix(future_exog, plan.exog_columns, rows=h, name="future_exog")
+        if history_exog is not None:
+            history_exog = _exog_matrix(history_exog, plan.exog_columns,
+                                       rows=len(hist), name="history_exog")
+
     if plan.industry_estimator_ is not None:
-        exog_mat_ind = None
-        if plan.exog_columns:
-            if future_exog is None:
-                raise ValidationError(
-                    "Industry exog plan requires future_exog for horizon generation."
-                )
-            exog_mat_ind = np.asarray(
-                future_exog if not isinstance(future_exog, pd.DataFrame)
-                else future_exog.loc[:, list(plan.exog_columns)].to_numpy(),
-                dtype=float,
-            )
-            if exog_mat_ind.ndim == 1:
-                exog_mat_ind = exog_mat_ind.reshape(-1, 1)
         preds_tuple = industry_predict(
             plan.industry_estimator_,
             steps=h,
             history=hist,
-            exog_future=exog_mat_ind,
+            exog_future=exog_mat,
+            history_exog=history_exog,
         )
         disclosures = [
             f"Industry horizon generate (backend={plan.backend}, method={plan.method}); no refit.",
         ]
-        if plan.method in {"prophet", "nbeats"}:
+        if plan.method == "prophet":
             disclosures.append(
                 "Prophet/N-BEATS use model-native multi-step paths; "
                 "not recursive lag composition."
+            )
+        elif plan.method == "nbeats":
+            disclosures.append(
+                "N-BEATS uses native forecast blocks; requests beyond the fitted "
+                "horizon append predictions to context without refitting."
             )
         return ForecastGenerateResult(
             method=plan.method,
@@ -166,34 +178,12 @@ def generate_forecast(
             warnings=tuple(warnings),
         )
 
-    exog_mat: np.ndarray | None = None
     disclosures = [
         f"Horizon generate from origin={origin} with frozen ForecastPlan "
         f"(method={plan.method}); no refit.",
         "Recursive multi-step: each step may feed predicted values into later lags.",
     ]
     if plan.exog_columns:
-        if future_exog is None:
-            raise ValidationError(
-                "Plan uses exogenous columns; pass future_exog with shape "
-                f"(horizon={h}, n_exog={len(plan.exog_columns)})."
-            )
-        if isinstance(future_exog, pd.DataFrame):
-            missing = [c for c in plan.exog_columns if c not in future_exog.columns]
-            if missing:
-                raise ValidationError(f"future_exog missing columns: {missing}")
-            exog_mat = future_exog.loc[:, list(plan.exog_columns)].to_numpy(dtype=float)
-        else:
-            exog_mat = np.asarray(future_exog, dtype=float)
-        if exog_mat.ndim == 1:
-            exog_mat = exog_mat.reshape(-1, 1)
-        if exog_mat.shape != (h, len(plan.exog_columns)):
-            raise ValidationError(
-                f"future_exog shape {exog_mat.shape} != "
-                f"(horizon={h}, n_exog={len(plan.exog_columns)})"
-            )
-        if np.isnan(exog_mat).any():
-            raise ValidationError("future_exog contains nulls")
         disclosures.append(
             "Exogenous horizon path uses caller-supplied future_exog "
             "(not inferred by BuildML)."
@@ -203,7 +193,8 @@ def generate_forecast(
     working = list(hist)
     for step in range(1, h + 1):
         row = None if exog_mat is None else exog_mat[step - 1]
-        yhat = _predict_next(plan, working, step=step, exog_row=row)
+        origin_history = hist if plan.method in {"naive", "mean", "drift", "seasonal_naive"} else working
+        yhat = _predict_next(plan, origin_history, step=step, exog_row=row)
         preds.append(yhat)
         working.append(yhat)
 
@@ -257,6 +248,8 @@ def history_through_partition(
     ValidationError
         When ``through`` is not ``train``, ``validation``, or ``test``.
     """
+    assert_temporal_split(split_plan)
+    assert_partition_time_order(dataset, split_plan, time_column=plan.time_column)
     if through == "train":
         parts = ["train"]
     elif through == "validation":
@@ -288,6 +281,7 @@ def rolling_one_step_predictions(
     actuals: np.ndarray,
     *,
     exog: np.ndarray | None = None,
+    history_exog: np.ndarray | None = None,
 ) -> tuple[tuple[float, ...], tuple[float, ...]]:
     """Walk holdout actuals with one-step predictions using prior actuals.
 
@@ -304,6 +298,8 @@ def rolling_one_step_predictions(
         Holdout actual target values in chronological order.
     exog:
         Optional holdout exogenous matrix with one row per actual.
+    history_exog:
+        Exogenous rows aligned with the history before holdout scoring.
 
     Returns
     -------
@@ -327,6 +323,8 @@ def rolling_one_step_predictions(
             exog = exog.reshape(-1, 1)
         if exog.shape[0] != actuals.shape[0]:
             raise ValidationError("exog rows must match holdout actuals length")
+    if history_exog is not None and exog is None:
+        raise ValidationError("history_exog requires holdout exog rows.")
 
     working = list(float(v) for v in history)
     preds: list[float] = []
@@ -353,8 +351,13 @@ def rolling_one_step_predictions(
         elif plan.method in {"lag_ridge", "lag_hgb"}:
             yhat = _predict_next(plan, working, step=1, exog_row=row)
         elif plan.industry_estimator_ is not None:
+            prior_exog = history_exog
+            if history_exog is not None:
+                assert exog is not None
+                prior_exog = np.vstack([history_exog, exog[:i]])
             yhat = industry_one_step(
-                plan.industry_estimator_, working, exog_row=row
+                plan.industry_estimator_, working, exog_row=row,
+                history_exog=prior_exog
             )
         else:
             yhat = _predict_next(plan, working, step=1, exog_row=row)
@@ -369,6 +372,7 @@ def origin_predictions(
     n_points: int,
     *,
     future_exog: np.ndarray | None = None,
+    history_exog: np.ndarray | None = None,
 ) -> tuple[tuple[float, ...], Any]:
     """Generate a fixed-origin multi-step forecast over holdout steps.
 
@@ -385,6 +389,8 @@ def origin_predictions(
         Number of holdout steps to forecast in one recursive pass.
     future_exog:
         Optional future exogenous rows for exog-aware plans.
+    history_exog:
+        Exogenous observations aligned with the prior target history.
 
     Returns
     -------
@@ -404,5 +410,6 @@ def origin_predictions(
         history=history,
         future_exog=future_exog,
         origin="eval_origin",
+        history_exog=history_exog,
     )
     return generated.predictions, generated

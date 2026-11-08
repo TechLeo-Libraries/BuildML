@@ -268,6 +268,11 @@ def build_gates_payload(report: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _coalesce(*values: Any) -> Any:
+    """Choose an available measurement without treating an observed zero as missing."""
+    return next((value for value in values if value is not None), None)
+
+
 def build_gate_context(report: dict[str, Any]) -> dict[str, Any]:
     """Flatten an EDA report dict into the resolver context used by gate rules."""
     overview = report.get("overview") or {}
@@ -280,8 +285,8 @@ def build_gate_context(report: dict[str, Any]) -> dict[str, Any]:
     outliers = report.get("outliers") or {}
     warnings = list(report.get("warnings") or [])
 
-    n_rows = int(overview.get("n_rows") or overview.get("analysis_rows") or 0)
-    analysis_rows = int(overview.get("analysis_rows") or n_rows)
+    n_rows = int(_coalesce(overview.get("n_rows"), overview.get("analysis_rows"), 0))
+    analysis_rows = int(_coalesce(overview.get("analysis_rows"), n_rows))
     columns = list(overview.get("columns") or overview.get("analysis_columns") or [])
     dtypes = overview.get("dtypes") or {}
     per_column = univariate.get("per_column") or {}
@@ -351,7 +356,10 @@ def build_gate_context(report: dict[str, Any]) -> dict[str, Any]:
             )
         else:
             stats = per_column.get(str(item)) or {}
-            distinct = int(stats.get("n_unique") or stats.get("unique") or 0)
+            full_count = (quality.get("high_cardinality_counts") or {}).get(str(item))
+            if full_count is None and analysis_rows == n_rows:
+                full_count = _coalesce(stats.get("nunique"), stats.get("n_unique"), stats.get("unique"))
+            distinct = int(full_count) if full_count is not None else None
             high_card.append({"name": str(item), "distinct": distinct})
 
     corr_pairs: list[dict[str, Any]] = []
@@ -401,7 +409,7 @@ def build_gate_context(report: dict[str, Any]) -> dict[str, Any]:
     target_payload = None
     if target.get("column"):
         task = "regression"
-        classes = None
+        classes: list[dict[str, Any]] | None = None
         if str(target_summary.get("type") or "").startswith("classification"):
             task = "classification"
             counts = target_summary.get("class_counts") or {}
@@ -411,36 +419,50 @@ def build_gate_context(report: dict[str, Any]) -> dict[str, Any]:
         stats = None
         if task == "regression":
             stats = {
-                "median": target_summary.get("median") or target_summary.get("p50"),
+                "median": _coalesce(target_summary.get("median"), target_summary.get("p50")),
             }
         target_payload = {
             "name": str(target.get("column")),
             "task": task,
             "classes": classes,
             "stats": stats,
+            "labeledRows": sum(item["count"] for item in classes) if classes else int(target.get("non_missing_target_rows") or 0),
         }
 
     mv = outliers.get("multivariate") or {}
     anomalies = None
-    if isinstance(mv, dict) and (mv.get("flagged_count") or mv.get("n_flagged") is not None):
+    if isinstance(mv, dict) and _coalesce(mv.get("flagged_count"), mv.get("n_flagged")) is not None:
         anomalies = {
-            "flagged": int(mv.get("flagged_count") or mv.get("n_flagged") or 0),
-            "scored": int(mv.get("n_scored") or mv.get("scored") or analysis_rows),
-            "contamination": float(mv.get("contamination") or 0.05),
+            "flagged": int(_coalesce(mv.get("flagged_count"), mv.get("n_flagged"), 0)),
+            "scored": int(_coalesce(mv.get("n_scored"), mv.get("scored"), analysis_rows)),
+            "contamination": float(_coalesce(mv.get("contamination"), 0.05)),
         }
 
     dup_count = quality.get("duplicate_row_count")
-    duplicates = {
-        "rows": int(dup_count or 0),
-        "keyDupes": 0,
-        "keyColumn": None,
-    }
+    duplicates = {"rows": int(dup_count)} if dup_count is not None else None
+
+    roles = overview.get("roles") or {}
+    group_names = [str(name) for name, role in roles.items() if role == "group"]
+    group_col = None
+    if len(group_names) == 1:
+        group_name = group_names[0]
+        summary = overview.get("group_summary") or {}
+        if summary.get("name") != group_name:
+            summary = {}
+        group_col = {
+            "name": group_name,
+            "groups": summary.get("groups"),
+            "observedRows": summary.get("observedRows"),
+        }
+    elif group_names:
+        group_col = {"names": group_names}
 
     datetime_cols = list(overview.get("datetime_columns") or [])
     time_col = None
     if datetime_cols:
-        name = str(datetime_cols[0])
-        time_col = {"name": name, "min": None, "max": None, "gaps": 0}
+        name = str(next((col for col in datetime_cols if roles.get(col) == "time"), datetime_cols[0]))
+        span = (overview.get("datetime_ranges") or {}).get(name) or {}
+        time_col = {"name": name, "min": span.get("min"), "max": span.get("max"), "gaps": None}
 
     return {
         "rows": analysis_rows,
@@ -448,18 +470,18 @@ def build_gate_context(report: dict[str, Any]) -> dict[str, Any]:
         "colCount": len(columns) or int(overview.get("n_columns") or 0),
         "sampled": analysis_rows < n_rows,
         "idLike": [str(x) for x in (quality.get("id_like_columns") or [])],
-        "missingCells": int(quality.get("missing_cell_count") or 0),
+        "missingCells": int(quality["missing_cell_count"]) if quality.get("missing_cell_count") is not None else None,
         "missing": missing_list,
-        "constants": [str(x) for x in (quality.get("constant_columns") or [])],
-        "nearConstant": [str(x) for x in (quality.get("quasi_constant_columns") or [])],
-        "highCard": high_card,
+        "constants": [str(x) for x in quality["constant_columns"]] if quality.get("constant_columns") is not None else None,
+        "nearConstant": [str(x) for x in quality["quasi_constant_columns"]] if quality.get("quasi_constant_columns") is not None else None,
+        "highCard": high_card if quality.get("high_cardinality_columns") is not None else None,
         "numeric": numeric,
         "profiledNumeric": profiled_numeric,
         "unprofiled": unprofiled,
         "skewed": skewed,
         "cols": cols,
         "timeCol": time_col,
-        "groupCol": None,
+        "groupCol": group_col,
         "duplicates": duplicates,
         "corrPairs": corr_pairs,
         "hasCorr": has_corr,
@@ -467,7 +489,7 @@ def build_gate_context(report: dict[str, Any]) -> dict[str, Any]:
         "vif": vif_rows,
         "vifThreshold": 5.0,
         "eligible": len(overview.get("eligible_feature_columns") or []),
-        "completeRows": int(multivariate.get("complete_case_rows") or analysis_rows),
+        "completeRows": int(_coalesce(multivariate.get("complete_case_rows"), analysis_rows)),
         "categorical": [str(x) for x in (overview.get("categorical_columns") or [])],
         "target": target_payload,
         "leakage": [],
@@ -617,14 +639,26 @@ def _r01_1(c: dict[str, Any]) -> dict[str, str]:
 
 
 def _r01_2(c: dict[str, Any]) -> dict[str, str]:
-    if c.get("missingCells", 0) == 0:
+    if c.get("missingCells") is None:
+        return {
+            "status": OPEN,
+            "evidence": "Missing-cell count unavailable; completeness has not been established by this report.",
+            "closes": "Run the quality screen before choosing an in-fold missing-value strategy.",
+        }
+    if c["missingCells"] == 0:
         return {
             "status": CLEAR,
             "evidence": f"No missing cells across {c['colCount']} columns.",
             "closes": "One in-fold strategy per gappy column, plus indicators where the gap may be informative.",
         }
     missing = c.get("missing") or []
-    worst = missing[0] if missing else {"name": "?", "missingRate": 0}
+    if not missing:
+        return {
+            "status": OPEN,
+            "evidence": f"{_fmt_n(c['missingCells'])} cells missing; per-column missing rates are unavailable.",
+            "closes": "Measure per-column missingness and choose an in-fold strategy per gappy column.",
+        }
+    worst = missing[0]
     return {
         "status": OPEN,
         "evidence": (
@@ -647,6 +681,12 @@ def _r01_3(c: dict[str, Any]) -> dict[str, str]:
             ),
             "closes": "MCAR / MAR / MNAR recorded per column, on evidence.",
         }
+    if c.get("missingCells") is None or c["missingCells"] > 0:
+        return {
+            "status": OPEN,
+            "evidence": "Per-column missingness unavailable; the report does not establish that nothing is missing.",
+            "closes": "Measure missingness before considering possible MCAR / MAR / MNAR mechanisms.",
+        }
     return {
         "status": NA,
         "evidence": "Nothing is missing in this extract.",
@@ -659,29 +699,30 @@ def _r01_4(c: dict[str, Any]) -> dict[str, str]:
     if not d:
         return {
             "status": OPEN,
-            "evidence": "No duplicate screen ran on this frame.",
+            "evidence": "Exact duplicate count unavailable; no duplicate screen is recorded in this report.",
             "closes": "A stated grain, deduplication before the split, and near-duplicate checks after string cleaning.",
         }
-    ok = not d.get("rows") and not d.get("keyDupes")
+    ok = not d["rows"]
     if ok:
         return {
             "status": CLEAR,
-            "evidence": f"No exact duplicates and no repeated keys across {_fmt_n(c['rows'])} rows.",
+            "evidence": f"No exact duplicate rows across {_fmt_n(c['rowsTotal'])} rows. Key uniqueness was not assessed.",
             "closes": "A stated grain, deduplication before the split, and near-duplicate checks after string cleaning.",
         }
-    key_bit = (
-        f" and {_fmt_n(d['keyDupes'])} repeated {_plural(int(d['keyDupes']), 'key')} on {d['keyColumn']}"
-        if d.get("keyDupes")
-        else ""
-    )
     return {
         "status": OPEN,
-        "evidence": f"{_fmt_n(d['rows'])} exact duplicate {_plural(int(d['rows']), 'row')}{key_bit}.",
+        "evidence": f"{_fmt_n(d['rows'])} exact duplicate {_plural(int(d['rows']), 'row')} across {_fmt_n(c['rowsTotal'])} rows. Key uniqueness was not assessed.",
         "closes": "A stated grain, deduplication before the split, and near-duplicate checks after string cleaning.",
     }
 
 
 def _r01_5(c: dict[str, Any]) -> dict[str, str]:
+    if c.get("constants") is None or c.get("nearConstant") is None:
+        return {
+            "status": OPEN,
+            "evidence": "Constant or near-constant screen unavailable; an empty list of flags has not been established for both screens.",
+            "closes": "Run both quality screens before deciding which columns to remove or keep.",
+        }
     constants = c.get("constants") or []
     near = c.get("nearConstant") or []
     n = len(constants) + len(near)
@@ -703,20 +744,32 @@ def _r01_5(c: dict[str, Any]) -> dict[str, str]:
 
 
 def _r01_6(c: dict[str, Any]) -> dict[str, str]:
+    if c.get("highCard") is None:
+        return {
+            "status": OPEN,
+            "evidence": "Categorical cardinality screen unavailable; level counts have not been established by this report.",
+            "closes": "Measure categorical levels before choosing an in-fold encoding and unseen-level policy.",
+        }
     high = c.get("highCard") or []
     if high:
+        if any(x.get("distinct") is None for x in high):
+            return {
+                "status": OPEN,
+                "evidence": f"{len(high)} categorical {_plural(len(high), 'column')} flagged by the quality screen; full-frame level counts are unavailable, so one-hot width cannot be estimated.",
+                "closes": "Measure full-frame categorical levels before choosing an in-fold encoding and unseen-level policy.",
+            }
         added = sum(int(x.get("distinct") or 0) for x in high)
         return {
             "status": OPEN,
             "evidence": (
-                f"{len(high)} categorical {_plural(len(high), 'column')} exceed 20 levels; "
+                f"{len(high)} categorical {_plural(len(high), 'column')} flagged by the quality screen; "
                 f"one-hot would add about {_fmt_n(added)} columns."
             ),
             "closes": "Group-rare, in-fold target encoding or attribute replacement - plus an unseen-level policy.",
         }
     return {
         "status": CLEAR,
-        "evidence": "No categorical column exceeds 20 observed levels.",
+        "evidence": "No categorical column met this report's high-cardinality screening threshold.",
         "closes": "Group-rare, in-fold target encoding or attribute replacement - plus an unseen-level policy.",
     }
 
@@ -993,13 +1046,18 @@ def _r03_1(c: dict[str, Any]) -> dict[str, str]:
             "evidence": f"{c['timeCol']['name']} orders the rows, so a random split would train on the future.",
             "closes": "A split drawn on the structure the data has, with the test set touched once.",
         }
-    if c.get("groupCol"):
+    group = c.get("groupCol")
+    if group:
+        if "names" in group:
+            evidence = f"Choose a grouping column from {', '.join(group['names'])} before splitting."
+        else:
+            evidence = (
+                f"{group['name']} is the declared group column. "
+                "Keep each group in one partition."
+            )
         return {
             "status": OPEN,
-            "evidence": (
-                f"{c['groupCol']['name']} repeats across {_fmt_n(c['rows'])} rows, "
-                "so a row-level split would straddle entities."
-            ),
+            "evidence": evidence,
             "closes": "A split drawn on the structure the data has, with the test set touched once.",
         }
     return {
@@ -1068,13 +1126,15 @@ def _r03_4(c: dict[str, Any]) -> dict[str, str]:
 def _r03_5(c: dict[str, Any]) -> dict[str, str]:
     time_col = c.get("timeCol")
     if time_col:
-        gaps = time_col.get("gaps")
-        gap_bit = (
-            f" with {_fmt_n(gaps)} coverage {_plural(int(gaps), 'gap')}" if gaps else ""
+        earliest, latest = time_col.get("min"), time_col.get("max")
+        evidence = (
+            f"{time_col['name']} spans {earliest} to {latest}."
+            if earliest is not None and latest is not None
+            else f"{time_col['name']} is a time column. The report has no observed date range."
         )
         return {
             "status": OPEN,
-            "evidence": f"{time_col['name']} spans {time_col.get('min')} to {time_col.get('max')}{gap_bit}.",
+            "evidence": evidence,
             "closes": "A forward split with a horizon-length gap, and every window closed before the prediction moment.",
         }
     return {
@@ -1087,13 +1147,22 @@ def _r03_5(c: dict[str, Any]) -> dict[str, str]:
 def _r03_6(c: dict[str, Any]) -> dict[str, str]:
     group = c.get("groupCol")
     if group:
-        groups = max(1, int(group.get("groups") or 1))
+        groups = group.get("groups")
+        observed = group.get("observedRows")
+        if "names" in group:
+            evidence = "Group counts depend on which declared grouping column is selected."
+        elif groups is None or observed is None:
+            evidence = f"{group['name']} is declared, but group counts are unavailable."
+        elif not groups:
+            evidence = f"{group['name']} has no observed group labels."
+        else:
+            evidence = (
+                f"{group['name']} identifies {_fmt_n(groups)} observed {_plural(groups, 'group')} "
+                f"across {_fmt_n(observed)} labeled {_plural(observed, 'row')}."
+            )
         return {
             "status": OPEN,
-            "evidence": (
-                f"{group['name']} identifies {_fmt_n(groups)} groups - about "
-                f"{(c['rows'] / groups):.1f} rows each."
-            ),
+            "evidence": evidence,
             "closes": "A group-aware split and cross-validation, or a recorded finding that rows are independent.",
         }
     id_bit = (
@@ -1222,24 +1291,26 @@ def _r04_2(c: dict[str, Any]) -> dict[str, str]:
     if not target:
         return {"status": NA, "evidence": "No target is declared.", "closes": "Trivial and incumbent baselines scored on the same rows and the same metric."}
     if target.get("task") == "regression" and target.get("stats"):
+        median = target["stats"].get("median")
         return {
             "status": OPEN,
             "evidence": (
-                f"Predicting the median ({_fmt_compact(float(target['stats'].get('median') or 0))}) "
-                "is the floor and has not been scored."
+                f"Observed target median ({_fmt_compact(float(median))}); select and fit a train-only baseline for the chosen metric."
+                if median is not None else "Target median is unavailable in this report; compute a train-only baseline for the chosen metric."
             ),
             "closes": "Trivial and incumbent baselines scored on the same rows and the same metric.",
         }
     if target.get("classes"):
-        maj = max(int(k["count"]) for k in target["classes"]) / max(1, c["rows"])
+        labeled = sum(int(k["count"]) for k in target["classes"])
+        maj = max(int(k["count"]) for k in target["classes"]) / max(1, labeled)
         return {
             "status": OPEN,
-            "evidence": f"Predicting the majority class scores {_fmt_pct(maj, 1)} and catches nothing.",
+            "evidence": f"Observed majority share {_fmt_pct(maj, 1)} among {_fmt_n(labeled)} labeled rows; score a train-fitted constant baseline on held-out rows.",
             "closes": "Trivial and incumbent baselines scored on the same rows and the same metric.",
         }
     return {
         "status": OPEN,
-        "evidence": "Predicting the majority class scores the base rate and catches nothing.",
+        "evidence": "Observed class counts are unavailable; fit and score a constant baseline on labeled rows.",
         "closes": "Trivial and incumbent baselines scored on the same rows and the same metric.",
     }
 
@@ -1250,16 +1321,17 @@ def _r04_3(c: dict[str, Any]) -> dict[str, str]:
         return {
             "status": NA,
             "evidence": "No classification target in this frame.",
-            "closes": "A ranking metric plus precision and recall at a stated threshold; class weights preferred to resampling.",
+            "closes": "Choose metrics, weighting or resampling using the task's error costs and held-out checks.",
         }
+    labeled = sum(int(k["count"]) for k in target["classes"])
     parts = ", ".join(
-        f"{k['label']} {_fmt_pct(int(k['count']) / max(1, c['rows']), 1)}"
+        f"{k['label']} {_fmt_pct(int(k['count']) / max(1, labeled), 1)}"
         for k in target["classes"]
     )
     return {
         "status": OPEN,
-        "evidence": f"{parts} - accuracy is uninformative at this balance.",
-        "closes": "A ranking metric plus precision and recall at a stated threshold; class weights preferred to resampling.",
+        "evidence": f"{parts} among {_fmt_n(labeled)} labeled rows; interpret accuracy alongside per-class performance and error costs.",
+        "closes": "Choose metrics, weighting or resampling using the task's error costs and held-out checks.",
     }
 
 
@@ -1272,12 +1344,11 @@ def _r04_4(c: dict[str, Any]) -> dict[str, str]:
             "evidence": "No binary target, so no single cut arises.",
             "closes": "A cut derived from C_FP/(C_FP+C_FN), tuned on validation and frozen.",
         }
-    pos = int(classes[1]["count"]) / max(1, c["rows"])
     return {
         "status": OPEN,
         "evidence": (
-            f"Positive rate {_fmt_pct(pos, 1)}; the default 0.5 cut assumes equal costs "
-            "and an even base rate."
+            "Declare the positive label and error costs. For calibrated posterior probabilities, "
+            "the 0.5 cut corresponds to equal false-positive and false-negative costs."
         ),
         "closes": "A cut derived from C_FP/(C_FP+C_FN), tuned on validation and frozen.",
     }

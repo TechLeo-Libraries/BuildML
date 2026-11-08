@@ -24,7 +24,7 @@ buildml.eda.analyzers.multivariate : Structure across many columns at once.
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, cast
 
 import numpy as np
 import pandas as pd
@@ -101,6 +101,10 @@ def analyze_bivariate(
     categoricals with 40 or fewer levels; Kendall covers only the strongest
     numeric pairs. A relationship outside those caps simply will not appear.
 
+    **Cramér's V here is uncorrected for finite-sample bias.** It describes
+    association in the observed contingency table; it is not a significance
+    test or evidence of a causal relationship.
+
     See Also
     --------
     buildml.model.selection : Feature selection with proper validation.
@@ -162,7 +166,7 @@ def analyze_bivariate(
 
     if target and target in frame.columns:
         result["mutual_information_vs_target"] = _mi_vs_target(
-            frame[[*features, target]], target
+            cast(pd.DataFrame, frame[[*features, target]]), target
         )
 
     result["feature_columns_analyzed"] = features
@@ -178,7 +182,7 @@ def _mi_vs_target(frame: pd.DataFrame, target: str) -> dict[str, float]:
         return {}
 
     mask = y_raw.notna()
-    x = frame.loc[mask, feature_cols].copy()
+    x = cast(pd.DataFrame, frame.loc[mask, feature_cols]).copy()
     y = y_raw.loc[mask]
     if len(x) < 10:
         return {}
@@ -223,6 +227,7 @@ def _mi_vs_target(frame: pd.DataFrame, target: str) -> dict[str, float]:
 
 
 def _cramers_v(confusion: pd.DataFrame) -> float | None:
+    """Return the uncorrected Pearson chi-square effect size, when identifiable."""
     if confusion.size == 0:
         return None
     table = confusion.to_numpy(dtype=float)

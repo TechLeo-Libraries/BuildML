@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from typing import Any
 
 
@@ -101,7 +102,9 @@ def json_safe(value: Any) -> Any:
     >>> json_safe(np.float64(0.5))
     0.5
     """
-    if value is None or isinstance(value, (str, int, float, bool)):
+    if isinstance(value, float):
+        return value if math.isfinite(value) else None
+    if value is None or isinstance(value, (str, int, bool)):
         return value
     if isinstance(value, dict):
         return {str(key): json_safe(item) for key, item in value.items()}

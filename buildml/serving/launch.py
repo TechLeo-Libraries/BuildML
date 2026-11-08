@@ -23,6 +23,7 @@ buildml.serving.cli : The command-line entry point onto this.
 
 from __future__ import annotations
 
+import os
 import socket
 import threading
 import time
@@ -30,6 +31,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Literal
 
+from buildml.core._defaults import _INHERIT_PERMISSION
 from buildml.core.errors import BuildMLError, MissingExtraError, ValidationError
 from buildml.serving.app import BundleKind, clear_serving_state, create_serving_app
 
@@ -118,13 +120,14 @@ class ServeHandle:
     _server: Any
     _thread: threading.Thread
     tls: bool = False
+    _app: Any | None = None
 
     def stop(self) -> None:
         """Ask the server to exit, wait briefly, and release the loaded bundle.
 
         Signals uvicorn to stop accepting connections and finish what it is
         handling, then joins the thread with a five-second timeout and clears
-        the process-global serving state so the model can be collected.
+        this app's serving state so the model can be collected.
 
         Notes
         -----
@@ -141,7 +144,7 @@ class ServeHandle:
             server.should_exit = True
         if self._thread.is_alive():
             self._thread.join(timeout=5)
-        clear_serving_state()
+        clear_serving_state(self._app)
 
     @property
     def is_running(self) -> bool:
@@ -163,9 +166,9 @@ class ServeHandle:
 
 
 def _validate_bind_target(host: str, port: int) -> None:
-    if not host or not str(host).strip():
+    if not isinstance(host, str) or not host.strip():
         raise ValidationError("host must be non-empty")
-    if not isinstance(port, int) or port < 1 or port > 65535:
+    if isinstance(port, bool) or not isinstance(port, int) or port < 1 or port > 65535:
         raise ValidationError("port must be an integer in 1..65535")
 
 
@@ -185,12 +188,7 @@ def _probe_bind_host(host: str) -> str:
     That would briefly listen on every interface. Uvicorn performs the
     real bind after auth and TLS checks have already run.
     """
-    normalized = str(host).strip().lower()
-    if normalized in {"0.0.0.0", "*"}:
-        return "127.0.0.1"
-    if normalized in {"::", "[::]"}:
-        return "::1"
-    return host
+    return "::1" if ":" in host else "127.0.0.1"
 
 
 def _has_api_keys(api_keys: str | list[str] | tuple[str, ...] | None) -> bool:
@@ -264,32 +262,32 @@ def _ensure_bind_security(
 def _ensure_port_available(host: str, port: int) -> None:
     """Pre-flight: is this TCP port free on loopback?
 
-    Always probes ``127.0.0.1``. The caller-supplied host is never used as
-    the bind address here, so a request to serve on ``0.0.0.0`` cannot open
-    a wildcard listener during the check. Uvicorn performs the real bind
-    after auth and TLS checks have already run.
+    Probe loopback in the requested address family. The caller-supplied host
+    is never bound here. Uvicorn performs the real bind after auth and TLS
+    checks have already run.
     """
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    probe_host = _probe_bind_host(host)
+    family = socket.AF_INET6 if probe_host == "::1" else socket.AF_INET
     try:
-        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        sock.bind(("127.0.0.1", port))
+        with socket.socket(family, socket.SOCK_STREAM) as sock:
+            if os.name != "nt":
+                sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            sock.bind((probe_host, port))
     except OSError as exc:
         raise ServingLaunchError(
             f"Cannot bind managed serving to {host}:{port}: {exc}"
         ) from exc
-    finally:
-        sock.close()
 
 
 def serve_bundle(
     path: str | Path | None = None,
     *,
-    kind: BundleKind | Literal["pipeline", "torchscript"] = "pipeline",
-    host: str = "127.0.0.1",
-    port: int = 8080,
-    title: str = "BuildML Serve",
+    kind: BundleKind | Literal["pipeline", "torchscript"] | None = None,
+    host: str | None = None,
+    port: int | None = None,
+    title: str | None = None,
     blocking: bool = False,
-    map_location: str = "cpu",
+    map_location: str | None = None,
     api_keys: str | list[str] | tuple[str, ...] | None = None,
     basic_auth: str
     | tuple[str, str]
@@ -297,10 +295,10 @@ def serve_bundle(
     | dict[str, str]
     | None = None,
     docs_enabled: bool | None = None,
-    allow_insecure_public_bind: bool = False,
+    allow_insecure_public_bind: bool = _INHERIT_PERMISSION,
     ssl_certfile: str | Path | None = None,
     ssl_keyfile: str | Path | None = None,
-    trusted: bool = False,
+    trusted: bool = _INHERIT_PERMISSION,
     config: Any | None = None,
 ) -> ServeHandle:
     """Load a bundle and start serving it, refusing the unsafe configurations.
@@ -323,8 +321,8 @@ def serve_bundle(
     kind:
         ``'pipeline'`` or ``'torchscript'``.
     host:
-        The bind address, defaulting to loopback. Anything else triggers the
-        security check below.
+        The bind address, defaulting to loopback. IPv6 literals may use URL
+        brackets. Non-loopback addresses trigger the security check below.
     port:
         The TCP port, 1 to 65535. Tested for availability before loading, so a
         clash fails in a second rather than after the model is read.
@@ -348,15 +346,19 @@ def serve_bundle(
         Bind a public address with no auth at all. Named at length because it
         should be conspicuous in review. Only defensible when something in front
         (a proxy, a service mesh) is doing the authentication.
+        Omission inherits config; explicit ``False`` revokes its override.
     ssl_certfile:
         A PEM certificate for local HTTPS. Must be paired with ``ssl_keyfile``.
     ssl_keyfile:
         The matching PEM private key. Must be paired with ``ssl_certfile``.
     trusted:
         Must be ``True`` to deserialize the artifact (pickle/joblib/TorchScript).
+        Omission inherits config trust, or refuses loads without a config.
+        Explicit ``False`` revokes configured trust; nonboolean values are rejected.
     config:
         Optional :class:`~buildml.serving.config.ServeConfig` base. Explicit
-        kwargs overlay it.
+        kwargs overlay it, even values equal to the usual defaults. Omitted
+        settings inherit this config; without one, localhost/pipeline/CPU defaults apply.
 
     Returns
     -------
@@ -432,6 +434,10 @@ def serve_bundle(
     buildml.serving.app.create_serving_app : Building the app without serving.
     buildml.serving.config.ServeConfig : Declarative YAML/env/CLI config.
     """
+    if trusted is not _INHERIT_PERMISSION and not isinstance(trusted, bool):
+        raise ValidationError("trusted must be a boolean; pass trusted=True only for trusted artifacts.")
+    if allow_insecure_public_bind is not _INHERIT_PERMISSION and not isinstance(allow_insecure_public_bind, bool):
+        raise ValidationError("allow_insecure_public_bind must be a boolean.")
     if config is not None:
         from buildml.serving.config import ServeConfig
 
@@ -440,15 +446,15 @@ def serve_bundle(
         overlay: dict[str, Any] = {}
         if path is not None:
             overlay["bundle"] = str(path)
-        if kind != "pipeline" or config.kind == "pipeline":
+        if kind is not None:
             overlay["kind"] = kind
-        if host != "127.0.0.1" or config.host == "127.0.0.1":
+        if host is not None:
             overlay["host"] = host
-        if port != 8080 or config.port == 8080:
+        if port is not None:
             overlay["port"] = port
-        if title != "BuildML Serve" or config.title == "BuildML Serve":
+        if title is not None:
             overlay["title"] = title
-        if map_location != "cpu" or config.map_location == "cpu":
+        if map_location is not None:
             overlay["map_location"] = map_location
         if api_keys is not None:
             overlay["api_keys"] = api_keys
@@ -456,40 +462,15 @@ def serve_bundle(
             overlay["basic_auth"] = basic_auth
         if docs_enabled is not None:
             overlay["docs_enabled"] = docs_enabled
-        if allow_insecure_public_bind:
-            overlay["allow_insecure_public_bind"] = True
+        if allow_insecure_public_bind is not _INHERIT_PERMISSION:
+            overlay["allow_insecure_public_bind"] = allow_insecure_public_bind
         if ssl_certfile is not None:
             overlay["ssl_certfile"] = str(ssl_certfile)
         if ssl_keyfile is not None:
             overlay["ssl_keyfile"] = str(ssl_keyfile)
-        if trusted:
-            overlay["trusted"] = True
-        elif config.trusted:
-            overlay["trusted"] = True
-        # Prefer config host/port/title/kind when kwargs left at defaults.
+        if trusted is not _INHERIT_PERMISSION:
+            overlay["trusted"] = trusted
         cfg = config.merge(**overlay)
-        if host == "127.0.0.1" and config.host != "127.0.0.1":
-            cfg = cfg.merge(host=config.host)
-        if port == 8080 and config.port != 8080:
-            cfg = cfg.merge(port=config.port)
-        if title == "BuildML Serve" and config.title != "BuildML Serve":
-            cfg = cfg.merge(title=config.title)
-        if kind == "pipeline" and config.kind != "pipeline":
-            cfg = cfg.merge(kind=config.kind)
-        if map_location == "cpu" and config.map_location != "cpu":
-            cfg = cfg.merge(map_location=config.map_location)
-        if not allow_insecure_public_bind and config.allow_insecure_public_bind:
-            cfg = cfg.merge(allow_insecure_public_bind=True)
-        if ssl_certfile is None and config.ssl_certfile:
-            cfg = cfg.merge(ssl_certfile=config.ssl_certfile)
-        if ssl_keyfile is None and config.ssl_keyfile:
-            cfg = cfg.merge(ssl_keyfile=config.ssl_keyfile)
-        if docs_enabled is None and config.docs_enabled is not None:
-            cfg = cfg.merge(docs_enabled=config.docs_enabled)
-        if api_keys is None and config.api_keys:
-            cfg = cfg.merge(api_keys=list(config.api_keys))
-        if basic_auth is None and config.basic_auth is not None:
-            cfg = cfg.merge(basic_auth=config.basic_auth)
         path = cfg.require_bundle()
         kind = cfg.kind  # type: ignore[assignment]
         host = cfg.host
@@ -503,12 +484,23 @@ def serve_bundle(
         ssl_certfile = cfg.ssl_certfile
         ssl_keyfile = cfg.ssl_keyfile
         trusted = cfg.trusted
-    elif path is None:
+
+    kind = "pipeline" if kind is None else kind
+    host = "127.0.0.1" if host is None else host
+    port = 8080 if port is None else port
+    title = "BuildML Serve" if title is None else title
+    map_location = "cpu" if map_location is None else map_location
+    allow_insecure_public_bind = False if allow_insecure_public_bind is _INHERIT_PERMISSION else allow_insecure_public_bind
+    trusted = False if trusted is _INHERIT_PERMISSION else trusted
+    if path is None:
         raise ValidationError(
             "serve_bundle requires path= or a ServeConfig with bundle set"
         )
 
     _validate_bind_target(host, port)
+    host = host.strip()
+    if ":" in host and host.startswith("[") and host.endswith("]"):
+        host = host[1:-1]
     _ensure_bind_security(
         host,
         api_keys=api_keys,
@@ -553,31 +545,48 @@ def serve_bundle(
         ssl_keyfile=str(key) if key is not None else None,
     )
     server = uvicorn.Server(config)
-    thread = threading.Thread(target=server.run, name="buildml-serve", daemon=True)
     scheme = "https" if tls else "http"
+    url_host = f"[{host}]" if ":" in host else host
+    url = f"{scheme}://{url_host}:{port}"
+    startup_errors: list[Exception | SystemExit] = []
+
+    def run_server() -> None:
+        try:
+            server.run()
+        except (Exception, SystemExit) as exc:
+            if getattr(server, "started", False):
+                raise
+            startup_errors.append(exc)
+        finally:
+            clear_serving_state(app)
+
+    thread = threading.Thread(target=run_server, name="buildml-serve", daemon=True)
     handle = ServeHandle(
         host=host,
         port=port,
-        url=f"{scheme}://{host}:{port}",
+        url=url,
         kind=str(kind),
         path=str(path),
         _server=server,
         _thread=thread,
         tls=tls,
+        _app=app,
     )
     if blocking:
-        try:
-            server.run()
-        finally:
-            clear_serving_state()
+        run_server()
+        if startup_errors:
+            raise ServingLaunchError(f"Managed serving startup failed on {url}") from startup_errors[0]
         return handle
     thread.start()
-    deadline = time.time() + 10.0
-    while time.time() < deadline:
+    deadline = time.monotonic() + 10.0
+    while time.monotonic() < deadline:
+        if not thread.is_alive():
+            cause = startup_errors[0] if startup_errors else None
+            raise ServingLaunchError(f"Managed serving startup failed on {url}") from cause
         if getattr(server, "started", False):
             break
-        if not thread.is_alive():
-            clear_serving_state()
-            raise ServingLaunchError("Managed serving thread exited during startup")
         time.sleep(0.05)
+    else:
+        handle.stop()
+        raise ServingLaunchError("Managed serving did not become ready within 10 seconds")
     return handle

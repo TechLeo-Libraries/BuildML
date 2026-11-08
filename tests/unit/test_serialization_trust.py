@@ -37,6 +37,15 @@ def _tiny_session() -> Session:
     return session
 
 
+def test_trust_guidance_survives_a_long_artifact_path_in_bounded_errors():
+    path = '/'.join(['long-artifact-component']*40)+'/model.joblib'
+    with pytest.raises(ValidationError) as raised:
+        require_trusted_deserialize(trusted=False, artifact='joblib plan', path=path)
+    bounded = ('Execution failed: '+str(raised.value))[:256]
+    assert 'trusted=True' in bounded
+    assert 'only for artifacts you created or fully trust' in bounded
+
+
 def test_require_trusted_deserialize_blocks_by_default(tmp_path: Path) -> None:
     target = tmp_path / "payload.joblib"
     target.write_text("not-a-real-joblib", encoding="utf-8")

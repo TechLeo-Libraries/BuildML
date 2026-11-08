@@ -16,8 +16,13 @@ usual sense.
 `session.cbr.fit()` with `backend=None` picks the **industry ANN**
 (hnswlib if `buildml[cbr-industry]` imported, else faiss if
 `buildml[cbr-faiss]` imported), otherwise exact sklearn kNN. On Windows
-the default stays sklearn and `backend="industry"` raises unless
-`BUILDML_ALLOW_CBR_INDUSTRY_WINDOWS=1`. Default metric is `euclidean`, default `k` is 5,
+the default stays sklearn. Explicit `backend="industry"` uses a persistent
+isolated ANN worker by default. Builds, queries and retention run there; a
+native fault or timeout raises an actionable error without killing the Session.
+Serialization stores vectors/settings and rebuilds the worker lazily. IPC adds
+overhead; measure throughput for your case base. The legacy environment opt-in
+`BUILDML_ALLOW_CBR_INDUSTRY_WINDOWS=1` still selects in-process execution.
+Default metric is `euclidean`, default `k` is 5,
 default reuse is `distance_weighted`, default adapt is `none`, and
 `standardize=True` fits mean/scale on train only. Torch is never probed
 while inferring a backend: you have to ask for `backend="torch"`. On

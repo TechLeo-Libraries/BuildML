@@ -52,8 +52,12 @@ def _parse_bool(value: Any, *, field_name: str) -> bool:
 
 def _parse_port(value: Any) -> int:
     try:
+        if isinstance(value, bool):
+            raise ValueError("boolean ports are ambiguous")
         port = int(value)
-    except (TypeError, ValueError) as exc:
+        if not isinstance(value, str) and value != port:
+            raise ValueError("fractional ports cannot identify an endpoint")
+    except (TypeError, ValueError, OverflowError) as exc:
         raise ValidationError(f"port must be an integer, got {value!r}") from exc
     if port < 1 or port > 65535:
         raise ValidationError("port must be an integer in 1..65535")
@@ -180,6 +184,8 @@ class ServeConfig:
     map_location: str = "cpu"
 
     def __post_init__(self) -> None:
+        for field_name in ("trusted", "allow_insecure_public_bind"):
+            object.__setattr__(self, field_name, _parse_bool(getattr(self, field_name), field_name=field_name))
         object.__setattr__(self, "host", str(self.host).strip() if self.host else "")
         object.__setattr__(self, "port", _parse_port(self.port))
         if self.bundle is not None:

@@ -22,6 +22,7 @@ buildml.checkpoint.bundle : Session state, for resuming work.
 from __future__ import annotations
 
 import json
+from numbers import Integral
 from pathlib import Path
 from typing import Any
 
@@ -135,6 +136,7 @@ def save_ensemble_bundle(
     """
     if plan is None:
         raise ValidationError("No EnsemblePlan to save.")
+    _validate_model_contract(plan, fit_result)
     destination = Path(path)
     destination.mkdir(parents=True, exist_ok=True)
     payload = {
@@ -272,4 +274,53 @@ def load_ensemble_bundle(path: str | Path, *, trusted: bool = False) -> tuple[En
             target_column=plan.target_column,
             n_train_rows=plan.n_train_rows,
         )
+    _validate_model_contract(plan, fit_result)
     return plan, fit_result
+
+
+def _validate_model_contract(plan: EnsemblePlan, fit_result: FitResult | None) -> None:
+    """Keep Ensemble and classical prediction contracts aligned at persistence.
+
+    Parameters
+    ----------
+    plan:
+        Selected Ensemble estimator and raw column contract.
+    fit_result:
+        Optional classical result carried with the same selected model.
+
+    Raises
+    ------
+    ValidationError
+        When the plan is incomplete or its paired fit result disagrees.
+    """
+    if not isinstance(plan, EnsemblePlan):
+        raise ValidationError("Ensemble bundle requires an EnsemblePlan.")
+    if plan.task not in {"classification", "regression"}:
+        raise ValidationError("Ensemble plan has an unsupported task.")
+    columns = plan.feature_columns
+    if (not isinstance(columns, (tuple, list)) or not columns
+            or any(not isinstance(c, str) or not c.strip() for c in columns)
+            or len(set(columns)) != len(columns)):
+        raise ValidationError("Ensemble plan requires unique, nonempty feature column names.")
+    if (not isinstance(plan.target_column, str) or not plan.target_column.strip()
+            or plan.target_column in columns):
+        raise ValidationError("Ensemble plan target must be separate from feature columns.")
+    if (isinstance(plan.n_train_rows, bool) or not isinstance(plan.n_train_rows, Integral)
+            or plan.n_train_rows < 1):
+        raise ValidationError("Ensemble plan n_train_rows must be a positive integer.")
+    if not callable(getattr(plan.estimator_, "predict", None)):
+        raise ValidationError("Ensemble plan is missing a prediction estimator.")
+    if fit_result is None:
+        return
+    if not isinstance(fit_result, FitResult):
+        raise ValidationError("Ensemble fit_result must be a FitResult or None.")
+    if fit_result.estimator is not plan.estimator_:
+        raise ValidationError("Ensemble plan and FitResult must refer to the same estimator.")
+    if (not isinstance(fit_result.feature_columns, (tuple, list))
+            or tuple(fit_result.feature_columns) != tuple(columns)):
+        raise ValidationError("Ensemble plan and FitResult feature columns must agree in order.")
+    if (fit_result.task != plan.task or fit_result.target_column != plan.target_column
+            or isinstance(fit_result.n_train_rows, bool)
+            or not isinstance(fit_result.n_train_rows, Integral)
+            or fit_result.n_train_rows != plan.n_train_rows):
+        raise ValidationError("Ensemble plan and FitResult task, target and training-row contract must agree.")

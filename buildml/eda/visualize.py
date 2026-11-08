@@ -22,6 +22,7 @@ buildml.eda.html_report : Embedding the results.
 from __future__ import annotations
 
 from pathlib import Path
+from tempfile import TemporaryDirectory
 from typing import Any
 
 import pandas as pd
@@ -531,14 +532,25 @@ def save_figures(figures: dict[str, Any], directory: str | Path) -> Path:
     --------
     render_adaptive_plots : Producing the figures.
     """
+    root, _ = _save_figures(figures, directory)
+    return root
+
+
+def _save_figures(figures: dict[str, Any], directory: str | Path) -> tuple[Path, dict[str, str]]:
+    """Save PNGs and record only the files published by this call."""
     root = Path(directory)
     root.mkdir(parents=True, exist_ok=True)
+    paths: dict[str, str] = {}
     for key, fig in figures.items():
         if fig is None or isinstance(fig, dict):
             continue
         out = root / f"{key}.png"
         try:
-            fig.savefig(out, dpi=140, bbox_inches="tight")
+            with TemporaryDirectory(prefix=".buildml-figure-", dir=root) as staging:
+                png = Path(staging) / out.name
+                fig.savefig(png, dpi=140, bbox_inches="tight")
+                png.replace(out)
+                paths[key] = str(out)
         except Exception:  # noqa: BLE001
             continue
-    return root
+    return root, paths

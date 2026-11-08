@@ -77,7 +77,7 @@ PROBABILISTIC_BEGINNER: dict[str, BeginnerLayer] = _index(
             "of just '12.4'. The tolerance comes from how consistent the measurements were."
         ),
         steps=(
-            "Prepare numeric features and scale them, as with any linear model.",
+            "Use unprocessed numeric features when conformal calibration is enabled; prior fitted preprocessing is refused.",
             "Fit: the method estimates both the coefficients and how uncertain each one is.",
             "Predict with `return_std` to get the mean and the predictive standard deviation per row.",
             "Notice that rows unlike the training data get wider intervals, which is the behaviour you want.",
@@ -111,7 +111,6 @@ PROBABILISTIC_BEGINNER: dict[str, BeginnerLayer] = _index(
             'frame["target"] = y',
             'session = Session.ingest(frame).set_roles({"target": "target"})',
             'session.split(test_size=0.2, validation_size=0.2, random_state=42)',
-            "session.scale(method='standard')",
             "session.probabilistic.fit(estimator='bayesian_ridge')",
             "pred = session.probabilistic.predict(partition='validation')",
             'print(pred.predictions[:5], pred.std[:5])',
@@ -170,7 +169,6 @@ PROBABILISTIC_BEGINNER: dict[str, BeginnerLayer] = _index(
             'frame["target"] = y',
             'session = Session.ingest(frame).set_roles({"target": "target"})',
             'session.split(test_size=0.2, validation_size=0.2, random_state=42)',
-            "session.scale(method='standard')",
             "session.probabilistic.fit(estimator='gaussian_process_regressor', random_state=0)",
             "pred = session.probabilistic.predict(partition='validation')",
             'print(pred.predictions[:5], pred.std[:5])   # std grows away from training data',

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
+from copy import copy, deepcopy
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -110,8 +111,17 @@ class RiverOnlineWrapper:
     n_seen_: int = 0
     drift_events_: list[dict[str, Any]] = field(default_factory=list)
 
-    def _ensure_model(self, n_features: int) -> None:
+    def _validate_classes(self, classes: Sequence[Any] | None) -> None:
+        if (self.task == "classification" and classes is not None and len(classes) > 2
+                and self.model_ is not None and not getattr(self.model_, "_multiclass", False)):
+            raise ValidationError(
+                "A binary River model cannot represent this multiclass vocabulary; "
+                "refit the online learner to train one classifier per class."
+            )
+
+    def _ensure_model(self, n_features: int, *, classes: Sequence[Any] | None = None) -> None:
         if self.model_ is not None:
+            self._validate_classes(classes)
             return
         require_river()
         from river import drift, linear_model, tree
@@ -144,6 +154,12 @@ class RiverOnlineWrapper:
             self.task = "regression"
         else:
             raise ValidationError(f"Unsupported River estimator {self.estimator_name!r}.")
+
+        if (self.task == "classification" and classes is not None and len(classes) > 2
+                and not getattr(self.model_, "_multiclass", False)):
+            from river.multiclass import OneVsRestClassifier
+
+            self.model_ = OneVsRestClassifier(self.model_)
 
         if self.drift_detector == "adwin":
             self.adwin_ = drift.ADWIN()
@@ -198,7 +214,8 @@ class RiverOnlineWrapper:
         y:
             Target array aligned with ``x`` rows.
         classes:
-            Ignored for River models (accepted for sklearn API compatibility).
+            Full encoded class vocabulary. Binary River classifiers use
+            one-vs-rest when this vocabulary contains more than two classes.
 
         Returns
         -------
@@ -214,7 +231,9 @@ class RiverOnlineWrapper:
         y_arr = np.asarray(y)
         if x_arr.ndim != 2:
             raise ValidationError("River partial_fit expects a 2D feature matrix.")
-        self._ensure_model(x_arr.shape[1])
+        self._ensure_model(
+            x_arr.shape[1], classes=classes if classes is not None else np.unique(y_arr)
+        )
         drift_notes: list[str] = []
         for i in range(len(x_arr)):
             row = self._row_dict(x_arr[i])
@@ -270,8 +289,9 @@ class RiverOnlineWrapper:
     ) -> tuple[bool, list[str]]:
         """Score holdout rows through River drift detectors without model update.
 
-        Feeds prediction errors into ADWIN or Page-Hinkley detectors for
-        evaluation-time drift disclosure; does not call ``learn_one``.
+        Feeds prediction errors into copies of the fitted ADWIN or Page-Hinkley
+        detectors. The learner, training detectors and event ledger stay
+        unchanged, so holdout checks cannot affect a later training update.
 
         Parameters
         ----------
@@ -287,6 +307,9 @@ class RiverOnlineWrapper:
         """
         if self.model_ is None:
             return False, []
+        probe = copy(self)
+        probe.adwin_, probe.page_hinkley_ = deepcopy((self.adwin_, self.page_hinkley_))
+        probe.drift_events_ = []
         x_arr = np.asarray(x, dtype=float)
         y_arr = np.asarray(y)
         detected = False
@@ -299,7 +322,7 @@ class RiverOnlineWrapper:
                 err = 0.0 if pred == target else 1.0
             else:
                 err = abs(float(pred) - float(target)) if pred is not None else 0.0
-            chunk_notes = self._update_drift(err)
+            chunk_notes = probe._update_drift(err)
             if chunk_notes:
                 detected = True
                 notes.extend(chunk_notes)

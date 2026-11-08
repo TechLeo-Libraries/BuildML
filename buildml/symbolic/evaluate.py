@@ -31,7 +31,7 @@ def evaluate_symbolic(
     *,
     partition: PartitionOrAll = "validation",
 ) -> SymbolicEvalResult:
-    """Score the symbolic rule base on a holdout partition without refit.
+    """Score the symbolic rule base on the requested partition without refit.
 
     Runs predict with traces on the requested partition, then compares
     predictions to held-out labels for accuracy or regression metrics.
@@ -45,7 +45,7 @@ def evaluate_symbolic(
     split_plan:
         Split plan defining the evaluation partition.
     partition:
-        ``validation``, ``test``, or ``all``.
+        ``train``, ``validation``, ``test``, or ``all``. Train/all include fitting rows.
 
     Returns
     -------
@@ -57,8 +57,12 @@ def evaluate_symbolic(
     )
     y_true = _targets(dataset, split_plan, partition, plan.target_column)
     metrics, coverage, mean_fired = _score(
-        y_true, pred.predictions, pred.traces, task=plan.task
+        y_true, pred.predictions, pred.traces, task=plan.task,
+        legacy_labels=not plan.config.get("raw_class_labels", False),
     )
+    warnings = list(pred.warnings)
+    if partition in {"train", "all"}:
+        warnings.append("Evaluation includes training rows; these metrics are not independent holdout evidence.")
     return SymbolicEvalResult(
         partition=str(partition),
         path="symbolic",
@@ -68,10 +72,10 @@ def evaluate_symbolic(
         rule_coverage=coverage,
         mean_rules_fired=mean_fired,
         disclosures=(
-            "Holdout evaluation only: rules were not re-induced on this partition.",
+            "Evaluation scores the requested partition without re-inducing rules.",
             *plan.disclosures[:2],
         ),
-        warnings=(),
+        warnings=tuple(warnings),
     )
 
 
@@ -82,7 +86,7 @@ def evaluate_neuro_symbolic(
     *,
     partition: PartitionOrAll = "validation",
 ) -> SymbolicEvalResult:
-    """Score the neuro-symbolic hybrid on a holdout partition without refit.
+    """Score the neuro-symbolic hybrid on the requested partition without refit.
 
     Combines neural and rule predictions from the fitted plan, then reports
     metrics plus rule coverage and repair rates on the holdout partition.
@@ -96,7 +100,7 @@ def evaluate_neuro_symbolic(
     split_plan:
         Split plan defining the evaluation partition.
     partition:
-        ``validation``, ``test``, or ``all``.
+        ``train``, ``validation``, ``test``, or ``all``. Train/all include fitting rows.
 
     Returns
     -------
@@ -108,7 +112,8 @@ def evaluate_neuro_symbolic(
     )
     y_true = _targets(dataset, split_plan, partition, plan.target_column)
     metrics, coverage, mean_fired = _score(
-        y_true, pred.predictions, pred.traces, task=plan.task
+        y_true, pred.predictions, pred.traces, task=plan.task,
+        legacy_labels=not plan.config.get("raw_class_labels", False),
     )
     repair_rate = (
         float(pred.n_repaired) / float(pred.n_rows) if pred.n_rows else None
@@ -116,7 +121,7 @@ def evaluate_neuro_symbolic(
     # Fidelity: agreement between neural and final when neural present.
     if pred.neural_predictions is not None:
         agree = sum(
-            str(a) == str(b)
+            classification_accuracy([a], [b], legacy_labels=not plan.config.get("raw_class_labels", False)) == 1.0
             for a, b in zip(
                 pred.neural_predictions, pred.predictions, strict=True
             )
@@ -125,6 +130,9 @@ def evaluate_neuro_symbolic(
             **metrics,
             "neural_final_agreement": float(agree) / float(max(pred.n_rows, 1)),
         }
+    warnings = list(pred.warnings)
+    if partition in {"train", "all"}:
+        warnings.append("Evaluation includes training rows; these metrics are not independent holdout evidence.")
     return SymbolicEvalResult(
         partition=str(partition),
         path="neuro_symbolic",
@@ -135,11 +143,11 @@ def evaluate_neuro_symbolic(
         mean_rules_fired=mean_fired,
         repair_rate=repair_rate,
         disclosures=(
-            "Holdout evaluation only: base estimator and rules were not "
-            "refit on this partition.",
+            "Evaluation scores the requested partition without refitting "
+            "the base estimator or rules.",
             *plan.disclosures[:2],
         ),
-        warnings=(),
+        warnings=tuple(warnings),
     )
 
 
@@ -176,6 +184,7 @@ def _score(
     traces: tuple[Any, ...],
     *,
     task: str,
+    legacy_labels: bool = False,
 ) -> tuple[dict[str, float], float | None, float | None]:
     if len(y_true) != len(predictions):
         raise ValidationError(
@@ -184,23 +193,29 @@ def _score(
     if task == "classification":
         metrics = {
             "accuracy": classification_accuracy(
-                y_true.tolist(), list(predictions)
+                y_true.tolist(), list(predictions), legacy_labels=legacy_labels
             )
         }
     else:
-        y_hat = np.asarray(
-            [
-                float(p) if p is not None else float("nan")
-                for p in predictions
-            ],
-            dtype=float,
-        )
-        if np.isnan(y_hat).any():
+        if np.iscomplexobj(y_true.to_numpy()) or np.iscomplexobj(np.asarray(predictions)):
             raise ValidationError(
-                "Symbolic regression predictions contain nulls "
-                "(missing default_consequent or unmatched rules)."
+                "Symbolic regression evaluation requires finite real targets and predictions."
             )
-        metrics = regression_metrics(y_true.to_numpy(dtype=float), y_hat)
+        try:
+            y_actual = y_true.to_numpy(dtype=float)
+            y_hat = np.asarray(
+                [float(p) if p is not None else float("nan") for p in predictions], dtype=float
+            )
+        except (TypeError, ValueError, OverflowError) as exc:
+            raise ValidationError(
+                "Symbolic regression evaluation requires finite real targets and predictions."
+            ) from exc
+        if not np.isfinite(y_actual).all() or not np.isfinite(y_hat).all():
+            raise ValidationError(
+                "Symbolic regression evaluation requires finite real targets and predictions "
+                "(check missing defaults, unmatched rules and non-finite values)."
+            )
+        metrics = regression_metrics(y_actual, y_hat)
 
     if traces:
         covered = sum(1 for t in traces if t.chosen_rule_id is not None)

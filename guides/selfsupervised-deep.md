@@ -11,6 +11,26 @@ on labeled train only. Holdout scores the frozen encoder plus head.
 Default when torch is installed is `simclr_tabular`. Evaluate needs
 both pretext and head.
 
+Head fitting and evaluation select labeled rows before encoding features.
+Missing targets and an optional `unlabeled_marker` are excluded, so missing
+features on those excluded rows do not prevent the head from fitting or scoring.
+Nullable Pandas targets can combine `pd.NA` with a custom marker. Pass the same
+marker to `ssl.finetune_head` and `ssl.evaluate`.
+
+Pretext fitting uses all selected training feature rows and requires valid
+inputs. `ssl.transform` validates every row it exports. Frozen representations
+must match the saved width and contain finite values; selected numeric inputs
+must also be finite. Empty evaluation returns counts with no invented metrics;
+empty exports keep the saved representation width. Unknown evaluation classes
+and mismatched head representation columns are refused before prediction.
+Refused Session calls preserve prior results and audit history.
+
+Evaluation does not refit the encoder or head. Current partition names do not
+establish independence from their original training data after loading a bundle
+or replacing data. Check that provenance when assessing a model. Scores from
+`partition="train"` or `"all"` are marked as diagnostic because they can include
+training observations.
+
 This is not semi-supervised pseudo-labelling and not
 `session.dl.load_backbone` (that path is published-weight probes).
 

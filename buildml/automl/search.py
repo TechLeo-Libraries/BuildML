@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+import time
+from collections.abc import Iterable, Iterator
+from dataclasses import dataclass, replace
 from itertools import product
+from numbers import Integral, Real
 from pathlib import Path
 from typing import Any, Literal
 
@@ -16,7 +19,7 @@ from sklearn.ensemble import (
     VotingClassifier,
     VotingRegressor,
 )
-from sklearn.model_selection import ParameterSampler
+from sklearn.model_selection import ParameterSampler, check_cv
 from sklearn.pipeline import Pipeline as SkPipeline
 
 from buildml.automl.results import AutoMLPlan, AutoMLResult, AutoMLTrial
@@ -36,6 +39,7 @@ from buildml.automl.types import (
     EnsembleMode,
 )
 from buildml.core.errors import LeakageError, ValidationError
+from buildml.core.validation import _positive_integer
 from buildml.data.dataset import Dataset
 from buildml.data.splits import SplitPlan, assert_fit_partition
 from buildml.model.selection import (
@@ -69,6 +73,43 @@ class _Candidate:
     recipe: RecipeStrategy
     params: dict[str, Any]
     ensemble_bases: tuple[str, ...] = ()
+
+
+def _positive_seconds(value: Any, *, name: str) -> float:
+    """Normalize a finite positive duration without boolean or text coercions."""
+    if isinstance(value, (bool, np.bool_)) or not isinstance(value, Real):
+        raise ValidationError(f"{name} must be finite positive seconds.")
+    try:
+        seconds = float(value)
+    except (OverflowError, TypeError, ValueError) as exc:
+        raise ValidationError(f"{name} must be finite positive seconds.") from exc
+    if not np.isfinite(seconds) or seconds <= 0:
+        raise ValidationError(f"{name} must be finite positive seconds.")
+    return seconds
+
+
+def _deadline_expired(deadline: float | None) -> bool:
+    """Check an optional absolute native-search deadline."""
+    return deadline is not None and time.monotonic() >= deadline
+
+
+def _validated_budget_copy(budget: AutoMLBudget | None, *, n_trials: int) -> AutoMLBudget:
+    """Validate integral count caps on a detached per-run budget."""
+    if budget is None:
+        budget = AutoMLBudget(max_trials=n_trials)
+    elif not isinstance(budget, AutoMLBudget):
+        raise ValidationError("budget must be an AutoMLBudget.")
+    budget = replace(budget)
+    for name in ("max_trials", "max_families", "max_recipe_strategies"):
+        value = getattr(budget, name)
+        if value is None and name != "max_trials":
+            continue
+        setattr(budget, name, _positive_integer(value, name=f"budget.{name}"))
+    value = budget.max_ensemble_trials
+    if isinstance(value, (bool, np.bool_)) or not isinstance(value, Integral) or value < 0:
+        raise ValidationError("budget.max_ensemble_trials must be a non-negative integer.")
+    budget.max_ensemble_trials = int(value)
+    return budget
 
 
 def export_comparison_metrics(result: AutoMLResult, path: str | Path) -> Path:
@@ -159,6 +200,7 @@ def run_automl(
     groups: pd.Series | None = None,
     budget: AutoMLBudget | None = None,
     time_budget: float | None = None,
+    _deadline: float | None = None,
 ) -> tuple[AutoMLPlan, AutoMLResult, FitResult | None]:
     """Search model families and fold-local preprocess strategies on train only.
 
@@ -228,6 +270,8 @@ def run_automl(
         Session-global fitted preprocessing has already transformed the frame.
     refit:
         When True, refit the best candidate on all train rows after selection.
+        Native search with False returns evidence without a final fitted winner.
+        Candidate fits and nested outer-fold fits still run for scoring.
     random_state:
         Seed for randomized search and CV splitters.
     groups:
@@ -235,9 +279,19 @@ def run_automl(
     budget:
         Optional :class:`~buildml.automl.types.AutoMLBudget` caps on trials,
         families, recipes, ensembles, and wall-clock time.
+        Count caps require integers (ensemble trials may be zero). The search
+        normalizes a copy, preserving the caller budget even with overrides.
+        Multi-objective Optuna studies record both objectives and disable
+        pruning, whose intermediate reports require a single objective.
+        AutoML still ranks and refits the winner by the primary metric.
     time_budget:
         Optional wall-clock cap (seconds). Industry backends use this directly;
-        native search stops after the current trial when exceeded.
+        native search stops starting trials after the current trial when exceeded.
+        The duration must be finite and positive. A shared deadline also limits
+        ensemble trials and nested outer folds. In-flight fits and winner refits
+        finish normally; an incomplete nested estimate is refused.
+    _deadline:
+        Internal shared deadline for recursive native nested searches.
 
     Returns
     -------
@@ -259,6 +313,13 @@ def run_automl(
     on fold-train only. This is **not** NAS, not causal discovery, and not a
     fully automated AI scientist: the search space is a disclosed finite
     catalog under a trial budget.
+    Randomized search prepares each candidate as it is consumed rather than
+    storing a pending queue. Method-specific optimizers do not prepare unused
+    randomized candidates. Explicit seeds retain reproducible candidate choices.
+
+    Nested selection carries built-in group/time constraints into inner folds
+    and honors custom inner splitters. Declared sample weights apply to both
+    fitting and evaluation in the inner and outer loops.
     """
     assert_fit_partition(split_plan, "train")
     assert split_plan is not None
@@ -280,17 +341,19 @@ def run_automl(
             "selection='validation' requires a Session validation partition. "
             "Use split(..., validation_size=...) or selection='cv'/'nested'."
         )
-    if n_trials < 1:
-        raise ValidationError("n_trials must be >= 1")
+    n_trials = _positive_integer(n_trials, name="n_trials")
+    max_ensemble_bases = _positive_integer(max_ensemble_bases, name="max_ensemble_bases")
     if max_ensemble_bases < 2:
         raise ValidationError("max_ensemble_bases must be >= 2")
 
-    budget = budget or AutoMLBudget(max_trials=n_trials)
-    if budget.max_trials < 1:
-        raise ValidationError("budget.max_trials must be >= 1")
-    if time_budget is not None:
-        budget.max_time_seconds = float(time_budget)
-    n_trials = min(int(n_trials), int(budget.max_trials))
+    budget = _validated_budget_copy(budget, n_trials=n_trials)
+    seconds = time_budget if time_budget is not None else budget.max_time_seconds
+    budget.max_time_seconds = (
+        None if seconds is None else _positive_seconds(
+            seconds, name="time_budget" if time_budget is not None else "budget.max_time_seconds"
+        )
+    )
+    n_trials = min(n_trials, budget.max_trials)
 
     # Industry adapters: train-only, disclosed internal preprocessing.
     if backend == "flaml":
@@ -321,6 +384,10 @@ def run_automl(
             random_state=random_state,
             refit=refit,
         )
+
+    deadline = _deadline
+    if deadline is None and budget.max_time_seconds is not None:
+        deadline = time.monotonic() + budget.max_time_seconds
 
     effective_method: AutoMLMethod = method
     if backend == "optuna":
@@ -360,8 +427,8 @@ def run_automl(
         selection=selection,
         task=resolved_task,
         n_trials=n_trials,
-        cv=int(cv) if isinstance(cv, int) else 3,
-        outer_cv=int(outer_cv) if isinstance(outer_cv, int) else 3,
+        cv=int(cv) if isinstance(cv, int) else None,
+        outer_cv=int(outer_cv) if isinstance(outer_cv, int) else None,
         ranking_metric=metric,
         include_recipe_search=include_recipe_search,
         include_ensembles=include_ensembles,
@@ -373,21 +440,23 @@ def run_automl(
             "ensemble_mode": ensemble_mode,
             "include_industry_families": include_industry_families,
             "time_budget_seconds": budget.max_time_seconds,
+            "cv_strategy": cv_strategy,
+            "cv_splitter": (None if isinstance(cv, int) else
+                            f"{type(cv).__module__}.{type(cv).__qualname__}"),
+            "outer_cv_splitter": (None if isinstance(outer_cv, int) else
+                                  f"{type(outer_cv).__module__}.{type(outer_cv).__qualname__}"),
         },
     )
 
-    import time as _time
+    # check_cv snapshots an iterable once into its reusable splitter wrapper.
+    # Rewrapping a generator separately for every candidate exhausts it after
+    # the first trial, silently dropping the rest of the search space.
+    # Keep actual splitter objects intact; their split method remains in charge.
+    if selection != "validation" and not isinstance(cv, int):
+        cv = check_cv(cv, y=y_train, classifier=resolved_task == "classification")
 
-    started = _time.monotonic()
-
-    candidates = _build_candidates(
-        fams,
-        recipes,
-        method=effective_method,
-        n_trials=n_trials,
-        random_state=random_state,
-        include_ensembles=False,  # ensemble trials added after single ranking
-    )
+    if _deadline_expired(deadline):
+        raise ValidationError("AutoML time budget exhausted before any scored trials completed.")
 
     if effective_method == "optuna":
         trials = _run_optuna_trials(
@@ -406,7 +475,7 @@ def run_automl(
             allow_session_global_preprocess=allow_session_global_preprocess,
             random_state=random_state,
             budget=budget,
-            started=started,
+            deadline=deadline,
         )
     elif effective_method == "evolutionary":
         trials = _run_evolutionary_trials(
@@ -424,10 +493,19 @@ def run_automl(
             session_preprocess_applied=session_preprocess_applied,
             allow_session_global_preprocess=allow_session_global_preprocess,
             random_state=random_state,
-            started=started,
+            deadline=deadline,
             budget=budget,
         )
     else:
+        candidates = _build_candidates(
+            fams,
+            recipes,
+            method=effective_method,
+            n_trials=n_trials,
+            random_state=random_state,
+            include_ensembles=False,  # ensembles follow single-model ranking
+            deadline=deadline,
+        )
         trials = _score_candidates(
             dataset,
             split_plan,
@@ -442,9 +520,12 @@ def run_automl(
             allow_session_global_preprocess=allow_session_global_preprocess,
             random_state=random_state,
             fams=fams,
+            deadline=deadline,
         )
 
     if not trials:
+        if _deadline_expired(deadline):
+            raise ValidationError("AutoML time budget exhausted before any scored trials completed.")
         raise ValidationError("AutoML produced no scored trials.")
 
     trials.sort(key=lambda t: t.mean_score, reverse=higher_is_better)
@@ -469,6 +550,7 @@ def run_automl(
             random_state=random_state,
             max_bases=max_ensemble_bases,
             max_ensemble_trials=budget.max_ensemble_trials,
+            deadline=deadline,
             ensemble_mode=ensemble_mode,
         )
         if ens_trials:
@@ -488,7 +570,7 @@ def run_automl(
             method=effective_method,
             task=resolved_task,
             metric=metric,
-            n_trials=max(4, min(n_trials, 12)),
+            n_trials=n_trials,
             outer_cv=outer_cv,
             inner_cv=cv,
             cv_strategy=cv_strategy,
@@ -497,8 +579,12 @@ def run_automl(
             allow_session_global_preprocess=allow_session_global_preprocess,
             random_state=random_state,
             include_recipe_search=include_recipe_search,
+            include_ensembles=include_ensembles,
+            ensemble_mode=ensemble_mode,
+            max_ensemble_bases=max_ensemble_bases,
             preprocess=preprocess,
             budget=budget,
+            deadline=deadline,
         )
     else:
         nested_warnings = ()
@@ -520,6 +606,8 @@ def run_automl(
         ),
     )
     warnings = list(nested_warnings)
+    if _deadline_expired(deadline):
+        warnings.append("AutoML time budget exhausted; completed search trials retained.")
     limitations = _limitations(
         backend=backend,
         selection=selection,
@@ -546,18 +634,6 @@ def run_automl(
             random_state=random_state,
         )
         estimator = fit_result.estimator
-    else:
-        # Still materialize an unfitted-then-fitted estimator for the plan.
-        fit_result = _refit_best(
-            dataset,
-            split_plan,
-            best=best,
-            fams=fams,
-            task=resolved_task,
-            random_state=random_state,
-        )
-        estimator = fit_result.estimator
-
     plan = AutoMLPlan(
         task=resolved_task,
         method=effective_method,
@@ -635,28 +711,36 @@ def _build_candidates(
     n_trials: int,
     random_state: int | None,
     include_ensembles: bool,
-) -> list[_Candidate]:
+    deadline: float | None = None,
+) -> Iterator[_Candidate]:
     del include_ensembles  # reserved for future joint generation
     out: list[_Candidate] = []
     if method == "grid":
         for fam, recipe in product(fams, recipes):
+            if _deadline_expired(deadline):
+                return
             keys = list(fam.param_grid)
             if not keys:
                 out.append(_Candidate("single", fam.name, recipe, {}))
                 continue
             value_lists = [fam.param_grid[k] for k in keys]
             for values in product(*value_lists):
+                if _deadline_expired(deadline):
+                    return
                 params = dict(zip(keys, values, strict=True))
                 out.append(_Candidate("single", fam.name, recipe, params))
         if len(out) > n_trials:
             rng = np.random.default_rng(random_state)
             idx = rng.choice(len(out), size=n_trials, replace=False)
             out = [out[int(i)] for i in sorted(idx)]
-        return out
+        yield from out
+        return
 
     # randomized: sample family × recipe × params
     rng = np.random.default_rng(random_state)
     for trial_i in range(n_trials):
+        if _deadline_expired(deadline):
+            return
         fam = fams[int(rng.integers(0, len(fams)))]
         recipe = recipes[int(rng.integers(0, len(recipes)))]
         if fam.param_distributions:
@@ -668,14 +752,13 @@ def _build_candidates(
             params = dict(next(iter(sampler)))
         else:
             params = {}
-        out.append(_Candidate("single", fam.name, recipe, params))
-    return out
+        yield _Candidate("single", fam.name, recipe, params)
 
 
 def _score_candidates(
     dataset: Dataset,
     split_plan: SplitPlan,
-    candidates: list[_Candidate],
+    candidates: Iterable[_Candidate],
     *,
     task: Literal["classification", "regression"],
     metric: str,
@@ -687,10 +770,13 @@ def _score_candidates(
     allow_session_global_preprocess: bool,
     random_state: int | None,
     fams: list[ModelFamily],
+    deadline: float | None = None,
 ) -> list[AutoMLTrial]:
     fam_map = {f.name: f for f in fams}
     trials: list[AutoMLTrial] = []
     for idx, cand in enumerate(candidates):
+        if _deadline_expired(deadline):
+            break
         estimator = _build_estimator(cand, fam_map, task=task, random_state=random_state)
         score_pack = _score_one(
             dataset,
@@ -870,18 +956,20 @@ def _score_ensemble_candidates(
     max_bases: int,
     max_ensemble_trials: int,
     ensemble_mode: EnsembleMode = "voting",
+    deadline: float | None = None,
 ) -> list[AutoMLTrial]:
     """Build voting/stacking candidates from diverse top single-model families."""
     fam_map = {f.name: f for f in fams}
     recipe_map = {r.name: r for r in recipes}
     best_by_family: dict[str, AutoMLTrial] = {}
+    higher_is_better = metric not in _LOWER_IS_BETTER
     for trial in single_trials:
         if trial.kind != "single":
             continue
         cur = best_by_family.get(trial.family)
-        if cur is None or trial.mean_score > cur.mean_score:
+        if cur is None or (trial.mean_score > cur.mean_score if higher_is_better else trial.mean_score < cur.mean_score):
             best_by_family[trial.family] = trial
-    ordered = sorted(best_by_family.values(), key=lambda t: t.mean_score, reverse=True)
+    ordered = sorted(best_by_family.values(), key=lambda t: t.mean_score, reverse=higher_is_better)
     if len(ordered) < 2:
         return []
 
@@ -896,6 +984,8 @@ def _score_ensemble_candidates(
 
     for kind in kinds:
         for n_bases in range(2, min(max_bases, len(ordered)) + 1):
+            if _deadline_expired(deadline):
+                return ens_trials
             if len(ens_trials) >= max_ensemble_trials:
                 break
             bases = tuple(t.family for t in ordered[:n_bases])
@@ -960,16 +1050,16 @@ def _run_optuna_trials(
     allow_session_global_preprocess: bool,
     random_state: int | None,
     budget: AutoMLBudget,
-    started: float,
+    deadline: float | None = None,
 ) -> list[AutoMLTrial]:
     from buildml.automl.extras import require_optuna
 
     optuna = require_optuna(feature="Optuna AutoML backend")
-    import time as _time
 
     higher_is_better = metric not in _LOWER_IS_BETTER
     secondary = budget.secondary_metric
     multi_obj = bool(budget.multi_objective and secondary)
+    pruning_enabled = budget.enable_pruning and not multi_obj
     if multi_obj:
         directions = [
             "maximize" if higher_is_better else "minimize",
@@ -982,7 +1072,7 @@ def _run_optuna_trials(
     sampler = optuna.samplers.TPESampler(seed=random_state)
     pruner = (
         optuna.pruners.MedianPruner(n_startup_trials=3, n_warmup_steps=1)
-        if budget.enable_pruning
+        if pruning_enabled
         else optuna.pruners.NopPruner()
     )
     study_kwargs: dict[str, Any] = {"sampler": sampler, "pruner": pruner}
@@ -1002,11 +1092,6 @@ def _run_optuna_trials(
     trial_rows: list[AutoMLTrial] = []
 
     def _objective(trial: Any) -> float | tuple[float, float]:
-        if budget.max_time_seconds is not None:
-            elapsed = _time.monotonic() - started
-            if elapsed >= budget.max_time_seconds:
-                raise optuna.exceptions.OptunaError("AutoML time budget exceeded")
-
         fam_name = trial.suggest_categorical("family_name", [f.name for f in fams])
         fam = fam_map[fam_name]
         recipe_name = trial.suggest_categorical("recipe_strategy", [r.name for r in recipes])
@@ -1060,7 +1145,7 @@ def _run_optuna_trials(
                 std_metrics=std_metrics,
             )
         )
-        if budget.enable_pruning:
+        if pruning_enabled:
             trial.report(mean_score, step=0)
             if trial.should_prune():
                 raise optuna.exceptions.TrialPruned()
@@ -1068,7 +1153,8 @@ def _run_optuna_trials(
             return mean_score, secondary_score
         return mean_score
 
-    study.optimize(_objective, n_trials=n_trials)
+    remaining = None if deadline is None else max(0.0, deadline - time.monotonic())
+    study.optimize(_objective, n_trials=n_trials, timeout=remaining)
     return trial_rows
 
 
@@ -1088,11 +1174,10 @@ def _run_evolutionary_trials(
     session_preprocess_applied: bool,
     allow_session_global_preprocess: bool,
     random_state: int | None,
-    started: float,
+    deadline: float | None = None,
     budget: AutoMLBudget,
 ) -> list[AutoMLTrial]:
     """Evolutionary search over family × recipe × param catalog (native GA)."""
-    import time as _time
 
     from buildml.model.selection import (
         _mutate_individual,
@@ -1128,6 +1213,7 @@ def _run_evolutionary_trials(
                 n_trials=n_trials,
                 random_state=random_state,
                 include_ensembles=False,
+                deadline=deadline,
             ),
             task=task,
             metric=metric,
@@ -1139,6 +1225,7 @@ def _run_evolutionary_trials(
             allow_session_global_preprocess=allow_session_global_preprocess,
             random_state=random_state,
             fams=fams,
+            deadline=deadline,
         )
 
     rng = np.random.default_rng(random_state)
@@ -1160,15 +1247,14 @@ def _run_evolutionary_trials(
                 recipe_strategy="",
                 mean_score=float("-inf") if higher else float("inf"),
             )
-        if budget.max_time_seconds is not None:
-            if _time.monotonic() - started >= budget.max_time_seconds:
-                return AutoMLTrial(
-                    trial=-1,
-                    kind="single",
-                    family="time_budget_exhausted",
-                    recipe_strategy="",
-                    mean_score=float("-inf") if higher else float("inf"),
-                )
+        if _deadline_expired(deadline):
+            return AutoMLTrial(
+                trial=-1,
+                kind="single",
+                family="time_budget_exhausted",
+                recipe_strategy="",
+                mean_score=float("-inf") if higher else float("inf"),
+            )
 
         fam_name = str(individual.get("family_name", fams[0].name))
         recipe_name = str(individual.get("recipe_strategy", recipes[0].name))
@@ -1226,6 +1312,8 @@ def _run_evolutionary_trials(
     fitness = [_evaluate(ind) for ind in population]
 
     for _generation in range(n_generations):
+        if _deadline_expired(deadline):
+            break
         ranked_idx = sorted(
             range(len(population)),
             key=lambda i: fitness[i].mean_score,
@@ -1239,6 +1327,8 @@ def _run_evolutionary_trials(
             next_pop.append(dict(population[elite_rank]))
             next_fit.append(fitness[elite_rank])
         while len(next_pop) < population_size:
+            if _deadline_expired(deadline):
+                break
             if len(scored) >= eval_budget:
                 filler = ranked_idx[len(next_pop) % len(ranked_idx)]
                 next_pop.append(dict(population[filler]))
@@ -1281,13 +1371,20 @@ def _nested_outer_estimate(
     allow_session_global_preprocess: bool,
     random_state: int | None,
     include_recipe_search: bool,
+    include_ensembles: bool,
+    ensemble_mode: EnsembleMode,
+    max_ensemble_bases: int,
     preprocess: PreprocessRecipe | None,
     budget: AutoMLBudget,
-) -> tuple[float | None, float | None, tuple[str, ...]]:
-    """Honest outer estimate: for each outer fold, run a smaller inner AutoML."""
-    del session_preprocess_applied, allow_session_global_preprocess
-    del include_recipe_search, preprocess, budget
-    from buildml.model.selection import _resolve_splitter
+    deadline: float | None = None,
+) -> tuple[float, float, tuple[str, ...]]:
+    """Repeat the configured search on each outer-training population."""
+    from buildml.model.selection import (
+        _require_finite_cv_metric,
+        _resolve_splitter,
+        _score_predictions,
+        _validated_fold_positions,
+    )
 
     x_train, y_train, _fc, _tg, sample_weight = _feature_target_frames(
         dataset, split_plan, "train"
@@ -1304,7 +1401,9 @@ def _nested_outer_estimate(
     x_reset = x_train.reset_index(drop=True)
     y_reset = y_train.reset_index(drop=True)
     w_reset = None if sample_weight is None else sample_weight.reset_index(drop=True)
+    position_map = np.asarray(split_plan.train_indices, dtype=int)
     if row_order is not None:
+        position_map = position_map[row_order]
         x_reset = x_reset.iloc[row_order].reset_index(drop=True)
         y_reset = y_reset.iloc[row_order].reset_index(drop=True)
         if w_reset is not None:
@@ -1320,75 +1419,108 @@ def _nested_outer_estimate(
         if group_reset is not None
         else splitter.split(x_reset, y_reset)
     )
-    fam_map = {f.name: f for f in fams}
-
     for fold_id, (train_pos, eval_pos) in enumerate(split_iter):
+        if _deadline_expired(deadline):
+            raise ValidationError("AutoML time budget exhausted before nested outer evaluation completed.")
+        train_pos = _validated_fold_positions(train_pos, len(x_reset))
+        eval_pos = _validated_fold_positions(eval_pos, len(x_reset))
         if set(train_pos) & set(eval_pos):
             raise LeakageError("AutoML nested outer fold train/eval indices overlap")
-        # Build a temporary Dataset/SplitPlan-like view via index remapping:
-        # score candidates with cv_score-style logic on outer-train only, then
-        # evaluate the winner on outer-eval.
-        inner_candidates = _build_candidates(
-            fams,
-            recipes,
-            method="randomized" if method == "optuna" else method,
-            n_trials=n_trials,
-            random_state=None if random_state is None else int(random_state) + fold_id,
-            include_ensembles=False,
+        inner_groups = None if group_reset is None else group_reset.iloc[list(train_pos)]
+        inner_split = SplitPlan(
+            kind="nested_inner", test_size=None, validation_size=None,
+            random_state=None, stratify_column=None,
+            train_indices=tuple(int(i) for i in position_map[train_pos]),
+            validation_indices=(),
+            test_indices=tuple(int(i) for i in position_map[eval_pos]),
         )
-        best_score = None
-        best_cand: _Candidate | None = None
-        higher = metric not in _LOWER_IS_BETTER
-        for cand in inner_candidates:
-            estimator = _build_estimator(cand, fam_map, task=task, random_state=random_state)
-            # Manual fold CV on outer-train positions only.
-            try:
-                score = _manual_inner_cv_score(
-                    x_reset.iloc[list(train_pos)],
-                    y_reset.iloc[list(train_pos)],
-                    None if w_reset is None else w_reset.iloc[list(train_pos)],
-                    estimator,
-                    recipe=cand.recipe.recipe,
-                    task=task,
-                    metric=metric,
-                    n_splits=int(inner_cv) if isinstance(inner_cv, int) else 3,
-                    random_state=random_state,
-                )
-            except (ValidationError, ValueError, TypeError):
-                continue
-            if best_score is None or (score > best_score if higher else score < best_score):
-                best_score = score
-                best_cand = cand
-        if best_cand is None:
-            warnings.append(f"Outer fold {fold_id}: no viable inner candidate.")
-            continue
-        # Fit winner on outer-train, score outer-eval.
-        estimator = _build_estimator(best_cand, fam_map, task=task, random_state=random_state)
-        x_otr = x_reset.iloc[list(train_pos)]
-        y_otr = y_reset.iloc[list(train_pos)]
-        w_otr = None if w_reset is None else w_reset.iloc[list(train_pos)]
-        x_oe = x_reset.iloc[list(eval_pos)]
-        y_oe = y_reset.iloc[list(eval_pos)]
-        recipe = best_cand.recipe.recipe
-        if recipe is not None and not recipe.is_empty():
-            prep = build_fold_preprocessor(x_otr, recipe, y_otr)
-            x_fit = transform_fold_features(prep, x_otr)
-            x_score = transform_fold_features(prep, x_oe)
-        else:
-            x_fit, x_score = x_otr, x_oe
-        model = clone(estimator)
-        model.fit(x_fit, y_otr, **fit_kwargs_for_sample_weight(model, w_otr))
-        y_pred = model.predict(x_score)
-        from buildml.model.selection import _score_predictions
-
-        fold_metrics = _score_predictions(task, y_oe, y_pred, sample_weight=None)
+        # selection='cv' terminates nesting and reuses the actual configured
+        # search, recipe and ensemble machinery on this outer-training subset.
+        # A fresh study prevents earlier folds' objective values leaking in.
+        _, inner_result, fitted = run_automl(
+            dataset, inner_split, backend="native", method=method, selection="cv",
+            task=task, ranking_metric=metric, n_trials=n_trials, cv=inner_cv,
+            cv_strategy=cv_strategy, groups=inner_groups,
+            families=tuple(f.name for f in fams), include_industry_families=True,
+            include_recipe_search=include_recipe_search, preprocess=preprocess,
+            include_ensembles=include_ensembles, ensemble_mode=ensemble_mode,
+            max_ensemble_bases=max_ensemble_bases,
+            session_preprocess_applied=session_preprocess_applied,
+            allow_session_global_preprocess=allow_session_global_preprocess,
+            random_state=None if random_state is None else int(random_state)+fold_id,
+            budget=replace(budget, study_storage=None), refit=True,
+            _deadline=deadline,
+        )
+        if fitted is None:
+            raise ValidationError("Nested AutoML did not return a fitted outer-training model")
+        y_pred = fitted.estimator.predict(x_reset.iloc[list(eval_pos)])
+        w_eval = None if w_reset is None else w_reset.iloc[list(eval_pos)]
+        fold_metrics = _score_predictions(task, y_reset.iloc[list(eval_pos)], y_pred,
+                                          sample_weight=w_eval)
+        _require_finite_cv_metric(fold_metrics, metric, f"Nested AutoML outer fold {fold_id}")
         outer_scores.append(float(fold_metrics[metric]))
+        warnings.extend(f"Outer fold {fold_id}: {item}" for item in inner_result.warnings)
 
     if not outer_scores:
-        return None, None, tuple(warnings + ["Nested outer estimate produced no folds."])
+        raise ValidationError("Nested AutoML outer CV produced no folds")
     mean = float(np.mean(outer_scores))
     std = float(np.std(outer_scores, ddof=1)) if len(outer_scores) > 1 else 0.0
+    if not np.isfinite((mean, std)).all():
+        raise ValidationError("Nested AutoML outer scores could not be summarized as finite values")
     return mean, std, tuple(warnings)
+
+
+def _nested_inner_splits(
+    x: pd.DataFrame,
+    y: pd.Series,
+    *,
+    cv: int | Any,
+    strategy: str,
+    groups: pd.Series | None,
+    task: str,
+    random_state: int | None,
+) -> list[tuple[np.ndarray, np.ndarray]]:
+    from sklearn.model_selection import (
+        GroupKFold,
+        KFold,
+        StratifiedGroupKFold,
+        StratifiedKFold,
+        TimeSeriesSplit,
+        check_cv,
+    )
+
+    from buildml.model.selection import _validated_fold_positions
+
+    strategy = {"GroupKFold": "group", "StratifiedGroupKFold": "stratified_group",
+                "TimeSeriesSplit": "time", "KFold": "kfold",
+                "StratifiedKFold": "stratified"}.get(strategy, strategy)
+    splitter: Any
+    if not isinstance(cv, int):
+        splitter = check_cv(cv, y=y, classifier=task == "classification")
+    else:
+        count = max(2, min(cv, len(x)))
+        if strategy in {"group", "stratified_group"}:
+            if groups is None:
+                raise ValidationError("AutoML nested group CV requires aligned groups")
+            splitter = (StratifiedGroupKFold(count, shuffle=True, random_state=random_state)
+                        if strategy == "stratified_group" else GroupKFold(count))
+        elif strategy == "time":
+            splitter = TimeSeriesSplit(count)
+        elif strategy == "stratified" or (strategy not in {"kfold"} and task == "classification" and y.nunique() > 1):
+            splitter = StratifiedKFold(count, shuffle=True, random_state=random_state)
+        else:
+            splitter = KFold(count, shuffle=True, random_state=random_state)
+    raw = splitter.split(x, y, groups) if groups is not None else splitter.split(x, y)
+    positions = []
+    for train_pos, eval_pos in raw:
+        train_pos = _validated_fold_positions(train_pos, len(x))
+        eval_pos = _validated_fold_positions(eval_pos, len(x))
+        if set(train_pos) & set(eval_pos):
+            raise LeakageError("AutoML nested inner fold train/eval indices overlap")
+        positions.append((train_pos, eval_pos))
+    if not positions:
+        raise ValidationError("AutoML nested inner CV produced no folds")
+    return positions
 
 
 def _manual_inner_cv_score(
@@ -1402,20 +1534,13 @@ def _manual_inner_cv_score(
     metric: str,
     n_splits: int,
     random_state: int | None,
+    split_positions: list[tuple[np.ndarray, np.ndarray]] | None = None,
 ) -> float:
-    from sklearn.model_selection import KFold, StratifiedKFold
-
     from buildml.model.selection import _score_predictions
 
-    n_splits = max(2, min(n_splits, len(x)))
-    if task == "classification" and y.nunique() > 1:
-        splitter = StratifiedKFold(
-            n_splits=n_splits, shuffle=True, random_state=random_state
-        )
-        splits = splitter.split(x, y)
-    else:
-        splitter = KFold(n_splits=n_splits, shuffle=True, random_state=random_state)
-        splits = splitter.split(x)
+    splits = split_positions if split_positions is not None else _nested_inner_splits(
+        x, y, cv=n_splits, strategy="auto", groups=None, task=task, random_state=random_state,
+    )
 
     scores: list[float] = []
     x_reset = x.reset_index(drop=True)
@@ -1427,6 +1552,7 @@ def _manual_inner_cv_score(
         x_ev = x_reset.iloc[list(eval_pos)]
         y_ev = y_reset.iloc[list(eval_pos)]
         w_tr = None if w_reset is None else w_reset.iloc[list(train_pos)]
+        w_ev = None if w_reset is None else w_reset.iloc[list(eval_pos)]
         if recipe is not None and not recipe.is_empty():
             prep = build_fold_preprocessor(x_tr, recipe, y_tr)
             x_fit = transform_fold_features(prep, x_tr)
@@ -1436,7 +1562,7 @@ def _manual_inner_cv_score(
         model = clone(estimator)
         model.fit(x_fit, y_tr, **fit_kwargs_for_sample_weight(model, w_tr))
         y_pred = model.predict(x_score)
-        metrics = _score_predictions(task, y_ev, y_pred, sample_weight=None)
+        metrics = _score_predictions(task, y_ev, y_pred, sample_weight=w_ev)
         scores.append(float(metrics[metric]))
     if not scores:
         raise ValidationError("Inner CV produced no scores")
@@ -1637,6 +1763,11 @@ def _disclosures(
             tips.append(
                 f"Multi-objective Optuna: primary={metric}, secondary={budget.secondary_metric}."
             )
+            if budget.enable_pruning:
+                tips.append(
+                    "Pruning disabled for multi-objective Optuna studies; "
+                    "Optuna does not support intermediate trial reports with multiple objectives."
+                )
     if method == "evolutionary":
         tips.append("Native evolutionary (GA) search over family/recipe/param genes.")
     if backend in {"flaml", "autogluon"}:

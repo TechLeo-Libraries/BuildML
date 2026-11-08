@@ -259,6 +259,18 @@ def explore_dataset(
     bivariate = analyze_bivariate(analysis_frame, target=target, feature_columns=feature_columns)
     multivariate = analyze_multivariate(analysis_frame, bivariate, feature_columns=feature_columns)
     target_info = analyze_target(dataset, analysis_frame, feature_columns=feature_columns)
+    overview["interpretation"] = {
+        "purpose": "exploratory",
+        "target_type": "heuristic; confirm against the modelling objective",
+        "mutual_information": "categorical/boolean features use a discrete-feature mask",
+        "drift": "univariate aggregate screen; absence of flags is not population equivalence",
+        "associations": "raw p-values and BH-adjusted q-values within each tested family",
+    }
+    warnings.append(
+        "EDA is exploratory. Verify inferred target type; use BH-adjusted q-values "
+        "alongside effect sizes and sampling assumptions. Associations are not "
+        "causal evidence, and univariate drift cannot exclude multivariate shift."
+    )
     if target is not None and target_info and target in numeric_columns:
         invalid_target_rows = int(frame[target].isin([float("inf"), float("-inf")]).sum())
         target_info["nonfinite_target_rows"] = invalid_target_rows
@@ -298,9 +310,9 @@ def explore_dataset(
     )
     if needs_matplotlib:
         from buildml.eda.visualize import (
+            _save_figures,
             render_adaptive_plots,
             render_analysis_plots,
-            save_figures,
         )
 
         try:
@@ -315,13 +327,8 @@ def explore_dataset(
         ]
         warnings.extend(plot_errors)
         if export_figures is not None:
-            root = save_figures(figures, export_figures)
+            root, figure_paths = _save_figures(figures, export_figures)
             figure_dir = str(root)
-            figure_paths = {
-                key: str(root / f"{key}.png")
-                for key, fig in figures.items()
-                if fig is not None and not isinstance(fig, dict) and (root / f"{key}.png").exists()
-            }
 
     report = EDAReport(
         overview=overview,
@@ -469,6 +476,24 @@ def _overview(dataset: Dataset, full: pd.DataFrame, sample: pd.DataFrame) -> dic
             "has_native=True: a Polars/DuckDB handle is attached for project/filter/"
             "sample before materialization. Sklearn still needs an in-memory design matrix."
         )
+    group_names = dataset.role_columns(ColumnRole.GROUP)
+    group_summary = None
+    if len(group_names) == 1 and group_names[0] in full:
+        group_name = group_names[0]
+        labels = full[group_name]
+        group_summary = {
+            "name": group_name,
+            "groups": int(labels.nunique()),
+            "observedRows": int(labels.notna().sum()),
+        }
+
+    datetime_ranges = {}
+    for name in full.select_dtypes(include=["datetime", "datetimetz"]).columns.astype(str):
+        earliest, latest = full[name].min(), full[name].max()
+        datetime_ranges[name] = {
+            "min": earliest.isoformat() if pd.notna(earliest) else None,
+            "max": latest.isoformat() if pd.notna(latest) else None,
+        }
     return {
         "n_rows": int(len(full)),
         "n_columns": int(full.shape[1]),
@@ -490,9 +515,9 @@ def _overview(dataset: Dataset, full: pd.DataFrame, sample: pd.DataFrame) -> dic
             if not pd.api.types.is_numeric_dtype(full[c])
             and not pd.api.types.is_datetime64_any_dtype(full[c])
         ],
-        "datetime_columns": list(
-            full.select_dtypes(include=["datetime", "datetimetz"]).columns.astype(str)
-        ),
+        "datetime_columns": list(datetime_ranges),
+        "datetime_ranges": datetime_ranges,
+        "group_summary": group_summary,
     }
 
 

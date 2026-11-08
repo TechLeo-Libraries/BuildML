@@ -18,6 +18,16 @@ cost-matrix need a prior `session.fit`. Tuning on test raises
 dangerous opt-in). Allocation (`topk`, `knapsack`, `lp_allocate`) can
 read scores and costs from columns instead of the model.
 
+Model-driven allocations read costs and identifiers in the same candidate row
+order as the scores. Duplicate DataFrame labels, including MultiIndex labels,
+do not duplicate candidate rows. `selected_indices` are positions within the
+requested partition; `selected_ids` come from `id_column` when supplied,
+including when costs default to one. Otherwise IDs are the original row labels.
+Explicit cost/ID columns must exist, and costs must be finite and non-negative.
+Invalid inputs refuse during policy fit and replay without replacing prior
+policy results. Decision bundles store the policy separately from the fitted
+classifier; keep the matching classifier when replaying a model-scored policy.
+
 Resolver when `backend=None`:
 
 - F1 threshold (no `fp_cost` / `fn_cost`) → `native`

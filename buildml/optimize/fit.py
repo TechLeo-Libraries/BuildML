@@ -118,7 +118,11 @@ def fit_decision_policy(
     score_source:
         ``'model_proba'``, ``'model_decision_function'``, or ``'column'``.
     score_column, cost_column, value_column, id_column:
-        Column-driven allocation inputs when not using model scores alone.
+        Candidate metadata and optional column-score overrides. Model-driven
+        costs and identifiers use the same candidate row order as scores,
+        including duplicate row labels. Explicit id columns are honored with
+        unit costs too. Costs must be finite and non-negative; named cost/id
+        columns must exist. Score/value columns override the model source.
     knapsack_solver:
         Native knapsack fallback: ``'dp'`` or ``'greedy'``.
     objective:
@@ -483,6 +487,7 @@ def _resolve_allocation_inputs(
     objective: str,
 ) -> tuple[Any, Any, Any, str]:
     import numpy as np
+    import pandas as pd
 
     use_columns = score_source == "column" or score_column is not None or value_column is not None
     if use_columns and score_source == "column":
@@ -524,23 +529,27 @@ def _resolve_allocation_inputs(
         partition,
         score_source=score_source,
     )
+    if len(frame) != len(scores) or not frame.index.equals(index):
+        raise ValidationError("Model scores must align with allocation candidate rows.")
     if cost_column is not None:
         if cost_column not in frame.columns:
             raise ValidationError(f"cost_column {cost_column!r} not in frame.")
-        aligned = frame.loc[index]
-        costs = aligned[cost_column].to_numpy(dtype=float)
-        ids = (
-            aligned[id_column].to_numpy()
-            if id_column is not None and id_column in aligned.columns
-            else index.to_numpy()
-        )
+        costs = pd.to_numeric(frame[cost_column], errors="coerce").to_numpy(dtype=float)
+        if not np.isfinite(costs).all():
+            raise ValidationError(f"cost_column {cost_column!r} contains non-finite values.")
+        if (costs < 0).any():
+            raise ValidationError("cost_column values must be >= 0.")
     else:
         costs = np.ones(len(scores), dtype=float)
+    if id_column is not None:
+        if id_column not in frame.columns:
+            raise ValidationError(f"id_column {id_column!r} not in frame.")
+        ids = frame[id_column].to_numpy()
+    else:
         ids = index.to_numpy()
     values = scores
     if objective == "minimize_cost":
         values = -costs
     elif objective == "maximize_value" and value_column is not None:
-        aligned = frame.loc[index]
-        values = aligned[value_column].to_numpy(dtype=float)
+        values = frame[value_column].to_numpy(dtype=float)
     return values, costs, ids, score_source

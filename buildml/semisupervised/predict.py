@@ -81,6 +81,8 @@ ValidationError
         "Pseudo-labels invented during self-training / graph propagation are not "
         "written back onto Session targets unless attach=True writes a prediction column.",
     ]
+    if not getattr(plan.label_encoder_, "_buildml_raw_class_labels_", False):
+        disclosures.append("Legacy semi-supervised plan uses stored string labels; refit to preserve raw class types.")
     new_dataset: Dataset | None = None
     if attach:
         if partition != "all":

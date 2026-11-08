@@ -27,6 +27,20 @@ Proof: [prob-interval-risk](https://github.com/TechLeo-Libraries/BuildML/tree/ma
 Classical `session.calibration()` stays on the classical `fit` path.
 This plan does not replace it.
 
+Classification points and sets retain the original scalar labels: `"001"` stays
+a string, and numeric or Boolean classes keep their types. Labels that share an
+encoding key, such as integer `1` and string `"1"`, are refused before fitting.
+NumPy scalars normalize to their equivalent Python values during encoding and
+evaluation. Probability columns follow sorted string-key order in `plan.classes_`;
+`plan.to_dict()["original_classes"]` records the corresponding original values.
+New trusted bundles preserve that mapping, including bytes and dates. JSON bundle
+metadata displays non-JSON labels as strings; the joblib plan keeps their types.
+Older bundles without the mapping retain their
+recorded encoded labels; refit to recover original types, which cannot be inferred
+unambiguously from strings. MAPIE probabilities and proper scores use the fitted
+point classifier. Its conformal sets are separate uncertainty estimates, and
+classifier probabilities do not establish calibrated deployment risk.
+
 ## A first interval
 
 ```python
@@ -44,7 +58,6 @@ session = (
     Session.ingest(frame)
     .set_roles({"a": "feature", "b": "feature", "y": "target"})
     .split(test_size=0.2, validation_size=0.2, random_state=0)
-    .scale(method="standard")
 )
 
 fit = session.probabilistic.fit(
@@ -63,17 +76,31 @@ print(ev.metrics)
 session.probabilistic.save_bundle("artifacts/probabilistic_bundle")
 ```
 
-Coverage statements require exchangeable calibration and future scores and
-learning confined to the fitting subset. A train-only carve does not establish
-these assumptions: prior Session preprocessing may already have learned from
-the calibration rows, and label-stratified classification calibration needs
-its own justification. Validate that design before relying on nominal coverage.
+Conformal fitting rejects Session-global fitted preprocessing, including scaling,
+imputation, encoding and feature selection: those plans have already learned from
+the future calibration rows. Start a new Session with unprocessed numeric features.
+Membership is sampled independently of labels, and the class vocabulary is learned
+from the fitting subset. Rare classes absent there raise an actionable error rather
+than silently changing the calibration split. For posterior-standard-deviation
+bands after preprocessing, set `conformal=False` and `interval_method="posterior_std"`;
+these bands do not carry a conformal coverage claim.
+
+Coverage still requires exchangeable calibration and future scores and a suitable
+sampling design. The guard cannot detect feature engineering performed outside
+BuildML, or make dependent groups/time series exchangeable. Evaluate marginal
+coverage and interval width on representative held-out observations; subgroup
+coverage and shifted populations require their own assessment.
+Split membership follows row positions, including when pandas index labels are
+offset, permuted or duplicated. Native, MAPIE split and NGBoost regression
+contracts check that relabeling the index or changing holdout targets cannot
+alter fitted predictions or calibration. These isolation checks do not establish
+coverage for a deployment population.
 The native cutoff rejects nonfinite scores and calibration samples too small
 to support a finite interval at the requested alpha; add calibration rows or
 choose a supported alpha.
 
 On native and NGBoost, conformal carves a calibration subset from
-**train only** (stratified for classification). MAPIE owns conformal
+**train only**, without label-based stratification. MAPIE owns conformal
 calibration internally: split carve, CV+, or jackknife+. Holdout is
 for scoring intervals, not for fitting the quantile.
 

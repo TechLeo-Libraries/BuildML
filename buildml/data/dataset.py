@@ -37,7 +37,7 @@ import pandas as pd
 from buildml.core.errors import ValidationError
 from buildml.core.types import ColumnRole, DataMode, EngineName, SchemaField, TableSchema
 from buildml.core.validation import validate_column_names, validate_role_name
-from buildml.ingest.detect import schema_from_dataframe
+from buildml.ingest.detect import available_engines, schema_from_dataframe
 
 
 @dataclass
@@ -339,6 +339,10 @@ class Dataset:
         the transformed frame into a fresh native table; it does not express
         the transform as engine operations, and it costs a full pass.
 
+        A Pandas-backed source whose recorded engine is not installed stays
+        Pandas-backed after the transform. The engine choice is retained so
+        :meth:`sync_native` can rebuild the handle once that engine is installed.
+
         See Also
         --------
         sync_native : Rebuilding on an existing Dataset.
@@ -346,6 +350,8 @@ class Dataset:
         resolved_roles = dict(source.roles) if roles is None else dict(roles)
         resolved_schema = schema or schema_from_dataframe(frame)
         attach = bool(sync_native and source.engine != EngineName.PANDAS)
+        if attach and not source.has_native:
+            attach = source.engine in available_engines()
         return cls.from_pandas(
             frame,
             schema=resolved_schema,
@@ -610,17 +616,25 @@ class Dataset:
         """Return the first few rows, for looking at the data.
 
         Pulled through the native handle when there is one, so peeking at a
-        large table does not materialise it.
+        large table does not promote the full Pandas cache. Negative or
+        extremely large native counts may first execute a row-count query.
 
         Parameters
         ----------
         n:
-            How many rows.
+            Python or NumPy integer count. Negative values return all rows
+            except the final ``abs(n)`` rows; counts beyond the table size clamp
+            to all rows (positive) or no rows (negative).
 
         Returns
         -------
         pandas.DataFrame
             The first ``n`` rows.
+
+        Raises
+        ------
+        ValidationError
+            If ``n`` is not an integer or is a boolean.
 
         Notes
         -----
@@ -632,6 +646,9 @@ class Dataset:
         --------
         sample : A random draw.
         """
+        if not pd.api.types.is_integer(n):
+            raise ValidationError("head n must be an integer, excluding booleans")
+        n = int(n)
         if self.has_native:
             from buildml.data.engines import get_engine
 
@@ -814,6 +831,16 @@ class Dataset:
         diverge. Pass ``materialize=True`` when the pandas value is the one that
         matters.
 
+        **Missing observations are excluded from column counts and distinct
+        counts.** A sum with no observed values is missing, rather than zero;
+        ``std`` uses sample variance (``ddof=1``). Null group keys form their
+        own group, and unused categorical levels do not create summary rows.
+        The row count requested with ``'*'`` includes rows with missing values.
+
+        Lazy native summaries retain their own input population when further
+        summaries are created from the same connection. Derived DuckDB tables
+        still share the owner's connection and must be consumed before it closes.
+
         Examples
         --------
         .. code-block:: python
@@ -882,8 +909,9 @@ class Dataset:
         Parameters
         ----------
         mask:
-            One boolean per row, aligned to current order. Must be exactly as
-            long as the table.
+            One Python or NumPy boolean per row, aligned to current order.
+            Must be exactly as long as the table. Missing values and other
+            types are refused rather than converted by truthiness.
         materialize:
             Force a pandas result.
 
@@ -895,9 +923,9 @@ class Dataset:
         Raises
         ------
         ValidationError
-            If the mask length does not match the row count. A mismatch means
-            the mask was built against different data, so filtering by it would
-            silently keep the wrong rows.
+            If a mask value is not a boolean, or its length does not match the
+            row count. A mismatch means the mask was built against different
+            data, so filtering by it would silently keep the wrong rows.
 
         Notes
         -----
@@ -913,7 +941,10 @@ class Dataset:
         filter_expr : Pushing the predicate into the engine.
         project : Narrowing columns instead.
         """
-        mask_list = [bool(v) for v in mask]
+        mask_list = list(mask)
+        if any(not pd.api.types.is_bool(value) for value in mask_list):
+            raise ValidationError("filter mask must contain only boolean values")
+        mask_list = [bool(value) for value in mask_list]
         if len(mask_list) != self.n_rows:
             raise ValidationError(
                 f"filter mask length {len(mask_list)} does not match dataset rows {self.n_rows}"

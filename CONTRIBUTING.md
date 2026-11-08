@@ -116,10 +116,20 @@ python scripts/probe_industry_extras.py --artifact industry-probe.json
 
 Coverage `fail_under` lives in `pyproject.toml` (`[tool.coverage.report]`) and
 `scripts/coverage_ratchet.json`. It is a one-way ratchet on the **Linux CI
-monolith** (**66** active since `2.6.0`; prior 70 was a Windows isolated
-combine, not this gate): raise only from a full-suite measure
+monolith** (**70** active after corrected thread/process tracing measured at least
+71.28% across Linux Python 3.10-3.13 at `2837fb3`): raise only from a full-suite measure
 (`python scripts/run_full_coverage.py --update-ratchet` or CI
 `pytest tests --cov=buildml`); do not lower it to silence a regression.
+The separate `expanded-coverage` CI job installs
+`requirements-expanded-coverage.txt` and runs the entire suite with an **89%**
+floor, supported by passing remote Linux 90.0049% evidence at `64d53c96`.
+The broadened profile includes DoWhy and ONNX Runtime, using a compatible
+NumPy 2.4.1/SciPy 1.15.3/mlxtend 0.23.4 stack. Same-source complete local suites
+passed 85.5192% for this profile and85.3947% for its original-profile control;
+remote acceptance is tracked separately. Keep the package-wide scope, audit
+skip changes, and never add percentages from different profiles. Raise the
+expanded floor only after a passing complete
+expanded Linux run provides at least one percentage point of headroom.
 `requirements.txt` / `requirements-dev.txt` are convenience mirrors of
 `pyproject.toml` ranges; prefer `pip install -e ".[dev]"`.
 
@@ -219,3 +229,19 @@ and pick the next target, and `--path buildml/<pkg>` to audit work in progress.
 - Describe supported behavior, dependency requirements, and known limitations accurately.
 - Write public documentation for library users. Keep implementation instructions,
   release actions, and work plans in clearly labeled contributor material.
+
+Remote Linux source `64d53c96` passed the expanded coverage gate on November 8,
+2026 at **90.0049%** (57,289/63,651 lines), with 19,612 passed and 173 skipped.
+All four workflows passed. The tested merge `3e89b25` has the same tree as
+the source. [CI42510496464](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42510496464)
+
+The run used coverage.py 7.16.2 across 800 files and 566 exclusions. All
+5,735 required consumer cases executed. Python 3.12.16, the installed
+distributions, profile inputs and all 173 skips across 37 messages match
+`2608d32e`. All 3,483 warnings match after normalization.
+There were no failures, errors, collection or coverage warnings.
+
+The group-split revision changed covered lines by +32 and statements by +28.
+The accepted run reached 90% whole-package coverage. The expanded floor
+rose to 89% with 1.0049 percentage points of headroom. The core
+floor remains 70%.

@@ -158,7 +158,6 @@ def main() -> None:
                 validation_indices=list(plan.validation_indices),
                 test_indices=list(plan.test_indices),
             )
-            .scale(method="standard")
         )
         p_fit = prob_session.probabilistic.fit(
             estimator="bayesian_ridge",

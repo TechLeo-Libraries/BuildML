@@ -193,9 +193,26 @@ assert "cluster_id" in session.dataset.columns
 
 Internal metrics describe cohesion under the feature geometry:
 silhouette, Calinski-Harabasz, Davies-Bouldin, and `noise_rate` when
-DBSCAN produces `-1`. Optional bootstrap stability
+DBSCAN produces `-1`. Optional subsample stability
 (`compute_stability=True`) and an elbow curve (`compute_elbow=True`)
 stay on train.
+
+Stability samples without replacement and compares labels for the same shared
+training rows against the first subsample. Set `stability_runs` to an integer
+of at least two and `stability_sample_fraction` to a finite value in `(0, 1]`.
+`diagnostics["stability_comparisons"]` counts usable comparisons; pairs with
+fewer than two shared rows are omitted. When none are usable, the report warns
+and omits the stability scores. This diagnostic uses k-means refits even when
+the fitted clusterer uses another method; it does not change the fitted plan.
+
+OPTICS accepts an integer `optics_min_cluster_size` row count or a fraction in
+`(0, 1]`; `None` uses `optics_min_samples`. Holdout assignment remains the
+disclosed nearest training centroid approximation. Saved clusterers retain
+their fitted geometry; changing this setting requires fitting again.
+
+External reference labels may mix hashable scalar types without requiring a
+sort order. If every assigned row is noise, external agreement scores are
+unavailable and the report warns instead of reporting agreement on empty rows.
 
 `external_label_column` adds ARI / NMI **after** fit. Those labels never
 train the clusterer. Agreement measures label similarity; it does not establish causality or business value.

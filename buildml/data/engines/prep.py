@@ -20,14 +20,14 @@ buildml.ingest.detect.check_materialization : The size gate applied here.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, cast
 
 import pandas as pd
 
 from buildml.core.errors import ValidationError
 from buildml.core.types import EngineName
 from buildml.data.dataset import Dataset
-from buildml.ingest.detect import check_materialization
+from buildml.ingest.detect import available_engines, check_materialization
 
 
 @dataclass(slots=True)
@@ -132,19 +132,19 @@ def prepare_design_frame(
     hundreds of columns is never widened into pandas just to fit on twelve of
     them.
 
-    Three paths exist, and which one runs determines how much is avoided. With
-    pandas, projection is a slice of an already-loaded frame. With an attached
-    native handle, projection and sampling both run in the engine. With an
-    engine selected but no handle, only the projected columns are converted :
-    better than nothing, and a sign that ``with_engine`` should be called to
-    attach one.
+    With Pandas, projection is a slice of an already-loaded frame. With an
+    attached native handle, projection and sampling run in that engine. If an
+    installed engine is selected but no handle is attached, only the projected
+    columns are converted. If the recorded engine is missing, as can happen
+    after checkpoint restore, preparation uses Pandas and reports that fallback.
 
     Parameters
     ----------
     dataset:
         The source.
     columns:
-        Everything the design matrix needs, features and target.
+        Everything the design matrix needs, features and target. Repeated names
+        are materialized once, preserving their first-occurrence order.
     sample_rows:
         Cap rows before materialising. Changes what a fit means: see the notes.
     random_state:
@@ -203,7 +203,7 @@ def prepare_design_frame(
     MaterializePrepResult : What comes back.
     buildml.data.dataset.Dataset.project : The narrowing this performs.
     """
-    cols = [str(c) for c in columns]
+    cols = list(dict.fromkeys(str(c) for c in columns))
     if not cols:
         raise ValidationError("prepare_design_frame requires at least one column")
     missing = [c for c in cols if c not in dataset.columns]
@@ -213,9 +213,16 @@ def prepare_design_frame(
     from buildml.data.engines import get_engine
 
     engine_name = EngineName(dataset.engine)
+    disclosures: list[str] = []
+    if (
+        engine_name != EngineName.PANDAS
+        and not dataset.has_native
+        and engine_name not in available_engines()
+    ):
+        disclosures.append(f"{engine_name.value} is unavailable; used the existing Pandas frame.")
+        engine_name = EngineName.PANDAS
     engine = get_engine(engine_name)
     n_source = int(dataset.n_rows)
-    disclosures: list[str] = []
     limitations: list[str] = [
         "Sklearn fit still consumes an in-memory Pandas/NumPy design matrix; "
         "engine prep does not enable out-of-core training.",
@@ -224,7 +231,7 @@ def prepare_design_frame(
     sampled = False
 
     if engine_name == EngineName.PANDAS:
-        work = dataset._ensure_pandas().loc[:, cols]
+        work = cast(pd.DataFrame, dataset._ensure_pandas().loc[:, cols])
         disclosures.append(
             f"Projected to {len(cols)} requested column(s) before materialization."
         )
@@ -269,7 +276,7 @@ def prepare_design_frame(
         frame = frame.loc[:, [c for c in cols if c in frame.columns]]
     else:
         # Engine selected but no persistent native handle: convert projected cols only.
-        narrow = dataset._ensure_pandas().loc[:, cols]
+        narrow = cast(pd.DataFrame, dataset._ensure_pandas().loc[:, cols])
         disclosures.append(
             f"Projected to {len(cols)} requested column(s) before materialization."
         )

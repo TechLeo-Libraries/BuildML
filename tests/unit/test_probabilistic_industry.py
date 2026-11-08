@@ -21,7 +21,6 @@ def _reg_session() -> Session:
         Session.ingest(frame)
         .set_roles({"a": "feature", "b": "feature", "y": "target"})
         .split(test_size=0.2, validation_size=0.2, random_state=1)
-        .scale(method="standard")
     )
 
 

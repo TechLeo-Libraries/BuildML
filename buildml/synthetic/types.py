@@ -78,6 +78,8 @@ class ColumnSchemaSpec:
     n_null: int = 0
     categories: tuple[str, ...] = ()
     extras: dict[str, Any] = field(default_factory=dict)
+    # The trusted plan payload retains raw values; JSON keeps display labels.
+    raw_categories_: tuple[Any, ...] | None = field(default=None, repr=False)
 
     def to_dict(self) -> dict[str, Any]:
         """Serialize the object to a JSON-friendly dict for history and bundles.

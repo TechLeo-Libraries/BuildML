@@ -37,6 +37,7 @@ from typing import Any
 import numpy as np
 
 from buildml.core.errors import ValidationError
+from buildml.dl.extras import require_torch
 from buildml.rl.extras import require_gymnasium, require_imitation, require_stable_baselines3
 
 
@@ -73,6 +74,27 @@ class TabularMlpPolicy:
     n_actions: int
     method: str
     classes_: tuple[Any, ...] | None = None
+
+    def __getstate__(self) -> dict[str, Any]:
+        state = dict(self.__dict__)
+        if self.method == "gail_lite":
+            from io import BytesIO
+
+            stream = BytesIO()
+            self.model.save(stream)
+            state["model"] = None
+            state["sb3_model_zip"] = stream.getvalue()
+        return state
+
+    def __setstate__(self, state: dict[str, Any]) -> None:
+        restored = dict(state)
+        archive = restored.pop("sb3_model_zip", None)
+        if archive is not None:
+            from io import BytesIO
+
+            sb3 = require_stable_baselines3(feature="Trusted GAIL bundle loading")
+            restored["model"] = sb3.PPO.load(BytesIO(archive), device="cpu")
+        self.__dict__.update(restored)
 
     def predict(self, x: np.ndarray) -> np.ndarray:
         """Choose an action for each row of a state matrix.
@@ -185,9 +207,12 @@ def fit_tabular_bc_mlp(
     require_stable_baselines3(feature="fit_imitation(backend='industry')")
     from imitation.algorithms import bc
     from imitation.data.types import Transitions
+    from stable_baselines3.common.policies import ActorCriticPolicy
 
     obs_dim = int(x.shape[1])
     n = int(x.shape[0])
+    if n == 0:
+        raise ValidationError("Behavioral cloning requires non-empty demonstrations")
     obs_space, act_space = _build_spaces(obs_dim, n_actions)
 
     transitions = Transitions(
@@ -199,17 +224,24 @@ def fit_tabular_bc_mlp(
     )
 
     rng = np.random.default_rng(random_state)
+    torch = require_torch(feature="Industry behavioral cloning")
+    if random_state is not None:
+        torch.manual_seed(random_state)
+    policy = ActorCriticPolicy(obs_space, act_space, lr_schedule=lambda _: float(learning_rate),
+                               net_arch=[64, 64])
+    effective_batch_size = min(int(batch_size), n)
     bc_trainer = bc.BC(
         observation_space=obs_space,
         action_space=act_space,
         demonstrations=transitions,
         rng=rng,
-        policy_kwargs={"net_arch": [64, 64]},
+        policy=policy,
+        batch_size=effective_batch_size,
+        optimizer_kwargs={"lr": float(learning_rate)},
     )
     bc_trainer.train(
         n_epochs=int(n_epochs),
-        batch_size=int(batch_size),
-        learning_rate=float(learning_rate),
+        progress_bar=False,
     )
     policy_model = bc_trainer.policy
     pred = policy_model.predict(np.asarray(x, dtype=np.float32), deterministic=True)[0]
@@ -222,6 +254,7 @@ def fit_tabular_bc_mlp(
         "Honesty: tabular BC from tables: not inverse RL, not DAgger, not robotics.",
         "Offline RL / batch RL are out of scope; this is supervised cloning depth.",
         f"method=bc_mlp; n_epochs={n_epochs}; obs_dim={obs_dim}; n_actions={n_actions}.",
+        f"batch_size={effective_batch_size} (requested {batch_size}); learning_rate={learning_rate}.",
     ]
     warnings: list[str] = []
     wrapper = TabularMlpPolicy(
@@ -241,6 +274,7 @@ def fit_tabular_gail_lite(
     n_actions: int,
     total_timesteps: int = 8_000,
     random_state: int | None = 0,
+    allow_variable_horizon: bool = False,
 ) -> tuple[TabularMlpPolicy, float, list[str], list[str]]:
     """Imitate by learning to be indistinguishable from the demonstrator.
 
@@ -271,7 +305,10 @@ def fit_tabular_gail_lite(
         The interaction budget. Small by deliberate default; GAIL normally
         wants far more.
     random_state:
-        Seed for the generator policy.
+        Seed for the generator policy and reward network initialization.
+    allow_variable_horizon:
+        Explicitly accept variable episode lengths and their reward-leakage
+        risk. Defaults to refusing them through imitation's guard.
 
     Returns
     -------
@@ -310,6 +347,8 @@ def fit_tabular_gail_lite(
     --------
     fit_tabular_bc_mlp : Supervised cloning, stabler and much cheaper.
     """
+    if not isinstance(allow_variable_horizon, bool):
+        raise ValidationError("allow_variable_horizon must be an explicit boolean")
     require_imitation(feature="fit_imitation(method='gail_lite')")
     sb3 = require_stable_baselines3(feature="fit_imitation(method='gail_lite')")
     gymnasium = require_gymnasium(feature="fit_imitation(method='gail_lite')")
@@ -317,6 +356,7 @@ def fit_tabular_gail_lite(
     from imitation.algorithms.adversarial.gail import GAIL
     from imitation.data.types import Transitions
     from imitation.rewards.reward_nets import BasicRewardNet
+    from stable_baselines3.common.vec_env import DummyVecEnv
 
     obs_dim = int(x.shape[1])
     n = int(x.shape[0])
@@ -328,6 +368,7 @@ def fit_tabular_gail_lite(
             f"gail_lite requires a valid Gymnasium env_id={env_id!r}: {exc}"
         ) from exc
 
+    vector_env = None
     try:
         env_obs_dim = int(np.prod(env.observation_space.shape))
         if env_obs_dim != obs_dim:
@@ -352,27 +393,40 @@ def fit_tabular_gail_lite(
             dones=np.ones(n, dtype=bool),
         )
 
+        if random_state is not None:
+            require_torch(feature="GAIL reward network").manual_seed(random_state)
         reward_net = BasicRewardNet(
             observation_space=env.observation_space,
             action_space=env.action_space,
         )
+        vector_env = DummyVecEnv([lambda: env])
         gail = GAIL(
             demonstrations=transitions,
             demo_batch_size=min(32, max(1, n)),
             gen_replay_buffer_capacity=512,
             n_disc_updates_per_round=2,
-            venv=env,
+            venv=vector_env,
             reward_net=reward_net,
+            allow_variable_horizon=allow_variable_horizon,
             gen_algo=sb3.PPO(
                 "MlpPolicy",
-                env,
+                vector_env,
                 verbose=0,
                 seed=random_state,
                 n_steps=128,
                 batch_size=64,
             ),
         )
-        gail.train(total_timesteps=int(total_timesteps))
+        try:
+            gail.train(total_timesteps=int(total_timesteps))
+        except ValueError as exc:
+            if "Episodes of different length" in str(exc):
+                raise ValidationError(
+                    "GAIL detected variable episode lengths, which can leak reward information. "
+                    "Use a suitable fixed-horizon environment or explicitly accept this risk "
+                    "with allow_variable_horizon=True."
+                ) from exc
+            raise
 
         policy_model = gail.gen_algo
         pred_raw = policy_model.predict(
@@ -391,6 +445,12 @@ def fit_tabular_gail_lite(
         warnings = [
             "GAIL-lite uses minimal timesteps; expect variance vs sklearn BC.",
         ]
+        disclosures.append(f"GAIL requested {total_timesteps} timesteps; actual generator steps={policy_model.num_timesteps}.")
+        if allow_variable_horizon:
+            warnings.append(
+                "Variable episode lengths were explicitly accepted; termination may leak reward information. "
+                "Tabular demonstrations are single-step transitions, not recorded expert trajectories."
+            )
         wrapper = TabularMlpPolicy(
             model=policy_model,
             obs_dim=obs_dim,
@@ -399,4 +459,7 @@ def fit_tabular_gail_lite(
         )
         return wrapper, train_score, disclosures, warnings
     finally:
-        env.close()
+        if vector_env is not None:
+            vector_env.close()
+        else:
+            env.close()

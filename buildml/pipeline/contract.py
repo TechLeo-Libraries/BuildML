@@ -454,7 +454,8 @@ def input_columns_from_plans(plans: dict[str, Any] | None) -> list[str]:
     ``city_London``, ``city_Paris``, and so on. Those outputs are *not* inputs;
     requiring them would demand that the caller do the encoding the bundle
     exists to perform. Engineered names are collected across all plans and
-    subtracted from the result.
+    subtracted from the result. Encoding outputs that reuse one of that same
+    plan's source names still require the raw source, as with ordinal encoding.
 
     Parameters
     ----------
@@ -493,7 +494,12 @@ def input_columns_from_plans(plans: dict[str, Any] | None) -> list[str]:
         names = getattr(encode_plan, "feature_names_", None)
         if names is None and isinstance(encode_plan, dict):
             names = encode_plan.get("feature_names_")
-        engineered.update(str(c) for c in names or [])
+        sources = getattr(encode_plan, "columns", None)
+        if sources is None and isinstance(encode_plan, dict):
+            sources = encode_plan.get("columns")
+        # Ordinal and other safe source-name reuse still need the raw input.
+        source_names = {str(c) for c in sources or []}
+        engineered.update(str(c) for c in names or [] if str(c) not in source_names)
 
     binning_plan = plans.get("binning_plan")
     if binning_plan is not None:
@@ -572,6 +578,7 @@ def build_schema_contract(
     target_column: str | None,
     input_columns: list[str] | tuple[str, ...] | None = None,
     encoded_numeric_columns: list[str] | tuple[str, ...] | None = None,
+    input_dtypes: dict[str, str] | None = None,
 ) -> SchemaContract:
     """Derive the contract from what was known at training time.
 
@@ -605,6 +612,10 @@ def build_schema_contract(
         Feature columns that are numeric post-transform. Inferred when omitted,
         by taking feature columns that are already numeric or that do not appear
         among the inputs: the latter being engineered outputs.
+    input_dtypes:
+        Original raw types for declared input columns whose types changed during
+        preprocessing. These override the transformed training schema; numeric
+        encoded outputs are checked separately at the features stage.
 
     Returns
     -------
@@ -613,9 +624,9 @@ def build_schema_contract(
 
     Notes
     -----
-    **A contract with no schema still checks column presence.** Types are
-    skipped, roles are skipped, and missing columns are still caught, which is
-    the most common failure anyway.
+    **A contract with no schema still checks column presence.** Raw types can
+    also be supplied through ``input_dtypes``; unknown types are skipped.
+    Missing columns are still caught.
 
     **The inference of ``encoded_numeric_columns`` is a heuristic**, and a good
     one for the standard plans. Pass the list explicitly when a custom transform
@@ -663,6 +674,8 @@ def build_schema_contract(
         if ordered:
             columns = tuple(ordered)
 
+    if input_dtypes:
+        dtypes.update({name: dtype for name, dtype in input_dtypes.items() if name in columns})
     families = {name: dtype_family(dtype) for name, dtype in dtypes.items()}
     # Ensure every declared column has a family entry.
     for name in columns:
@@ -679,7 +692,8 @@ def build_schema_contract(
             if families.get(name) == "numeric" or name not in columns
         )
     for name in encoded:
-        families[name] = "numeric"
+        if name not in columns:
+            families[name] = "numeric"
 
     required_roles = tuple(
         sorted(
@@ -959,6 +973,7 @@ def coerce_score_frame(
     contract: SchemaContract | None,
     *,
     stage: Literal["input", "features"] = "input",
+    stringify_columns: list[str] | tuple[str, ...] = (),
 ) -> tuple[pd.DataFrame, SchemaContractValidation]:
     """Convert what can safely be converted, then report what is left.
 
@@ -982,6 +997,11 @@ def coerce_score_frame(
         The contract to coerce toward, or ``None`` to copy and skip.
     stage:
         Which expectation to use, as in :func:`validate_score_frame`.
+    stringify_columns:
+        Raw categorical inputs consumed by a native encode plan. At the input
+        stage their string conversion uses the encoder's ``astype(str)`` policy
+        so nullable-string normalization cannot change fitted category labels.
+        Numeric validation and the features stage are unaffected.
 
     Returns
     -------
@@ -998,11 +1018,9 @@ def coerce_score_frame(
     **Boolean coercion requires strictly 0 and 1.** A column of arbitrary
     integers is not silently truncated to booleans.
 
-    **Numeric coercion uses ``errors='coerce'``, which turns unparseable values
-    into nulls.** A column of mostly-numeric strings with a few ``'N/A'``
-    entries converts, and those entries become missing. That is usually what was
-    meant, and it is worth knowing it happened: check ``coerced_columns``
-    against your expectations rather than assuming a clean conversion.
+    **Numeric coercion refuses to discard non-null values.** If conversion
+    would turn a supplied value into null, the original column is retained and
+    validation fails. Existing null values remain allowed by this conversion.
 
     **Coercion is not free on large frames.** It touches every expected column;
     skip it when the source already produces correct types.
@@ -1037,6 +1055,7 @@ def coerce_score_frame(
 
     out = frame.copy()
     coerced: list[str] = []
+    conversion_errors: dict[str, str] = {}
     expected = (
         list(contract.columns)
         if stage == "input" and contract.columns
@@ -1045,6 +1064,7 @@ def coerce_score_frame(
     if not expected:
         expected = list(contract.feature_columns)
     encoded_numeric = set(contract.encoded_numeric_columns)
+    stringify = set(stringify_columns) if stage == "input" else set()
 
     for column in expected:
         if column not in out.columns:
@@ -1056,7 +1076,9 @@ def coerce_score_frame(
         try:
             if family == "numeric":
                 converted = pd.to_numeric(series, errors="coerce")
-                # Only accept when at least one non-null value converted or all null.
+                if (series.notna() & converted.isna()).any():
+                    conversion_errors[column] = "numeric conversion would discard non-null values"
+                    continue
                 if converted.notna().any() or series.isna().all():
                     out[column] = converted
                     coerced.append(column)
@@ -1064,21 +1086,39 @@ def coerce_score_frame(
                 if pd.api.types.is_bool_dtype(series):
                     continue
                 numeric = pd.to_numeric(series, errors="coerce")
-                if numeric.dropna().isin([0, 1]).all():
-                    out[column] = numeric.astype("boolean")
-                    coerced.append(column)
+                if (series.notna() & numeric.isna()).any() or not numeric.dropna().isin([0, 1]).all():
+                    conversion_errors[column] = "boolean values must be 0, 1, or null"
+                    continue
+                out[column] = numeric.astype("boolean")
+                coerced.append(column)
             elif family == "datetime":
                 converted = pd.to_datetime(series, errors="coerce")
+                if (series.notna() & converted.isna()).any():
+                    conversion_errors[column] = "datetime conversion would discard non-null values"
+                    continue
                 if converted.notna().any() or series.isna().all():
                     out[column] = converted
                     coerced.append(column)
             elif family in {"string", "categorical"}:
-                out[column] = series.astype("string")
+                out[column] = series.astype(str) if column in stringify else series.astype("string")
                 coerced.append(column)
         except Exception:  # noqa: BLE001 - leave column unchanged
             continue
 
     result = validate_score_frame(out, contract, stage=stage, strict_types=True)
+    if conversion_errors:
+        result.ok = False
+        already_wrong = {item["column"] for item in result.wrong_type_columns}
+        for column, reason in conversion_errors.items():
+            if column not in already_wrong:
+                result.wrong_type_columns.append({
+                    "column": column,
+                    "expected_family": contract.dtype_families.get(column, "other"),
+                    "actual_family": dtype_family(out[column].dtype),
+                    "actual_dtype": str(out[column].dtype),
+                    "reason": reason,
+                })
+        result.warnings.append(f"Refused lossy or invalid coercion: {conversion_errors}")
     result.coerced_columns = coerced
     if coerced:
         result.warnings.append(f"Coerced columns toward contract families: {coerced}")

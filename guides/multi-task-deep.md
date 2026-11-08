@@ -31,6 +31,12 @@ Proof: [multi-target-underwriting](https://github.com/TechLeo-Libraries/BuildML/
 Prefer two or more `role="target"` columns. `task="auto"` infers
 classification vs regression from dtypes and cardinality. Set the task explicitly when integer-valued outcomes make inference ambiguous.
 
+An explicit `task="regression"` applies to every head, even when a target has
+only a few distinct numeric values. An explicit `task="classification"` keeps
+numeric class codes as classes even when there are many of them. The same task
+choice controls target encoding, Torch head construction and evaluation metrics.
+Per-target inference remains available for mixed Torch tasks.
+
 `split(stratify=True)` still goes through the single-target gate. With
 several target roles, split without stratification (or stratify on a
 temporary single-target setup, then restore roles).
@@ -86,6 +92,10 @@ refits. `attach=True` on predict can write columns with prefix
 Industry is available when at least one of XGBoost, LightGBM, or
 CatBoost imports in a subprocess. Chains stay on sklearn. There is no
 ClassifierChain on a GBDT backend.
+
+LightGBM regression fits one independent scalar regressor per target. It does
+not learn cross-target interactions. XGBoost and CatBoost regression use their
+native multi-target support; all methods preserve the requested target order.
 
 Torch is a shared MLP trunk with per-task heads and joint training.
 `epochs` defaults to 60, `batch_size` to 64, `device` to `"cpu"`. Task relationships and the shared architecture are specified by the caller.
@@ -145,6 +155,12 @@ target contract, per-task label encoders, backend metadata. A Session
 checkpoint does not embed it. Reload the table with `checkpoint_load`.
 Reload the learner with `session.multitask.load_bundle`. `trusted=True`
 only for a file you created or whose source and contents you trust.
+
+Fixed classification/regression bundles must have matching per-head task
+metadata. Older bundles with contradictory kinds refuse before replacing a
+working plan and require refitting. Loading cannot repair a Torch learner that
+was trained with a regression head where classification was requested. Consistent
+older bundles retain their predictions.
 
 [Artifacts](artifacts-checkpoints-bundles.md)
 

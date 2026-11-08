@@ -7,6 +7,15 @@ pip install buildml
 Query the train pool, then you label. Unlabeled means target NaN.
 Validation and test are never queried. A person or a separate labeling system supplies the queried labels. Default strategy is margin. `label_budget` defaults to 50.
 
+New learners preserve raw class identities through human labeling rounds, refits
+and trusted bundles. Numeric-looking strings remain strings; numeric and boolean
+labels retain their types. With refitting enabled (the default), new classes trigger a full refit with
+the expanded vocabulary. Fitting refuses incompatible mixed label types. Evaluation scores raw
+labels and includes unseen holdout classes without confusing strings with numbers.
+Legacy learners retain their original string class ordering and numeric decoding,
+including during labeling refits; evaluation emits a notice. Start a fresh fit to
+recover raw identities from an older bundle.
+
 [Active learning deep](active-learning-deep.md) ·
 Runnable example: [`examples/activelearning_margin_loop.py`](../examples/activelearning_margin_loop.py) ·
 Evidence: [active-labeling-budget](https://github.com/TechLeo-Libraries/BuildML/tree/main/proofs/active-labeling-budget)
@@ -40,7 +49,7 @@ session = (
 full = session.to_pandas().copy()
 train_idx = list(session.split_plan.train_indices)
 blank = rng.choice(train_idx, size=int(0.85 * len(train_idx)), replace=False)
-full.loc[blank, "label"] = np.nan
+full.iloc[blank, full.columns.get_loc("label")] = np.nan
 # Re-ingest the masked table while preserving the original row assignments.
 session = (Session.ingest(full)
     .set_roles(dict(session.dataset.roles))
@@ -61,7 +70,7 @@ for round_i in range(3):
     if not q.indices:
         break
     # Example-only simulated oracle: production code must use a human labeler.
-    human_labels = [int(truth.loc[i]) for i in q.indices]
+    human_labels = [int(truth.iloc[i]) for i in q.indices]
     labeled = session.active_learning.label_rows(indices=q.indices, labels=human_labels)
     print(round_i, labeled.n_newly_labeled, labeled.n_labeled_now, labeled.budget_remaining)
 

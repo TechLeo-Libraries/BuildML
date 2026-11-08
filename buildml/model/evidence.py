@@ -726,11 +726,16 @@ def evidence_for_plot_board(
                 )
             )
     else:
+        rmse = metrics.get("rmse")
+        bias = metrics.get("residual_bias")
+        correlation = metrics.get("heteroscedasticity_correlation")
+        correlation_text = "unavailable" if correlation is None else _fmt(correlation)
         findings.append(
             diagnostic_finding(
                 "regression-errors",
                 "Regression residual behavior was measured",
-                f"Observed RMSE={_fmt(metrics.get('rmse'))}, mean residual={_fmt(metrics.get('residual_bias'))}, and absolute-residual correlation={_fmt(metrics.get('heteroscedasticity_correlation'))}.",
+                f"Observed RMSE={_fmt(rmse)}, mean residual={_fmt(bias)}, "
+                f"and absolute-residual correlation={correlation_text}.",
                 evidence=(metric_evidence("residual-summary", "Residual summary", dict(metrics), source=source, limitations=("Residual patterns on one partition may not persist after distribution shift.",)),),
             )
         )
@@ -744,6 +749,33 @@ def evidence_for_plot_board(
                 parameters={"partition": partition, "include_learning_curve": True},
             )
         )
+        if (
+            isinstance(bias, (int, float))
+            and isinstance(rmse, (int, float))
+            and abs(bias) > 0.25 * (rmse + 1e-12)
+        ):
+            recommendations.append(
+                diagnostic_recommendation(
+                    "review-residual-bias",
+                    "Inspect systematic residual bias",
+                    f"The mean residual ({bias:.4g}) is large relative to RMSE ({rmse:.4g}).",
+                    finding_keys=("regression-errors",),
+                    operation="eval_plots",
+                    parameters={"partition": partition},
+                )
+            )
+        if isinstance(correlation, (int, float)) and abs(correlation) > 0.35:
+            recommendations.append(
+                diagnostic_recommendation(
+                    "review-residual-spread",
+                    "Inspect how error magnitude varies with the prediction",
+                    f"Absolute residuals correlate with predictions at {correlation:.2f} on this partition.",
+                    finding_keys=("regression-errors",),
+                    operation="eval_plots",
+                    parameters={"partition": partition},
+                    caveats=("This correlation is a screening measure and does not establish a variance model.",),
+                )
+            )
     limitations = [
         f"Visual and numeric evidence describes partition={partition}.",
         "Plots are diagnostic estimates, not causal or deployment-validity claims.",

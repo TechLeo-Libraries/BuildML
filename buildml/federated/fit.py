@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from copy import deepcopy
 from dataclasses import dataclass, field
+from numbers import Real
+from sys import float_info
 from typing import Any
 
 import numpy as np
@@ -18,6 +20,7 @@ from sklearn.linear_model import (
 from sklearn.metrics import accuracy_score, mean_squared_error, r2_score
 
 from buildml.core.errors import ValidationError
+from buildml.core.validation import _positive_integer
 from buildml.data.dataset import Dataset
 from buildml.data.splits import SplitPlan, assert_fit_partition, frame_for_partition
 from buildml.federated.catalog import resolve_backend
@@ -224,14 +227,16 @@ def _prepare_federated_context(
             f"Unknown federated estimator={estimator!r}. Supported: "
             f"{sorted(_CLASSIFIERS | _REGRESSORS)}."
         )
-    if int(n_rounds) < 1:
-        raise ValidationError("n_rounds must be >= 1.")
-    if int(local_epochs) < 1:
-        raise ValidationError("local_epochs must be >= 1.")
-    if not (0.0 < float(client_fraction) <= 1.0):
-        raise ValidationError("client_fraction must be in (0, 1].")
-    if float(mu) < 0.0:
-        raise ValidationError("mu (FedProx proximal strength) must be >= 0.")
+    _positive_integer(n_rounds, name="n_rounds")
+    _positive_integer(local_epochs, name="local_epochs")
+    if (
+        isinstance(client_fraction, (bool, np.bool_))
+        or not isinstance(client_fraction, Real)
+        or not 0.0 < client_fraction <= 1.0
+    ):
+        raise ValidationError("client_fraction must be a real number in (0, 1].")
+    if isinstance(mu, (bool, np.bool_)) or not isinstance(mu, Real) or not 0.0 <= mu <= float_info.max:
+        raise ValidationError("mu (FedProx proximal strength) must be finite and >= 0.")
     if method_key == "fedprox" and float(mu) == 0.0:
         raise ValidationError(
             "method='fedprox' requires mu > 0 (proximal strength toward the "
@@ -239,8 +244,7 @@ def _prepare_federated_context(
         )
     if method_key == "fedavg":
         mu = 0.0
-    if int(min_client_rows) < 1:
-        raise ValidationError("min_client_rows must be >= 1.")
+    min_client_rows = _positive_integer(min_client_rows, name="min_client_rows")
 
     resolved_task = _resolve_task(est_key, task)
     disclosures: list[str] = []
@@ -268,7 +272,7 @@ def _prepare_federated_context(
     skipped_small = 0
     for cid in all_client_ids:
         n = int((train[client_col] == cid).sum())
-        if n >= int(min_client_rows):
+        if n >= min_client_rows:
             eligible.append(cid)
         else:
             skipped_small += 1
@@ -416,7 +420,7 @@ def _fit_native(
         aggregated = average_linear_params(client_params, weights)
         set_linear_params(ctx.global_est, aggregated)
         if ctx.classes_tuple is not None and hasattr(ctx.global_est, "classes_"):
-            ctx.global_est.classes_ = np.asarray(ctx.label_encoder.classes_)
+            ctx.global_est.classes_ = np.arange(len(ctx.classes_tuple))
 
         mean_client = float(np.mean(client_metrics)) if client_metrics else None
         final_metric = mean_client

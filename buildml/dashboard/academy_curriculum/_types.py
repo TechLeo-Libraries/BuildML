@@ -40,42 +40,47 @@ def lesson(
     slug: str,
     stage: int,
     title: str,
-    plain: tuple[str, ...] | list[str],
-    technical: tuple[str, ...] | list[str],
-    why: tuple[str, ...] | list[str],
+    plain: str | tuple[str, ...] | list[str],
+    technical: str | tuple[str, ...] | list[str],
+    why: str | tuple[str, ...] | list[str],
     formula: str | None,
     calculation: TextFn,
     session_evidence: TextFn,
     example_code: TextFn,
-    what_to_change: ListFn | tuple[str, ...] | list[str],
-    pitfalls: ListFn | tuple[str, ...] | list[str],
+    what_to_change: ListFn | str | tuple[str, ...] | list[str],
+    pitfalls: ListFn | str | tuple[str, ...] | list[str],
     decide: TextFn | str,
-    read_steps: ListFn | tuple[str, ...] | list[str],
+    read_steps: ListFn | str | tuple[str, ...] | list[str],
     concept_key: str | None = None,
     search_terms: tuple[str, ...] = (),
     order: int = 0,
     tags: tuple[str, ...] = (),
 ) -> LessonSpec:
-    """Build a lesson with static or adaptive callables."""
+    """Build a lesson, preserving scalar prose as one paragraph and sequence order."""
+
+    def _as_paragraphs(value: str | tuple[str, ...] | list[str]) -> tuple[str, ...]:
+        if isinstance(value, str):
+            return (value,) if value else ()
+        return tuple(value)
 
     def _as_text(value: TextFn | str) -> TextFn:
         if callable(value):
             return value
         return lambda _ctx, text=str(value): text
 
-    def _as_list(value: ListFn | tuple[str, ...] | list[str]) -> ListFn:
+    def _as_list(value: ListFn | str | tuple[str, ...] | list[str]) -> ListFn:
         if callable(value):
             return value
-        items = tuple(str(x) for x in value)
+        items = tuple(str(x) for x in _as_paragraphs(value))
         return lambda _ctx, fixed=items: list(fixed)
 
     return LessonSpec(
         slug=slug,
         stage=stage,
         title=title,
-        plain=tuple(plain),
-        technical=tuple(technical),
-        why=tuple(why),
+        plain=_as_paragraphs(plain),
+        technical=_as_paragraphs(technical),
+        why=_as_paragraphs(why),
         formula=formula,
         calculation=calculation,
         session_evidence=session_evidence,

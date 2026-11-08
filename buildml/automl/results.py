@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Literal
+from typing import Any, Literal, cast
 
 import pandas as pd
 
@@ -172,7 +172,8 @@ class AutoMLResult:
     def leaderboard(self, *, top_n: int | None = None) -> pd.DataFrame:
         """Return a rich AutoML leaderboard with selection / nested-CV fields.
 
-        Ranks trials by ``mean_score`` (descending), adds ``rank`` and
+        Ranks finite scores in the metric's preferred direction, places unavailable
+        scores last, adds ``rank`` and
         ``gap_to_best``, and broadcasts selection-mode disclosures
         (``selection``, ``outer_score_mean`` / ``outer_score_std``) so a
         default ``selection='cv'`` run cannot be mistaken for nested outer
@@ -189,10 +190,17 @@ class AutoMLResult:
             Leaderboard with family, recipe, kind, scores, selection context,
             and flattened ``param_*`` columns.
         """
+        import math
+
+        from buildml.model.selection import _LOWER_IS_BETTER
+
+        lower_is_better = self.ranking_metric in _LOWER_IS_BETTER
         ranked = sorted(
             self.trials,
-            key=lambda t: (
-                -1.0 if t.mean_score != t.mean_score else -float(t.mean_score)
+            key=lambda trial: (
+                not math.isfinite(float(trial.mean_score)),
+                (float(trial.mean_score) if lower_is_better else -float(trial.mean_score))
+                if math.isfinite(float(trial.mean_score)) else 0.0,
             ),
         )
         best = ranked[0].mean_score if ranked else float("nan")
@@ -201,7 +209,7 @@ class AutoMLResult:
             gap = (
                 float("nan")
                 if best != best or t.mean_score != t.mean_score
-                else float(best - t.mean_score)
+                else float(t.mean_score - best if lower_is_better else best - t.mean_score)
             )
             rows.append(
                 {
@@ -225,7 +233,7 @@ class AutoMLResult:
             )
             if top_n is not None and len(rows) >= int(top_n):
                 break
-        return pd.DataFrame(rows)
+        return cast(pd.DataFrame, pd.DataFrame(rows))
 
     def to_dict(self) -> dict[str, Any]:
         """Serialize the full search outcome for history and bundle metadata.

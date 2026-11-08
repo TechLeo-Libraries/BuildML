@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
+from math import isfinite
 from typing import Any
 
 import pandas as pd
+from sklearn.metrics import f1_score
 
 from buildml.automl.extras import require_flaml
 from buildml.automl.results import AutoMLPlan, AutoMLResult, AutoMLTrial
@@ -12,7 +15,6 @@ from buildml.automl.types import AutoMLBudget, AutoMLConfig, AutoMLSelection
 from buildml.core.errors import ValidationError
 from buildml.data.dataset import Dataset
 from buildml.data.splits import SplitPlan, assert_fit_partition
-from buildml.model.selection import _LOWER_IS_BETTER
 from buildml.model.supervised import (
     FitResult,
     TaskType,
@@ -50,8 +52,9 @@ def run_flaml_adapter(
     task:
         ``classification``, ``regression``, or ``auto`` to infer from the target.
     selection:
-        ``cv`` (train-only internal scoring), or ``validation`` to re-rank on
-        the Session validation partition. ``nested`` is not supported.
+        ``cv`` reports train-only internal scoring. ``validation`` evaluates
+        the selected model on the Session validation partition. Trial rows
+        summarize each learner's best internal score.
     ranking_metric:
         Metric passed to FLAML; converted to FLAML loss orientation internally.
     time_budget:
@@ -78,6 +81,7 @@ def run_flaml_adapter(
     """
     require_flaml(feature="FLAML AutoML backend")
     from flaml import AutoML as FlamlAutoML
+    from flaml.automl.ml import is_min_metric
 
     assert_fit_partition(split_plan, "train")
     if selection == "nested":
@@ -101,25 +105,21 @@ def run_flaml_adapter(
     resolved_task = _infer_task(y_train, task, None)
     flaml_task = "classification" if resolved_task == "classification" else "regression"
     metric = ranking_metric or ("r2" if resolved_task == "regression" else "f1_weighted")
-    higher_is_better = metric not in _LOWER_IS_BETTER
-
-    frame = x_train.copy()
-    frame[target] = y_train.values
-    if sample_weight is not None:
-        frame["_sample_weight"] = sample_weight.values
+    provider_metric = _flaml_metric(metric)
+    higher_is_better = not isinstance(provider_metric, str) or not is_min_metric(provider_metric)
 
     automl = FlamlAutoML()
     fit_kwargs: dict[str, Any] = {
-        "X_train": frame.drop(columns=[target] + (["_sample_weight"] if sample_weight is not None else [])),
-        "y_train": frame[target],
+        "X_train": x_train.copy(),
+        "y_train": y_train.copy(),
         "task": flaml_task,
         "time_budget": float(seconds),
-        "metric": _flaml_metric(metric),
+        "metric": provider_metric,
         "seed": random_state,
         "verbose": 0,
     }
     if sample_weight is not None:
-        fit_kwargs["sample_weight"] = frame["_sample_weight"]
+        fit_kwargs["sample_weight"] = sample_weight.to_numpy(copy=True)
 
     automl.fit(**fit_kwargs)
 
@@ -130,17 +130,9 @@ def run_flaml_adapter(
     best_estimator = _FlamlSklearnWrapper(automl, feature_cols=feature_cols)
     best_config = dict(getattr(automl, "best_config", {}) or {})
     best_loss = float(getattr(automl, "best_loss", float("nan")))
-    if higher_is_better and best_loss == best_loss:  # not nan
-        best_score = -best_loss if metric in {"log_loss", "mse", "mae", "rmse"} else -best_loss
-    else:
-        best_score = -best_loss if not higher_is_better else -best_loss
-
-    # FLAML minimizes loss; convert to ranking score orientation.
-    if not higher_is_better:
-        display_score = best_loss if best_loss == best_loss else float("nan")
-    else:
-        display_score = -best_loss if best_loss == best_loss else float("nan")
-
+    if not isfinite(best_loss):
+        raise ValidationError("FLAML AutoML finished without a finite internal validation loss")
+    display_score = _flaml_score(best_loss, higher_is_better=higher_is_better)
     trials = _flaml_trials(automl, metric=metric, higher_is_better=higher_is_better)
 
     fit_result: FitResult | None = None
@@ -165,6 +157,19 @@ def run_flaml_adapter(
         mean_metrics = {metric: display_score}
         std_metrics = {metric: 0.0}
 
+    if not trials:
+        trials.append(AutoMLTrial(
+            trial=0,
+            kind="single",
+            family=getattr(automl, "best_estimator", None) or "flaml",
+            recipe_strategy="flaml_internal",
+            params=best_config,
+            mean_score=display_score,
+            std_score=std_score,
+            mean_metrics=mean_metrics,
+            std_metrics=std_metrics,
+        ))
+
     config = AutoMLConfig(
         method="randomized",
         selection=selection,
@@ -185,24 +190,13 @@ def run_flaml_adapter(
         "backend=flaml (buildml[automl-industry]); FLAML internal model search on train only.",
         "Fold-local PreprocessRecipe search bypassed: FLAML handles preprocessing internally.",
         "Session test never entered FLAML fit or selection scoring.",
+        "Trial rows summarize each learner's best finite internal result when available.",
         f"time_budget={seconds:.1f}s; metric={metric}; best_loss={best_loss}.",
     ]
     limitations = [
         "FLAML adapter does not support nested CV or fold-local recipe strategy search.",
         "Industry adapter scores are not directly comparable to native fold-local AutoML trials.",
     ]
-    best_trial = trials[0] if trials else AutoMLTrial(
-        trial=0,
-        kind="single",
-        family="flaml",
-        recipe_strategy="flaml_internal",
-        params=best_config,
-        mean_score=display_score,
-        std_score=std_score,
-        mean_metrics=mean_metrics,
-        std_metrics=std_metrics,
-    )
-
     plan = AutoMLPlan(
         task=resolved_task,
         method="randomized",
@@ -231,7 +225,7 @@ def run_flaml_adapter(
         method="randomized",
         selection=selection,
         ranking_metric=metric,
-        trials=trials or [best_trial],
+        trials=trials,
         best_family="flaml",
         best_recipe_strategy="flaml_internal",
         best_kind="single",
@@ -351,20 +345,27 @@ class _FlamlSklearnWrapper:
         raise AttributeError("FLAML model does not expose predict_proba")
 
 
-def _flaml_metric(metric: str) -> str:
-    mapping = {
-        "accuracy": "accuracy",
-        "f1": "f1",
-        "f1_weighted": "f1",
-        "f1_macro": "f1",
-        "roc_auc": "roc_auc",
-        "log_loss": "log_loss",
-        "r2": "r2",
-        "mse": "mse",
-        "mae": "mae",
-        "rmse": "rmse",
-    }
-    return mapping.get(metric, metric)
+def _flaml_metric(metric: str) -> str | Callable[..., tuple[float, dict[str, float]]]:
+    if metric == "f1_weighted":
+        return _weighted_f1_loss
+    return "macro_f1" if metric == "f1_macro" else metric
+
+
+def _weighted_f1_loss(
+    x_eval: Any,
+    y_eval: Any,
+    estimator: Any,
+    _labels: Any,
+    _x_train: Any,
+    _y_train: Any,
+    weight_eval: Any = None,
+    *_: Any,
+) -> tuple[float, dict[str, float]]:
+    score = float(f1_score(
+        y_eval, estimator.predict(x_eval), average="weighted",
+        zero_division=0, sample_weight=weight_eval,
+    ))
+    return 1.0 - score, {"f1_weighted": score}
 
 
 def _flaml_trials(
@@ -374,20 +375,20 @@ def _flaml_trials(
     higher_is_better: bool,
 ) -> list[AutoMLTrial]:
     rows: list[AutoMLTrial] = []
-    history = getattr(automl, "config_history", None) or []
-    for i, entry in enumerate(history):
-        if not isinstance(entry, dict):
+    configs = getattr(automl, "best_config_per_estimator", None) or {}
+    losses = getattr(automl, "best_loss_per_estimator", None) or {}
+    for learner, loss in losses.items():
+        config = configs.get(learner)
+        if config is None or loss is None or not isfinite(loss):
             continue
-        loss = entry.get("loss")
-        score = float(-loss) if loss is not None and higher_is_better else float(loss or float("nan"))
-        cfg = dict(entry.get("config") or {})
+        score = _flaml_score(float(loss), higher_is_better=higher_is_better)
         rows.append(
             AutoMLTrial(
-                trial=i,
+                trial=len(rows),
                 kind="single",
-                family=str(cfg.get("learner", "flaml")),
+                family=learner,
                 recipe_strategy="flaml_internal",
-                params=cfg,
+                params=dict(config),
                 mean_score=score,
                 std_score=0.0,
                 mean_metrics={metric: score},
@@ -396,5 +397,9 @@ def _flaml_trials(
         )
     rows.sort(key=lambda t: t.mean_score, reverse=higher_is_better)
     return rows
+
+
+def _flaml_score(loss: float, *, higher_is_better: bool) -> float:
+    return 1.0 - loss if higher_is_better else loss
 
 

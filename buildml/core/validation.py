@@ -1,6 +1,6 @@
 """Reject bad input at the boundary, with a message that says how to fix it.
 
-Both helpers here exist to convert the failure that would happen later into one
+These helpers exist to convert the failure that would happen later into one
 that happens now. A misspelled role or column name will eventually surface as a
 ``KeyError`` from deep inside an operation, naming neither what was asked for
 nor what was available. Caught at the entry point instead, the error can list
@@ -14,6 +14,8 @@ buildml.core.types.ColumnRole : The roles being validated.
 from __future__ import annotations
 
 from collections.abc import Iterable
+from numbers import Integral
+from typing import Any
 
 from buildml.core.errors import ValidationError
 from buildml.core.types import ColumnRole
@@ -123,3 +125,10 @@ def validate_column_names(columns: Iterable[str], known: Iterable[str]) -> list[
     if missing:
         raise ValidationError(f"Unknown column(s): {missing}")
     return cols
+
+
+def _positive_integer(value: Any, *, name: str) -> int:
+    """Normalize a positive integral count while rejecting lossy coercions."""
+    if isinstance(value, bool) or not isinstance(value, Integral) or value < 1:
+        raise ValidationError(f"{name} must be a positive integer.")
+    return int(value)
