@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-11-06, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed at 89.9942% (57,257/63,623) with 19,609 passed and 173 skipped | Source `2608d32e`, tested merge `1fe3bc4`. Trees match and all four workflows passed. Same 800 files, 566 exclusions and coverage.py 7.16.2. All 5,732 required cases executed. No failures, errors or collection warnings. The gap to 90% is 4 covered lines at this denominator. [CI42500961082](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42500961082) |
+| Current accepted remote expanded CPU whole-package gate | Passed at 90.0049% (57,289/63,651) with 19,612 passed and 173 skipped | Source `64d53c96`, tested merge `3e89b25`. Trees match and all four workflows passed. Same 800 files, 566 exclusions and coverage.py 7.16.2. All 5,735 required cases executed. No failures, errors or collection warnings. Reached 90% whole-package line coverage. [CI42510496464](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42510496464) |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -9048,3 +9048,15 @@ Against accepted `2608d32e`, Windows provider, core and Ubuntu
 selections reach 5/5/6
 previously missing unchanged and 31/31/31
 edited lines. These counts describe the selections.
+
+Remote Linux source `64d53c96` passed at **90.0049%** (57,289/63,651 lines)
+with 19,612 passes and 173 skips. All four workflows passed. The tested
+merge tree matches the source, and all 5,735 required cases executed.
+Scope, exclusions, tracing, profile inputs, distributions and skips match
+`2608d32e`. All 3,483 warnings match after normalization.
+The group-split revision changed covered lines by +32 and statements by +28. There were no collection or coverage warnings.
+The complete comparison reached
+3 previously missing unchanged and
+31 edited lines. The expanded floor rises to
+89% with 1.0049 percentage points of headroom and the core floor
+remains 70%. [Group-split CI](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42510496464)

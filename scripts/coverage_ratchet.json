@@ -3,27 +3,27 @@
   "source": "pyproject.toml [tool.coverage.report] fail_under",
   "current": 70,
   "expanded": {
-    "current": 88,
+    "current": 89,
     "source": ".github/workflows/ci.yml expanded-coverage job --cov-fail-under",
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 89.99418449302925,
-      "covered_lines": 57257,
-      "num_statements": 63623,
+      "percent_covered": 90.0048703084005,
+      "covered_lines": 57289,
+      "num_statements": 63651,
       "excluded_lines": 566,
-      "source_revision": "2608d32e1150a0ae51700055705a7a8b416d5be8",
-      "tested_revision": "1fe3bc409267d4524ec30d5a0faaf101b4555d92",
+      "source_revision": "64d53c969df5fe73c0c43115fb9901a7b5dae049",
+      "tested_revision": "3e89b25af2f711f3a78ed6af328206052114921b",
       "platform": "remote Linux, CPU expanded profile",
       "python": "3.12.16",
-      "run_id": 42500961082,
-      "result": "19609 passed, 173 skipped, zero failures or errors",
+      "run_id": 42510496464,
+      "result": "19612 passed, 173 skipped, zero failures or errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
       "coverage_version": "7.16.2",
-      "notes": "All four exact-source workflows passed. Tested merge and source have equal trees. Same installed distributions, profile inputs, scope, tracing and skips as c5868b09. All 5,732 required cases in 62 modules executed. The warning total increased from 3,431 to 3,483 as 52 recurring NLP NMF convergence warnings reappeared. All other normalized warnings match. The Gaussian mixture revision added nine covered lines and five statements. No collection or coverage warnings. The gap to 90% is 4 covered lines at this denominator."
+      "notes": "All four exact-source workflows passed. Tested merge and source have equal trees. Scope, exclusions, tracing, profile inputs, distributions and skips match 2608d32e. All 5,735 required cases in 63 modules executed. All 3,483 warnings match after normalization. The group-split revision changed covered lines by +32 and statements by +28. No collection or coverage warnings. The expanded floor rises to 89 with 1.004870 percentage points of headroom."
     },
     "latest_local_measurement": {
       "percent_covered": 85.51916984547746,
@@ -70,13 +70,13 @@
       "notes": "Not promoted: automatic coverage.py upgrade from7.16.2 changed TYPE_CHECKING exclusion accounting across40 files (+41 excluded lines). Source/merge trees equal fbacba31e290aee2038d5d45c3216171a93ca80b. Full12:47,1900 warnings,no coverage collection warnings. Development coverage pinned to7.16.2; static package exclusions restored566. Fresh whole-suite gate required. Latest accepted4c06bd3 remains86.4734%."
     },
     "last_raise": {
-      "previous": 87,
-      "current": 88,
-      "source_revision": "489641e82124dbae3a5351b2701dfd819898826a",
-      "run_id": 41159198670,
-      "percent_covered": 89.02427445643573,
-      "headroom_percentage_points": 1.0242744564357338,
-      "qualification": "Passing complete expanded Linux CPU suite; all four workflows pass and source/merge trees match. Scope800/566 exclusions/coverage7.16.2 unchanged; core70 retained."
+      "previous": 88,
+      "current": 89,
+      "source_revision": "64d53c969df5fe73c0c43115fb9901a7b5dae049",
+      "run_id": 42510496464,
+      "percent_covered": 90.0048703084005,
+      "headroom_percentage_points": 1.0048703084004984,
+      "qualification": "Passing complete expanded Linux CPU suite. All four workflows passed and source and tested merge trees match. Scope remains 800 files with 566 exclusions and coverage.py 7.16.2. Core 70 retained."
     }
   },
   "schedule": [

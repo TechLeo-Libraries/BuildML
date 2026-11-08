@@ -54,24 +54,21 @@ across Linux Python 3.10-3.13, run 38589015544, commit 2837fb3).
 Measure the complete suite with `python scripts/run_full_coverage.py`; subset
 runs are not comparable to the project coverage threshold.
 The separate expanded Linux job runs the complete test directory with
-`requirements-expanded-coverage.txt` and an **88%** floor. Remote Linux source
-`2608d32e` passed at **89.9942%** (57,257/63,623 lines), with 19,609 passed
-and 173 skipped. All four workflows passed. The tested merge `1fe3bc4` has
-the same tree as the source. [CI42500961082](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42500961082)
+`requirements-expanded-coverage.txt` and an **89%** floor. Remote Linux source
+`64d53c96` passed at **90.0049%** (57,289/63,651 lines), with 19,612 passed
+and 173 skipped. All four workflows passed. The tested merge `3e89b25` has
+the same tree as the source. [CI42510496464](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42510496464)
 
 The run used coverage.py 7.16.2 across 800 files and 566 exclusions. All
-5,732 required consumer cases executed. Python 3.12.16, the installed
+5,735 required consumer cases executed. Python 3.12.16, the installed
 distributions, profile inputs and all 173 skips across 37 messages match
-`c5868b09`. The warning total increased from 3,431 to 3,483 as
-52 recurring NLP NMF convergence warnings reappeared. All other normalized
-warnings match.
+`2608d32e`. All 3,483 warnings match after normalization.
 There were no failures, errors, collection or coverage warnings.
 
-The Gaussian mixture revision added nine covered lines and five statements.
-Core 70 and expanded 88 remain in force. The next expanded floor of 89 requires
-at least 90% complete coverage to preserve one percentage point of
-headroom. At `2608d32e`, 4 more covered lines would reach 90% at the
-measured statement count.
+The group-split revision changed covered lines by +32 and statements by +28.
+The accepted run reached 90% whole-package coverage. The expanded floor
+rose to 89% with 1.0049 percentage points of headroom. The core
+floor remains 70%.
 
 The subsequent `8594200` gate passed its tests, but coverage.py upgraded from
 7.16.2 to7.17.0 and reported607 excluded lines instead of566. Its raw86.5151%

@@ -121,14 +121,14 @@ monolith** (**70** active after corrected thread/process tracing measured at lea
 (`python scripts/run_full_coverage.py --update-ratchet` or CI
 `pytest tests --cov=buildml`); do not lower it to silence a regression.
 The separate `expanded-coverage` CI job installs
-`requirements-expanded-coverage.txt` and runs the entire suite with an **88%**
-floor, supported by passing remote Linux 89.9942% evidence at `2608d32e`.
+`requirements-expanded-coverage.txt` and runs the entire suite with an **89%**
+floor, supported by passing remote Linux 90.0049% evidence at `64d53c96`.
 The broadened profile includes DoWhy and ONNX Runtime, using a compatible
 NumPy 2.4.1/SciPy 1.15.3/mlxtend 0.23.4 stack. Same-source complete local suites
 passed 85.5192% for this profile and85.3947% for its original-profile control;
 remote acceptance is tracked separately. Keep the package-wide scope, audit
-skip changes, and never add percentages from different profiles. The 90% target
-remains outstanding. Raise the expanded floor only after a passing complete
+skip changes, and never add percentages from different profiles. Raise the
+expanded floor only after a passing complete
 expanded Linux run provides at least one percentage point of headroom.
 `requirements.txt` / `requirements-dev.txt` are convenience mirrors of
 `pyproject.toml` ranges; prefer `pip install -e ".[dev]"`.
@@ -230,21 +230,18 @@ and pick the next target, and `--path buildml/<pkg>` to audit work in progress.
 - Write public documentation for library users. Keep implementation instructions,
   release actions, and work plans in clearly labeled contributor material.
 
-Remote Linux source `2608d32e` passed the expanded coverage gate on November 8,
-2026 at **89.9942%** (57,257/63,623 lines), with 19,609 passed and 173 skipped.
-All four workflows passed. The tested merge `1fe3bc4` has the same tree as
-the source. [CI42500961082](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42500961082)
+Remote Linux source `64d53c96` passed the expanded coverage gate on November 8,
+2026 at **90.0049%** (57,289/63,651 lines), with 19,612 passed and 173 skipped.
+All four workflows passed. The tested merge `3e89b25` has the same tree as
+the source. [CI42510496464](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42510496464)
 
 The run used coverage.py 7.16.2 across 800 files and 566 exclusions. All
-5,732 required consumer cases executed. Python 3.12.16, the installed
+5,735 required consumer cases executed. Python 3.12.16, the installed
 distributions, profile inputs and all 173 skips across 37 messages match
-`c5868b09`. The warning total increased from 3,431 to 3,483 as
-52 recurring NLP NMF convergence warnings reappeared. All other normalized
-warnings match.
+`2608d32e`. All 3,483 warnings match after normalization.
 There were no failures, errors, collection or coverage warnings.
 
-The Gaussian mixture revision added nine covered lines and five statements.
-Core 70 and expanded 88 remain in force. The next expanded floor of 89 requires
-at least 90% complete coverage to preserve one percentage point of
-headroom. At `2608d32e`, 4 more covered lines would reach 90% at the
-measured statement count.
+The group-split revision changed covered lines by +32 and statements by +28.
+The accepted run reached 90% whole-package coverage. The expanded floor
+rose to 89% with 1.0049 percentage points of headroom. The core
+floor remains 70%.
