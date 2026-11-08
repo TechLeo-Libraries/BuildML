@@ -334,6 +334,28 @@ def _fit_legacy_mapie(
     )
 
 
+def mapie_predict_point(wrapper: Any, x: np.ndarray) -> np.ndarray:
+    """Return one point prediction per row from a fitted MAPIE model.
+
+    The estimator's point API can score rows even when calibration data
+    cannot support intervals or prediction sets at the requested alpha.
+
+    Parameters
+    ----------
+    wrapper:
+        Fitted :class:`MapieWrapper` or raw fitted MAPIE estimator.
+    x:
+        Feature matrix in the order used to fit the model.
+
+    Returns
+    -------
+    numpy.ndarray
+        One-dimensional point predictions in input row order.
+    """
+    estimator = wrapper.estimator if isinstance(wrapper, MapieWrapper) else wrapper
+    return np.asarray(estimator.predict(x)).ravel()
+
+
 def mapie_predict_interval(
     wrapper: Any,
     x: np.ndarray,

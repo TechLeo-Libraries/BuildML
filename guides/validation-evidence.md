@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-11-06, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed at 89.9415% (57,210/63,608) with 19,564 passed and 173 skipped | Source `078a64b1`, tested merge `9b759e3`. Trees match and all four workflows passed. Same 800 files, 566 exclusions and coverage.py 7.16.2. All 5,687 required cases executed. No failures, errors or collection warnings. The gap to 90% is 38 covered lines at this denominator. [CI42473973964](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42473973964) |
+| Current accepted remote expanded CPU whole-package gate | Passed at 89.9544% (57,220/63,610) with 19,568 passed and 173 skipped | Source `47109ece`, tested merge `2900a49`. Trees match and all four workflows passed. Same 800 files, 566 exclusions and coverage.py 7.16.2. All 5,691 required cases executed. No failures, errors or collection warnings. The gap to 90% is 29 covered lines at this denominator. [CI42478033334](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42478033334) |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -8899,3 +8899,33 @@ Against accepted `078a64b1`, Windows provider/core selections reach
 6/0 edited lines. The Ubuntu selection reaches
 12 previously missing unchanged and 6
 edited lines. These counts describe the selections.
+
+Remote Linux source `47109ece` passed at **89.9544%** (57,220/63,610 lines)
+with 19,568 passes and 173 skips. All four workflows passed. The
+tested merge tree matches the source, and all 5,691 required cases
+executed. Scope, exclusions, tracing, profile inputs, distributions
+and skips match `078a64b1`. The run emitted 3,431 warnings. The 52 recurring NLP NMF convergence warnings from the federated run were absent. The other normalized warnings match.
+The SMOTE revision changed covered lines by +10 and statements by +2. There were no collection or coverage warnings.
+[CI42478033334](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42478033334)
+
+## MAPIE point predictions and conformal evidence (2026-11-08)
+
+MAPIE point predictions remain available when too few calibration
+scores prevent conformal intervals or prediction sets at the
+requested alpha. Explicit uncertainty requests report the provider
+validation error. Evaluation preserves point metrics and discloses
+unavailable uncertainty metrics.
+
+Real classification and regression consumers cover split, CV+ and
+jackknife+ methods at feasible and infeasible alpha values.
+Independent numeric checks verify point metrics and conformal
+coverage where supported. Windows provider passes 217 without
+warnings. Genuine core passes 67 and skips 145 because MAPIE is
+absent. Modern and legacy Ubuntu controls fail six and pass six.
+The corrected Ubuntu selections each pass all 12. The modern
+selection emits no warnings and the legacy MAPIE 0.9.2 selection
+emits six provider deprecations. No collection or coverage warnings.
+
+Against accepted `47109ece`, Windows provider/core selections reach
+3/5 previously missing unchanged and
+13/2 edited lines. These counts describe the selections.

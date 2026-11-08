@@ -18,6 +18,7 @@ from sklearn.metrics import (
 from buildml.core.errors import ValidationError
 from buildml.data.dataset import Dataset
 from buildml.data.splits import PartitionName, SplitPlan, frame_for_partition
+from buildml.probabilistic.adapters.mapie import mapie_predict_point
 from buildml.probabilistic.conformal import regression_intervals
 from buildml.probabilistic.features import (
     decode_predictions,
@@ -166,12 +167,7 @@ def evaluate_probabilistic(
     if plan.task == "regression":
         y_num = y_true.to_numpy(dtype=float)
         if plan.backend == "mapie":
-            from buildml.probabilistic.adapters.mapie import mapie_predict_interval
-
-            point, _, _, _ = mapie_predict_interval(
-                plan.estimator_, x, task="regression", alpha=resolved_alpha
-            )
-            y_hat = np.asarray(point, dtype=float)
+            y_hat = np.asarray(mapie_predict_point(plan.estimator_, x), dtype=float)
         elif plan.backend == "ngboost":
             from buildml.probabilistic.adapters.ngboost import (
                 ngboost_crps_regression,
@@ -232,12 +228,7 @@ def evaluate_probabilistic(
             warnings.append(f"Interval metrics skipped: {exc}")
     else:
         if plan.backend == "mapie":
-            from buildml.probabilistic.adapters.mapie import mapie_predict_sets
-
-            point_raw, _ = mapie_predict_sets(
-                plan.estimator_, x, alpha=resolved_alpha, task="classification"
-            )
-            preds = decode_predictions(np.asarray(point_raw), plan.label_encoder_)
+            preds = decode_predictions(mapie_predict_point(plan.estimator_, x), plan.label_encoder_)
         else:
             raw = plan.estimator_.predict(x)
             preds = decode_predictions(raw, plan.label_encoder_)

@@ -122,7 +122,7 @@ monolith** (**70** active after corrected thread/process tracing measured at lea
 `pytest tests --cov=buildml`); do not lower it to silence a regression.
 The separate `expanded-coverage` CI job installs
 `requirements-expanded-coverage.txt` and runs the entire suite with an **88%**
-floor, supported by passing remote Linux 89.9415% evidence at `078a64b1`.
+floor, supported by passing remote Linux 89.9544% evidence at `47109ece`.
 The broadened profile includes DoWhy and ONNX Runtime, using a compatible
 NumPy 2.4.1/SciPy 1.15.3/mlxtend 0.23.4 stack. Same-source complete local suites
 passed 85.5192% for this profile and85.3947% for its original-profile control;
@@ -230,19 +230,19 @@ and pick the next target, and `--path buildml/<pkg>` to audit work in progress.
 - Write public documentation for library users. Keep implementation instructions,
   release actions, and work plans in clearly labeled contributor material.
 
-Remote Linux source `078a64b1` passed the expanded coverage gate on November 8,
-2026 at **89.9415%** (57,210/63,608 lines), with 19,564 passed and 173 skipped.
-All four workflows passed. The tested merge `9b759e3` has the same tree as
-the source. [CI42473973964](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42473973964)
+Remote Linux source `47109ece` passed the expanded coverage gate on November 8,
+2026 at **89.9544%** (57,220/63,610 lines), with 19,568 passed and 173 skipped.
+All four workflows passed. The tested merge `2900a49` has the same tree as
+the source. [CI42478033334](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42478033334)
 
 The run used coverage.py 7.16.2 across 800 files and 566 exclusions. All
-5,687 required consumer cases executed. Python 3.12.16, the installed
+5,691 required consumer cases executed. Python 3.12.16, the installed
 distributions, profile inputs and all 173 skips across 37 messages match
-`be80231f`. All 3,483 normalized warnings match the PNG run.
+`078a64b1`. The run emitted 3,431 warnings. The 52 recurring NLP NMF convergence warnings from the federated run were absent. The other normalized warnings match.
 There were no failures, errors, collection or coverage warnings.
 
-The federated revision changed covered lines by +11 and statements by +0. Core 70
+The SMOTE revision changed covered lines by +10 and statements by +2. Core 70
 and expanded 88 remain in force. The next expanded floor of 89 requires
 at least 90% complete coverage to preserve one percentage point of
-headroom. At `078a64b1`, 38 more covered lines would reach 90% at the
+headroom. At `47109ece`, 29 more covered lines would reach 90% at the
 measured statement count.
