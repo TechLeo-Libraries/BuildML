@@ -223,6 +223,9 @@ ValidationError
         )
 
     if method == "gmm":
+        criterion = config.gmm_select_by
+        if criterion not in ("bic", "aic"):
+            raise ValidationError("gmm_select_by must be 'bic' or 'aic'.")
         if config.auto_k or n_clusters is None:
             lo = max(2, int(config.auto_k_min))
             hi = min(int(config.auto_k_max), int(config.gmm_max_components), n_train - 1)
@@ -233,9 +236,9 @@ ValidationError
             lo = hi = k_fixed
         if hi < lo:
             raise ValidationError("GMM component search range invalid for train size")
-        best_bic = float("inf")
+        best_score = float("inf")
         best_gmm: GaussianMixture | None = None
-        bic_table: dict[int, float] = {}
+        scores: dict[str, float] = {}
         for k in range(lo, hi + 1):
             gmm = GaussianMixture(
                 n_components=k,
@@ -245,22 +248,24 @@ ValidationError
                 max_iter=config.max_iter,
             )
             gmm.fit(x)
-            bic = float(gmm.bic(x))
-            bic_table[k] = bic
-            if bic < best_bic:
-                best_bic = bic
+            score = float(gmm.aic(x) if criterion == "aic" else gmm.bic(x))
+            scores[str(k)] = score
+            if score < best_score:
+                best_score = score
                 best_gmm = gmm
         assert best_gmm is not None
         labels = best_gmm.predict(x)
         n_clusters = int(best_gmm.n_components)
         centroids = np.asarray(best_gmm.means_, dtype=float)
-        extra["gmm_bic"] = {str(k): v for k, v in bic_table.items()}
+        extra[f"gmm_{criterion}"] = scores
         extra["gmm_selected_k"] = n_clusters
         disclosures.append(
-            f"GMM selected n_components={n_clusters} by BIC over k∈[{lo},{hi}] on train."
+            f"GMM selected n_components={n_clusters} by {criterion.upper()} over k∈[{lo},{hi}] on train."
         )
         if config.auto_k and lo != hi:
-            disclosures.append("auto_k enabled: BIC search used instead of fixed n_clusters.")
+            disclosures.append(
+                f"auto_k enabled: {criterion.upper()} search used instead of fixed n_clusters."
+            )
         return FitOutcome(
             labels=labels,
             estimator=best_gmm,

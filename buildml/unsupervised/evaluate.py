@@ -218,10 +218,12 @@ ValidationError
         else:
             warnings.append("Stability skipped: insufficient train rows or k for bootstrap.")
 
-    if plan.method == "gmm" and plan.config.get("gmm_bic"):
-        diagnostics["gmm_bic"] = plan.config["gmm_bic"]
-        if plan.config.get("gmm_selected_k") is not None:
-            diagnostics["gmm_selected_k"] = plan.config["gmm_selected_k"]
+    if plan.method == "gmm":
+        score_key = "gmm_aic" if "gmm_aic" in plan.config else "gmm_bic"
+        if plan.config.get(score_key):
+            diagnostics[score_key] = plan.config[score_key]
+            if plan.config.get("gmm_selected_k") is not None:
+                diagnostics["gmm_selected_k"] = plan.config["gmm_selected_k"]
 
     transductive = plan.method in {"spectral", "optics"}
     if transductive:

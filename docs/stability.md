@@ -55,20 +55,20 @@ Measure the complete suite with `python scripts/run_full_coverage.py`; subset
 runs are not comparable to the project coverage threshold.
 The separate expanded Linux job runs the complete test directory with
 `requirements-expanded-coverage.txt` and an **88%** floor. Remote Linux source
-`45d8f76b` passed at **89.9720%** (57,233/63,612 lines), with 19,604 passed
-and 173 skipped. All four workflows passed. The tested merge `1819032` has
-the same tree as the source. [CI42491323229](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42491323229)
+`c5868b09` passed at **89.9871%** (57,248/63,618 lines), with 19,606 passed
+and 173 skipped. All four workflows passed. The tested merge `8b65858` has
+the same tree as the source. [CI42495548917](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42495548917)
 
 The run used coverage.py 7.16.2 across 800 files and 566 exclusions. All
-5,727 required consumer cases executed. Python 3.12.16, the installed
+5,729 required consumer cases executed. Python 3.12.16, the installed
 distributions, profile inputs and all 173 skips across 37 messages match
-`6e34e0d1`. The run emitted 3,483 warnings. The 52 recurring NLP NMF convergence warnings reappeared. The other normalized warnings match the MAPIE run.
+`45d8f76b`. The warning total decreased from 3,483 to 3,431. The only normalized warning difference is that 52 existing NMF convergence warnings did not recur.
 There were no failures, errors, collection or coverage warnings.
 
-The tabular revision changed covered lines by +9 and statements by +0. Core 70
+The EDA temporal revision changed covered lines by +15 and statements by +6. Core 70
 and expanded 88 remain in force. The next expanded floor of 89 requires
 at least 90% complete coverage to preserve one percentage point of
-headroom. At `45d8f76b`, 18 more covered lines would reach 90% at the
+headroom. At `c5868b09`, 9 more covered lines would reach 90% at the
 measured statement count.
 
 The subsequent `8594200` gate passed its tests, but coverage.py upgraded from

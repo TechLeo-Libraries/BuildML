@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-11-06, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed at 89.9720% (57,233/63,612) with 19,604 passed and 173 skipped | Source `45d8f76b`, tested merge `1819032`. Trees match and all four workflows passed. Same 800 files, 566 exclusions and coverage.py 7.16.2. All 5,727 required cases executed. No failures, errors or collection warnings. The gap to 90% is 18 covered lines at this denominator. [CI42491323229](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42491323229) |
+| Current accepted remote expanded CPU whole-package gate | Passed at 89.9871% (57,248/63,618) with 19,606 passed and 173 skipped | Source `c5868b09`, tested merge `8b65858`. Trees match and all four workflows passed. Same 800 files, 566 exclusions and coverage.py 7.16.2. All 5,729 required cases executed. No failures, errors or collection warnings. The gap to 90% is 9 covered lines at this denominator. [CI42495548917](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42495548917) |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -8983,4 +8983,34 @@ passes both without warnings. No collection or coverage warnings.
 Against accepted `45d8f76b`, Windows provider/core and Ubuntu
 selections reach 7/7/8
 previously missing unchanged and 10/10/10
+edited lines. These counts describe the selections.
+
+Remote Linux source `c5868b09` passed at **89.9871%** (57,248/63,618 lines)
+with 19,606 passes and 173 skips. All four workflows passed. The
+tested merge tree matches the source, and all 5,729 required cases
+executed. Scope, exclusions, tracing, profile inputs, distributions
+and skips match `45d8f76b`. The warning total decreased from 3,483 to 3,431. The only normalized warning difference is that 52 existing NMF convergence warnings did not recur.
+The EDA temporal revision changed covered lines by +15 and statements by +6. There were no collection or coverage warnings.
+[CI42495548917](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42495548917)
+
+## Gaussian mixture information criteria (2026-11-08)
+
+Gaussian mixture fitting selects the component count using the
+requested BIC or AIC and preserves that score table in evaluation.
+Invalid criteria raise a validation error before replacing a fitted
+plan. An independent likelihood and penalty calculation chooses
+two components by BIC and four by AIC. Holdout assignments agree
+with posterior scores computed from the fitted train mixture.
+
+Windows and Ubuntu controls pass BIC and fail AIC and invalid
+criterion cases. Corrected Windows provider passes 15 and skips
+two without HDBSCAN or UMAP. Four existing facade deprecations and
+one existing DEC read-only tensor warning were emitted. Genuine core
+passes 13 and skips four without HDBSCAN, UMAP or Torch. Corrected
+Ubuntu Python 3.12.3 and scikit-learn 1.9.1 passes all three without
+warnings. There were no collection or coverage warnings.
+
+Against accepted `c5868b09`, Windows provider/core and Ubuntu
+selections reach 6/6/4
+previously missing unchanged and 17/17/17
 edited lines. These counts describe the selections.

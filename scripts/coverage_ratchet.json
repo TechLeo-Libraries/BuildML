@@ -8,22 +8,22 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 89.97201785826573,
-      "covered_lines": 57233,
-      "num_statements": 63612,
+      "percent_covered": 89.98711056619196,
+      "covered_lines": 57248,
+      "num_statements": 63618,
       "excluded_lines": 566,
-      "source_revision": "45d8f76bcd14f14b61b7cf73039e2d3254acc330",
-      "tested_revision": "1819032670fae7842eac99d5fa90c4ce629bd939",
+      "source_revision": "c5868b09d7e8618af5c0f53677b0c86e187571b2",
+      "tested_revision": "8b658580037946a24b08d0b93c7825e75e9b3742",
       "platform": "remote Linux, CPU expanded profile",
       "python": "3.12.16",
-      "run_id": 42491323229,
-      "result": "19604 passed, 173 skipped, zero failures or errors",
+      "run_id": 42495548917,
+      "result": "19606 passed, 173 skipped, zero failures or errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
       "coverage_version": "7.16.2",
-      "notes": "All four exact-source workflows passed. Tested merge and source have equal trees. Same installed distributions, profile inputs, scope, tracing and skips as 6e34e0d1. All 5,727 required cases in 60 modules executed. The run emitted 3,483 warnings. The 52 recurring NLP NMF convergence warnings reappeared. The other normalized warnings match the MAPIE run. The tabular revision changed covered lines by +9 and statements by +0. No collection or coverage warnings. The gap to 90% is 18 covered lines at this denominator."
+      "notes": "All four exact-source workflows passed. Tested merge and source have equal trees. Same installed distributions, profile inputs, scope, tracing and skips as 45d8f76b. All 5,729 required cases in 61 modules executed. The warning total decreased from 3,483 to 3,431. The only normalized warning difference is that 52 existing NMF convergence warnings did not recur. The EDA temporal revision changed covered lines by +15 and statements by +6. No collection or coverage warnings. The gap to 90% is 9 covered lines at this denominator."
     },
     "latest_local_measurement": {
       "percent_covered": 85.51916984547746,
