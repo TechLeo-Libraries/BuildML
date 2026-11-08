@@ -41,10 +41,9 @@ def test_explicit_false_revokes_configured_artifact_trust_before_deserialization
 
 
 def test_explicit_default_app_kind_title_and_cpu_override_configuration(tmp_path, monkeypatch):
-    from fastapi.testclient import TestClient
-
     from buildml.serving import app as module
 
+    TestClient = pytest.importorskip("fastapi.testclient").TestClient
     captured = {}
 
     def load(path, **kwargs):

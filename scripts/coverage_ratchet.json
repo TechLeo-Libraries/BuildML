@@ -8,22 +8,22 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 89.84424166142227,
-      "covered_lines": 57105,
-      "num_statements": 63560,
+      "percent_covered": 89.86061292555534,
+      "covered_lines": 57119,
+      "num_statements": 63564,
       "excluded_lines": 566,
-      "source_revision": "f42b40d8d90957e04816112e9a85e70c485a2b3c",
-      "tested_revision": "4b7087ae56ebbe47537fd61e5dc176ba77f24532",
+      "source_revision": "048fa5f346d0bbe160570684610207f9cce3634b",
+      "tested_revision": "666bd82d2ccac63b62ce6a81f422379c911d8a86",
       "platform": "remote Linux, CPU expanded profile",
       "python": "3.12.16",
-      "run_id": 42421281966,
-      "result": "19496 passed, 173 skipped, zero failures or errors",
+      "run_id": 42425378740,
+      "result": "19502 passed, 173 skipped, zero failures or errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
       "coverage_version": "7.16.2",
-      "notes": "All four exact-source workflows passed. Tested merge and source have equal trees. Same installed distributions, profile inputs, scope, tracing and skips as 33ddd48. All 5,619 required consumers in 50 modules executed. Net change is 16 covered lines and one statement in dashboard launch and state. The 52 recurring NLP NMF convergence warnings returned. No collection warnings. The gap to 90% is 99 covered lines at this denominator."
+      "notes": "All four exact-source workflows passed. Tested merge and source have equal trees. Same installed distributions, profile inputs, scope, tracing and skips as f42b40d8. All 5,625 required consumers in 51 modules executed. Net change is 14 covered lines and four statements in the FLAML adapter. The 52 recurring NLP NMF convergence warnings were absent. No collection warnings. The gap to 90% is 89 covered lines at this denominator."
     },
     "latest_local_measurement": {
       "percent_covered": 85.51916984547746,

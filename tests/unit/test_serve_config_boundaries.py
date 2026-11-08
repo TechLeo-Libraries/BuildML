@@ -52,6 +52,8 @@ def test_valid_basic_auth_config_is_closed_and_redacted(value):
 
 @pytest.mark.parametrize("suffix", [".yaml", ".json"])
 def test_config_file_environment_and_cli_precedence(suffix, tmp_path):
+    if suffix == ".yaml":
+        pytest.importorskip("yaml")
     path = tmp_path / f"serve{suffix}"
     body = {"bundle": "file-model", "port": 8123, "api_keys": ["file-key"], "trusted": False}
     path.write_text(json.dumps(body))  # JSON is also valid YAML.
@@ -74,6 +76,8 @@ def test_config_file_environment_and_cli_precedence(suffix, tmp_path):
 @pytest.mark.parametrize("body", ["[]", "42", '"text"'])
 @pytest.mark.parametrize("suffix", [".json", ".yaml"])
 def test_non_mapping_configuration_file_rejected(body, suffix, tmp_path):
+    if suffix == ".yaml":
+        pytest.importorskip("yaml")
     path = tmp_path / f"serve{suffix}"
     path.write_text(body)
     with pytest.raises(ValidationError):
@@ -81,6 +85,7 @@ def test_non_mapping_configuration_file_rejected(body, suffix, tmp_path):
 
 
 def test_empty_yaml_defaults_unknown_fields_and_required_bundle(tmp_path):
+    pytest.importorskip("yaml")
     path = tmp_path / "empty.yaml"
     path.write_text("")
     config = ServeConfig.from_yaml(path)

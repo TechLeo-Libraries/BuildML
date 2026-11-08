@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-11-06, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed at 89.8442% (57,105/63,560) with 19,496 passed and 173 skipped | Source `f42b40d8`, tested merge `4b7087a`. Trees match and all four workflows passed. Same 800 files, 566 exclusions and coverage.py 7.16.2. All 5,619 required cases executed. No failures, errors or collection warnings. The gap to 90% is 99 covered lines at this denominator. [CI42421281966](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42421281966) |
+| Current accepted remote expanded CPU whole-package gate | Passed at 89.8606% (57,119/63,564) with 19,502 passed and 173 skipped | Source `048fa5f3`, tested merge `666bd82`. Trees match and all four workflows passed. Same 800 files, 566 exclusions and coverage.py 7.16.2. All 5,625 required cases executed. No failures, errors or collection warnings. The gap to 90% is 89 covered lines at this denominator. [CI42425378740](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42425378740) |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -8694,3 +8694,32 @@ Against verified full `f42b40d8`, the provider selection reaches six previously
 missing unchanged lines and 25 changed lines. Five of the unchanged lines
 are in the FLAML adapter. Core reaches nine previously missing unchanged
 lines elsewhere and six changed lines. These are selected-run counts.
+
+Remote Linux source `048fa5f3` passed at **89.8606%** (57,119/63,564 lines)
+with 19,502 passes and 173 skips. All four workflows passed and the tested
+merge tree matches the source. All 5,625 required cases executed. Scope,
+exclusions, tracing, profile inputs, distributions and skips match
+`f42b40d8`. The only warning change was the absence of 52 recurring NLP
+NMF convergence warnings. The FLAML changes added 14 covered lines and
+four statements. There were no collection warnings.
+[CI42425378740](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42425378740)
+
+## Managed serving endpoint startup (2026-11-08)
+
+Managed serving accepts IPv6 loopback addresses with or without URL brackets
+and returns a usable URL. Port preflight uses the requested address family and
+binds only to loopback. Blocking and background startup failures preserve the
+underlying error and release the loaded application state.
+
+The frozen `048fa5f3` control fails five of the six new cases and emits one
+unhandled-thread warning. An authenticated HTTPS prediction with a local
+certificate already passes in the control. The corrected Windows TLS selection
+passes all 98 cases without warnings, including six new cases. Genuine core
+passes 64 and skips 34 for missing FastAPI, Uvicorn, HTTPX or PyYAML. All six
+new cases skip in core. The TLS selection uses cryptography 46.0.7. Neither
+corrected selection emits collection or coverage warnings.
+
+Against verified full `048fa5f3`, the TLS selection reaches three previously
+missing unchanged lines and 28 changed lines. Two of the unchanged lines are
+in serving launch. Core reaches one unchanged line elsewhere and seven changed
+lines. These are selected-run counts.

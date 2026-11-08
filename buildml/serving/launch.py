@@ -23,6 +23,7 @@ buildml.serving.cli : The command-line entry point onto this.
 
 from __future__ import annotations
 
+import os
 import socket
 import threading
 import time
@@ -165,7 +166,7 @@ class ServeHandle:
 
 
 def _validate_bind_target(host: str, port: int) -> None:
-    if not host or not str(host).strip():
+    if not isinstance(host, str) or not host.strip():
         raise ValidationError("host must be non-empty")
     if isinstance(port, bool) or not isinstance(port, int) or port < 1 or port > 65535:
         raise ValidationError("port must be an integer in 1..65535")
@@ -187,12 +188,7 @@ def _probe_bind_host(host: str) -> str:
     That would briefly listen on every interface. Uvicorn performs the
     real bind after auth and TLS checks have already run.
     """
-    normalized = str(host).strip().lower()
-    if normalized in {"0.0.0.0", "*"}:
-        return "127.0.0.1"
-    if normalized in {"::", "[::]"}:
-        return "::1"
-    return host
+    return "::1" if ":" in host else "127.0.0.1"
 
 
 def _has_api_keys(api_keys: str | list[str] | tuple[str, ...] | None) -> bool:
@@ -266,21 +262,21 @@ def _ensure_bind_security(
 def _ensure_port_available(host: str, port: int) -> None:
     """Pre-flight: is this TCP port free on loopback?
 
-    Always probes ``127.0.0.1``. The caller-supplied host is never used as
-    the bind address here, so a request to serve on ``0.0.0.0`` cannot open
-    a wildcard listener during the check. Uvicorn performs the real bind
-    after auth and TLS checks have already run.
+    Probe loopback in the requested address family. The caller-supplied host
+    is never bound here. Uvicorn performs the real bind after auth and TLS
+    checks have already run.
     """
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    probe_host = _probe_bind_host(host)
+    family = socket.AF_INET6 if probe_host == "::1" else socket.AF_INET
     try:
-        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        sock.bind(("127.0.0.1", port))
+        with socket.socket(family, socket.SOCK_STREAM) as sock:
+            if os.name != "nt":
+                sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            sock.bind((probe_host, port))
     except OSError as exc:
         raise ServingLaunchError(
             f"Cannot bind managed serving to {host}:{port}: {exc}"
         ) from exc
-    finally:
-        sock.close()
 
 
 def serve_bundle(
@@ -325,8 +321,8 @@ def serve_bundle(
     kind:
         ``'pipeline'`` or ``'torchscript'``.
     host:
-        The bind address, defaulting to loopback. Anything else triggers the
-        security check below.
+        The bind address, defaulting to loopback. IPv6 literals may use URL
+        brackets. Non-loopback addresses trigger the security check below.
     port:
         The TCP port, 1 to 65535. Tested for availability before loading, so a
         clash fails in a second rather than after the model is read.
@@ -502,6 +498,9 @@ def serve_bundle(
         )
 
     _validate_bind_target(host, port)
+    host = host.strip()
+    if ":" in host and host.startswith("[") and host.endswith("]"):
+        host = host[1:-1]
     _ensure_bind_security(
         host,
         api_keys=api_keys,
@@ -546,12 +545,26 @@ def serve_bundle(
         ssl_keyfile=str(key) if key is not None else None,
     )
     server = uvicorn.Server(config)
-    thread = threading.Thread(target=server.run, name="buildml-serve", daemon=True)
     scheme = "https" if tls else "http"
+    url_host = f"[{host}]" if ":" in host else host
+    url = f"{scheme}://{url_host}:{port}"
+    startup_errors: list[Exception | SystemExit] = []
+
+    def run_server() -> None:
+        try:
+            server.run()
+        except (Exception, SystemExit) as exc:
+            if getattr(server, "started", False):
+                raise
+            startup_errors.append(exc)
+        finally:
+            clear_serving_state(app)
+
+    thread = threading.Thread(target=run_server, name="buildml-serve", daemon=True)
     handle = ServeHandle(
         host=host,
         port=port,
-        url=f"{scheme}://{host}:{port}",
+        url=url,
         kind=str(kind),
         path=str(path),
         _server=server,
@@ -560,19 +573,18 @@ def serve_bundle(
         _app=app,
     )
     if blocking:
-        try:
-            server.run()
-        finally:
-            clear_serving_state(app)
+        run_server()
+        if startup_errors:
+            raise ServingLaunchError(f"Managed serving startup failed on {url}") from startup_errors[0]
         return handle
     thread.start()
     deadline = time.monotonic() + 10.0
     while time.monotonic() < deadline:
+        if not thread.is_alive():
+            cause = startup_errors[0] if startup_errors else None
+            raise ServingLaunchError(f"Managed serving startup failed on {url}") from cause
         if getattr(server, "started", False):
             break
-        if not thread.is_alive():
-            clear_serving_state(app)
-            raise ServingLaunchError("Managed serving thread exited during startup")
         time.sleep(0.05)
     else:
         handle.stop()

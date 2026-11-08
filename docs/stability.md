@@ -55,20 +55,20 @@ Measure the complete suite with `python scripts/run_full_coverage.py`; subset
 runs are not comparable to the project coverage threshold.
 The separate expanded Linux job runs the complete test directory with
 `requirements-expanded-coverage.txt` and an **88%** floor. Remote Linux source
-`f42b40d8` passed at **89.8442%** (57,105/63,560 lines), with 19,496 passed
-and 173 skipped. All four workflows passed. The tested merge `4b7087a` has
-the same tree as the source. [CI42421281966](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42421281966)
+`048fa5f3` passed at **89.8606%** (57,119/63,564 lines), with 19,502 passed
+and 173 skipped. All four workflows passed. The tested merge `666bd82` has
+the same tree as the source. [CI42425378740](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42425378740)
 
 The run used coverage.py 7.16.2 across 800 files and 566 exclusions. All
-5,619 required consumer cases executed. Python 3.12.16, the installed
+5,625 required consumer cases executed. Python 3.12.16, the installed
 distributions, profile inputs and all 173 skips across 37 messages match
-`33ddd48`. The 52 recurring NLP NMF convergence warnings returned, bringing
-the total to 3,466. There were no failures, errors or collection warnings.
+`f42b40d8`. The run had 3,414 warnings. The 52 recurring NLP NMF convergence
+warnings were absent. There were no failures, errors or collection warnings.
 
-The dashboard lifecycle changes added 16 covered lines and one statement. Core 70
+The FLAML changes added 14 covered lines and four statements. Core 70
 and expanded 88 remain in force. The next expanded floor of 89 requires
 at least 90% complete coverage to preserve one percentage point of
-headroom. At `f42b40d8`, 99 more covered lines would reach 90% at the
+headroom. At `048fa5f3`, 89 more covered lines would reach 90% at the
 measured statement count.
 
 The subsequent `8594200` gate passed its tests, but coverage.py upgraded from

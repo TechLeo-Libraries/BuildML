@@ -43,6 +43,7 @@ def _tiny_bundle(tmp_path: Path) -> Path:
 
 
 def test_serve_config_from_yaml_env_cli(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    pytest.importorskip("yaml")
     yaml_path = tmp_path / "serve.yaml"
     yaml_path.write_text(
         "\n".join(
@@ -87,6 +88,7 @@ def test_serve_config_from_yaml_env_cli(tmp_path: Path, monkeypatch: pytest.Monk
 
 
 def test_serve_config_rejects_unknown_fields(tmp_path: Path) -> None:
+    pytest.importorskip("yaml")
     path = tmp_path / "bad.yaml"
     path.write_text("bundle: /m\nnot_a_field: 1\n", encoding="utf-8")
     with pytest.raises(ValidationError, match="Unknown ServeConfig"):
@@ -295,14 +297,44 @@ def test_serve_cli_config_and_basic_auth_flags() -> None:
     assert args.api_keys == ["k1"]
 
 
-def test_port_probe_binds_loopback_only() -> None:
-    import inspect
+def test_port_probe_binds_loopback_only(monkeypatch: pytest.MonkeyPatch) -> None:
+    import socket
+    from types import SimpleNamespace
 
     from buildml.serving import launch
 
-    source = inspect.getsource(launch._ensure_port_available)
-    assert 'sock.bind(("127.0.0.1", port))' in source
-    assert "sock.bind((host" not in source
+    binds = []
+
+    class ProbeSocket:
+        def __init__(self, family, kind):
+            self.family = family
+            assert kind == socket.SOCK_STREAM
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            return False
+
+        def setsockopt(self, *_):
+            pass
+
+        def bind(self, address):
+            binds.append((self.family, address))
+
+    monkeypatch.setattr(launch, "socket", SimpleNamespace(
+        socket=ProbeSocket, AF_INET=socket.AF_INET, AF_INET6=socket.AF_INET6,
+        SOCK_STREAM=socket.SOCK_STREAM, SOL_SOCKET=socket.SOL_SOCKET,
+        SO_REUSEADDR=socket.SO_REUSEADDR,
+    ))
+    for host in ("0.0.0.0", "::", "192.0.2.4", "2001:db8::4"):
+        launch._ensure_port_available(host, 8123)
+    assert binds == [
+        (socket.AF_INET, ("127.0.0.1", 8123)),
+        (socket.AF_INET6, ("::1", 8123)),
+        (socket.AF_INET, ("127.0.0.1", 8123)),
+        (socket.AF_INET6, ("::1", 8123)),
+    ]
     assert launch._is_wildcard_host("0.0.0.0")
     assert launch._is_wildcard_host("::")
     assert launch._probe_bind_host("0.0.0.0") == "127.0.0.1"
