@@ -444,8 +444,10 @@ def build_gate_context(report: dict[str, Any]) -> dict[str, Any]:
     datetime_cols = list(overview.get("datetime_columns") or [])
     time_col = None
     if datetime_cols:
-        name = str(datetime_cols[0])
-        time_col = {"name": name, "min": None, "max": None, "gaps": 0}
+        roles = overview.get("roles") or {}
+        name = str(next((col for col in datetime_cols if roles.get(col) == "time"), datetime_cols[0]))
+        span = (overview.get("datetime_ranges") or {}).get(name) or {}
+        time_col = {"name": name, "min": span.get("min"), "max": span.get("max"), "gaps": None}
 
     return {
         "rows": analysis_rows,
@@ -1104,13 +1106,15 @@ def _r03_4(c: dict[str, Any]) -> dict[str, str]:
 def _r03_5(c: dict[str, Any]) -> dict[str, str]:
     time_col = c.get("timeCol")
     if time_col:
-        gaps = time_col.get("gaps")
-        gap_bit = (
-            f" with {_fmt_n(gaps)} coverage {_plural(int(gaps), 'gap')}" if gaps else ""
+        earliest, latest = time_col.get("min"), time_col.get("max")
+        evidence = (
+            f"{time_col['name']} spans {earliest} to {latest}."
+            if earliest is not None and latest is not None
+            else f"{time_col['name']} is a time column. The report has no observed date range."
         )
         return {
             "status": OPEN,
-            "evidence": f"{time_col['name']} spans {time_col.get('min')} to {time_col.get('max')}{gap_bit}.",
+            "evidence": evidence,
             "closes": "A forward split with a horizon-length gap, and every window closed before the prediction moment.",
         }
     return {

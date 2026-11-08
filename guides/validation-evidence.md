@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-11-06, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed at 89.9579% (57,224/63,612) with 19,580 passed and 173 skipped | Source `6e34e0d1`, tested merge `8b849e1`. Trees match and all four workflows passed. Same 800 files, 566 exclusions and coverage.py 7.16.2. All 5,703 required cases executed. No failures, errors or collection warnings. The gap to 90% is 27 covered lines at this denominator. [CI42485930278](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42485930278) |
+| Current accepted remote expanded CPU whole-package gate | Passed at 89.9720% (57,233/63,612) with 19,604 passed and 173 skipped | Source `45d8f76b`, tested merge `1819032`. Trees match and all four workflows passed. Same 800 files, 566 exclusions and coverage.py 7.16.2. All 5,727 required cases executed. No failures, errors or collection warnings. The gap to 90% is 18 covered lines at this denominator. [CI42491323229](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42491323229) |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -8956,3 +8956,31 @@ runtime warnings.
 Against accepted `6e34e0d1`, Windows provider/core selections reach
 7/6 previously missing unchanged and
 2/0 edited lines. These counts describe the selections.
+
+Remote Linux source `45d8f76b` passed at **89.9720%** (57,233/63,612 lines)
+with 19,604 passes and 173 skips. All four workflows passed. The
+tested merge tree matches the source, and all 5,727 required cases
+executed. Scope, exclusions, tracing, profile inputs, distributions
+and skips match `6e34e0d1`. The run emitted 3,483 warnings. The 52 recurring NLP NMF convergence warnings reappeared. The other normalized warnings match the MAPIE run.
+The tabular revision changed covered lines by +9 and statements by +0. There were no collection or coverage warnings.
+[CI42491323229](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42491323229)
+
+## EDA dashboard temporal evidence (2026-11-08)
+
+The dashboard uses the declared datetime role when available and
+shows the observed timezone-aware range from the profiled partition.
+Older reports and unobserved ranges display that the range is
+unavailable. Gap counts remain unknown unless measured.
+
+A train-only oracle crosses a daylight-saving boundary, excludes
+held-out dates and verifies the complete range despite row sampling.
+Windows and Ubuntu controls fail both cases. Corrected Windows
+provider passes 49 with one existing LangChain deprecation. Genuine
+core passes 38 and skips the module requiring FastAPI. Both new
+cases run in core. Corrected Ubuntu Python 3.12.3 with pandas 2.3.3
+passes both without warnings. No collection or coverage warnings.
+
+Against accepted `45d8f76b`, Windows provider/core and Ubuntu
+selections reach 7/7/8
+previously missing unchanged and 10/10/10
+edited lines. These counts describe the selections.

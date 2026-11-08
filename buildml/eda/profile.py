@@ -476,6 +476,13 @@ def _overview(dataset: Dataset, full: pd.DataFrame, sample: pd.DataFrame) -> dic
             "has_native=True: a Polars/DuckDB handle is attached for project/filter/"
             "sample before materialization. Sklearn still needs an in-memory design matrix."
         )
+    datetime_ranges = {}
+    for name in full.select_dtypes(include=["datetime", "datetimetz"]).columns.astype(str):
+        earliest, latest = full[name].min(), full[name].max()
+        datetime_ranges[name] = {
+            "min": earliest.isoformat() if pd.notna(earliest) else None,
+            "max": latest.isoformat() if pd.notna(latest) else None,
+        }
     return {
         "n_rows": int(len(full)),
         "n_columns": int(full.shape[1]),
@@ -497,9 +504,8 @@ def _overview(dataset: Dataset, full: pd.DataFrame, sample: pd.DataFrame) -> dic
             if not pd.api.types.is_numeric_dtype(full[c])
             and not pd.api.types.is_datetime64_any_dtype(full[c])
         ],
-        "datetime_columns": list(
-            full.select_dtypes(include=["datetime", "datetimetz"]).columns.astype(str)
-        ),
+        "datetime_columns": list(datetime_ranges),
+        "datetime_ranges": datetime_ranges,
     }
 
 

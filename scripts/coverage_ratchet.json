@@ -8,22 +8,22 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 89.95786958435515,
-      "covered_lines": 57224,
+      "percent_covered": 89.97201785826573,
+      "covered_lines": 57233,
       "num_statements": 63612,
       "excluded_lines": 566,
-      "source_revision": "6e34e0d13d1d0c6e5b5f54617374f5f0c1c4973b",
-      "tested_revision": "8b849e18b98f8ac1552b3c8021e6ec5755c0e2d7",
+      "source_revision": "45d8f76bcd14f14b61b7cf73039e2d3254acc330",
+      "tested_revision": "1819032670fae7842eac99d5fa90c4ce629bd939",
       "platform": "remote Linux, CPU expanded profile",
       "python": "3.12.16",
-      "run_id": 42485930278,
-      "result": "19580 passed, 173 skipped, zero failures or errors",
+      "run_id": 42491323229,
+      "result": "19604 passed, 173 skipped, zero failures or errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
       "coverage_version": "7.16.2",
-      "notes": "All four exact-source workflows passed. Tested merge and source have equal trees. Same installed distributions, profile inputs, scope, tracing and skips as 47109ece. All 5,703 required cases in 59 modules executed. All 3,431 normalized warnings match the SMOTE run. The MAPIE revision changed covered lines by +4 and statements by +2. No collection or coverage warnings. The gap to 90% is 27 covered lines at this denominator."
+      "notes": "All four exact-source workflows passed. Tested merge and source have equal trees. Same installed distributions, profile inputs, scope, tracing and skips as 6e34e0d1. All 5,727 required cases in 60 modules executed. The run emitted 3,483 warnings. The 52 recurring NLP NMF convergence warnings reappeared. The other normalized warnings match the MAPIE run. The tabular revision changed covered lines by +9 and statements by +0. No collection or coverage warnings. The gap to 90% is 18 covered lines at this denominator."
     },
     "latest_local_measurement": {
       "percent_covered": 85.51916984547746,
