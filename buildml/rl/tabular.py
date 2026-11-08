@@ -1141,8 +1141,8 @@ def train_tabular_control(
                     next_obs, reward, terminated, truncated, _info = step_out
                     done = bool(terminated) or bool(truncated)
                 else:
-                    next_obs, reward, done, _info = step_out
-                    terminated = bool(done)
+                    next_obs, reward, done, info = step_out
+                    terminated = bool(done) and not bool(info.get("TimeLimit.truncated", False))
                 next_state = discretizer.index(next_obs)
                 next_action = policy.epsilon_greedy_action_for_state(
                     next_state, rng=rng, epsilon=current_epsilon

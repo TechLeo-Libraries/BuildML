@@ -55,20 +55,20 @@ Measure the complete suite with `python scripts/run_full_coverage.py`; subset
 runs are not comparable to the project coverage threshold.
 The separate expanded Linux job runs the complete test directory with
 `requirements-expanded-coverage.txt` and an **88%** floor. Remote Linux source
-`47109ece` passed at **89.9544%** (57,220/63,610 lines), with 19,568 passed
-and 173 skipped. All four workflows passed. The tested merge `2900a49` has
-the same tree as the source. [CI42478033334](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42478033334)
+`6e34e0d1` passed at **89.9579%** (57,224/63,612 lines), with 19,580 passed
+and 173 skipped. All four workflows passed. The tested merge `8b849e1` has
+the same tree as the source. [CI42485930278](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42485930278)
 
 The run used coverage.py 7.16.2 across 800 files and 566 exclusions. All
-5,691 required consumer cases executed. Python 3.12.16, the installed
+5,703 required consumer cases executed. Python 3.12.16, the installed
 distributions, profile inputs and all 173 skips across 37 messages match
-`078a64b1`. The run emitted 3,431 warnings. The 52 recurring NLP NMF convergence warnings from the federated run were absent. The other normalized warnings match.
+`47109ece`. All 3,431 normalized warnings match the SMOTE run.
 There were no failures, errors, collection or coverage warnings.
 
-The SMOTE revision changed covered lines by +10 and statements by +2. Core 70
+The MAPIE revision changed covered lines by +4 and statements by +2. Core 70
 and expanded 88 remain in force. The next expanded floor of 89 requires
 at least 90% complete coverage to preserve one percentage point of
-headroom. At `47109ece`, 29 more covered lines would reach 90% at the
+headroom. At `6e34e0d1`, 27 more covered lines would reach 90% at the
 measured statement count.
 
 The subsequent `8594200` gate passed its tests, but coverage.py upgraded from

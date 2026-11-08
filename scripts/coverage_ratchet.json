@@ -8,22 +8,22 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 89.95440968401195,
-      "covered_lines": 57220,
-      "num_statements": 63610,
+      "percent_covered": 89.95786958435515,
+      "covered_lines": 57224,
+      "num_statements": 63612,
       "excluded_lines": 566,
-      "source_revision": "47109ece4bf19f0bc785911b2913d414605ddf62",
-      "tested_revision": "2900a49a0aac228063b3e224c3bbe80549312a66",
+      "source_revision": "6e34e0d13d1d0c6e5b5f54617374f5f0c1c4973b",
+      "tested_revision": "8b849e18b98f8ac1552b3c8021e6ec5755c0e2d7",
       "platform": "remote Linux, CPU expanded profile",
       "python": "3.12.16",
-      "run_id": 42478033334,
-      "result": "19568 passed, 173 skipped, zero failures or errors",
+      "run_id": 42485930278,
+      "result": "19580 passed, 173 skipped, zero failures or errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
       "coverage_version": "7.16.2",
-      "notes": "All four exact-source workflows passed. Tested merge and source have equal trees. Same installed distributions, profile inputs, scope, tracing and skips as 078a64b1. All 5,691 required cases in 58 modules executed. The run emitted 3,431 warnings. The 52 recurring NLP NMF convergence warnings from the federated run were absent. The other normalized warnings match. The SMOTE revision changed covered lines by +10 and statements by +2. No collection or coverage warnings. The gap to 90% is 29 covered lines at this denominator."
+      "notes": "All four exact-source workflows passed. Tested merge and source have equal trees. Same installed distributions, profile inputs, scope, tracing and skips as 47109ece. All 5,703 required cases in 59 modules executed. All 3,431 normalized warnings match the SMOTE run. The MAPIE revision changed covered lines by +4 and statements by +2. No collection or coverage warnings. The gap to 90% is 27 covered lines at this denominator."
     },
     "latest_local_measurement": {
       "percent_covered": 85.51916984547746,

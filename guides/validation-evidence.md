@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-11-06, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed at 89.9544% (57,220/63,610) with 19,568 passed and 173 skipped | Source `47109ece`, tested merge `2900a49`. Trees match and all four workflows passed. Same 800 files, 566 exclusions and coverage.py 7.16.2. All 5,691 required cases executed. No failures, errors or collection warnings. The gap to 90% is 29 covered lines at this denominator. [CI42478033334](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42478033334) |
+| Current accepted remote expanded CPU whole-package gate | Passed at 89.9579% (57,224/63,612) with 19,580 passed and 173 skipped | Source `6e34e0d1`, tested merge `8b849e1`. Trees match and all four workflows passed. Same 800 files, 566 exclusions and coverage.py 7.16.2. All 5,703 required cases executed. No failures, errors or collection warnings. The gap to 90% is 27 covered lines at this denominator. [CI42485930278](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42485930278) |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -8929,3 +8929,30 @@ emits six provider deprecations. No collection or coverage warnings.
 Against accepted `47109ece`, Windows provider/core selections reach
 3/5 previously missing unchanged and
 13/2 edited lines. These counts describe the selections.
+
+Remote Linux source `6e34e0d1` passed at **89.9579%** (57,224/63,612 lines)
+with 19,580 passes and 173 skips. All four workflows passed. The
+tested merge tree matches the source, and all 5,703 required cases
+executed. Scope, exclusions, tracing, profile inputs, distributions
+and skips match `47109ece`. All 3,431 normalized warnings match the SMOTE run.
+The MAPIE revision changed covered lines by +4 and statements by +2. There were no collection or coverage warnings.
+[CI42485930278](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42485930278)
+
+## Tabular learning at legacy time limits (2026-11-08)
+
+The four-value step API can mark a time-limit truncation in its info
+dictionary. Q-learning, SARSA and Expected SARSA now end that rollout
+and include the value of its final observation in the TD update.
+Genuine terminations still omit the bootstrap.
+
+An independently computed Q-value verifies the update through a
+registered environment with discrete or Box observations. The frozen
+controls pass 18 and fail the six legacy truncation cases. Corrected
+Windows Gymnasium/SB3 passes 96 and skips one intentional missing-extra
+check. Genuine core passes 11 and skips 86 without Gymnasium. Ubuntu
+Gymnasium 1.2.3 and 0.29.1 each pass all 24. No collection, coverage or
+runtime warnings.
+
+Against accepted `6e34e0d1`, Windows provider/core selections reach
+7/6 previously missing unchanged and
+2/0 edited lines. These counts describe the selections.
