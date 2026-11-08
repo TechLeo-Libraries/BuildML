@@ -8,22 +8,22 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 89.89182730102827,
-      "covered_lines": 57173,
-      "num_statements": 63602,
+      "percent_covered": 89.89528960442739,
+      "covered_lines": 57177,
+      "num_statements": 63604,
       "excluded_lines": 566,
-      "source_revision": "b4b73cc14db73a66e143a2d7dc417647ad152edf",
-      "tested_revision": "174bd971c6736cbe7e319c8239f7f2d6caad240e",
+      "source_revision": "c0e62e1668c61ef12bf8e5a2c82de9941dd80cde",
+      "tested_revision": "7acd77160bc878972f76033cdbbb863cd18c90ce",
       "platform": "remote Linux, CPU expanded profile",
       "python": "3.12.16",
-      "run_id": 42443816233,
-      "result": "19524 passed, 173 skipped, zero failures or errors",
+      "run_id": 42462881428,
+      "result": "19540 passed, 173 skipped, zero failures or errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
       "coverage_version": "7.16.2",
-      "notes": "All four exact-source workflows passed. Tested merge and source have equal trees. Same installed distributions, profile inputs, scope, tracing and skips as 2a6b73ea. All 5,647 required cases in 54 modules executed. Three ONNX exporter deprecations raised the warning count to 3,417. The other 3,414 normalized warnings match. The ONNX changes added 11 covered lines and 6 statements. No collection or coverage warnings. The gap to 90% is 69 covered lines at this denominator."
+      "notes": "All four exact-source workflows passed. Tested merge and source have equal trees. Same installed distributions, profile inputs, scope, tracing and skips as b4b73cc1. All 5,663 required cases in 55 modules executed. The 3,475 warnings include six added facade deprecations and 52 recurring NLP NMF convergence warnings. The audio revision changed covered lines by +4 and statements by +2. No collection or coverage warnings. The gap to 90% is 67 covered lines at this denominator."
     },
     "latest_local_measurement": {
       "percent_covered": 85.51916984547746,

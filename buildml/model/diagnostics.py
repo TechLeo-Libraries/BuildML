@@ -969,7 +969,7 @@ def learning_curve_report(
     if export_figures is not None:
         # Learning-curve-only board needs a FitResult-like path; export via plot helper.
         try:
-            from buildml.eda.visualize import save_figures
+            from buildml.eda.visualize import _save_figures
             from buildml.model.plot_boards import _plot_learning_curve, _require_viz
             from buildml.model.supervised import FitResult as FR
 
@@ -991,11 +991,8 @@ def learning_curve_report(
                 cv=n_splits,
                 precomputed=(train_sizes, train_scores, valid_scores),
             )
-            root = save_figures({"learning_curve": fig}, export_figures)
+            root, report.figure_paths = _save_figures({"learning_curve": fig}, export_figures)
             report.figure_dir = str(root)
-            png = root / "learning_curve.png"
-            if png.exists():
-                report.figure_paths = {"learning_curve": str(png)}
         except Exception:  # noqa: BLE001 - structured report still valid
             pass
     if export_html is not None:

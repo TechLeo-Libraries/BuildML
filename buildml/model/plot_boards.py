@@ -47,7 +47,7 @@ from sklearn.model_selection import learning_curve
 from buildml.core.errors import MissingExtraError, ValidationError
 from buildml.data.dataset import Dataset
 from buildml.data.splits import SplitPlan
-from buildml.eda.visualize import save_figures
+from buildml.eda.visualize import _save_figures
 from buildml.explain.schemas import Finding, Recommendation
 from buildml.model.evidence import (
     compatibility_recommendations,
@@ -417,13 +417,8 @@ def build_eval_plot_board(
     )
 
     if export_figures is not None:
-        root = save_figures(figures, export_figures)
+        root, report.figure_paths = _save_figures(figures, export_figures)
         report.figure_dir = str(root)
-        report.figure_paths = {
-            key: str(root / f"{key}.png")
-            for key, fig in figures.items()
-            if fig is not None and not isinstance(fig, dict) and (root / f"{key}.png").exists()
-        }
 
     if export_html is not None:
         from buildml.model.html_diagnostics import export_diagnostics_html

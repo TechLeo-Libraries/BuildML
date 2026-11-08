@@ -310,9 +310,9 @@ def explore_dataset(
     )
     if needs_matplotlib:
         from buildml.eda.visualize import (
+            _save_figures,
             render_adaptive_plots,
             render_analysis_plots,
-            save_figures,
         )
 
         try:
@@ -327,13 +327,8 @@ def explore_dataset(
         ]
         warnings.extend(plot_errors)
         if export_figures is not None:
-            root = save_figures(figures, export_figures)
+            root, figure_paths = _save_figures(figures, export_figures)
             figure_dir = str(root)
-            figure_paths = {
-                key: str(root / f"{key}.png")
-                for key, fig in figures.items()
-                if fig is not None and not isinstance(fig, dict) and (root / f"{key}.png").exists()
-            }
 
     report = EDAReport(
         overview=overview,

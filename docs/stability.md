@@ -55,20 +55,20 @@ Measure the complete suite with `python scripts/run_full_coverage.py`; subset
 runs are not comparable to the project coverage threshold.
 The separate expanded Linux job runs the complete test directory with
 `requirements-expanded-coverage.txt` and an **88%** floor. Remote Linux source
-`b4b73cc1` passed at **89.8918%** (57,173/63,602 lines), with 19,524 passed
-and 173 skipped. All four workflows passed. The tested merge `174bd97` has
-the same tree as the source. [CI42443816233](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42443816233)
+`c0e62e16` passed at **89.8953%** (57,177/63,604 lines), with 19,540 passed
+and 173 skipped. All four workflows passed. The tested merge `7acd771` has
+the same tree as the source. [CI42462881428](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42462881428)
 
 The run used coverage.py 7.16.2 across 800 files and 566 exclusions. All
-5,647 required consumer cases executed. Python 3.12.16, the installed
+5,663 required consumer cases executed. Python 3.12.16, the installed
 distributions, profile inputs and all 173 skips across 37 messages match
-`2a6b73ea`. Three ONNX exporter deprecations raised the warning count to 3,417. The other 3,414 normalized warnings match.
+`b4b73cc1`. The 3,475 warnings include six added facade deprecations and 52 recurring NLP NMF convergence warnings.
 There were no failures, errors, collection or coverage warnings.
 
-The ONNX changes added 11 covered lines and 6 statements. Core 70
+The audio revision changed covered lines by +4 and statements by +2. Core 70
 and expanded 88 remain in force. The next expanded floor of 89 requires
 at least 90% complete coverage to preserve one percentage point of
-headroom. At `b4b73cc1`, 69 more covered lines would reach 90% at the
+headroom. At `c0e62e16`, 67 more covered lines would reach 90% at the
 measured statement count.
 
 The subsequent `8594200` gate passed its tests, but coverage.py upgraded from

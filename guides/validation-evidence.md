@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-11-06, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed at 89.8918% (57,173/63,602) with 19,524 passed and 173 skipped | Source `b4b73cc1`, tested merge `174bd97`. Trees match and all four workflows passed. Same 800 files, 566 exclusions and coverage.py 7.16.2. All 5,647 required cases executed. No failures, errors or collection warnings. The gap to 90% is 69 covered lines at this denominator. [CI42443816233](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42443816233) |
+| Current accepted remote expanded CPU whole-package gate | Passed at 89.8953% (57,177/63,604) with 19,540 passed and 173 skipped | Source `c0e62e16`, tested merge `7acd771`. Trees match and all four workflows passed. Same 800 files, 566 exclusions and coverage.py 7.16.2. All 5,663 required cases executed. No failures, errors or collection warnings. The gap to 90% is 67 covered lines at this denominator. [CI42462881428](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42462881428) |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -8810,3 +8810,32 @@ waveform matches the expected 8 to 16 kHz interpolation and repeat padding.
 Against verified full `b4b73cc1`, the Windows provider selection reaches
 2 previously missing unchanged and 2 changed lines.
 Core reaches 0 unchanged and 0 changed lines. These are selected-run counts.
+
+Remote Linux source `c0e62e16` passed at **89.8953%** (57,177/63,604 lines)
+with 19,540 passes and 173 skips. All four workflows passed. The tested
+merge tree matches the source, and all 5,663 required cases executed.
+Scope, exclusions, tracing, profile inputs, distributions and skips match
+`b4b73cc1`. The 3,475 warnings include six added facade deprecations and 52 recurring NLP NMF convergence warnings.
+The audio revision changed covered lines by +4 and statements by +2. There were no collection or coverage warnings.
+[CI42462881428](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42462881428)
+
+## PNG export receipts (2026-11-08)
+
+EDA, evaluation boards and learning curves report the PNGs successfully
+written during the current export. The shared saver renders into a
+temporary file before publishing the completed image. A failed write
+preserves earlier artifacts and leaves unrelated figures available.
+
+All three consumer cases fail on the frozen Windows and Ubuntu controls.
+They use an existing directory at the destination to provoke a real write
+failure. The corrected Windows selection passes 54 and skips one
+missing-extra test. It emits nine Seaborn and LangChain warnings. Core
+passes 27 and skips 37 for absent Seaborn, Plotly or FastAPI. Ubuntu Python
+3.12.3 with Matplotlib 3.11.2 and Seaborn 0.13.2 passes all four cases and
+emits eight plot deprecations. No collection or coverage warnings. The
+tests read back successful PNGs and check that a failed render preserves
+the prior image.
+
+Against accepted `c0e62e16`, Windows provider/core selections exercise
+18/4 previously missing unchanged lines and
+16/3 edited lines. These counts describe the selections.
