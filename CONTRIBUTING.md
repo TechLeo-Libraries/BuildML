@@ -122,7 +122,7 @@ monolith** (**70** active after corrected thread/process tracing measured at lea
 `pytest tests --cov=buildml`); do not lower it to silence a regression.
 The separate `expanded-coverage` CI job installs
 `requirements-expanded-coverage.txt` and runs the entire suite with an **88%**
-floor, supported by passing remote Linux 89.8953% evidence at `c0e62e16`.
+floor, supported by passing remote Linux 89.9242% evidence at `be80231f`.
 The broadened profile includes DoWhy and ONNX Runtime, using a compatible
 NumPy 2.4.1/SciPy 1.15.3/mlxtend 0.23.4 stack. Same-source complete local suites
 passed 85.5192% for this profile and85.3947% for its original-profile control;
@@ -230,19 +230,19 @@ and pick the next target, and `--path buildml/<pkg>` to audit work in progress.
 - Write public documentation for library users. Keep implementation instructions,
   release actions, and work plans in clearly labeled contributor material.
 
-Remote Linux source `c0e62e16` passed the expanded coverage gate on November 8,
-2026 at **89.8953%** (57,177/63,604 lines), with 19,540 passed and 173 skipped.
-All four workflows passed. The tested merge `7acd771` has the same tree as
-the source. [CI42462881428](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42462881428)
+Remote Linux source `be80231f` passed the expanded coverage gate on November 8,
+2026 at **89.9242%** (57,199/63,608 lines), with 19,544 passed and 173 skipped.
+All four workflows passed. The tested merge `13dd2d6` has the same tree as
+the source. [CI42467659841](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42467659841)
 
 The run used coverage.py 7.16.2 across 800 files and 566 exclusions. All
-5,663 required consumer cases executed. Python 3.12.16, the installed
+5,667 required consumer cases executed. Python 3.12.16, the installed
 distributions, profile inputs and all 173 skips across 37 messages match
-`b4b73cc1`. The 3,475 warnings include six added facade deprecations and 52 recurring NLP NMF convergence warnings.
+`c0e62e16`. The 3,483 warnings add eight Seaborn and Matplotlib deprecations from the new EDA case.
 There were no failures, errors, collection or coverage warnings.
 
-The audio revision changed covered lines by +4 and statements by +2. Core 70
+The PNG revision changed covered lines by +22 and statements by +4. Core 70
 and expanded 88 remain in force. The next expanded floor of 89 requires
 at least 90% complete coverage to preserve one percentage point of
-headroom. At `c0e62e16`, 67 more covered lines would reach 90% at the
+headroom. At `be80231f`, 49 more covered lines would reach 90% at the
 measured statement count.

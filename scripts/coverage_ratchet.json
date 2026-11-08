@@ -8,22 +8,22 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 89.89528960442739,
-      "covered_lines": 57177,
-      "num_statements": 63604,
+      "percent_covered": 89.9242233681298,
+      "covered_lines": 57199,
+      "num_statements": 63608,
       "excluded_lines": 566,
-      "source_revision": "c0e62e1668c61ef12bf8e5a2c82de9941dd80cde",
-      "tested_revision": "7acd77160bc878972f76033cdbbb863cd18c90ce",
+      "source_revision": "be80231ffea71718d1438c33b604f671c7e70143",
+      "tested_revision": "13dd2d6019f15d7fb75f73f9e9b5930266eea236",
       "platform": "remote Linux, CPU expanded profile",
       "python": "3.12.16",
-      "run_id": 42462881428,
-      "result": "19540 passed, 173 skipped, zero failures or errors",
+      "run_id": 42467659841,
+      "result": "19544 passed, 173 skipped, zero failures or errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
       "coverage_version": "7.16.2",
-      "notes": "All four exact-source workflows passed. Tested merge and source have equal trees. Same installed distributions, profile inputs, scope, tracing and skips as b4b73cc1. All 5,663 required cases in 55 modules executed. The 3,475 warnings include six added facade deprecations and 52 recurring NLP NMF convergence warnings. The audio revision changed covered lines by +4 and statements by +2. No collection or coverage warnings. The gap to 90% is 67 covered lines at this denominator."
+      "notes": "All four exact-source workflows passed after Python 3.10 setup retries. Tested merge and source have equal trees. Same installed distributions, profile inputs, scope, tracing and skips as c0e62e16. All 5,667 required cases in 56 modules executed. The 3,483 warnings add eight Seaborn and Matplotlib deprecations from the new EDA case. The PNG revision changed covered lines by +22 and statements by +4. No collection or coverage warnings. The gap to 90% is 49 covered lines at this denominator."
     },
     "latest_local_measurement": {
       "percent_covered": 85.51916984547746,
