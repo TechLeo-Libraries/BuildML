@@ -122,7 +122,7 @@ monolith** (**70** active after corrected thread/process tracing measured at lea
 `pytest tests --cov=buildml`); do not lower it to silence a regression.
 The separate `expanded-coverage` CI job installs
 `requirements-expanded-coverage.txt` and runs the entire suite with an **88%**
-floor, supported by passing remote Linux 89.9871% evidence at `c5868b09`.
+floor, supported by passing remote Linux 89.9942% evidence at `2608d32e`.
 The broadened profile includes DoWhy and ONNX Runtime, using a compatible
 NumPy 2.4.1/SciPy 1.15.3/mlxtend 0.23.4 stack. Same-source complete local suites
 passed 85.5192% for this profile and85.3947% for its original-profile control;
@@ -230,19 +230,21 @@ and pick the next target, and `--path buildml/<pkg>` to audit work in progress.
 - Write public documentation for library users. Keep implementation instructions,
   release actions, and work plans in clearly labeled contributor material.
 
-Remote Linux source `c5868b09` passed the expanded coverage gate on November 8,
-2026 at **89.9871%** (57,248/63,618 lines), with 19,606 passed and 173 skipped.
-All four workflows passed. The tested merge `8b65858` has the same tree as
-the source. [CI42495548917](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42495548917)
+Remote Linux source `2608d32e` passed the expanded coverage gate on November 8,
+2026 at **89.9942%** (57,257/63,623 lines), with 19,609 passed and 173 skipped.
+All four workflows passed. The tested merge `1fe3bc4` has the same tree as
+the source. [CI42500961082](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42500961082)
 
 The run used coverage.py 7.16.2 across 800 files and 566 exclusions. All
-5,729 required consumer cases executed. Python 3.12.16, the installed
+5,732 required consumer cases executed. Python 3.12.16, the installed
 distributions, profile inputs and all 173 skips across 37 messages match
-`45d8f76b`. The warning total decreased from 3,483 to 3,431. The only normalized warning difference is that 52 existing NMF convergence warnings did not recur.
+`c5868b09`. The warning total increased from 3,431 to 3,483 as
+52 recurring NLP NMF convergence warnings reappeared. All other normalized
+warnings match.
 There were no failures, errors, collection or coverage warnings.
 
-The EDA temporal revision changed covered lines by +15 and statements by +6. Core 70
-and expanded 88 remain in force. The next expanded floor of 89 requires
+The Gaussian mixture revision added nine covered lines and five statements.
+Core 70 and expanded 88 remain in force. The next expanded floor of 89 requires
 at least 90% complete coverage to preserve one percentage point of
-headroom. At `c5868b09`, 9 more covered lines would reach 90% at the
+headroom. At `2608d32e`, 4 more covered lines would reach 90% at the
 measured statement count.

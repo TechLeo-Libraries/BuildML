@@ -441,10 +441,25 @@ def build_gate_context(report: dict[str, Any]) -> dict[str, Any]:
     dup_count = quality.get("duplicate_row_count")
     duplicates = {"rows": int(dup_count)} if dup_count is not None else None
 
+    roles = overview.get("roles") or {}
+    group_names = [str(name) for name, role in roles.items() if role == "group"]
+    group_col = None
+    if len(group_names) == 1:
+        group_name = group_names[0]
+        summary = overview.get("group_summary") or {}
+        if summary.get("name") != group_name:
+            summary = {}
+        group_col = {
+            "name": group_name,
+            "groups": summary.get("groups"),
+            "observedRows": summary.get("observedRows"),
+        }
+    elif group_names:
+        group_col = {"names": group_names}
+
     datetime_cols = list(overview.get("datetime_columns") or [])
     time_col = None
     if datetime_cols:
-        roles = overview.get("roles") or {}
         name = str(next((col for col in datetime_cols if roles.get(col) == "time"), datetime_cols[0]))
         span = (overview.get("datetime_ranges") or {}).get(name) or {}
         time_col = {"name": name, "min": span.get("min"), "max": span.get("max"), "gaps": None}
@@ -466,7 +481,7 @@ def build_gate_context(report: dict[str, Any]) -> dict[str, Any]:
         "skewed": skewed,
         "cols": cols,
         "timeCol": time_col,
-        "groupCol": None,
+        "groupCol": group_col,
         "duplicates": duplicates,
         "corrPairs": corr_pairs,
         "hasCorr": has_corr,
@@ -1031,13 +1046,18 @@ def _r03_1(c: dict[str, Any]) -> dict[str, str]:
             "evidence": f"{c['timeCol']['name']} orders the rows, so a random split would train on the future.",
             "closes": "A split drawn on the structure the data has, with the test set touched once.",
         }
-    if c.get("groupCol"):
+    group = c.get("groupCol")
+    if group:
+        if "names" in group:
+            evidence = f"Choose a grouping column from {', '.join(group['names'])} before splitting."
+        else:
+            evidence = (
+                f"{group['name']} is the declared group column. "
+                "Keep each group in one partition."
+            )
         return {
             "status": OPEN,
-            "evidence": (
-                f"{c['groupCol']['name']} repeats across {_fmt_n(c['rows'])} rows, "
-                "so a row-level split would straddle entities."
-            ),
+            "evidence": evidence,
             "closes": "A split drawn on the structure the data has, with the test set touched once.",
         }
     return {
@@ -1127,13 +1147,22 @@ def _r03_5(c: dict[str, Any]) -> dict[str, str]:
 def _r03_6(c: dict[str, Any]) -> dict[str, str]:
     group = c.get("groupCol")
     if group:
-        groups = max(1, int(group.get("groups") or 1))
+        groups = group.get("groups")
+        observed = group.get("observedRows")
+        if "names" in group:
+            evidence = "Group counts depend on which declared grouping column is selected."
+        elif groups is None or observed is None:
+            evidence = f"{group['name']} is declared, but group counts are unavailable."
+        elif not groups:
+            evidence = f"{group['name']} has no observed group labels."
+        else:
+            evidence = (
+                f"{group['name']} identifies {_fmt_n(groups)} observed {_plural(groups, 'group')} "
+                f"across {_fmt_n(observed)} labeled {_plural(observed, 'row')}."
+            )
         return {
             "status": OPEN,
-            "evidence": (
-                f"{group['name']} identifies {_fmt_n(groups)} groups - about "
-                f"{(c['rows'] / groups):.1f} rows each."
-            ),
+            "evidence": evidence,
             "closes": "A group-aware split and cross-validation, or a recorded finding that rows are independent.",
         }
     id_bit = (

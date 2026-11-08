@@ -476,6 +476,17 @@ def _overview(dataset: Dataset, full: pd.DataFrame, sample: pd.DataFrame) -> dic
             "has_native=True: a Polars/DuckDB handle is attached for project/filter/"
             "sample before materialization. Sklearn still needs an in-memory design matrix."
         )
+    group_names = dataset.role_columns(ColumnRole.GROUP)
+    group_summary = None
+    if len(group_names) == 1 and group_names[0] in full:
+        group_name = group_names[0]
+        labels = full[group_name]
+        group_summary = {
+            "name": group_name,
+            "groups": int(labels.nunique()),
+            "observedRows": int(labels.notna().sum()),
+        }
+
     datetime_ranges = {}
     for name in full.select_dtypes(include=["datetime", "datetimetz"]).columns.astype(str):
         earliest, latest = full[name].min(), full[name].max()
@@ -506,6 +517,7 @@ def _overview(dataset: Dataset, full: pd.DataFrame, sample: pd.DataFrame) -> dic
         ],
         "datetime_columns": list(datetime_ranges),
         "datetime_ranges": datetime_ranges,
+        "group_summary": group_summary,
     }
 
 

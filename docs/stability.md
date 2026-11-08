@@ -55,20 +55,22 @@ Measure the complete suite with `python scripts/run_full_coverage.py`; subset
 runs are not comparable to the project coverage threshold.
 The separate expanded Linux job runs the complete test directory with
 `requirements-expanded-coverage.txt` and an **88%** floor. Remote Linux source
-`c5868b09` passed at **89.9871%** (57,248/63,618 lines), with 19,606 passed
-and 173 skipped. All four workflows passed. The tested merge `8b65858` has
-the same tree as the source. [CI42495548917](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42495548917)
+`2608d32e` passed at **89.9942%** (57,257/63,623 lines), with 19,609 passed
+and 173 skipped. All four workflows passed. The tested merge `1fe3bc4` has
+the same tree as the source. [CI42500961082](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42500961082)
 
 The run used coverage.py 7.16.2 across 800 files and 566 exclusions. All
-5,729 required consumer cases executed. Python 3.12.16, the installed
+5,732 required consumer cases executed. Python 3.12.16, the installed
 distributions, profile inputs and all 173 skips across 37 messages match
-`45d8f76b`. The warning total decreased from 3,483 to 3,431. The only normalized warning difference is that 52 existing NMF convergence warnings did not recur.
+`c5868b09`. The warning total increased from 3,431 to 3,483 as
+52 recurring NLP NMF convergence warnings reappeared. All other normalized
+warnings match.
 There were no failures, errors, collection or coverage warnings.
 
-The EDA temporal revision changed covered lines by +15 and statements by +6. Core 70
-and expanded 88 remain in force. The next expanded floor of 89 requires
+The Gaussian mixture revision added nine covered lines and five statements.
+Core 70 and expanded 88 remain in force. The next expanded floor of 89 requires
 at least 90% complete coverage to preserve one percentage point of
-headroom. At `c5868b09`, 9 more covered lines would reach 90% at the
+headroom. At `2608d32e`, 4 more covered lines would reach 90% at the
 measured statement count.
 
 The subsequent `8594200` gate passed its tests, but coverage.py upgraded from
