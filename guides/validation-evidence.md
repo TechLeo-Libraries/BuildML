@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-11-06, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed at 89.8720% (57,137/63,576) with 19,508 passed and 173 skipped | Source `e7311b7c`, tested merge `e788c0b`. Trees match and all four workflows passed. Same 800 files, 566 exclusions and coverage.py 7.16.2. All 5,631 required cases executed. No failures, errors or collection warnings. The gap to 90% is 82 covered lines at this denominator. [CI42430085949](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42430085949) |
+| Current accepted remote expanded CPU whole-package gate | Passed at 89.8830% (57,162/63,596) with 19,521 passed and 173 skipped | Source `2a6b73ea`, tested merge `85992c5`. Trees match and all four workflows passed. Same 800 files, 566 exclusions and coverage.py 7.16.2. All 5,644 required cases executed. No failures, errors or collection warnings. The gap to 90% is 75 covered lines at this denominator. [CI42439463011](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42439463011) |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -8755,3 +8755,32 @@ selection passes all 13 without warnings.
 Against verified full `e7311b7c`, the native selection reaches one previously
 missing unchanged line and 38 changed lines. Core reaches 11 previously
 missing unchanged lines and 34 changed lines. These are selected-run counts.
+
+Remote Linux source `2a6b73ea` passed at **89.8830%** (57,162/63,596 lines)
+with 19,521 passes and 173 skips. All four workflows passed and the tested
+merge tree matches the source. All 5,644 required cases executed. Scope,
+exclusions, tracing, profile inputs, distributions, skips and warnings
+match `e7311b7c`. The checkpoint boundary changes added 25 covered lines
+and 20 statements. There were no collection or coverage warnings.
+[CI42439463011](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42439463011)
+
+## ONNX graph interface (2026-11-08)
+
+ONNX export metadata uses the validated graph's input and output names
+and symbolic batch axes. That covers cases where Torch prunes an unused
+input, names an additional output automatically, or emits a scalar.
+Trace shapes continue to describe the examples supplied to the exporter.
+
+All three real ONNX Runtime cases fail on the frozen control. The corrected
+Windows selection passes 22 cases with ONNX 1.23.2, ONNX Runtime 1.31.0 and
+Torch 2.13.0. The 62 warnings come from the exporter, tracer and deprecated
+facade calls. The core selection skips five cases for absent Torch,
+including two module-level skips. Ubuntu Python 3.12.3 with CPU Torch
+2.7.1 and the same ONNX packages passes all three corrected cases. Each
+Ubuntu selection emits three Torch exporter deprecations. There are no
+collection or coverage warnings. ONNX Runtime predictions match NumPy
+for a static batch and multiple dynamic batch sizes.
+
+Against verified full `2a6b73ea`, the Windows provider selection reaches
+five previously missing unchanged lines and nine changed lines. Core
+reaches zero in both categories. These are selected-run counts.

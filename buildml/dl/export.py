@@ -54,10 +54,9 @@ class ExportResult:
     opset:
         The ONNX operator set version. ``None`` for TorchScript.
     example_input_shapes:
-        The shapes traced with. Anything not marked dynamic is baked in.
+        The input shapes supplied for tracing.
     dynamic_axes:
-        Which dimensions may vary at inference, by input name. Normally just
-        the batch dimension.
+        Symbolic batch dimensions by runtime input or output name.
     disclosures:
         What was exported and how.
     limitations:
@@ -71,9 +70,9 @@ class ExportResult:
 
     Notes
     -----
-    **``example_input_shapes`` tells you what the artifact expects.** Every
-    dimension outside ``dynamic_axes`` is fixed at the traced value, so a model
-    traced on 32-length sequences will not accept 64-length ones.
+    A validated ONNX graph supplies the runtime names and symbolic batch
+    axes. Traced shapes still describe the supplied examples, including inputs
+    the exporter optimized away.
 
     See Also
     --------
@@ -473,10 +472,17 @@ def export_onnx(
         onnx.checker.check_model(model)
     except Exception as exc:  # noqa: BLE001
         warnings.append(f"onnx.checker reported issues: {exc}")
+    else:
+        names = [value.name for value in model.graph.input]
+        outs = [value.name for value in model.graph.output]
+        if dynamic_batch:
+            dynamic_axes = {}
+            for value in (*model.graph.input, *model.graph.output):
+                dimensions = value.type.tensor_type.shape.dim
+                if dimensions and dimensions[0].dim_param:
+                    dynamic_axes[value.name] = {0: dimensions[0].dim_param}
 
-    shapes = _shapes_of(example_input if not isinstance(example_input, tuple) else example_input)
-    if isinstance(example_input, (tuple, list)):
-        shapes = tuple(tuple(int(x) for x in t.shape) for t in example_input)
+    shapes = _shapes_of(example_input)
 
     return ExportResult(
         path=destination,
@@ -486,7 +492,7 @@ def export_onnx(
         dynamic_axes=dynamic_axes,
         disclosures=(
             f"ONNX export at opset={opset} to {destination.name}.",
-            "dynamic_axes batch dim enabled." if dynamic_batch else "Static batch axes.",
+            "dynamic_axes batch dim enabled." if dynamic_axes else "Static batch axes.",
         ),
         limitations=(
             "ONNX export is alpha-quality: opset coverage varies by operator and Torch version.",
