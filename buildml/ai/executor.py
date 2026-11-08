@@ -2817,6 +2817,10 @@ def _dispatch_tool(
             img_kwargs["audio_sample_rate"] = int(call.arguments["audio_sample_rate"])
         if call.arguments.get("audio_max_samples") is not None:
             img_kwargs["audio_max_samples"] = int(call.arguments["audio_max_samples"])
+        if call.arguments.get("audio_source_sample_rate") is not None:
+            img_kwargs["audio_source_sample_rate"] = int(
+                call.arguments["audio_source_sample_rate"]
+            )
         session.dl.make_image_loaders(**img_kwargs)
         state_changes.append(
             "Built image multimodal Torch DataLoaders (train-only image/channel stats)."

@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-11-06, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed at 89.8830% (57,162/63,596) with 19,521 passed and 173 skipped | Source `2a6b73ea`, tested merge `85992c5`. Trees match and all four workflows passed. Same 800 files, 566 exclusions and coverage.py 7.16.2. All 5,644 required cases executed. No failures, errors or collection warnings. The gap to 90% is 75 covered lines at this denominator. [CI42439463011](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42439463011) |
+| Current accepted remote expanded CPU whole-package gate | Passed at 89.8918% (57,173/63,602) with 19,524 passed and 173 skipped | Source `b4b73cc1`, tested merge `174bd97`. Trees match and all four workflows passed. Same 800 files, 566 exclusions and coverage.py 7.16.2. All 5,647 required cases executed. No failures, errors or collection warnings. The gap to 90% is 69 covered lines at this denominator. [CI42443816233](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42443816233) |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -8784,3 +8784,29 @@ for a static batch and multiple dynamic batch sizes.
 Against verified full `2a6b73ea`, the Windows provider selection reaches
 five previously missing unchanged lines and nine changed lines. Core
 reaches zero in both categories. These are selected-run counts.
+
+Remote Linux source `b4b73cc1` passed at **89.8918%** (57,173/63,602 lines)
+with 19,524 passes and 173 skips. All four workflows passed, and the
+tested merge tree matches the source. All 5,647 required cases executed.
+Scope, exclusions, tracing, profile inputs, distributions and skips match
+`2a6b73ea`. Three ONNX exporter deprecations raised the warning count to 3,417. The other 3,414 normalized warnings match.
+The ONNX changes added 11 covered lines and 6 statements. There were no collection or coverage warnings.
+[CI42443816233](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42443816233)
+
+## Agent image and audio loader timebase (2026-11-08)
+
+The image-led agent loader exposes and forwards the optional sample rate
+of array recordings. It shares the existing integer argument validation
+and uses the rate when resampling to the requested model input rate.
+
+The frozen Windows and Ubuntu controls each pass 12 cases and fail four.
+The corrected Windows Torch 2.13.0 and Pillow 12.3.0 selection passes 224
+tests and skips six for absent Polars. It emits ten facade deprecations.
+Core passes 146 and skips 84 for absent Torch or SoundFile. Ubuntu Python
+3.12.3 with CPU Torch 2.7.1 and Pillow 13.0.0 passes all 16 cases, with
+six facade deprecations. No collection or coverage warnings. The loader's
+waveform matches the expected 8 to 16 kHz interpolation and repeat padding.
+
+Against verified full `b4b73cc1`, the Windows provider selection reaches
+2 previously missing unchanged and 2 changed lines.
+Core reaches 0 unchanged and 0 changed lines. These are selected-run counts.

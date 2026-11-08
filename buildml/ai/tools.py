@@ -612,6 +612,10 @@ def _build_rag_dl_tools() -> tuple[ToolSpec, ...]:
                             "(default 16000)."
                         ),
                     },
+                    "audio_source_sample_rate": {
+                        "type": "integer",
+                        "description": "Optional source rate for array waveforms.",
+                    },
                 },
                 "required": ["image_column"],
             },

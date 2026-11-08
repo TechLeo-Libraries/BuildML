@@ -122,7 +122,7 @@ monolith** (**70** active after corrected thread/process tracing measured at lea
 `pytest tests --cov=buildml`); do not lower it to silence a regression.
 The separate `expanded-coverage` CI job installs
 `requirements-expanded-coverage.txt` and runs the entire suite with an **88%**
-floor, supported by passing remote Linux 89.8830% evidence at `2a6b73ea`.
+floor, supported by passing remote Linux 89.8918% evidence at `b4b73cc1`.
 The broadened profile includes DoWhy and ONNX Runtime, using a compatible
 NumPy 2.4.1/SciPy 1.15.3/mlxtend 0.23.4 stack. Same-source complete local suites
 passed 85.5192% for this profile and85.3947% for its original-profile control;
@@ -230,19 +230,19 @@ and pick the next target, and `--path buildml/<pkg>` to audit work in progress.
 - Write public documentation for library users. Keep implementation instructions,
   release actions, and work plans in clearly labeled contributor material.
 
-Remote Linux source `2a6b73ea` passed the expanded coverage gate on November 8,
-2026 at **89.8830%** (57,162/63,596 lines), with 19,521 passed and 173 skipped.
-All four workflows passed. The tested merge `85992c5` has the same tree as
-the source. [CI42439463011](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42439463011)
+Remote Linux source `b4b73cc1` passed the expanded coverage gate on November 8,
+2026 at **89.8918%** (57,173/63,602 lines), with 19,524 passed and 173 skipped.
+All four workflows passed. The tested merge `174bd97` has the same tree as
+the source. [CI42443816233](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42443816233)
 
 The run used coverage.py 7.16.2 across 800 files and 566 exclusions. All
-5,644 required consumer cases executed. Python 3.12.16, the installed
+5,647 required consumer cases executed. Python 3.12.16, the installed
 distributions, profile inputs and all 173 skips across 37 messages match
-`e7311b7c`. All 3,414 warnings also match. There were no failures, errors or
-collection warnings.
+`2a6b73ea`. Three ONNX exporter deprecations raised the warning count to 3,417. The other 3,414 normalized warnings match.
+There were no failures, errors, collection or coverage warnings.
 
-The checkpoint boundary changes added 25 covered lines and 20 statements. Core 70
+The ONNX changes added 11 covered lines and 6 statements. Core 70
 and expanded 88 remain in force. The next expanded floor of 89 requires
 at least 90% complete coverage to preserve one percentage point of
-headroom. At `2a6b73ea`, 75 more covered lines would reach 90% at the
+headroom. At `b4b73cc1`, 69 more covered lines would reach 90% at the
 measured statement count.

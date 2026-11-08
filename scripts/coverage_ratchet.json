@@ -8,22 +8,22 @@
     "profile": "requirements-expanded-coverage.txt",
     "policy": "Run the whole tests directory and preserve package-wide coverage scope. Raise only from passing full-suite evidence with at least one percentage point of headroom. Never lower to silence failures.",
     "latest_measurement": {
-      "percent_covered": 89.88301151015787,
-      "covered_lines": 57162,
-      "num_statements": 63596,
+      "percent_covered": 89.89182730102827,
+      "covered_lines": 57173,
+      "num_statements": 63602,
       "excluded_lines": 566,
-      "source_revision": "2a6b73ea257ea21b7798131a9a98b7f50290f943",
-      "tested_revision": "85992c550f4eb4f8d1373f30ab721b7a86fd486d",
+      "source_revision": "b4b73cc14db73a66e143a2d7dc417647ad152edf",
+      "tested_revision": "174bd971c6736cbe7e319c8239f7f2d6caad240e",
       "platform": "remote Linux, CPU expanded profile",
       "python": "3.12.16",
-      "run_id": 42439463011,
-      "result": "19521 passed, 173 skipped, zero failures or errors",
+      "run_id": 42443816233,
+      "result": "19524 passed, 173 skipped, zero failures or errors",
       "trace_concurrency": [
         "multiprocessing",
         "thread"
       ],
       "coverage_version": "7.16.2",
-      "notes": "All four exact-source workflows passed. Tested merge and source have equal trees. Same installed distributions, profile inputs, scope, tracing, skips and all 3,414 warnings as e7311b7c. All 5,644 required consumers in 53 modules executed. The checkpoint boundary changes added 25 covered lines and 20 statements. No collection or coverage warnings. The gap to 90% is 75 covered lines at this denominator."
+      "notes": "All four exact-source workflows passed. Tested merge and source have equal trees. Same installed distributions, profile inputs, scope, tracing and skips as 2a6b73ea. All 5,647 required cases in 54 modules executed. Three ONNX exporter deprecations raised the warning count to 3,417. The other 3,414 normalized warnings match. The ONNX changes added 11 covered lines and 6 statements. No collection or coverage warnings. The gap to 90% is 69 covered lines at this denominator."
     },
     "latest_local_measurement": {
       "percent_covered": 85.51916984547746,
