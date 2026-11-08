@@ -111,7 +111,7 @@ Maintained assessment, updated 2026-11-06, review branch `codex/coverage-cuda-ci
 | Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
-| Current accepted remote expanded CPU whole-package gate | Passed at 89.8606% (57,119/63,564) with 19,502 passed and 173 skipped | Source `048fa5f3`, tested merge `666bd82`. Trees match and all four workflows passed. Same 800 files, 566 exclusions and coverage.py 7.16.2. All 5,625 required cases executed. No failures, errors or collection warnings. The gap to 90% is 89 covered lines at this denominator. [CI42425378740](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42425378740) |
+| Current accepted remote expanded CPU whole-package gate | Passed at 89.8720% (57,137/63,576) with 19,508 passed and 173 skipped | Source `e7311b7c`, tested merge `e788c0b`. Trees match and all four workflows passed. Same 800 files, 566 exclusions and coverage.py 7.16.2. All 5,631 required cases executed. No failures, errors or collection warnings. The gap to 90% is 82 covered lines at this denominator. [CI42430085949](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42430085949) |
 | Remote expanded CPU whole-package gate, before profile expansion | Passed: 85.2993% (52,773 / 61,868); 3,305 passed, 91 skipped | [CI run 39376275463](https://github.com/TechLeo-Libraries/BuildML/actions/runs/39376275463); merge `a373d1fe` tree equals `4fcceb2`; all three workflows passed. NumPy 2.5.4/SciPy 1.18.1 profile; broader profile subsequently passed at 85.4319% (`0b31402`); scope/exclusions and floor 84% unchanged |
 | Remote EconML and compatible causal profiles, Windows/Linux | All four jobs passed | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; real estimation/refutation, graph-name, policy and persistence contracts |
 | Local Linux CUDA | BuildML regression fit/evaluation passed | Quadro RTX 3000, Torch 2.7.1+cu126, CUDA 12.6; five epochs, finite metrics, R² 0.98486; peak Torch allocation 29.38 MiB, excluding driver/context allocations |
@@ -8723,3 +8723,35 @@ Against verified full `048fa5f3`, the TLS selection reaches three previously
 missing unchanged lines and 28 changed lines. Two of the unchanged lines are
 in serving launch. Core reaches one unchanged line elsewhere and seven changed
 lines. These are selected-run counts.
+
+Remote Linux source `e7311b7c` passed at **89.8720%** (57,137/63,576 lines)
+with 19,508 passes and 173 skips. All four workflows passed and the tested
+merge tree matches the source. All 5,631 required cases executed. Scope,
+exclusions, tracing, profile inputs, distributions, skips and warnings
+match `048fa5f3`. Managed serving added 18 covered lines and 12 statements.
+There were no collection warnings.
+[CI42430085949](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42430085949)
+
+## Checkpoint member boundaries (2026-11-08)
+
+Checkpoint reads validate resolved member paths against the selected bundle.
+Manifest entries and native sidecar metadata reject references to external
+files, including symlinks that resolve outside the bundle. Data-only restore
+reads canonical Parquet and preserves relative source labels. Legacy single
+and partitioned sidecars and explicit bare Parquet loads still restore.
+
+The matched Windows selection uses DuckDB 1.5.6, Polars 2.0.0 and
+PyArrow 25.0.0. The frozen control fails six new cases, passes four
+compatibility cases and skips three because the account lacks symlink
+privileges. The corrected selection passes 180 and skips those same three.
+Genuine core passes 56 and skips 127 for missing DuckDB or Polars and
+unavailable symlink privileges. The corrected selections emit no warnings.
+An independent Windows junction check confirms that the fix rejects a
+reference that resolved to synthetic rows outside the bundle. An isolated
+Ubuntu run on Python 3.12.3 executes all 13 new cases, including the three
+symlink cases. The frozen control fails nine and passes four. The corrected
+selection passes all 13 without warnings.
+
+Against verified full `e7311b7c`, the native selection reaches one previously
+missing unchanged line and 38 changed lines. Core reaches 11 previously
+missing unchanged lines and 34 changed lines. These are selected-run counts.
