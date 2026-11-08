@@ -104,11 +104,11 @@ Sources: [M4 official data](https://github.com/Mcompetitions/M4-methods),
 
 ## Backend/platform evidence table
 
-Maintained assessment, updated 2026-11-06, review branch `codex/coverage-cuda-ci-20261012`:
+Maintained assessment, updated 2026-11-08, review branch `codex/coverage-cuda-ci-20261012`.
 
 | Configuration | Outcome | Qualification |
 |---|---|---|
-| Remote core Linux, Python 3.10-3.13 | All core jobs passed: 71.28-71.29%; 2,172 passed, 398 skipped per job | [CI run 38589015544](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015544), `2837fb3`; corrected thread/process collection permits core floor 70% under the one-point headroom rule |
+| Remote core Linux, Python 3.10-3.13 | All four core jobs passed at 75.6642–75.6657% with 12,716 passes and 5,036 skips per job | Source `64d53c96`. Core has its own dependencies and a 70% floor. [CI run 42510496464](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42510496464) |
 | Remote backend Windows/Linux matrix | Both jobs passed, including real HTTP recovery and continuous probes | [Backend run 38589015595](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015595), `2837fb3`; real backend groups and bounded allocation checks; skips remain visible |
 | Remote release acceptance | Passed | [Acceptance run 38589015461](https://github.com/TechLeo-Libraries/BuildML/actions/runs/38589015461), `2837fb3`; verification does not publish a release |
 | Current accepted remote expanded CPU whole-package gate | Passed at 90.0049% (57,289/63,651) with 19,612 passed and 173 skipped | Source `64d53c96`, tested merge `3e89b25`. Trees match and all four workflows passed. Same 800 files, 566 exclusions and coverage.py 7.16.2. All 5,735 required cases executed. No failures, errors or collection warnings. Reached 90% whole-package line coverage. [CI42510496464](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42510496464) |
@@ -131,12 +131,15 @@ Exact local measurements are preserved in `reports/coverage90-gpu-linux.json`,
 The broader local environment and the remote core environment have different
 dependencies; their percentages are not interchangeable.
 
-The `expanded-coverage` CI job reproduces the assessed dependency profile using
-`requirements-expanded-coverage.txt` and its dated constraints. It runs all
-tests against all BuildML modules, with an 84% floor, and uploads source,
-installed package, coverage and test-result artifacts. CPU Torch replaces local
-CUDA Torch in that job; its outcome must be verified independently. The core
-floor remains 70%, and the 90% target remains outstanding.
+The `expanded-coverage` CI job uses `requirements-expanded-coverage.txt`, its
+dated constraints and CPU Torch. It runs the complete test directory, measures
+the whole BuildML package and uploads the source revision, installed
+distributions, coverage and test results. The accepted expanded run measured
+90.0049% and supports the 89% floor with one percentage point of headroom.
+The closeout suite reproduced that result at the new floor. The core floor
+remains 70%. CUDA and other backend profiles have separate evidence.
+[Accepted expanded run](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42510496464)
+[Verified 89% floor](https://github.com/TechLeo-Libraries/BuildML/actions/runs/42516256442)
 
 ## Correctness and coverage reach
 
