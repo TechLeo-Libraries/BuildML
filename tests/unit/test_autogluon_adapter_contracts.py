@@ -1,5 +1,6 @@
 """AutoGluon metrics retain BuildML meaning and selection uses held-out scores."""
 import json
+import warnings
 from pathlib import Path
 
 import numpy as np
@@ -43,6 +44,52 @@ def test_unknown_metrics_and_missing_validation_scores_are_refused():
     with pytest.raises(ValidationError, match='validation'):
         _leaderboard_trials(pd.DataFrame({'model':['a'], 'fit_time':[1.]}),
                             metric='rmse', higher_is_better=False)
+
+
+@pytest.mark.parametrize("metric", ["r2", "rmse"])
+def test_real_autogluon_identifies_the_score_source_with_singleton_validation(
+    metric, monkeypatch, tmp_path,
+):
+    pytest.importorskip("autogluon.tabular")
+    from buildml import Session
+
+    monkeypatch.chdir(tmp_path)
+    x, y = make_regression(n_samples=120, n_features=2, noise=1.0, random_state=3)
+    frame = pd.DataFrame(x, columns=["signal", "noise"]).assign(target=y)
+    session = Session.ingest(frame).set_roles({"target": "target"}).inject_split(
+        train_indices=list(range(80)),
+        validation_indices=[80],
+        test_indices=list(range(81, 120)),
+    )
+    with pytest.warns(UserWarning, match=r"R\^2 score is not well-defined"):
+        result = session.automl.run(
+            backend="autogluon", task="regression", selection="validation",
+            ranking_metric=metric, time_budget=30, random_state=9,
+        )
+
+    plan = session.automl_plan
+    wrapper = session.fit_result.estimator
+    if metric == "r2":
+        predictor = wrapper._predictor
+        leaderboard = predictor.leaderboard(silent=True).set_index("model")
+        expected = leaderboard.loc[predictor.model_best, "score_val"]
+        source = "provider_internal"
+        assert any("finite 'r2'" in message for message in result.warnings)
+    else:
+        validation = session.partition("validation")
+        predictions = wrapper.predict(validation[list(plan.feature_columns)])
+        expected = np.sqrt(np.mean((validation["target"].to_numpy() - predictions) ** 2))
+        source = "session_validation"
+        assert result.warnings == ()
+    assert np.isfinite(expected)
+    assert result.best_score == pytest.approx(expected)
+    assert plan.best_score == pytest.approx(expected)
+    assert plan.warnings == result.warnings
+    assert plan.config["extras"]["best_score_source"] == source
+    assert result.config["extras"]["best_score_source"] == source
+    json.dumps(plan.to_dict(), allow_nan=False)
+    json.dumps(result.to_dict(), allow_nan=False)
+    assert session.automl.evaluate(partition="test").n_rows == 39
 
 
 @pytest.mark.parametrize('task,classes,metric,selection', [
@@ -94,11 +141,25 @@ def test_real_autogluon_selection_preserves_train_boundary_and_metric(
     assert evaluation.n_rows == len(session.split_plan.test_indices)
     assert np.isfinite(evaluation.metrics[metric])
     if task == 'classification':
-        assert list(session.automl_plan.estimator_.classes_) == predictor.class_labels
-    if classes == 2:
         from buildml.automl.checkpoint import load_automl_bundle
+
+        wrapper = session.automl_plan.estimator_
         features = session.partition('test')[list(session.automl_plan.feature_columns)]
-        expected = session.automl_plan.estimator_.predict_proba(features)
+        provider = predictor.predict_proba(features)
+        assert list(wrapper.classes_) == list(provider.columns) == predictor.class_labels
+        raw = provider.to_numpy(dtype=float)
+        expected = raw / raw.sum(axis=1, keepdims=True)
+        probabilities = wrapper.predict_proba(features)
+        np.testing.assert_allclose(probabilities.sum(axis=1), 1, atol=1e-14, rtol=0)
+        np.testing.assert_allclose(probabilities, expected, atol=1e-14, rtol=0)
+        labels = session.partition('test')['target'].to_numpy()
+        row_label_probabilities = expected[np.arange(len(labels)), provider.columns.get_indexer(labels)]
+        loss = -np.log(np.clip(row_label_probabilities, np.finfo(float).eps, 1)).mean()
+        with warnings.catch_warnings():
+            warnings.filterwarnings('error', message='The y_prob values do not sum to one')
+            evaluation = session.automl.evaluate(partition='test')
+        assert evaluation.metrics['log_loss'] == pytest.approx(loss, abs=1e-12, rel=0)
+
         bundle = session.automl.save_bundle(tmp_path/'bundle')
         original_path = Path(predictor.path).resolve()
         assert original_path.is_relative_to(tmp_path.resolve())
@@ -124,4 +185,5 @@ def test_real_autogluon_selection_preserves_train_boundary_and_metric(
         with pytest.raises(ValidationError, match='trusted'):
             load_automl_bundle(relocated)
         loaded, _ = load_automl_bundle(relocated, trusted=True)
-        np.testing.assert_allclose(loaded.estimator_.predict_proba(features), expected)
+        np.testing.assert_array_equal(loaded.estimator_.classes_, wrapper.classes_)
+        np.testing.assert_allclose(loaded.estimator_.predict_proba(features), expected, atol=1e-14, rtol=0)

@@ -505,6 +505,9 @@ def _resolve_multimodal_columns(
     if missing:
         raise ValidationError(f"numeric_columns missing from dataset: {missing}")
 
+    if target in numeric_columns or target in (text_column, image_column, audio_column):
+        raise ValidationError(f"Target column {target!r} cannot also be a multimodal input.")
+
     has_numeric = bool(numeric_columns)
     has_text = text_column is not None
     has_image = image_column is not None
@@ -1047,11 +1050,14 @@ def make_multimodal_loaders(
         audio_column=audio_column if frozen is None else frozen.audio_column,
     )
     if frozen is not None:
+        if frozen.target_column != target:
+            raise ValidationError(
+                f"Frozen target column {frozen.target_column!r} does not match the dataset target {target!r}."
+            )
         numeric_cols = list(frozen.numeric_columns)
         text_col = frozen.text_column
         image_col = frozen.image_column
         audio_col = frozen.audio_column
-        target = frozen.target_column
 
     frame = dataset._ensure_pandas()
     train_idx = list(split_plan.indices_for("train"))
