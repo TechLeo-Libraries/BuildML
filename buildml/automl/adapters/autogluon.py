@@ -409,14 +409,23 @@ class _AutoGluonSklearnWrapper:
         Returns
         -------
         array-like
-            Probability matrix from ``TabularPredictor.predict_proba``.
+            Probability matrix in the predictor's class order, normalized
+            in float64 to remove rounding error in row sums.
 
         Raises
         ------
         AttributeError
             When the underlying TabularPredictor has no ``predict_proba``.
+        ValueError
+            When the predictor returns invalid probabilities.
         """
         frame = X[self._feature_cols].copy()
-        if hasattr(self._predictor, "predict_proba"):
-            return np.asarray(self._predictor.predict_proba(frame), dtype=float)
-        raise AttributeError("Underlying TabularPredictor has no predict_proba.")
+        if not hasattr(self._predictor, "predict_proba"):
+            raise AttributeError("Underlying TabularPredictor has no predict_proba.")
+        probabilities = np.asarray(self._predictor.predict_proba(frame), dtype=float)
+        if probabilities.shape != (len(frame), len(self.classes_)):
+            raise ValueError("AutoGluon returned an unexpected probability matrix shape.")
+        row_sums = probabilities.sum(axis=1, keepdims=True)
+        if (probabilities < 0).any() or not np.allclose(row_sums, 1.0, rtol=0, atol=1e-6):
+            raise ValueError("AutoGluon returned invalid class probabilities.")
+        return probabilities / row_sums
