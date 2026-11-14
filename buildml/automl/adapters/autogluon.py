@@ -76,8 +76,9 @@ def run_autogluon_adapter(
     task:
         ``classification``, ``regression``, or ``auto`` to infer from the target.
     selection:
-        ``cv`` (train-only internal scoring), or ``validation`` to re-rank on
-        the Session validation partition. ``nested`` is not supported.
+        ``cv`` reports the train-only internal score. ``validation`` reports
+        the selected model's Session validation score when finite, with
+        the internal score as a fallback. ``nested`` is not supported.
     ranking_metric:
         Metric for leaderboard display; mapped to AutoGluon eval_metric names.
     time_budget:
@@ -160,6 +161,8 @@ def run_autogluon_adapter(
     wrapper = _AutoGluonSklearnWrapper(predictor, target=target, feature_cols=feature_cols)
     fit_result: FitResult | None = None
     display_score = best_score
+    score_source = "provider_internal"
+    warnings: list[str] = []
     std_score = 0.0
 
     if selection == "validation":
@@ -172,7 +175,15 @@ def run_autogluon_adapter(
             weight_column=weight_column(dataset),
         )
         ev = evaluate_estimator(dataset, split_plan, fit_result, partition="validation")
-        display_score = float(ev.metrics.get(metric, best_score))
+        validation_score = ev.metrics.get(metric, float("nan"))
+        if np.isfinite(validation_score):
+            display_score = validation_score
+            score_source = "session_validation"
+        else:
+            warnings.append(
+                f"Session validation did not produce a finite '{metric}' score. "
+                "Best score uses AutoGluon's internal validation on the training partition."
+            )
     elif refit:
         fit_result = FitResult(
             estimator=wrapper,
@@ -198,13 +209,14 @@ def run_autogluon_adapter(
             "time_budget_seconds": seconds,
             "presets": presets,
             "best_model": best_model_name,
+            "best_score_source": score_source,
         },
     )
     disclosures = [
         "backend=autogluon (buildml[automl-industry]); AutoGluon internal stacking on train only.",
         "Fold-local PreprocessRecipe search bypassed: AutoGluon handles featurization internally.",
         "Session test never entered AutoGluon fit or selection scoring.",
-        "Scores use AutoGluon internal validation; selection='cv' is not BuildML fold-local cross-validation.",
+        "Trial scores use AutoGluon internal validation. The best score source is recorded in the config.",
         f"time_limit={int(seconds)}s; eval_metric={ag_metric}; best_model={best_model_name}.",
     ]
     limitations = [
@@ -233,7 +245,7 @@ def run_autogluon_adapter(
         families_searched=("autogluon",),
         recipe_strategies_searched=("autogluon_internal",),
         disclosures=tuple(disclosures),
-        warnings=(),
+        warnings=tuple(warnings),
         config=config.to_dict(),
     )
     result = AutoMLResult(
@@ -254,7 +266,7 @@ def run_autogluon_adapter(
         feature_columns=tuple(feature_cols),
         target_column=str(target),
         disclosures=tuple(disclosures),
-        warnings=(),
+        warnings=tuple(warnings),
         limitations=tuple(limitations),
         recommendations=(
             f"Winner: autogluon model={best_model_name}, score={display_score:.6f}.",

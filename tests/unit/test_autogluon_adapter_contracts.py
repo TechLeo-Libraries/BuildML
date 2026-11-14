@@ -45,6 +45,52 @@ def test_unknown_metrics_and_missing_validation_scores_are_refused():
                             metric='rmse', higher_is_better=False)
 
 
+@pytest.mark.parametrize("metric", ["r2", "rmse"])
+def test_real_autogluon_identifies_the_score_source_with_singleton_validation(
+    metric, monkeypatch, tmp_path,
+):
+    pytest.importorskip("autogluon.tabular")
+    from buildml import Session
+
+    monkeypatch.chdir(tmp_path)
+    x, y = make_regression(n_samples=120, n_features=2, noise=1.0, random_state=3)
+    frame = pd.DataFrame(x, columns=["signal", "noise"]).assign(target=y)
+    session = Session.ingest(frame).set_roles({"target": "target"}).inject_split(
+        train_indices=list(range(80)),
+        validation_indices=[80],
+        test_indices=list(range(81, 120)),
+    )
+    with pytest.warns(UserWarning, match=r"R\^2 score is not well-defined"):
+        result = session.automl.run(
+            backend="autogluon", task="regression", selection="validation",
+            ranking_metric=metric, time_budget=30, random_state=9,
+        )
+
+    plan = session.automl_plan
+    wrapper = session.fit_result.estimator
+    if metric == "r2":
+        predictor = wrapper._predictor
+        leaderboard = predictor.leaderboard(silent=True).set_index("model")
+        expected = leaderboard.loc[predictor.model_best, "score_val"]
+        source = "provider_internal"
+        assert any("finite 'r2'" in message for message in result.warnings)
+    else:
+        validation = session.partition("validation")
+        predictions = wrapper.predict(validation[list(plan.feature_columns)])
+        expected = np.sqrt(np.mean((validation["target"].to_numpy() - predictions) ** 2))
+        source = "session_validation"
+        assert result.warnings == ()
+    assert np.isfinite(expected)
+    assert result.best_score == pytest.approx(expected)
+    assert plan.best_score == pytest.approx(expected)
+    assert plan.warnings == result.warnings
+    assert plan.config["extras"]["best_score_source"] == source
+    assert result.config["extras"]["best_score_source"] == source
+    json.dumps(plan.to_dict(), allow_nan=False)
+    json.dumps(result.to_dict(), allow_nan=False)
+    assert session.automl.evaluate(partition="test").n_rows == 39
+
+
 @pytest.mark.parametrize('task,classes,metric,selection', [
     ('classification',3,'f1_weighted','validation'),
     ('classification',2,'f1_weighted','cv'),
