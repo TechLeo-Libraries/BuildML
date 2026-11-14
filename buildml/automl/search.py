@@ -45,6 +45,7 @@ from buildml.data.splits import SplitPlan, assert_fit_partition
 from buildml.model.selection import (
     _LOWER_IS_BETTER,
     _refuse_session_global_cv_leakage,
+    _require_finite_cv_metric,
     cv_score,
 )
 from buildml.model.supervised import (
@@ -526,7 +527,10 @@ def run_automl(
     if not trials:
         if _deadline_expired(deadline):
             raise ValidationError("AutoML time budget exhausted before any scored trials completed.")
-        raise ValidationError("AutoML produced no scored trials.")
+        raise ValidationError(
+            f"AutoML produced no scored trials with a finite '{metric}' ranking score "
+            "and any configured secondary objective."
+        )
 
     trials.sort(key=lambda t: t.mean_score, reverse=higher_is_better)
     for i, trial in enumerate(trials):
@@ -896,6 +900,7 @@ def _score_on_validation(
         fit = fit_estimator(dataset, split_plan, model, task=task)
 
     ev = evaluate_estimator(dataset, split_plan, fit, partition="validation")
+    _require_finite_cv_metric(ev.metrics, metric, "AutoML validation")
     score = float(ev.metrics[metric])
     return score, 0.0, dict(ev.metrics), {k: 0.0 for k in ev.metrics}
 
@@ -1125,12 +1130,13 @@ def _run_optuna_trials(
             allow_session_global_preprocess=allow_session_global_preprocess,
         )
         if score_pack is None:
-            if multi_obj:
-                bad = float("-inf") if higher_is_better else float("inf")
-                return bad, bad
-            return float("-inf") if higher_is_better else float("inf")
+            raise optuna.exceptions.TrialPruned()
         mean_score, std_score, mean_metrics, std_metrics = score_pack
-        secondary_score = float(mean_metrics.get(secondary, mean_score)) if secondary else mean_score
+        secondary_score = mean_score
+        if multi_obj:
+            secondary_score = float(mean_metrics.get(secondary or "", float("nan")))
+            if not np.isfinite(secondary_score):
+                raise optuna.exceptions.TrialPruned()
         trial_rows.append(
             AutoMLTrial(
                 trial=int(trial.number),
@@ -1346,7 +1352,8 @@ def _run_evolutionary_trials(
         population = next_pop[:population_size]
         fitness = next_fit[:population_size]
 
-    trials = [t for t in scored.values() if t.family not in {"budget_exhausted", "time_budget_exhausted"}]
+    # Failed fits count against the search budget but cannot become winners.
+    trials = [trial for trial in scored.values() if np.isfinite(trial.mean_score)]
     trials.sort(key=lambda t: t.mean_score, reverse=higher)
     for i, trial in enumerate(trials):
         trial.trial = i
@@ -1380,7 +1387,6 @@ def _nested_outer_estimate(
 ) -> tuple[float, float, tuple[str, ...]]:
     """Repeat the configured search on each outer-training population."""
     from buildml.model.selection import (
-        _require_finite_cv_metric,
         _resolve_splitter,
         _score_predictions,
         _validated_fold_positions,
