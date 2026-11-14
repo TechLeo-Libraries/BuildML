@@ -41,6 +41,15 @@ from buildml.dl.extras import require_torch
 from buildml.rl.extras import require_gymnasium, require_imitation, require_stable_baselines3
 
 
+def _observation_array(values: np.ndarray) -> np.ndarray:
+    """Convert observations to the neural policy dtype and reject overflow."""
+    with np.errstate(over="ignore", invalid="ignore"):
+        observations = np.asarray(values, dtype=np.float32)
+    if not np.isfinite(observations).all():
+        raise ValidationError("Neural imitation requires finite float32 observations.")
+    return observations
+
+
 @dataclass
 class TabularMlpPolicy:
     """Make a neural policy look like the estimator the rest of the code expects.
@@ -117,7 +126,7 @@ class TabularMlpPolicy:
             :func:`~buildml.rl.features.decode_discrete_actions` to recover the
             original action labels.
         """
-        obs = np.asarray(x, dtype=float)
+        obs = _observation_array(x)
         if obs.ndim == 1:
             obs = obs.reshape(1, -1)
         actions, _states = self.model.predict(obs, deterministic=True)
@@ -213,13 +222,14 @@ def fit_tabular_bc_mlp(
     n = int(x.shape[0])
     if n == 0:
         raise ValidationError("Behavioral cloning requires non-empty demonstrations")
+    observations = _observation_array(x)
     obs_space, act_space = _build_spaces(obs_dim, n_actions)
 
     transitions = Transitions(
-        obs=np.asarray(x, dtype=np.float32),
+        obs=observations,
         acts=np.asarray(y_codes, dtype=np.int64),
         infos=np.array([{}] * n, dtype=object),
-        next_obs=np.asarray(x, dtype=np.float32),
+        next_obs=observations,
         dones=np.ones(n, dtype=bool),
     )
 
@@ -244,7 +254,7 @@ def fit_tabular_bc_mlp(
         progress_bar=False,
     )
     policy_model = bc_trainer.policy
-    pred = policy_model.predict(np.asarray(x, dtype=np.float32), deterministic=True)[0]
+    pred = policy_model.predict(observations, deterministic=True)[0]
     pred = np.asarray(pred).reshape(-1)
     train_score = float(np.mean(pred == y_codes))
 
@@ -360,6 +370,7 @@ def fit_tabular_gail_lite(
 
     obs_dim = int(x.shape[1])
     n = int(x.shape[0])
+    observations = _observation_array(x)
 
     try:
         env = gymnasium.make(env_id)
@@ -386,10 +397,10 @@ def fit_tabular_gail_lite(
             )
 
         transitions = Transitions(
-            obs=np.asarray(x, dtype=np.float32),
+            obs=observations,
             acts=np.asarray(y_codes, dtype=np.int64),
             infos=np.array([{}] * n, dtype=object),
-            next_obs=np.asarray(x, dtype=np.float32),
+            next_obs=observations,
             dones=np.ones(n, dtype=bool),
         )
 
@@ -429,9 +440,7 @@ def fit_tabular_gail_lite(
             raise
 
         policy_model = gail.gen_algo
-        pred_raw = policy_model.predict(
-            np.asarray(x, dtype=np.float32), deterministic=True
-        )[0]
+        pred_raw = policy_model.predict(observations, deterministic=True)[0]
         pred = np.asarray(pred_raw).reshape(-1)
         train_score = float(np.mean(pred == y_codes))
 

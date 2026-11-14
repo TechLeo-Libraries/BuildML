@@ -496,6 +496,7 @@ jobs:
         run: >-
           pytest tests/unit/test_rl_industry.py tests/unit/test_imitation_real_contracts.py
           tests/unit/test_rl_action_identity_consumers.py tests/unit/test_imitation_action_identity_consumers.py
+          tests/unit/test_imitation_finite_observations.py
           -q --junitxml=artifacts/rl-contracts.xml
       - uses: actions/upload-artifact@v4
         if: always()
