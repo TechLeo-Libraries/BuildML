@@ -53,8 +53,9 @@ def run_flaml_adapter(
         ``classification``, ``regression``, or ``auto`` to infer from the target.
     selection:
         ``cv`` reports train-only internal scoring. ``validation`` evaluates
-        the selected model on the Session validation partition. Trial rows
-        summarize each learner's best internal score.
+        the selected model on the Session validation partition. The best
+        score uses that evaluation when finite, with the internal score as
+        a fallback. Trial rows summarize each learner's best internal score.
     ranking_metric:
         Metric passed to FLAML; converted to FLAML loss orientation internally.
     time_budget:
@@ -132,7 +133,10 @@ def run_flaml_adapter(
     best_loss = float(getattr(automl, "best_loss", float("nan")))
     if not isfinite(best_loss):
         raise ValidationError("FLAML AutoML finished without a finite internal validation loss")
-    display_score = _flaml_score(best_loss, higher_is_better=higher_is_better)
+    internal_score = _flaml_score(best_loss, higher_is_better=higher_is_better)
+    display_score = internal_score
+    score_source = "provider_internal"
+    warnings: list[str] = []
     trials = _flaml_trials(automl, metric=metric, higher_is_better=higher_is_better)
 
     fit_result: FitResult | None = None
@@ -148,14 +152,16 @@ def run_flaml_adapter(
     if selection == "validation":
         assert fit_result is not None
         ev = evaluate_estimator(dataset, split_plan, fit_result, partition="validation")
-        display_score = float(ev.metrics.get(metric, display_score))
-        std_score = 0.0
-        mean_metrics = dict(ev.metrics)
-        std_metrics = {k: 0.0 for k in ev.metrics}
-    else:
-        std_score = 0.0
-        mean_metrics = {metric: display_score}
-        std_metrics = {metric: 0.0}
+        validation_score = ev.metrics.get(metric, float("nan"))
+        if isfinite(validation_score):
+            display_score = validation_score
+            score_source = "session_validation"
+        else:
+            warnings.append(
+                f"Session validation did not produce a finite '{metric}' score. "
+                "Best score uses FLAML's internal validation on the training partition."
+            )
+    std_score = 0.0
 
     if not trials:
         trials.append(AutoMLTrial(
@@ -164,10 +170,10 @@ def run_flaml_adapter(
             family=getattr(automl, "best_estimator", None) or "flaml",
             recipe_strategy="flaml_internal",
             params=best_config,
-            mean_score=display_score,
+            mean_score=internal_score,
             std_score=std_score,
-            mean_metrics=mean_metrics,
-            std_metrics=std_metrics,
+            mean_metrics={metric: internal_score},
+            std_metrics={metric: std_score},
         ))
 
     config = AutoMLConfig(
@@ -184,13 +190,15 @@ def run_flaml_adapter(
             "backend": "flaml",
             "time_budget_seconds": seconds,
             "best_config": best_config,
+            "best_score_source": score_source,
         },
     )
     disclosures = [
         "backend=flaml (buildml[automl-industry]); FLAML internal model search on train only.",
         "Fold-local PreprocessRecipe search bypassed: FLAML handles preprocessing internally.",
         "Session test never entered FLAML fit or selection scoring.",
-        "Trial rows summarize each learner's best finite internal result when available.",
+        "Trial rows summarize each learner's best finite internal result when available. "
+        "The best score source is recorded in the config.",
         f"time_budget={seconds:.1f}s; metric={metric}; best_loss={best_loss}.",
     ]
     limitations = [
@@ -217,7 +225,7 @@ def run_flaml_adapter(
         families_searched=("flaml",),
         recipe_strategies_searched=("flaml_internal",),
         disclosures=tuple(disclosures),
-        warnings=(),
+        warnings=tuple(warnings),
         config=config.to_dict(),
     )
     result = AutoMLResult(
@@ -238,7 +246,7 @@ def run_flaml_adapter(
         feature_columns=tuple(feature_cols),
         target_column=str(target),
         disclosures=tuple(disclosures),
-        warnings=(),
+        warnings=tuple(warnings),
         limitations=tuple(limitations),
         recommendations=(
             f"Winner: flaml config={best_config}, score={display_score:.6f}.",

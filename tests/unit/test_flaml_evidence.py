@@ -1,5 +1,7 @@
 """Exercise FLAML's public search and validation results with real fitted learners."""
 
+import json
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -14,7 +16,9 @@ def _require_provider():
         pytest.skip("FLAML AutoML dependencies are unavailable")
 
 
-def _regression_session(*, signal_name="signal", target_name="target", zero_loss=False):
+def _regression_session(
+    *, signal_name="signal", target_name="target", zero_loss=False, validation_rows=20,
+):
     rng = np.random.default_rng(82)
     n = 120
     signal = np.tile([-1.0, 1.0], n // 2)
@@ -39,8 +43,8 @@ def _regression_session(*, signal_name="signal", target_name="target", zero_loss
         )
         .inject_split(
             train_indices=list(range(80)),
-            validation_indices=list(range(80, 100)),
-            test_indices=list(range(100, n)),
+            validation_indices=list(range(80, 80 + validation_rows)),
+            test_indices=list(range(80 + validation_rows, n)),
         )
     )
 
@@ -98,6 +102,40 @@ def test_real_weighted_flaml_preserves_reserved_spelling_in_user_columns(signal_
         (validation[target_name].to_numpy() - predicted) ** 2, weights=validation["row_weight"]
     )
     assert result.best_score == pytest.approx(expected)
+
+
+@pytest.mark.parametrize("metric", ["r2", "mse"])
+def test_real_flaml_identifies_the_score_source_with_singleton_validation(metric):
+    session = _regression_session(validation_rows=1)
+    with pytest.warns(UserWarning, match="R\\^2 score is not well-defined"):
+        result = session.automl.run(
+            backend="flaml", task="regression", selection="validation",
+            ranking_metric=metric, time_budget=4, random_state=17,
+        )
+
+    plan = session.automl_plan
+    wrapper = session.fit_result.estimator
+    if metric == "r2":
+        expected = 1 - wrapper._automl.best_loss
+        source = "provider_internal"
+        assert any("finite 'r2'" in message for message in result.warnings)
+    else:
+        validation = session.partition("validation")
+        predictions = wrapper.predict(validation[list(plan.feature_columns)])
+        expected = np.average(
+            (validation["target"].to_numpy() - predictions) ** 2, weights=validation["row_weight"]
+        )
+        source = "session_validation"
+        assert result.warnings == ()
+    assert np.isfinite(expected)
+    assert result.best_score == pytest.approx(expected)
+    assert plan.best_score == pytest.approx(expected)
+    assert plan.warnings == result.warnings
+    assert plan.config["extras"]["best_score_source"] == source
+    assert result.config["extras"]["best_score_source"] == source
+    json.dumps(plan.to_dict(), allow_nan=False)
+    json.dumps(result.to_dict(), allow_nan=False)
+    assert session.automl.evaluate(partition="test").n_rows == 39
 
 
 @pytest.mark.parametrize("ranking_metric", [None, "f1_macro"])
