@@ -10,6 +10,8 @@ from sklearn.linear_model import LinearRegression, LogisticRegression
 from buildml import Session
 from buildml.core.errors import ValidationError
 from buildml.core.types import ColumnRole
+from buildml.pipeline import predict_from_pipeline
+from buildml.pipeline.card import load_model_card
 
 
 def _weighted_regression_frame(n: int = 80) -> pd.DataFrame:
@@ -116,3 +118,58 @@ def test_evaluate_records_weight_usage() -> None:
     metrics = session.evaluate(partition="test")
     assert metrics.diagnostics.get("sample_weight_column") == "w"
     assert "f1_weighted" in metrics.metrics
+
+
+@pytest.mark.parametrize("operation", ["fit", "cv_score"])
+@pytest.mark.parametrize(
+    ("weights", "message"),
+    [
+        pytest.param([1.0, np.inf], "finite real values", id="infinite"),
+        pytest.param([1 + 2j, 1 + 0j], "finite real values", id="complex"),
+        pytest.param([1e308, 1e308], "finite total weight", id="overflow"),
+        pytest.param([0.0, 0.0], "at least one positive weight", id="zero-total"),
+        pytest.param(["1", "invalid"], "non-numeric or missing", id="invalid-text"),
+    ],
+)
+def test_unusable_training_weights_fail_at_the_session_boundary(operation, weights, message):
+    frame = _weighted_regression_frame(40)
+    frame["w"] = np.tile(weights, 20)
+    session = (
+        Session.ingest(frame)
+        .set_roles({"x": "feature", "y": "target", "w": "weight"})
+        .inject_split(train_indices=list(range(32)), validation_indices=[], test_indices=list(range(32, 40)))
+    )
+    with pytest.raises(ValidationError, match=f"Weight column 'w'.*{message}"):
+        getattr(session, operation)(LinearRegression(), task="regression")
+    assert session.fit_result is None
+
+
+def test_weighted_fit_and_bundle_preserve_valid_predictions_when_holdout_weights_overflow(tmp_path):
+    frame = _weighted_regression_frame(40)
+    train_rows = list(range(32))
+    test_rows = list(range(32, 40))
+    weights = np.resize([2.0, 0.0, 0.25], len(train_rows))
+    frame["w"] = [str(value) for value in weights] + ["1e308"] * len(test_rows)
+    session = (
+        Session.ingest(frame)
+        .set_roles({"x": "feature", "y": "target", "w": "weight"})
+        .inject_split(train_indices=train_rows, validation_indices=[], test_indices=test_rows)
+        .fit(LinearRegression(), task="regression")
+    )
+    train = frame.iloc[train_rows]
+    queries = frame.iloc[test_rows][["x"]]
+    scale = np.sqrt(weights)
+    design = np.column_stack((np.ones(len(train)), train.x))
+    intercept, slope = np.linalg.lstsq(design * scale[:, None], train.y * scale, rcond=None)[0]
+    expected = intercept + slope * queries.x.to_numpy()
+    np.testing.assert_allclose(session.predict(partition="test"), expected)
+
+    fitted = session.fit_result
+    with pytest.raises(ValidationError, match="Weight column 'w'.*finite total weight"):
+        session.evaluate(partition="test")
+    assert session.fit_result is fitted
+    saved = session.save_pipeline(tmp_path / "weighted", evaluate_partition="test")
+    card = load_model_card(saved)
+    assert "test" not in card.metrics
+    assert any("Evaluation at save time was skipped" in note and "finite total weight" in note for note in card.notes)
+    np.testing.assert_allclose(predict_from_pipeline(saved, queries, trusted=True).predictions, expected)

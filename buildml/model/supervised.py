@@ -369,7 +369,8 @@ def validate_sample_weights(weights: pd.Series, *, column: str) -> pd.Series:
     Bad weights do not usually raise inside scikit-learn; they change the answer.
     A missing value coerced to zero drops a row from training. A negative weight
     asks the optimiser to make a row *more* wrong. All-zero weights make the
-    fit degenerate. Each is caught here, where the message can name the column.
+    fit degenerate. Complex values, infinities, and overflowing totals also
+    make fitting or scoring unreliable. Errors name the weight column.
 
     Parameters
     ----------
@@ -386,8 +387,8 @@ def validate_sample_weights(weights: pd.Series, *, column: str) -> pd.Series:
     Raises
     ------
     ValidationError
-        If any value is missing or non-numeric, if any is negative, or if none
-        is positive.
+        If any value is missing, non-numeric, non-real, non-finite or negative,
+        or if the total weight is zero or exceeds the float64 range.
 
     Notes
     -----
@@ -408,11 +409,19 @@ def validate_sample_weights(weights: pd.Series, *, column: str) -> pd.Series:
         raise ValidationError(
             f"Weight column '{column}' contains non-numeric or missing values"
         )
+    if np.iscomplexobj(numeric.to_numpy()):
+        raise ValidationError(f"Weight column '{column}' must contain finite real values")
     values = numeric.to_numpy(dtype=float)
+    if not np.isfinite(values).all():
+        raise ValidationError(f"Weight column '{column}' must contain finite real values")
     if np.any(values < 0):
         raise ValidationError(f"Weight column '{column}' must be non-negative")
     if not np.any(values > 0):
         raise ValidationError(f"Weight column '{column}' must contain at least one positive weight")
+    with np.errstate(over="ignore"):
+        total = values.sum()
+    if not np.isfinite(total):
+        raise ValidationError(f"Weight column '{column}' must have finite total weight")
     return numeric.astype(float)
 
 
@@ -511,13 +520,13 @@ def _feature_target_frames(
     sample_rows: int | None = None,
     random_state: int | None = 0,
     materialize_prep: bool = True,
+    include_sample_weight: bool = True,
 ) -> tuple[pd.DataFrame, pd.Series, list[str], str, pd.Series | None]:
     """Build the X, y, and weights for one partition.
 
     The single place partition data becomes a design matrix, which is what keeps
     fit, predict, and evaluate consistent: all three resolve features from the
-    same roles and validate weights the same way, so a column set that trains
-    cannot fail to score.
+    same roles. Fit and evaluation also validate their weights.
 
     Parameters
     ----------
@@ -535,6 +544,9 @@ def _feature_target_frames(
     materialize_prep:
         Whether to route through the engine's projection and sampling. ``False``
         slices the partition frame directly, skipping the engine path.
+    include_sample_weight:
+        Whether to project and validate the weight column. Prediction only
+        uses the feature data.
 
     Returns
     -------
@@ -555,7 +567,7 @@ def _feature_target_frames(
     """
     target = dataset.require_target()
     feature_cols = resolve_feature_columns(dataset)
-    weight = weight_column(dataset)
+    weight = weight_column(dataset) if include_sample_weight else None
 
     frame = frame_for_partition(dataset, split_plan, partition)
     if not materialize_prep:
@@ -930,7 +942,9 @@ def predict_estimator(
     """
     if split_plan is None:
         raise ValidationError("A split is required for partitioned prediction")
-    x, _, _, _, _ = _feature_target_frames(dataset, split_plan, partition)
+    x, _, _, _, _ = _feature_target_frames(
+        dataset, split_plan, partition, include_sample_weight=False
+    )
     missing = [c for c in fit_result.feature_columns if c not in x.columns]
     if missing:
         raise ValidationError(f"Missing feature columns for prediction: {missing}")
