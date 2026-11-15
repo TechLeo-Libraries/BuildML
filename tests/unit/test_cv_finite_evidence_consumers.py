@@ -8,12 +8,13 @@ import pandas as pd
 import pytest
 from sklearn.exceptions import UndefinedMetricWarning
 from sklearn.linear_model import Ridge
-from sklearn.model_selection import GroupKFold, LeaveOneOut, PredefinedSplit
+from sklearn.model_selection import GroupKFold, LeaveOneOut, PredefinedSplit, TimeSeriesSplit
 
 from buildml import Session
 from buildml.core.errors import LeakageError, ValidationError
 from buildml.model.selection import cv_score, nested_cv_score
 from buildml.pipeline import predict_from_pipeline
+from buildml.preprocess.fold import PreprocessRecipe
 
 ROUTES = ["cv_score", "grid_search", "randomized_search", "evolutionary_search"]
 ALPHAS = [0.1, 2.0]
@@ -114,6 +115,103 @@ def invoke(s, route, splitter, metric="r2", **kwargs):
         )
     assert not hasattr(template, "coef_")
     return result
+
+
+def _fold_weight_session():
+    rows = np.arange(48)
+    order = np.random.default_rng(42).permutation(36)
+    signal = np.sin(rows / 4) + rows / 10
+    weights = np.tile([0.0, 1.0, 2.0, 0.0, 3.0, 4.0], 8)
+    frame = pd.DataFrame(
+        {"x": signal, "y": 2 + 1.5 * signal + np.cos(rows / 7),
+         "weight": weights, "when": pd.date_range("2021-01-01", periods=len(rows))},
+        index=np.repeat(np.arange(16), 3),
+    )
+    return (
+        Session.ingest(frame)
+        .set_roles({"x": "feature", "y": "target", "weight": "weight", "when": "time"})
+        .inject_split(train_indices=order.tolist(), validation_indices=list(range(36, 42)),
+                      test_indices=list(range(42, 48)))
+    )
+
+
+def _score_weighted_folds(session, route, splitter, strategy="auto"):
+    if route == "cv":
+        result = session.cv_score(
+            Ridge(alpha=0.1), task="regression", scoring_metric="mse", cv=splitter, cv_strategy=strategy,
+        )
+        return result.mean_metrics["mse"]
+    if route == "nested_cv":
+        result = session.nested_cv_score(
+            Ridge(), task="regression", param_grid={"alpha": [0.1]}, scoring_metric="mse",
+            inner_cv=2, outer_cv=splitter, cv_strategy=strategy,
+        )
+        return result.mean_metrics["mse"]
+    result = session.automl.run(
+        task="regression", method="grid", selection="nested", ranking_metric="mse",
+        families=("ridge",), n_trials=3, cv=2, outer_cv=splitter, cv_strategy=strategy,
+        include_recipe_search=False, preprocess=PreprocessRecipe(impute=None),
+    )
+    return result.outer_score_mean
+
+
+@pytest.mark.parametrize(
+    ("route", "label"),
+    [("cv", "CV fold"), ("nested_cv", "Nested CV outer fold"), ("automl", "Nested AutoML outer fold")],
+)
+@pytest.mark.parametrize("side", ["training", "evaluation"])
+def test_fold_with_zero_total_weight_reports_its_side_without_replacing_state(route, label, side):
+    session = _fold_weight_session().fit(Ridge(alpha=0.1))
+    session.cv_score(Ridge(alpha=0.1), task="regression", scoring_metric="mse", cv=2)
+    weights = session.partition("train").weight.to_numpy()
+    zero = np.flatnonzero(weights == 0)
+    positive = np.flatnonzero(weights > 0)
+    split = (zero, positive) if side == "training" else (positive, zero)
+    before = snapshot(session)
+    previous_plan = session.automl_plan
+
+    with pytest.raises(ValidationError, match=rf"{label} 0 {side} rows.*positive sample weight"):
+        _score_weighted_folds(session, route, [split])
+    unchanged(session, before)
+    assert session.automl_plan is previous_plan
+
+
+@pytest.mark.parametrize("route", ["cv", "nested_cv", "automl"])
+@pytest.mark.parametrize("strategy", ["auto", "time"])
+def test_fold_predictions_use_aligned_positive_mass_and_keep_zero_weight_rows(route, strategy):
+    def mse(fit, evaluate, alpha):
+        design = np.column_stack([np.ones(len(fit)), fit.x])
+        weighted = design.T * fit.weight.to_numpy()
+        intercept, slope = np.linalg.solve(
+            weighted @ design + np.diag([0.0, alpha]), weighted @ fit.y.to_numpy(),
+        )
+        residual = evaluate.y - (intercept + slope * evaluate.x)
+        return np.average(residual**2, weights=evaluate.weight)
+
+    session = _fold_weight_session()
+    train = session.partition("train")
+    if strategy == "time":
+        train = train.sort_values("when")
+        folds = list(TimeSeriesSplit(n_splits=3).split(train))
+        splitter = 3
+    else:
+        splitter = PredefinedSplit(np.arange(len(train)) // 12)
+        folds = list(splitter.split())
+    expected = []
+    for fit_pos, eval_pos in folds:
+        fit, evaluate = train.iloc[fit_pos], train.iloc[eval_pos]
+        alpha = 0.1
+        if route == "automl":
+            chronological_fit = fit.sort_values("when")
+            inner = list(TimeSeriesSplit(n_splits=2).split(chronological_fit))
+            alphas = [0.1, 1.0, 10.0]
+            inner_scores = [
+                np.mean([mse(chronological_fit.iloc[i], chronological_fit.iloc[j], alpha) for i, j in inner])
+                for alpha in alphas
+            ]
+            alpha = alphas[int(np.argmin(inner_scores))]
+        expected.append(mse(fit, evaluate, alpha))
+    assert _score_weighted_folds(session, route, splitter, strategy) == pytest.approx(np.mean(expected))
 
 
 @pytest.mark.parametrize("route", ROUTES)

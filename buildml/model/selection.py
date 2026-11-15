@@ -90,7 +90,6 @@ from buildml.model.supervised import (
     _infer_task,
     fit_estimator,
     fit_kwargs_for_sample_weight,
-    validate_sample_weights,
     weight_column,
 )
 from buildml.preprocess.fold import (
@@ -1121,8 +1120,9 @@ def cv_score(
         y_fold_train = y_reset.iloc[list(train_pos)]
         x_fold_eval = x_reset.iloc[list(eval_pos)]
         y_fold_eval = y_reset.iloc[list(eval_pos)]
-        w_fold_train = None if w_reset is None else w_reset.iloc[list(train_pos)]
-        w_fold_eval = None if w_reset is None else w_reset.iloc[list(eval_pos)]
+        w_fold_train, w_fold_eval = _validated_fold_weights(
+            w_reset, train_pos, eval_pos, context=f"CV fold {fold_id}",
+        )
 
         if active_recipe is not None and not active_recipe.is_empty():
             prep = build_fold_preprocessor(x_fold_train, active_recipe, y_fold_train)
@@ -2357,12 +2357,11 @@ def nested_cv_score(
         allow_session_global_preprocess=allow_session_global_preprocess,
     )
 
-    x_train, y_train, _feature_cols, _target, _sample_weight = _feature_target_frames(
+    x_train, y_train, _feature_cols, _target, sample_weight = _feature_target_frames(
         dataset, split_plan, "train"
     )
     resolved_task = _infer_task(y_train, task, estimator)
     metric = _resolve_cv_metric(scoring_metric, resolved_task)
-    weight_col = weight_column(dataset)
 
     held_out: list[str] = ["test"]
     if split_plan.validation_indices:
@@ -2389,11 +2388,14 @@ def nested_cv_score(
 
     x_reset = x_train.reset_index(drop=True)
     y_reset = y_train.reset_index(drop=True)
+    w_reset = None if sample_weight is None else sample_weight.reset_index(drop=True)
     position_map = np.asarray(train_positions, dtype=int)
     if row_order is not None:
         x_reset = x_reset.iloc[row_order].reset_index(drop=True)
         y_reset = y_reset.iloc[row_order].reset_index(drop=True)
         position_map = position_map[row_order]
+        if w_reset is not None:
+            w_reset = w_reset.iloc[row_order].reset_index(drop=True)
         if group_values is not None:
             group_values = pd.Series(group_values).iloc[row_order]
 
@@ -2423,6 +2425,9 @@ def nested_cv_score(
             raise LeakageError("Nested CV outer fold intersected Session test partition")
         if set(outer_train_idx) & session_valid or set(outer_eval_idx) & session_valid:
             raise LeakageError("Nested CV outer fold intersected Session validation partition")
+        w_outer_train, w_outer_eval = _validated_fold_weights(
+            w_reset, outer_train_pos, outer_eval_pos, context=f"Nested CV outer fold {fold_id}",
+        )
 
         inner_plan = SplitPlan(
             kind="nested_inner",
@@ -2546,15 +2551,6 @@ def nested_cv_score(
         y_outer_train = base.iloc[list(outer_train_idx)][_target]
         x_outer_eval = base.iloc[list(outer_eval_idx)][list(_feature_cols)]
         y_outer_eval = base.iloc[list(outer_eval_idx)][_target]
-        w_outer_train = None
-        w_outer_eval = None
-        if weight_col is not None:
-            w_outer_train = validate_sample_weights(
-                base.iloc[list(outer_train_idx)][weight_col], column=weight_col
-            )
-            w_outer_eval = validate_sample_weights(
-                base.iloc[list(outer_eval_idx)][weight_col], column=weight_col
-            )
         if active_recipe is not None and not active_recipe.is_empty():
             prep = build_fold_preprocessor(x_outer_train, active_recipe, y_outer_train)
             x_fit = transform_fold_features(prep, x_outer_train)
@@ -3366,6 +3362,26 @@ def _validated_fold_positions(positions: Any, n_rows: int) -> np.ndarray:
     if len(np.unique(values)) != len(values):
         raise ValidationError("CV fold indices must not repeat observations")
     return values
+
+
+def _validated_fold_weights(
+    weights: pd.Series | None,
+    train_pos: np.ndarray,
+    eval_pos: np.ndarray,
+    *,
+    context: str,
+) -> tuple[pd.Series | None, pd.Series | None]:
+    """Slice validated parent weights and require positive mass on both sides."""
+    if weights is None:
+        return None, None
+    train_weights = weights.iloc[train_pos]
+    eval_weights = weights.iloc[eval_pos]
+    for side, values in (("training", train_weights), ("evaluation", eval_weights)):
+        if not (values > 0).any():
+            raise ValidationError(
+                f"{context} {side} rows must contain at least one positive sample weight"
+            )
+    return train_weights, eval_weights
 
 
 def _role_group_labels(dataset: Dataset, split_plan: SplitPlan) -> pd.Series:

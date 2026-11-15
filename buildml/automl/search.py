@@ -1390,6 +1390,7 @@ def _nested_outer_estimate(
         _resolve_splitter,
         _score_predictions,
         _validated_fold_positions,
+        _validated_fold_weights,
     )
 
     x_train, y_train, _fc, _tg, sample_weight = _feature_target_frames(
@@ -1432,6 +1433,9 @@ def _nested_outer_estimate(
         eval_pos = _validated_fold_positions(eval_pos, len(x_reset))
         if set(train_pos) & set(eval_pos):
             raise LeakageError("AutoML nested outer fold train/eval indices overlap")
+        _, w_eval = _validated_fold_weights(
+            w_reset, train_pos, eval_pos, context=f"Nested AutoML outer fold {fold_id}",
+        )
         inner_groups = None if group_reset is None else group_reset.iloc[list(train_pos)]
         inner_split = SplitPlan(
             kind="nested_inner", test_size=None, validation_size=None,
@@ -1460,7 +1464,6 @@ def _nested_outer_estimate(
         if fitted is None:
             raise ValidationError("Nested AutoML did not return a fitted outer-training model")
         y_pred = fitted.estimator.predict(x_reset.iloc[list(eval_pos)])
-        w_eval = None if w_reset is None else w_reset.iloc[list(eval_pos)]
         fold_metrics = _score_predictions(task, y_reset.iloc[list(eval_pos)], y_pred,
                                           sample_weight=w_eval)
         _require_finite_cv_metric(fold_metrics, metric, f"Nested AutoML outer fold {fold_id}")
