@@ -42,7 +42,7 @@ def test_tied_score_ece_weights_actual_group_sizes_and_preserves_brier():
     assert report.payload["ece_method"] == "sample-weighted mean absolute bin gap"
 
 
-def _weighted_classifier(classes):
+def _weighted_classifier(classes, *, holdout_weight=None):
     rows = np.arange(120)
     x = np.tile([-2.0, -1.0, 1.0, 2.0], 30)
     if classes == 2:
@@ -53,6 +53,8 @@ def _weighted_classifier(classes):
         weights = np.where(target == 2, 20.0, 1.0)
     weights[rows < 80] = 1
     weights[(rows >= 80) & (x == 2)] = 0
+    if holdout_weight is not None:
+        weights[rows >= 80] = holdout_weight
     labels = np.asarray(["red", "blue", "gold"])[target]
     frame = pd.DataFrame({"x": x, "y": labels, "importance": weights}, index=rows // 3)
     return (
@@ -141,6 +143,43 @@ def test_multiclass_calibration_uses_declared_weights_in_provider_class_order():
     report = session.calibration(partition="test")
     assert report.payload["sample_weight_column"] == "importance"
     assert {row["class"]: row["brier_score"] for row in report.payload["per_class_brier"]} == pytest.approx(expected)
+
+
+def test_binary_calibration_is_invariant_to_subnormal_weight_scale():
+    tiny = np.nextafter(0.0, 1.0)
+    session = _weighted_classifier(2, holdout_weight=tiny)
+    holdout = session.partition("test")
+    model = session.fit_result.estimator
+    actual = holdout.y.eq(model.classes_[1]).to_numpy(dtype=float)
+    probabilities = model.predict_proba(holdout[["x"]])[:, 1]
+    median = np.median(probabilities)
+    groups = (probabilities <= median, probabilities > median)
+    fractions = [actual[group].mean() for group in groups]
+    means = [probabilities[group].mean() for group in groups]
+    counts = [int(group.sum()) for group in groups]
+    ece = sum(n * abs(y - p) for n, y, p in zip(counts, fractions, means, strict=True)) / len(actual)
+
+    report = calibration_report(session.dataset, session.split_plan, session.fit_result, partition="test", n_bins=2)
+    assert report.payload["brier_score"] == pytest.approx(np.square(actual - probabilities).mean())
+    assert report.payload["ece"] == pytest.approx(ece)
+    assert report.payload["prevalence"] == pytest.approx(actual.mean())
+    assert report.payload["bin_weights"] == [n * tiny for n in counts]
+    assert report.payload["calibration_curve"]["fraction_positives"] == pytest.approx(fractions)
+    assert report.payload["calibration_curve"]["mean_predicted_value"] == pytest.approx(means)
+
+
+def test_multiclass_brier_is_invariant_to_subnormal_weight_scale():
+    session = _weighted_classifier(3, holdout_weight=np.nextafter(0.0, 1.0))
+    holdout = session.partition("test")
+    estimator = session.fit_result.estimator
+    probabilities = estimator.predict_proba(holdout[["x"]])
+    expected = {
+        label: np.square(holdout.y.eq(label) - probabilities[:, index]).mean()
+        for index, label in enumerate(estimator.classes_)
+    }
+    report = session.calibration(partition="test")
+    scores = {row["class"]: row["brier_score"] for row in report.payload["per_class_brier"]}
+    assert scores == pytest.approx(expected)
 
 
 @pytest.mark.parametrize(("fault", "message"), [("shape", "one probability"), ("nonfinite", "finite probabilities")])

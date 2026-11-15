@@ -258,11 +258,26 @@ def _calibration_bins(
     bin_ids = np.searchsorted(thresholds, probabilities)
     counts = np.bincount(bin_ids, minlength=effective)
     mass = np.bincount(bin_ids, weights=weights, minlength=effective)
-    positives = np.bincount(bin_ids, weights=weights * y_true, minlength=effective)
-    summed_probabilities = np.bincount(bin_ids, weights=weights * probabilities, minlength=effective)
+    # Scale within each bin so even a bin with only subnormal weights keeps its mean.
+    max_weight = np.zeros(effective)
+    np.maximum.at(max_weight, bin_ids, weights)
+    scaled = weights / max_weight[bin_ids]
+    scaled_mass = np.bincount(bin_ids, weights=scaled, minlength=effective)
+    positives = np.bincount(bin_ids, weights=scaled * y_true, minlength=effective)
+    summed_probabilities = np.bincount(bin_ids, weights=scaled * probabilities, minlength=effective)
     nonempty = counts > 0
-    mass = mass[nonempty]
-    return effective, positives[nonempty] / mass, summed_probabilities[nonempty] / mass, counts[nonempty], mass
+    return (
+        effective,
+        positives[nonempty] / scaled_mass[nonempty],
+        summed_probabilities[nonempty] / scaled_mass[nonempty],
+        counts[nonempty],
+        mass[nonempty],
+    )
+
+
+def _calibration_error(gaps: np.ndarray, mass: np.ndarray) -> float:
+    """Average the bin gaps with their relative mass."""
+    return float(np.average(gaps, weights=mass / mass.max()))
 
 
 def calibration_report(
@@ -370,6 +385,7 @@ def calibration_report(
     if not np.isfinite(proba).all() or ((proba < 0) | (proba > 1)).any():
         raise ValidationError("Calibration requires finite probabilities in [0, 1]")
     weights = None if sample_weight is None else sample_weight.to_numpy(dtype=float)
+    metric_weights = None if weights is None else weights / weights.max()
     tips: list[str] = []
     interpretation: list[str] = []
     payload: dict[str, Any] = {
@@ -389,9 +405,9 @@ def calibration_report(
         n_bins_eff, frac_pos, mean_pred, counts, mass = _calibration_bins(
             y_true, prob_pos, n_bins=n_bins, sample_weight=weights,
         )
-        brier = float(brier_score_loss(y_true, prob_pos, sample_weight=weights))
+        brier = float(brier_score_loss(y_true, prob_pos, sample_weight=metric_weights))
         gaps = np.abs(frac_pos - mean_pred)
-        ece = float(np.average(gaps, weights=mass))
+        ece = _calibration_error(gaps, mass)
         max_gap = float(gaps.max())
         payload["positive_class"] = positive
         payload["brier_score"] = brier
@@ -402,7 +418,7 @@ def calibration_report(
         if weights is not None:
             payload["bin_weights"] = mass.tolist()
         payload["ece_method"] = "sample-weighted mean absolute bin gap"
-        payload["prevalence"] = float(np.average(y_true, weights=weights))
+        payload["prevalence"] = float(np.average(y_true, weights=metric_weights))
         payload["calibration_curve"] = {
             "fraction_positives": [float(v) for v in frac_pos],
             "mean_predicted_value": [float(v) for v in mean_pred],
@@ -427,7 +443,7 @@ def calibration_report(
                 f"Calibration looks usable (ECE≈{ece:.3f}); still validate "
                 "threshold policy against business costs."
             )
-        if abs(float(np.average(prob_pos, weights=weights)) - payload["prevalence"]) > 0.08:
+        if abs(float(np.average(prob_pos, weights=metric_weights)) - payload["prevalence"]) > 0.08:
             tips.append(
                 "Mean predicted probability diverges from prevalence: "
                 "check class priors / sample weights."
@@ -440,7 +456,7 @@ def calibration_report(
             y_bin = (y_values == cls).astype(int).to_numpy()
             prob_c = proba[:, idx]
             try:
-                brier_c = float(brier_score_loss(y_bin, prob_c, sample_weight=weights))
+                brier_c = float(brier_score_loss(y_bin, prob_c, sample_weight=metric_weights))
             except ValueError:
                 brier_c = float("nan")
             per_class.append({"class": str(cls), "brier_score": brier_c})

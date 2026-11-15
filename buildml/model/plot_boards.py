@@ -481,7 +481,11 @@ def _classification_board(
     calibration_n_bins: int,
     metrics: dict[str, Any],
 ) -> None:
-    from buildml.model.diagnostics import _calibration_bins, _validate_diagnostic_classes
+    from buildml.model.diagnostics import (
+        _calibration_bins,
+        _calibration_error,
+        _validate_diagnostic_classes,
+    )
 
     classes = list(getattr(estimator, "classes_", pd.unique(pd.concat([y_true, pd.Series(y_pred)]))))
     _validate_diagnostic_classes(y_true, classes)
@@ -621,7 +625,7 @@ def _classification_board(
         _, frac_pos, mean_pred, bin_counts, bin_weights = _calibration_bins(
             y_pos, prob_pos, n_bins=calibration_n_bins, sample_weight=weights,
         )
-        ece = float(np.average(np.abs(frac_pos - mean_pred), weights=bin_weights))
+        ece = _calibration_error(np.abs(frac_pos - mean_pred), bin_weights)
         figures["calibration"] = _plot_calibration(mean_pred, frac_pos, ece, plt)
         interpretation.append(
             f"Calibration ECE (sample-weighted bin gap) ≈ {ece:.3f}; "

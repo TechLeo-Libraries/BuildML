@@ -22,6 +22,7 @@ buildml.data.dataset.Dataset : The caller.
 
 from __future__ import annotations
 
+from glob import escape
 from pathlib import Path
 from typing import Any, cast
 from uuid import uuid4
@@ -361,8 +362,8 @@ class DuckDBEngine:
         about column names or types fail at execution, not here: the error
         surfaces on the first materialisation.
 
-        Directory globs are passed directly to DuckDB's Parquet reader, so
-        quotes in directory names retain their literal meaning.
+        The file or directory path is treated literally, including names
+        containing characters DuckDB would otherwise interpret as glob patterns.
 
         See Also
         --------
@@ -371,11 +372,10 @@ class DuckDBEngine:
         del lazy, compression
         target = Path(path)
         con = connection if connection is not None else self._new_connection()
+        source = escape(target.as_posix())
         if target.is_dir():
-            pattern = str(target / "*.parquet").replace("\\", "/")
-            rel = con.read_parquet(pattern)
-        else:
-            rel = con.read_parquet(str(target))
+            source = f"{source.rstrip('/')}/*.parquet"
+        rel = con.read_parquet(source)
         self._bridge = "parquet"
         self._last_pushdown = "read_parquet"
         return _wrap(rel, con)
