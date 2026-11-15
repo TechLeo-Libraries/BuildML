@@ -46,6 +46,64 @@ def test_unknown_metrics_and_missing_validation_scores_are_refused():
                             metric='rmse', higher_is_better=False)
 
 
+@pytest.mark.parametrize("signal_name", ["signal", "_buildml_sample_weight"])
+def test_real_autogluon_uses_declared_training_weights(signal_name, monkeypatch, tmp_path):
+    provider = pytest.importorskip("autogluon.tabular")
+    from buildml import Session
+    from buildml.automl.checkpoint import load_automl_bundle
+
+    monkeypatch.chdir(tmp_path)
+    signal = np.tile([0.0, 0.0, 1.0, 1.0], 50)
+    target = signal * 10 + np.tile([0.0, 30.0], 100)
+    queries = pd.DataFrame({signal_name: [0.0, 1.0]})
+    predictions = []
+
+    for index, train_weight in enumerate(([1.0, 100.0], [100.0, 1.0])):
+        weights = np.concatenate([np.tile(train_weight, 80), np.tile([1.0, 5.0], 20)])
+        # AutoGluon reserves balance_weight as a request to derive its own weights.
+        frame = pd.DataFrame({signal_name: signal, "target": target, "balance_weight": weights})
+        session = Session.ingest(frame).set_roles(
+            {signal_name: "feature", "target": "target", "balance_weight": "weight"},
+        ).inject_split(
+            train_indices=list(range(160)),
+            validation_indices=list(range(160, 180)),
+            test_indices=list(range(180, 200)),
+        )
+        result = session.automl.run(
+            backend="autogluon", task="regression", selection="validation",
+            ranking_metric="rmse", time_budget=30, random_state=17,
+        )
+        fitted = session.fit_result
+        native_frame = frame.iloc[:160].rename(columns={"balance_weight": "reference_weight"})
+        native = provider.TabularPredictor(
+            label="target", problem_type="regression", eval_metric="root_mean_squared_error",
+            sample_weight="reference_weight", weight_evaluation=True,
+            path=str(tmp_path / f"weighted-reference-{index}"), verbosity=0,
+        )
+        native.fit(
+            native_frame, time_limit=30, presets="medium_quality",
+            hyperparameters={"GBM": {"ag_args_fit": {"num_cpus": 1}, "seed": 17}},
+        )
+        actual = fitted.estimator.predict(queries)
+        np.testing.assert_allclose(actual, native.predict(queries), rtol=1e-6)
+        predictions.append(actual)
+        assert fitted.feature_columns == (signal_name,)
+        predictor = fitted.estimator._predictor
+        assert predictor.features() == [signal_name]
+        assert predictor.weight_evaluation
+        validation = session.partition("validation")
+        error = validation["target"].to_numpy() - fitted.estimator.predict(validation[[signal_name]])
+        assert result.best_score == pytest.approx(
+            np.sqrt(np.average(error**2, weights=validation["balance_weight"])),
+        )
+        if index == 0:
+            bundle = session.automl.save_bundle(tmp_path / "weighted-bundle")
+            restored, _ = load_automl_bundle(bundle, trusted=True)
+            np.testing.assert_array_equal(restored.estimator_.predict(queries), actual)
+
+    assert np.all(predictions[0] - predictions[1] > 20)
+
+
 @pytest.mark.parametrize("metric", ["r2", "rmse"])
 def test_real_autogluon_identifies_the_score_source_with_singleton_validation(
     metric, monkeypatch, tmp_path,
