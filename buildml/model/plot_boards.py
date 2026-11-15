@@ -30,7 +30,6 @@ from typing import Any, Literal
 
 import numpy as np
 import pandas as pd
-from sklearn.calibration import calibration_curve
 from sklearn.inspection import permutation_importance
 from sklearn.metrics import (
     average_precision_score,
@@ -214,6 +213,7 @@ def build_eval_plot_board(
     include_importance: bool = True,
     n_importance_repeats: int = 6,
     learning_curve_cv: int = 3,
+    calibration_n_bins: int = 10,
     export_figures: str | Path | None = None,
     export_html: str | Path | None = None,
     show: bool = False,
@@ -256,6 +256,8 @@ def build_eval_plot_board(
         since a board is meant to be quick.
     learning_curve_cv:
         Folds at each learning-curve size.
+    calibration_n_bins:
+        Maximum quantile bins for the binary reliability diagram.
     export_figures:
         Directory to save the panels as PNGs.
     export_html:
@@ -324,7 +326,7 @@ def build_eval_plot_board(
         raise ValidationError("Split required for evaluation plot boards")
 
     plt, sns = _require_viz()
-    x, y_true, _, _, _ = _feature_target_frames(dataset, split_plan, partition)
+    x, y_true, _, _, sample_weight = _feature_target_frames(dataset, split_plan, partition)
     x = x[list(fit_result.feature_columns)]
     y_pred = fit_result.estimator.predict(x)
 
@@ -346,6 +348,8 @@ def build_eval_plot_board(
             x=x,
             y_true=y_true,
             y_pred=y_pred,
+            sample_weight=sample_weight,
+            calibration_n_bins=calibration_n_bins,
             metrics=metrics,
         )
     else:
@@ -473,9 +477,11 @@ def _classification_board(
     x: pd.DataFrame,
     y_true: pd.Series,
     y_pred: Any,
+    sample_weight: pd.Series | None,
+    calibration_n_bins: int,
     metrics: dict[str, Any],
 ) -> None:
-    from buildml.model.diagnostics import _validate_diagnostic_classes
+    from buildml.model.diagnostics import _calibration_bins, _validate_diagnostic_classes
 
     classes = list(getattr(estimator, "classes_", pd.unique(pd.concat([y_true, pd.Series(y_pred)]))))
     _validate_diagnostic_classes(y_true, classes)
@@ -611,15 +617,11 @@ def _classification_board(
         )
 
     try:
-        n_bins = min(10, max(3, len(y_pos) // 5))
-        frac_pos, mean_pred = calibration_curve(
-            y_pos, prob_pos, n_bins=n_bins, strategy="quantile"
+        weights = None if sample_weight is None else sample_weight.to_numpy(dtype=float)
+        _, frac_pos, mean_pred, bin_counts, bin_weights = _calibration_bins(
+            y_pos, prob_pos, n_bins=calibration_n_bins, sample_weight=weights,
         )
-        edges = np.percentile(prob_pos, np.linspace(0, 100, n_bins + 1))
-        bin_ids = np.searchsorted(edges[1:-1], prob_pos)
-        counts = np.bincount(bin_ids, minlength=len(edges))
-        nonempty_counts = counts[counts > 0]
-        ece = float(np.average(np.abs(np.asarray(frac_pos) - np.asarray(mean_pred)), weights=nonempty_counts))
+        ece = float(np.average(np.abs(frac_pos - mean_pred), weights=bin_weights))
         figures["calibration"] = _plot_calibration(mean_pred, frac_pos, ece, plt)
         interpretation.append(
             f"Calibration ECE (sample-weighted bin gap) ≈ {ece:.3f}; "
@@ -627,7 +629,10 @@ def _classification_board(
         )
         metrics["ece"] = ece
         metrics["ece_method"] = "sample-weighted mean absolute bin gap"
-        metrics["calibration_bin_counts"] = [int(count) for count in nonempty_counts]
+        metrics["calibration_bin_counts"] = bin_counts.tolist()
+        if sample_weight is not None:
+            metrics["calibration_sample_weight_column"] = str(sample_weight.name)
+            metrics["calibration_bin_weights"] = bin_weights.tolist()
         if ece > 0.1:
             recommendations.append(
                 "Reliability gap is material: apply CalibratedClassifierCV "

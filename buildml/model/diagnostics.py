@@ -50,7 +50,6 @@ from typing import Any, Literal
 
 import numpy as np
 import pandas as pd
-from sklearn.calibration import calibration_curve
 from sklearn.inspection import permutation_importance
 from sklearn.metrics import (
     average_precision_score,
@@ -64,7 +63,7 @@ from sklearn.metrics import (
 )
 from sklearn.model_selection import learning_curve
 
-from buildml.core.errors import ValidationError
+from buildml.core.errors import MissingExtraError, ValidationError
 from buildml.core.validation import _positive_integer
 from buildml.data.dataset import Dataset
 from buildml.data.splits import SplitPlan, assert_fit_partition
@@ -238,6 +237,34 @@ class DiagnosticReport:
         return destination
 
 
+def _calibration_bins(
+    y_true: np.ndarray,
+    probabilities: np.ndarray,
+    *,
+    n_bins: int,
+    sample_weight: np.ndarray | None,
+) -> tuple[int, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """Return quantile bins over positive-weight rows and their weighted means."""
+    requested = _positive_integer(n_bins, name="n_bins")
+    if sample_weight is None:
+        weights = np.ones(len(y_true))
+    else:
+        included = sample_weight > 0
+        weights = sample_weight[included]
+        y_true = y_true[included]
+        probabilities = probabilities[included]
+    effective = min(requested, max(3, len(probabilities) // 5))
+    thresholds = np.percentile(probabilities, np.linspace(0, 100, effective + 1))[1:-1]
+    bin_ids = np.searchsorted(thresholds, probabilities)
+    counts = np.bincount(bin_ids, minlength=effective)
+    mass = np.bincount(bin_ids, weights=weights, minlength=effective)
+    positives = np.bincount(bin_ids, weights=weights * y_true, minlength=effective)
+    summed_probabilities = np.bincount(bin_ids, weights=weights * probabilities, minlength=effective)
+    nonempty = counts > 0
+    mass = mass[nonempty]
+    return effective, positives[nonempty] / mass, summed_probabilities[nonempty] / mass, counts[nonempty], mass
+
+
 def calibration_report(
     dataset: Dataset,
     split_plan: SplitPlan | None,
@@ -304,6 +331,10 @@ def calibration_report(
     different ``n_bins`` values, so hold it fixed when tracking calibration over
     time. Above roughly 0.1 is worth investigating.
 
+    Declared sample weights determine the metric averages and the mass of
+    each reliability bin. Quantile boundaries and bin counts use rows with
+    positive weight. The report keeps the full partition row count.
+
     **Assess on held-out data.** Calibration on training rows is meaningless :
     the model has seen the answers.
 
@@ -329,10 +360,16 @@ def calibration_report(
     if split_plan is None:
         raise ValidationError("Split required")
 
-    x, y, _, _, _ = _feature_target_frames(dataset, split_plan, partition)
+    x, y, _, _, sample_weight = _feature_target_frames(dataset, split_plan, partition)
     x = x[list(fit_result.feature_columns)]
-    _validate_diagnostic_classes(y, fit_result.estimator.classes_)
-    proba = fit_result.estimator.predict_proba(x)
+    classes = fit_result.estimator.classes_
+    _validate_diagnostic_classes(y, classes)
+    proba = np.asarray(fit_result.estimator.predict_proba(x), dtype=float)
+    if proba.shape != (len(y), len(classes)):
+        raise ValidationError("Calibration requires one probability per fitted class and row")
+    if not np.isfinite(proba).all() or ((proba < 0) | (proba > 1)).any():
+        raise ValidationError("Calibration requires finite probabilities in [0, 1]")
+    weights = None if sample_weight is None else sample_weight.to_numpy(dtype=float)
     tips: list[str] = []
     interpretation: list[str] = []
     payload: dict[str, Any] = {
@@ -340,36 +377,32 @@ def calibration_report(
         "n_rows": int(len(y)),
         "n_classes": int(proba.shape[1]),
     }
+    if sample_weight is not None:
+        payload["sample_weight_column"] = str(sample_weight.name)
 
     if proba.shape[1] == 2:
         y_bin = pd.Series(y)
-        positive_value = fit_result.estimator.classes_[1]
+        positive_value = classes[1]
         positive = str(positive_value)
         y_true = (y_bin == positive_value).astype(int).to_numpy()
         prob_pos = proba[:, 1]
-        n_bins_eff = min(n_bins, max(3, len(y_true) // 5))
-        frac_pos, mean_pred = calibration_curve(
-            y_true, prob_pos, n_bins=n_bins_eff, strategy="quantile"
+        n_bins_eff, frac_pos, mean_pred, counts, mass = _calibration_bins(
+            y_true, prob_pos, n_bins=n_bins, sample_weight=weights,
         )
-        brier = float(brier_score_loss(y_true, prob_pos))
-        # Quantile bins can have very unequal sizes when probabilities tie.
-        # Weight nonempty bins by their actual sample counts, matching the
-        # bin assignment used by sklearn.calibration_curve.
-        edges = np.percentile(prob_pos, np.linspace(0, 100, n_bins_eff + 1))
-        bin_ids = np.searchsorted(edges[1:-1], prob_pos)
-        counts = np.bincount(bin_ids, minlength=len(edges))
-        nonempty_counts = counts[counts > 0]
-        gaps = np.abs(np.asarray(frac_pos) - np.asarray(mean_pred))
-        ece = float(np.average(gaps, weights=nonempty_counts))
-        max_gap = float(np.max(np.abs(np.asarray(frac_pos) - np.asarray(mean_pred))))
+        brier = float(brier_score_loss(y_true, prob_pos, sample_weight=weights))
+        gaps = np.abs(frac_pos - mean_pred)
+        ece = float(np.average(gaps, weights=mass))
+        max_gap = float(gaps.max())
         payload["positive_class"] = positive
         payload["brier_score"] = brier
         payload["ece"] = ece
         payload["max_reliability_gap"] = max_gap
         payload["n_bins"] = int(n_bins_eff)
-        payload["bin_counts"] = [int(value) for value in nonempty_counts]
+        payload["bin_counts"] = counts.tolist()
+        if weights is not None:
+            payload["bin_weights"] = mass.tolist()
         payload["ece_method"] = "sample-weighted mean absolute bin gap"
-        payload["prevalence"] = float(y_true.mean())
+        payload["prevalence"] = float(np.average(y_true, weights=weights))
         payload["calibration_curve"] = {
             "fraction_positives": [float(v) for v in frac_pos],
             "mean_predicted_value": [float(v) for v in mean_pred],
@@ -394,7 +427,7 @@ def calibration_report(
                 f"Calibration looks usable (ECE≈{ece:.3f}); still validate "
                 "threshold policy against business costs."
             )
-        if abs(float(np.mean(prob_pos)) - float(y_true.mean())) > 0.08:
+        if abs(float(np.average(prob_pos, weights=weights)) - payload["prevalence"]) > 0.08:
             tips.append(
                 "Mean predicted probability diverges from prevalence: "
                 "check class priors / sample weights."
@@ -402,13 +435,12 @@ def calibration_report(
     else:
         # Multiclass: one-vs-rest Brier-style summary per class (micro)
         y_values = pd.Series(y)
-        classes = list(fit_result.estimator.classes_)
         per_class = []
         for idx, cls in enumerate(classes):
             y_bin = (y_values == cls).astype(int).to_numpy()
             prob_c = proba[:, idx]
             try:
-                brier_c = float(brier_score_loss(y_bin, prob_c))
+                brier_c = float(brier_score_loss(y_bin, prob_c, sample_weight=weights))
             except ValueError:
                 brier_c = float("nan")
             per_class.append({"class": str(cls), "brier_score": brier_c})
@@ -450,6 +482,7 @@ def calibration_report(
         export_figures=export_figures,
         export_html=export_html,
         board_panels=("calibration",),
+        calibration_n_bins=n_bins,
     )
 
 
@@ -1574,6 +1607,7 @@ def _maybe_export_diagnostic_board(
     include_learning_curve: bool = False,
     include_importance: bool = False,
     n_importance_repeats: int = 6,
+    calibration_n_bins: int = 10,
 ) -> DiagnosticReport:
     """Optionally render/export plot-board panels for a diagnostic report."""
     if export_figures is None and export_html is None:
@@ -1585,18 +1619,25 @@ def _maybe_export_diagnostic_board(
             report.export_html(export_html)
         return report
 
-    board = build_eval_plot_board(
-        dataset,
-        split_plan,
-        fit_result,
-        partition=partition,
-        include_learning_curve=include_learning_curve,
-        include_importance=include_importance,
-        n_importance_repeats=n_importance_repeats,
-        export_figures=export_figures,
-        export_html=None,
-        show=False,
-    )
+    try:
+        board = build_eval_plot_board(
+            dataset,
+            split_plan,
+            fit_result,
+            partition=partition,
+            include_learning_curve=include_learning_curve,
+            include_importance=include_importance,
+            n_importance_repeats=n_importance_repeats,
+            calibration_n_bins=calibration_n_bins,
+            export_figures=export_figures,
+            export_html=None,
+            show=False,
+        )
+    except MissingExtraError as exc:
+        if exc.extra != "viz" or export_figures is not None or export_html is None:
+            raise
+        report.export_html(export_html)
+        return report
     # Keep only requested panels when a subset was asked for.
     if board_panels and board.figure_paths:
         keep = {k: v for k, v in board.figure_paths.items() if k in board_panels}
