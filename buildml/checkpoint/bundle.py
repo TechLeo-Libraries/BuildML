@@ -396,7 +396,7 @@ def load_checkpoint(
 
     Partitioned sidecars with a recorded ``parts`` list must contain exactly
     those Parquet files. Extra or missing partitions refuse resume before a
-    native handle is opened. ``data_only=True`` reads the canonical frame.
+    native handle is opened. ``data_only=True`` reads the canonical Parquet file.
     Checkpoint member paths must stay within the selected directory.
     An explicit ``meta.has_plans=False`` skips a leftover inactive plans file;
     older metadata without this flag still loads its plans with trust required.
@@ -418,6 +418,8 @@ def load_checkpoint(
         data_path = alt
         source = str(alt)
 
+    if not data_path.is_file():
+        raise ValidationError(f"Checkpoint data at '{source}' must be a Parquet file.")
     frame = pd.read_parquet(data_path)
     schema = schema_from_dataframe(frame)
 

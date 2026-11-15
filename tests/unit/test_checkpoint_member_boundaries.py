@@ -78,6 +78,34 @@ def test_data_only_does_not_follow_a_canonical_file_symlink_outside_bundle(tmp_p
         Session.checkpoint_load(bundle, data_only=True)
 
 
+def test_data_only_refuses_a_directory_in_place_of_the_canonical_file(tmp_path, frames):
+    canonical, _ = frames
+    bundle = Session.ingest(canonical).checkpoint_save(tmp_path / "bundle")
+    data = bundle / "data" / "frame.parquet"
+    data.unlink()
+    data.mkdir()
+    canonical.assign(x=canonical.x + 100).to_parquet(data / "shard.parquet")
+    with pytest.raises(ValidationError, match="Parquet file"):
+        Session.checkpoint_load(bundle, data_only=True)
+
+
+@pytest.mark.parametrize("engine", ["duckdb", "polars"])
+@pytest.mark.parametrize("layout", ["single", "partitioned"])
+def test_native_checkpoint_reads_the_literal_bundle_path(tmp_path, frames, engine, layout):
+    pytest.importorskip(engine)
+    canonical, _ = frames
+    session = Session.ingest(canonical, engine=engine)
+    bundle = session.checkpoint_save(
+        tmp_path / "bundle[1]", sidecar_layout=layout, sidecar_partition_rows=4,
+    )
+    sibling = Session.ingest(canonical.assign(x=canonical.x + 100), engine=engine)
+    sibling.checkpoint_save(tmp_path / "bundle1", sidecar_layout=layout, sidecar_partition_rows=4)
+
+    restored = Session.checkpoint_load(bundle)
+    assert restored.dataset.has_native
+    pd.testing.assert_frame_equal(restored.dataset._ensure_pandas(), canonical)
+
+
 def test_explicit_bare_parquet_path_can_be_loaded_without_a_bundle(frames):
     canonical, outside = frames
     pd.testing.assert_frame_equal(

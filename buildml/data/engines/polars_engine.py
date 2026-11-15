@@ -22,6 +22,7 @@ buildml.data.dataset.Dataset : The caller.
 
 from __future__ import annotations
 
+from glob import escape
 from pathlib import Path
 from typing import Any
 
@@ -141,19 +142,20 @@ class PolarsEngine:
         **Directory reads assume a consistent schema.** Under ``lazy=True``,
         files that disagree fail at collection rather than here.
 
+        The file or directory path is treated literally, including names
+        containing characters Polars would otherwise interpret as glob patterns.
+
         See Also
         --------
         write_parquet : The other direction.
         """
         target = Path(path)
+        source = escape(target.as_posix())
         if target.is_dir():
-            pattern = str(target / "*.parquet")
-            if lazy:
-                return self._pl.scan_parquet(pattern)
-            return self._pl.read_parquet(pattern)
+            source = f"{source.rstrip('/')}/*.parquet"
         if lazy:
-            return self._pl.scan_parquet(target)
-        return self._pl.read_parquet(target)
+            return self._pl.scan_parquet(source)
+        return self._pl.read_parquet(source)
 
     def write_parquet(
         self,
