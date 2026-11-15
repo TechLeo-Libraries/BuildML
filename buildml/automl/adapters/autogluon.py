@@ -122,7 +122,7 @@ def run_autogluon_adapter(
     if seconds is None:
         seconds = max(60.0, float(budget.max_trials) * 8.0)
 
-    x_train, y_train, feature_cols, target, _sample_weight = _feature_target_frames(
+    x_train, y_train, feature_cols, target, sample_weight = _feature_target_frames(
         dataset, split_plan, "train"
     )
     resolved_task = _infer_task(y_train, task, None)
@@ -132,11 +132,19 @@ def run_autogluon_adapter(
 
     train_frame = x_train.copy()
     train_frame[target] = y_train.values
+    provider_weight = None
+    if sample_weight is not None:
+        provider_weight = "_buildml_sample_weight"
+        while provider_weight in train_frame.columns:
+            provider_weight += "_"
+        train_frame[provider_weight] = sample_weight.to_numpy(copy=True)
 
     predictor = TabularPredictor(
         label=target,
         problem_type=_autogluon_problem_type(resolved_task, n_classes=int(y_train.nunique())),
         eval_metric=ag_metric,
+        sample_weight=provider_weight,
+        weight_evaluation=provider_weight is not None,
     )
     fit_kwargs: dict[str, Any] = {
         "time_limit": int(seconds),
